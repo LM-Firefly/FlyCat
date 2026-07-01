@@ -18,17 +18,18 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.runtime.session
+package com.github.yumelira.yumebox.runtime.service.runtime.session
+import com.github.yumelira.yumebox.runtime.api.service.runtime.session.RuntimeSpec
 
 import android.content.Context
+import com.github.yumelira.yumebox.core.appContextOrSelf
+import com.github.yumelira.yumebox.core.importedDir
 import com.github.yumelira.yumebox.core.model.OverrideSpec
-import com.github.yumelira.yumebox.service.common.util.appContextOrSelf
-import com.github.yumelira.yumebox.service.root.RootTunConfigFactory
-import com.github.yumelira.yumebox.service.runtime.config.ServiceStore
-import com.github.yumelira.yumebox.service.runtime.records.ImportedDao
-import com.github.yumelira.yumebox.service.runtime.state.RuntimeOwner
-import com.github.yumelira.yumebox.service.runtime.util.directoryLastModified
-import com.github.yumelira.yumebox.service.runtime.util.importedDir
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimeOwner
+import com.github.yumelira.yumebox.runtime.service.root.RootTunConfigFactory
+import com.github.yumelira.yumebox.runtime.service.runtime.config.ServiceStore
+import com.github.yumelira.yumebox.runtime.service.runtime.records.ImportedDao
+import com.github.yumelira.yumebox.runtime.service.runtime.util.directoryLastModified
 import java.io.File
 import java.security.MessageDigest
 
@@ -39,25 +40,27 @@ class SessionRuntimeSpecFactory(
     private val context: Context = context.appContextOrSelf
     private val compiledConfigPipeline = CompiledConfigPipeline(this.context)
 
-    fun createTunSpec(): RuntimeSpec = createLocalSpec(RuntimeOwner.LocalTun)
+    fun createTunSpec(): RuntimeSpec {
+        return createLocalSpec(RuntimeOwner.LocalTun)
+    }
 
-    fun createHttpSpec(): RuntimeSpec = createLocalSpec(RuntimeOwner.LocalHttp)
+    fun createHttpSpec(): RuntimeSpec {
+        return createLocalSpec(RuntimeOwner.LocalHttp)
+    }
 
     private fun createLocalSpec(owner: RuntimeOwner): RuntimeSpec {
         val profile = requireActiveProfile()
         val profileDir = context.importedDir.resolve(profile.uuid.toString())
         val overrideSpecs = compiledConfigPipeline.resolveOverrideSpecs(profile.uuid.toString())
-        val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
         return RuntimeSpec(
             owner = owner,
             profileUuid = profile.uuid.toString(),
             profileName = profile.name,
             profileDir = profileDir.absolutePath,
             runtimeConfigPath = profileDir.resolve("runtime.yaml").absolutePath,
-            ageSecretKey = ageSecretKey,
             overrideSpecs = overrideSpecs,
             effectiveFingerprint =
-                buildEffectiveFingerprint(profile.uuid.toString(), overrideSpecs, ageSecretKey),
+                buildEffectiveFingerprint(profile.uuid.toString(), overrideSpecs),
             profileFingerprint = buildProfileFingerprint(profile.uuid.toString()),
         )
     }
@@ -69,30 +72,24 @@ class SessionRuntimeSpecFactory(
                 ?: error("Root tun profile metadata not found: ${rootResult.profileUuid}")
         val overrideSpecs =
             compiledConfigPipeline.resolveOverrideSpecs(rootResult.profileUuid.toString())
-        val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
         return RuntimeSpec(
             owner = RuntimeOwner.RootTun,
             profileUuid = rootResult.profileUuid.toString(),
             profileName = rootResult.profileName,
             profileDir = rootResult.profileDir.absolutePath,
             runtimeConfigPath = rootResult.profileDir.resolve("runtime.yaml").absolutePath,
-            ageSecretKey = ageSecretKey,
             overrideSpecs = overrideSpecs,
             rootTunConfig = rootResult.config,
             staticPlanFingerprint = rootResult.staticPlan.fingerprint,
             transportFingerprint = rootResult.dynamicOverrides.transportFingerprint,
             effectiveFingerprint =
-                buildEffectiveFingerprint(
-                    rootResult.profileUuid.toString(),
-                    overrideSpecs,
-                    ageSecretKey,
-                ),
+                buildEffectiveFingerprint(rootResult.profileUuid.toString(), overrideSpecs),
             profileFingerprint = rootResult.dynamicOverrides.profileFingerprint,
         )
     }
 
     private fun requireActiveProfile():
-        com.github.yumelira.yumebox.service.runtime.entity.Imported {
+        com.github.yumelira.yumebox.runtime.service.runtime.entity.Imported {
         val profileId = store.activeProfile ?: error("No active profile selected")
         return ImportedDao.queryByUUID(profileId)
             ?: error("Active profile metadata not found: $profileId")
@@ -110,13 +107,11 @@ class SessionRuntimeSpecFactory(
     private fun buildEffectiveFingerprint(
         profileUuid: String,
         overrideSpecs: List<OverrideSpec>,
-        ageSecretKey: String?,
     ): String {
         val profileDir = context.importedDir.resolve(profileUuid)
         val metadataFile = context.filesDir.resolve("overrides/metadata.yaml")
         return sha256 {
             update(profileUuid.toByteArray())
-            updateAgeSecretKeyDigest(ageSecretKey)
             updateFile(profileDir.resolve("config.yaml"))
             updateFile(metadataFile)
             overrideSpecs.forEach { overrideSpec ->
@@ -125,11 +120,6 @@ class SessionRuntimeSpecFactory(
                 updateFile(File(overrideSpec.path))
             }
         }
-    }
-
-    private fun MessageDigest.updateAgeSecretKeyDigest(ageSecretKey: String?) {
-        update("age-secret-key:".toByteArray())
-        update((ageSecretKey?.let(::sha256String) ?: "none").toByteArray())
     }
 
     private inline fun sha256(block: MessageDigest.() -> Unit): String {
@@ -145,13 +135,5 @@ class SessionRuntimeSpecFactory(
         }
         update(file.absolutePath.toByteArray())
         update(file.readBytes())
-    }
-
-    private fun normalizeAgeSecretKey(value: String?): String? =
-        value?.trim()?.takeIf { it.isNotEmpty() }
-
-    private fun sha256String(value: String): String {
-        val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray())
-        return digest.joinToString("") { "%02x".format(it) }
     }
 }

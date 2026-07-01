@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.screen.node
+package com.github.yumelira.yumebox.feature.proxy.presentation.screen.node
 
 import com.github.yumelira.yumebox.presentation.util.extractFlaggedName
 

@@ -41,10 +41,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.BuildConfig
 import com.github.yumelira.yumebox.WebViewActivity
-import com.github.yumelira.yumebox.common.util.toast
+import com.github.yumelira.yumebox.feature.substore.presentation.viewmodel.SettingEvent
+import com.github.yumelira.yumebox.feature.substore.presentation.viewmodel.SettingViewModel
+import com.github.yumelira.yumebox.platform.util.toast
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.component.LocalNavigator
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
@@ -52,16 +55,15 @@ import com.github.yumelira.yumebox.presentation.component.Title
 import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.FlaskConical
 import com.github.yumelira.yumebox.presentation.icon.yume.`Git-merge`
-import com.github.yumelira.yumebox.presentation.icon.yume.Github
-import com.github.yumelira.yumebox.presentation.icon.yume.Meta
+import com.github.yumelira.yumebox.presentation.icon.yume.`Scroll-text`
 import com.github.yumelira.yumebox.presentation.icon.yume.`Settings-2`
 import com.github.yumelira.yumebox.presentation.icon.yume.`Wifi-cog`
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import com.github.yumelira.yumebox.presentation.icon.yume.FlaskConical
+import com.github.yumelira.yumebox.presentation.icon.yume.Github
+import com.github.yumelira.yumebox.presentation.icon.yume.Meta
 import com.github.yumelira.yumebox.presentation.navigation.Route
-import com.github.yumelira.yumebox.presentation.viewmodel.SettingEvent
-import com.github.yumelira.yumebox.presentation.viewmodel.SettingViewModel
+import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import dev.oom_wg.purejoy.mlang.MLang
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Icon
@@ -199,6 +201,14 @@ fun SettingPager(mainInnerPadding: PaddingValues) {
                 Title(MLang.Settings.Section.More)
 
                 Card {
+                    ArrowPreference(
+                        title = MLang.Settings.More.Logs,
+                        summary = MLang.Settings.More.LogsSummary,
+                        onClick = { navigator.push(Route.Log) },
+                        startAction = {
+                            CircularIcon(imageVector = Yume.`Scroll-text`, contentDescription = null)
+                        },
+                    )
                     ArrowPreference(
                         title = MLang.Settings.More.Lab,
                         summary = MLang.Settings.More.LabSummary,

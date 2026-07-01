@@ -18,10 +18,10 @@
  *
  */
 
-package com.github.yumelira.yumebox.domain.model
+package com.github.yumelira.yumebox.core.domain.model
 
 import com.github.yumelira.yumebox.core.model.Traffic
-import com.github.yumelira.yumebox.core.util.decodeTrafficValue
+import com.github.yumelira.yumebox.core.model.decodeTrafficValue
 
 data class TrafficData(
     val upload: Long,

@@ -18,31 +18,31 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.root
+package com.github.yumelira.yumebox.runtime.service.root
 
 import android.content.Context
+import com.github.yumelira.yumebox.runtime.api.service.root.RootAccessStatus
+import com.github.yumelira.yumebox.runtime.api.service.root.RootAccessSupportContract
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-data class RootAccessStatus(val rootAccessGranted: Boolean) {
-    val canStartRootTun: Boolean
-        get() = rootAccessGranted
-
-    fun rootTunBlockedMessage(): String = MLang.NetworkSettings.Error.RootRequired
-}
-
-object RootAccessSupport {
-    fun evaluate(@Suppress("UNUSED_PARAMETER") context: Context): RootAccessStatus {
+object RootAccessSupport : RootAccessSupportContract {
+    override fun evaluate(@Suppress("UNUSED_PARAMETER") context: Context): RootAccessStatus {
         val rootAccessGranted = RootPackageShell.hasRootAccess()
-        return RootAccessStatus(rootAccessGranted = rootAccessGranted)
+        return RootAccessStatus(
+            rootAccessGranted = rootAccessGranted,
+            blockedMessage = MLang.NetworkSettings.Error.RootRequired,
+        )
     }
 
-    suspend fun evaluateAsync(context: Context): RootAccessStatus =
-        withContext(Dispatchers.IO) { evaluate(context) }
+    override suspend fun evaluateAsync(context: Context): RootAccessStatus = withContext(Dispatchers.IO) {
+        evaluate(context)
+    }
 
-    suspend fun requireRootTunAccess(context: Context): RootAccessStatus =
-        evaluateAsync(context).also { status ->
+    override suspend fun requireRootTunAccess(context: Context): RootAccessStatus {
+        return evaluateAsync(context).also { status ->
             check(status.canStartRootTun) { status.rootTunBlockedMessage() }
         }
+    }
 }

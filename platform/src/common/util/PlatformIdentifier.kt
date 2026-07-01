@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.common.util
+package com.github.yumelira.yumebox.platform.util
 
 object PlatformIdentifier {
     fun getPlatformIdentifier() = "android.kmp.target"

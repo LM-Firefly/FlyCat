@@ -38,15 +38,10 @@ jobs:
         uses: fwilhe2/setup-kotlin@main
 
       - name: Setup Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        uses: actions/setup-go@v6
         with:
           go-download-base-url: 'https://github.com/MetaCubeX/go/releases/download/build'
           go-version: '1.26'
-
-      - name: Apply Go patches
-        run: |
-          cd "$(go env GOROOT)"
-          for p in "$GITHUB_WORKSPACE"/.github/patch/*.patch; do patch --verbose -p 1 < "$p"; done
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -54,7 +49,7 @@ jobs:
           targets: armv7-linux-androideabi,aarch64-linux-android,i686-linux-android,x86_64-linux-android
 
       - name: Cache Rust
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/
@@ -80,7 +75,7 @@ jobs:
 
       - name: Cache NDK
         id: cache-ndk
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.14904198
           key: ${{ runner.os }}-ndk-30.0.14904198-v2

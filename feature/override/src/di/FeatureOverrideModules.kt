@@ -18,9 +18,9 @@
  *
  */
 
-package com.github.yumelira.yumebox.di
+package com.github.yumelira.yumebox.feature.override.di
 
-import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
+import com.github.yumelira.yumebox.feature.override.presentation.viewmodel.OverrideConfigViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -30,7 +30,7 @@ val featureOverrideViewModelModule = module {
             configRepo = get(),
             resolver = get(),
             bindingProvider = get(),
-            activeProfileOverrideReloader = get(),
+            activeProfileOverrideApplier = get(),
         )
     }
 }

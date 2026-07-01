@@ -21,6 +21,15 @@ func queryTunnelState() *C.char {
 	return marshalJson(response)
 }
 
+//export patchTunnelMode
+func patchTunnelMode(mode C.c_string) C.int {
+	if tunnel.PatchMode(C.GoString(mode)) {
+		return 1
+	}
+
+	return 0
+}
+
 //export queryNow
 func queryNow(upload, download *C.uint64_t) {
 	up, down := tunnel.Now()
@@ -120,6 +129,16 @@ func patchSelector(selector, name C.c_string) C.int {
 		return 1
 	}
 
+	return 0
+}
+
+//export patchForceSelector
+func patchForceSelector(selector, name C.c_string) C.int {
+	s := C.GoString(selector)
+	n := C.GoString(name)
+	if tunnel.PatchForceSelector(s, n) {
+		return 1
+	}
 	return 0
 }
 

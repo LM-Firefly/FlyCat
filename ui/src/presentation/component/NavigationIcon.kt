@@ -20,25 +20,17 @@
 
 package com.github.yumelira.yumebox.presentation.component
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.dropUnlessResumed
+import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme.spacing
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
@@ -48,31 +40,26 @@ fun NavigationBackIcon(
     navigator: Navigator,
     modifier: Modifier = Modifier,
     contentDescription: String = "Back",
+    extraStartPadding: Dp = UiDp.dp24,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by
-        animateFloatAsState(
-            targetValue = if (pressed) 0.92f else 1f,
-            animationSpec = AnimationSpecs.ButtonPress,
-            label = "back_icon_scale",
-        )
+    NavigationBackIcon(
+        onNavigateBack = { navigator.popBackStack() },
+        modifier = modifier,
+        contentDescription = contentDescription,
+        extraStartPadding = extraStartPadding,
+    )
+}
 
-    Box(
-        modifier =
-            modifier
-                .padding(start = spacing.space20)
-                .semantics { role = Role.Button }
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                }
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = dropUnlessResumed { navigator.popBackStack() },
-                ),
-        contentAlignment = Alignment.Center,
+@Composable
+fun NavigationBackIcon(
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    contentDescription: String = "Back",
+    extraStartPadding: Dp = UiDp.dp24,
+) {
+    IconButton(
+        modifier = modifier.padding(start = extraStartPadding),
+        onClick = dropUnlessResumed { onNavigateBack() },
     ) {
         Icon(
             imageVector = MiuixIcons.Back,

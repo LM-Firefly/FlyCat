@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.clash.module
+package com.github.yumelira.yumebox.runtime.service.clash.module
 
 import android.app.Service
 import android.content.Intent

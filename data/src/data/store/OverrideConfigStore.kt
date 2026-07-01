@@ -21,12 +21,13 @@
 package com.github.yumelira.yumebox.data.store
 
 import android.content.Context
+import com.github.yumelira.yumebox.core.data.OverrideConfigRepository
+import com.github.yumelira.yumebox.core.model.MetadataIndex
+import com.github.yumelira.yumebox.core.model.OverrideConfig
+import com.github.yumelira.yumebox.core.model.OverrideContentType
 import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
+import com.github.yumelira.yumebox.core.model.OverrideMetadata
 import com.github.yumelira.yumebox.core.util.YamlCodec
-import com.github.yumelira.yumebox.data.model.MetadataIndex
-import com.github.yumelira.yumebox.data.model.OverrideConfig
-import com.github.yumelira.yumebox.data.model.OverrideContentType
-import com.github.yumelira.yumebox.data.model.OverrideMetadata
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,7 +41,7 @@ import java.io.File
 class OverrideConfigStore(
     private val context: Context,
     private val bindingProvider: ProfileBindingProvider,
-) : OverrideConfigProvider {
+) : OverrideConfigProvider, OverrideConfigRepository {
     companion object {
         const val INTERNAL_RUNTIME_PREFIX = "__runtime__"
 
@@ -166,7 +167,7 @@ class OverrideConfigStore(
             loadMetadataIndex().getById(id)?.let(::findConfigFile) != null
         }
 
-    suspend fun loadCustomRoutingContent(): String? =
+    override suspend fun loadCustomRoutingContent(): String? =
         withContext(Dispatchers.IO) {
             val file =
                 getConfigFilePath(OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID)
@@ -178,7 +179,7 @@ class OverrideConfigStore(
             file.readText().takeIf(String::isNotBlank)
         }
 
-    suspend fun saveCustomRoutingContent(content: String) =
+    override suspend fun saveCustomRoutingContent(content: String) =
         withContext(Dispatchers.IO) {
             if (content.isBlank()) {
                 delete(OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID)
@@ -199,13 +200,13 @@ class OverrideConfigStore(
             )
         }
 
-    fun getConfigContent(id: String): String? {
+    override fun getConfigContent(id: String): String? {
         val metadata = loadMetadataIndex().getById(id) ?: return null
         val file = findConfigFile(metadata) ?: return null
         return runCatching { file.readText() }.getOrNull()
     }
 
-    fun saveConfigContent(id: String, content: String): Boolean {
+    override fun saveConfigContent(id: String, content: String): Boolean {
         val metadata = loadMetadataIndex().getById(id) ?: return false
         return runCatching {
                 val file = findConfigFile(metadata) ?: resolveConfigFile(id, metadata.contentType)
@@ -239,7 +240,7 @@ class OverrideConfigStore(
 
     fun getConfigsDirectory(): File = configsDir
 
-    suspend fun reorderUserConfigs(orderedIds: List<String>) =
+    override suspend fun reorderUserConfigs(orderedIds: List<String>) =
         withContext(Dispatchers.IO) {
             if (orderedIds.isEmpty()) return@withContext
 
@@ -315,12 +316,46 @@ class OverrideConfigStore(
                         MetadataIndex()
                     }
             }
-        val sanitizedIndex = sanitizeMetadataIndex(metadataIndex)
+        val recoveredIndex = recoverMetadataIndexIfNeeded(metadataIndex)
+        val sanitizedIndex = sanitizeMetadataIndex(recoveredIndex)
         val normalizedIndex = sanitizedIndex.normalizeUserSortOrders()
         if (normalizedIndex != metadataIndex) {
             saveMetadataIndex(normalizedIndex)
         }
         return normalizedIndex
+    }
+
+    private fun recoverMetadataIndexIfNeeded(index: MetadataIndex): MetadataIndex {
+        if (index.configs.isNotEmpty()) return index
+        if (!configsDir.exists()) return index
+        val recoveredConfigs =
+            configsDir.listFiles()
+                ?.asSequence()
+                ?.filter(File::isFile)
+                ?.mapNotNull { file ->
+                    val extension = file.extension.lowercase()
+                    val contentType = OverrideContentType.fromExtension(extension) ?: return@mapNotNull null
+                    val id = file.nameWithoutExtension.takeIf(String::isNotBlank) ?: return@mapNotNull null
+                    val timestamp = file.lastModified().takeIf { it > 0L } ?: System.currentTimeMillis()
+                    id to
+                        OverrideMetadata(
+                            id = id,
+                            name = id,
+                            description = null,
+                            contentType = contentType,
+                            createdAt = timestamp,
+                            updatedAt = timestamp,
+                            sortOrder = 0L,
+                        )
+                }
+                ?.toMap()
+                ?: emptyMap()
+        if (recoveredConfigs.isEmpty()) return index
+        Timber.i(
+            "Recovered override metadata index from config files: %d entries",
+            recoveredConfigs.size,
+        )
+        return index.copy(configs = recoveredConfigs)
     }
 
     private fun saveMetadataIndex(index: MetadataIndex) {

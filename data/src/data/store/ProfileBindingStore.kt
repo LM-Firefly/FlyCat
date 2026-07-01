@@ -21,10 +21,10 @@
 package com.github.yumelira.yumebox.data.store
 
 import android.content.Context
+import com.github.yumelira.yumebox.core.model.MetadataIndex
+import com.github.yumelira.yumebox.core.model.OverrideMetadata
+import com.github.yumelira.yumebox.core.model.ProfileBinding
 import com.github.yumelira.yumebox.core.util.YamlCodec
-import com.github.yumelira.yumebox.data.model.MetadataIndex
-import com.github.yumelira.yumebox.data.model.OverrideMetadata
-import com.github.yumelira.yumebox.data.model.ProfileBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -115,12 +115,6 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
         setBinding(existing.clearOverrides())
     }
 
-    suspend fun clearAll() =
-        withContext(Dispatchers.IO) {
-            val index = loadMetadataIndex()
-            saveMetadataIndex(index.copy(profileChains = emptyMap()))
-        }
-
     suspend fun setOverrides(profileId: String, overrideIds: List<String>) {
         val existing = getBinding(profileId)
         val binding =
@@ -130,11 +124,6 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
                 ProfileBinding.withOverrides(profileId, overrideIds)
             }
         setBinding(binding)
-    }
-
-    suspend fun moveOverride(profileId: String, fromIndex: Int, toIndex: Int) {
-        val existing = getBinding(profileId) ?: return
-        setBinding(existing.moveOverride(fromIndex, toIndex))
     }
 
     private fun loadBindings(): Map<String, ProfileBinding> =

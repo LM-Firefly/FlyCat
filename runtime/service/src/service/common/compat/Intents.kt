@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.common.compat
+package com.github.yumelira.yumebox.runtime.service.common.compat
 
 import android.app.PendingIntent
 import android.os.Build

@@ -18,45 +18,49 @@
  *
  */
 
-package com.github.yumelira.yumebox.service
+package com.github.yumelira.yumebox.runtime.service
 
 import android.content.Context
 import android.content.Intent
 import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.core.model.LogMessage
-import com.github.yumelira.yumebox.service.common.constants.Intents
-import com.github.yumelira.yumebox.service.common.log.Log
-import com.github.yumelira.yumebox.service.remote.ILogObserver
-import com.github.yumelira.yumebox.service.runtime.util.sendBroadcastSelf
+import com.github.yumelira.yumebox.runtime.api.service.common.constants.Intents
+import com.github.yumelira.yumebox.runtime.api.service.remote.ILogObserver
+import com.github.yumelira.yumebox.runtime.service.common.log.Log
+import com.github.yumelira.yumebox.runtime.service.runtime.util.sendBroadcastSelf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ClashManager(private val context: Context) :
-    CoroutineScope by CoroutineScope(Dispatchers.IO) {
-    private var logReceiver: ReceiveChannel<LogMessage>? = null
-
-    fun requestStop() {
-        runCatching { context.sendBroadcastSelf(Intent(Intents.ACTION_CLASH_REQUEST_STOP)) }
-
-        runCatching {
-            context.stopService(Intent(context, TunService::class.java))
-            context.stopService(Intent(context, ClashService::class.java))
-        }
-
-        runCatching {
-            Clash.stopHttp()
-            Clash.stopTun()
-            Clash.reset()
-        }
+/**
+ * Stops all local proxy services (TUN and HTTP) and resets the Clash core.
+ * Extracted from the former `ClashManager.requestStop()`.
+ */
+fun Context.requestClashStop() {
+    runCatching { sendBroadcastSelf(Intent(Intents.actionClashRequestStop(packageName))) }
+    runCatching {
+        stopService(Intent(this, TunService::class.java))
+        stopService(Intent(this, ClashService::class.java))
     }
+    runCatching {
+        Clash.stopHttp()
+        Clash.stopTun()
+        Clash.reset()
+    }
+}
 
-    fun setLogObserver(observer: ILogObserver?) {
+/**
+ * Manages a logcat subscription from the Clash core. Attach an [ILogObserver] to receive
+ * log messages; detach to cancel the subscription and release resources.
+ * Extracted from the former `ClashManager.setLogObserver()`.
+ */
+class ClashLogcatSubscription(private val scope: CoroutineScope) {
+    private var logReceiver: ReceiveChannel<LogMessage>? = null
+    fun attach(observer: ILogObserver?) {
         synchronized(this) {
             logReceiver?.apply {
                 cancel()
@@ -67,7 +71,7 @@ class ClashManager(private val context: Context) :
             if (observer != null) {
                 logReceiver =
                     Clash.subscribeLogcat().also { receiver ->
-                        launch {
+                        scope.launch {
                             try {
                                 while (isActive) {
                                     observer.newItem(receiver.receive())
@@ -85,5 +89,9 @@ class ClashManager(private val context: Context) :
                     }
             }
         }
+    }
+
+    fun detach() {
+        attach(null)
     }
 }

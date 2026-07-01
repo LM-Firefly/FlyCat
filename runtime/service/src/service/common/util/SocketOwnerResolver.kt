@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.common.util
+package com.github.yumelira.yumebox.runtime.service.common.util
 
 import android.content.Context
 import android.net.ConnectivityManager

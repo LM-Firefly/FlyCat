@@ -18,15 +18,15 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.root
+package com.github.yumelira.yumebox.runtime.service.root
 
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
-import com.github.yumelira.yumebox.service.runtime.config.AccessControlMode
-import com.github.yumelira.yumebox.service.runtime.config.ServiceStore
+import com.github.yumelira.yumebox.runtime.service.runtime.config.AccessControlMode
+import com.github.yumelira.yumebox.runtime.service.runtime.config.ServiceStore
 
 internal class RootTunPackageResolver(
     private val context: Context,

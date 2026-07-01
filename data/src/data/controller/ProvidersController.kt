@@ -23,7 +23,9 @@ package com.github.yumelira.yumebox.data.controller
 import android.content.Context
 import android.net.Uri
 import com.github.yumelira.yumebox.core.Clash
+import com.github.yumelira.yumebox.core.data.ProvidersRepository
 import com.github.yumelira.yumebox.core.model.Provider
+import com.github.yumelira.yumebox.core.model.UpdateProvidersResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -31,18 +33,18 @@ import java.io.File
 class ProvidersController(
     private val context: Context,
     private val queryProvidersAction: suspend () -> List<Provider>,
-) {
-    suspend fun queryProviders(): Result<List<Provider>> =
+) : ProvidersRepository {
+    override suspend fun queryProviders(): Result<List<Provider>> =
         try {
             Result.success(queryProvidersAction())
         } catch (error: Exception) {
             Result.failure(error)
         }
 
-    suspend fun updateProvider(provider: Provider): Result<Unit> =
+    override suspend fun updateProvider(provider: Provider): Result<Unit> =
         updateProviderInternal(provider.type, provider.name)
 
-    suspend fun updateAllProviders(providers: List<Provider>): Result<UpdateProvidersResult> {
+    override suspend fun updateAllProviders(providers: List<Provider>): Result<UpdateProvidersResult> {
         if (providers.isEmpty()) return Result.success(UpdateProvidersResult(emptyList()))
 
         val failed = mutableListOf<String>()
@@ -55,7 +57,14 @@ class ProvidersController(
         return Result.success(UpdateProvidersResult(failed))
     }
 
-    suspend fun uploadProviderFile(
+    override suspend fun uploadProviderFile(
+        context: Any,
+        provider: Provider,
+        uri: Any,
+        maxBytes: Long,
+    ): Result<Unit> = uploadProviderFile(context as Context, provider, uri as Uri, maxBytes)
+
+    private suspend fun uploadProviderFile(
         context: Context,
         provider: Provider,
         uri: Uri,
@@ -114,8 +123,6 @@ class ProvidersController(
         targetFile.parentFile?.mkdirs()
         return targetFile
     }
-
-    data class UpdateProvidersResult(val failedProviders: List<String>)
 
     companion object {
         private const val MAX_UPLOAD_SIZE_BYTES = 50L * 1024 * 1024

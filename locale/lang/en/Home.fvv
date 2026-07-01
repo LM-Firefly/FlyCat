@@ -1,6 +1,6 @@
 <Home Page>
 Home = {
-    Title = "YumeBox"
+    Title = "FlyCat"
 
     Message = {
         ConfigSwitched = "Config switched"
@@ -53,7 +53,7 @@ Home = {
     }
 
     PreviewGuide = {
-        Title = "Welcome to YumeBox"
+        Title = "Welcome to FlyCat"
         Description = "Tap Start at the bottom-right to connect"
         Next = "Next"
         Start = "Get started"

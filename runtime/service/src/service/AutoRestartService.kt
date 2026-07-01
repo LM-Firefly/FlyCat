@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service
+package com.github.yumelira.yumebox.runtime.service
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -33,18 +33,19 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
 import com.github.yumelira.yumebox.core.util.StartupTaskCoordinator
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.core.model.Profile
+import com.github.yumelira.yumebox.core.model.ProxyMode
 import com.github.yumelira.yumebox.data.store.AppSettingsStore
 import com.github.yumelira.yumebox.data.store.FeatureStore
 import com.github.yumelira.yumebox.data.store.MMKVProvider
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
+import com.github.yumelira.yumebox.runtime.api.autostart.AutoStartExecutionGate
+import com.github.yumelira.yumebox.runtime.api.autostart.AutoStartUpdatePolicy
+import com.github.yumelira.yumebox.runtime.api.service.ProxyServiceContracts
 import com.github.yumelira.yumebox.runtime.service.R
-import com.github.yumelira.yumebox.service.common.util.AutoStartExecutionGate
-import com.github.yumelira.yumebox.service.common.util.AutoStartUpdatePolicy
-import com.github.yumelira.yumebox.service.root.RootTunServiceBridge
-import com.github.yumelira.yumebox.service.runtime.entity.Profile
-import com.github.yumelira.yumebox.service.runtime.session.RuntimeServiceLauncher
+import com.github.yumelira.yumebox.runtime.service.root.RootTunServiceBridge
+import com.github.yumelira.yumebox.runtime.service.runtime.session.RuntimeServiceLauncher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -63,7 +64,7 @@ class AutoRestartService : Service() {
         const val REASON_PACKAGE_REPLACED = "package_replaced"
     }
 
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mmkvProvider by lazy { MMKVProvider() }
     private val appSettingsStorage by lazy { AppSettingsStore(mmkvProvider.getMMKV("settings")) }
     private val featureStore by lazy { FeatureStore(mmkvProvider.getMMKV("substore")) }
@@ -78,11 +79,16 @@ class AutoRestartService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        ensureForegroundStarted()
+        if (!ensureForegroundStarted()) {
+            stopSelf()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        ensureForegroundStarted()
+        if (!ensureForegroundStarted()) {
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
         AutoStartExecutionGate.markStarted(serviceCache)
 
         serviceScope.launch {
@@ -105,20 +111,34 @@ class AutoRestartService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun ensureForegroundStarted() {
-        if (!foregroundStarted.compareAndSet(false, true)) return
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createNotificationChannel()
-            val notification = createNotification()
-            val foregroundFlags =
-                when {
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE ->
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                    else -> 0
+    private fun ensureForegroundStarted(): Boolean {
+        if (foregroundStarted.get()) return true
+        if (!foregroundStarted.compareAndSet(false, true)) return true
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true
+        createNotificationChannel()
+        val notification = createNotification()
+        val started =
+            runCatching {
+                    val foregroundFlags =
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                        } else {
+                            0
+                        }
+                    startForeground(NOTIFICATION_ID, notification, foregroundFlags)
                 }
-            startForeground(NOTIFICATION_ID, notification, foregroundFlags)
+                .recoverCatching {
+                    // Some vendors reject special-use type at runtime; fallback to the default call.
+                    startForeground(NOTIFICATION_ID, notification)
+                }
+                .onFailure { error ->
+                    Timber.tag(TAG).e(error, "Failed to start foreground for auto-restart service")
+                }
+                .isSuccess
+        if (!started) {
+            foregroundStarted.set(false)
         }
+        return started
     }
 
     private suspend fun checkAndAutoStart(reason: String) {
@@ -148,9 +168,9 @@ class AutoRestartService : Service() {
 
         val startupSource =
             when (reason) {
-                REASON_BOOT_COMPLETED -> RuntimeServiceLauncher.SOURCE_AUTO_RESTART_BOOT
-                REASON_PACKAGE_REPLACED -> RuntimeServiceLauncher.SOURCE_AUTO_RESTART_REPLACED
-                else -> RuntimeServiceLauncher.SOURCE_AUTO_RESTART
+                REASON_BOOT_COMPLETED -> ProxyServiceContracts.SOURCE_AUTO_RESTART_BOOT
+                REASON_PACKAGE_REPLACED -> ProxyServiceContracts.SOURCE_AUTO_RESTART_REPLACED
+                else -> ProxyServiceContracts.SOURCE_AUTO_RESTART
             }
         when (networkSettingsStorage.proxyMode.value) {
             ProxyMode.Tun -> {
@@ -235,13 +255,14 @@ class AutoRestartService : Service() {
         }
     }
 
-    private fun createNotification(): Notification =
-        NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("YumeBox")
+    private fun createNotification(): Notification {
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("FlyCat")
             .setContentText("Checking auto-start...")
             .setSmallIcon(R.drawable.ic_logo_service)
             .setOngoing(true)
             .build()
+    }
 
     override fun onDestroy() {
         AutoStartExecutionGate.clear(serviceCache)

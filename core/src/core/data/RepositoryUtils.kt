@@ -33,13 +33,4 @@ object RepositoryUtils {
             Timber.tag(tag).e(error, "Failed to execute $operation")
             Result.failure(error)
         }
-
-    fun <T> safeCall(tag: String, operation: String, block: () -> T): Result<T> =
-        try {
-            Result.success(block())
-        } catch (error: Exception) {
-            if (error is CancellationException) throw error
-            Timber.tag(tag).e(error, "Failed to execute $operation")
-            Result.failure(error)
-        }
 }

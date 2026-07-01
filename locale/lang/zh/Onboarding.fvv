@@ -34,7 +34,7 @@ Onboarding = {
     Privacy = {
         Title = "确认隐私与协议"
         Subtitle = "阅读并同意协议后方可继续"
-        RichTextLead = "在开始使用前需要同意隐私协议，才能继续使用 YumeBox。"
+        RichTextLead = "在开始使用前需要同意隐私协议，才能继续使用 FlyCat。"
         RichTextPrefix = "继续前请先阅读并同意 "
         RichTextConnector = " 与 "
         RichTextSuffix = "。"
@@ -58,7 +58,7 @@ Onboarding = {
     Project = {
         Github = {
             Title = "GitHub 仓库"
-            Summary = "github.com/YumeLira/YumeBox"
+            Summary = "github.com/LM-Firefly/FlyCat"
         }
         Community = {
             Title = "社区频道"

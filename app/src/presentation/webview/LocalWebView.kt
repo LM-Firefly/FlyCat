@@ -52,6 +52,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.github.yumelira.yumebox.BuildConfig
 import com.github.yumelira.yumebox.WebViewActivity
 import dev.oom_wg.purejoy.mlang.MLang
+import timber.log.Timber
 import top.yukonga.miuix.kmp.basic.Text
 
 private object NoOpWebViewClient : WebViewClient()
@@ -95,16 +96,26 @@ fun LocalWebView(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             webViewRef.value?.let { webView ->
-                webView.stopLoading()
-                webView.onPause()
-                webView.visibility = View.GONE
-                webView.webChromeClient = NoOpWebChromeClient
-                webView.webViewClient = NoOpWebViewClient
-                webView.loadUrl("about:blank")
-                webView.clearHistory()
-                webView.removeAllViews()
-                (webView.parent as? ViewGroup)?.removeView(webView)
-                webView.destroy()
+                try {
+                    webView.stopLoading()
+                    webView.onPause()
+                    webView.visibility = View.GONE
+                    webView.webChromeClient = NoOpWebChromeClient
+                    webView.webViewClient = NoOpWebViewClient
+                    try {
+                        webView.removeJavascriptInterface("interface_name")
+                    } catch (_: Exception) {
+                    }
+                    webView.clearCache(true)
+                    webView.clearFormData()
+                    webView.clearHistory()
+                    webView.loadUrl("about:blank")
+                    webView.removeAllViews()
+                    (webView.parent as? ViewGroup)?.removeView(webView)
+                    webView.destroy()
+                } catch (e: Exception) {
+                    Timber.w(e, "Error destroying WebView")
+                }
             }
             webViewRef.value = null
         }
@@ -140,6 +151,7 @@ private fun createWebView(
     val activity = context as? WebViewActivity
 
     return WebView(context).apply {
+        val isLocalFileUrl = initialUrl.startsWith("file://", ignoreCase = true)
         layoutParams =
             ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -150,8 +162,8 @@ private fun createWebView(
             javaScriptEnabled = true
             domStorageEnabled = true
 
-            allowFileAccess = true
-            allowContentAccess = true
+            allowFileAccess = isLocalFileUrl
+            allowContentAccess = isLocalFileUrl
 
             setSupportZoom(true)
             builtInZoomControls = false
@@ -159,7 +171,7 @@ private fun createWebView(
 
             useWideViewPort = true
             loadWithOverviewMode = true
-            mediaPlaybackRequiresUserGesture = false
+            mediaPlaybackRequiresUserGesture = true
 
             cacheMode = WebSettings.LOAD_DEFAULT
 

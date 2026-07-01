@@ -18,13 +18,40 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.common.constants
+package com.github.yumelira.yumebox.runtime.api.service.common.constants
 
 import android.content.ComponentName
-import com.github.yumelira.yumebox.service.common.util.packageName
+import com.github.yumelira.yumebox.core.Global
 
 object Components {
-    val MAIN_ACTIVITY = ComponentName(packageName, "com.github.yumelira.yumebox.MainActivity")
-    val PROXY_SHEET_ACTIVITY =
-        ComponentName(packageName, "com.github.yumelira.yumebox.ProxySheetActivity")
+    @Volatile
+    private var mainActivityClassName: String? = null
+
+    @Volatile
+    private var proxySheetActivityClassName: String? = null
+
+    val MAIN_ACTIVITY: ComponentName
+        get() = ComponentName(Global.application.packageName, requireMain())
+
+    val PROXY_SHEET_ACTIVITY: ComponentName
+        get() = ComponentName(Global.application.packageName, requireSheet())
+
+    fun registerMainActivity(className: String) {
+        mainActivityClassName = className
+    }
+
+    fun registerProxySheetActivity(className: String) {
+        proxySheetActivityClassName = className
+    }
+
+    fun register(mainActivityClassName: String, proxySheetActivityClassName: String) {
+        registerMainActivity(mainActivityClassName)
+        registerProxySheetActivity(proxySheetActivityClassName)
+    }
+
+    private fun requireMain(): String = mainActivityClassName
+        ?: error("Components.MAIN_ACTIVITY not registered. Call Components.register(...) in Application.onCreate.")
+
+    private fun requireSheet(): String = proxySheetActivityClassName
+        ?: error("Components.PROXY_SHEET_ACTIVITY not registered. Call Components.register(...) in Application.onCreate.")
 }

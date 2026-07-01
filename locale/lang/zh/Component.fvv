@@ -58,6 +58,38 @@ Component = {
         Starting = "启动中..."
     }
 
+    Update = {
+        Action = {
+            DownloadNow = "立即下载"
+        }
+        Title = {
+            Available = "发现新版本"
+        }
+        Message = {
+            Available = "检测到可用更新"
+            SelectPackage = "选择下载包"
+            Tag = "标签"
+            PackageUniversal = "通用包"
+            PackageExtension = "扩展合并包"
+            PackageLite = "精简包"
+            PackageStandard = "标准包"
+            CurrentVersion = "当前版本"
+            RemoteVersion = "推送版本"
+            Preparing = "正在准备下载..."
+            DownloadingWithProgress = "正在下载更新包 %d%%"
+            Downloading = "正在下载更新包..."
+            DownloadReady = "下载完成，准备安装"
+            Error = "下载失败，请稍后重试"
+            Checking = "正在检查更新..."
+            NoUpdate = "当前已经是最新版本"
+            CheckFailed = "检查更新失败：%s"
+            MissingReleaseMetadata = "最新发布缺少版本元数据"
+            NoCompatibleAsset = "最新发布中没有找到适合当前设备的 APK"
+            DownloadAlreadyRunning = "更新包仍在下载中"
+            InstallPromptOpened = "下载完成，已打开安装器"
+            InstallFailed = "打开安装器失败：%s"
+        }
+    }
 
     ConfigInput = {
         PortLabel = "端口号 (留空表示不修改)"

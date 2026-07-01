@@ -23,16 +23,19 @@ package com.github.yumelira.yumebox.screen.profiles
 import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
+import com.github.yumelira.yumebox.core.data.Preference
+import com.github.yumelira.yumebox.core.data.ProfileBindingReader
+import com.github.yumelira.yumebox.core.data.ProfileLinksReader
 import com.github.yumelira.yumebox.core.model.FetchStatus
-import com.github.yumelira.yumebox.core.presentation.AndroidContractStateViewModel
-import com.github.yumelira.yumebox.core.presentation.LoadableState
-import com.github.yumelira.yumebox.data.store.LinkOpenMode
-import com.github.yumelira.yumebox.data.store.Preference
-import com.github.yumelira.yumebox.data.store.ProfileLink
-import com.github.yumelira.yumebox.data.store.ProfileLinksStore
+import com.github.yumelira.yumebox.core.model.LinkOpenMode
+import com.github.yumelira.yumebox.core.model.Profile
+import com.github.yumelira.yumebox.core.model.ProfileBinding
+import com.github.yumelira.yumebox.core.model.ProfileLink
+import com.github.yumelira.yumebox.data.controller.OverrideApplicator
+import com.github.yumelira.yumebox.presentation.viewmodel.AndroidContractStateViewModel
+import com.github.yumelira.yumebox.presentation.viewmodel.LoadableState
+import com.github.yumelira.yumebox.runtime.api.service.remote.IFetchObserver
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
-import com.github.yumelira.yumebox.service.remote.IFetchObserver
-import com.github.yumelira.yumebox.service.runtime.entity.Profile
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -48,7 +51,9 @@ import java.util.UUID
 class ProfilesViewModel(
     application: Application,
     private val profilesRepository: ProfilesRepository,
-    profileLinksStorage: ProfileLinksStore,
+    profileLinksStorage: ProfileLinksReader,
+    private val bindingProvider: ProfileBindingReader,
+    private val overrideApplicator: OverrideApplicator,
 ) :
     AndroidContractStateViewModel<ProfilesUiState, ProfilesViewModel.ProfilesUiEffect>(
         application,
@@ -248,25 +253,47 @@ class ProfilesViewModel(
         }
     }
 
-    fun patchProfile(
-        uuid: UUID,
-        name: String,
-        source: String,
-        interval: Long,
-        updateAgeSecretKey: Boolean = false,
-        ageSecretKey: String? = null,
-    ) {
+    fun updateAllUrlProfiles() {
         viewModelScope.launch {
             try {
                 applyLoading(true)
-                profilesRepository.patchProfile(
-                    uuid = uuid,
-                    name = name,
-                    source = source,
-                    interval = interval,
-                    updateAgeSecretKey = updateAgeSecretKey,
-                    ageSecretKey = ageSecretKey,
-                )
+                val targets = _profiles.value.filter { it.type == Profile.Type.Url }
+                for (profile in targets) {
+                    _downloadProgress.value =
+                        DownloadProgress(0, MLang.ProfilesVM.Progress.Preparing)
+                    profilesRepository.updateProfile(
+                        profile.uuid,
+                        IFetchObserver { status ->
+                            _downloadProgress.value = status.toDownloadProgress()
+                        },
+                    )
+                }
+                if (targets.isNotEmpty()) {
+                    _downloadProgress.value =
+                        DownloadProgress(
+                            percent = 100,
+                            message = MLang.ProfilesVM.Progress.ImportComplete,
+                            isCompleted = true,
+                        )
+                    showMessage(MLang.ProfilesPage.Action.UpdateAll)
+                }
+                refreshProfiles()
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                Timber.e(error, "Failed to update all url profiles")
+                showError(MLang.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown"))
+                _downloadProgress.value = null
+            } finally {
+                applyLoading(false)
+            }
+        }
+    }
+
+    fun patchProfile(uuid: UUID, name: String, source: String, interval: Long, ageSecretKey: String? = null) {
+        viewModelScope.launch {
+            try {
+                applyLoading(true)
+                profilesRepository.patchProfile(uuid, name, source, interval, ageSecretKey)
                 showMessage(MLang.ProfilesVM.Message.ProfileUpdated.format(name))
                 refreshProfiles()
                 Timber.i("Profile patched: $uuid")
@@ -340,6 +367,23 @@ class ProfilesViewModel(
         clearMessageState()
     }
 
+    suspend fun getBinding(profileId: String): ProfileBinding? =
+        bindingProvider.getBinding(profileId)
+
+    suspend fun saveOverrideBinding(
+        profileId: String,
+        overrideIds: List<String>,
+        applyNow: Boolean,
+    ): ProfileBinding? {
+        val normalizedIds = overrideIds.distinct()
+        val current = bindingProvider.getBinding(profileId)
+        val updated = current?.copy(overrideIds = normalizedIds)
+            ?: ProfileBinding(profileId = profileId, overrideIds = normalizedIds)
+        bindingProvider.setBinding(updated)
+        if (applyNow) overrideApplicator.applyOverride(profileId)
+        return bindingProvider.getBinding(profileId)
+    }
+
     private fun applyLoading(loading: Boolean) {
         super.setLoading(loading)
     }
@@ -396,7 +440,7 @@ private fun FetchStatus.toDownloadProgress(): DownloadProgress {
             }
 
             FetchStatus.Action.SubscriptionInfo -> {
-                ""
+                detail.ifBlank { MLang.ProfilesVM.Progress.Preparing }
             }
 
             FetchStatus.Action.Verifying -> {

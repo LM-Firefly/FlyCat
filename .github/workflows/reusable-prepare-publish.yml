@@ -24,6 +24,10 @@ on:
       publish_artifact_name:
         required: true
         type: string
+      checkout_ref:
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -37,6 +41,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
           submodules: recursive
           fetch-depth: 0
 
@@ -99,11 +104,13 @@ jobs:
               *) abi="universal" ;;
             esac
 
-            if [ "$abi" = "universal" ]; then
-              new_name="${{ inputs.artifact_prefix }}.apk"
+            if [[ "$base" =~ -([0-9]{12}-[0-9a-fA-F]{5,8})\.apk$ ]]; then
+              build_id="${BASH_REMATCH[1]}"
             else
-              new_name="${{ inputs.artifact_prefix }}-${abi}.apk"
+              echo "::error::Could not extract build_id from $base" >&2
+              exit 1
             fi
+            new_name="${{ inputs.artifact_prefix }}-${abi}-${build_id}.apk"
             cp -f "$file" "publish/${new_name}"
           done < <(find "${{ inputs.module }}/build/outputs/apk/release" -maxdepth 1 -type f -name '*.apk' | sort)
 

@@ -18,20 +18,25 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.root
+package com.github.yumelira.yumebox.runtime.service.root
 
 import android.content.Context
-import com.github.yumelira.yumebox.service.runtime.state.RuntimePhase
+import com.github.yumelira.yumebox.runtime.api.service.root.RootTunStateStoreContract
+import com.github.yumelira.yumebox.runtime.api.service.root.RootTunStateStoreFactoryContract
+import com.github.yumelira.yumebox.runtime.api.service.root.RootTunStatus
+import com.github.yumelira.yumebox.runtime.api.service.root.rootTunDecode
+import com.github.yumelira.yumebox.runtime.api.service.root.rootTunEncode
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimePhase
 import com.tencent.mmkv.MMKV
 
-class RootTunStateStore(context: Context) {
+class RootTunStateStore(@Suppress("UNUSED_PARAMETER") context: Context) : RootTunStateStoreContract {
     private val store = MMKV.mmkvWithID(STORE_ID, MMKV.MULTI_PROCESS_MODE)
 
     @Volatile private var cachedEncoded: String? = null
 
     @Volatile private var cachedStatus: RootTunStatus? = null
 
-    fun snapshot(): RootTunStatus {
+    override fun snapshot(): RootTunStatus {
         val encoded = store.decodeString(KEY_STATUS_JSON)
         if (!encoded.isNullOrBlank()) {
             val lastEncoded = cachedEncoded
@@ -53,9 +58,9 @@ class RootTunStateStore(context: Context) {
         }
     }
 
-    fun isRunning(): Boolean = snapshot().running
+    override fun isRunning(): Boolean = snapshot().running
 
-    fun updateStatus(status: RootTunStatus) {
+    override fun updateStatus(status: RootTunStatus) {
         val normalized = status.copy(running = status.state.isActiveOrStopping)
         val encoded = rootTunEncode(normalized)
         store.encode(KEY_STATUS_JSON, encoded)
@@ -67,7 +72,7 @@ class RootTunStateStore(context: Context) {
         cachedStatus = normalized
     }
 
-    fun markIdle(error: String? = null) {
+    override fun markIdle(error: String?) {
         updateStatus(
             RootTunStatus(
                 state = RuntimePhase.Idle,
@@ -78,7 +83,7 @@ class RootTunStateStore(context: Context) {
         )
     }
 
-    fun clear() {
+    override fun clear() {
         store.clearAll()
         cachedEncoded = null
         cachedStatus = null
@@ -106,12 +111,18 @@ class RootTunStateStore(context: Context) {
         }
     }
 
-    companion object {
-        private const val STORE_ID = "root_tun_state"
-        private const val KEY_STATUS_JSON = "status_json"
-        private const val KEY_RUNNING = "running"
-        private const val KEY_LAST_ERROR = "last_error"
-        private const val KEY_PROFILE_UUID = "profile_uuid"
-        private const val KEY_PROFILE_NAME = "profile_name"
+    private companion object {
+        const val STORE_ID = "root_tun_state"
+        const val KEY_STATUS_JSON = "status_json"
+        const val KEY_RUNNING = "running"
+        const val KEY_LAST_ERROR = "last_error"
+        const val KEY_PROFILE_UUID = "profile_uuid"
+        const val KEY_PROFILE_NAME = "profile_name"
+    }
+}
+
+object RootTunStateStoreFactory : RootTunStateStoreFactoryContract {
+    override fun create(context: Context): RootTunStateStoreContract {
+        return RootTunStateStore(context)
     }
 }

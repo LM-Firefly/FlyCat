@@ -10,6 +10,7 @@ Connection = {
 
     Search = "搜索"
     SearchHint = "搜索主机、进程..."
+    CloseAll = "关闭所有连接"
 
     SortBy = "排序:"
     Sort = {

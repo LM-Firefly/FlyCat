@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.remote
+package com.github.yumelira.yumebox.runtime.api.remote
 
 import android.content.Intent
 

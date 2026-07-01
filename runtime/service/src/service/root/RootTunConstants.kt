@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.root
+package com.github.yumelira.yumebox.runtime.service.root
 
 internal object RootTunConstants {
     const val IF_NAME = "Yume"

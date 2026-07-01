@@ -18,12 +18,13 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.runtime.session
+package com.github.yumelira.yumebox.runtime.service.runtime.session
+import com.github.yumelira.yumebox.runtime.api.service.runtime.session.RuntimeSpec
 
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.LogMessage
-import com.github.yumelira.yumebox.data.model.ProxyMode
-import com.github.yumelira.yumebox.service.runtime.state.RuntimeSnapshot
+import com.github.yumelira.yumebox.core.model.ProxyMode
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimeSnapshot
 
 interface RuntimeHost {
     val context: Context

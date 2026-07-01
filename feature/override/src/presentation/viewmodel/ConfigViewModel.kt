@@ -18,17 +18,16 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.viewmodel
+package com.github.yumelira.yumebox.feature.override.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.data.controller.ActiveProfileOverrideReloader
-import com.github.yumelira.yumebox.data.controller.OverrideResolver
-import com.github.yumelira.yumebox.data.model.OverrideConfig
-import com.github.yumelira.yumebox.data.model.OverrideContentType
-import com.github.yumelira.yumebox.data.model.OverrideMetadata
-import com.github.yumelira.yumebox.data.store.OverrideConfigStore
-import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
+import com.github.yumelira.yumebox.core.data.OverrideApplier
+import com.github.yumelira.yumebox.core.data.OverrideConfigRepository
+import com.github.yumelira.yumebox.core.data.ProfileBindingReader
+import com.github.yumelira.yumebox.core.model.OverrideConfig
+import com.github.yumelira.yumebox.core.model.OverrideContentType
+import com.github.yumelira.yumebox.core.model.OverrideMetadata
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,10 +37,10 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class OverrideConfigViewModel(
-    private val configRepo: OverrideConfigStore,
-    private val resolver: OverrideResolver,
-    private val bindingProvider: ProfileBindingProvider,
-    private val activeProfileOverrideReloader: ActiveProfileOverrideReloader,
+    private val configRepo: OverrideConfigRepository,
+    private val resolver: ProfileBindingReader,
+    private val bindingProvider: ProfileBindingReader,
+    private val activeProfileOverrideApplier: OverrideApplier,
 ) : ViewModel() {
     companion object {
         private const val TAG = "OverrideConfigViewModel"
@@ -94,7 +93,7 @@ class OverrideConfigViewModel(
         if (!saved) return false
 
         viewModelScope.launch {
-            activeProfileOverrideReloader.reapplyActiveProfileIfUsingOverride(configId)
+            activeProfileOverrideApplier.reapplyActiveProfileIfUsingOverride(configId)
             refresh()
         }
         return true
@@ -126,10 +125,10 @@ class OverrideConfigViewModel(
         viewModelScope.launch {
             runCatching {
                     val shouldResyncRuntime =
-                        activeProfileOverrideReloader.isActiveProfileUsingOverride(id)
+                        activeProfileOverrideApplier.isActiveProfileUsingOverride(id)
                     val deleted = configRepo.delete(id)
                     if (deleted && shouldResyncRuntime) {
-                        activeProfileOverrideReloader.reapplyActiveProfileOverride()
+                        activeProfileOverrideApplier.reapplyActiveProfileOverride()
                     }
                     refresh()
                 }

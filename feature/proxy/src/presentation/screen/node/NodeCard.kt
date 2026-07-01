@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.screen.node
+package com.github.yumelira.yumebox.feature.proxy.presentation.screen.node
 
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -29,6 +29,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -39,9 +40,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -54,15 +60,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.core.model.Proxy
-import com.github.yumelira.yumebox.presentation.component.CountryFlagCircle
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.BadgeDollarSign
 import com.github.yumelira.yumebox.presentation.icon.yume.CircleGauge
 import com.github.yumelira.yumebox.presentation.icon.yume.Cloud
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.util.extractNodeTags
+import com.github.yumelira.yumebox.feature.proxy.presentation.util.extractNodeTags
 import dev.oom_wg.purejoy.mlang.MLang
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -70,20 +76,32 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
 
-@Composable
-internal fun nodeLatencyLabel(delay: Int?): Pair<String, Color>? =
-    when {
-        delay == null -> null
-        delay < 0 -> MLang.Proxy.Node.Timeout to AppTheme.colors.latency.timeout
-        delay == 0 -> null
-        delay in 1..300 ->
-            MLang.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.fast
-        delay in 301..1000 ->
-            MLang.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.moderate
-        delay in 1001..3000 ->
-            MLang.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.slow
-        else -> null
+internal object NodeCardDefaults {
+    val CornerRadius = 12.dp
+    val GroupCornerRadius = 12.dp
+    val PaddingHorizontal = 12.dp
+    val PaddingVertical = 16.dp
+}
+
+internal fun nodeLatencyLabel(delay: Int?, withUnit: Boolean = false): Pair<String, Color>? {
+    if (delay == null || delay == 0) return null
+    val text = if (delay < 0) {
+        MLang.Proxy.Node.Timeout
+    } else if (withUnit) {
+        MLang.Home.NodeInfo.DelayValue.format(delay)
+    } else {
+        delay.toString()
     }
+    val color = when {
+        delay < 0 -> Color(0xFF9E9E9E)
+        delay in 1..500 -> Color(0xFF4CAF50)
+        delay in 501..1000 -> Color(0xFFFFC107)
+        delay in 1001..3000 -> Color(0xFFFF9800)
+        delay in 3001..5000 -> Color(0xFFFFA726)
+        else -> return null
+    }
+    return text to color
+}
 
 internal fun displayName(type: String): String =
     when (type) {
@@ -176,9 +194,13 @@ internal fun NodeSelectableCard(
     val sizes = AppTheme.sizes
     val opacity = AppTheme.opacity
     val interactionSource = remember { MutableInteractionSource() }
-    val shape = RoundedCornerShape(radii.radius18)
+    val shape = RoundedCornerShape(radii.radius12)
     val primary = MiuixTheme.colorScheme.primary
-    val backgroundColor = MiuixTheme.colorScheme.background
+    val backgroundColor = if (isSelected) {
+        MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+    } else {
+        MiuixTheme.colorScheme.background
+    }
     val transition = updateTransition(targetState = isSelected, label = "node_card_selection")
     val borderColor by
         transition.animateColor(
@@ -199,28 +221,24 @@ internal fun NodeSelectableCard(
             modifier
                 .fillMaxWidth()
                 .let {
-                    if (onClick != null) {
+                    if (onClick != null)
                         it.pressable(
                             interactionSource = interactionSource,
                             indication = SinkFeedback(),
                         )
-                    } else {
-                        it
-                    }
+                    else it
                 }
                 .clip(shape)
                 .background(backgroundColor)
                 .border(sizes.nodeCardBorderWidth, borderColor, shape)
                 .let {
-                    if (onClick != null) {
+                    if (onClick != null)
                         it.clickable(
                             interactionSource = interactionSource,
                             indication = null,
                             onClick = onClick,
                         )
-                    } else {
-                        it
-                    }
+                    else it
                 }
                 .padding(horizontal = sizes.nodeCardPaddingHorizontal, vertical = paddingVertical),
         content = content,
@@ -232,15 +250,18 @@ internal fun NodeSelectableCard(
 internal fun NodeCard(
     proxy: Proxy,
     isSelected: Boolean,
+    isPinned: Boolean = false,
     onClick: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
     isDelayTesting: Boolean = false,
     isThisProxyTesting: Boolean = false,
     onSingleNodeTestClick: ((String) -> Unit)? = null,
+    isSingleColumn: Boolean = true,
+    showDetail: Boolean = true,
     showCountryFlag: Boolean = true,
+    resolvedChildNodeName: String? = null,
     singleNodeTestEnabled: Boolean = true,
 ) {
-    val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
     val onCardClick =
         remember(proxy.name, onClick) { onClick?.let { click -> { click(proxy.name) } } }
@@ -248,8 +269,6 @@ internal fun NodeCard(
         remember(proxy.name, onSingleNodeTestClick) {
             onSingleNodeTestClick?.let { click -> { click(proxy.name) } }
         }
-    val delayInteractionSource = remember { MutableInteractionSource() }
-    val iconInteractionSource = remember { MutableInteractionSource() }
 
     NodeSelectableCard(
         isSelected = isSelected,
@@ -257,131 +276,145 @@ internal fun NodeCard(
         modifier = modifier,
         paddingVertical = sizes.nodeCardPaddingVertical,
     ) {
-        val presentation =
-            remember(proxy.name, proxy.title) {
-                resolveProxyDisplayPresentation(name = proxy.name, title = proxy.title)
-            }
         val tags = remember(proxy.name) { extractNodeTags(proxy.name) }
-        val delayLabel = nodeLatencyLabel(proxy.delay)
-        val typeLabel = remember(proxy.type) { displayName(proxy.type) }
-        val iconLabel = remember(proxy.type) { iconLabel(proxy.type) }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(sizes.nodeCardContentGap),
-        ) {
-            NodeLargeIcon(
-                modifier = Modifier.padding(top = spacing.space2),
-                countryCode = presentation.countryCode.takeIf { showCountryFlag },
-                typeName = iconLabel,
-            )
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(sizes.nodeCardTitleGap),
-            ) {
-                Text(
-                    text = presentation.displayName,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
+        val delayLabel = remember(proxy.delay, isSingleColumn) { nodeLatencyLabel(proxy.delay, withUnit = isSingleColumn) }
+        val childNodeName = remember(resolvedChildNodeName, proxy.name) {
+            val raw = resolvedChildNodeName?.trim().orEmpty()
+            raw.takeIf { it.isNotEmpty() && it != proxy.name.trim() }
+        }
+        val textColor = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
+        if (showDetail) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    FlowRow(
+                    Text(
+                        text = proxy.name,
+                        style = MiuixTheme.textStyles.body2,
+                        color = textColor,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = if (isSingleColumn) {
+                            Modifier.basicMarquee()
+                        } else {
+                            Modifier.weight(1f).basicMarquee()
+                        },
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
                         modifier = Modifier.weight(1f),
-                        horizontalArrangement =
-                            Arrangement.spacedBy(AppTheme.sizes.listItemVerticalMinimal),
-                        verticalArrangement = Arrangement.spacedBy(spacing.space4),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        NodeTagChip(label = typeLabel)
+                        NodeTagChip(label = displayName(proxy.type))
                         tags.keywords.forEach { keyword -> NodeTagChip(label = keyword) }
-                        tags.multiplier?.let { multiplier ->
-                            if (multiplier > 0f) NodeMultiplierChip(multiplier = multiplier)
+                        tags.multiplier?.let { m ->
+                            if (m > 0f) NodeMultiplierChip(multiplier = m)
                         }
-                    }
-                    when {
-                        delayLabel != null -> {
-                            val (delayText, delayColor) = delayLabel
+                        if (childNodeName != null) {
                             Text(
-                                text = delayText,
+                                text = childNodeName,
                                 style = MiuixTheme.textStyles.footnote1,
-                                color = delayColor,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 maxLines = 1,
-                                textAlign = TextAlign.End,
-                                modifier =
-                                    Modifier.padding(start = sizes.nodeCardTrailingGap).let {
-                                        modifier ->
-                                        if (onNodeTestClick != null && singleNodeTestEnabled) {
-                                            modifier.clickable(
-                                                interactionSource = delayInteractionSource,
-                                                indication = null,
-                                                onClick = onNodeTestClick,
-                                            )
-                                        } else {
-                                            modifier
-                                        }
-                                    },
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f).basicMarquee(),
                             )
                         }
-
-                        onNodeTestClick != null && singleNodeTestEnabled -> {
-                            if (isThisProxyTesting) {
-                                RotatingCircleGauge(
-                                    isRotating = true,
-                                    modifier =
-                                        Modifier.padding(start = sizes.nodeCardTrailingGap)
-                                            .size(sizes.nodeCardTrailingGap * 2),
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Yume.Cloud,
-                                    contentDescription = MLang.Proxy.Action.Test,
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    modifier =
-                                        Modifier.padding(start = sizes.nodeCardTrailingGap)
-                                            .size(sizes.nodeCardTrailingGap * 2)
-                                            .clickable(
-                                                interactionSource = iconInteractionSource,
-                                                indication = null,
-                                                onClick = onNodeTestClick,
-                                            ),
-                                )
-                            }
-                        }
                     }
+                    ProxyDelayIndicator(
+                        delayLabel = delayLabel,
+                        isDelayTesting = isDelayTesting || isThisProxyTesting,
+                        onDelayTestClick = if (singleNodeTestEnabled) onNodeTestClick else null,
+                    )
                 }
             }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = proxy.name,
+                    style = MiuixTheme.textStyles.body2,
+                    color = textColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).basicMarquee(),
+                )
+            }
+        }
+        if (isPinned) {
+            Text(
+                text = "📌",
+                style = MiuixTheme.textStyles.footnote1.copy(fontSize = 18.sp),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 10.dp, y = (-10).dp),
+            )
         }
     }
 }
 
 @Composable
-internal fun NodeLargeIcon(modifier: Modifier = Modifier, countryCode: String?, typeName: String) {
-    val opacity = AppTheme.opacity
-    val sizes = AppTheme.sizes
-    val neutral = MiuixTheme.colorScheme.onSurface
-    Box(
-        modifier =
-            modifier
-                .size(sizes.nodeLargeIconSize)
-                .clip(RoundedCornerShape(sizes.nodeLargeIconCornerRadius))
-                .background(neutral.copy(alpha = opacity.ambientLight + opacity.ambientShadow)),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (countryCode != null) {
-            CountryFlagCircle(countryCode = countryCode, size = sizes.nodeLargeIconFlagSize)
-        } else {
+internal fun ProxyDelayIndicator(
+    delayLabel: Pair<String, Color>?,
+    isDelayTesting: Boolean,
+    onDelayTestClick: (() -> Unit)?,
+) {
+    val slotModifier = Modifier.widthIn(min = 20.dp)
+    when {
+        isDelayTesting -> {
+            Box(modifier = slotModifier, contentAlignment = Alignment.CenterEnd) {
+                RotatingCircleGauge(
+                    isRotating = true,
+                    modifier = Modifier.size(13.dp),
+                    tint = MiuixTheme.colorScheme.primary,
+                    contentDescription = null,
+                )
+            }
+        }
+        delayLabel != null -> {
+            val (delayText, delayColor) = delayLabel
             Text(
-                text = typeName.take(2),
+                text = delayText,
                 style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                color = delayColor,
+                maxLines = 1,
+                modifier = Modifier
+                    .padding(start = 6.dp)
+                    .let { m ->
+                        if (onDelayTestClick != null) m.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onDelayTestClick,
+                        ) else m
+                    },
+            )
+        }
+        else -> {
+            Icon(
+                imageVector = Yume.Cloud,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(16.dp)
+                    .let { m ->
+                        if (onDelayTestClick != null) m.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onDelayTestClick,
+                        ) else m
+                    },
+                tint = Color(0xFFC7C7CC),
             )
         }
     }
@@ -397,10 +430,10 @@ private fun NodeTagChip(label: String) {
         text = label,
         style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
         color = primary,
-        modifier =
-            Modifier.clip(RoundedCornerShape(radii.full))
-                .background(primary.copy(alpha = opacity.subtle))
-                .padding(horizontal = spacing.space4, vertical = spacing.space2),
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(primary.copy(alpha = opacity.subtle))
+            .padding(horizontal = spacing.space4, vertical = spacing.space2),
     )
 }
 
@@ -417,17 +450,14 @@ private fun NodeMultiplierChip(multiplier: Float) {
         if (isHigh) appColors.status.destructiveContainer else primary.copy(alpha = opacity.subtle)
     val chipColor = if (isHigh) appColors.status.destructive else primary
     val label =
-        if (multiplier == multiplier.toLong().toFloat()) {
-            "x${multiplier.toLong()}"
-        } else {
-            "x$multiplier"
-        }
+        if (multiplier == multiplier.toLong().toFloat()) "x${multiplier.toLong()}"
+        else "x$multiplier"
 
     Row(
-        modifier =
-            Modifier.clip(RoundedCornerShape(radii.full))
-                .background(chipBg)
-                .padding(horizontal = spacing.space4, vertical = spacing.space2),
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(chipBg)
+            .padding(horizontal = spacing.space4, vertical = spacing.space2),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.space2),
     ) {

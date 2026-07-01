@@ -49,9 +49,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.github.yumelira.yumebox.R
 import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumelira.yumebox.presentation.component.Card
+import com.github.yumelira.yumebox.presentation.component.NavigationBackIcon
 import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.TopBar
@@ -82,7 +84,7 @@ fun OpenSourceLicensesScreen(navigator: Navigator) {
     val libraryItems = remember(libraries) { libraries?.libraries.orEmpty() }
 
     Scaffold(
-        topBar = { TopBar(title = MLang.OpenSourceLicenses.Title, scrollBehavior = scrollBehavior) }
+        topBar = { TopBar(title = MLang.OpenSourceLicenses.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(navigator = navigator) }) }
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
             val mainLikePadding = rememberStandalonePageMainPadding()

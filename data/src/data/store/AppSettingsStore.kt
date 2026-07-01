@@ -20,22 +20,38 @@
 
 package com.github.yumelira.yumebox.data.store
 
-import com.github.yumelira.yumebox.data.model.AppColorTheme
-import com.github.yumelira.yumebox.data.model.AppLanguage
-import com.github.yumelira.yumebox.data.model.ThemeMode
+import android.util.Log
+import com.github.yumelira.yumebox.core.data.AppSettingsReader
+import com.github.yumelira.yumebox.core.data.UpdateSettings
+import com.github.yumelira.yumebox.core.model.AppColorTheme
+import com.github.yumelira.yumebox.core.model.AppLanguage
+import com.github.yumelira.yumebox.core.model.ThemeMode
 import com.tencent.mmkv.MMKV
 
-class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
+/**
+ * WebDAV backup settings, isolated to feature/meta consumers.
+ */
+class WebDavSettings(mmkv: MMKV) : MMKVPreference(externalMmkv = mmkv) {
+    val webDavUrl by strFlow("")
+    val webDavAccount by strFlow("")
+    val webDavPassword by strFlow("")
+    val webDavDir by strFlow("FlyCat")
+}
+
+class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv), AppSettingsReader, UpdateSettings {
+    override val initialSetupCompleted by boolFlow(false)
+    val privacyPolicyAccepted by boolFlow(false)
+
     val themeMode by enumFlow(ThemeMode.Auto)
     val appLanguage by enumFlow(AppLanguage.System)
     val colorTheme by enumFlow(AppColorTheme.ClassicMonochrome)
     val themeAccentColorArgb by longFlow(0xFF138A74L)
     val invertOnPrimaryColors by boolFlow(false)
     val homePreviewGuideShown by boolFlow(false)
-    val automaticRestart by boolFlow(false)
-    val autoUpdateCurrentProfileOnStart by boolFlow(true)
+    override val automaticRestart by boolFlow(false)
+    override val autoUpdateCurrentProfileOnStart by boolFlow(true)
     val hideAppIcon by boolFlow(false)
-    val excludeFromRecents by boolFlow(false)
+    override val excludeFromRecents by boolFlow(false)
     val showTrafficNotification by boolFlow(true)
     val bottomBarAutoHide by boolFlow(true)
     val topBarBlurEnabled by boolFlow(false)
@@ -49,9 +65,13 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
     val moeHomeQuoteAuthor by strFlow("恋文")
     val moeSidebarExpanded by boolFlow(true)
     val pageScale by floatFlow(1.0f)
-    val singleNodeTest by boolFlow(true)
+    override val singleNodeTest by boolFlow(true)
+    val logLevel by intFlow(Log.INFO)
+    override val autoCheckAppUpdate by boolFlow(false)
+    override val updateSourceKey by strFlow("Stable")
+    override val customUserAgent by strFlow("")
 
-    val customUserAgent by strFlow("")
+    val webDav = WebDavSettings(externalMmkv)
 
     init {
         migrateLegacyHomeKeys()
@@ -88,3 +108,12 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
         moveBool("acgSidebarExpanded", "moeSidebarExpanded")
     }
 }
+
+class AppStateManager(
+    val appSettingsStore: AppSettingsStore,
+    val networkSettingsStore: NetworkSettingsStore,
+    val featureStore: FeatureStore,
+    val profileLinksStore: ProfileLinksStore,
+    val proxyDisplaySettingsStore: ProxyDisplaySettingsStore,
+    val trafficStatisticsStore: TrafficStatisticsStore,
+)

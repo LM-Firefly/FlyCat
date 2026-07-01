@@ -100,6 +100,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -113,6 +114,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.`Arrow-down-up`
@@ -126,7 +128,8 @@ import com.kyant.shapes.Capsule
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.blurEffect
 import dev.chrisbanes.haze.hazeEffect
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.CoroutineScope
@@ -134,14 +137,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-class MainPagerState(
-    val pagerState: PagerState,
-    private val coroutineScope: CoroutineScope,
-) {
+class MainPagerState(val pagerState: PagerState, private val coroutineScope: CoroutineScope) {
     var selectedPage by mutableIntStateOf(pagerState.currentPage)
         private set
 
@@ -191,8 +192,9 @@ class MainPagerState(
 fun rememberMainPagerState(
     pagerState: PagerState,
     coroutineScope: CoroutineScope = rememberCoroutineScope(),
-): MainPagerState =
-    remember(pagerState, coroutineScope) { MainPagerState(pagerState, coroutineScope) }
+): MainPagerState {
+    return remember(pagerState, coroutineScope) { MainPagerState(pagerState, coroutineScope) }
+}
 
 val LocalPagerState = compositionLocalOf<PagerState> { error("LocalPagerState is not provided") }
 val LocalMainPagerState =
@@ -202,9 +204,22 @@ val LocalHandlePageChange =
 val LocalNavigator =
     compositionLocalOf<Navigator> { error("LocalNavigator is not provided") }
 val LocalBottomBarHazeState = compositionLocalOf<HazeState?> { null }
-val LocalBottomBarHazeStyle = compositionLocalOf<HazeStyle?> { null }
+val LocalBottomBarHazeStyle = compositionLocalOf<HazeBlurStyle?> { null }
+val LocalBottomBarUseLegacyStyle = compositionLocalOf { false }
 
 object MainBottomBarDefaults {
+    val CornerRadius = UiDp.dp28
+    val Shape: androidx.compose.ui.graphics.Shape
+        @Composable get() = RoundedCornerShape(
+            topStart = CornerRadius,
+            topEnd = CornerRadius,
+        )
+    val BorderWidth = UiDp.dp0_26
+    val OutlineHorizontalInset = UiDp.dp0
+    val ItemHeight = UiDp.dp60
+    val IconSize = UiDp.dp26
+    val LabelFontSize = 11.5.sp
+    val IconLabelSpacing = UiDp.dp3
     val HorizontalPadding = UiDp.dp48
     val TopPadding = UiDp.dp6
     val FloatingBottomPadding = UiDp.dp12
@@ -219,11 +234,12 @@ object MainBottomBarDefaults {
 }
 
 @Composable
-fun rememberMainPagerFlingBehavior(pagerState: PagerState): TargetedFlingBehavior =
-    PagerDefaults.flingBehavior(
+fun rememberMainPagerFlingBehavior(pagerState: PagerState): TargetedFlingBehavior {
+    return PagerDefaults.flingBehavior(
         state = pagerState,
         snapAnimationSpec = MainBottomBarDefaults.PagerAnimationSpec,
     )
+}
 
 @Composable
 fun rememberBottomBarReservedHeight(): Dp {
@@ -242,14 +258,16 @@ fun rememberBottomBarReservedHeight(): Dp {
 }
 
 @OptIn(ExperimentalHazeApi::class)
-private fun Modifier.bottomBarHazeEffect(state: HazeState?, style: HazeStyle?): Modifier {
+private fun Modifier.bottomBarHazeEffect(state: HazeState?, style: HazeBlurStyle?): Modifier {
     if (state == null || style == null) return this
 
     return hazeEffect(state) {
-        this.style = style
-        blurRadius = UiDp.dp26
+        blurEffect {
+            this.style = style
+            blurRadius = UiDp.dp26
+            noiseFactor = 0f
+        }
         inputScale = HazeInputScale.Fixed(0.24f)
-        noiseFactor = 0f
         forceInvalidateOnPreDraw = false
     }
 }
@@ -263,6 +281,9 @@ fun BottomBarContent(isVisible: Boolean = true) {
 private fun FloatingBottomBarContent(isVisible: Boolean = true) {
     val bottomBarScrollBehavior = LocalBottomBarScrollBehavior.current
     val mainPagerState = LocalMainPagerState.current
+    val hazeState = LocalBottomBarHazeState.current
+    val hazeStyle = LocalBottomBarHazeStyle.current
+    val hazeEnabled = hazeState != null && hazeStyle != null
     val pagerState = mainPagerState.pagerState
     val page by remember(mainPagerState) { derivedStateOf { mainPagerState.selectedPage } }
     val indicatorProgress by
@@ -344,7 +365,11 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
         }
     val selectedColor = MiuixTheme.colorScheme.primary
     val unselectedColor = MiuixTheme.colorScheme.onSurface.copy(alpha = opacity.secondaryText)
-    val containerColor = MiuixTheme.colorScheme.background
+    val containerColor = if (hazeEnabled) {
+        MiuixTheme.colorScheme.background.copy(alpha = opacity.elevatedSurface)
+    } else {
+        MiuixTheme.colorScheme.background
+    }
     val indicatorContainerColor = selectedColor.copy(alpha = opacity.subtle)
 
     LegacyBottomNavigationBar(
@@ -353,6 +378,9 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
         tabsCount = BottomBarDestination.entries.size,
         containerColor = containerColor,
         indicatorContainerColor = indicatorContainerColor,
+        hazeEnabled = hazeEnabled,
+        hazeState = hazeState,
+        hazeStyle = hazeStyle,
         modifier =
             Modifier.fillMaxWidth()
                 .padding(
@@ -361,11 +389,11 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
                     top = MainBottomBarDefaults.TopPadding,
                     bottom = bottomSafeInset + MainBottomBarDefaults.FloatingBottomPadding,
                 )
+                .offset { IntOffset(0, animatedTranslationY.value.toInt()) }
                 .graphicsLayer {
                     alpha = animatedAlpha
                     scaleX = animatedScale
                     scaleY = animatedScale
-                    translationY = animatedTranslationY.value
                     transformOrigin = TransformOrigin(0.5f, 1f)
                 },
     ) {
@@ -404,6 +432,9 @@ private fun LegacyBottomNavigationBar(
     tabsCount: Int,
     containerColor: Color,
     indicatorContainerColor: Color,
+    hazeEnabled: Boolean = false,
+    hazeState: HazeState? = null,
+    hazeStyle: HazeBlurStyle? = null,
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit,
 ) {
@@ -467,6 +498,13 @@ private fun LegacyBottomNavigationBar(
                 }
                 .height(UiDp.dp56)
                 .clip(Capsule())
+                .then(
+                    if (hazeEnabled) {
+                        Modifier.bottomBarHazeEffect(hazeState, hazeStyle)
+                    } else {
+                        Modifier
+                    },
+                )
                 .background(containerColor, Capsule()),
         contentAlignment = Alignment.CenterStart,
     ) {

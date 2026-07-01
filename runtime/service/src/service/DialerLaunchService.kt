@@ -18,13 +18,13 @@
  *
  */
 
-package com.github.yumelira.yumebox.service
+package com.github.yumelira.yumebox.runtime.service
 
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.ServiceCompat
-import com.github.yumelira.yumebox.service.common.constants.Components
+import com.github.yumelira.yumebox.runtime.api.service.common.constants.Components
 
 class DialerLaunchService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null

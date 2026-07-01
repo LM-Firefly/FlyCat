@@ -1389,7 +1389,7 @@ class LocaleGenerator(private val config: LocaleProjectConfig) {
 fun printUsage() {
     println(
         """
-        YumeBox Locale Generator
+        FlyCat Locale Generator
 
         Usage: kotlin scripts/generate-locale.main.kts [repositoryRoot]
 

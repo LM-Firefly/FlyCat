@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.common.util
+package com.github.yumelira.yumebox.platform.util
 
 import java.util.Locale
 

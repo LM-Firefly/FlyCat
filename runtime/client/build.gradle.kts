@@ -29,9 +29,7 @@ android {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":data"))
-    implementation(project(":runtime:api"))
-    implementation(project(":runtime:service"))
+    api(project(":runtime:api"))
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
@@ -51,5 +49,3 @@ dependencies {
     implementation(libs.libsu.core)
     implementation(libs.libsu.service)
 }
-
-

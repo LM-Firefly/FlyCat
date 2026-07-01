@@ -13,6 +13,8 @@
 #include <mutex>
 #include "libclash.h"
 
+extern "C" int patchTunnelMode(c_string mode);
+
 extern "C" {
 
 JNIEXPORT void JNICALL
@@ -242,6 +244,16 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeHealthCheckAll(JNIEnv 
     healthCheckAll();
 }
 
+JNIEXPORT jboolean JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativePatchTunnelMode(JNIEnv *env, jobject thiz,
+                                                                     jstring mode) {
+    TRACE_METHOD();
+
+    scoped_string _mode = get_string(mode);
+
+    return (jboolean) patchTunnelMode(_mode);
+}
+
 JNIEXPORT void JNICALL
 Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeHealthCheckProxy(JNIEnv *env, jobject thiz,
 jobject completable,
@@ -263,6 +275,18 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativePatchSelector(JNIEnv *
     scoped_string _name = get_string(name);
 
     return (jboolean) patchSelector(_selector, _name);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeForcePatchSelector(JNIEnv *env, jobject thiz,
+                                                                        jstring selector,
+                                                                        jstring name) {
+    TRACE_METHOD();
+
+    scoped_string _selector = get_string(selector);
+    scoped_string _name = get_string(name);
+
+    return (jboolean) patchForceSelector(_selector, _name);
 }
 
 JNIEXPORT void JNICALL
@@ -362,6 +386,22 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeQueryProviders(JNIEnv 
     scoped_string response = queryProviders();
 
     return new_string(response);
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeInspectCompiledGroups(JNIEnv *env, jobject thiz,
+                                                                            jstring yaml_text,
+                                                                            jstring profile_dir,
+                                                                            jboolean exclude_not_selectable) {
+    TRACE_METHOD();
+    scoped_string _yaml_text = get_string(yaml_text);
+    scoped_string _profile_dir = get_string(profile_dir);
+    scoped_string groups_yaml = inspectCompiledGroupsResult(_yaml_text, _profile_dir, (int) exclude_not_selectable);
+    if (groups_yaml == NULL) {
+        scoped_string error_result = inspectErrorResult("inspect compiled groups failed");
+        return new_string(error_result);
+    }
+    return new_string(groups_yaml);
 }
 
 JNIEXPORT void JNICALL
@@ -802,6 +842,121 @@ static char* compile_override_raw_config(const char* request_json, override_symb
     return config_raw;
 }
 
+JNIEXPORT void JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeCompileAndLoadConfig(JNIEnv *env, jobject thiz,
+                                                                         jobject completable,
+                                                                         jstring request_json) {
+    TRACE_METHOD();
+
+    override_symbols symbols = resolve_override_symbols();
+
+    if (!symbols.compile_raw || !symbols.free_string) {
+        jobject _completable = new_global(completable);
+        call_completable_complete_impl(_completable, "override library symbols not found");
+        release_jni_object_impl(_completable);
+        return;
+    }
+
+    jobject _completable = new_global(completable);
+    scoped_string _request_json = get_string(request_json);
+
+    // Call Rust to compile the source to RawConfig JSON in native memory.
+    scoped_string compile_error = NULL;
+    char* config_raw = compile_override_raw_config(_request_json, symbols, &compile_error);
+
+    if (config_raw == NULL) {
+        call_completable_complete_impl(_completable, compile_error != NULL ? compile_error : "compile raw config failed");
+        release_jni_object_impl(_completable);
+        return;
+    }
+
+    // Call Go to load the raw config (async, spawns goroutine, calls complete)
+    loadCompiledRaw(_completable, config_raw);
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeCompilePreview(JNIEnv *env, jobject thiz,
+                                                                    jstring request_json) {
+    TRACE_METHOD();
+
+    override_symbols symbols = resolve_override_symbols();
+
+    if (!symbols.compile_raw || !symbols.free_string) {
+        return new_string("{\"success\":false,\"error\":\"override library symbols not found\"}");
+    }
+
+    scoped_string _request_json = get_string(request_json);
+    raw_compile_payload payload = compile_override_raw_payload(_request_json, symbols);
+
+    if (payload.config_raw == NULL) {
+        const char* err = raw_compile_error_or_default(&payload, "compile raw config failed");
+        // Build CompileResult JSON: {success:false, error:"..."}
+        size_t len = strlen(err) + 64;
+        char* result = (char*)malloc(len);
+        snprintf(result, len, "{\"success\":false,\"error\":\"%s\"}", err);
+        free_raw_compile_payload(&payload);
+        return new_string(result);
+    }
+
+    // Build CompileResult JSON from summary_json + finalYaml
+    // summary_json has: {success, fingerprint, warnings, error}
+    // We need: {success, fingerprint, finalYaml, warnings, error}
+    if (payload.summary_json != NULL) {
+        // Insert "finalYaml":"<yaml>" into the summary JSON before the closing brace
+        size_t summary_len = strlen(payload.summary_json);
+        size_t yaml_len = strlen(payload.config_raw);
+        // Escape config_raw for JSON (basic escaping of backslash and quote)
+        size_t escaped_yaml_cap = yaml_len * 2 + 1;
+        char* escaped_yaml = (char*)malloc(escaped_yaml_cap);
+        size_t ei = 0;
+        for (size_t i = 0; i < yaml_len; i++) {
+            char c = payload.config_raw[i];
+            if (c == '\\' || c == '"') {
+                escaped_yaml[ei++] = '\\';
+                escaped_yaml[ei++] = c;
+            } else if (c == '\n') {
+                escaped_yaml[ei++] = '\\';
+                escaped_yaml[ei++] = 'n';
+            } else if (c == '\r') {
+                escaped_yaml[ei++] = '\\';
+                escaped_yaml[ei++] = 'r';
+            } else if (c == '\t') {
+                escaped_yaml[ei++] = '\\';
+                escaped_yaml[ei++] = 't';
+            } else {
+                escaped_yaml[ei++] = c;
+            }
+        }
+        escaped_yaml[ei] = '\0';
+
+        // Build: {summary fields without }, "finalYaml":"<escaped>"}
+        // Strip trailing } from summary, add finalYaml, then }
+        size_t result_len = summary_len + strlen(escaped_yaml) + 32;
+        char* result = (char*)malloc(result_len);
+        if (summary_len > 1 && payload.summary_json[summary_len - 1] == '}') {
+            // Remove trailing } and append ,\"finalYaml\":\"...\"}
+            memcpy(result, payload.summary_json, summary_len - 1);
+            result[summary_len - 1] = '\0';
+            strcat(result, ",\"finalYaml\":\"");
+            strcat(result, escaped_yaml);
+            strcat(result, "\"}");
+        } else {
+            snprintf(result, result_len, "{\"success\":true,\"finalYaml\":\"%s\"}", escaped_yaml);
+        }
+        free(escaped_yaml);
+        free_raw_compile_payload(&payload);
+        return new_string(result);
+    }
+
+    // Fallback: just return success with the yaml
+    size_t yaml_len = strlen(payload.config_raw);
+    size_t result_len = yaml_len + 64;
+    char* result = (char*)malloc(result_len);
+    snprintf(result, result_len, "{\"success\":true,\"finalYaml\":\"%s\"}", payload.config_raw);
+    free_raw_compile_payload(&payload);
+    return new_string(result);
+}
+
 JNIEXPORT jstring JNICALL
 Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeCompileAndLoadConfigSummary(JNIEnv *env,
                                                                                       jobject thiz,
@@ -917,6 +1072,19 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeCompileAndInspectTunRo
     }
 
     return new_string(route_exclude_address_json);
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeInspectCompiledGroupNames(JNIEnv *env, jobject thiz,
+                                                                                jstring yaml_text,
+                                                                                jboolean exclude_not_selectable) {
+    TRACE_METHOD();
+    scoped_string _yaml_text = get_string(yaml_text);
+    scoped_string names_json = inspectCompiledGroupNames(_yaml_text, (int) exclude_not_selectable);
+    if (names_json == NULL) {
+        return NULL;
+    }
+    return new_string(names_json);
 }
 
 } // extern "C"

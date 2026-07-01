@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.runtime.config
+package com.github.yumelira.yumebox.runtime.service.runtime.config
 
 import com.github.yumelira.yumebox.core.model.RootTunDnsMode
 import com.tencent.mmkv.MMKV

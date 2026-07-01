@@ -21,6 +21,7 @@
 package com.github.yumelira.yumebox.presentation.component
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
+import com.github.yumelira.yumebox.core.model.Profile
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.`Circle-fading-arrow-up`
 import com.github.yumelira.yumebox.presentation.icon.yume.Delete
@@ -50,15 +52,14 @@ import com.github.yumelira.yumebox.presentation.util.getDisplayProvider
 import com.github.yumelira.yumebox.presentation.util.getInfoText
 import com.github.yumelira.yumebox.presentation.util.isConfigSaved
 import com.github.yumelira.yumebox.presentation.util.shouldShowUpdateButton
-import com.github.yumelira.yumebox.service.runtime.entity.Profile
 import dev.oom_wg.purejoy.mlang.MLang
+import java.io.File
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.io.File
 
 @Composable
 fun ProfileCard(
@@ -109,7 +110,7 @@ fun ProfileCard(
                     fontWeight = FontWeight(550),
                     color = colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.basicMarquee(),
                 )
 
                 Text(

@@ -18,9 +18,12 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.root
+package com.github.yumelira.yumebox.runtime.service.root
 
 import android.os.RemoteCallbackList
+import com.github.yumelira.yumebox.runtime.api.service.root.RootTunStatus
+import com.github.yumelira.yumebox.runtime.api.service.root.rootTunEncode
+import com.github.yumelira.yumebox.service.root.IRootTunStateObserver
 
 /**
  * Single root-side write path for [RootTunStateStore]. Wraps every store mutation with a fan-out

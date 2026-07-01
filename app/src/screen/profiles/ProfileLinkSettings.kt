@@ -38,8 +38,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
-import com.github.yumelira.yumebox.data.store.LinkOpenMode
-import com.github.yumelira.yumebox.data.store.ProfileLink
+import com.github.yumelira.yumebox.core.model.LinkOpenMode
+import com.github.yumelira.yumebox.core.model.ProfileLink
 import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumelira.yumebox.presentation.component.AppFormDialog
 import com.github.yumelira.yumebox.presentation.component.PreferenceEnumItem

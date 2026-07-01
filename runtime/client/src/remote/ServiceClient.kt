@@ -18,30 +18,39 @@
  *
  */
 
-package com.github.yumelira.yumebox.remote
+package com.github.yumelira.yumebox.runtime.client.remote
 
 import android.content.Context
-import com.github.yumelira.yumebox.data.store.MMKVProvider
-import com.github.yumelira.yumebox.data.store.RemoteControllerStore
-import com.github.yumelira.yumebox.service.ProfileManager
-import com.github.yumelira.yumebox.service.common.util.appContextOrSelf
-import com.github.yumelira.yumebox.service.common.util.initializeServiceGlobal
-import com.github.yumelira.yumebox.service.remote.IClashManager
-import com.github.yumelira.yumebox.service.remote.IProfileManager
+import com.github.yumelira.yumebox.core.appContextOrSelf
+import com.github.yumelira.yumebox.core.data.RemoteControllerStoreReader
+import com.github.yumelira.yumebox.core.Global
+import com.github.yumelira.yumebox.runtime.api.service.remote.IClashManager
+import com.github.yumelira.yumebox.runtime.api.service.remote.IProfileManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import timber.log.Timber
 
 object ServiceClient {
+    private const val CONNECT_TIMEOUT_MS = 10_000L
     private val mutex = Mutex()
     private var initialized = false
     private var clashManager: IClashManager? = null
     private var profileManager: IProfileManager? = null
+    private var remoteControllerStore: RemoteControllerStoreReader? = null
+
+    /** Must be called before [connect] to inject the remote controller store dependency. */
+    fun configure(store: RemoteControllerStoreReader) {
+        remoteControllerStore = store
+    }
 
     suspend fun connect(ctx: Context) {
+        val store = requireNotNull(remoteControllerStore) {
+            "ServiceClient.configure() must be called before connect()"
+        }
         withContext(Dispatchers.IO) {
             mutex.withLock {
                 val appContext = ctx.appContextOrSelf
@@ -52,22 +61,24 @@ object ServiceClient {
                 val startedAt = System.currentTimeMillis()
 
                 try {
-                    initializeServiceGlobal(appContext)
-                    val remoteStore =
-                        RemoteControllerStore(MMKVProvider().getMMKV("remote_controller"))
-                    val httpManager =
-                        HttpClashManager(backendProvider = { remoteStore.activeBackend() })
-                    clashManager =
-                        ClashGateway(
+                    withTimeout(CONNECT_TIMEOUT_MS) {
+                        Global.init(appContext)
+                        val httpManager =
+                            HttpClashManager(backendProvider = { store.activeBackend() })
+                        clashManager = ClashGateway(
                             appContext,
                             remote = httpManager,
                             isRemoteControllerActive = {
-                                remoteStore.controllerEnabled.value &&
-                                    remoteStore.activeBackend() != null
+                                store.controllerEnabled.value &&
+                                    store.activeBackend() != null
                             },
                         )
-                    profileManager = ProfileManager(appContext)
-                    initialized = true
+                        profileManager = instantiateServiceObject<IProfileManager>(
+                            className = "com.github.yumelira.yumebox.runtime.service.ProfileManager",
+                            context = appContext,
+                        )
+                        initialized = true
+                    }
                     Timber.d(
                         "ServiceClient gateway initialized in pid=${android.os.Process.myPid()}, process=${android.app.Application.getProcessName()}, cost=${System.currentTimeMillis() - startedAt}ms"
                     )
@@ -83,17 +94,27 @@ object ServiceClient {
         }
     }
 
-    suspend fun disconnect() {
+    fun disconnect() {
+        // ClashGateway does not require explicit close
+
         clashManager = null
         profileManager = null
         initialized = false
     }
 
-    suspend fun clash(): IClashManager =
-        clashManager ?: throw IllegalStateException("ServiceClient not connected")
+    fun clash(): IClashManager {
+        return clashManager ?: throw IllegalStateException("ServiceClient not connected")
+    }
 
-    suspend fun profile(): IProfileManager =
-        profileManager ?: throw IllegalStateException("ServiceClient not connected")
+    fun profile(): IProfileManager {
+        return profileManager ?: throw IllegalStateException("ServiceClient not connected")
+    }
 
     fun isConnected(): Boolean = initialized && clashManager != null && profileManager != null
+
+    private inline fun <reified T> instantiateServiceObject(className: String, context: Context): T {
+        val clazz = Class.forName(className)
+        val instance = clazz.getConstructor(Context::class.java).newInstance(context)
+        return (instance as? T) ?: error("$className does not implement ${T::class.java.name}")
+    }
 }

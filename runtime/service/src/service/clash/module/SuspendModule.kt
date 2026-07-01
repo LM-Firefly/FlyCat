@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.clash.module
+package com.github.yumelira.yumebox.runtime.service.clash.module
 
 import android.app.Service
 import android.content.Intent
@@ -53,7 +53,7 @@ class SuspendModule(service: Service) : Module<Unit>(service) {
                 addAction(Intent.ACTION_SCREEN_OFF)
                 addAction(Intent.ACTION_USER_PRESENT)
             }
-        val safetyTicker = ticker(5_000L)
+        val safetyTicker = ticker(60_000L)
 
         try {
             while (true) {

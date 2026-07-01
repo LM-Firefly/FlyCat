@@ -22,14 +22,11 @@ package com.github.yumelira.yumebox.presentation.util
 
 import android.content.ClipboardManager
 import android.content.Context
-import android.net.Uri
-import android.provider.OpenableColumns
-import com.github.yumelira.yumebox.service.runtime.entity.Profile
+import com.github.yumelira.yumebox.core.model.Profile
 import java.io.File
 
 const val PROFILE_IMPORT_TYPE_URL = 0
 const val PROFILE_IMPORT_TYPE_FILE = 1
-const val PROFILE_IMPORT_TYPE_QR = 2
 
 private val SUBSCRIPTION_URL_PATTERN =
     Regex(pattern = "^https?://\\S+$", options = setOf(RegexOption.IGNORE_CASE))
@@ -58,18 +55,6 @@ fun profileNameFromConfigFileName(fileName: String, fallback: String): String =
     fileName.substringBeforeLast(".").ifBlank {
         fallback
     }
-
-fun readDisplayName(context: Context, uri: Uri, fallback: String): String =
-    context.contentResolver
-        .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-        ?.use { cursor ->
-            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (nameIndex < 0 || !cursor.moveToFirst()) {
-                fallback
-            } else {
-                cursor.getString(nameIndex)
-            }
-        } ?: fallback
 
 fun importTypeIndexFor(profileType: Profile.Type): Int =
     when (profileType) {

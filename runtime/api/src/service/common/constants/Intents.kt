@@ -18,9 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.common.constants
-
-import com.github.yumelira.yumebox.service.common.util.packageName
+package com.github.yumelira.yumebox.runtime.api.service.common.constants
 
 object Intents {
     private fun action(packageName: String, actionName: String): String =
@@ -29,13 +27,13 @@ object Intents {
     private fun intentAction(packageName: String, actionName: String): String =
         "$packageName.intent.action.$actionName"
 
-    fun actionProvideUrl(packageName: String): String = "$packageName.action.PROVIDE_URL"
+    fun actionProvideUrl(packageName: String): String = action(packageName, "PROVIDE_URL")
 
-    fun actionStartClash(packageName: String): String = "$packageName.action.START_CLASH"
+    fun actionStartClash(packageName: String): String = action(packageName, "START_CLASH")
 
-    fun actionStopClash(packageName: String): String = "$packageName.action.STOP_CLASH"
+    fun actionStopClash(packageName: String): String = action(packageName, "STOP_CLASH")
 
-    fun actionToggleClash(packageName: String): String = "$packageName.action.TOGGLE_CLASH"
+    fun actionToggleClash(packageName: String): String = action(packageName, "TOGGLE_CLASH")
 
     fun actionServiceRecreated(packageName: String): String =
         intentAction(packageName, "CLASH_RECREATED")
@@ -62,6 +60,8 @@ object Intents {
     fun actionProxyGroupsUpdated(packageName: String): String =
         intentAction(packageName, "PROXY_GROUPS_UPDATED")
 
+    fun actionAppForeground(packageName: String): String = intentAction(packageName, "APP_FOREGROUND")
+
     fun actionPatchSelector(packageName: String): String = action(packageName, "PATCH_SELECTOR")
 
     fun actionPatchOverride(packageName: String): String = action(packageName, "PATCH_OVERRIDE")
@@ -72,63 +72,9 @@ object Intents {
 
     fun actionHealthCheckAll(packageName: String): String = action(packageName, "HEALTH_CHECK_ALL")
 
-    val ACTION_PROVIDE_URL: String
-        get() = actionProvideUrl(packageName)
-
-    val ACTION_START_CLASH: String
-        get() = actionStartClash(packageName)
-
-    val ACTION_STOP_CLASH: String
-        get() = actionStopClash(packageName)
-
-    val ACTION_TOGGLE_CLASH: String
-        get() = actionToggleClash(packageName)
-
     const val EXTRA_NAME = "name"
-
-    val ACTION_SERVICE_RECREATED: String
-        get() = actionServiceRecreated(packageName)
-
-    val ACTION_CLASH_STARTED: String
-        get() = actionClashStarted(packageName)
-
-    val ACTION_CLASH_STOPPED: String
-        get() = actionClashStopped(packageName)
-
-    val ACTION_CLASH_REQUEST_STOP: String
-        get() = actionClashRequestStop(packageName)
-
-    val ACTION_PROFILE_CHANGED: String
-        get() = actionProfileChanged(packageName)
-
-    val ACTION_PROFILE_LOADED: String
-        get() = actionProfileLoaded(packageName)
-
-    val ACTION_OVERRIDE_CHANGED: String
-        get() = actionOverrideChanged(packageName)
-
-    val ACTION_ROOT_RUNTIME_FAILED: String
-        get() = actionRootRuntimeFailed(packageName)
-
-    val ACTION_PROXY_GROUPS_UPDATED: String
-        get() = actionProxyGroupsUpdated(packageName)
-
-    val ACTION_PATCH_SELECTOR: String
-        get() = actionPatchSelector(packageName)
-
-    val ACTION_PATCH_OVERRIDE: String
-        get() = actionPatchOverride(packageName)
-
-    val ACTION_CLEAR_OVERRIDE: String
-        get() = actionClearOverride(packageName)
-
-    val ACTION_HEALTH_CHECK: String
-        get() = actionHealthCheck(packageName)
-
-    val ACTION_HEALTH_CHECK_ALL: String
-        get() = actionHealthCheckAll(packageName)
-
     const val EXTRA_STOP_REASON = "stop_reason"
+    const val EXTRA_APP_FOREGROUND = "app_foreground"
     const val EXTRA_UUID = "uuid"
     const val EXTRA_GROUP_NAME = "group_name"
     const val EXTRA_PROXY_NAME = "proxy_name"

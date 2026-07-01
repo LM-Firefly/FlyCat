@@ -53,10 +53,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import androidx.navigationevent.NavigationEventInfo
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import androidx.navigationevent.NavigationEventInfo
+import com.github.yumelira.yumebox.core.model.LinkOpenMode
+import com.github.yumelira.yumebox.data.store.FeatureStore
+import com.github.yumelira.yumebox.feature.proxy.presentation.screen.ProxyPager
+import com.github.yumelira.yumebox.platform.util.openUrl
 import com.github.yumelira.yumebox.presentation.component.BottomBarContent
 import com.github.yumelira.yumebox.presentation.component.LocalBottomBarHazeState
 import com.github.yumelira.yumebox.presentation.component.LocalBottomBarHazeStyle
@@ -71,22 +77,25 @@ import com.github.yumelira.yumebox.presentation.component.rememberBottomBarReser
 import com.github.yumelira.yumebox.presentation.component.rememberBottomBarScrollBehavior
 import com.github.yumelira.yumebox.presentation.component.rememberMainPagerFlingBehavior
 import com.github.yumelira.yumebox.presentation.component.rememberMainPagerState
-import com.github.yumelira.yumebox.presentation.screen.ProxyPager
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.screen.moe.MoeHomePage
-import com.github.yumelira.yumebox.screen.moe.calculateHomeVisibility
+import com.github.yumelira.yumebox.presentation.webview.WebViewUtils
+import com.github.yumelira.yumebox.presentation.webview.WebViewUtils.getPanelUrl
 import com.github.yumelira.yumebox.screen.home.HomePager
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
+import com.github.yumelira.yumebox.screen.moe.calculateHomeVisibility
+import com.github.yumelira.yumebox.screen.moe.MoeHomePage
 import com.github.yumelira.yumebox.screen.profiles.ProfilesPager
 import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
 import com.github.yumelira.yumebox.screen.settings.SettingPager
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.HazeColorEffect
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.HazeState
+import kotlinx.coroutines.flow.collect
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -98,16 +107,20 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val hazeState = remember { HazeState() }
 
     val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
+    val featureStore = koinInject<FeatureStore>()
     val homeViewModel = koinViewModel<HomeViewModel>()
-    val bottomBarAutoHideEnabled by appSettingsViewModel.bottomBarAutoHide.state.collectAsState()
-    val topBarBlurEnabled by appSettingsViewModel.topBarBlurEnabled.state.collectAsState()
-    val classicHomeEnabled by appSettingsViewModel.classicHomeEnabled.state.collectAsState()
-    val moeWallpaperUri by appSettingsViewModel.moeWallpaperUri.state.collectAsState()
-    val moeWallpaperZoom by appSettingsViewModel.moeWallpaperZoom.state.collectAsState()
-    val moeWallpaperBiasX by appSettingsViewModel.moeWallpaperBiasX.state.collectAsState()
-    val moeWallpaperBiasY by appSettingsViewModel.moeWallpaperBiasY.state.collectAsState()
+    val mainScreenSettings by appSettingsViewModel.mainScreenSettings.collectAsStateWithLifecycle()
+    val selectedPanelType by featureStore.selectedPanelType.state.collectAsStateWithLifecycle()
+    val panelOpenMode by featureStore.panelOpenMode.state.collectAsStateWithLifecycle()
+    val bottomBarAutoHideEnabled by appSettingsViewModel.bottomBarAutoHide.state.collectAsStateWithLifecycle()
+    val topBarBlurEnabled by appSettingsViewModel.topBarBlurEnabled.state.collectAsStateWithLifecycle()
+    val classicHomeEnabled by appSettingsViewModel.classicHomeEnabled.state.collectAsStateWithLifecycle()
+    val moeWallpaperUri by appSettingsViewModel.moeWallpaperUri.state.collectAsStateWithLifecycle()
+    val moeWallpaperZoom by appSettingsViewModel.moeWallpaperZoom.state.collectAsStateWithLifecycle()
+    val moeWallpaperBiasX by appSettingsViewModel.moeWallpaperBiasX.state.collectAsStateWithLifecycle()
+    val moeWallpaperBiasY by appSettingsViewModel.moeWallpaperBiasY.state.collectAsStateWithLifecycle()
     val bottomBarScrollBehavior =
-        rememberBottomBarScrollBehavior(autoHideEnabled = bottomBarAutoHideEnabled)
+        rememberBottomBarScrollBehavior(autoHideEnabled = mainScreenSettings.bottomBarAutoHide)
     val pagerFlingBehavior = rememberMainPagerFlingBehavior(mainPagerState.pagerState)
     var settledMainPage by remember { mutableIntStateOf(initialMainPage) }
     val homeVisibility by
@@ -142,9 +155,9 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val opacity = AppTheme.opacity
     val bottomBarHazeStyle =
         remember(bottomBarBackground) {
-            HazeStyle(
+            HazeBlurStyle(
                 backgroundColor = bottomBarBackground.copy(alpha = opacity.subtle),
-                tint = HazeTint(bottomBarBackground.copy(alpha = opacity.softOverlay)),
+                colorEffects = listOf(HazeColorEffect.tint(bottomBarBackground.copy(alpha = opacity.softOverlay))),
             )
         }
 
@@ -243,7 +256,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                 HorizontalPager(
                     modifier =
                         Modifier.fillMaxSize().let { modifier ->
-                            if (topBarBlurEnabled) {
+                            if (mainScreenSettings.topBarBlurEnabled) {
                                 modifier.hazeSource(state = hazeState)
                             } else {
                                 modifier
@@ -271,6 +284,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                         navigator = navigator,
                         homePageProgress = homeVisibility,
                         selectedPage = settledMainPage,
+                        selectedPanelType = selectedPanelType,
                     )
                 }
 
@@ -279,7 +293,9 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Bottom,
                 ) {
-                    BottomBarContent(isVisible = bottomBarVisible)
+                    BottomBarContent(
+                        isVisible = bottomBarVisible,
+                    )
                 }
             }
         }
@@ -311,6 +327,7 @@ private fun MainRootPageContent(
     navigator: Navigator,
     homePageProgress: Float,
     selectedPage: Int,
+    selectedPanelType: Int = 0,
 ) {
     when (page) {
         0 -> {
@@ -329,14 +346,22 @@ private fun MainRootPageContent(
             }
         }
 
-        1 ->
+        1 -> {
+            val context = androidx.compose.ui.platform.LocalContext.current
             ProxyPager(
                 mainInnerPadding = mainInnerPadding,
                 onNavigateToProviders = {
                     navigator.push(Route.Providers)
                 },
+                onOpenDashboard = {
+                    val panelUrl = WebViewUtils.getPanelUrl(selectedPanelType)
+                    if (panelUrl.isNotBlank()) {
+                        WebViewActivity.start(context, panelUrl)
+                    }
+                },
                 isActive = selectedPage == 1,
             )
+        }
 
         2 -> ProfilesPager(mainInnerPadding)
         3 -> SettingPager(mainInnerPadding)

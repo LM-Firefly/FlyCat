@@ -45,14 +45,19 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
-import com.github.yumelira.yumebox.common.util.VpnUtils
-import com.github.yumelira.yumebox.common.util.toast
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.yumelira.yumebox.core.model.AccessControlMode
+import com.github.yumelira.yumebox.core.model.ProxyMode
 import com.github.yumelira.yumebox.core.model.RootTunDnsMode
-import com.github.yumelira.yumebox.data.model.AccessControlMode
-import com.github.yumelira.yumebox.data.model.ProxyMode
-import com.github.yumelira.yumebox.data.model.TunStack
+import com.github.yumelira.yumebox.core.model.TunStack
+import com.github.yumelira.yumebox.platform.util.toast
+import com.github.yumelira.yumebox.platform.util.VpnUtils
+import com.github.yumelira.yumebox.presentation.component.AppDialog
 import com.github.yumelira.yumebox.presentation.component.AppTextFieldDialog
 import com.github.yumelira.yumebox.presentation.component.Card
+import com.github.yumelira.yumebox.presentation.component.NavigationBackIcon
+import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.PreferenceArrowItem
 import com.github.yumelira.yumebox.presentation.component.PreferenceEnumItem
 import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
@@ -61,8 +66,6 @@ import com.github.yumelira.yumebox.presentation.component.Title
 import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
-import com.github.yumelira.yumebox.service.root.RootAccessSupport
-import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
@@ -74,10 +77,10 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 fun NetworkSettingsScreen(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
     val viewModel = koinViewModel<NetworkSettingsViewModel>()
-    val uiState by viewModel.uiState.collectAsState()
-    val tunServiceOptionsUiState by viewModel.tunServiceOptionsUiState.collectAsState()
-    val rootTunServiceOptionsUiState by viewModel.rootTunServiceOptionsUiState.collectAsState()
-    val accessControlMode by viewModel.accessControlMode.state.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val tunServiceOptionsUiState by viewModel.tunServiceOptionsUiState.collectAsStateWithLifecycle()
+    val rootTunServiceOptionsUiState by viewModel.rootTunServiceOptionsUiState.collectAsStateWithLifecycle()
+    val accessControlMode by viewModel.accessControlMode.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     LaunchedEffect(Unit) { viewModel.errors.collect { message -> context.toast(message) } }
@@ -94,7 +97,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
         }
 
     Scaffold(
-        topBar = { TopBar(title = MLang.NetworkSettings.Title, scrollBehavior = scrollBehavior) }
+        topBar = { TopBar(title = MLang.NetworkSettings.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(navigator = navigator) }) }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
@@ -162,7 +165,7 @@ private fun NetworkVpnServiceSection(
 
                     ProxyMode.RootTun -> {
                         coroutineScope.launch {
-                            val rootStatus = RootAccessSupport.evaluateAsync(context)
+                            val rootStatus = viewModel.evaluateRootAccess()
                             if (!rootStatus.canStartRootTun) {
                                 context.toast(rootStatus.rootTunBlockedMessage())
                                 return@launch

@@ -18,29 +18,26 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.runtime.session
+package com.github.yumelira.yumebox.runtime.service.runtime.session
 
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.core.appContextOrSelf
+import com.github.yumelira.yumebox.core.model.ProxyMode
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
-import com.github.yumelira.yumebox.service.ClashService
-import com.github.yumelira.yumebox.service.StatusProvider
-import com.github.yumelira.yumebox.service.TunService
-import com.github.yumelira.yumebox.service.common.util.appContextOrSelf
+import com.github.yumelira.yumebox.runtime.api.service.LocalRuntimeServiceContract
+import com.github.yumelira.yumebox.runtime.api.service.ProxyServiceContracts
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimeTargetMode
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.toProxyMode
+import com.github.yumelira.yumebox.runtime.service.ClashService
+import com.github.yumelira.yumebox.runtime.service.StatusProvider
+import com.github.yumelira.yumebox.runtime.service.TunService
 
-object RuntimeServiceLauncher {
+object RuntimeServiceLauncher : LocalRuntimeServiceContract {
     const val EXTRA_REQUEST_SOURCE = "runtime_request_source"
 
-    const val SOURCE_UI = "ui"
-    const val SOURCE_TILE = "tile"
-    const val SOURCE_AUTO_RESTART = "auto_restart"
-    const val SOURCE_AUTO_RESTART_BOOT = "auto_restart_boot"
-    const val SOURCE_AUTO_RESTART_REPLACED = "auto_restart_replaced"
-    const val SOURCE_UNKNOWN = "unknown"
-
-    fun start(context: Context, mode: ProxyMode, source: String = SOURCE_UNKNOWN) {
+    fun start(context: Context, mode: ProxyMode, source: String = ProxyServiceContracts.SOURCE_UNKNOWN) {
         require(mode != ProxyMode.RootTun) { "RuntimeServiceLauncher does not start RootTun" }
 
         val appContext = context.appContextOrSelf
@@ -95,5 +92,23 @@ object RuntimeServiceLauncher {
                 )
                 throw error
             }
+    }
+
+    override fun start(
+        context: Context,
+        mode: RuntimeTargetMode,
+        source: String,
+    ) {
+        start(context = context, mode = mode.toProxyMode(), source = source)
+    }
+
+    override fun stop(
+        context: Context,
+        clashRequestStopAction: String,
+    ) {
+        val appContext = context.appContextOrSelf
+        appContext.sendBroadcast(Intent(clashRequestStopAction).setPackage(appContext.packageName))
+        appContext.stopService(Intent(appContext, TunService::class.java))
+        appContext.stopService(Intent(appContext, ClashService::class.java))
     }
 }

@@ -90,4 +90,7 @@ sealed interface Route : NavKey {
 
     @Serializable
     data object KeyValueEditor : Route
+
+    @Serializable
+    data class LogDetail(val fileName: String) : Route
 }

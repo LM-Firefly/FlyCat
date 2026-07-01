@@ -18,41 +18,34 @@
  *
  */
 
-package com.github.yumelira.yumebox.service
+package com.github.yumelira.yumebox.runtime.service
 
 import android.content.Context
-import com.github.yumelira.yumebox.service.remote.IFetchObserver
-import com.github.yumelira.yumebox.service.remote.IProfileManager
-import com.github.yumelira.yumebox.service.runtime.config.ServiceStore
-import com.github.yumelira.yumebox.service.runtime.entity.Imported
-import com.github.yumelira.yumebox.service.runtime.entity.Profile
-import com.github.yumelira.yumebox.service.runtime.records.ImportedDao
-import com.github.yumelira.yumebox.service.runtime.records.ProfileStore
-import com.github.yumelira.yumebox.service.runtime.util.directoryLastModified
-import com.github.yumelira.yumebox.service.runtime.util.generateProfileUUID
-import com.github.yumelira.yumebox.service.runtime.util.importedDir
-import com.github.yumelira.yumebox.service.runtime.util.sendProfileChanged
-import kotlinx.coroutines.CoroutineScope
+import com.github.yumelira.yumebox.core.importedDir
+import com.github.yumelira.yumebox.core.model.Profile
+import com.github.yumelira.yumebox.runtime.api.service.remote.IFetchObserver
+import com.github.yumelira.yumebox.runtime.api.service.remote.IProfileManager
+import com.github.yumelira.yumebox.runtime.service.runtime.config.ServiceStore
+import com.github.yumelira.yumebox.runtime.service.runtime.entity.Imported
+import com.github.yumelira.yumebox.runtime.service.runtime.records.ImportedDao
+import com.github.yumelira.yumebox.runtime.service.runtime.records.ProfileStore
+import com.github.yumelira.yumebox.runtime.service.runtime.util.directoryLastModified
+import com.github.yumelira.yumebox.runtime.service.runtime.util.generateProfileUUID
+import com.github.yumelira.yumebox.runtime.service.runtime.util.sendProfileChanged
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.FileNotFoundException
 import java.util.UUID
 
 class ProfileManager(private val context: Context) :
-    IProfileManager, CoroutineScope by CoroutineScope(Dispatchers.IO) {
+    IProfileManager {
     private val store = ServiceStore()
 
     init {
-        launch { context.importedDir.mkdirs() }
+        context.importedDir.mkdirs()
     }
 
-    override suspend fun create(
-        type: Profile.Type,
-        name: String,
-        source: String,
-        ageSecretKey: String?,
-    ): UUID {
+    override suspend fun create(type: Profile.Type, name: String, source: String, ageSecretKey: String): UUID {
         val uuid = generateProfileUUID()
         val normalizedName = name.trim().ifBlank { "New Profile" }
         val now = System.currentTimeMillis()
@@ -69,7 +62,7 @@ class ProfileManager(private val context: Context) :
                 download = 0,
                 expire = 0,
                 createdAt = now,
-                ageSecretKey = normalizeAgeSecretKey(ageSecretKey),
+                ageSecretKey = ageSecretKey,
             )
 
         ImportedDao.insert(imported)
@@ -112,29 +105,16 @@ class ProfileManager(private val context: Context) :
         return newUUID
     }
 
-    override suspend fun patch(
-        uuid: UUID,
-        name: String,
-        source: String,
-        interval: Long,
-        updateAgeSecretKey: Boolean,
-        ageSecretKey: String?,
-    ) {
+    override suspend fun patch(uuid: UUID, name: String, source: String, interval: Long, ageSecretKey: String?) {
         val imported =
             ImportedDao.queryByUUID(uuid) ?: throw FileNotFoundException("profile $uuid not found")
 
-        val updated =
-            imported.copy(
-                name = name,
-                source = source,
-                interval = interval,
-                ageSecretKey =
-                    if (updateAgeSecretKey) {
-                        normalizeAgeSecretKey(ageSecretKey)
-                    } else {
-                        imported.ageSecretKey
-                    },
-            )
+        val updated = imported.copy(
+            name = name,
+            source = source,
+            interval = interval,
+            ageSecretKey = ageSecretKey ?: imported.ageSecretKey,
+        )
 
         ImportedDao.update(updated)
         context.sendProfileChanged(uuid)
@@ -148,7 +128,9 @@ class ProfileManager(private val context: Context) :
         ProfileProcessor.delete(context, uuid)
     }
 
-    override suspend fun queryByUUID(uuid: UUID): Profile? = resolveProfile(uuid)
+    override suspend fun queryByUUID(uuid: UUID): Profile? {
+        return resolveProfile(uuid)
+    }
 
     override suspend fun queryAll(): List<Profile> {
         val uuids = withContext(Dispatchers.IO) { ImportedDao.queryAllUUIDs() }
@@ -174,7 +156,7 @@ class ProfileManager(private val context: Context) :
 
     override suspend fun setActive(profile: Profile) {
         store.activeProfile = profile.uuid
-        StatusProvider.currentProfile = profile.name
+        StatusProvider.currentProfile = profile.toString()
         context.sendProfileChanged(profile.uuid)
     }
 
@@ -203,24 +185,22 @@ class ProfileManager(private val context: Context) :
         val name = ProfileNameUtils.resolveDisplayName(imported.name, imported.source)
 
         return Profile(
-            uuid = uuid,
-            name = name,
-            type = imported.type,
-            source = imported.source,
-            active = active != null && imported.uuid == active,
-            interval = imported.interval,
-            upload = imported.upload,
-            download = imported.download,
-            total = imported.total,
-            expire = imported.expire,
-            updatedAt = resolveUpdatedAt(uuid),
-            hasAgeSecretKey = imported.ageSecretKey != null,
+            uuid,
+            name,
+            imported.type,
+            imported.source,
+            active != null && imported.uuid == active,
+            imported.interval,
+            imported.upload,
+            imported.download,
+            imported.total,
+            imported.expire,
+            resolveUpdatedAt(uuid),
+            imported.ageSecretKey,
         )
     }
 
-    private fun resolveUpdatedAt(uuid: UUID): Long =
-        context.importedDir.resolve(uuid.toString()).directoryLastModified ?: -1
-
-    private fun normalizeAgeSecretKey(value: String?): String? =
-        value?.trim()?.takeIf { it.isNotEmpty() }
+    private fun resolveUpdatedAt(uuid: UUID): Long {
+        return context.importedDir.resolve(uuid.toString()).directoryLastModified ?: -1
+    }
 }

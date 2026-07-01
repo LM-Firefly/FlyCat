@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.android)
     implementation(libs.commons.compress)
@@ -58,4 +59,3 @@ dependencies {
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)
 }
-

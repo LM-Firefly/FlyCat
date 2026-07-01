@@ -43,7 +43,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,8 +62,16 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.yumelira.yumebox.feature.override.presentation.component.OverrideAnimatedFab
+import com.github.yumelira.yumebox.feature.override.presentation.component.rememberOverrideFabController
+import com.github.yumelira.yumebox.platform.util.toast
+import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumelira.yumebox.presentation.component.Card
+import com.github.yumelira.yumebox.presentation.component.NavigationBackIcon
+import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.SearchPager
 import com.github.yumelira.yumebox.presentation.component.SearchStatus
@@ -76,7 +83,6 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.`Settings-2`
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.AppTheme.spacing
-import com.github.yumelira.yumebox.presentation.component.Navigator
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -105,8 +111,9 @@ fun AccessControlScreen(navigator: Navigator) {
     val spacing = spacing
     val mainLikePadding = rememberStandalonePageMainPadding()
     val viewModel = koinViewModel<AccessControlViewModel>()
-    val uiState by viewModel.uiState.collectAsState()
-    val filteredApps by viewModel.filteredApps.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val filteredApps by viewModel.filteredApps.collectAsStateWithLifecycle()
+    val settingsFabController = rememberOverrideFabController()
 
     var showSortMenu by remember { mutableStateOf(false) }
     var showOpsMenu by remember { mutableStateOf(false) }
@@ -176,6 +183,8 @@ fun AccessControlScreen(navigator: Navigator) {
                     TopBar(
                         title = MLang.AccessControl.Title,
                         scrollBehavior = scrollBehavior,
+                        navigationIconPadding = 0.dp,
+                        navigationIcon = { NavigationBackIcon(navigator = navigator) },
                         actions = {
                             Box {
                                 IconButton(

@@ -18,9 +18,9 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.runtime.records
+package com.github.yumelira.yumebox.runtime.service.runtime.records
 
-import com.github.yumelira.yumebox.service.runtime.entity.Imported
+import com.github.yumelira.yumebox.runtime.service.runtime.entity.Imported
 import java.util.UUID
 
 object ImportedDao {

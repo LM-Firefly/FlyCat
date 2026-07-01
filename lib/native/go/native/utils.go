@@ -44,6 +44,16 @@ func marshalString(obj any) *C.char {
 	return nil
 }
 
+func marshalYaml(obj any) *C.char {
+	res, err := yaml.Marshal(obj)
+	if err != nil {
+		log.Errorln("marshalYaml: %v", err)
+		return nil
+	}
+
+	return C.CString(string(res))
+}
+
 func yamlString(obj any) (string, error) {
 	res, err := yaml.Marshal(obj)
 	if err != nil {

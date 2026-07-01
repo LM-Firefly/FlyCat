@@ -20,7 +20,8 @@
 
 package com.github.yumelira.yumebox.service.runtime.state
 
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.core.model.ProxyMode
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimePhase
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -30,27 +31,6 @@ enum class RuntimeOwner {
     LocalHttp,
     RootTun,
     RemoteController,
-}
-
-@Serializable
-enum class RuntimePhase {
-    Idle,
-    Starting,
-    Running,
-    Stopping,
-    Failed;
-
-    val running: Boolean
-        get() = this == Running
-
-    val isNotIdle: Boolean
-        get() = this != Idle
-
-    val isActiveOrStopping: Boolean
-        get() = this == Starting || this == Running || this == Stopping
-
-    val isRecovering: Boolean
-        get() = this == Starting || this == Stopping
 }
 
 @Serializable

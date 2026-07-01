@@ -36,6 +36,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -113,13 +114,13 @@ fun ProxyControlButton(
                     .scale(scaleAnim.value)
                     .shadow(
                         elevation = UiDp.dp1,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(cornerRadius),
+                        shape = RoundedCornerShape(cornerRadius),
                         clip = false,
                     )
                     .border(
                         width = UiDp.dp0_2,
                         color = MiuixTheme.colorScheme.outline,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(cornerRadius),
+                        shape = RoundedCornerShape(cornerRadius),
                     ),
             colors = ButtonDefaults.buttonColors(MiuixTheme.colorScheme.background),
             cornerRadius = cornerRadius,

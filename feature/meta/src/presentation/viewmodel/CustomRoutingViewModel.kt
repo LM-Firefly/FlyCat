@@ -22,11 +22,10 @@ package com.github.yumelira.yumebox.feature.meta.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.yumelira.yumebox.core.data.OverrideApplier
+import com.github.yumelira.yumebox.core.data.OverrideConfigRepository
 import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
 import com.github.yumelira.yumebox.core.util.YamlCodec
-import com.github.yumelira.yumebox.data.controller.ActiveProfileOverrideReloader
-import com.github.yumelira.yumebox.data.store.OverrideConfigStore
-import com.github.yumelira.yumebox.feature.meta.presentation.util.CustomRoutingBootstrapper
 import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetTemplateSelection
 import com.github.yumelira.yumebox.feature.meta.presentation.util.analyzePresetTemplateContent
 import com.github.yumelira.yumebox.feature.meta.presentation.util.buildPresetTemplateYaml
@@ -35,12 +34,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 class CustomRoutingViewModel(
-    private val overrideConfigRepository: OverrideConfigStore,
-    private val activeProfileOverrideReloader: ActiveProfileOverrideReloader,
-    private val customRoutingBootstrapper: CustomRoutingBootstrapper,
+    private val overrideConfigRepository: OverrideConfigRepository,
+    private val activeProfileOverrideApplier: OverrideApplier,
 ) : ViewModel() {
     private val presetSelectionState = MutableStateFlow(defaultOverridePresetTemplateSelection())
     val presetSelection: StateFlow<OverridePresetTemplateSelection> =
@@ -53,42 +50,37 @@ class CustomRoutingViewModel(
     val templateRoundTripSafe: StateFlow<Boolean> = templateRoundTripSafeState.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            runCatching { reloadStateFromStoredContent() }
-                .onFailure {
-                    Timber.e(it, "Failed to reload custom routing state from stored content")
-                }
-        }
+        viewModelScope.launch { reloadStateFromStoredContent() }
     }
 
     suspend fun savePresetSelection(
         updatedPresetSelection: OverridePresetTemplateSelection
-    ): Result<Unit> = runCatching {
-        val generatedYaml = buildPresetTemplateYaml(updatedPresetSelection)
-        overrideConfigRepository.saveCustomRoutingContent(generatedYaml)
-        applyContentState(generatedYaml)
-        activeProfileOverrideReloader.reapplyActiveProfileIfUsingOverride(
-            OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID
-        )
+    ): Result<Unit> {
+        return runCatching {
+            val generatedYaml = buildPresetTemplateYaml(updatedPresetSelection)
+            overrideConfigRepository.saveCustomRoutingContent(generatedYaml)
+            applyContentState(generatedYaml)
+            activeProfileOverrideApplier.reapplyActiveProfileIfUsingOverride(
+                OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID
+            )
+        }
     }
 
-    suspend fun saveCustomRoutingYaml(content: String): Result<Unit> = runCatching {
-        val contentToSave =
-            if (content.isBlank()) {
-                buildPresetTemplateYaml(defaultOverridePresetTemplateSelection())
-            } else {
+    suspend fun saveCustomRoutingYaml(content: String): Result<Unit> {
+        return runCatching {
+            if (content.isNotBlank()) {
                 YamlCodec.validate(content)
-                content
             }
-        overrideConfigRepository.saveCustomRoutingContent(contentToSave)
-        applyContentState(contentToSave)
-        activeProfileOverrideReloader.reapplyActiveProfileIfUsingOverride(
-            OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID
-        )
+            overrideConfigRepository.saveCustomRoutingContent(content)
+            applyContentState(content.takeIf(String::isNotBlank))
+            activeProfileOverrideApplier.reapplyActiveProfileIfUsingOverride(
+                OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID
+            )
+        }
     }
 
     private suspend fun reloadStateFromStoredContent() {
-        applyContentState(customRoutingBootstrapper.ensureDefaultContent())
+        applyContentState(overrideConfigRepository.loadCustomRoutingContent())
     }
 
     private fun applyContentState(content: String?) {

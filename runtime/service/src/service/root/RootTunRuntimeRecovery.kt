@@ -18,31 +18,32 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.root
+package com.github.yumelira.yumebox.runtime.service.root
 
 import android.content.Context
 import android.content.Intent
 import android.os.DeadObjectException
 import android.os.IInterface
 import android.os.RemoteException
-import com.github.yumelira.yumebox.data.model.ProxyMode
-import com.github.yumelira.yumebox.service.RootTunService
-import com.github.yumelira.yumebox.service.StatusProvider
-import com.github.yumelira.yumebox.service.common.constants.Intents
-import com.github.yumelira.yumebox.service.common.util.appContextOrSelf
+import com.github.yumelira.yumebox.core.appContextOrSelf
+import com.github.yumelira.yumebox.core.model.ProxyMode
+import com.github.yumelira.yumebox.runtime.api.service.common.constants.Intents
+import com.github.yumelira.yumebox.runtime.api.service.root.RootTunRuntimeRecoveryContract
+import com.github.yumelira.yumebox.runtime.service.RootTunService
+import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.topjohnwu.superuser.ipc.RootService
 
-object RootTunRuntimeRecovery {
+object RootTunRuntimeRecovery : RootTunRuntimeRecoveryContract {
     private val bindingFailureMarkers =
         listOf("root tun binder is null", "root tun service returned null binding", "binding died")
 
-    fun isBinderAlive(service: IInterface?): Boolean {
+    override fun isBinderAlive(service: IInterface?): Boolean {
         val remote = service?.asBinder() ?: return false
         return remote.isBinderAlive && remote.pingBinder()
     }
 
-    fun isBinderConnectionFailure(error: Throwable): Boolean =
-        generateSequence(error) { it.cause }
+    override fun isBinderConnectionFailure(error: Throwable): Boolean {
+        return generateSequence(error) { it.cause }
             .any { cause ->
                 cause is DeadObjectException ||
                     cause is RemoteException ||
@@ -51,13 +52,15 @@ object RootTunRuntimeRecovery {
                             cause.message?.contains(marker, ignoreCase = true) == true
                         })
             }
+    }
 
-    fun binderFailureReason(error: Throwable): String =
-        generateSequence(error) { it.cause }
+    override fun binderFailureReason(error: Throwable): String {
+        return generateSequence(error) { it.cause }
             .mapNotNull { cause -> cause.message?.trim()?.takeIf(String::isNotEmpty) }
             .firstOrNull() ?: "RootTun IPC disconnected"
+    }
 
-    fun handleBinderGone(context: Context, reason: String?) {
+    override fun handleBinderGone(context: Context, reason: String?) {
         val appContext = context.appContextOrSelf
         val previous = RootTunStatusFlow.current(appContext)
         val hadRuntime = previous.state.isActiveOrStopping || previous.runtimeReady

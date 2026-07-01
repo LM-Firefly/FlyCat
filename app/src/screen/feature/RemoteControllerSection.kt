@@ -37,8 +37,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.data.model.RemoteBackend
+import com.github.yumelira.yumebox.core.model.RemoteBackend
+import com.github.yumelira.yumebox.platform.util.toast
 import com.github.yumelira.yumebox.presentation.component.AppDialog
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.component.PreferenceArrowItem

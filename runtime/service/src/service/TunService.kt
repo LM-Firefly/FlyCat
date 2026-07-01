@@ -18,18 +18,17 @@
  *
  */
 
-package com.github.yumelira.yumebox.service
+package com.github.yumelira.yumebox.runtime.service
 
 import android.content.Intent
 import android.net.VpnService
-import com.github.yumelira.yumebox.data.model.ProxyMode
-import com.github.yumelira.yumebox.service.common.util.appContextOrSelf
-import com.github.yumelira.yumebox.service.common.util.initializeServiceGlobal
-import com.github.yumelira.yumebox.service.notification.ServiceNotificationManager
-import com.github.yumelira.yumebox.service.runtime.session.RuntimeStartupLogStore
-import com.github.yumelira.yumebox.service.runtime.session.SessionRuntimeSpecFactory
-import com.github.yumelira.yumebox.service.runtime.session.VpnTunTransport
-import com.github.yumelira.yumebox.service.runtime.util.cancelAndJoinBlocking
+import com.github.yumelira.yumebox.core.appContextOrSelf
+import com.github.yumelira.yumebox.core.model.ProxyMode
+import com.github.yumelira.yumebox.runtime.service.notification.ServiceNotificationManager
+import com.github.yumelira.yumebox.runtime.service.runtime.session.RuntimeStartupLogStore
+import com.github.yumelira.yumebox.runtime.service.runtime.session.SessionRuntimeSpecFactory
+import com.github.yumelira.yumebox.runtime.service.runtime.session.VpnTunTransport
+import com.github.yumelira.yumebox.service.RuntimeForegroundController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 
@@ -48,7 +47,6 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
 
     override fun onCreate() {
         super.onCreate()
-        initializeServiceGlobal(appContextOrSelf)
         controller.onCreate()
     }
 
@@ -58,7 +56,6 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
     override fun onDestroy() {
         controller.onDestroy()
         super.onDestroy()
-        cancelAndJoinBlocking()
     }
 
     override fun onTrimMemory(level: Int) {

@@ -18,12 +18,12 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.common.log
+package com.github.yumelira.yumebox.runtime.service.common.log
 
 import timber.log.Timber
 
 object Log {
-    private const val TAG = "YumeBox"
+    private const val TAG = "FlyCat"
 
     fun d(message: String, throwable: Throwable? = null) = Timber.tag(TAG).d(throwable, message)
 

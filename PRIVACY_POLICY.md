@@ -1,6 +1,6 @@
 ## Privacy Policy
 
-The YumeBox is built as an Open Source software. This app is provided by personal at no cost and is intended for use as is.
+The FlyCat is built as an Open Source software. This app is provided by personal at no cost and is intended for use as is.
 
 This page is used to inform visitors regarding our policies with the collection, use, and disclosure of Personal Information if anyone decided to use our app.
 

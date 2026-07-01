@@ -26,7 +26,7 @@ import com.github.yumelira.yumebox.presentation.theme.topPadding
 import top.yukonga.miuix.kmp.basic.SmallTitle
 
 /**
- * App-level wrapper around Miuix `Title`. Keeps YumeBox default spacing while avoiding direct Miuix
+ * App-level wrapper around Miuix `Title`. Keeps FlyCat default spacing while avoiding direct Miuix
  * usage at call sites.
  */
 @Composable

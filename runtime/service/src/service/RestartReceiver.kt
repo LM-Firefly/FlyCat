@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service
+package com.github.yumelira.yumebox.runtime.service
 
 import android.content.BroadcastReceiver
 import android.content.Context

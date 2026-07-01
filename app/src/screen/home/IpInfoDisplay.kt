@@ -22,6 +22,7 @@ package com.github.yumelira.yumebox.screen.home
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -42,16 +43,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.common.util.LocaleUtil
-import com.github.yumelira.yumebox.data.gateway.IpMonitoringState
+import com.github.yumelira.yumebox.core.model.IpMonitoringState
+import com.github.yumelira.yumebox.platform.util.LocaleUtil
 import com.github.yumelira.yumebox.presentation.component.CountryFlagCircle
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import dev.oom_wg.purejoy.mlang.MLang
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private val INFO_VALUE_CORNER_RADIUS = RoundedCornerShape(UiDp.dp10)
+private val INFO_VALUE_CORNER_RADIUS_DP = UiDp.dp10
 private val INFO_VALUE_MAX_WIDTH = UiDp.dp220
 internal val INFO_TEXT_HEIGHT = UiDp.dp24
 
@@ -112,23 +114,36 @@ private fun IpInfoRow(
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
             Spacer(modifier = Modifier.height(UiDp.dp4))
-            Text(
-                text = value,
-                style = MiuixTheme.textStyles.body1.copy(lineHeight = 20.sp),
-                fontFamily = FontFamily.Monospace,
-                color = valueColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier =
-                    if (isRevealable) {
-                        Modifier.widthIn(max = INFO_VALUE_MAX_WIDTH)
-                            .height(INFO_TEXT_HEIGHT)
-                            .clip(INFO_VALUE_CORNER_RADIUS)
-                            .clickable(onClick = onToggleVisibility)
-                    } else {
-                        Modifier.height(INFO_TEXT_HEIGHT)
-                    },
-            )
+            if (isRevealable) {
+                Box(
+                    modifier = Modifier
+                        .widthIn(max = INFO_VALUE_MAX_WIDTH)
+                        .height(INFO_TEXT_HEIGHT)
+                        .clip(RoundedCornerShape(INFO_VALUE_CORNER_RADIUS_DP))
+                        .clickable(onClick = onToggleVisibility),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Text(
+                        text = value,
+                        style = MiuixTheme.textStyles.body1.copy(lineHeight = 20.sp),
+                        fontFamily = FontFamily.Monospace,
+                        color = valueColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    )
+                }
+            } else {
+                Text(
+                    text = value,
+                    style = MiuixTheme.textStyles.body1.copy(lineHeight = 20.sp),
+                    fontFamily = FontFamily.Monospace,
+                    color = valueColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.height(INFO_TEXT_HEIGHT)
+                )
+            }
         }
 
         CountryBadge(countryCode = countryCode)

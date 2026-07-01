@@ -18,11 +18,12 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.root
+package com.github.yumelira.yumebox.runtime.service.root
 
+import com.github.yumelira.yumebox.runtime.api.service.root.RootPackageQueryContract
 import com.topjohnwu.superuser.Shell
 
-object RootPackageShell {
+object RootPackageShell : RootPackageQueryContract {
     private data class CacheEntry<T>(
         val value: T,
         val cachedAt: Long,
@@ -37,7 +38,9 @@ object RootPackageShell {
 
     @Volatile private var packageNameCache: CacheEntry<Set<String>>? = null
 
-    fun hasRootAccess(): Boolean = runCatching { Shell.getShell().isRoot }.getOrDefault(false)
+    override fun hasRootAccess(): Boolean {
+        return runCatching { Shell.getShell().isRoot }.getOrDefault(false)
+    }
 
     fun queryPackageUidMap(packages: Set<String>? = null): Map<String, Int>? {
         if (!hasRootAccess()) return null
@@ -103,7 +106,7 @@ object RootPackageShell {
         return resolved
     }
 
-    fun queryInstalledPackageNames(): Set<String>? {
+    override fun queryInstalledPackageNames(): Set<String>? {
         if (!hasRootAccess()) return null
 
         val now = System.currentTimeMillis()
@@ -156,7 +159,9 @@ object RootPackageShell {
         return "for pkg in $filters; do cmd package list packages -U \"\$pkg\" || pm list packages -U \"\$pkg\"; done"
     }
 
-    private fun escapeShellArg(value: String): String = "'" + value.replace("'", "'\\''") + "'"
+    private fun escapeShellArg(value: String): String {
+        return "'" + value.replace("'", "'\\''") + "'"
+    }
 
     private const val CACHE_TTL_MS = 5 * 60 * 1000L
 }

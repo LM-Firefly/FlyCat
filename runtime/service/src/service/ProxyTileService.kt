@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service
+package com.github.yumelira.yumebox.runtime.service
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
@@ -28,25 +28,33 @@ import android.net.VpnService
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
+import com.github.yumelira.yumebox.core.model.ProxyMode
 import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
+import com.github.yumelira.yumebox.core.util.throttleWhenScreenOff
 import com.github.yumelira.yumebox.data.store.MMKVProvider
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
+import com.github.yumelira.yumebox.runtime.api.service.ProxyServiceContracts
+import com.github.yumelira.yumebox.runtime.api.service.common.constants.Components
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimeOwner
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimePhase
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimeSnapshot
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimeTargetMode
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.detectRuntimeOwner
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.toRuntimePhase
 import com.github.yumelira.yumebox.runtime.service.R
-import com.github.yumelira.yumebox.service.common.constants.Components
-import com.github.yumelira.yumebox.service.root.RootTunServiceBridge
-import com.github.yumelira.yumebox.service.root.RootTunStatusFlow
-import com.github.yumelira.yumebox.service.runtime.session.RuntimeServiceLauncher
-import com.github.yumelira.yumebox.service.runtime.state.RuntimeOwner
-import com.github.yumelira.yumebox.service.runtime.state.RuntimePhase
-import com.github.yumelira.yumebox.service.runtime.state.RuntimeSnapshot
+import com.github.yumelira.yumebox.runtime.service.root.RootTunServiceBridge
+import com.github.yumelira.yumebox.runtime.service.root.RootTunStateStore
+import com.github.yumelira.yumebox.runtime.service.runtime.session.RuntimeServiceLauncher
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -54,30 +62,38 @@ import timber.log.Timber
 @SuppressLint("NewApi")
 class ProxyTileService : TileService() {
     private val profileManager by lazy { ProfileManager(applicationContext) }
-    private val clashManager by lazy { ClashManager(applicationContext) }
     private val networkSettingsStorage by lazy {
         NetworkSettingsStore(MMKVProvider().getMMKV("network_settings"))
     }
+    private val rootTunStateStore by lazy { RootTunStateStore(applicationContext) }
+    private val powerController by lazy { ServicePowerController(applicationContext).also { it.start() } }
     private val tileLabelText: String by lazy {
-        applicationInfo.loadLabel(packageManager).toString().ifBlank { "YumeBox" }
+        applicationInfo.loadLabel(packageManager).toString().ifBlank { "FlyCat" }
     }
 
-    private val scope = CoroutineScope(Dispatchers.Main + Job())
+    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private var updateJob: Job? = null
     private var toggleJob: Job? = null
 
     override fun onDestroy() {
         super.onDestroy()
+        runCatching { powerController.stop() }
         scope.cancel()
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun onStartListening() {
         super.onStartListening()
         updateJob?.cancel()
         updateJob = scope.launch {
-            PollingTimers.ticks(PollingTimerSpecs.ProxyTileRefresh).collect {
-                updateTileState(currentSnapshot().running)
-            }
+            PollingTimers.ticks(PollingTimerSpecs.ProxyTileRefresh)
+                .throttleWhenScreenOff(powerController.screenOn, slowIntervalMs = 60_000L)
+                .collect {
+                    val running = currentSnapshot().running
+                    withContext(Dispatchers.Main.immediate) {
+                        updateTileState(running)
+                    }
+                }
         }
     }
 
@@ -90,12 +106,12 @@ class ProxyTileService : TileService() {
         super.onClick()
         if (toggleJob?.isActive == true) return
 
-        toggleJob = scope.launch {
+        toggleJob = scope.launch(Dispatchers.Main.immediate) {
             if (RemoteControllerStore.isActive()) {
                 updateTileState(true)
                 return@launch
             }
-            val snapshot = currentSnapshot()
+            val snapshot = withContext(Dispatchers.Default) { currentSnapshot() }
             val isRunning = snapshot.running
             val currentMode = effectiveMode(snapshot)
 
@@ -121,7 +137,7 @@ class ProxyTileService : TileService() {
                                 error(result.error ?: "RootTun stop failed")
                             }
                         } else {
-                            clashManager.requestStop()
+                            applicationContext.requestClashStop()
                         }
                     }
                 } else {
@@ -152,7 +168,7 @@ class ProxyTileService : TileService() {
                             RuntimeServiceLauncher.start(
                                 this@ProxyTileService,
                                 ProxyMode.Tun,
-                                RuntimeServiceLauncher.SOURCE_TILE,
+                                ProxyServiceContracts.SOURCE_TILE,
                             )
                         }
                         ProxyMode.RootTun -> {
@@ -168,7 +184,7 @@ class ProxyTileService : TileService() {
                             RuntimeServiceLauncher.start(
                                 this@ProxyTileService,
                                 ProxyMode.Http,
-                                RuntimeServiceLauncher.SOURCE_TILE,
+                                ProxyServiceContracts.SOURCE_TILE,
                             )
                         }
                     }
@@ -176,96 +192,84 @@ class ProxyTileService : TileService() {
             } catch (error: Exception) {
                 Timber.e(error, "Error toggling proxy from tile")
             } finally {
-                PollingTimers.awaitTick(
-                    PollingTimerSpecs.dynamic(
-                        name = "proxy_tile_toggle_state_sync",
-                        intervalMillis = 300L,
-                        initialDelayMillis = 300L,
-                    )
-                )
-                updateTileState(currentSnapshot().running)
+                delay(300L)
+                val running = withContext(Dispatchers.Default) { currentSnapshot().running }
+                updateTileState(running)
             }
         }
     }
 
     private fun currentSnapshot(): RuntimeSnapshot {
         val configuredMode = networkSettingsStorage.proxyMode.value
-        val rootStatus = RootTunStatusFlow.current(applicationContext)
-        val tunPhase = StatusProvider.queryRuntimePhase(ProxyMode.Tun).toRuntimePhase()
-        val httpPhase = StatusProvider.queryRuntimePhase(ProxyMode.Http).toRuntimePhase()
-        val owner =
-            when {
-                rootStatus.state.isActiveOrStopping || rootStatus.runtimeReady -> RuntimeOwner.RootTun
-                tunPhase != RuntimePhase.Idle -> RuntimeOwner.LocalTun
-                httpPhase != RuntimePhase.Idle -> RuntimeOwner.LocalHttp
-                else -> RuntimeOwner.None
+        val rootStatus = rootTunStateStore.snapshot()
+        val owner = rootStatus.detectRuntimeOwner { mode ->
+            StatusProvider.queryRuntimePhase(mode.toRuntimeTargetMode()).toRuntimePhase().run {
+                this == RuntimePhase.Starting || this == RuntimePhase.Running || this == RuntimePhase.Stopping
             }
+        }
 
         return if (owner == RuntimeOwner.None) {
             RuntimeSnapshot(
                 owner = RuntimeOwner.None,
                 phase = RuntimePhase.Idle,
-                targetMode = configuredMode,
+                targetMode = configuredMode.toRuntimeTargetMode(),
             )
         } else {
             RuntimeSnapshot(
                 owner = owner,
                 phase =
                     when (owner) {
-                        RuntimeOwner.RootTun ->
-                            when (rootStatus.state) {
-                                RuntimePhase.Idle ->
-                                    RuntimePhase.Idle
-                                RuntimePhase.Starting ->
-                                    RuntimePhase.Starting
-                                RuntimePhase.Running ->
-                                    RuntimePhase.Running
-                                RuntimePhase.Stopping ->
-                                    RuntimePhase.Stopping
-                                RuntimePhase.Failed ->
-                                    RuntimePhase.Failed
-                            }
-                        RuntimeOwner.LocalTun -> tunPhase
-                        RuntimeOwner.LocalHttp -> httpPhase
+                        RuntimeOwner.RootTun -> rootStatus.state
+                        RuntimeOwner.LocalTun -> StatusProvider.queryRuntimePhase(ProxyMode.Tun)
+                        RuntimeOwner.LocalHttp -> StatusProvider.queryRuntimePhase(ProxyMode.Http)
                         RuntimeOwner.RemoteController -> RuntimePhase.Running
                         RuntimeOwner.None -> RuntimePhase.Idle
                     },
-                targetMode = modeForOwner(owner) ?: configuredMode,
+                targetMode = (modeForOwner(owner) ?: configuredMode).toRuntimeTargetMode(),
             )
         }
     }
 
-    private fun modeForOwner(owner: RuntimeOwner): ProxyMode? =
-        when (owner) {
+    private fun modeForOwner(owner: RuntimeOwner): ProxyMode? {
+        return when (owner) {
             RuntimeOwner.LocalTun -> ProxyMode.Tun
             RuntimeOwner.LocalHttp -> ProxyMode.Http
             RuntimeOwner.RootTun -> ProxyMode.RootTun
             RuntimeOwner.RemoteController -> null
             RuntimeOwner.None -> null
         }
+    }
 
-    private fun effectiveMode(snapshot: RuntimeSnapshot): ProxyMode =
-        when {
+    private fun effectiveMode(snapshot: RuntimeSnapshot): ProxyMode {
+        return when {
             snapshot.running ->
                 when (snapshot.owner) {
                     RuntimeOwner.LocalTun -> ProxyMode.Tun
                     RuntimeOwner.LocalHttp -> ProxyMode.Http
                     RuntimeOwner.RootTun -> ProxyMode.RootTun
-                    RuntimeOwner.RemoteController -> snapshot.targetMode
-                    RuntimeOwner.None -> snapshot.targetMode
+                    RuntimeOwner.RemoteController -> snapshot.targetMode.toProxyMode()
+                    RuntimeOwner.None -> snapshot.targetMode.toProxyMode()
                 }
 
-            else -> snapshot.targetMode
+            else -> snapshot.targetMode.toProxyMode()
         }
+    }
 
-    private fun RuntimePhase.toRuntimePhase(): RuntimePhase =
-        when (this) {
-            RuntimePhase.Idle -> RuntimePhase.Idle
-            RuntimePhase.Starting -> RuntimePhase.Starting
-            RuntimePhase.Running -> RuntimePhase.Running
-            RuntimePhase.Stopping -> RuntimePhase.Stopping
-            RuntimePhase.Failed -> RuntimePhase.Failed
+    private fun ProxyMode.toRuntimeTargetMode(): RuntimeTargetMode {
+        return when (this) {
+            ProxyMode.Tun -> RuntimeTargetMode.Tun
+            ProxyMode.Http -> RuntimeTargetMode.Http
+            ProxyMode.RootTun -> RuntimeTargetMode.RootTun
         }
+    }
+
+    private fun RuntimeTargetMode.toProxyMode(): ProxyMode {
+        return when (this) {
+            RuntimeTargetMode.Tun -> ProxyMode.Tun
+            RuntimeTargetMode.Http -> ProxyMode.Http
+            RuntimeTargetMode.RootTun -> ProxyMode.RootTun
+        }
+    }
 
     private fun updateTileState(isRunning: Boolean) {
         val tile = qsTile ?: return
@@ -285,7 +289,7 @@ class ProxyTileService : TileService() {
         tile.icon =
             Icon.createWithResource(
                 this,
-                if (isRunning) R.drawable.ic_logo_service else R.drawable.ic_logo_service,
+                R.drawable.ic_logo_service
             )
 
         tile.updateTile()

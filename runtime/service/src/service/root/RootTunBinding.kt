@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.root
+package com.github.yumelira.yumebox.runtime.service.root
 
 import android.content.ComponentName
 import android.content.Context
@@ -27,7 +27,9 @@ import android.content.ServiceConnection
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import com.github.yumelira.yumebox.service.common.util.appContextOrSelf
+import com.github.yumelira.yumebox.core.appContextOrSelf
+import com.github.yumelira.yumebox.runtime.api.service.root.RootTunBindingContract
+import com.github.yumelira.yumebox.service.root.IRootTunService
 import com.topjohnwu.superuser.ipc.RootService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -198,4 +200,37 @@ class RootTunBinding {
     }
 
     fun createIntent(context: Context): Intent = Intent(context, RootTunRootService::class.java)
+}
+
+// ── RootTunBindingContractAdapter ───────────────────────────────────────
+
+/**
+ * Adapter that wraps [RootTunBinding] to implement [RootTunBindingContract]
+ * for use by runtime:client via the contract registry.
+ */
+class RootTunBindingContractAdapter(
+    private val delegate: RootTunBinding,
+) : RootTunBindingContract {
+
+    override suspend fun <T> remoteCall(
+        context: Context,
+        onBinderFailure: (() -> T)?,
+        block: (Any) -> T,
+    ): T = delegate.remoteCall(context, onBinderFailure) { binder -> block(binder) }
+
+    override suspend fun bind(context: Context): Any = delegate.bind(context)
+
+    override fun cachedBinder(context: Context): Any? = delegate.cachedBinder(context)
+
+    override fun createIntent(context: Context): Intent = delegate.createIntent(context)
+
+    override suspend fun disconnect() = delegate.disconnect()
+
+    override fun afterBind(callback: ((Any) -> Unit)?) {
+        delegate.afterBind = callback?.let { cb -> { service: IRootTunService -> cb(service) } }
+    }
+
+    override fun beforeUnbind(callback: ((Any) -> Unit)?) {
+        delegate.beforeUnbind = callback?.let { cb -> { service: IRootTunService -> cb(service) } }
+    }
 }

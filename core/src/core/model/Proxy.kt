@@ -22,7 +22,6 @@ package com.github.yumelira.yumebox.core.model
 
 import android.os.Parcel
 import android.os.Parcelable
-import com.github.yumelira.yumebox.core.util.Parcelizer
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -89,9 +88,3 @@ data class Proxy(
         override fun newArray(size: Int): Array<Proxy?> = arrayOfNulls(size)
     }
 }
-
-val Proxy.isProxyGroup: Boolean
-    get() = isGroup || type in Proxy.Type.GROUP_TYPES
-
-internal val String.isManuallySelectable: Boolean
-    get() = this in Proxy.Type.MANUALLY_SELECTABLE

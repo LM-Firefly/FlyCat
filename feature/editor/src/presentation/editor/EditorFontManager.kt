@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.feature.editor.editor
+package com.github.yumelira.yumebox.feature.editor.presentation.editor
 
 import android.content.Context
 import android.graphics.Typeface

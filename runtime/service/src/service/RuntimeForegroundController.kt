@@ -27,21 +27,23 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import com.github.yumelira.yumebox.core.model.LogMessage
-import com.github.yumelira.yumebox.data.model.ProxyMode
-import com.github.yumelira.yumebox.service.common.constants.Intents
-import com.github.yumelira.yumebox.service.common.log.Log
-import com.github.yumelira.yumebox.service.common.util.CoreRuntimeConfig
-import com.github.yumelira.yumebox.service.notification.ServiceNotificationManager
-import com.github.yumelira.yumebox.service.runtime.session.RuntimeHost
-import com.github.yumelira.yumebox.service.runtime.session.RuntimeSpec
-import com.github.yumelira.yumebox.service.runtime.session.RuntimeStartupLogStore
-import com.github.yumelira.yumebox.service.runtime.session.RuntimeTransport
-import com.github.yumelira.yumebox.service.runtime.session.SessionRuntime
-import com.github.yumelira.yumebox.service.runtime.state.RuntimeSnapshot
-import com.github.yumelira.yumebox.service.runtime.util.sendClashStarted
-import com.github.yumelira.yumebox.service.runtime.util.sendClashStopped
-import com.github.yumelira.yumebox.service.runtime.util.sendProfileLoaded
+import com.github.yumelira.yumebox.core.model.ProxyMode
+import com.github.yumelira.yumebox.runtime.api.service.common.constants.Intents
+import com.github.yumelira.yumebox.runtime.service.common.log.Log
+import com.github.yumelira.yumebox.runtime.service.common.util.CoreRuntimeConfig
+import com.github.yumelira.yumebox.runtime.service.notification.ServiceNotificationManager
+import com.github.yumelira.yumebox.runtime.service.runtime.session.RuntimeHost
+import com.github.yumelira.yumebox.runtime.api.service.runtime.session.RuntimeSpec
+import com.github.yumelira.yumebox.runtime.service.runtime.session.RuntimeStartupLogStore
+import com.github.yumelira.yumebox.runtime.service.runtime.session.RuntimeTransport
+import com.github.yumelira.yumebox.runtime.service.runtime.session.SessionRuntime
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimeSnapshot
+import com.github.yumelira.yumebox.runtime.service.StatusProvider
+import com.github.yumelira.yumebox.runtime.service.runtime.util.sendClashStarted
+import com.github.yumelira.yumebox.runtime.service.runtime.util.sendClashStopped
+import com.github.yumelira.yumebox.runtime.service.runtime.util.sendProfileLoaded
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -82,10 +84,10 @@ class RuntimeForegroundController(
         object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 when (intent?.action ?: return) {
-                    Intents.ACTION_PROFILE_CHANGED,
-                    Intents.ACTION_OVERRIDE_CHANGED -> scheduleReload()
+                    Intents.actionProfileChanged(service.packageName),
+                    Intents.actionOverrideChanged(service.packageName) -> scheduleReload()
 
-                    Intents.ACTION_CLASH_REQUEST_STOP -> {
+                    Intents.actionClashRequestStop(service.packageName) -> {
                         reason = intent.getStringExtra(Intents.EXTRA_STOP_REASON)
                         reloadJob?.cancel()
                         reloadJob = null
@@ -187,7 +189,8 @@ class RuntimeForegroundController(
 
     fun onStartCommand(): Int {
         if (notificationJob?.isActive != true) {
-            notificationJob = notificationManager.startTrafficUpdate(scope)
+            val always = MutableStateFlow(true)
+            notificationJob = notificationManager.startTrafficUpdate(scope, always, always)
         }
         return Service.START_STICKY
     }
@@ -218,9 +221,9 @@ class RuntimeForegroundController(
     private fun registerRuntimeReceiver() {
         val filter =
             IntentFilter().apply {
-                addAction(Intents.ACTION_PROFILE_CHANGED)
-                addAction(Intents.ACTION_OVERRIDE_CHANGED)
-                addAction(Intents.ACTION_CLASH_REQUEST_STOP)
+                addAction(Intents.actionProfileChanged(service.packageName))
+                addAction(Intents.actionOverrideChanged(service.packageName))
+                addAction(Intents.actionClashRequestStop(service.packageName))
             }
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             service.registerReceiver(runtimeEventsReceiver, filter, Context.RECEIVER_NOT_EXPORTED)

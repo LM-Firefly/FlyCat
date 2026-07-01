@@ -21,14 +21,15 @@
 package com.github.yumelira.yumebox.screen.navigation
 
 import androidx.compose.runtime.Composable
-import com.github.yumelira.yumebox.data.model.OverrideContentType
-import com.github.yumelira.yumebox.feature.editor.language.LanguageScope
-import com.github.yumelira.yumebox.feature.editor.screen.ConfigPreviewScreen
-import com.github.yumelira.yumebox.presentation.screen.OverrideListScreen
+import com.github.yumelira.yumebox.core.model.OverrideConfig
+import com.github.yumelira.yumebox.core.model.OverrideContentType
+import com.github.yumelira.yumebox.feature.editor.presentation.screen.ConfigPreviewScreen
+import com.github.yumelira.yumebox.feature.override.presentation.screen.OverrideListScreen
+import com.github.yumelira.yumebox.feature.override.presentation.util.OverrideEditorStore
+import com.github.yumelira.yumebox.feature.override.presentation.viewmodel.OverrideConfigViewModel
 import com.github.yumelira.yumebox.presentation.component.Navigator
+import com.github.yumelira.yumebox.presentation.language.LanguageScope
 import com.github.yumelira.yumebox.presentation.navigation.Route
-import com.github.yumelira.yumebox.presentation.util.OverrideEditorStore
-import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
 import org.koin.compose.koinInject
 
 @Composable
@@ -36,7 +37,8 @@ fun OverrideScreen(navigator: Navigator) {
     val overrideConfigViewModel: OverrideConfigViewModel = koinInject()
 
     OverrideListScreen(
-        onOpenCodeEditor = { config ->
+        onNavigateBack = { navigator.pop() },
+        onOpenCodeEditor = { config: OverrideConfig ->
             OverrideEditorStore.setupConfigPreview(
                 title = config.name,
                 content = overrideConfigViewModel.getConfigContent(config.id) ?: config.content,

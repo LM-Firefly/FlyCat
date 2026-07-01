@@ -23,35 +23,39 @@ package com.github.yumelira.yumebox.screen.settings
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.yumelira.yumebox.core.data.Preference
+import com.github.yumelira.yumebox.core.model.AccessControlMode
+import com.github.yumelira.yumebox.core.model.ProxyMode
 import com.github.yumelira.yumebox.core.model.RootTunDnsMode
+import com.github.yumelira.yumebox.core.model.TunStack
 import com.github.yumelira.yumebox.data.controller.NetworkSettingsController
-import com.github.yumelira.yumebox.data.model.AccessControlMode
-import com.github.yumelira.yumebox.data.model.ProxyMode
-import com.github.yumelira.yumebox.data.model.TunStack
+import com.github.yumelira.yumebox.data.store.AppStateManager
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
-import com.github.yumelira.yumebox.data.store.Preference
+import com.github.yumelira.yumebox.runtime.api.service.root.RootAccessStatus
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimePhase
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
 import com.github.yumelira.yumebox.runtime.client.RuntimeStateMapper
-import com.github.yumelira.yumebox.service.runtime.state.RuntimePhase
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class NetworkSettingsViewModel(
     application: Application,
-    settings: NetworkSettingsStore,
+    appStateManager: AppStateManager,
     private val controller: NetworkSettingsController,
     private val proxyFacade: ProxyFacade,
 ) : AndroidViewModel(application) {
+    private val settings: NetworkSettingsStore = appStateManager.networkSettingsStore
+
     val proxyMode: Preference<ProxyMode> = settings.proxyMode
     val bypassPrivateNetwork: Preference<Boolean> = settings.bypassPrivateNetwork
     val dnsHijack: Preference<Boolean> = settings.dnsHijack
@@ -243,6 +247,10 @@ class NetworkSettingsViewModel(
 
     fun onProxyModeChange(mode: ProxyMode) {
         controller.setProxyMode(mode)
+    }
+
+    suspend fun evaluateRootAccess(): RootAccessStatus {
+        return proxyFacade.evaluateRootAccess()
     }
 
     fun onBypassPrivateNetworkChange(enabled: Boolean) {

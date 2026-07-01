@@ -4,6 +4,7 @@ MetaFeature = {
 
     Section = {
         ConnectionAndTraffic = "Connections & Traffic"
+        BackupRestore = "Backup & Restore"
         Routing = "Routing"
     }
 
@@ -26,6 +27,28 @@ MetaFeature = {
     Download = {
         DialogTitle = "Update GeoX Online"
         DownloadComplete = "Download complete: %d/%d"
+    }
+
+    Backup = {
+        BackupTitle = "Back Up Data"
+        BackupSummary = "Export current user data to a zip file"
+        RestoreTitle = "Restore Data"
+        RestoreSummary = "Overwrite current user data from a zip file"
+        BackupDialogTitle = "Backing up"
+        BackupDialogMessage = "Packing current user data, please wait"
+        RestoreDialogTitle = "Restoring"
+        RestoreDialogMessage = "Unpacking and restoring current user data, please wait"
+        RestoreConfirmTitle = "Confirm Restore"
+        RestoreConfirmMessage = "Restoring will overwrite current user data. It is recommended to create a backup first. Please restart the app after restore."
+        BackupSuccess = "Backup complete"
+        RestoreSuccess = "Restore complete, please restart the app"
+        RestoreSuccessTitle = "Restore complete"
+        RestoreSuccessMessage = "%s\n\nRestart now to apply restored data?"
+        WebDavRestoreSuccess = "WebDAV restore complete: %s"
+        RestartNow = "Restart now"
+        RestartLaunchNotFound = "Restart failed: launcher entry not found"
+        BackupFailed = "Backup failed: %s"
+        RestoreFailed = "Restore failed: %s"
     }
 
     AgeKey = {

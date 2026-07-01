@@ -20,16 +20,13 @@
 
 @file:Suppress("TYPE_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
 
-package com.github.yumelira.yumebox.service.runtime.util
+package com.github.yumelira.yumebox.runtime.service.runtime.util
 
 import java.math.BigInteger
 import java.net.InetAddress
 import kotlin.math.max
 
-data class IncludedRouteSet(
-    val ipv4: List<IPNet>,
-    val ipv6: List<IPNet>,
-)
+data class IncludedRouteSet(val ipv4: List<IPNet>, val ipv6: List<IPNet>)
 
 fun buildIncludedRoutesFromExcludedCidrs(
     cidrs: List<String>,
@@ -42,18 +39,12 @@ fun buildIncludedRoutesFromExcludedCidrs(
     )
 }
 
-private data class ParsedCidr(
-    val address: InetAddress,
-    val prefix: Int,
-) {
+private data class ParsedCidr(val address: InetAddress, val prefix: Int) {
     val bitSize: Int
         get() = address.address.size * 8
 }
 
-private data class AddressRange(
-    val start: BigInteger,
-    val endInclusive: BigInteger,
-)
+private data class AddressRange(val start: BigInteger, val endInclusive: BigInteger)
 
 private fun parseIpCidrOrNull(raw: String): ParsedCidr? {
     val parts = raw.split("/", limit = 2)
@@ -160,10 +151,16 @@ private fun bigIntegerToAddressString(value: BigInteger, bitSize: Int): String {
     val copyLength = raw.size - sourceStart
     System.arraycopy(raw, sourceStart, normalized, byteLength - copyLength, copyLength)
     return InetAddress.getByAddress(normalized).hostAddress
+        ?: throw IllegalStateException("Unable to resolve IP address string")
 }
 
-private fun rootRouteAddress(bitSize: Int): String =
-    "0.0.0.0".takeIf { bitSize == IPV4_BITS } ?: "::"
+private fun rootRouteAddress(bitSize: Int): String {
+    return if (bitSize == IPV4_BITS) {
+        "0.0.0.0"
+    } else {
+        "::"
+    }
+}
 
 private const val IPV4_BITS = 32
 private const val IPV6_BITS = 128

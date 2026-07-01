@@ -21,6 +21,29 @@ on:
       raw_apk_artifact_name:
         required: true
         type: string
+      with_extension:
+        required: false
+        type: boolean
+        default: false
+      checkout_ref:
+        required: false
+        type: string
+        default: ''
+      build_number:
+        description: "Monotonic push counter N; versionCode = base + N. Empty = local-style base version."
+        required: false
+        type: string
+        default: ""
+      build_hash:
+        description: "Commit sha of the build; first 8 chars go into versionName (<base>[.<branch>].<hash8>)."
+        required: false
+        type: string
+        default: ""
+      build_branch:
+        description: "Branch name; normalized (lowercase, [^a-z0-9] runs -> '-') into the versionName branch segment."
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -30,10 +53,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      NDK_CACHE_ROOT: ${{ github.workspace }}/.ndk
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
           submodules: recursive
           fetch-depth: 0
 
@@ -56,7 +81,7 @@ jobs:
 
       - name: Cache NDK
         id: cache-ndk
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.14904198
           key: ${{ runner.os }}-ndk-30.0.14904198-v2
@@ -108,13 +133,29 @@ jobs:
 
       - name: Build Release APKs
         shell: bash
+        env:
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          BUILD_HASH: ${{ inputs.build_hash }}
+          BUILD_BRANCH: ${{ inputs.build_branch }}
         run: |
           set -eu
           chmod +x gradlew
+          build_stamp="$(TZ=Asia/Shanghai date +%Y%m%d%H%M)"
+          commit_short="$(git rev-parse --short=6 HEAD)"
+          ui_build_id="${build_stamp}-${commit_short}"
+          EXTRA_ARGS=""
+          if [ "${{ inputs.with_extension }}" = "true" ]; then
+            EXTRA_ARGS="-PwithExtension=true"
+          fi
           ./gradlew --no-daemon \
             -Pupdate.channel="${{ inputs.channel }}" \
             -Pupdate.tag="${{ inputs.release_tag }}" \
             -Pupdate.metaAssetName="${{ inputs.meta_asset_name }}" \
+            -Pupdate.uiBuildId="${ui_build_id}" \
+            -Pbuild.number="${BUILD_NUMBER}" \
+            -Pbuild.hash="${BUILD_HASH:0:8}" \
+            -Pbuild.branch="${BUILD_BRANCH}" \
+            $EXTRA_ARGS \
             :${{ inputs.module }}:assembleRelease
 
       - name: Upload raw APK artifact

@@ -106,9 +106,33 @@ func patchProviders(cfg *config.RawConfig, profileDir string) error {
 			return // both path and url is empty, WTF???
 		}
 		provider["path"] = path
+		if prefix == PROXIES {
+			if _, hasURL := provider["url"].(string); hasURL {
+				patchProviderUserAgent(provider)
+			}
+		}
 	})
 
 	return nil
+}
+
+func patchProviderUserAgent(provider map[string]any) {
+	ua := GetCustomUserAgent()
+	if ua == "" {
+		return
+	}
+	switch h := provider["header"].(type) {
+	case map[string]any:
+		if _, hasUA := h["User-Agent"]; !hasUA {
+			h["User-Agent"] = []string{ua}
+		}
+	case map[string][]string:
+		if _, hasUA := h["User-Agent"]; !hasUA {
+			h["User-Agent"] = []string{ua}
+		}
+	case nil:
+		provider["header"] = map[string]any{"User-Agent": []string{ua}}
+	}
 }
 
 func providerExtension(provider map[string]any, prefix string) string {

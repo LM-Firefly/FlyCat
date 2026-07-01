@@ -64,6 +64,17 @@ func fetchAndValid(callback unsafe.Pointer, path, url C.c_string, force C.int) {
 	}(C.GoString(path), C.GoString(url), callback)
 }
 
+//export load
+func load(completable unsafe.Pointer, path C.c_string) {
+	go func(path string) {
+		C.complete(completable, marshalString(config.Load(path)))
+
+		C.release_object(completable)
+
+		runtime.GC()
+	}(C.GoString(path))
+}
+
 //export loadCompiledRaw
 func loadCompiledRaw(completable unsafe.Pointer, configRawJson *C.char) {
 	rawCopy := C.GoString(configRawJson)
@@ -148,6 +159,19 @@ func decodeCompileRawResult(resultJson string) (*compileRawResult, error) {
 	return &result, nil
 }
 
+//export inspectCompiledGroups
+func inspectCompiledGroups(configRawJson C.c_string, profileDir C.c_string, excludeNotSelectable C.int) *C.char {
+	groups, err := config.QueryProxyGroupsFromCompiledRaw(
+		C.GoString(configRawJson),
+		C.GoString(profileDir),
+		excludeNotSelectable != 0,
+	)
+	if err != nil {
+		return nil
+	}
+	return marshalYaml(groups)
+}
+
 //export inspectCompiledGroupsResult
 func inspectCompiledGroupsResult(configRawJson C.c_string, profileDir C.c_string, excludeNotSelectable C.int) *C.char {
 	groups, err := config.QueryProxyGroupsFromCompiledRaw(
@@ -165,6 +189,15 @@ func inspectCompiledGroupsResult(configRawJson C.c_string, profileDir C.c_string
 	return marshalJson(inspectResult{Success: true, Payload: payload})
 }
 
+//export inspectCompiledTunRouteExcludeAddress
+func inspectCompiledTunRouteExcludeAddress(configRawJson C.c_string) *C.char {
+	addresses, err := config.QueryTunRouteExcludeAddressFromCompiledRaw(C.GoString(configRawJson))
+	if err != nil {
+		return nil
+	}
+	return marshalJson(addresses)
+}
+
 //export inspectCompiledTunRouteExcludeAddressResult
 func inspectCompiledTunRouteExcludeAddressResult(configRawJson C.c_string) *C.char {
 	addresses, err := config.QueryTunRouteExcludeAddressFromCompiledRaw(C.GoString(configRawJson))
@@ -178,14 +211,26 @@ func inspectCompiledTunRouteExcludeAddressResult(configRawJson C.c_string) *C.ch
 	return marshalJson(inspectResult{Success: true, Payload: payload})
 }
 
+//export inspectCompiledGroupNames
+func inspectCompiledGroupNames(configRawJson C.c_string, excludeNotSelectable C.int) *C.char {
+	names, err := config.QueryGroupNamesFromCompiledRaw(
+		C.GoString(configRawJson),
+		excludeNotSelectable != 0,
+	)
+	if err != nil {
+		return nil
+	}
+	return marshalJson(names)
+}
+
 //export setAgeSecretKey
 func setAgeSecretKey(key C.c_string) {
 	if key == nil {
-		config.SetGlobalSecretKeys()
+		config.SetAgeSecretKey("")
 		return
 	}
 
-	config.SetGlobalSecretKeys(C.GoString(key))
+	config.SetAgeSecretKey(C.GoString(key))
 }
 
 //export genX25519KeyPair

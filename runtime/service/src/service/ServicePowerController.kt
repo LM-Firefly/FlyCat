@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service
+package com.github.yumelira.yumebox.runtime.service
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -27,6 +27,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.PowerManager
 import androidx.core.content.ContextCompat
+import com.github.yumelira.yumebox.runtime.api.service.common.constants.Intents
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,12 +41,19 @@ class ServicePowerController(private val context: Context) {
     private val _deviceIdle = MutableStateFlow(isDeviceIdle())
     val deviceIdle: StateFlow<Boolean> = _deviceIdle.asStateFlow()
 
+    private val _appForeground = MutableStateFlow(false)
+    val appForeground: StateFlow<Boolean> = _appForeground.asStateFlow()
+
     private var started = false
 
     private val receiver =
         object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                updateState()
+                when (intent.action) {
+                    Intents.actionAppForeground(context.packageName) ->
+                        _appForeground.value = intent.getBooleanExtra(Intents.EXTRA_APP_FOREGROUND, false)
+                    else -> updateState()
+                }
             }
         }
 
@@ -84,6 +92,7 @@ class ServicePowerController(private val context: Context) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     addAction(PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED)
                 }
+                addAction(Intents.actionAppForeground(context.packageName))
             }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.registerReceiver(

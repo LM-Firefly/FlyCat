@@ -18,9 +18,10 @@
  *
  */
 
-package com.github.yumelira.yumebox.feature.editor.language
+package com.github.yumelira.yumebox.feature.editor.presentation.language
 
 import android.content.Context
+import com.github.yumelira.yumebox.presentation.language.LanguageScope
 import io.github.rosemoe.sora.langs.textmate.TextMateLanguage
 import io.github.rosemoe.sora.langs.textmate.registry.FileProviderRegistry
 import io.github.rosemoe.sora.langs.textmate.registry.GrammarRegistry

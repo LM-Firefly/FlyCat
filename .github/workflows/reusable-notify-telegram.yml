@@ -51,7 +51,7 @@ jobs:
 
       - name: Bot session cache
         if: steps.check_upload.outputs.UPLOAD == 'true'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: scripts/yumebot.session
           key: ${{ runner.os }}-bot-session-${{ github.ref_name }}-${{ inputs.channel }}

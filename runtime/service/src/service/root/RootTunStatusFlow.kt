@@ -1,78 +1,23 @@
-/*
- * This file is part of YumeBox.
- *
- * YumeBox is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
- * Copyright (c)  YumeYucca 2025 - Present
- *
- */
-
-package com.github.yumelira.yumebox.service.root
+package com.github.yumelira.yumebox.runtime.service.root
 
 import android.content.Context
-import com.github.yumelira.yumebox.service.common.util.appContextOrSelf
-import com.github.yumelira.yumebox.service.runtime.state.RuntimePhase
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.github.yumelira.yumebox.runtime.api.service.root.RootTunStatus
+import com.github.yumelira.yumebox.runtime.api.service.root.RootTunStatusFlow as ApiRootTunStatusFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Process-global main-process view of the RootTun runtime status.
- *
- * After the root process became the single authoritative writer of the `root_tun_state` MMKV
- * (via [RootTunStatePublisher]), the main process no longer writes that store. Instead it keeps
- * this in-process flow fed by:
- *  - a one-time read-only seed from the durable root-written store ([ensureSeeded]),
- *  - the push observer (`IRootTunStateObserver`) registered by `RootTunController`, and
- *  - its own optimistic/pull updates ([update]/[markIdle]).
- *
- * Normalization mirrors [RootTunStateStore.updateStatus]/[RootTunStateStore.markIdle] exactly so the
- * observable behavior matches the previous "read shared MMKV" path.
+ * Thin delegation to the canonical RootTunStatusFlow in runtime:api.
+ * Kept in runtime:service so that existing intra-service references
+ * (e.g. RootTunRuntimeRecovery) continue to compile without import changes.
  */
 object RootTunStatusFlow {
-    private val _flow = MutableStateFlow(RootTunStatus())
-    val flow: StateFlow<RootTunStatus> = _flow.asStateFlow()
+    val flow: StateFlow<RootTunStatus> get() = ApiRootTunStatusFlow.flow
 
-    @Volatile private var seeded = false
+    fun ensureSeeded(context: Context) = ApiRootTunStatusFlow.ensureSeeded(context)
 
-    /** One-time read-only seed from the durable root-written store (cross-process READ is safe). */
-    fun ensureSeeded(context: Context) {
-        if (seeded) return
-        synchronized(this) {
-            if (seeded) return
-            _flow.value = RootTunStateStore(context.appContextOrSelf).snapshot()
-            seeded = true
-        }
-    }
+    fun current(context: Context): RootTunStatus = ApiRootTunStatusFlow.current(context)
 
-    fun current(context: Context): RootTunStatus {
-        ensureSeeded(context)
-        return _flow.value
-    }
+    fun update(status: RootTunStatus) = ApiRootTunStatusFlow.update(status)
 
-    /** Optimistic/push/pull update — normalizes `running` exactly like the store did. */
-    fun update(status: RootTunStatus) {
-        _flow.value = status.copy(running = status.state.isActiveOrStopping)
-    }
-
-    fun markIdle(error: String? = null) =
-        update(
-            RootTunStatus(
-                state = RuntimePhase.Idle,
-                lastError = error,
-                runtimeReady = false,
-                controllerReady = true,
-            )
-        )
+    fun markIdle(error: String? = null) = ApiRootTunStatusFlow.markIdle(error)
 }

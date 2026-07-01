@@ -1,134 +1,115 @@
 ---
 title: "更新日志"
 sidebarTitle: "更新日志"
-description: "YumeBox 项目的版本更新记录和变更历史"
+description: "FlyCat 项目的版本更新记录和变更历史"
 rss: "true"
 icon: "clock"
 ---
 
-<Card title="GitHub Releases" icon="download" horizontal href="https://github.com/YumeYucca/YumeBox/releases">
+<Card
+  title="GitHub Releases"
+  horizontal
+  icon="download"
+  href="https://github.com/LM-Firefly/FlyCat/releases"
+>
 </Card>
 
-<Update label="2026-6-20" tags={["功能更新","优化","修复"]} description="v0.5.2">
+<Update label="2026-4-9" tags={["功能更新", "优化", "修复"]} description="v0.5.1">
   ## 更改
 
-  - **签名已更换，无法覆盖安装，请卸载后重新安装**
-  - 重构了 override 覆写
-  - 增加` js yaml` 覆写支持
-  - 增加了桌面创建 web 面板快捷方式
-  - 增加 `age ` 支持
-  - 修复桌面控制图标
-  - 修复了磁铁图标
-  - 修复订阅排序方案
-  - 修复代理组获取异常
-  - 修复订阅更新失败
-  - 修复订阅导入异常
-  - 修复 override 不生效
-  - 修复 override 导致的订阅损坏
-  - 修复背景缓存
-  - 修复持久记忆节点失效
-  - 移除废弃override方案
-  - 移除 native 签名校验
-  - _~~等等，时间尺度太长忘记了~~_
+- **FlyCat Lite 版支持**
+- 移除了 Senrty 跟踪器
+- 移除了EMAS推送更新
+- 移除了液态玻璃
+- 新增实验性首页支持,可自定义更换裁剪图片
+- 新增 Meta 特性 自定义分流入口
+- 新增流量统计,可统计 app,需要开启查找进程
+- 新增导航栏样式
+- 新增语言切换
+- 新增隐私设置选项
+- 新增后台释放 UI
+- 新增启动触感反馈
+- 优化图标格式支持
+- 优化启动代理过程
+- 优化导航栏动画反馈
+- 优化通知栏内容
+- 优化通知栏快捷弹窗卡顿
+- 优化卡片圆角大小
+- 优化节点排序动画
+- 优化访问控制 app 搜索栏
+- 优化流量统计图
+- 优化全局取色(深色主题)
+- 优化弹窗组件性能
+- 优化配置卡片排序
+- 优化导航手感
+- 优化滚动列表padding
+- 优化 app 目录资源
+- 修复初始化页面链接错误
+- 修复弹窗异常高度
+- 修复自启动阻塞卡死
+- 修复滚动列表触感反馈
+- 修复导入弹窗阻塞
+- 修复关于内核hash异常
 
-  **Full Changelog**: [https://github.com/YumeYucca/YumeBox/compare/v0.5.1...v0.5.2](https://github.com/YumeYucca/YumeBox/compare/v0.5.1...v0.5.2)
+##  无关内容
 
-  [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.5.2)
+- 多语言插件移除,通过 generate-locale kotlin脚本生成多语言
+- Workflows 重构
+
+**Full Changelog**: https://github.com/LM-Firefly/FlyCat/compare/v0.5.0...v0.5.1
+
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.1)
 </Update>
 
-<Update label="2026-4-9" tags={["功能更新","优化","修复"]} description="v0.5.1">
+<Update label="2026-3-29" tags={["功能更新", "优化", "修复"]} description="v0.5.0">
   ## 更改
 
-  - **YumeBox Lite 版支持**
-  - 移除了 Senrty 跟踪器
-  - 移除了EMAS推送更新
-  - 移除了液态玻璃
-  - 新增实验性首页支持,可自定义更换裁剪图片
-  - 新增 Meta 特性 自定义分流入口
-  - 新增流量统计,可统计 app,需要开启查找进程
-  - 新增导航栏样式
-  - 新增语言切换
-  - 新增隐私设置选项
-  - 新增后台释放 UI
-  - 新增启动触感反馈
-  - 优化图标格式支持
-  - 优化启动代理过程
-  - 优化导航栏动画反馈
-  - 优化通知栏内容
-  - 优化通知栏快捷弹窗卡顿
-  - 优化卡片圆角大小
-  - 优化节点排序动画
-  - 优化访问控制 app 搜索栏
-  - 优化流量统计图
-  - 优化全局取色(深色主题)
-  - 优化弹窗组件性能
-  - 优化配置卡片排序
-  - 优化导航手感
-  - 优化滚动列表padding
-  - 优化 app 目录资源
-  - 修复初始化页面链接错误
-  - 修复弹窗异常高度
-  - 修复自启动阻塞卡死
-  - 修复滚动列表触感反馈
-  - 修复导入弹窗阻塞
-  - 修复关于内核hash异常
+- **全新的覆写系统，允许多配置切换 应用 叠加可视化编辑等覆写预设分流模板，支持快速添加，编辑分流等**
+- **完全自定义的覆写配置使用后缀修饰符（`start end merge force`）不同的覆写操作** 详细见 [override document](https://flycat.oom-wg.dev/override)
+- **Root Tun 支持，无需 vpn 需要 **Root** 权限**
+- 更好的初始化引导页面
+- 更好的 Toast 弹窗
+- 更加人性化的UI交互细节UI优化
+- 引入液体玻璃(不建议使用)
+- 支持修改订阅链接
+- 重写了部分bridge
+- 新增连接页面
+- 新增使用 Rust 解析覆写配置生成运行时配置
+- 新增配置编辑器支持语法检查和部分补全
+- 新增单节点测速功能
+- 新增预览配置
+- 新增节点页测速动画
+- 新增节点更多tag 支持
+- 新增节点页动画排序效果
+- 新增链接预览页面
+- 新增 GeoX 文件下载
+- 重构日志页面
+- 修复某些场景下的弹窗无法关闭情况
+- 修复节点页面意外的 padding 错误
+- 修复路由系统流量模式错误
+- 修复流量统计页不可用状态
+- 修复在某些设备上的图标异常
+- 修复导入配置概率卡住
+- 默认主题将切换至深绿色
+- 更换部分图标增强视觉效果
+- 优化深色模式下主题取色
+- 优化代理组图标大小
+- 优化部分弹窗卡顿问题
+- 优化部分页面显示卡片边距
+- 优化 Topbar 模糊效果
+- 优化页面导航的动画
+- 优化首页滑动跟手
+- 优化持久化节点选择策略
+- 优化首页节点 Unknown 及意外 padding 错位
+- 优化导航栏隐藏逻辑
+- 移除接节点页弹窗设置分流
+- ~~修复了作者更新不写日志~~
 
-  ## 无关内容
 
-  - 多语言插件移除,通过 generate-locale kotlin脚本生成多语言
-  - Workflows 重构
-
-  **Full Changelog**: [https://github.com/YumeYucca/YumeBox/compare/v0.5.0...v0.5.1](https://github.com/YumeYucca/YumeBox/compare/v0.5.0...v0.5.1)
-
-  [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.5.1)
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.0)
 </Update>
 
-<Update label="2026-3-29" tags={["功能更新","优化","修复"]} description="v0.5.0">
-  ## 更改
-
-  - **全新的覆写系统，允许多配置切换 应用 叠加可视化编辑等覆写预设分流模板，支持快速添加，编辑分流等**
-  - **完全自定义的覆写配置使用后缀修饰符（`start end merge force`）不同的覆写操作** 详细见 [override document](https://yumebox.oom-wg.dev/override)
-  - **Root Tun 支持，无需 vpn 需要 Root 权限**
-  - 更好的初始化引导页面
-  - 更好的 Toast 弹窗
-  - 更加人性化的UI交互细节UI优化
-  - 引入液体玻璃(不建议使用)
-  - 支持修改订阅链接
-  - 重写了部分bridge
-  - 新增连接页面
-  - 新增使用 Rust 解析覆写配置生成运行时配置
-  - 新增配置编辑器支持语法检查和部分补全
-  - 新增单节点测速功能
-  - 新增预览配置
-  - 新增节点页测速动画
-  - 新增节点更多tag 支持
-  - 新增节点页动画排序效果
-  - 新增链接预览页面
-  - 新增 GeoX 文件下载
-  - 重构日志页面
-  - 修复某些场景下的弹窗无法关闭情况
-  - 修复节点页面意外的 padding 错误
-  - 修复路由系统流量模式错误
-  - 修复流量统计页不可用状态
-  - 修复在某些设备上的图标异常
-  - 修复导入配置概率卡住
-  - 默认主题将切换至深绿色
-  - 更换部分图标增强视觉效果
-  - 优化深色模式下主题取色
-  - 优化代理组图标大小
-  - 优化部分弹窗卡顿问题
-  - 优化部分页面显示卡片边距
-  - 优化 Topbar 模糊效果
-  - 优化页面导航的动画
-  - 优化首页滑动跟手
-  - 优化持久化节点选择策略
-  - 优化首页节点 Unknown 及意外 padding 错位
-  - 优化导航栏隐藏逻辑
-  - 移除接节点页弹窗设置分流
-  - ~~修复了作者更新不写日志~~ [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.5.0)
-</Update>
-
-<Update label="2026-2-27" tags={["功能更新","优化","修复"]} description="v0.4.0">
+<Update label="2026-2-27" tags={["功能更新", "优化", "修复"]} description="v0.4.0">
   ## 更改
 
   - 优化全局取色
@@ -136,10 +117,10 @@ icon: "clock"
   - 功能细节优化
   - 大幅优化打包体积
 
-  [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.4.0)
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.4.0)
 </Update>
 
-<Update label="2026-2-22" tags={["功能更新","优化","修复"]} description="v0.3.10">
+<Update label="2026-2-22" tags={["功能更新", "优化", "修复"]} description="v0.3.10">
   ## 更改
 
   - 新增云发布推送更新
@@ -161,7 +142,7 @@ icon: "clock"
   - 移除全屏节点显示支持
   - 尝试加入更多 ACG 内容
 
-  [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.3.10)
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.10)
 </Update>
 
 <Update label="2026-2-22" tags={["优化"]} description="v0.3.9">
@@ -169,20 +150,20 @@ icon: "clock"
 
   - NULL
 
-  [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.3.9)
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.9)
 </Update>
 
-<Update label="2026-2-19" tags={["功能更新","优化","修复"]} description="v0.3.9">
+<Update label="2026-2-19" tags={["功能更新", "优化", "修复"]} description="v0.3.9">
   ## 更改
 
   - 新增了自定义主题取色
   - 调整暗色主题下取色
   - 咕噜咕噜
 
-  [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.3.8)
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.8)
 </Update>
 
-<Update label="2026-2-11" tags={["功能更新","优化","修复"]} description="v0.3.7">
+<Update label="2026-2-11" tags={["功能更新", "优化", "修复"]} description="v0.3.7">
   ## 更改
 
   - 修复启动概率阻塞
@@ -197,10 +178,10 @@ icon: "clock"
   - 提升应用稳定性
   - 跟进上游内核
 
-  [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.3.7)
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.7)
 </Update>
 
-<Update label="2026-1-22" tags={["功能更新","优化","修复"]} description="v0.3.6">
+<Update label="2026-1-22" tags={["功能更新", "优化", "修复"]} description="v0.3.6">
   ## 更改
 
   - 优化组件性能
@@ -211,11 +192,12 @@ icon: "clock"
   - 代理组支持 `icon` 显示支持,可自定义图标
   - 修复多语言错误
   - 更加流畅的页面跳转动画
+  - <Badge color="red" icon="ban">提取节点旗帜为强制性启用</Badge>
 
-  [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.3.6)
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.6)
 </Update>
 
-<Update label="2026-1-21" tags={["功能更新","优化","修复"]} description="v0.3.5">
+<Update label="2026-1-21" tags={["功能更新", "优化", "修复"]} description="v0.3.5">
   ## 更改
 
   - 优化组件性能
@@ -228,10 +210,10 @@ icon: "clock"
 
   > 古が遺す呪われた種が、もう一度僕らを苦しめても  .
 
-  [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.3.5)
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.5)
 </Update>
 
-<Update label="2026-1-2" tags={["功能更新","优化","修复"]} description="v0.3.4">
+<Update label="2026-1-2" tags={["功能更新", "优化", "修复"]} description="v0.3.4">
   ## 更改
 
   - 增加配置页打开外部链接
@@ -245,17 +227,19 @@ icon: "clock"
   - 跟进上游内核 build
   - 若干...
 
-  [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.3.4)
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.4)
 </Update>
 
-<Update label="2025-12-25" tags={["优化"]} description="v0.3.3">
+<Update label="2025-12-25" tags={ ["优化"] } description="v0.3.3">
   ## 更改
 
   - 优化部分内容
-  - 若干... [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.3.3)
+  - 若干...
+
+    [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.3)
 </Update>
 
-<Update label="2025-12-24" tags={["功能更新","优化","修复"]} description="v0.3.2">
+<Update label="2025-12-24" tags={["功能更新", "优化", "修复"]} description="v0.3.2">
   ## 更改
 
   - 优化启动按钮交互体验
@@ -268,18 +252,22 @@ icon: "clock"
   - ~~修复~~.?可能存在的自动代理组失效问题（无法稳定复现）
   - Mihimo 内核常规更新
   - Smart 内核 Build
-  - 若干... [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.3.2)
+  - 若干...
+
+    [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.2)
 </Update>
 
-<Update label="2025-12-4" tags={["功能更新","修复"]} description="v0.3.1">
+<Update label="2025-12-4" tags={["功能更新", "修复"]} description="v0.3.1">
   ## 更改
 
   - 新增导航栏功能
   - 优化持续集成流程
-  - 引入 Intent 处理和状态持久化改进 [下载链接](https://github.com/YumeYucca/YumeBox/releases/tag/v0.3.1)
+  - 引入 Intent 处理和状态持久化改进
+
+    [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.1)
 </Update>
 
-<Update label="2025-12-2" tags={["重要更新","优化"]} description="v0.3.0">
+<Update label="2025-12-2" tags={["重要更新", "优化"]} description="v0.3.0">
   ## 更改
 
   ### 包名已变更，本版本不会继承原有数据，请自行卸载旧版本
@@ -293,7 +281,7 @@ icon: "clock"
   - 进一步优化打包资源体积
 </Update>
 
-<Update label="2025-11-30" tags={["新功能","优化"]} description="v0.2.0">
+<Update label="2025-11-30" tags={["新功能", "优化"]} description="v0.2.0">
   ## 更改
 
   - 新增多语言适配
@@ -316,14 +304,35 @@ icon: "clock"
   - 其他细节优化与修复
 </Update>
 
-<Update label="2025-11-27" tags={["里程碑","测试版"]} description="v0.1.0">
+<Update label="2025-11-27" tags={["里程碑", "测试版"]} description="v0.1.0">
   ## 首个正式版本
 
-  YumeBox 0.1.0 正式发布！
+  FlyCat 0.1.0 正式发布！本次发布标志着 FlyCat 正式进入新的发展阶段。 项目已从原有架构中完全独立，不再局限于 UI 层面的改动，而是进行了整体的重构。
+
+  ### 当前版本仍处于测试阶段，无法保证所有功能均保持可用与稳定。
+
+  如在使用过程中遇到问题、异常或有改进建议，请在 Issue 中提交反馈
+
+  ### 推广
+
+  如果你觉得好用请帮助我推广：https://github.com/LM-Firefly/FlyCat
+
+  ### 核心功能
+
+  - 基于 mihomo 内核的代理服务
+  - 多种代理协议支持（Shadowsocks、V2Ray、Trojan 等）
+  - 灵活的规则分流系统
+  - 简洁易用的用户界面
 
   ### 系统支持
 
   - Android 7.0 及以上版本
-  - 支持 armeabi-v7a、arm64-v8a、x86、x86\_64 架构
+  - 支持 armeabi-v7a、arm64-v8a、x86、x86_64 架构
 
+  ### 特色功能
+
+  - 配置文件 URL 导入
+  - 外部控制 API
+  - 详细的连接日志
+  - 节点延迟测试
 </Update>

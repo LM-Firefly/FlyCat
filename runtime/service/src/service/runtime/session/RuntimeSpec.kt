@@ -18,28 +18,11 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.runtime.session
+package com.github.yumelira.yumebox.runtime.service.runtime.session
 
-import com.github.yumelira.yumebox.core.model.OverrideSpec
-import com.github.yumelira.yumebox.core.model.RootTunConfig
-import com.github.yumelira.yumebox.service.runtime.state.RuntimeOwner
 import kotlinx.serialization.Serializable
 
-@Serializable
-data class RuntimeSpec(
-    val owner: RuntimeOwner,
-    val profileUuid: String,
-    val profileName: String,
-    val profileDir: String,
-    val runtimeConfigPath: String = "",
-    val ageSecretKey: String? = null,
-    val overrideSpecs: List<OverrideSpec> = emptyList(),
-    val rootTunConfig: RootTunConfig? = null,
-    val staticPlanFingerprint: String = "",
-    val transportFingerprint: String = "",
-    val effectiveFingerprint: String = "",
-    val profileFingerprint: String = "",
-)
+// RuntimeSpec has been moved to runtime:api (com.github.yumelira.yumebox.runtime.api.service.runtime.session.RuntimeSpec)
 
 @Serializable
 data class RuntimeOperationResult(

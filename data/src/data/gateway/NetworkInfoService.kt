@@ -20,6 +20,9 @@
 
 package com.github.yumelira.yumebox.data.gateway
 
+import com.github.yumelira.yumebox.core.data.NetworkInfoReader
+import com.github.yumelira.yumebox.core.model.IpInfo
+import com.github.yumelira.yumebox.core.model.IpMonitoringState
 import com.github.yumelira.yumebox.core.util.NetworkInterfaces
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
@@ -27,6 +30,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.serialization.kotlinx.json.json
+import java.io.Closeable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -39,30 +43,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.io.Closeable
 
-@Serializable
-data class IpInfo(
-    val ip: String,
-    @SerialName("country_code") val countryCode: String? = null,
-)
-
-sealed class IpMonitoringState {
-    data class Success(
-        val localIp: String?,
-        val externalIp: IpInfo?,
-        val isProxyActive: Boolean = false,
-    ) : IpMonitoringState()
-
-    data class Error(val message: String) : IpMonitoringState()
-
-    object Loading : IpMonitoringState()
-}
-
-class NetworkInfoService : Closeable {
+class NetworkInfoService : Closeable, NetworkInfoReader {
     private val json = Json { ignoreUnknownKeys = true }
 
     private val httpClient = HttpClient {
@@ -85,7 +68,7 @@ class NetworkInfoService : Closeable {
         httpClient.close()
     }
 
-    fun triggerRefresh() {
+    override fun triggerRefresh() {
         _refreshTrigger.tryEmit(Unit)
     }
 
@@ -103,9 +86,9 @@ class NetworkInfoService : Closeable {
         }
     }
 
-    fun startIpMonitoring(
+    override fun startIpMonitoring(
         isProxyActiveFlow: Flow<Boolean>,
-        externalRefreshFlow: Flow<Unit> = emptyFlow(),
+        externalRefreshFlow: Flow<Unit>,
     ): Flow<IpMonitoringState> = flow {
         var lastSuccessfulState: IpMonitoringState.Success? = null
 
@@ -124,10 +107,8 @@ class NetworkInfoService : Closeable {
 
         val refreshFlow =
             merge(
-                flowOf(Unit),
                 _refreshTrigger,
                 externalRefreshFlow,
-                isProxyActiveFlow.distinctUntilChanged().drop(1).map {},
             )
 
         combine(refreshFlow, isProxyActiveFlow) { _, isProxyActive ->

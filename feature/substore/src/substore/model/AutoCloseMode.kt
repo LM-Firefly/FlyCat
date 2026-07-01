@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore.model
+package com.github.yumelira.yumebox.feature.substore.model
 
 import dev.oom_wg.purejoy.mlang.MLang
 

@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.clash.module
+package com.github.yumelira.yumebox.runtime.service.clash.module
 
 import android.app.Service
 import android.net.ConnectivityManager
@@ -29,8 +29,8 @@ import android.net.NetworkRequest
 import android.os.Build
 import androidx.core.content.getSystemService
 import com.github.yumelira.yumebox.core.Clash
-import com.github.yumelira.yumebox.service.common.log.Log
-import com.github.yumelira.yumebox.service.runtime.util.asSocketAddressText
+import com.github.yumelira.yumebox.runtime.service.common.log.Log
+import com.github.yumelira.yumebox.runtime.service.runtime.util.asSocketAddressText
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.selects.select

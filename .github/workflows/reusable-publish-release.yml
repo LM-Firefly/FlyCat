@@ -40,7 +40,7 @@ jobs:
 
       - name: Cleanup existing assets for rolling tag
         if: inputs.cleanup_assets
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const tag = '${{ inputs.release_tag }}';
@@ -68,7 +68,7 @@ jobs:
             }
 
       - name: Publish release assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.release_tag }}
           name: ${{ inputs.release_name }}

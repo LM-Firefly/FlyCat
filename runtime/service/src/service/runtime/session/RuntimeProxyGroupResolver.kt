@@ -18,7 +18,8 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.runtime.session
+package com.github.yumelira.yumebox.runtime.service.runtime.session
+import com.github.yumelira.yumebox.runtime.api.service.runtime.session.RuntimeSpec
 
 import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.core.model.Proxy
@@ -65,7 +66,7 @@ class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConf
                 profileUuid = spec.profileUuid,
                 effectiveFingerprint = spec.effectiveFingerprint,
                 excludeNotSelectable = excludeNotSelectable,
-                ageSecretKeyFingerprint = sha256Short(spec.ageSecretKey),
+                ageSecretKeyFingerprint = "",
             )
         synchronized(canonicalCacheLock) {
             canonicalCache
@@ -94,7 +95,7 @@ class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConf
                 profileUuid = spec.profileUuid,
                 effectiveFingerprint = spec.effectiveFingerprint,
                 excludeNotSelectable = excludeNotSelectable,
-                ageSecretKeyFingerprint = sha256Short(spec.ageSecretKey),
+                ageSecretKeyFingerprint = "",
             )
         synchronized(expectedNameCacheLock) {
             expectedNameCache
@@ -106,7 +107,7 @@ class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConf
 
         // Every profile (encrypted and non-encrypted) goes through the native in-memory compile, so
         // expected names never depend on an on-disk runtime.yaml.
-        val names = compiledConfigPipeline.previewGroupNames(spec, excludeNotSelectable)
+        val names = canonicalGroups(spec, excludeNotSelectable).map(ProxyGroup::name)
 
         // Never cache an empty result: a transient empty compile during the start window must not
         // pin the whole session to an empty expected-name set.
@@ -133,9 +134,7 @@ class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConf
         }
         // Core not loaded yet (preview / transient start window): fall back to the compiled
         // rawConfig.
-        return spec
-            ?.let { canonicalGroups(it, excludeNotSelectable) }
-            .orEmpty()
+        return (if (spec != null) canonicalGroups(spec, excludeNotSelectable) else emptyList())
             .map(ProxyGroup::name)
             .filter(String::isNotBlank)
     }
@@ -161,7 +160,7 @@ class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConf
             }
         }
         // Preview / core not loaded yet: use the compiled rawConfig (no running core to read from).
-        return spec?.let { canonicalGroups(it, excludeNotSelectable) }.orEmpty()
+        return if (spec != null) canonicalGroups(spec, excludeNotSelectable) else emptyList()
     }
 
     /**

@@ -18,10 +18,16 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.screen.node
+package com.github.yumelira.yumebox.feature.proxy.presentation.screen.node
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.Composable
-import com.github.yumelira.yumebox.data.model.ProxySortMode
+import androidx.compose.runtime.MutableState
+import androidx.compose.ui.unit.dp
+import com.github.yumelira.yumebox.core.model.ProxyDisplayMode
+import com.github.yumelira.yumebox.core.model.ProxySortMode
+import dev.oom_wg.purejoy.mlang.MLang
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
@@ -31,14 +37,44 @@ import top.yukonga.miuix.kmp.window.WindowListPopup
 internal val NodeSortModes =
     listOf(ProxySortMode.DEFAULT, ProxySortMode.BY_NAME, ProxySortMode.BY_LATENCY)
 
+internal val NodeDisplayModes = listOf(
+    ProxyDisplayMode.SINGLE_DETAILED,
+    ProxyDisplayMode.DOUBLE_DETAILED,
+)
+
+private val ProxyDisplayMode.displayName: String
+    get() = when (this) {
+        ProxyDisplayMode.SINGLE_DETAILED -> MLang.Proxy.DisplayMode.SingleDetailed
+        ProxyDisplayMode.SINGLE_SIMPLE -> MLang.Proxy.DisplayMode.SingleSimple
+        ProxyDisplayMode.DOUBLE_DETAILED -> MLang.Proxy.DisplayMode.DoubleDetailed
+        ProxyDisplayMode.DOUBLE_SIMPLE -> MLang.Proxy.DisplayMode.DoubleSimple
+    }
+
+private val ProxySortMode.displayName: String
+    get() = when (this) {
+        ProxySortMode.DEFAULT -> MLang.Proxy.SortMode.Default
+        ProxySortMode.BY_NAME -> MLang.Proxy.SortMode.ByName
+        ProxySortMode.BY_LATENCY -> MLang.Proxy.SortMode.ByLatency
+    }
+
 @Composable
 internal fun NodeSortPopup(
     show: Boolean,
     onDismiss: () -> Unit,
+    displayMode: ProxyDisplayMode,
     sortMode: ProxySortMode,
     alignment: PopupPositionProvider.Align = PopupPositionProvider.Align.Start,
+    onDisplayModeSelected: (ProxyDisplayMode) -> Unit,
     onSortSelected: (ProxySortMode) -> Unit,
 ) {
+    val selectedDisplayIndex = when (displayMode) {
+        ProxyDisplayMode.SINGLE_DETAILED,
+        ProxyDisplayMode.SINGLE_SIMPLE,
+        -> 0
+        ProxyDisplayMode.DOUBLE_DETAILED,
+        ProxyDisplayMode.DOUBLE_SIMPLE,
+        -> 1
+    }
     val selectedSortIndex = NodeSortModes.indexOf(sortMode).coerceAtLeast(0)
     WindowListPopup(
         show = show,
@@ -47,6 +83,19 @@ internal fun NodeSortPopup(
         onDismissRequest = onDismiss,
     ) {
         ListPopupColumn {
+            NodeDisplayModes.forEachIndexed { index, mode ->
+                DropdownImpl(
+                    text = mode.displayName,
+                    optionSize = NodeDisplayModes.size,
+                    isSelected = selectedDisplayIndex == index,
+                    onSelectedIndexChange = {
+                        if (selectedDisplayIndex != index) onDisplayModeSelected(mode)
+                        onDismiss()
+                    },
+                    index = index,
+                )
+            }
+            Spacer(modifier = androidx.compose.ui.Modifier.height(6.dp))
             NodeSortModes.forEachIndexed { index, mode ->
                 DropdownImpl(
                     text = mode.displayName,

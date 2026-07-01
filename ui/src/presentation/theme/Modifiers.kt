@@ -20,46 +20,10 @@
 
 package com.github.yumelira.yumebox.presentation.theme
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
-
-@Composable
-fun Modifier.screenPadding(): Modifier {
-    val s = AppTheme.spacing
-    return this.padding(
-        start = s.screenHorizontal,
-        end = s.screenHorizontal,
-        top = s.screenVertical,
-        bottom = s.screenVertical,
-    )
-}
-
-@SuppressLint("SuspiciousModifierThen")
-@Composable
-fun Modifier.sectionVSpacing(top: Boolean = true, bottom: Boolean = true): Modifier {
-    val s = AppTheme.spacing
-    return this.then(
-        Modifier.padding(
-            top = if (top) s.space16 else UiDp.dp0,
-            bottom = if (bottom) s.space16 else UiDp.dp0,
-        )
-    )
-}
-
-@SuppressLint("SuspiciousModifierThen")
-@Composable
-fun Modifier.sectionHPadding(start: Boolean = true, end: Boolean = true): Modifier {
-    val s = AppTheme.spacing
-    return this.then(
-        Modifier.padding(
-            start = if (start) s.contentHorizontal else UiDp.dp0,
-            end = if (end) s.contentHorizontal else UiDp.dp0,
-        )
-    )
-}
 
 @Composable
 fun Modifier.topPadding(amount: Dp = AppTheme.spacing.space8): Modifier = this.padding(top = amount)

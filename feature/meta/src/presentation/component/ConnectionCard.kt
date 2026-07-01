@@ -21,16 +21,21 @@
 package com.github.yumelira.yumebox.feature.meta.presentation.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -41,186 +46,204 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.core.model.ConnectionInfo
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.ConnectionCardItem
 import dev.oom_wg.purejoy.mlang.MLang
-import kotlinx.serialization.json.jsonPrimitive
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ConnectionCard(
-    connectionInfo: ConnectionInfo,
+    item: ConnectionCardItem,
+    showCloseAction: Boolean,
     onClick: () -> Unit,
+    onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val spacing = AppTheme.spacing
     val radii = AppTheme.radii
     val sizes = AppTheme.sizes
-    val opacity = AppTheme.opacity
     val shape = RoundedCornerShape(radii.radius24)
-    val backgroundColor = MiuixTheme.colorScheme.background
     val interactionSource = remember { MutableInteractionSource() }
+    val network = item.network
+    val chainText = item.ruleChain
 
-    val host =
-        remember(connectionInfo.metadata) {
-            connectionInfo.metadata["host"]?.jsonPrimitive?.content ?: ""
-        }
-    val network =
-        remember(connectionInfo.metadata) {
-            connectionInfo.metadata["network"]?.jsonPrimitive?.content ?: "TCP"
-        }
-    val destinationPort =
-        remember(connectionInfo.metadata) {
-            connectionInfo.metadata["destinationPort"]?.jsonPrimitive?.content ?: ""
-        }
-    val sourceIP =
-        remember(connectionInfo.metadata) {
-            connectionInfo.metadata["sourceIP"]?.jsonPrimitive?.content ?: ""
-        }
-    val sourcePort =
-        remember(connectionInfo.metadata) {
-            connectionInfo.metadata["sourcePort"]?.jsonPrimitive?.content ?: ""
-        }
-
-    val destinationIp =
-        remember(connectionInfo.metadata) {
-            connectionInfo.metadata["destinationIP"]?.jsonPrimitive?.content ?: ""
-        }
-
-    val displayHost =
-        remember(host, destinationIp, destinationPort, sourceIP, sourcePort) {
-            if (host.isNotEmpty() && destinationPort.isNotEmpty()) {
-                "$host:$destinationPort"
-            } else if (host.isNotEmpty()) {
-                host
-            } else if (destinationIp.isNotEmpty() && destinationPort.isNotEmpty()) {
-                "$destinationIp:$destinationPort"
-            } else if (destinationIp.isNotEmpty()) {
-                destinationIp
-            } else {
-                "$sourceIP:$sourcePort"
-            }
-        }
-
-    val relativeTime = formatRelativeTime(connectionInfo.start)
-
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .pressable(interactionSource = interactionSource, indication = SinkFeedback())
-                .clip(shape)
-                .background(backgroundColor)
-                .border(sizes.nodeCardBorderWidth, MiuixTheme.colorScheme.surfaceVariant, shape)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = onClick,
-                )
-                .padding(horizontal = spacing.space16, vertical = spacing.space12),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.space16),
-    ) {
-        ConnectionLeadingIcon(metadata = connectionInfo.metadata, network = network)
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(spacing.space6),
-        ) {
-            Text(
-                text = displayHost,
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .pressable(interactionSource = interactionSource, indication = SinkFeedback())
+            .clip(shape)
+            .background(MiuixTheme.colorScheme.background)
+            .border(sizes.nodeCardBorderWidth, MiuixTheme.colorScheme.surfaceVariant, shape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
             )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+            .padding(horizontal = spacing.space16, vertical = spacing.space12),
+        verticalArrangement = Arrangement.spacedBy(spacing.space12),
+    ) {
+        Row(
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(spacing.space16),
+        ) {
+            ConnectionLeadingIcon(
+                metadata = item.connectionInfo.metadata,
+                network = network,
+                modifier = Modifier.padding(top = spacing.space2),
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(spacing.space4),
             ) {
-                FlowRow(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(sizes.listItemVerticalMinimal),
-                    verticalArrangement = Arrangement.spacedBy(spacing.space4),
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(spacing.space8),
                 ) {
-                    ConnectionTagChip(
-                        label = network.uppercase(),
-                        backgroundColor = getProtocolColor(network),
+                    Text(
+                        text = item.displayHost,
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .basicMarquee(),
                     )
-
-                    if (connectionInfo.rule.isNotEmpty()) {
-                        ConnectionTagChip(label = connectionInfo.rule)
-                    }
-
-                    if (connectionInfo.chains.isNotEmpty()) {
-                        ConnectionTagChip(
-                            label = MLang.Connection.ChainCount.format(connectionInfo.chains.size)
+                    Text(
+                        text = item.relativeTime,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.End,
+                        maxLines = 1,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(spacing.space4),
+                ) {
+                    Text(
+                        text = item.protocolAndNetwork,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = getProtocolColor(network),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (item.processName.isNotBlank()) {
+                        Text(
+                            text = item.processName,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            textAlign = TextAlign.End,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .weight(1f)
+                                .basicMarquee(),
                         )
                     }
                 }
 
                 Text(
-                    text = relativeTime,
-                    style = MiuixTheme.textStyles.footnote1,
+                    text = chainText,
+                    style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     maxLines = 1,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.padding(start = spacing.space8),
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .basicMarquee(),
                 )
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.space12),
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(spacing.space6),
+            ) {
+                TrafficMetricRow(
+                    label = "↓",
+                    speedText = item.downloadSpeedText,
+                    totalText = item.downloadText,
+                    accentColor = Color(0xFF4CAF50),
+                )
+                TrafficMetricRow(
+                    label = "↑",
+                    speedText = item.uploadSpeedText,
+                    totalText = item.uploadText,
+                    accentColor = Color(0xFF2196F3),
+                )
+            }
+            if (showCloseAction) {
+                Box(
+                    modifier = Modifier.heightIn(min = sizes.connectionLeadingIconSize),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Delete,
+                        contentDescription = MLang.Connection.Detail.Action.Interrupt,
+                        tint = MiuixTheme.colorScheme.error,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .clickable(onClick = onClose)
+                            .padding(horizontal = spacing.space12, vertical = spacing.space8),
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ConnectionTagChip(
+private fun TrafficMetricRow(
     label: String,
-    backgroundColor: Color = MiuixTheme.colorScheme.primary,
+    speedText: String,
+    totalText: String,
+    accentColor: Color,
 ) {
     val spacing = AppTheme.spacing
-    val radii = AppTheme.radii
-    val opacity = AppTheme.opacity
-    Text(
-        text = label,
-        style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
-        color = backgroundColor,
-        modifier =
-            Modifier.clip(RoundedCornerShape(radii.full))
-                .background(backgroundColor.copy(alpha = opacity.subtle))
-                .padding(horizontal = spacing.space4, vertical = spacing.space2),
-    )
-}
-
-private fun formatRelativeTime(start: String): String {
-    if (start.isEmpty()) return ""
-
-    return try {
-        val startTime = java.time.OffsetDateTime.parse(start).toInstant()
-        val now = java.time.Instant.now()
-        val duration = java.time.Duration.between(startTime, now)
-
-        val seconds = duration.seconds
-        val minutes = seconds / 60
-        val hours = minutes / 60
-        val days = hours / 24
-
-        when {
-            seconds < 60 -> MLang.Connection.RelativeTime.JustNow
-            minutes < 60 -> MLang.Connection.RelativeTime.MinutesAgo.format(minutes)
-            hours < 24 -> MLang.Connection.RelativeTime.HoursAgo.format(hours)
-            days < 7 -> MLang.Connection.RelativeTime.DaysAgo.format(days)
-            else -> {
-                val date =
-                    java.time.LocalDateTime.ofInstant(startTime, java.time.ZoneId.systemDefault())
-                MLang.Connection.RelativeTime.Date.format(date.monthValue, date.dayOfMonth)
-            }
-        }
-    } catch (error: Exception) {
-        ""
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.space6),
+    ) {
+        Text(
+            text = label,
+            style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
+            color = accentColor,
+            maxLines = 1,
+        )
+        Text(
+            text = speedText,
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
+        Spacer(modifier = Modifier.width(spacing.space6))
+        Text(
+            text = label,
+            style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
+            color = accentColor,
+            maxLines = 1,
+        )
+        Text(
+            text = totalText,
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }

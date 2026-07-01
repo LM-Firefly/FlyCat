@@ -88,6 +88,13 @@ object Bridge {
 
     external fun nativeQueryGroupNames(excludeNotSelectable: Boolean): String
 
+    external fun nativeInspectCompiledGroups(
+        yamlText: String,
+        profileDir: String,
+        excludeNotSelectable: Boolean,
+    ): String?
+
+    external fun nativeInspectCompiledGroupNames(yamlText: String, excludeNotSelectable: Boolean): String?
     external fun nativeQueryGroup(name: String, sort: String): String?
 
     external fun nativeHealthCheck(completable: CompletableDeferred<Unit>, name: String)
@@ -96,8 +103,10 @@ object Bridge {
 
     external fun nativeHealthCheckAll()
 
+    external fun nativePatchTunnelMode(mode: String): Boolean
     external fun nativePatchSelector(selector: String, name: String): Boolean
 
+    external fun nativeForcePatchSelector(selector: String, name: String): Boolean
     external fun nativeFetchAndValid(
         completable: FetchCallback,
         path: String,
@@ -121,7 +130,7 @@ object Bridge {
 
     external fun nativeSetCustomUserAgent(userAgent: String)
 
-    external fun nativeSetAgeSecretKey(key: String?)
+    external fun nativeSetAgeSecretKey(key: String)
 
     external fun nativeGenX25519KeyPair(): String?
 

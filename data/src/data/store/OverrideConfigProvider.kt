@@ -20,7 +20,7 @@
 
 package com.github.yumelira.yumebox.data.store
 
-import com.github.yumelira.yumebox.data.model.OverrideConfig
+import com.github.yumelira.yumebox.core.model.OverrideConfig
 import kotlinx.coroutines.flow.Flow
 
 interface OverrideConfigProvider {

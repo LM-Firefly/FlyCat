@@ -58,6 +58,38 @@ Component = {
         Starting = "Starting..."
     }
 
+    Update = {
+        Action = {
+            DownloadNow = "Download Now"
+        }
+        Title = {
+            Available = "New Version Available"
+        }
+        Message = {
+            Available = "A new update is available"
+            SelectPackage = "Select Download Package"
+            Tag = "Tag"
+            PackageUniversal = "Universal"
+            PackageExtension = "WithExtension"
+            PackageLite = "Lite"
+            PackageStandard = "Standard"
+            CurrentVersion = "Current Version"
+            RemoteVersion = "Target Version"
+            Preparing = "Preparing download..."
+            DownloadingWithProgress = "Downloading update package %d%%"
+            Downloading = "Downloading update package..."
+            DownloadReady = "Download complete, ready to install"
+            Error = "Download failed, please try again later"
+            Checking = "Checking for updates..."
+            NoUpdate = "Already on the latest version"
+            CheckFailed = "Failed to check updates: %s"
+            MissingReleaseMetadata = "The latest release is missing update metadata"
+            NoCompatibleAsset = "No compatible APK was found in the latest release"
+            DownloadAlreadyRunning = "The update package is still downloading"
+            InstallPromptOpened = "Download complete, installer opened"
+            InstallFailed = "Failed to open installer: %s"
+        }
+    }
 
     ConfigInput = {
         PortLabel = "Port (leave empty to not modify)"

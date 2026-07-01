@@ -1,0 +1,352 @@
+name: Release Stable
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Stable release tag, for manual run (example: v0.5.0)"
+        required: true
+        type: string
+
+concurrency:
+  group: release-stable-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version_name: ${{ steps.set-version.outputs.version_name }}
+      version_code: ${{ steps.set-version.outputs.version_code }}
+      checkout_sha: ${{ steps.commit.outputs.commit_sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Parse and set version
+        id: set-version
+        shell: bash
+        run: |
+          set -eu
+          release_tag="${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}"
+          version_name="${release_tag#v}"
+          echo "version_name=${version_name}" >> "$GITHUB_OUTPUT"
+          IFS='.-' read -r major minor patch rest <<< "${version_name}"
+          major="${major:-0}"
+          minor="${minor:-0}"
+          patch="${patch:-0}"
+          version_code=$(( major * 10000 + minor * 1000 + patch * 100 ))
+          echo "version_code=${version_code}" >> "$GITHUB_OUTPUT"
+
+      - name: Update gradle.properties
+        shell: bash
+        run: |
+          set -eu
+          sed -i "s/^project.version.name=.*/project.version.name=${{ steps.set-version.outputs.version_name }}/" gradle.properties
+          sed -i "s/^project.version.code=.*/project.version.code=${{ steps.set-version.outputs.version_code }}/" gradle.properties
+
+      - name: Commit and push version update
+        id: commit
+        shell: bash
+        run: |
+          set -eu
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add gradle.properties
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "chore: release ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}"
+          git push
+          echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  build-geo-stable:
+    uses: ./.github/workflows/reusable-build-geo.yml
+    with:
+      channel: stable
+    secrets: inherit
+
+  build-native-abi-stable-armeabi-v7a:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: stable
+      kernel_channel: alpha
+      abi: armeabi-v7a
+    secrets: inherit
+
+  build-native-abi-stable-arm64-v8a:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: stable
+      kernel_channel: alpha
+      abi: arm64-v8a
+    secrets: inherit
+
+  build-native-abi-stable-x86:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: stable
+      kernel_channel: alpha
+      abi: x86
+    secrets: inherit
+
+  build-native-abi-stable-x86_64:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: stable
+      kernel_channel: alpha
+      abi: x86_64
+    secrets: inherit
+
+  bundle-native-stable:
+    needs:
+      - build-geo-stable
+      - build-native-abi-stable-armeabi-v7a
+      - build-native-abi-stable-arm64-v8a
+      - build-native-abi-stable-x86
+      - build-native-abi-stable-x86_64
+    uses: ./.github/workflows/reusable-bundle-native.yml
+    with:
+      channel: stable
+    secrets: inherit
+
+  build-apk-stable-app:
+    needs:
+      - update-version
+      - bundle-native-stable
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: stable
+      module: app
+      artifact_prefix: FlyCat-stable
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      meta_asset_name: FlyCat-stable-meta.json
+      raw_apk_artifact_name: apk-raw-stable-app
+      checkout_ref: ${{ needs.update-version.outputs.checkout_sha }}
+    secrets: inherit
+
+  build-apk-stable-lite:
+    needs:
+      - update-version
+      - bundle-native-stable
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: stable
+      module: lite
+      artifact_prefix: FlyCat-stable-lite
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      meta_asset_name: FlyCat-stable-lite-meta.json
+      raw_apk_artifact_name: apk-raw-stable-lite
+      checkout_ref: ${{ needs.update-version.outputs.checkout_sha }}
+    secrets: inherit
+
+  build-apk-stable-app-with-extension:
+    needs:
+      - update-version
+      - bundle-native-stable
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: stable
+      module: app
+      artifact_prefix: FlyCat-stable-extension
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      meta_asset_name: FlyCat-stable-extension-meta.json
+      raw_apk_artifact_name: apk-raw-stable-app-with-extension
+      with_extension: true
+      checkout_ref: ${{ needs.update-version.outputs.checkout_sha }}
+    secrets: inherit
+
+  build-apk-stable-extension:
+    needs:
+      - update-version
+      - bundle-native-stable
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: stable
+      module: extension
+      artifact_prefix: FlyCat-stable-extension-standalone
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      meta_asset_name: FlyCat-stable-extension-standalone-meta.json
+      raw_apk_artifact_name: apk-raw-stable-extension
+      checkout_ref: ${{ needs.update-version.outputs.checkout_sha }}
+    secrets: inherit
+
+  prepare-publish-stable-app:
+    needs:
+      - update-version
+      - build-apk-stable-app
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: stable
+      module: app
+      artifact_prefix: FlyCat-stable
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      meta_asset_name: FlyCat-stable-meta.json
+      raw_apk_artifact_name: apk-raw-stable-app
+      publish_artifact_name: publish-stable-app
+      checkout_ref: ${{ needs.update-version.outputs.checkout_sha }}
+    secrets: inherit
+
+  prepare-publish-stable-lite:
+    needs:
+      - update-version
+      - build-apk-stable-lite
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: stable
+      module: lite
+      artifact_prefix: FlyCat-stable-lite
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      meta_asset_name: FlyCat-stable-lite-meta.json
+      raw_apk_artifact_name: apk-raw-stable-lite
+      publish_artifact_name: publish-stable-lite
+      checkout_ref: ${{ needs.update-version.outputs.checkout_sha }}
+    secrets: inherit
+
+  prepare-publish-stable-app-with-extension:
+    needs:
+      - update-version
+      - build-apk-stable-app-with-extension
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: stable
+      module: app
+      artifact_prefix: FlyCat-stable-extension
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      meta_asset_name: FlyCat-stable-extension-meta.json
+      raw_apk_artifact_name: apk-raw-stable-app-with-extension
+      publish_artifact_name: publish-stable-app-with-extension
+      checkout_ref: ${{ needs.update-version.outputs.checkout_sha }}
+    secrets: inherit
+
+  prepare-publish-stable-extension:
+    needs:
+      - update-version
+      - build-apk-stable-extension
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: stable
+      module: extension
+      artifact_prefix: FlyCat-stable-extension-standalone
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      meta_asset_name: FlyCat-stable-extension-standalone-meta.json
+      raw_apk_artifact_name: apk-raw-stable-extension
+      publish_artifact_name: publish-stable-extension
+      checkout_ref: ${{ needs.update-version.outputs.checkout_sha }}
+    secrets: inherit
+
+  publish-release-stable:
+    needs:
+      - prepare-publish-stable-app
+      - prepare-publish-stable-lite
+      - prepare-publish-stable-app-with-extension
+      - prepare-publish-stable-extension
+    uses: ./.github/workflows/reusable-publish-release.yml
+    with:
+      channel: stable
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      release_name: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      prerelease: false
+      publish_artifacts: publish-stable-app,publish-stable-lite,publish-stable-app-with-extension,publish-stable-extension
+      cleanup_assets: false
+    secrets: inherit
+
+  delete-extension-release-tag:
+    needs:
+      - prepare-publish-stable-extension
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Delete existing Extension release and tag
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const tag = 'Extension';
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            try {
+              const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+              await github.rest.repos.deleteRelease({
+                owner,
+                repo,
+                release_id: release.data.id,
+              });
+              core.info(`Deleted release for tag ${tag}`);
+            } catch (error) {
+              if (error.status === 404) {
+                core.info(`Release ${tag} not found, skip release delete.`);
+              } else {
+                throw error;
+              }
+            }
+
+            try {
+              await github.rest.git.getRef({
+                owner,
+                repo,
+                ref: `tags/${tag}`,
+              });
+              await github.rest.git.deleteRef({
+                owner,
+                repo,
+                ref: `tags/${tag}`,
+              });
+              core.info(`Deleted git tag ${tag}`);
+            } catch (error) {
+              if (error.status === 404 || error.status === 422) {
+                core.info(`Tag ${tag} not found, skip tag delete.`);
+              } else {
+                throw error;
+              }
+            }
+
+  publish-release-extension:
+    needs:
+      - delete-extension-release-tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Download publish stable extension artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: publish-stable-extension
+          path: publish
+
+      - name: Publish extension release assets
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: Extension
+          name: Extension
+          prerelease: true
+          draft: false
+          target_commitish: ${{ github.sha }}
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          files: publish/*.apk
+
+#  notify-stable:
+#    needs:
+#      - prepare-publish-stable-app
+#      - publish-release-stable
+#    uses: ./.github/workflows/reusable-notify-telegram.yml
+#    with:
+#      channel: stable
+#      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+#      publish_artifact_name: publish-stable-app
+#      meta_asset_name: FlyCat-stable-meta.json
+#      telegram_title: FlyCat Stable
+#    secrets: inherit

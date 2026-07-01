@@ -18,53 +18,72 @@
  *
  */
 
-package com.github.yumelira.yumebox.service
+package com.github.yumelira.yumebox.runtime.api.service
 
-import com.github.yumelira.yumebox.service.common.constants.Intents
+import android.content.Context
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimeTargetMode
+
+enum class LocalRuntimePhase {
+    Idle,
+    Starting,
+    Running,
+    Stopping,
+    Failed;
+    val isActive: Boolean
+        get() = this != Idle
+}
+
+interface LocalRuntimeServiceContract {
+    fun start(
+        context: Context,
+        mode: RuntimeTargetMode,
+        source: String = ProxyServiceContracts.SOURCE_UNKNOWN,
+    )
+    fun stop(
+        context: Context,
+        clashRequestStopAction: String,
+    )
+}
+
+interface LocalRuntimeStatusContract {
+    val serviceRunning: Boolean
+    fun reconcilePersistedRuntimeState()
+    fun clearLegacyStateFiles()
+    fun isRuntimeActive(mode: RuntimeTargetMode): Boolean
+    fun queryRuntimePhase(mode: RuntimeTargetMode): LocalRuntimePhase
+    fun queryRuntimeStartedAt(mode: RuntimeTargetMode): Long?
+    fun isLocalRuntimeServiceAlive(mode: RuntimeTargetMode): Boolean
+    fun markRuntimeIdle(mode: RuntimeTargetMode)
+}
+
+object RuntimeServiceContractRegistry {
+    @Volatile
+    var localRuntimeService: LocalRuntimeServiceContract? = null
+    @Volatile
+    var localRuntimeStatus: LocalRuntimeStatusContract? = null
+    @Volatile
+    var rootAccessSupport: com.github.yumelira.yumebox.runtime.api.service.root.RootAccessSupportContract? = null
+    @Volatile
+    var rootTunRuntimeRecovery: com.github.yumelira.yumebox.runtime.api.service.root.RootTunRuntimeRecoveryContract? = null
+    @Volatile
+    var rootTunForegroundService: com.github.yumelira.yumebox.runtime.api.service.root.RootTunForegroundServiceContract? = null
+    @Volatile
+    var rootTunStateStoreFactory: com.github.yumelira.yumebox.runtime.api.service.root.RootTunStateStoreFactoryContract? = null
+    @Volatile
+    var rootPackageQuery: com.github.yumelira.yumebox.runtime.api.service.root.RootPackageQueryContract? = null
+    @Volatile
+    var rootTunBinding: com.github.yumelira.yumebox.runtime.api.service.root.RootTunBindingContract? = null
+    @Volatile
+    var localRuntimeSessionHelpers: com.github.yumelira.yumebox.runtime.api.service.runtime.session.LocalRuntimeSessionHelpers? = null
+}
 
 object ProxyServiceContracts {
-    val ACTION_PROXY_STARTED: String
-        get() = Intents.ACTION_CLASH_STARTED
-
-    val ACTION_PROXY_STOPPED: String
-        get() = Intents.ACTION_CLASH_STOPPED
-
-    val ACTION_PROXY_GROUPS_UPDATED: String
-        get() = Intents.ACTION_PROXY_GROUPS_UPDATED
-
-    val ACTION_PROFILE_LOADED: String
-        get() = Intents.ACTION_PROFILE_LOADED
-
-    val ACTION_PROFILE_CHANGED: String
-        get() = Intents.ACTION_PROFILE_CHANGED
-
-    val ACTION_REQUEST_STOP: String
-        get() = Intents.ACTION_CLASH_REQUEST_STOP
-
-    val ACTION_PATCH_SELECTOR: String
-        get() = Intents.ACTION_PATCH_SELECTOR
-
-    const val EXTRA_GROUP_NAME = Intents.EXTRA_GROUP_NAME
-    const val EXTRA_PROXY_NAME = Intents.EXTRA_PROXY_NAME
-    const val EXTRA_PROFILE_ID = Intents.EXTRA_PROFILE_ID
-    const val EXTRA_START_PROXY = Intents.EXTRA_START_PROXY
-
-    val ACTION_PATCH_OVERRIDE: String
-        get() = Intents.ACTION_PATCH_OVERRIDE
-
-    val ACTION_CLEAR_OVERRIDE: String
-        get() = Intents.ACTION_CLEAR_OVERRIDE
-
-    const val EXTRA_OVERRIDE_SLOT = Intents.EXTRA_OVERRIDE_SLOT
-    const val EXTRA_OVERRIDE_CONFIG = Intents.EXTRA_OVERRIDE_CONFIG
-
-    val ACTION_HEALTH_CHECK: String
-        get() = Intents.ACTION_HEALTH_CHECK
-
-    val ACTION_HEALTH_CHECK_ALL: String
-        get() = Intents.ACTION_HEALTH_CHECK_ALL
-
-    const val EXTRA_HEALTH_CHECK_GROUP = Intents.EXTRA_HEALTH_CHECK_GROUP
+    const val SOURCE_UI = "ui"
+    const val SOURCE_TILE = "tile"
+    const val SOURCE_AUTO_RESTART = "auto_restart"
+    const val SOURCE_AUTO_RESTART_BOOT = "auto_restart_boot"
+    const val SOURCE_AUTO_RESTART_REPLACED = "auto_restart_replaced"
+    const val SOURCE_UNKNOWN = "unknown"
 
     fun intentSelf(action: String, packageName: String? = null): android.content.Intent =
         android.content.Intent(action).apply {

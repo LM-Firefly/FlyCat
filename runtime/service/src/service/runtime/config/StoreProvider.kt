@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.runtime.config
+package com.github.yumelira.yumebox.runtime.service.runtime.config
 
 interface StoreProvider {
     fun getInt(key: String, defaultValue: Int): Int

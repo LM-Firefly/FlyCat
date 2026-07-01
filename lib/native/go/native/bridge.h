@@ -11,7 +11,7 @@
 #include <malloc.h>
 #include <android/log.h>
 
-#define TAG "YumeBox"
+#define TAG "FlyCat"
 
 typedef const char *c_string;
 

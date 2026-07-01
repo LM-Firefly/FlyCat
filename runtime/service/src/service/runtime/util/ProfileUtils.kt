@@ -18,9 +18,9 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.runtime.util
+package com.github.yumelira.yumebox.runtime.service.runtime.util
 
-import com.github.yumelira.yumebox.service.runtime.records.ImportedDao
+import com.github.yumelira.yumebox.runtime.service.runtime.records.ImportedDao
 import java.util.UUID
 
 suspend fun generateProfileUUID(): UUID {

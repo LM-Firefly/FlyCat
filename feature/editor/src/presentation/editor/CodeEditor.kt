@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.feature.editor.editor
+package com.github.yumelira.yumebox.feature.editor.presentation.editor
 
 import android.util.TypedValue
 import androidx.compose.runtime.Composable
@@ -31,8 +31,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.github.yumelira.yumebox.feature.editor.language.TextMateInitializer
-import com.github.yumelira.yumebox.feature.editor.theme.EditorThemeManager
+import com.github.yumelira.yumebox.feature.editor.presentation.language.TextMateInitializer
+import com.github.yumelira.yumebox.feature.editor.presentation.theme.EditorThemeManager
 import io.github.rosemoe.sora.event.ContentChangeEvent
 import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.subscribeAlways

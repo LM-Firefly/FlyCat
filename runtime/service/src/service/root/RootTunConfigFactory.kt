@@ -18,17 +18,19 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.root
+package com.github.yumelira.yumebox.runtime.service.root
 
 import android.content.Context
+import com.github.yumelira.yumebox.core.importedDir
 import com.github.yumelira.yumebox.core.model.RootTunConfig
 import com.github.yumelira.yumebox.core.model.RootTunDnsMode
-import com.github.yumelira.yumebox.service.runtime.config.ServiceStore
-import com.github.yumelira.yumebox.service.runtime.records.ImportedDao
-import com.github.yumelira.yumebox.service.runtime.records.ProfileStore
-import com.github.yumelira.yumebox.service.runtime.session.RuntimeStartupLogStore
-import com.github.yumelira.yumebox.service.runtime.util.directoryLastModified
-import com.github.yumelira.yumebox.service.runtime.util.importedDir
+import com.github.yumelira.yumebox.runtime.api.service.root.RootTunJson
+import com.github.yumelira.yumebox.runtime.api.service.root.rootTunEncode
+import com.github.yumelira.yumebox.runtime.service.runtime.config.ServiceStore
+import com.github.yumelira.yumebox.runtime.service.runtime.records.ImportedDao
+import com.github.yumelira.yumebox.runtime.service.runtime.records.ProfileStore
+import com.github.yumelira.yumebox.runtime.service.runtime.session.RuntimeStartupLogStore
+import com.github.yumelira.yumebox.runtime.service.runtime.util.directoryLastModified
 import java.io.File
 import java.util.UUID
 

@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.service.remote
+package com.github.yumelira.yumebox.runtime.api.service.remote
 
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
 import com.github.yumelira.yumebox.core.model.Provider
@@ -29,35 +29,39 @@ import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.model.UiConfiguration
 
 interface IClashManager {
-    fun queryTunnelState(): TunnelState
+    suspend fun queryTunnelState(): TunnelState
 
-    fun queryTrafficNow(): Long
+    suspend fun queryTrafficNow(): Long
 
-    fun queryTrafficTotal(): Long
+    suspend fun queryTrafficTotal(): Long
 
-    fun queryConnections(): ConnectionSnapshot
+    suspend fun queryConnections(): ConnectionSnapshot
 
-    fun queryProfileProxyGroupNames(excludeNotSelectable: Boolean): List<String>
+    suspend fun queryProfileProxyGroupNames(excludeNotSelectable: Boolean): List<String>
 
-    fun queryProfileProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup>
+    suspend fun queryProfileProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup>
 
-    fun queryActiveProfileTunRouteExcludeAddress(): List<String>
+    suspend fun queryActiveProfileTunRouteExcludeAddress(): List<String>
 
-    fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup>
+    suspend fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup>
 
-    fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String>
+    suspend fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String>
 
-    fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup
+    suspend fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup
 
-    fun queryConfiguration(): UiConfiguration
+    suspend fun queryConfiguration(): UiConfiguration
 
-    fun queryProviders(): ProviderList
+    suspend fun queryProviders(): ProviderList
 
-    fun patchSelector(group: String, name: String): Boolean
+    suspend fun patchTunnelMode(mode: TunnelState.Mode): Boolean
 
-    fun closeConnection(id: String): Boolean
+    suspend fun patchSelector(group: String, name: String): Boolean
 
-    fun closeAllConnections()
+    suspend fun patchForceSelector(group: String, name: String): Boolean
+
+    suspend fun closeConnection(id: String): Boolean
+
+    suspend fun closeAllConnections()
 
     suspend fun healthCheck(group: String)
 

@@ -18,25 +18,31 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore
+package com.github.yumelira.yumebox.feature.substore
 
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
-import com.github.yumelira.yumebox.substore.engine.NativeLibraryManager
+import com.github.yumelira.yumebox.feature.substore.engine.NativeLibraryManager
 import timber.log.Timber
 
 class SubStoreService : Service() {
     private var caseEngine: CaseEngine? = null
+    @Volatile private var isStarting = false
     private var isRunning = false
 
     override fun onBind(intent: Intent): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (isRunning) return START_STICKY
+        if (isRunning || isStarting) return START_STICKY
 
         val request = SubStoreServiceController.requestFrom(intent)
-        return runCatching {
+        Timber.w(
+            "Sub-Store onStartCommand: frontend=${request.frontendPort}, backend=${request.backendPort}, allowLan=${request.allowLan}"
+        )
+        isStarting = true
+        Thread {
+            runCatching {
                 if (
                     NetworkUtil.isPortInUse(request.frontendPort) ||
                         NetworkUtil.isPortInUse(request.backendPort)
@@ -60,18 +66,34 @@ class SubStoreService : Service() {
                     throw Exception("CaseEngine 初始化失败")
                 }
 
+                caseEngine = engine
                 engine.startServer()
+                val frontendReady =
+                    NetworkUtil.waitForPortReady(host = "127.0.0.1", port = request.frontendPort)
+                val backendReady =
+                    NetworkUtil.waitForPortReady(host = "127.0.0.1", port = request.backendPort)
+                Timber.w(
+                    "Sub-Store port readiness: frontend=${request.frontendPort} ready=$frontendReady, backend=${request.backendPort} ready=$backendReady"
+                )
+                if (!frontendReady || !backendReady) {
+                    throw Exception(
+                        "Sub-Store 启动超时（frontend:${request.frontendPort} ready=$frontendReady, backend:${request.backendPort} ready=$backendReady）"
+                    )
+                }
                 isRunning = true
                 SubStoreServiceController.markRunning()
-
-                START_STICKY
+                Timber.i(
+                    "Sub-Store started: frontend=${request.frontendPort}, backend=${request.backendPort}, allowLan=${request.allowLan}"
+                )
             }
             .getOrElse { error ->
                 Timber.e(error, "Sub-Store service start failed")
                 cleanupService()
                 stopSelf(startId)
-                START_NOT_STICKY
             }
+            isStarting = false
+        }.start()
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {
@@ -91,14 +113,7 @@ class SubStoreService : Service() {
                         return false
                     }
                 }
-
-                val loaded = NativeLibraryManager.loadJniLibrary(javetLibBaseName)
-                if (!loaded) {
-                    Timber.e(
-                        "Javet load failed: ${NativeLibraryManager.getLibraryStatus(javetLibBaseName)}"
-                    )
-                }
-                loaded
+                true
             }
             .getOrElse { error ->
                 Timber.e(error, "Javet load error")
@@ -110,6 +125,7 @@ class SubStoreService : Service() {
             .onFailure { error -> Timber.e(error, "Failed to stop Sub-Store service") }
         caseEngine = null
         isRunning = false
+        isStarting = false
         SubStoreServiceController.markStopped()
     }
 }
