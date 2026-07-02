@@ -37,11 +37,14 @@ val appAbiList =
 
 val geoFilesAssetsDir = rootProject.layout.buildDirectory.dir("generated/assets/geo")
 
-// CI-computed build versioning. CI injects `-Pbuild.number=<N>` (monotonic push counter,
-// see .github/workflows), `-Pbuild.hash=<commit sha>` and `-Pbuild.branch=<branch name>`;
-// local builds fall back to the base version. versionName = <base>[.<branch>].<hash8> when
-// a hash is injected. 5795 is the versionCode epoch that replaced the legacy manual
-// `project.version.code` scheme (last manual value: 5200).
+// CI-computed build versioning. CI injects `-Pbuild.number=<N>` (N = ci-channel.yml
+// run_number: +1 per run, one push -> one run, immune to git history rewrites; both
+// channels of one run share the same N), `-Pbuild.hash=<commit sha>` and
+// `-Pbuild.branch=<branch name>`; local builds fall back to the base version.
+// versionName = <base>[.<branch>].<hash8> when a hash is injected. 5795 is the versionCode
+// epoch that replaced the legacy manual `project.version.code` scheme (last manual value:
+// 5200). If ci-channel.yml is ever RENAMED its run_number resets to 1 - bump this base
+// above the last published versionCode to stay monotonic.
 val baseVersionCode = 5795
 val ciBuildNumber = providers.gradleProperty("build.number").orNull
     ?.trim()?.takeIf { it.isNotEmpty() }?.toInt()

@@ -66,9 +66,9 @@ jobs:
       channel: pr
     secrets: inherit
 
-  # PR builds do NOT consume the BUILD_NUMBER push counter: build_number stays empty, so
-  # versionCode falls back to the 5795 base. The commit hash in versionName (and the PR
-  # number in the release tag) uniquely identifies the build instead.
+  # PR builds carry no push counter (that is ci-channel.yml's run_number): build_number
+  # stays empty, so versionCode falls back to the 5795 base. The commit hash in versionName
+  # (and the PR number in the release tag) uniquely identifies the build instead.
   build-apk-pr-app:
     needs: bundle-native-pr
     uses: ./.github/workflows/reusable-build-apk-only.yml
