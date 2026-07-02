@@ -30,9 +30,9 @@ import com.github.yumelira.yumebox.data.model.ProxyMode
 import com.github.yumelira.yumebox.data.model.TunStack
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.Preference
+import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
 import com.github.yumelira.yumebox.runtime.client.RuntimeStateMapper
-import com.github.yumelira.yumebox.service.runtime.state.RuntimePhase
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow

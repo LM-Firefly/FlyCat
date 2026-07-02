@@ -71,14 +71,14 @@ import com.github.yumelira.yumebox.presentation.component.rememberBottomBarReser
 import com.github.yumelira.yumebox.presentation.component.rememberBottomBarScrollBehavior
 import com.github.yumelira.yumebox.presentation.component.rememberMainPagerFlingBehavior
 import com.github.yumelira.yumebox.presentation.component.rememberMainPagerState
-import com.github.yumelira.yumebox.presentation.screen.ProxyPager
 import com.github.yumelira.yumebox.presentation.navigation.Route
+import com.github.yumelira.yumebox.presentation.screen.ProxyPager
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.screen.moe.MoeHomePage
-import com.github.yumelira.yumebox.screen.moe.calculateHomeVisibility
 import com.github.yumelira.yumebox.screen.home.HomePager
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
+import com.github.yumelira.yumebox.screen.moe.MoeHomePage
+import com.github.yumelira.yumebox.screen.moe.calculateHomeVisibility
 import com.github.yumelira.yumebox.screen.profiles.ProfilesPager
 import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
 import com.github.yumelira.yumebox.screen.settings.SettingPager

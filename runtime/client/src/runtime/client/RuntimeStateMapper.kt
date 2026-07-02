@@ -21,9 +21,9 @@
 package com.github.yumelira.yumebox.runtime.client
 
 import com.github.yumelira.yumebox.data.model.ProxyMode
-import com.github.yumelira.yumebox.service.runtime.state.RuntimeOwner
-import com.github.yumelira.yumebox.service.runtime.state.RuntimePhase
-import com.github.yumelira.yumebox.service.runtime.state.RuntimeSnapshot
+import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
+import com.github.yumelira.yumebox.runtime.api.RuntimePhase
+import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 
 object RuntimeStateMapper {
     fun isRunningOrStarting(snapshot: RuntimeSnapshot): Boolean =

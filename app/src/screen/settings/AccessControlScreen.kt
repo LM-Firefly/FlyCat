@@ -64,7 +64,9 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.graphics.drawable.toBitmap
+import com.github.yumelira.yumebox.data.model.AccessControlSortMode
 import com.github.yumelira.yumebox.presentation.component.Card
+import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.SearchPager
 import com.github.yumelira.yumebox.presentation.component.SearchStatus
@@ -76,7 +78,6 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.`Settings-2`
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.AppTheme.spacing
-import com.github.yumelira.yumebox.presentation.component.Navigator
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -406,18 +407,29 @@ private fun AccessControlCollapsedSearchBar(
     )
 }
 
+// :data cannot depend on MLang, so the display-name mapping for the persisted sort-mode enum
+// stays here on the :app side.
+private val AccessControlSortMode.displayName: String
+    get() =
+        when (this) {
+            AccessControlSortMode.PACKAGE_NAME -> MLang.AccessControl.SortMode.PackageName
+            AccessControlSortMode.LABEL -> MLang.AccessControl.SortMode.Label
+            AccessControlSortMode.INSTALL_TIME -> MLang.AccessControl.SortMode.InstallTime
+            AccessControlSortMode.UPDATE_TIME -> MLang.AccessControl.SortMode.UpdateTime
+        }
+
 @Composable
 private fun AccessControlSortMenu(
     show: Boolean,
-    sortMode: AccessControlViewModel.SortMode,
+    sortMode: AccessControlSortMode,
     onDismiss: () -> Unit,
-    onSortModeChange: (AccessControlViewModel.SortMode) -> Unit,
+    onSortModeChange: (AccessControlSortMode) -> Unit,
 ) {
     val entries =
         listOf(
             DropdownEntry(
                 items =
-                    AccessControlViewModel.SortMode.entries.map { mode ->
+                    AccessControlSortMode.entries.map { mode ->
                         DropdownItem(
                             text = mode.displayName,
                             selected = mode == sortMode,

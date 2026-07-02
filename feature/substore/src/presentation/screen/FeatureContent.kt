@@ -66,7 +66,6 @@ fun FeatureContent(
     val isDownloadingSubStoreBackend by viewModel.isDownloadingSubStoreBackend.collectAsState()
     val isExtensionInstalled by viewModel.isExtensionInstalled.collectAsState()
     val isJavetLoaded by viewModel.isJavetLoaded.collectAsState()
-    val isSubStoreInitialized by viewModel.isSubStoreInitialized.collectAsState()
     val selectedPanelType by viewModel.selectedPanelType.state.collectAsState()
 
     val panelDisplayNames = listOf("Zashboard", "MetaCubeXD", "Yacd")
@@ -109,40 +108,36 @@ fun FeatureContent(
             }
 
             item {
-                val canStartService = isExtensionInstalled && isSubStoreInitialized
                 Title(MLang.Feature.ServiceStatus.Section)
                 Card {
                     val autoCloseItems = AutoCloseMode.entries.map { it.getDisplayName() }
                     val autoCloseValues = AutoCloseMode.entries
 
-                    EnumSelector(
+                    SwitchPreference(
                         title = MLang.Feature.ServiceStatus.SwitchStartSubStore,
-                        summary = MLang.Feature.ServiceStatus.AutoCloseModeSummary,
-                        currentValue = autoCloseMode,
-                        items = autoCloseItems,
-                        values = autoCloseValues,
-                        onValueChange = { mode ->
-                            viewModel.setAutoCloseMode(mode)
-                            if (
-                                mode != AutoCloseMode.DISABLED &&
-                                    !isServiceRunning &&
-                                    canStartService
-                            ) {
-                                viewModel.startService()
-                            } else if (mode == AutoCloseMode.DISABLED && isServiceRunning) {
-                                viewModel.stopService()
-                            }
+                        summary = null,
+                        checked = isServiceRunning,
+                        onCheckedChange = {
+                            if (it) viewModel.startService() else viewModel.stopService()
                         },
                     )
                     SwitchPreference(
                         title = MLang.Feature.ServiceStatus.AllowLan,
-                        summary = MLang.Feature.ServiceStatus.AllowLanSummary,
+                        summary = null,
                         checked = allowLanAccess,
                         onCheckedChange = { viewModel.setAllowLanAccess(it) },
                     )
+                    EnumSelector(
+                        title = MLang.Feature.ServiceStatus.AutoCloseModeTitle,
+                        summary = null,
+                        currentValue = autoCloseMode,
+                        items = autoCloseItems,
+                        values = autoCloseValues,
+                        onValueChange = { viewModel.setAutoCloseMode(it) },
+                    )
                     ArrowPreference(
-                        title = "Sub-Store",
-                        summary = subStoreUrl,
+                        title = MLang.Feature.ServiceStatus.OpenSubStorePanel,
+                        summary = null,
                         enabled = !DeviceUtil.is32BitDevice() && isServiceRunning,
                         onClick = {
                             if (!isServiceRunning) return@ArrowPreference
@@ -153,7 +148,7 @@ fun FeatureContent(
             }
 
             item {
-                Title(MLang.Feature.SubStore.SectionHint)
+                Title(MLang.Feature.SubStore.Section)
                 Card {
                     ArrowPreference(
                         title =

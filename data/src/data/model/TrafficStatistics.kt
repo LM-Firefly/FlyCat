@@ -91,27 +91,6 @@ data class AppRouteTrafficUsage(
 }
 
 @Serializable
-data class DailyAppTrafficSummary(
-    val dateMillis: Long,
-    val appUsages: Map<String, AppTrafficUsage> = emptyMap(),
-) {
-    val totalUpload: Long
-        get() = appUsages.values.sumOf(AppTrafficUsage::totalUpload)
-
-    val totalDownload: Long
-        get() = appUsages.values.sumOf(AppTrafficUsage::totalDownload)
-
-    val total: Long
-        get() = totalUpload + totalDownload
-}
-
-@Serializable
-data class DailyRouteTrafficSummary(
-    val dateMillis: Long,
-    val routeUsagesByApp: Map<String, Map<String, AppRouteTrafficUsage>> = emptyMap(),
-)
-
-@Serializable
 data class ConnectionTrafficBaseline(
     val id: String,
     val upload: Long,

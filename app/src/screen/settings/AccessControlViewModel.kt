@@ -29,9 +29,9 @@ import com.github.yumelira.yumebox.core.presentation.AndroidContractStateViewMod
 import com.github.yumelira.yumebox.core.presentation.LoadableState
 import com.github.yumelira.yumebox.data.controller.AccessControlController
 import com.github.yumelira.yumebox.data.model.AccessControlMode
+import com.github.yumelira.yumebox.data.model.AccessControlSortMode
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
-import com.github.yumelira.yumebox.service.root.RootPackageShell
-import dev.oom_wg.purejoy.mlang.MLang
+import com.github.yumelira.yumebox.runtime.service.root.RootPackageShell
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -49,7 +49,14 @@ class AccessControlViewModel(
     AndroidContractStateViewModel<
         AccessControlViewModel.UiState,
         AccessControlViewModel.AccessControlUiEffect,
-    >(application, UiState()) {
+    >(
+        application,
+        UiState(
+            showSystemApps = settings.accessControlShowSystemApps.value,
+            sortMode = settings.accessControlSortMode.value,
+            selectedFirst = settings.accessControlSelectedFirst.value,
+        ),
+    ) {
     data class AppInfo(
         val packageName: String,
         val label: String,
@@ -59,30 +66,20 @@ class AccessControlViewModel(
         val updateTime: Long = 0L,
     )
 
-    enum class SortMode {
-        PACKAGE_NAME,
-        LABEL,
-        INSTALL_TIME,
-        UPDATE_TIME;
-
-        val displayName: String
-            get() =
-                when (this) {
-                    PACKAGE_NAME -> MLang.AccessControl.SortMode.PackageName
-                    LABEL -> MLang.AccessControl.SortMode.Label
-                    INSTALL_TIME -> MLang.AccessControl.SortMode.InstallTime
-                    UPDATE_TIME -> MLang.AccessControl.SortMode.UpdateTime
-                }
-    }
-
     data class UiState(
         override val isLoading: Boolean = true,
         val apps: List<AppInfo> = emptyList(),
         val selectedPackages: Set<String> = emptySet(),
+        /**
+         * Snapshot of the selected packages taken when the screen loads. Selected-first sorting
+         * only ever looks at this snapshot, so toggling apps never reorders the visible list —
+         * newly selected apps float to the top on the next screen entry instead.
+         */
+        val initialSelectedPackages: Set<String> = emptySet(),
         val searchQuery: String = "",
         val showSystemApps: Boolean = false,
-        val sortMode: SortMode = SortMode.LABEL,
-        val selectedFirst: Boolean = false,
+        val sortMode: AccessControlSortMode = AccessControlSortMode.LABEL,
+        val selectedFirst: Boolean = true,
         val needsMiuiPermission: Boolean = false,
         override val message: String? = null,
         override val error: String? = null,
@@ -99,7 +96,7 @@ class AccessControlViewModel(
             .map { state ->
                 filterApps(
                     apps = state.apps,
-                    selectedPackages = state.selectedPackages,
+                    initialSelectedPackages = state.initialSelectedPackages,
                     query = state.searchQuery,
                     showSystemApps = state.showSystemApps,
                     sortMode = state.sortMode,
@@ -173,7 +170,12 @@ class AccessControlViewModel(
                     }
 
             _uiState.update { state ->
-                state.copy(isLoading = false, apps = apps, selectedPackages = selectedPackages)
+                state.copy(
+                    isLoading = false,
+                    apps = apps,
+                    selectedPackages = selectedPackages,
+                    initialSelectedPackages = selectedPackages,
+                )
             }
         }
     }
@@ -227,12 +229,11 @@ class AccessControlViewModel(
 
     private fun filterApps(
         apps: List<AppInfo>,
-        selectedPackages: Set<String>,
+        initialSelectedPackages: Set<String>,
         query: String,
         showSystemApps: Boolean,
-        sortMode: SortMode = SortMode.LABEL,
-        selectedFirst: Boolean = true,
-        descending: Boolean = false,
+        sortMode: AccessControlSortMode,
+        selectedFirst: Boolean,
     ): List<AppInfo> {
         val filtered = apps.filter { app ->
             val matchesQuery =
@@ -244,19 +245,15 @@ class AccessControlViewModel(
         }
         val comparator =
             when (sortMode) {
-                SortMode.PACKAGE_NAME -> compareBy<AppInfo> { it.packageName.lowercase() }
-                SortMode.LABEL -> compareBy { it.label.lowercase() }
-                SortMode.INSTALL_TIME -> compareBy { it.installTime }
-                SortMode.UPDATE_TIME -> compareBy { it.updateTime }
+                AccessControlSortMode.PACKAGE_NAME ->
+                    compareBy<AppInfo> { it.packageName.lowercase() }
+                AccessControlSortMode.LABEL -> compareBy { it.label.lowercase() }
+                AccessControlSortMode.INSTALL_TIME -> compareBy { it.installTime }
+                AccessControlSortMode.UPDATE_TIME -> compareBy { it.updateTime }
             }
-        val sorted =
-            if (descending) {
-                filtered.sortedWith(comparator.reversed())
-            } else {
-                filtered.sortedWith(comparator)
-            }
+        val sorted = filtered.sortedWith(comparator)
         return if (selectedFirst) {
-            sorted.sortedByDescending { selectedPackages.contains(it.packageName) }
+            sorted.sortedByDescending { initialSelectedPackages.contains(it.packageName) }
         } else {
             sorted
         }
@@ -266,15 +263,18 @@ class AccessControlViewModel(
         _uiState.update { state -> state.copy(searchQuery = query) }
     }
 
-    fun onSortModeChange(mode: SortMode) {
+    fun onSortModeChange(mode: AccessControlSortMode) {
+        settings.accessControlSortMode.set(mode)
         _uiState.update { state -> state.copy(sortMode = mode) }
     }
 
     fun onSelectedFirstChange(selectedFirst: Boolean) {
+        settings.accessControlSelectedFirst.set(selectedFirst)
         _uiState.update { state -> state.copy(selectedFirst = selectedFirst) }
     }
 
     fun onShowSystemAppsChange(show: Boolean) {
+        settings.accessControlShowSystemApps.set(show)
         _uiState.update { state -> state.copy(showSystemApps = show) }
     }
 

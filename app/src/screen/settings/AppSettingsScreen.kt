@@ -20,10 +20,13 @@
 
 package com.github.yumelira.yumebox.screen.settings
 
+import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.runtime.Composable
@@ -33,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -64,6 +68,8 @@ import com.github.yumelira.yumebox.presentation.component.rememberStandalonePage
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.screen.settings.component.ThemeColorPickerItem
 import dev.oom_wg.purejoy.mlang.MLang
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -246,6 +252,18 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
     var batteryOptimizationIgnored by remember {
         mutableStateOf(isBatteryOptimizationIgnored(context))
     }
+    val scope = rememberCoroutineScope()
+    // Launch via activity-result so the summary refreshes as soon as the system grant dialog
+    // returns — HyperOS shows it as a dialog-style activity where ON_RESUME timing is unreliable.
+    val batteryOptimizationLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            batteryOptimizationIgnored = isBatteryOptimizationIgnored(context)
+            scope.launch {
+                // The PowerManager whitelist state can lag slightly behind the dialog result.
+                delay(500)
+                batteryOptimizationIgnored = isBatteryOptimizationIgnored(context)
+            }
+        }
     val batteryOptimizationSummary =
         remember(batteryOptimizationIgnored) {
             if (batteryOptimizationIgnored) {
@@ -286,7 +304,11 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
             title = MLang.AppSettings.ServiceSection.BatteryOptimizationTitle,
             summary = batteryOptimizationSummary,
             onClick = {
-                if (!openBatteryOptimizationSettings(context, batteryOptimizationIgnored)) {
+                val launched =
+                    batteryOptimizationIntents(context, batteryOptimizationIgnored).any { intent ->
+                        runCatching { batteryOptimizationLauncher.launch(intent) }.isSuccess
+                    }
+                if (!launched) {
                     context.toast(MLang.Util.Error.UnknownError)
                 }
             },
@@ -377,38 +399,40 @@ private fun isBatteryOptimizationIgnored(context: android.content.Context): Bool
     return powerManager.isIgnoringBatteryOptimizations(context.packageName)
 }
 
-private fun openBatteryOptimizationSettings(
+private fun batteryOptimizationIntents(
     context: android.content.Context,
     alreadyIgnored: Boolean,
-): Boolean {
-    val intents = buildList {
-        if (!alreadyIgnored) {
-            add(
-                Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                    data = "package:${context.packageName}".toUri()
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-            )
-        }
+): List<Intent> = buildList {
+    if (!alreadyIgnored) {
         add(
-            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = "package:${context.packageName}".toUri()
             }
         )
+    } else {
+        // Already whitelisted: open this app's own power policy page instead of the global
+        // "battery usage of all apps" list. MIUI/HyperOS per-app power keeper page first...
         add(
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", context.packageName, null)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            Intent().apply {
+                component =
+                    ComponentName(
+                        "com.miui.powerkeeper",
+                        "com.miui.powerkeeper.ui.HiddenAppsConfigActivity",
+                    )
+                putExtra("package_name", context.packageName)
+                putExtra(
+                    "package_label",
+                    context.applicationInfo.loadLabel(context.packageManager).toString(),
+                )
             }
         )
     }
-
-    intents.forEach { intent ->
-        if (runCatching { context.startActivity(intent) }.isSuccess) {
-            return true
+    // ...then the public per-app details page as the fallback for both branches.
+    add(
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
         }
-    }
-    return false
+    )
 }
 
 @Composable

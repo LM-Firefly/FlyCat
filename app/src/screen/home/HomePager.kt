@@ -49,8 +49,8 @@ import com.github.yumelira.yumebox.presentation.component.LocalNavigator
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.navigation.Route
+import com.github.yumelira.yumebox.presentation.theme.UiDp
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -207,8 +207,8 @@ fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
 
 private fun handleProxyToggle(
     isRunning: Boolean,
-    recommendedProfile: com.github.yumelira.yumebox.service.runtime.entity.Profile?,
-    onStart: (com.github.yumelira.yumebox.service.runtime.entity.Profile) -> Unit,
+    recommendedProfile: com.github.yumelira.yumebox.runtime.api.Profile?,
+    onStart: (com.github.yumelira.yumebox.runtime.api.Profile) -> Unit,
     onStop: () -> Unit,
 ) {
     if (!isRunning) {

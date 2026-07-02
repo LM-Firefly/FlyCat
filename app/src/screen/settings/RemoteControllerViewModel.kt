@@ -28,8 +28,8 @@ import com.github.yumelira.yumebox.data.store.RemoteControllerStore
 import com.github.yumelira.yumebox.data.store.add
 import com.github.yumelira.yumebox.data.store.remove
 import com.github.yumelira.yumebox.data.store.update
-import com.github.yumelira.yumebox.remote.HttpClashManager
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
+import com.github.yumelira.yumebox.runtime.client.manager.HttpClashManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow

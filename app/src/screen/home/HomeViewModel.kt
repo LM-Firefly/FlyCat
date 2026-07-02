@@ -33,14 +33,14 @@ import com.github.yumelira.yumebox.data.gateway.NetworkInfoService
 import com.github.yumelira.yumebox.data.model.ProxyMode
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.domain.model.TrafficData
+import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
+import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
 import com.github.yumelira.yumebox.runtime.client.ProxyGroupSyncPriority
 import com.github.yumelira.yumebox.runtime.client.RuntimeStateMapper
-import com.github.yumelira.yumebox.service.root.RootAccessSupport
-import com.github.yumelira.yumebox.service.runtime.entity.Profile
-import com.github.yumelira.yumebox.service.runtime.state.RuntimeOwner
-import com.github.yumelira.yumebox.service.runtime.state.RuntimePhase
+import com.github.yumelira.yumebox.runtime.service.root.RootAccessSupport
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -514,7 +514,7 @@ class HomeViewModel(
                 clearPendingStart()
                 _pendingTransition.value = PendingTransition.None
             }
-        } catch (error: com.github.yumelira.yumebox.remote.VpnPermissionRequired) {
+        } catch (error: com.github.yumelira.yumebox.runtime.api.VpnPermissionRequired) {
             _pendingTransition.value = PendingTransition.AwaitingPermission
             _vpnPrepareIntent.emit(error.intent)
             Timber.i("VPN permission required")

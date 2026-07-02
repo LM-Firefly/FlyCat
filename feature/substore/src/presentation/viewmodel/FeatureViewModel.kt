@@ -58,7 +58,7 @@ class FeatureViewModel(
     val panelOpenMode: Preference<LinkOpenMode> = store.panelOpenMode
     val exitUiWhenBackground: Preference<Boolean> = store.exitUiWhenBackground
 
-    private val _autoCloseMode = MutableStateFlow(AutoCloseMode.DISABLED)
+    private val _autoCloseMode = MutableStateFlow(AutoCloseMode.ALWAYS_ON)
     val autoCloseMode: StateFlow<AutoCloseMode> = _autoCloseMode.asStateFlow()
 
     val serviceRunningState: StateFlow<Boolean> =
@@ -141,7 +141,6 @@ class FeatureViewModel(
         viewModelScope.launch {
             cancelAutoCloseTimer()
             SubStoreServiceController.stopService(application)
-            _autoCloseMode.value = AutoCloseMode.DISABLED
         }
     }
 

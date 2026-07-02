@@ -4,19 +4,14 @@ Feature = {
 
     ServiceStatus = {
         Section = "Service Status"
-        Running = "Service running: %s"
-        NeedExtension = "Extension required"
-        NeedSubStore = "Sub-Store resources required"
-        NotRunning = "Service not running"
         SwitchStartSubStore = "Start Sub-Store Service"
+        OpenSubStorePanel = "Open Sub-Store Panel"
         AllowLan = "Allow LAN Access"
-        AllowLanSummary = "Allow LAN devices to access Sub-Store"
-        AutoCloseModeSummary = "Select service auto close time, long running will consume more performance"
+        AutoCloseModeTitle = "Auto-close timer"
         AutoCloseModeAlwaysOn = "Always On"
         AutoCloseMode5Min = "5 minutes"
         AutoCloseMode10Min = "10 minutes"
         AutoClosed = "Sub-Store auto closed"
-        AutoCloseModeDisabled = "Disabled"
     }
 
     Panel = {
@@ -46,12 +41,12 @@ Feature = {
     }
 
     SubStore = {
-        SectionHint = "Sub-Store resource download, both extension and static resources are required. After installing extension for the first time, please restart the app"
+        Section = "Sub-Store Resources"
         ExtensionInstalled = "Extension Installed"
         ExtensionInstall = "Install Extension"
         JavetAvailable = "Javet library available, click to refresh status"
         JavetPending = "Extension installed, Javet pending extraction, click to refresh status"
-        DownloadHint = "Click to download extension"
+        DownloadHint = "Click to download the extension; both the extension and static resources are required. Restart the app after first install"
         DownloadResources = "Download Resources"
         DownloadResourcesSummary = "Download frontend and backend resources at once"
         Not32Bit = "Sub-Store does not support 32-bit devices"

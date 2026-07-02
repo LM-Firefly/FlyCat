@@ -32,11 +32,13 @@ import com.github.yumelira.yumebox.data.store.TrafficStatisticsStore
 import com.github.yumelira.yumebox.presentation.component.TrafficDonutSlice
 import com.github.yumelira.yumebox.presentation.theme.AppColors
 import dev.oom_wg.purejoy.mlang.MLang
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -45,23 +47,13 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
     private val selectedTimeRange = MutableStateFlow(StatisticsTimeRange.TODAY)
     private val appColors = AppColors()
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<TrafficStatisticsUiState> =
-        combine(selectedTimeRange, trafficStatisticsStore.dailyAppSummaries) { range, _ ->
-                val topApps = trafficStatisticsStore.getAppUsagesSorted(range)
-                val totalUpload = topApps.sumOf(AppTrafficUsage::totalUpload)
-                val totalDownload = topApps.sumOf(AppTrafficUsage::totalDownload)
-
-                TrafficStatisticsUiState(
-                    selectedTimeRange = range,
-                    summary =
-                        DailyTrafficSummary(
-                            dateMillis = range.days.toLong(),
-                            totalUpload = totalUpload,
-                            totalDownload = totalDownload,
-                        ),
-                    topApps = topApps,
-                    donutSlices = buildDonutSlices(topApps),
-                )
+        selectedTimeRange
+            .flatMapLatest { range ->
+                trafficStatisticsStore.getAppUsagesFlow(range).map { topApps ->
+                    buildUiState(range, topApps)
+                }
             }
             .distinctUntilChanged()
             .stateIn(
@@ -76,6 +68,26 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
 
     fun clearAllStatistics() {
         viewModelScope.launch { trafficStatisticsStore.clearAll() }
+    }
+
+    private fun buildUiState(
+        range: StatisticsTimeRange,
+        topApps: List<AppTrafficUsage>,
+    ): TrafficStatisticsUiState {
+        val totalUpload = topApps.sumOf(AppTrafficUsage::totalUpload)
+        val totalDownload = topApps.sumOf(AppTrafficUsage::totalDownload)
+
+        return TrafficStatisticsUiState(
+            selectedTimeRange = range,
+            summary =
+                DailyTrafficSummary(
+                    dateMillis = range.days.toLong(),
+                    totalUpload = totalUpload,
+                    totalDownload = totalDownload,
+                ),
+            topApps = topApps,
+            donutSlices = buildDonutSlices(topApps),
+        )
     }
 
     private fun buildDonutSlices(apps: List<AppTrafficUsage>): List<TrafficDonutSlice> {

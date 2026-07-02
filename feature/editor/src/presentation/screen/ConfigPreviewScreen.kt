@@ -38,13 +38,13 @@ import com.github.yumelira.yumebox.feature.editor.editor.CodeEditor
 import com.github.yumelira.yumebox.feature.editor.editor.rememberConfiguredCodeEditorState
 import com.github.yumelira.yumebox.feature.editor.format.CodeFormatter
 import com.github.yumelira.yumebox.feature.editor.language.LanguageScope
+import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.SmallTopBar
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.ArrowLeft
 import com.github.yumelira.yumebox.presentation.icon.yume.ArrowRight
 import com.github.yumelira.yumebox.presentation.icon.yume.ListCollapse
 import com.github.yumelira.yumebox.presentation.icon.yume.Save
-import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon

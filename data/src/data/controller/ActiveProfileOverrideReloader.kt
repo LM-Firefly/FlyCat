@@ -21,7 +21,7 @@
 package com.github.yumelira.yumebox.data.controller
 
 import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
-import com.github.yumelira.yumebox.service.runtime.entity.Profile
+import com.github.yumelira.yumebox.runtime.api.Profile
 import timber.log.Timber
 
 class ActiveProfileOverrideReloader(

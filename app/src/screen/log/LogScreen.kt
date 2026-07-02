@@ -57,6 +57,7 @@ import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.data.store.LogStore
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.component.CenteredText
+import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
@@ -67,7 +68,6 @@ import com.github.yumelira.yumebox.presentation.icon.yume.PowerOff
 import com.github.yumelira.yumebox.presentation.icon.yume.Share
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.component.Navigator
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged

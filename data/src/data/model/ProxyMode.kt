@@ -20,8 +20,6 @@
 
 package com.github.yumelira.yumebox.data.model
 
-enum class ProxyMode {
-    Tun,
-    RootTun,
-    Http,
-}
+// Compatibility shim: the enum now lives in :core so :runtime:api (which cannot depend
+// on :data) can reference it. Callers migrate to the core import module by module.
+typealias ProxyMode = com.github.yumelira.yumebox.core.model.ProxyMode

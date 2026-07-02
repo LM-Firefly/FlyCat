@@ -289,7 +289,7 @@ class AppTrafficStatisticsCollector(
         )
     }
 
-    private fun recordUnattributedDeltaIfNeeded(
+    private suspend fun recordUnattributedDeltaIfNeeded(
         timestamp: Long,
         currentUpload: Long,
         currentDownload: Long,

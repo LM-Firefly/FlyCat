@@ -50,7 +50,7 @@ import com.github.yumelira.yumebox.presentation.util.getDisplayProvider
 import com.github.yumelira.yumebox.presentation.util.getInfoText
 import com.github.yumelira.yumebox.presentation.util.isConfigSaved
 import com.github.yumelira.yumebox.presentation.util.shouldShowUpdateButton
-import com.github.yumelira.yumebox.service.runtime.entity.Profile
+import com.github.yumelira.yumebox.runtime.api.Profile
 import dev.oom_wg.purejoy.mlang.MLang
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon

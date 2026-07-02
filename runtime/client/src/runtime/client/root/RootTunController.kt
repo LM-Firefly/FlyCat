@@ -28,50 +28,26 @@ import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.model.ProxySort
 import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.model.UiConfiguration
-import com.github.yumelira.yumebox.service.RootTunService
-import com.github.yumelira.yumebox.service.common.util.appContextOrSelf
-import com.github.yumelira.yumebox.service.root.IRootTunService
-import com.github.yumelira.yumebox.service.root.IRootTunStateObserver
-import com.github.yumelira.yumebox.service.root.RootTunBinding
-import com.github.yumelira.yumebox.service.root.RootTunLogChunk
-import com.github.yumelira.yumebox.service.root.RootTunOperationResult
-import com.github.yumelira.yumebox.service.root.RootTunStartRequest
-import com.github.yumelira.yumebox.service.root.RootTunStatus
-import com.github.yumelira.yumebox.service.root.RootTunStatusFlow
-import com.github.yumelira.yumebox.service.root.rootTunDecode
-import com.github.yumelira.yumebox.service.root.rootTunEncode
-import com.github.yumelira.yumebox.service.runtime.state.RuntimePhase
+import com.github.yumelira.yumebox.runtime.api.RootTunStatus
+import com.github.yumelira.yumebox.runtime.api.RuntimePhase
+import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
+import com.github.yumelira.yumebox.runtime.service.RootTunService
+import com.github.yumelira.yumebox.runtime.service.root.IRootTunService
+import com.github.yumelira.yumebox.runtime.service.root.RootTunBinding
+import com.github.yumelira.yumebox.runtime.service.root.RootTunLogChunk
+import com.github.yumelira.yumebox.runtime.service.root.RootTunOperationResult
+import com.github.yumelira.yumebox.runtime.service.root.RootTunStartRequest
+import com.github.yumelira.yumebox.runtime.service.root.RootTunStatusFlow
+import com.github.yumelira.yumebox.runtime.service.root.rootTunDecode
+import com.github.yumelira.yumebox.runtime.service.root.rootTunEncode
 import com.topjohnwu.superuser.ipc.RootService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 object RootTunController {
-    private val binding = RootTunBinding()
-
-    /**
-     * Receives root-pushed status over the AIDL channel and freshens the in-process
-     * [RootTunStatusFlow], replacing the old shared-MMKV polling.
-     */
-    private val stateObserver =
-        object : IRootTunStateObserver.Stub() {
-            override fun onStatusChanged(statusJson: String) {
-                runCatching {
-                    RootTunStatusFlow.update(rootTunDecode<RootTunStatus>(statusJson))
-                }
-            }
-        }
-
-    init {
-        // Re-register the observer on every (re)bind; unregister on disconnect. Registration is
-        // idempotent (RemoteCallbackList dedups by binder) and failures are swallowed (root may be
-        // momentarily gone).
-        binding.afterBind = { service ->
-            runCatching { service.registerStateObserver(stateObserver) }
-        }
-        binding.beforeUnbind = { service ->
-            runCatching { service.unregisterStateObserver(stateObserver) }
-        }
-    }
+    // Status-push observation is armed by RootTunBinding.shared itself, so every caller of the
+    // single process-wide connection feeds RootTunStatusFlow regardless of who bound first.
+    private val binding = RootTunBinding.shared
 
     private suspend fun <T> remoteCall(
         context: Context,
@@ -345,7 +321,7 @@ object RootTunController {
             return true
         }
         val status = RootTunStatusFlow.current(context)
-        return status.state.isActiveOrStopping || status.runtimeReady
+        return status.isSessionActive
     }
 
     private suspend fun rollbackFailedStart(

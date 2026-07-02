@@ -21,6 +21,8 @@
 plugins {
     id("com.android.library")
     kotlin("plugin.serialization")
+    id("com.google.devtools.ksp")
+    id("androidx.room")
 }
 
 android {
@@ -28,6 +30,22 @@ android {
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
+
+    // `main` kotlin dir is rewritten to `src` in the root build.gradle.kts. Mirror that flat
+    // convention for unit tests (`test/`) so test sources do not leak into the `main` compile
+    // (which would fail with test-only deps missing from the main classpath).
+    sourceSets {
+        getByName("test") {
+            kotlin.directories.apply {
+                clear()
+                add("test")
+            }
+        }
+    }
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
@@ -45,6 +63,10 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.timber)
     implementation(libs.koin.core)
+
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     val mmkv64 = libs.versions.mmkv64.get()
     val mmkv32 = libs.versions.mmkv32.get()

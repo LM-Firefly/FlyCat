@@ -110,7 +110,8 @@ fun SearchStatus.TopAppBarAnim(
             label = "SearchTopBarAlpha",
         )
     Box(
-        modifier = modifier.fillMaxWidth().background(colorScheme.surface).graphicsLayer {
+        modifier =
+            modifier.fillMaxWidth().background(colorScheme.surface).graphicsLayer {
                 this.alpha = alpha
             }
     ) {
@@ -268,7 +269,8 @@ fun SearchStatus.SearchPager(
     val surfaceAlpha by
         animateFloatAsState(
             targetValue = if (searchStatus.shouldExpand()) 1f else 0f,
-            // Match topPadding's duration/easing so the surface dim and the layout settle on the same
+            // Match topPadding's duration/easing so the surface dim and the layout settle on the
+            // same
             // frame. Previously the dim finished 100ms earlier (200 vs 300), exposing the content
             // mid-collapse and reading as an end-of-animation hitch.
             animationSpec = tween(300, easing = LinearOutSlowInEasing),
@@ -365,7 +367,8 @@ private fun SearchPagerCancelButton(
     val isExpanded = searchStatus.isExpanded() || searchStatus.isExpanding()
     AnimatedVisibility(
         visible = isExpanded,
-        // Animate only the layout width (expand/shrink) + fade. The previous slide-in/out fought the
+        // Animate only the layout width (expand/shrink) + fade. The previous slide-in/out fought
+        // the
         // simultaneous width animation (slide offset keyed off the shrinking width), which made the
         // adjacent weight(1f) search bar reflow jerkily on removal. Dropping the slide keeps the
         // space reclaim smooth.

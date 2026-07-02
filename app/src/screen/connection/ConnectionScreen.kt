@@ -50,11 +50,11 @@ import com.github.yumelira.yumebox.feature.meta.presentation.component.TabRowWit
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.ConnectionSort
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.ConnectionTab
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.ConnectionViewModel
+import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.component.Navigator
 import dev.oom_wg.purejoy.mlang.MLang
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.DropdownImpl

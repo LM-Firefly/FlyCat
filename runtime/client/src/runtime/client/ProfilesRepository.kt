@@ -23,13 +23,13 @@ package com.github.yumelira.yumebox.runtime.client
 import android.content.Context
 import android.content.Intent
 import com.github.yumelira.yumebox.core.data.RepositoryUtils.safeApiCall
-import com.github.yumelira.yumebox.remote.ServiceClient
+import com.github.yumelira.yumebox.runtime.api.IFetchObserver
+import com.github.yumelira.yumebox.runtime.api.Intents
+import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
+import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
 import com.github.yumelira.yumebox.runtime.client.root.RootTunReloadScheduler
-import com.github.yumelira.yumebox.service.common.constants.Intents
-import com.github.yumelira.yumebox.service.common.util.appContextOrSelf
-import com.github.yumelira.yumebox.service.remote.IFetchObserver
-import com.github.yumelira.yumebox.service.root.RootTunStatusFlow
-import com.github.yumelira.yumebox.service.runtime.entity.Profile
+import com.github.yumelira.yumebox.runtime.service.root.RootTunStatusFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -183,14 +183,7 @@ class ProfilesRepository(private val context: Context) {
             .getOrThrow()
     }
 
-    suspend fun queryAll(): List<Profile> = queryAllProfiles()
-
-    suspend fun queryActive(): Profile? = queryActiveProfile()
-
-    private fun isRootTunActive(): Boolean {
-        val status = RootTunStatusFlow.current(appContext)
-        return status.state.isActiveOrStopping || status.runtimeReady
-    }
+    private fun isRootTunActive(): Boolean = RootTunStatusFlow.current(appContext).isSessionActive
 
     private fun notifyRuntimeOverrideChanged() {
         appContext.sendBroadcast(

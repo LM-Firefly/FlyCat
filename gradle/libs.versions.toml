@@ -32,6 +32,7 @@ shapes = "1.2.0"
 snakeYaml = "v1.18-android"
 libsu = "6.0.0"
 animation = "1.11.3"
+room = "2.8.4"
 
 [libraries]
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
@@ -102,3 +103,6 @@ rosemoe-language-treesitter = { module = "io.github.rosemoe:language-treesitter"
 libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu" }
 libsu-service = { module = "com.github.topjohnwu.libsu:service", version.ref = "libsu" }
 androidx-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }

@@ -97,12 +97,12 @@ import com.github.yumelira.yumebox.presentation.component.LocalHandlePageChange
 import com.github.yumelira.yumebox.presentation.component.LocalNavigator
 import com.github.yumelira.yumebox.presentation.component.calculateWallpaperViewportLayout
 import com.github.yumelira.yumebox.presentation.icon.ShellIcons
+import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.screen.home.HomeProxyControlState
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
 import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
-import com.github.yumelira.yumebox.presentation.navigation.Route
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

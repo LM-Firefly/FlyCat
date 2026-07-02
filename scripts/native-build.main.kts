@@ -20,13 +20,13 @@
 
 @file:DependsOn("org.tukaani:xz:1.9")
 
+import org.tukaani.xz.LZMA2Options
+import org.tukaani.xz.XZOutputStream
 import java.io.File
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.concurrent.thread
-import org.tukaani.xz.LZMA2Options
-import org.tukaani.xz.XZOutputStream
 
 class ProjectConfig {
     private val properties = Properties()

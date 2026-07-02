@@ -74,7 +74,7 @@ import com.github.yumelira.yumebox.presentation.util.profileNameFromConfigFileNa
 import com.github.yumelira.yumebox.presentation.util.readClipboardSubscriptionUrl
 import com.github.yumelira.yumebox.presentation.util.readDisplayName
 import com.github.yumelira.yumebox.presentation.util.sourceFileName
-import com.github.yumelira.yumebox.service.runtime.entity.Profile
+import com.github.yumelira.yumebox.runtime.api.Profile
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import java.util.UUID

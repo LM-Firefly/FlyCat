@@ -19,7 +19,11 @@
   ~
   -->
 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
+    <!-- The module declares what its own foreground service needs; hosts merge these. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:ignore="ForegroundServicesPolicy"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <application>
         <service
             android:name="com.github.yumelira.yumebox.substore.SubStoreService"

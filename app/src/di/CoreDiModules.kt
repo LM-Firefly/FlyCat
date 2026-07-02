@@ -45,6 +45,7 @@ import com.github.yumelira.yumebox.data.store.ProfileLinksStore
 import com.github.yumelira.yumebox.data.store.ProxyDisplaySettingsStore
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
 import com.github.yumelira.yumebox.data.store.TrafficStatisticsStore
+import com.github.yumelira.yumebox.data.store.room.createTrafficStatisticsDao
 import com.github.yumelira.yumebox.domain.model.TrafficData
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
@@ -85,7 +86,9 @@ val appFoundationModule = module {
     single { ProfileLinksStore(get(named("profile_links"))) }
     single { FeatureStore(get(named("substore"))) }
     single { ProxyDisplaySettingsStore(get(named("proxy_display"))) }
-    single { TrafficStatisticsStore(get(named("traffic_statistics"))) }
+
+    single { createTrafficStatisticsDao(androidApplication()) }
+    single { TrafficStatisticsStore(get(named("traffic_statistics")), get()) }
 }
 
 val appDataRuntimeModule = module {
@@ -121,8 +124,8 @@ val appDataRuntimeModule = module {
     single {
         val appContext = androidContext()
         ProvidersController(appContext) {
-            com.github.yumelira.yumebox.remote.ServiceClient.connect(appContext)
-            com.github.yumelira.yumebox.remote.ServiceClient.clash().queryProviders()
+            com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.connect(appContext)
+            com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.clash().queryProviders()
         }
     }
 
@@ -151,7 +154,7 @@ val appDataRuntimeModule = module {
         )
     }
 
-    single { ProxyFacade(androidContext()) }
+    single { ProxyFacade(androidContext(), get(), get()) }
     single { AppIdentityResolver(androidContext()) }
     single { ProfilesRepository(androidContext()) }
     single {

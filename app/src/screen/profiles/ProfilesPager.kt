@@ -23,7 +23,6 @@ package com.github.yumelira.yumebox.screen.profiles
 import android.annotation.SuppressLint
 import android.content.Intent
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -54,12 +53,12 @@ import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.icon.ShellIcons
+import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.util.OverrideEditorStore
 import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
+import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
-import com.github.yumelira.yumebox.service.runtime.entity.Profile
-import com.github.yumelira.yumebox.presentation.navigation.Route
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel

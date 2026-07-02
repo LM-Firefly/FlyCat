@@ -23,14 +23,14 @@ package com.github.yumelira.yumebox.runtime.client
 import android.content.Context
 import android.content.Intent
 import com.github.yumelira.yumebox.data.model.ProxyMode
-import com.github.yumelira.yumebox.remote.ServiceClient
+import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
+import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
+import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
 import com.github.yumelira.yumebox.runtime.client.root.RootTunController
-import com.github.yumelira.yumebox.service.ClashService
-import com.github.yumelira.yumebox.service.TunService
-import com.github.yumelira.yumebox.service.common.util.appContextOrSelf
-import com.github.yumelira.yumebox.service.root.RootAccessSupport
-import com.github.yumelira.yumebox.service.runtime.session.RuntimeServiceLauncher
-import com.github.yumelira.yumebox.service.runtime.state.RuntimeOwner
+import com.github.yumelira.yumebox.runtime.service.ClashService
+import com.github.yumelira.yumebox.runtime.service.TunService
+import com.github.yumelira.yumebox.runtime.service.root.RootAccessSupport
+import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

@@ -21,6 +21,7 @@
 package com.github.yumelira.yumebox
 
 import android.app.Application
+import android.content.ComponentName
 import android.content.res.Configuration
 import com.github.yumelira.yumebox.common.util.AppLanguageManager
 import com.github.yumelira.yumebox.common.util.PlatformIdentifier
@@ -32,7 +33,10 @@ import com.github.yumelira.yumebox.data.store.AppSettingsStore
 import com.github.yumelira.yumebox.data.store.FeatureStore
 import com.github.yumelira.yumebox.di.appModule
 import com.github.yumelira.yumebox.feature.meta.presentation.util.CustomRoutingBootstrapper
+import com.github.yumelira.yumebox.runtime.api.Components
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
+import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
+import com.github.yumelira.yumebox.runtime.service.LogRecordService
 import com.github.yumelira.yumebox.screen.settings.MoeWallpaperImporter
 import com.github.yumelira.yumebox.substore.util.AppUtil
 import com.tencent.mmkv.MMKV
@@ -66,10 +70,23 @@ class App : Application() {
         Global.init(this)
         MMKV.initialize(this)
 
+        // Runtime notifications/tiles jump to these activities; the runtime layer must not
+        // name app classes, so the entry points are injected here.
+        Components.MAIN_ACTIVITY = ComponentName(this, MainActivity::class.java)
+        Components.PROXY_SHEET_ACTIVITY = ComponentName(this, ProxySheetActivity::class.java)
+
         val koinApp = startKoin {
             androidContext(this@App)
             modules(appModule)
         }
+
+        // Recording must tap the mode-aware log channel (local/root/remote); the service module
+        // cannot depend on the client gateway, so the binding is injected here.
+        LogRecordService.clashManagerProvider = {
+            ServiceClient.connect(this)
+            ServiceClient.clash()
+        }
+
         val appSettingsStorage: AppSettingsStore = koinApp.koin.get()
         AppLanguageManager.apply(appSettingsStorage.appLanguage.value)
 

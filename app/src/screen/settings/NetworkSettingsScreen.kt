@@ -53,6 +53,7 @@ import com.github.yumelira.yumebox.data.model.ProxyMode
 import com.github.yumelira.yumebox.data.model.TunStack
 import com.github.yumelira.yumebox.presentation.component.AppTextFieldDialog
 import com.github.yumelira.yumebox.presentation.component.Card
+import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.PreferenceArrowItem
 import com.github.yumelira.yumebox.presentation.component.PreferenceEnumItem
 import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
@@ -61,9 +62,8 @@ import com.github.yumelira.yumebox.presentation.component.Title
 import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
-import com.github.yumelira.yumebox.service.root.RootAccessSupport
-import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.navigation.Route
+import com.github.yumelira.yumebox.runtime.service.root.RootAccessSupport
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel

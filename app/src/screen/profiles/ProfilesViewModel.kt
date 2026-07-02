@@ -30,9 +30,9 @@ import com.github.yumelira.yumebox.data.store.LinkOpenMode
 import com.github.yumelira.yumebox.data.store.Preference
 import com.github.yumelira.yumebox.data.store.ProfileLink
 import com.github.yumelira.yumebox.data.store.ProfileLinksStore
+import com.github.yumelira.yumebox.runtime.api.IFetchObserver
+import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
-import com.github.yumelira.yumebox.service.remote.IFetchObserver
-import com.github.yumelira.yumebox.service.runtime.entity.Profile
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers

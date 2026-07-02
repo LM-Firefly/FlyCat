@@ -27,7 +27,7 @@ import com.github.yumelira.yumebox.core.model.ConnectionInfo
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.remote.ServiceClient
+import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
