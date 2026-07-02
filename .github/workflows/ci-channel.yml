@@ -18,8 +18,41 @@ concurrency:
 
 permissions:
   contents: write
+  # Required to read/update the BUILD_NUMBER repository Actions variable (push counter).
+  actions: write
 
 jobs:
+  # Atomically increments the repo-level Actions variable BUILD_NUMBER and exposes the new
+  # value as the push counter N (versionCode = 5795 + N). The counter lives outside git
+  # history, so squash/rebase/force-push can never make it go backwards; both channels of
+  # one run share the same N (same commit -> same versionCode). Uses GITHUB_TOKEN with
+  # `actions: write`; if that is restricted for this repo/org, configure a PAT with
+  # "Variables: write" as the BUILD_COUNTER_TOKEN secret and it takes precedence.
+  compute-version:
+    runs-on: ubuntu-latest
+    outputs:
+      build_number: ${{ steps.counter.outputs.build_number }}
+    steps:
+      - name: Increment build counter
+        id: counter
+        env:
+          GH_TOKEN: ${{ secrets.BUILD_COUNTER_TOKEN || github.token }}
+        run: |
+          set -eu
+          var_name="BUILD_NUMBER"
+          current="$(gh api "repos/${GITHUB_REPOSITORY}/actions/variables/${var_name}" --jq .value 2>/dev/null || echo "")"
+          if [ -z "${current}" ]; then
+            next=1
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/actions/variables" \
+              -f name="${var_name}" -f value="${next}"
+          else
+            next=$((current + 1))
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/actions/variables/${var_name}" \
+              -f name="${var_name}" -f value="${next}"
+          fi
+          echo "build number: ${next}"
+          echo "build_number=${next}" >> "$GITHUB_OUTPUT"
+
   build-geo-pre:
     uses: ./.github/workflows/reusable-build-geo.yml
     with:
@@ -121,7 +154,9 @@ jobs:
     secrets: inherit
 
   build-apk-pre-app:
-    needs: bundle-native-pre
+    needs:
+      - bundle-native-pre
+      - compute-version
     uses: ./.github/workflows/reusable-build-apk-only.yml
     with:
       channel: pre
@@ -130,10 +165,15 @@ jobs:
       release_tag: Pre-release
       meta_asset_name: yumebox-pre-meta.json
       raw_apk_artifact_name: apk-raw-pre-app
+      build_number: ${{ needs.compute-version.outputs.build_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
     secrets: inherit
 
   build-apk-smart-app:
-    needs: bundle-native-smart
+    needs:
+      - bundle-native-smart
+      - compute-version
     uses: ./.github/workflows/reusable-build-apk-only.yml
     with:
       channel: smart
@@ -142,10 +182,15 @@ jobs:
       release_tag: Smart
       meta_asset_name: yumebox-smart-meta.json
       raw_apk_artifact_name: apk-raw-smart-app
+      build_number: ${{ needs.compute-version.outputs.build_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
     secrets: inherit
 
   prepare-publish-pre-app:
-    needs: build-apk-pre-app
+    needs:
+      - build-apk-pre-app
+      - compute-version
     uses: ./.github/workflows/reusable-prepare-publish.yml
     with:
       channel: pre
@@ -155,10 +200,15 @@ jobs:
       meta_asset_name: yumebox-pre-meta.json
       raw_apk_artifact_name: apk-raw-pre-app
       publish_artifact_name: publish-pre-app
+      build_number: ${{ needs.compute-version.outputs.build_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
     secrets: inherit
 
   prepare-publish-smart-app:
-    needs: build-apk-smart-app
+    needs:
+      - build-apk-smart-app
+      - compute-version
     uses: ./.github/workflows/reusable-prepare-publish.yml
     with:
       channel: smart
@@ -168,6 +218,9 @@ jobs:
       meta_asset_name: yumebox-smart-meta.json
       raw_apk_artifact_name: apk-raw-smart-app
       publish_artifact_name: publish-smart-app
+      build_number: ${{ needs.compute-version.outputs.build_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
     secrets: inherit
 
   publish-release-pre:
@@ -180,7 +233,7 @@ jobs:
       release_name: Pre-release
       prerelease: true
       publish_artifacts: publish-pre-app
-      cleanup_assets: true
+      recreate_release: true
     secrets: inherit
 
   publish-release-smart:
@@ -192,7 +245,7 @@ jobs:
       release_name: Smart
       prerelease: true
       publish_artifacts: publish-smart-app
-      cleanup_assets: true
+      recreate_release: true
     secrets: inherit
 
   notify-pre:

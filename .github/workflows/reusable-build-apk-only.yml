@@ -21,6 +21,21 @@ on:
       raw_apk_artifact_name:
         required: true
         type: string
+      build_number:
+        description: "Monotonic push counter N; versionCode = 5795 + N. Empty = local-style base version."
+        required: false
+        type: string
+        default: ""
+      build_hash:
+        description: "Commit sha of the build; first 8 chars go into versionName (<base>[.<branch>].<hash8>)."
+        required: false
+        type: string
+        default: ""
+      build_branch:
+        description: "Branch name; normalized (lowercase, [^a-z0-9] runs -> '-') into the versionName branch segment."
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -108,6 +123,10 @@ jobs:
 
       - name: Build Release APKs
         shell: bash
+        env:
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          BUILD_HASH: ${{ inputs.build_hash }}
+          BUILD_BRANCH: ${{ inputs.build_branch }}
         run: |
           set -eu
           chmod +x gradlew
@@ -115,6 +134,9 @@ jobs:
             -Pupdate.channel="${{ inputs.channel }}" \
             -Pupdate.tag="${{ inputs.release_tag }}" \
             -Pupdate.metaAssetName="${{ inputs.meta_asset_name }}" \
+            -Pbuild.number="${BUILD_NUMBER}" \
+            -Pbuild.hash="${BUILD_HASH:0:8}" \
+            -Pbuild.branch="${BUILD_BRANCH}" \
             :${{ inputs.module }}:assembleRelease
 
       - name: Upload raw APK artifact

@@ -37,14 +37,36 @@ val appAbiList =
 
 val geoFilesAssetsDir = rootProject.layout.buildDirectory.dir("generated/assets/geo")
 
+// CI-computed build versioning. CI injects `-Pbuild.number=<N>` (monotonic push counter,
+// see .github/workflows), `-Pbuild.hash=<commit sha>` and `-Pbuild.branch=<branch name>`;
+// local builds fall back to the base version. versionName = <base>[.<branch>].<hash8> when
+// a hash is injected. 5795 is the versionCode epoch that replaced the legacy manual
+// `project.version.code` scheme (last manual value: 5200).
+val baseVersionCode = 5795
+val ciBuildNumber = providers.gradleProperty("build.number").orNull
+    ?.trim()?.takeIf { it.isNotEmpty() }?.toInt()
+val ciBuildHash = providers.gradleProperty("build.hash").orNull
+    ?.trim()?.takeIf { it.isNotEmpty() }?.take(8)
+// Branch segment normalization (must stay in sync with reusable-prepare-publish.yml):
+// lowercase, every non-[a-z0-9] run collapses to a single '-', leading/trailing '-' trimmed.
+val ciBuildBranch = providers.gradleProperty("build.branch").orNull
+    ?.lowercase()
+    ?.replace(Regex("[^a-z0-9]+"), "-")
+    ?.trim('-')
+    ?.takeIf { it.isNotEmpty() }
+val appVersionCode = baseVersionCode + (ciBuildNumber ?: 0)
+val appVersionName = ciBuildHash
+    ?.let { hash -> listOfNotNull(gropify.project.version.name, ciBuildBranch, hash).joinToString(".") }
+    ?: gropify.project.version.name
+
 android {
     namespace = gropify.project.namespace.base
 
     defaultConfig {
         applicationId = gropify.project.namespace.base
         targetSdk = gropify.android.targetSdk
-        versionCode = gropify.project.version.code
-        versionName = gropify.project.version.name
+        versionCode = appVersionCode
+        versionName = appVersionName
         manifestPlaceholders["appName"] = gropify.project.name
     }
 
@@ -168,9 +190,9 @@ android {
                     it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI
                 }?.identifier ?: "universal"
                 val buildTypeName = variant.buildType ?: "release"
-                output.versionName.set(gropify.project.version.name)
+                output.versionName.set(appVersionName)
                 (output as com.android.build.api.variant.impl.VariantOutputImpl).outputFileName.set(
-                    "${gropify.project.name}-${abiName}-${buildTypeName}.apk"
+                    "${gropify.project.name}-${appVersionName}-${abiName}-${buildTypeName}.apk"
                 )
             }
         }

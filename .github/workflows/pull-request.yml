@@ -66,6 +66,9 @@ jobs:
       channel: pr
     secrets: inherit
 
+  # PR builds do NOT consume the BUILD_NUMBER push counter: build_number stays empty, so
+  # versionCode falls back to the 5795 base. The commit hash in versionName (and the PR
+  # number in the release tag) uniquely identifies the build instead.
   build-apk-pr-app:
     needs: bundle-native-pr
     uses: ./.github/workflows/reusable-build-apk-only.yml
@@ -76,6 +79,8 @@ jobs:
       release_tag: pr-${{ github.event.pull_request.number }}
       meta_asset_name: yumebox-pr-meta.json
       raw_apk_artifact_name: apk-raw-pr-app
+      build_hash: ${{ github.event.pull_request.head.sha }}
+      build_branch: ${{ github.event.pull_request.head.ref }}
     secrets: inherit
 
   prepare-publish-pr-app:
@@ -89,4 +94,6 @@ jobs:
       meta_asset_name: yumebox-pr-meta.json
       raw_apk_artifact_name: apk-raw-pr-app
       publish_artifact_name: publish-pr-app
+      build_hash: ${{ github.event.pull_request.head.sha }}
+      build_branch: ${{ github.event.pull_request.head.ref }}
     secrets: inherit
