@@ -144,9 +144,9 @@ jobs:
             esac
 
             if [ "$abi" = "universal" ]; then
-              new_name="${{ inputs.artifact_prefix }}.apk"
+              new_name="${{ inputs.artifact_prefix }}-${version_name}.apk"
             else
-              new_name="${{ inputs.artifact_prefix }}-${abi}.apk"
+              new_name="${{ inputs.artifact_prefix }}-${version_name}-${abi}.apk"
             fi
             cp -f "$file" "publish/${new_name}"
           done < <(find "${{ inputs.module }}/build/outputs/apk/release" -maxdepth 1 -type f -name '*.apk' | sort)
@@ -243,3 +243,43 @@ jobs:
           name: ${{ inputs.publish_artifact_name }}
           path: publish/*.apk
           if-no-files-found: error
+
+      # Per-APK artifacts: artifact downloads are zip archives, so the aggregate artifact
+      # above mixes every ABI into one zip. Uploading each APK separately gives one
+      # downloadable installer per ABI. Names in publish/ are exactly
+      # <artifact_prefix>-<versionName>-<abi>.apk (universal has no ABI suffix), see the
+      # rename loop in "Prepare publish artifacts" above.
+      - name: Upload arm64-v8a APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-arm64-v8a
+          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-arm64-v8a.apk
+          if-no-files-found: ignore
+
+      - name: Upload armeabi-v7a APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-armeabi-v7a
+          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-armeabi-v7a.apk
+          if-no-files-found: ignore
+
+      - name: Upload x86_64 APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86_64
+          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86_64.apk
+          if-no-files-found: ignore
+
+      - name: Upload x86 APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86
+          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86.apk
+          if-no-files-found: ignore
+
+      - name: Upload universal APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-universal
+          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}.apk
+          if-no-files-found: ignore

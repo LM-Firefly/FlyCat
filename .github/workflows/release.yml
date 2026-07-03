@@ -1,0 +1,113 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag (e.g. v0.5.2)"
+        required: true
+        type: string
+      release_title:
+        description: "Release title"
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+# Manual official-release pipeline: mirrors the ci-channel pre pipeline with channel=stable
+# and kernel_channel=alpha. build_number/build_hash/build_branch are intentionally NOT passed
+# so the release uses the clean base versionName (e.g. 0.5.2) and base versionCode (5795).
+# publish-release runs with prerelease=false -> generate_release_notes=false (empty body,
+# edited by hand afterwards) and make_latest=true (channel == 'stable').
+jobs:
+  build-geo-stable:
+    uses: ./.github/workflows/reusable-build-geo.yml
+    with:
+      channel: stable
+    secrets: inherit
+
+  build-native-abi-stable-armeabi-v7a:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: stable
+      kernel_channel: alpha
+      abi: armeabi-v7a
+    secrets: inherit
+
+  build-native-abi-stable-arm64-v8a:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: stable
+      kernel_channel: alpha
+      abi: arm64-v8a
+    secrets: inherit
+
+  build-native-abi-stable-x86:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: stable
+      kernel_channel: alpha
+      abi: x86
+    secrets: inherit
+
+  build-native-abi-stable-x86_64:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: stable
+      kernel_channel: alpha
+      abi: x86_64
+    secrets: inherit
+
+  bundle-native-stable:
+    needs:
+      - build-geo-stable
+      - build-native-abi-stable-armeabi-v7a
+      - build-native-abi-stable-arm64-v8a
+      - build-native-abi-stable-x86
+      - build-native-abi-stable-x86_64
+    uses: ./.github/workflows/reusable-bundle-native.yml
+    with:
+      channel: stable
+    secrets: inherit
+
+  build-apk-stable-app:
+    needs: bundle-native-stable
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: stable
+      module: app
+      artifact_prefix: yumebox
+      release_tag: ${{ inputs.release_tag }}
+      meta_asset_name: yumebox-stable-meta.json
+      raw_apk_artifact_name: apk-raw-stable-app
+    secrets: inherit
+
+  prepare-publish-stable-app:
+    needs: build-apk-stable-app
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: stable
+      module: app
+      artifact_prefix: yumebox
+      release_tag: ${{ inputs.release_tag }}
+      meta_asset_name: yumebox-stable-meta.json
+      raw_apk_artifact_name: apk-raw-stable-app
+      publish_artifact_name: publish-stable-app
+    secrets: inherit
+
+  publish-release-stable:
+    needs: prepare-publish-stable-app
+    uses: ./.github/workflows/reusable-publish-release.yml
+    with:
+      channel: stable
+      release_tag: ${{ inputs.release_tag }}
+      release_name: ${{ inputs.release_title }}
+      prerelease: false
+      publish_artifacts: publish-stable-app
+      recreate_release: false
+    secrets: inherit
