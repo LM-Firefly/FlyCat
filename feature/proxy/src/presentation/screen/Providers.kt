@@ -170,11 +170,13 @@ fun ProvidersContent(navigator: Navigator) {
             CenteredText(
                 firstLine = MLang.Providers.Empty.NotRunning,
                 secondLine = MLang.Providers.Empty.NotRunningHint,
+                showEmptyResourceIllustration = true,
             )
         } else if (providers.isEmpty() && !uiState.isLoading) {
             CenteredText(
                 firstLine = MLang.Providers.Empty.NoProviders,
                 secondLine = MLang.Providers.Empty.NoProvidersHint,
+                showEmptyResourceIllustration = true,
             )
         } else {
             val mainLikePadding = rememberStandalonePageMainPadding()

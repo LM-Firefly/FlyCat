@@ -36,7 +36,12 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-fun CenteredText(firstLine: String, secondLine: String, modifier: Modifier = Modifier) {
+fun CenteredText(
+    firstLine: String,
+    secondLine: String,
+    modifier: Modifier = Modifier,
+    showEmptyResourceIllustration: Boolean = false,
+) {
     val spacing = AppTheme.spacing
     val opacity = AppTheme.opacity
 
@@ -45,6 +50,10 @@ fun CenteredText(firstLine: String, secondLine: String, modifier: Modifier = Mod
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
+            if (showEmptyResourceIllustration) {
+                EmptyResourceIllustration()
+                Spacer(modifier = Modifier.height(spacing.space16))
+            }
             Text(
                 text = firstLine,
                 style = MiuixTheme.textStyles.body1,

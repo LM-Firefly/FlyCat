@@ -256,6 +256,7 @@ fun ProxyPager(
                         CenteredText(
                             firstLine = MLang.Proxy.Empty.NoNodes,
                             secondLine = MLang.Proxy.Empty.Hint,
+                            showEmptyResourceIllustration = true,
                         )
                     } else {
                         ProxyContent(
@@ -362,7 +363,11 @@ private fun NodeListPage(
     singleNodeTestEnabled: Boolean = true,
 ) {
     if (group == null) {
-        CenteredText(firstLine = MLang.Proxy.Empty.NoNodes, secondLine = MLang.Proxy.Empty.Hint)
+        CenteredText(
+            firstLine = MLang.Proxy.Empty.NoNodes,
+            secondLine = MLang.Proxy.Empty.Hint,
+            showEmptyResourceIllustration = true,
+        )
         return
     }
     val spacing = LocalSpacing.current

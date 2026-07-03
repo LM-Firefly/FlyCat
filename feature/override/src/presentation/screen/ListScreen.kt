@@ -227,6 +227,7 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
                             CenteredText(
                                 firstLine = MLang.Override.Empty.Title,
                                 secondLine = MLang.Override.Empty.Hint,
+                                showEmptyResourceIllustration = true,
                             )
                             Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
                                 Button(
