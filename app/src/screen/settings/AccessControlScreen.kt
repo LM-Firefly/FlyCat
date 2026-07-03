@@ -457,8 +457,8 @@ private fun AccessControlOperationsMenu(
     onSelectAll: () -> Unit,
     onDeselectAll: () -> Unit,
     onInvertSelection: () -> Unit,
-    onSelectChinaApps: () -> Int,
-    onSelectNonChinaApps: () -> Int,
+    onSelectChinaApps: () -> Unit,
+    onSelectNonChinaApps: () -> Unit,
     onImportPackages: (String) -> Int,
     onExportPackages: () -> String,
 ) {

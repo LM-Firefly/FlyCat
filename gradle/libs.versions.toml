@@ -33,6 +33,7 @@ snakeYaml = "v1.18-android"
 libsu = "6.0.0"
 animation = "1.11.3"
 room = "2.8.4"
+smaliDexlib2 = "3.0.9"
 
 [libraries]
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
@@ -73,6 +74,7 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serializationJson" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 xz = { module = "org.tukaani:xz", version.ref = "xz" }
+smali-dexlib2 = { module = "com.android.tools.smali:smali-dexlib2", version.ref = "smaliDexlib2" }
 mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkitBarcodeScanning" }
 sketch-compose = { module = "io.github.panpf.sketch4:sketch-compose", version.ref = "sketch4" }
 sketch-http = { module = "io.github.panpf.sketch4:sketch-http", version.ref = "sketch4" }
