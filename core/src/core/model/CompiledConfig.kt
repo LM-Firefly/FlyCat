@@ -61,4 +61,6 @@ data class CompileRawSummary(
     val fingerprint: String = "",
     val warnings: List<String> = emptyList(),
     val error: String? = null,
+    val tunIncludePackage: List<String> = emptyList(),
+    val tunExcludePackage: List<String> = emptyList(),
 )

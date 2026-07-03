@@ -35,10 +35,12 @@ type inspectResult struct {
 }
 
 type compileRawSummary struct {
-	Success     bool     `json:"success"`
-	Fingerprint string   `json:"fingerprint"`
-	Warnings    []string `json:"warnings"`
-	Error       string   `json:"error"`
+	Success           bool     `json:"success"`
+	Fingerprint       string   `json:"fingerprint"`
+	Warnings          []string `json:"warnings"`
+	Error             string   `json:"error"`
+	TunIncludePackage []string `json:"tunIncludePackage,omitempty"`
+	TunExcludePackage []string `json:"tunExcludePackage,omitempty"`
 }
 
 type remoteValidCallback struct {
@@ -114,12 +116,23 @@ func compiledRawResultSummary(resultJson C.c_string) *C.char {
 	if err != nil {
 		return marshalJson(compileRawSummary{Success: false, Error: err.Error()})
 	}
-	return marshalJson(compileRawSummary{
+	summary := compileRawSummary{
 		Success:     result.Success,
 		Fingerprint: result.Fingerprint,
 		Warnings:    result.Warnings,
 		Error:       result.Error,
-	})
+	}
+	if result.Success && strings.TrimSpace(result.ConfigRaw) != "" {
+		includePackage, excludePackage, err := config.QueryTunPackagesFromCompiledRaw(result.ConfigRaw)
+		if err != nil {
+			// Extraction failure must not fail the summary; surface it as a warning only.
+			summary.Warnings = append(summary.Warnings, "inspect tun packages failed: "+err.Error())
+		} else {
+			summary.TunIncludePackage = includePackage
+			summary.TunExcludePackage = excludePackage
+		}
+	}
+	return marshalJson(summary)
 }
 
 //export compiledRawFallbackSummary

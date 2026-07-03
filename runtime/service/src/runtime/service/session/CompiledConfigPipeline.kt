@@ -110,6 +110,7 @@ class CompiledConfigPipeline(private val context: Context) {
             val summary = Clash.compileAndLoadConfigSummary(request, load)
             logRawCompileWarnings(summary, logger)
             load.await()
+            publishCompiledTunPackages(summary, logger)
         }
 
     /**
@@ -201,6 +202,23 @@ class CompiledConfigPipeline(private val context: Context) {
                 spec.runtimeConfigPath.ifBlank { profileDir.resolve("runtime.yaml").absolutePath },
             ageSecretKey = spec.ageSecretKey,
         )
+    }
+
+    /**
+     * Publishes the compiled `tun.include-package` / `tun.exclude-package` lists for
+     * [VpnTunTransport]. A running VPN session does not re-establish the TUN device on profile
+     * reload, so a mid-session change only takes effect on the next VPN (re)start — log it so the
+     * limitation is diagnosable.
+     */
+    private fun publishCompiledTunPackages(summary: CompileRawSummary, logger: ((String) -> Unit)?) {
+        val changed = CompiledTunPackages.update(summary.tunIncludePackage, summary.tunExcludePackage)
+        if (changed) {
+            logger?.invoke(
+                "runtime native: tun package lists changed include=${summary.tunIncludePackage.size}" +
+                    " exclude=${summary.tunExcludePackage.size}; applied at next TUN establish" +
+                    " (a running VPN session is not re-established on reload)"
+            )
+        }
     }
 
     private fun logRawCompileWarnings(summary: CompileRawSummary, logger: ((String) -> Unit)?) {

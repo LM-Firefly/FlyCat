@@ -115,17 +115,39 @@ class VpnTunTransport(
                     }
                 }
 
-                when (store.accessControlMode) {
-                    AccessControlMode.AcceptAll -> Unit
-                    AccessControlMode.AcceptSelected -> {
-                        (store.accessControlPackages + vpnService.packageName).forEach {
-                            runCatching { addAllowedApplication(it) }
+                val configInclude = CompiledTunPackages.includePackages
+                val configExclude = CompiledTunPackages.excludePackages
+                if (configInclude.isNotEmpty() || configExclude.isNotEmpty()) {
+                    // Compiled config declares tun.include-package/exclude-package: the config
+                    // fully takes over per-app routing and the UI access control is ignored.
+                    startupLogStore.append(
+                        "LOCAL_TUN per-app routing: config include=${configInclude.size}" +
+                            " exclude=${configExclude.size}"
+                    )
+                    if (configInclude.isNotEmpty()) {
+                        (configInclude.toSet() - configExclude.toSet() + vpnService.packageName)
+                            .forEach { runCatching { addAllowedApplication(it) } }
+                    } else {
+                        (configExclude.toSet() - vpnService.packageName).forEach {
+                            runCatching { addDisallowedApplication(it) }
                         }
                     }
-                    AccessControlMode.RejectAll -> Unit
-                    AccessControlMode.RejectSelected -> {
-                        (store.accessControlPackages - vpnService.packageName).forEach {
-                            runCatching { addDisallowedApplication(it) }
+                } else {
+                    startupLogStore.append(
+                        "LOCAL_TUN per-app routing: ui mode=${store.accessControlMode}"
+                    )
+                    when (store.accessControlMode) {
+                        AccessControlMode.AcceptAll -> Unit
+                        AccessControlMode.AcceptSelected -> {
+                            (store.accessControlPackages + vpnService.packageName).forEach {
+                                runCatching { addAllowedApplication(it) }
+                            }
+                        }
+                        AccessControlMode.RejectAll -> Unit
+                        AccessControlMode.RejectSelected -> {
+                            (store.accessControlPackages - vpnService.packageName).forEach {
+                                runCatching { addDisallowedApplication(it) }
+                            }
                         }
                     }
                 }

@@ -612,6 +612,9 @@ class SessionRuntime(
         val owner = coreOwner
         if (owner !== this && owner != null) return
         coreOwner = null
+        // The compiled tun package lists mirror the loaded config; drop them with the core so a
+        // stale profile's lists never drive per-app routing in the next session.
+        CompiledTunPackages.clear()
         runCatching { Clash.stopRootTun() }
         runCatching { Clash.stopTun() }
         runCatching { Clash.stopHttp() }

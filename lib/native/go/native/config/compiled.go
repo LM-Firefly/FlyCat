@@ -48,6 +48,15 @@ func QueryTunRouteExcludeAddressFromCompiledRaw(configRaw string) ([]string, err
 	return addresses, nil
 }
 
+func QueryTunPackagesFromCompiledRaw(configRaw string) ([]string, []string, error) {
+	rawCfg, err := UnmarshalCompiledRaw(configRaw)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return rawCfg.Tun.IncludePackage, rawCfg.Tun.ExcludePackage, nil
+}
+
 func UnmarshalCompiledRaw(configRaw string) (*config.RawConfig, error) {
 	return config.UnmarshalRawConfig([]byte(configRaw))
 }
