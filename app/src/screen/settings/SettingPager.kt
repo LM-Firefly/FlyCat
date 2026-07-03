@@ -135,7 +135,7 @@ fun SettingPager(mainInnerPadding: PaddingValues) {
     val navigator = LocalNavigator.current
     val context = LocalContext.current
 
-    val versionInfo = BuildConfig.VERSION_NAME
+    val versionInfo = "v${BuildConfig.BASE_VERSION}"
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -223,7 +223,7 @@ fun SettingPager(mainInnerPadding: PaddingValues) {
 }
 
 @Composable
-private fun VersionBadge(versionInfo: String?) {
+private fun VersionBadge(versionInfo: String) {
     val spacing = AppTheme.spacing
     val componentSizes = AppTheme.sizes
     val opacity = AppTheme.opacity
@@ -240,7 +240,7 @@ private fun VersionBadge(versionInfo: String?) {
             horizontalArrangement = Arrangement.spacedBy(spacing.space8),
         ) {
             Text(
-                text = versionInfo ?: "Unknown",
+                text = versionInfo,
                 style =
                     MiuixTheme.textStyles.footnote1.copy(
                         fontSize = 12.sp,

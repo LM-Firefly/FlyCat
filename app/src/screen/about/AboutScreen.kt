@@ -20,24 +20,30 @@
 
 package com.github.yumelira.yumebox.screen.about
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.BuildConfig
-import com.github.yumelira.yumebox.R
 import com.github.yumelira.yumebox.common.util.openUrl
 import com.github.yumelira.yumebox.core.bridge.Bridge
 import com.github.yumelira.yumebox.presentation.component.Card
@@ -52,12 +58,18 @@ import com.github.yumelira.yumebox.presentation.theme.UiDp
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.CancellationException
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+private val AppNameGradient =
+    listOf(
+        Color(0xFFEFC0D9),
+        Color(0xFFD2C6F0),
+        Color(0xFFC0D5F5),
+    )
 
 @Composable
 fun AboutScreen(navigator: Navigator) {
@@ -82,33 +94,88 @@ fun AboutScreen(navigator: Navigator) {
             innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
         ) {
             item {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Spacer(modifier = Modifier.height(UiDp.dp24))
+                Spacer(modifier = Modifier.height(UiDp.dp24))
 
-                    Icon(
-                        painter = painterResource(id = R.drawable.yume),
-                        contentDescription = "App Icon",
-                        modifier = Modifier.size(UiDp.dp120).clip(RoundedCornerShape(UiDp.dp24)),
-                        tint = Color.Unspecified,
-                    )
+                val ringColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.10f)
+                Card {
+                    Box(
+                        modifier =
+                            Modifier.fillMaxWidth().drawBehind {
+                                drawRect(
+                                    brush =
+                                        Brush.radialGradient(
+                                            colors =
+                                                listOf(
+                                                    AppNameGradient.first().copy(alpha = 0.06f),
+                                                    Color.Transparent,
+                                                ),
+                                            center = Offset(size.width * 0.08f, size.height * 0.1f),
+                                            radius = size.width * 0.45f,
+                                        ),
+                                )
+                                drawRect(
+                                    brush =
+                                        Brush.radialGradient(
+                                            colors =
+                                                listOf(
+                                                    AppNameGradient.last().copy(alpha = 0.06f),
+                                                    Color.Transparent,
+                                                ),
+                                            center = Offset(size.width * 0.92f, size.height * 0.95f),
+                                            radius = size.width * 0.5f,
+                                        ),
+                                )
+                                val ringStroke =
+                                    Stroke(
+                                        width = 1.dp.toPx(),
+                                        pathEffect =
+                                            PathEffect.dashPathEffect(
+                                                floatArrayOf(2.dp.toPx(), 7.dp.toPx()),
+                                            ),
+                                        cap = StrokeCap.Round,
+                                    )
+                                drawCircle(
+                                    color = ringColor,
+                                    radius = size.width * 0.55f,
+                                    center = Offset(size.width * 0.2f, -size.height * 0.7f),
+                                    style = ringStroke,
+                                )
+                                drawCircle(
+                                    color = ringColor,
+                                    radius = size.width * 0.6f,
+                                    center = Offset(size.width * 0.85f, size.height * 1.8f),
+                                    style = ringStroke,
+                                )
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = UiDp.dp64),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = "YumeBox",
+                                style =
+                                    MiuixTheme.textStyles.title1.copy(
+                                        fontSize = 44.sp,
+                                        fontFamily = FontFamily.Serif,
+                                        brush = Brush.linearGradient(AppNameGradient),
+                                    ),
+                            )
 
-                    Spacer(modifier = Modifier.height(UiDp.dp24))
+                            Spacer(modifier = Modifier.height(UiDp.dp12))
 
-                    Text(text = "YumeBox", style = MiuixTheme.textStyles.title1)
-
-                    Spacer(modifier = Modifier.height(UiDp.dp8))
-
-                    Text(
-                        text = "${BuildConfig.VERSION_NAME} ($coreVersion)",
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-
-                    Spacer(modifier = Modifier.height(UiDp.dp32))
+                            Text(
+                                text = "${BuildConfig.VERSION_NAME} · $coreVersion",
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(UiDp.dp12))
 
                 Card {
                     BasicComponent(

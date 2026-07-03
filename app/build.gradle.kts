@@ -70,6 +70,7 @@ android {
         targetSdk = gropify.android.targetSdk
         versionCode = appVersionCode
         versionName = appVersionName
+        buildConfigField("String", "BASE_VERSION", "\"${gropify.project.version.name}\"")
         manifestPlaceholders["appName"] = gropify.project.name
     }
 
