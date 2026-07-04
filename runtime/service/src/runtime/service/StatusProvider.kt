@@ -91,6 +91,7 @@ class StatusProvider : ContentProvider() {
         private val legacyRuntimeFiles =
             listOf("service_running.lock", "service_autostart.lock", "service_running_mode.txt")
         private const val SERVICE_CACHE_ID = "service_cache"
+        private const val STARTING_GRACE_MS = 60_000L
         private const val KEY_TUN_STARTING = "local_tun_starting"
         private const val KEY_RUNTIME_MODE = "local_runtime_mode"
         private const val KEY_RUNTIME_PHASE = "local_runtime_phase"
@@ -162,9 +163,13 @@ class StatusProvider : ContentProvider() {
                 return
             }
 
-            if (
-                persistedMode == ProxyMode.RootTun || persistedPhase == RuntimePhase.Starting
-            ) {
+            if (persistedMode == ProxyMode.RootTun) {
+                updateInMemoryRuntimeState(persistedMode, persistedPhase)
+                return
+            }
+
+            // Keep recent starts; stale Starting states must pass the liveness check.
+            if (persistedPhase == RuntimePhase.Starting && isStartingWithinGrace()) {
                 updateInMemoryRuntimeState(persistedMode, persistedPhase)
                 return
             }
@@ -263,6 +268,11 @@ class StatusProvider : ContentProvider() {
             serviceCache().decodeLong(KEY_RUNTIME_STARTED_AT, 0L).takeIf {
                 it > 0L
             }
+
+        private fun isStartingWithinGrace(): Boolean {
+            val startedAt = readPersistedRuntimeStartedAt() ?: return false
+            return System.currentTimeMillis() - startedAt in 0..STARTING_GRACE_MS
+        }
 
         private fun resolveRuntimeStartedAt(mode: ProxyMode?, phase: RuntimePhase): Long? {
             if (!phase.isNotIdle || mode == null) {

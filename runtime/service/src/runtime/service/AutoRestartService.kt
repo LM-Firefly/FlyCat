@@ -64,7 +64,7 @@ class AutoRestartService : Service() {
         const val REASON_PACKAGE_REPLACED = "package_replaced"
     }
 
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mmkvProvider by lazy { MMKVProvider() }
     private val appSettingsStorage by lazy { AppSettingsStore(mmkvProvider.getMMKV("settings")) }
     private val featureStore by lazy { FeatureStore(mmkvProvider.getMMKV("substore")) }
