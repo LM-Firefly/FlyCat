@@ -9,13 +9,13 @@ Settings = {
 
     UiSettings = {
         App = "应用"
-        AppSummary = "外观 · 语言 · 主题"
+        AppSummary = "主题 · 语言 · 行为"
         Network = "网络"
-        NetworkSummary = "DNS · 端口 · 入站"
+        NetworkSummary = "代理模式 · DNS · 访问控制"
         Override = "覆写"
-        OverrideSummary = "规则覆写"
+        OverrideSummary = "YAML · JS · 规则覆写"
         MetaFeatures = "Meta 功能"
-        MetaFeaturesSummary = "Meta 扩展"
+        MetaFeaturesSummary = "连接 · 路由 · GeoX · 密钥"
     }
 
     More = {

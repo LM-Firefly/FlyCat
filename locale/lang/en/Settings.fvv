@@ -9,13 +9,13 @@ Settings = {
 
     UiSettings = {
         App = "App"
-        AppSummary = "Appearance · Language · Theme"
+        AppSummary = "Theme · Language · Behavior"
         Network = "Network"
-        NetworkSummary = "DNS · Port · Inbound"
+        NetworkSummary = "Proxy Mode · DNS · Access Control"
         Override = "Override"
-        OverrideSummary = "Rule Override"
+        OverrideSummary = "YAML · JS · Rule Override"
         MetaFeatures = "Meta Features"
-        MetaFeaturesSummary = "Meta Extensions"
+        MetaFeaturesSummary = "Connections · Routing · GeoX · Keys"
     }
 
     More = {
