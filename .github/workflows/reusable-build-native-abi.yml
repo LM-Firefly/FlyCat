@@ -49,9 +49,13 @@ jobs:
           for p in "$GITHUB_WORKSPACE"/.github/patch/*.patch; do patch --verbose -p 1 < "$p"; done
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        # nightly + rust-src: the rust build uses -Zbuild-std and
+        # -Cpanic=immediate-abort to shrink liboverride.so (~18%), see
+        # RustBuilder in scripts/native-build.main.kts.
+        uses: dtolnay/rust-toolchain@nightly
         with:
           targets: armv7-linux-androideabi,aarch64-linux-android,i686-linux-android,x86_64-linux-android
+          components: rust-src
 
       - name: Cache Rust
         uses: actions/cache@v5

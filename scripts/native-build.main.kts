@@ -433,12 +433,32 @@ class RustBuilder(private val config: ProjectConfig) {
             "cargo", "ndk",
             "-t", abi,
             "-o", outputDir.absolutePath,
-            "build", "--release", "--lib"
+            "build", "--release", "--lib",
+            // Rebuild std from source so the size profile (opt-level=z, LTO,
+            // immediate-abort) applies to it too. Requires the nightly
+            // toolchain pinned below plus the rust-src component.
+            "-Z", "build-std=std,panic_abort",
         )
 
         val result = executeCommand(
             command = command,
             workingDir = sourceDir,
+            environment = mapOf(
+                // -Z flags and -Cpanic=immediate-abort are nightly-only; pin via
+                // rustup so the build does not depend on the host default toolchain.
+                "RUSTUP_TOOLCHAIN" to "nightly",
+                // immediate-abort drops all panic message/formatting machinery
+                // (~18% smaller liboverride.so). Panics already aborted the
+                // process (profile panic=abort); they just lose the logcat
+                // message. Compile errors are reported via Result/JSON and are
+                // unaffected. gc-sections + lld ICF fold what LTO leaves behind.
+                "RUSTFLAGS" to listOf(
+                    "-Zunstable-options",
+                    "-Cpanic=immediate-abort",
+                    "-C", "link-arg=-Wl,--gc-sections",
+                    "-C", "link-arg=-Wl,--icf=all",
+                ).joinToString(" "),
+            ),
             stdoutPrefix = "[building][$abi]",
             stderrPrefix = "[building][$abi]",
             stderrIsError = false
