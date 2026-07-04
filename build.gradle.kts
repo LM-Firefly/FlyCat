@@ -52,7 +52,7 @@ plugins {
   id("org.jetbrains.compose") version "1.11.1" apply false
   id("com.google.devtools.ksp") version "2.3.9" apply false
   id("androidx.room") version "2.8.4" apply false
-  id("com.mikepenz.aboutlibraries.plugin.android") version "15.0.2" apply false
+  id("com.mikepenz.aboutlibraries.plugin.android") version "15.0.3" apply false
   id("com.diffplug.spotless") version "8.7.0" apply false
 }
 
