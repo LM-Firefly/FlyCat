@@ -113,11 +113,8 @@ jobs:
           chmod +x scripts/sync-kernel.sh
           ./scripts/sync-kernel.sh "${{ inputs.kernel_channel }}"
 
-      - name: Sync Rust submodule
-        run: |
-          git submodule sync -- lib/native/rust
-          git submodule update --init --recursive -- lib/native/rust
-          test -f lib/native/rust/Cargo.toml
+      - name: Verify Rust sources
+        run: test -f lib/native/rust/Cargo.toml
 
       - name: Build native libraries for ABI
         env:
