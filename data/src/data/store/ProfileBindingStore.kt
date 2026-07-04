@@ -137,10 +137,11 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
         setBinding(existing.moveOverride(fromIndex, toIndex))
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun loadBindings(): Map<String, ProfileBinding> =
         try {
             loadMetadataIndex().profileChains
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: any metadata read/decode failure degrades to empty
             Timber.w(error, "Failed to load bindings from metadata.yaml, returning empty map")
             emptyMap()
         }

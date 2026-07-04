@@ -26,6 +26,7 @@ import android.os.Build
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
+import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
 @SuppressLint("StaticFieldLeak")
@@ -120,22 +121,13 @@ object NativeLibraryManager {
     @SuppressLint("SetWorldReadable")
     private fun extractFromMainApk(info: LibraryInfo, targetFile: File): Boolean {
         val apkPath =
-            context?.applicationInfo?.sourceDir ?: throw RuntimeException("Context not initialized")
+            context?.applicationInfo?.sourceDir
+                ?: throw IllegalStateException("Context not initialized")
 
-        val abi = getSupportedAbi()
         ZipFile(apkPath).use { zip ->
-            var libEntry = zip.getEntry("lib/$abi/${info.name}")
-            if (libEntry == null) {
-                val supportedAbis = Build.SUPPORTED_ABIS
-                for (tryAbi in supportedAbis) {
-                    libEntry = zip.getEntry("lib/$tryAbi/${info.name}")
-                    if (libEntry != null) break
-                }
-            }
-
-            if (libEntry == null) {
-                throw RuntimeException("Library not found in APK: ${info.name}")
-            }
+            val libEntry =
+                findMainApkLibEntry(zip, info.name)
+                    ?: throw IllegalStateException("Library not found in APK: ${info.name}")
 
             zip.getInputStream(libEntry).use { input ->
                 FileOutputStream(targetFile).use { output -> input.copyTo(output) }
@@ -150,10 +142,18 @@ object NativeLibraryManager {
         }
     }
 
+    private fun findMainApkLibEntry(zip: ZipFile, libraryName: String): ZipEntry? {
+        zip.getEntry("lib/${getSupportedAbi()}/$libraryName")?.let { return it }
+        for (tryAbi in Build.SUPPORTED_ABIS) {
+            zip.getEntry("lib/$tryAbi/$libraryName")?.let { return it }
+        }
+        return null
+    }
+
     @SuppressLint("SetWorldReadable")
     private fun extractFromExtensionApk(info: LibraryInfo, targetFile: File): Boolean {
         if (info.packageName == null) {
-            throw RuntimeException("Package name required for extension APK source")
+            throw IllegalArgumentException("Package name required for extension APK source")
         }
 
         val extensionApk = getExtensionApk(info.packageName)

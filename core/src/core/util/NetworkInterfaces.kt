@@ -25,6 +25,7 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.net.InetAddress
 import java.net.NetworkInterface
+import java.net.SocketException
 
 object NetworkInterfaces {
     suspend fun getLocalIpAddress(): String? =
@@ -45,7 +46,7 @@ object NetworkInterfaces {
                     }
                 }
                 null
-            } catch (error: Exception) {
+            } catch (error: SocketException) {
                 Timber.w(error, "Failed to get local IP address")
                 null
             }

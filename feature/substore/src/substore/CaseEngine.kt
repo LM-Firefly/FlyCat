@@ -57,6 +57,7 @@ class CaseEngine(
             .trimIndent()
 
     init {
+        @Suppress("TooGenericExceptionCaught")
         try {
             SubStorePaths.ensureStructure()
             val nodeRuntimeOptions = NodeRuntimeOptions()
@@ -81,11 +82,12 @@ class CaseEngine(
 
             runtime.allowEval(true)
             runtime.getExecutor(argv2EnvScript).executeVoid()
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: Javet engine init throws unspecified exceptions
             Timber.e(error, "CaseEngine init failed")
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun startServer() {
         val runtime =
             nodeRuntime
@@ -109,7 +111,7 @@ class CaseEngine(
                         while (shouldAwait) {
                             runtime.await(V8AwaitMode.RunNoWait)
                         }
-                    } catch (_: InterruptedException) {} catch (error: Exception) {
+                    } catch (_: InterruptedException) {} catch (error: Exception) { // fault barrier: embedded JS engine
                         Timber.e(error, "CaseEngine run failed")
                     } finally {
                         cleanup()
@@ -127,6 +129,7 @@ class CaseEngine(
         stopServer()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun stopServer() {
         if (!isRunning) return
 
@@ -138,7 +141,7 @@ class CaseEngine(
                 thread.interrupt()
                 thread.join(5000)
             }
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: best-effort Javet engine shutdown
             Timber.e(error, "CaseEngine stop failed")
         }
     }

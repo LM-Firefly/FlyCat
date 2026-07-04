@@ -77,6 +77,8 @@ enum class ProxyGroupSyncPriority {
     FAST,
 }
 
+// Established runtime facade seam (UI-facing single entry point); splitting is tracked separately.
+@Suppress("LargeClass")
 class ProxyFacade(
     private val context: Context,
     private val networkSettingsStorage: NetworkSettingsStore =

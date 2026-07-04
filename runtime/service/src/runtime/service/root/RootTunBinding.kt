@@ -92,6 +92,7 @@ class RootTunBinding {
     val currentBinder: IRootTunService?
         get() = binder
 
+    @Suppress("TooGenericExceptionCaught")
     suspend fun <T> remoteCall(
         context: Context,
         onBinderFailure: (() -> T)? = null,
@@ -102,6 +103,8 @@ class RootTunBinding {
             try {
                 block(bind(appContext))
             } catch (error: Throwable) {
+                // fault barrier: root binder call may fail for any reason; invalidate the dead
+                // connection and either fall back or rethrow untouched.
                 if (RootTunRuntimeRecovery.isBinderConnectionFailure(error)) {
                     invalidateConnection(
                         appContext,

@@ -42,21 +42,23 @@ object EditorThemeManager {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun applyTheme(editor: CodeEditor) {
         try {
             val themeRegistry = ThemeRegistry.getInstance()
             editor.colorScheme = TextMateColorScheme.create(themeRegistry)
-        } catch (error: Exception) {
+        } catch (_: Exception) { // fault barrier: TextMate/tm4e throws unspecified exceptions, fall back
             editor.colorScheme = EditorColorSynchronizer.createColorScheme(false)
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun updateTheme(editor: CodeEditor, isDark: Boolean) {
         try {
             TextMateInitializer.setTheme(isDark)
 
             editor.colorScheme = TextMateColorScheme.create(ThemeRegistry.getInstance())
-        } catch (error: Exception) {
+        } catch (_: Exception) { // fault barrier: TextMate/tm4e throws unspecified exceptions, fall back
             editor.colorScheme = EditorColorSynchronizer.createColorScheme(isDark)
         }
     }

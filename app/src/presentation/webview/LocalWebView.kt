@@ -173,10 +173,9 @@ private fun createWebView(
                     request: WebResourceRequest?,
                 ): Boolean {
                     val scheme = request?.url?.scheme
+                    val isWebScheme = scheme == "http" || scheme == "https" || scheme == "file"
 
-                    if (
-                        scheme != null && scheme != "http" && scheme != "https" && scheme != "file"
-                    ) {
+                    if (scheme != null && !isWebScheme) {
                         try {
                             val intent = Intent(Intent.ACTION_VIEW, request.url)
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

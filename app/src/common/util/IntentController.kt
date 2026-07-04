@@ -72,6 +72,8 @@ class IntentController(private val scope: CoroutineScope) : KoinComponent {
         }
     }
 
+    // Fault barrier: external intents must never crash the app; any failure is logged only.
+    @Suppress("TooGenericExceptionCaught")
     private fun handleStopClash() {
         scope.launch {
             Timber.i("External stop")

@@ -41,11 +41,11 @@ class SubStoreService : Service() {
                     NetworkUtil.isPortInUse(request.frontendPort) ||
                         NetworkUtil.isPortInUse(request.backendPort)
                 ) {
-                    throw Exception("端口 ${request.frontendPort} 或 ${request.backendPort} 已被占用")
+                    error("端口 ${request.frontendPort} 或 ${request.backendPort} 已被占用")
                 }
 
                 if (!ensureJavetLibraryLoaded()) {
-                    throw Exception("Javet native 库加载失败")
+                    error("Javet native 库加载失败")
                 }
 
                 val engine =
@@ -57,7 +57,7 @@ class SubStoreService : Service() {
                 caseEngine = engine
 
                 if (!engine.isInitialized()) {
-                    throw Exception("CaseEngine 初始化失败")
+                    error("CaseEngine 初始化失败")
                 }
 
                 engine.startServer()

@@ -77,7 +77,7 @@ object Parcelizer {
             previousValue: T?,
         ): T = decodeSerializableValue(deserializer)
 
-        override fun endStructure(descriptor: SerialDescriptor) {}
+        override fun endStructure(descriptor: SerialDescriptor) = Unit
 
         override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder = this
 
@@ -164,7 +164,7 @@ object Parcelizer {
             value: T,
         ) = encodeSerializableValue(serializer, value)
 
-        override fun endStructure(descriptor: SerialDescriptor) {}
+        override fun endStructure(descriptor: SerialDescriptor) = Unit
 
         override fun beginStructure(descriptor: SerialDescriptor): CompositeEncoder = this
 

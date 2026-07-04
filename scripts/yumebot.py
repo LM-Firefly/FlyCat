@@ -1,7 +1,8 @@
 import requests
 import os
 import glob
-import subprocess
+import shutil
+import subprocess  # nosec B404 - only runs fixed git commands from CI env
 import html
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
@@ -28,9 +29,10 @@ COMMIT_MESSAGE = os.environ.get("COMMIT_MESSAGE", "")
 def get_commit_message():
     msg = (COMMIT_MESSAGE or "").strip()
     if not msg and COMMIT_SHA:
+        git = shutil.which("git") or "git"
         try:
-            result = subprocess.run(
-                ["git", "log", "-1", "--format=%B", COMMIT_SHA],
+            result = subprocess.run(  # noqa: S603 - fixed git command, sha from CI env
+                [git, "log", "-1", "--format=%B", COMMIT_SHA],
                 cwd=os.environ.get("GITHUB_WORKSPACE") or ".",
                 capture_output=True, text=True, timeout=15,
             )
@@ -44,54 +46,48 @@ def html_escape(text):
     return html.escape(text or "")
 
 
-def get_caption():
-    workflow_label = "Normal"
+def _workflow_label():
     workflow_name_lower = WORKFLOW_NAME.lower()
-    title_lower = TITLE.lower()
+    if "smart" in workflow_name_lower or "smart" in TITLE.lower():
+        return "Smart"
+    if "test" in workflow_name_lower:
+        return "Test"
+    return "Normal"
 
-    if "smart" in workflow_name_lower or "smart" in title_lower:
-        workflow_label = "Smart"
-    elif "test" in workflow_name_lower:
-        workflow_label = "Test"
 
-    trigger_label = "Manual"
-    if EVENT_NAME == "push":
-        trigger_label = "Push"
-    elif EVENT_NAME == "schedule":
-        trigger_label = "Nightly"
-    elif EVENT_NAME == "workflow_dispatch":
-        trigger_label = "Manual"
+def _trigger_label():
+    return {"push": "Push", "schedule": "Nightly"}.get(EVENT_NAME, "Manual")
 
-    action_url = f"{SERVER_URL}/{REPOSITORY}/actions/runs/{RUN_ID}" if REPOSITORY and RUN_ID else ""
-    commit_url = f"{SERVER_URL}/{REPOSITORY}/commit/{COMMIT_SHA}" if REPOSITORY and COMMIT_SHA else ""
-    commit_short = COMMIT_SHA[:7] if COMMIT_SHA else "unknown"
-    run_text = RUN_NUMBER if RUN_NUMBER else "?"
 
-    display_title = TITLE
-    if workflow_label == "Test" and "test" not in title_lower:
-        display_title = f"{TITLE} Test"
-
-    lines = [
-        f"<b>{html_escape(display_title)}</b>",
-        f"<b>• Trigger</b>: {html_escape(trigger_label)}",
-        f"<b>• Branch</b>: {html_escape(BRANCH)}",
-    ]
+def _version_lines():
     if VERSION_NAME and VERSION_CODE:
-        lines.append(f"<b>• Version</b>: <code>{html_escape(VERSION_NAME)} ({html_escape(VERSION_CODE)})</code>")
-    elif VERSION_NAME:
-        lines.append(f"<b>• Version</b>: <code>{html_escape(VERSION_NAME)}</code>")
+        version = f"{html_escape(VERSION_NAME)} ({html_escape(VERSION_CODE)})"
+        return [f"<b>• Version</b>: <code>{version}</code>"]
+    if VERSION_NAME:
+        return [f"<b>• Version</b>: <code>{html_escape(VERSION_NAME)}</code>"]
+    return []
 
-    if action_url:
+
+def _link_lines():
+    lines = []
+    if REPOSITORY and RUN_ID:
+        action_url = f"{SERVER_URL}/{REPOSITORY}/actions/runs/{RUN_ID}"
         lines.append(f'<b>• Download</b>: <a href="{action_url}">workpiece</a>')
     if RELEASE_URL:
         lines.append(f'<b>• Release</b>: <a href="{RELEASE_URL}">open</a>')
     if META_URL:
         lines.append(f'<b>• Meta</b>: <a href="{META_URL}">json</a>')
+    return lines
 
-    if commit_url:
-        lines.append(f'<b>• Commit</b>: <a href="{commit_url}">{html_escape(commit_short)}</a>')
+
+def _commit_lines():
+    commit_short = COMMIT_SHA[:7] if COMMIT_SHA else "unknown"
+    if REPOSITORY and COMMIT_SHA:
+        commit_url = f"{SERVER_URL}/{REPOSITORY}/commit/{COMMIT_SHA}"
+        link = f'<a href="{commit_url}">{html_escape(commit_short)}</a>'
+        lines = [f"<b>• Commit</b>: {link}"]
     else:
-        lines.append(f"<b>• Commit</b>: {html_escape(commit_short)}")
+        lines = [f"<b>• Commit</b>: {html_escape(commit_short)}"]
 
     commit_message = get_commit_message()
     if commit_message:
@@ -99,7 +95,22 @@ def get_caption():
         if len(body) > 700:
             body = body[:700].rstrip() + "…"
         lines.append(f"<blockquote>{html_escape(body)}</blockquote>")
+    return lines
 
+
+def get_caption():
+    display_title = TITLE
+    if _workflow_label() == "Test" and "test" not in TITLE.lower():
+        display_title = f"{TITLE} Test"
+
+    lines = [
+        f"<b>{html_escape(display_title)}</b>",
+        f"<b>• Trigger</b>: {html_escape(_trigger_label())}",
+        f"<b>• Branch</b>: {html_escape(BRANCH)}",
+    ]
+    lines.extend(_version_lines())
+    lines.extend(_link_lines())
+    lines.extend(_commit_lines())
     return "\n".join(lines)
 
 

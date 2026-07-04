@@ -69,6 +69,8 @@ import kotlin.reflect.KClass
 private val SUPPRESS_ANNOTATION =
     "@file:Suppress(\"PackageDirectoryMismatch\", \"PackageName\", \"ClassName\", \"ObjectPropertyName\", \"PropertyName\", \"FunctionName\", \"NonAsciiCharacters\", \"RemoveRedundantBackticks\", \"REDUNDANT_ELSE_IN_WHEN\", \"UnusedExpression\", \"unused\")\n"
 
+// detekt LargeClass: FVVV is the self-contained .fvv parser/serializer core; splitting it would break cohesion.
+@Suppress("LargeClass")
 open class FVVV(
     value: Any? = null,
     var nodes: MutableMap<String, FVVV> = mutableMapOf(),
@@ -548,228 +550,331 @@ open class FVVV(
         override fun toString() = "ParseException: $message"
     }
 
-    private fun parseMain(context: TextCtx, scopeStack: MutableList<FVVV>) {
-        fun findKey(path: String, scopeStack: List<FVVV>) = path.split('.').takeIf { it.isNotEmpty() }?.let { paths ->
-            scopeStack.asReversed().firstNotNullOfOrNull { index ->
-                paths.fold(index as FVVV?) { target, pathIndex ->
-                    target?.nodes?.get(pathIndex)
-                }
+    private fun findKey(path: String, scopeStack: List<FVVV>) = path.split('.').takeIf { it.isNotEmpty() }?.let { paths ->
+        scopeStack.asReversed().firstNotNullOfOrNull { index ->
+            paths.fold(index as FVVV?) { target, pathIndex ->
+                target?.nodes?.get(pathIndex)
             }
         }
+    }
 
-        fun parseName(context: TextCtx) = context.skipBlanks().let {
-            buildString {
-                while (!context.isEof && !context.prematch('=', ':', '：', '<')) append(context.next()!!)
-            }.trimEnd()
-        }
+    private fun parseName(context: TextCtx) = context.skipBlanks().let {
+        buildString {
+            while (!context.isEof && !context.prematch('=', ':', '：', '<')) append(context.next()!!)
+        }.trimEnd()
+    }
 
-        fun parseDescription(
-            context: TextCtx,
-            description: StringBuilder,
-            scopeStack: List<FVVV>,
-            skipBlanks: Boolean = true,
-            sameLine: Boolean = false,
-        ) {
-            while (true) {
-                val (originalIndex, originalLine) = context.index to context.linesStart.size
-                if (!context.match('<', sameLine = sameLine)) {
-                    if (!skipBlanks) {
-                        context.index = originalIndex
-                        while (context.linesStart.size > originalLine) context.linesStart.removeLast()
-                    }
+    private fun parseDescription(
+        context: TextCtx,
+        description: StringBuilder,
+        scopeStack: List<FVVV>,
+        skipBlanks: Boolean = true,
+        sameLine: Boolean = false,
+    ) {
+        while (true) {
+            val (originalIndex, originalLine) = context.index to context.linesStart.size
+            if (!context.match('<', sameLine = sameLine)) {
+                if (!skipBlanks) rewindTo(context, originalIndex, originalLine)
+                break
+            }
+
+            description.clear()
+            while (true) when {
+                context.isEof -> throw context.err.whyEOF()
+                context.match('>', skipBlanks = false) -> {
+                    resolveDescriptionLink(description, scopeStack)
                     break
                 }
 
-                description.clear()
-                while (true) when {
-                    context.isEof -> throw context.err.whyEOF()
-                    context.match('>', skipBlanks = false) -> {
-                        findKey("$description", scopeStack)?.takeIf { it.isType<String>() }?.also { target ->
-                                description.clear().append(target.get<String>())
-                            }
-                        break
-                    }
+                context.match('\\', skipBlanks = false) -> appendEscapedDescriptionChar(context, description)
 
-                    context.match('\\', skipBlanks = false) -> when {
-                        context.isEof -> throw context.err.whyEOF()
-                        context.match('>', skipBlanks = false) -> description.append('>')
-                        else -> {
-                            val character = context.next()!!
-                            getEscapedChar(character)?.let { target -> description.append(target) }
-                                ?: description.append('\\', character)
-                        }
-                    }
+                else -> description.append(context.next()!!)
+            }
+        }
+    }
 
-                    else -> description.append(context.next()!!)
-                }
+    private fun rewindTo(context: TextCtx, originalIndex: Int, originalLine: Int) {
+        context.index = originalIndex
+        while (context.linesStart.size > originalLine) context.linesStart.removeLast()
+    }
+
+    private fun resolveDescriptionLink(description: StringBuilder, scopeStack: List<FVVV>) {
+        findKey("$description", scopeStack)?.takeIf { it.isType<String>() }?.also { target ->
+            description.clear().append(target.get<String>())
+        }
+    }
+
+    private fun appendEscapedDescriptionChar(context: TextCtx, description: StringBuilder) {
+        when {
+            context.isEof -> throw context.err.whyEOF()
+            context.match('>', skipBlanks = false) -> description.append('>')
+            else -> {
+                val character = context.next()!!
+                getEscapedChar(character)?.let { target -> description.append(target) }
+                    ?: description.append('\\', character)
+            }
+        }
+    }
+
+    private fun parseText(context: TextCtx, text: StringBuilder) {
+        if (context.match('`')) {
+            while (true) when {
+                context.isEof -> throw context.err.whyEOF()
+                context.match('`', skipBlanks = false) -> break
+                else -> text.append(context.next()!!)
+            }
+            "$text".trimIndent().trim().also { trimmedText ->
+                text.clear().append(trimmedText)
+            }
+            return
+        }
+
+        val isFullWidth = context.match('“') || !context.match('"')
+        while (true) when {
+            context.isEof -> throw context.err.whyEOF()
+            if (isFullWidth) context.match('”', skipBlanks = false)
+            else context.match('"', skipBlanks = false) -> return
+
+            context.match('\\', skipBlanks = false) -> appendEscapedTextChar(context, text, isFullWidth)
+
+            else -> text.append(context.next()!!)
+        }
+    }
+
+    private fun appendEscapedTextChar(context: TextCtx, text: StringBuilder, isFullWidth: Boolean) {
+        when {
+            context.isEof -> throw context.err.whyEOF()
+            isFullWidth && context.match('”', skipBlanks = false) -> text.append('”')
+            !isFullWidth && context.match('"', skipBlanks = false) -> text.append('"')
+            else -> {
+                val character = context.next()!!
+                getEscapedChar(character)?.let { target -> text.append(target) } ?: text.append('\\', character)
+            }
+        }
+    }
+
+    private fun tryParseNumber(targetString: String): Number? {
+        val sanitizedString = targetString.filterNot { it in "'’" }
+        if (sanitizedString.isEmpty()) return null
+
+        var sign = 1
+        var index = 0
+        if (sanitizedString.startsWith('-')) sign = (-1).also { ++index }
+        else if (sanitizedString.startsWith('+')) ++index
+
+        var radix = 10
+        if (index < sanitizedString.length && sanitizedString[index] == '0' && index + 1 < sanitizedString.length) {
+            when (sanitizedString[index + 1]) {
+                'x', 'X' -> radix = 16.also { index += 2 }
+                'o', 'O' -> radix = 8.also { index += 2 }
+                'b', 'B' -> radix = 2.also { index += 2 }
+                '0', '1', '2', '3', '4', '5', '6', '7' -> radix = 8.also { ++index }
             }
         }
 
-        fun parseText(context: TextCtx, text: StringBuilder) {
-            if (context.match('`')) {
-                while (true) when {
-                    context.isEof -> throw context.err.whyEOF()
-                    context.match('`', skipBlanks = false) -> break
-                    else -> text.append(context.next()!!)
+        val digitString = sanitizedString.substring(index)
+        return digitString.takeIf { it.isNotEmpty() }?.let {
+            when {
+                radix != 10 -> digitString.toLongOrNull(radix)
+                digitString.any { character -> character == '.' || character == 'e' || character == 'E' } -> digitString.toDoubleOrNull()
+                else -> digitString.toLongOrNull()
+            }?.let {
+                when (it) {
+                    is Long -> it * sign
+                    is Double -> it * sign
+                    else -> null
                 }
-                "$text".trimIndent().trim().also { trimmedText ->
-                    text.clear().append(trimmedText)
-                }
+            }
+        }
+    }
+
+    private fun parseValue(
+        context: TextCtx,
+        scopeStack: List<FVVV>,
+        targetFvvv: FVVV,
+        keyDescription: StringBuilder,
+        inList: Boolean = false,
+    ) {
+        while (true) {
+            parseDescription(context, keyDescription, scopeStack, skipBlanks = inList, sameLine = !inList)
+            val missingValue = context.isEof || (if (inList) {
+                context.match(',', '，') || context.prematch(']', '］')
+            } else {
+                !context.isSameLine() || context.match(';', '；') || context.prematch('}', '｝')
+            })
+            if (missingValue) {
+                throw context.err.notFound("value")
+            }
+
+            if (context.prematch('"', '“', '`')) {
+                val temporaryText = StringBuilder()
+                parseText(context, temporaryText)
+                assignScalarValue(targetFvvv, "$temporaryText", "$temporaryText")
+            } else {
+                parsePlainValue(context, scopeStack, targetFvvv, inList)
+            }
+
+            parseDescription(context, keyDescription, scopeStack, skipBlanks = false, sameLine = true)
+            val valueFinished = context.isEof || !context.isSameLine() || (if (inList) {
+                context.match(',', '，') || context.prematch(']', '］')
+            } else {
+                context.match(';', '；') || context.prematch('}', '｝')
+            })
+            if (valueFinished) {
                 return
             }
 
-            val isFullWidth = context.match('“') || !context.match('"')
-            while (true) when {
-                context.isEof -> throw context.err.whyEOF()
-                if (isFullWidth) context.match('”', skipBlanks = false)
-                else context.match('"', skipBlanks = false) -> return
+            if (context.match('+')) continue else throw context.err.notFound("+")
+        }
+    }
 
-                context.match('\\', skipBlanks = false) -> when {
-                    context.isEof -> throw context.err.whyEOF()
-                    isFullWidth && context.match('”', skipBlanks = false) -> text.append('”')
-                    !isFullWidth && context.match('"', skipBlanks = false) -> text.append('"')
-                    else -> {
-                        val character = context.next()!!
-                        getEscapedChar(character)?.let { target -> text.append(target) } ?: text.append('\\', character)
-                    }
-                }
-
-                else -> text.append(context.next()!!)
+    private fun parsePlainValue(context: TextCtx, scopeStack: List<FVVV>, targetFvvv: FVVV, inList: Boolean) {
+        val temporaryText = StringBuilder()
+        while (!context.isEof && !context.prematch('<', '+') && !context.prematch('\r', '\n')) {
+            val atValueEnd = if (inList) {
+                context.prematch(',', '，', ']', '］')
+            } else {
+                context.prematch(';', '；', '}', '｝')
             }
+            if (atValueEnd) {
+                break
+            }
+            temporaryText.append(context.next()!!)
         }
 
-        fun tryParseNumber(targetString: String): Number? {
-            val sanitizedString = targetString.filterNot { it in "'’" }
-            if (sanitizedString.isEmpty()) return null
+        val temporaryString = "$temporaryText".trimEnd()
+        if (temporaryString.isEmpty()) throw context.err.notFound("value")
 
-            var sign = 1
-            var index = 0
-            if (sanitizedString.startsWith('-')) sign = (-1).also { ++index }
-            else if (sanitizedString.startsWith('+')) ++index
+        val isTrue = temporaryString.toBoolean()
+        if (isTrue || temporaryString.equals("false", true)) {
+            assignScalarValue(targetFvvv, isTrue, temporaryString)
+        } else {
+            tryParseNumber(temporaryString)?.also { temporaryNumber ->
+                assignScalarValue(targetFvvv, temporaryNumber, temporaryString)
+            } ?: findKey(temporaryString, scopeStack)?.also { target ->
+                assignLinkedValue(context, targetFvvv, temporaryString, target)
+            } ?: throw context.err.noValue(temporaryString)
+        }
+    }
 
-            var radix = 10
-            if (index < sanitizedString.length && sanitizedString[index] == '0' && index + 1 < sanitizedString.length) {
-                when (sanitizedString[index + 1]) {
-                    'x', 'X' -> radix = 16.also { index += 2 }
-                    'o', 'O' -> radix = 8.also { index += 2 }
-                    'b', 'B' -> radix = 2.also { index += 2 }
-                    '0', '1', '2', '3', '4', '5', '6', '7' -> radix = 8.also { ++index }
-                }
-            }
-
-            val digitString = sanitizedString.substring(index)
-            return digitString.takeIf { it.isNotEmpty() }?.let {
-                when {
-                    radix != 10 -> digitString.toLongOrNull(radix)
-                    digitString.any { character -> character == '.' || character == 'e' || character == 'E' } -> digitString.toDoubleOrNull()
-                    else -> digitString.toLongOrNull()
-                }?.let {
-                    when (it) {
-                        is Long -> it * sign
-                        is Double -> it * sign
-                        else -> null
-                    }
-                }
+    private fun assignScalarValue(targetFvvv: FVVV, parsedValue: Any, rawText: String) {
+        if (targetFvvv.value == null) {
+            targetFvvv.value = parsedValue
+        } else {
+            targetFvvv.apply {
+                link = ""
+                value = "${targetFvvv.value}$rawText"
             }
         }
+    }
 
-        fun parseValue(
-            context: TextCtx,
-            scopeStack: List<FVVV>,
-            targetFvvv: FVVV,
-            keyDescription: StringBuilder,
-            inList: Boolean = false,
-        ) {
-            while (true) {
-                parseDescription(context, keyDescription, scopeStack, skipBlanks = inList, sameLine = !inList)
-                if (context.isEof || (if (inList) {
-                        context.match(',', '，') || context.prematch(']', '］')
-                    } else {
-                        !context.isSameLine() || context.match(';', '；') || context.prematch('}', '｝')
-                    })
-                ) {
-                    throw context.err.notFound("value")
-                }
+    private fun assignLinkedValue(context: TextCtx, targetFvvv: FVVV, temporaryString: String, target: FVVV) {
+        if (targetFvvv.value != null && target.value is List<*>) throw context.err.plusList()
+        if (targetFvvv.value == null) {
+            targetFvvv.apply {
+                link = temporaryString
+                value = target.value
+            }
+        } else {
+            targetFvvv.apply {
+                link = ""
+                value = "${targetFvvv.value}${target.value}"
+            }
+        }
+        targetFvvv.nodes = target.nodes
+    }
 
-                val temporaryText = StringBuilder()
-                if (context.prematch('"', '“', '`')) {
-                    parseText(context, temporaryText)
-                    if (targetFvvv.value == null) {
-                        targetFvvv.value = "$temporaryText"
-                    } else {
-                        targetFvvv.apply {
-                            link = ""
-                            value = "${targetFvvv.value}$temporaryText"
-                        }
+    private fun mergeListType(context: TextCtx, listType: KClass<*>?, lastItem: Any): KClass<*>? {
+        if (listType == null) return lastItem::class
+        if (listType == lastItem::class) return listType
+        if (listType == FVVV::class || lastItem::class == FVVV::class) throw context.err.valuePlusFVVV()
+        return when (lastItem::class) {
+            String::class -> String::class
+            Double::class -> if (listType != String::class) Double::class else listType
+            Long::class -> if (listType != String::class && listType != Double::class) Long::class else listType
+            else -> listType
+        }
+    }
+
+    private fun coerceListItems(targetList: MutableList<Any>, listType: KClass<*>?) {
+        if (listType == FVVV::class) return
+        targetList.map { item ->
+            if (item::class == listType) {
+                item
+            } else {
+                when (listType) {
+                    String::class -> "$item"
+                    Double::class -> when (item) {
+                        is Long -> item.toDouble()
+                        is Boolean -> if (item) 1.0 else 0.0
+                        else -> item
                     }
+
+                    Long::class -> when (item) {
+                        is Boolean -> if (item) 1 else 0
+                        else -> item
+                    }
+
+                    else -> item
+                }
+            }
+        }.also { normalizedList ->
+            targetList.apply {
+                clear()
+                addAll(normalizedList)
+            }
+        }
+    }
+
+    private fun parseListValue(context: TextCtx, scopeStack: MutableList<FVVV>, keyDescription: StringBuilder): Any {
+        val targetList = mutableListOf<Any>()
+        var listType = null as KClass<*>?
+        while (true) {
+            val valueDescription = StringBuilder()
+            parseDescription(context, valueDescription, scopeStack, skipBlanks = false)
+            if (!context.isSameLine()) valueDescription.clear()
+
+            if (context.isEof) throw context.err.whyEOF()
+            if (context.match('{', '｛')) {
+                listType = FVVV::class
+                val temporaryValue = FVVV().apply { parseMain(context, scopeStack) }
+                if (!context.match('}', '｝')) throw context.err.notFound("}")
+                parseDescription(context, valueDescription, scopeStack, skipBlanks = false, sameLine = true)
+                temporaryValue.desc = "$valueDescription"
+                targetList.add(temporaryValue)
+                if (context.isSameLine() && !context.match(',', '，') && !context.prematch(']', '］')) {
+                    throw context.err.notFound("EOL")
+                }
+            } else {
+                val targetFvvv = FVVV()
+                parseValue(context, scopeStack, targetFvvv, keyDescription, inList = true)
+
+                @Suppress("UNCHECKED_CAST") if (targetFvvv.value is List<*>) {
+                    targetList.addAll(targetFvvv.value as List<Any>)
+                } else if (targetFvvv.value != null) {
+                    targetList.add(targetFvvv.value!!)
                 } else {
-                    while (!context.isEof && !context.prematch('<', '+') && !context.prematch('\r', '\n')) {
-                        if (if (inList) {
-                                context.prematch(',', '，', ']', '］')
-                            } else {
-                                context.prematch(';', '；', '}', '｝')
-                            }
-                        ) {
-                            break
-                        }
-                        temporaryText.append(context.next()!!)
-                    }
-
-                    val temporaryString = "$temporaryText".trimEnd()
-                    if (temporaryString.isEmpty()) throw context.err.notFound("value")
-
-                    val isTrue = temporaryString.toBoolean()
-                    if (isTrue || temporaryString.equals("false", true)) {
-                        if (targetFvvv.value == null) {
-                            targetFvvv.value = isTrue
-                        } else {
-                            targetFvvv.apply {
-                                link = ""
-                                value = "${targetFvvv.value}$temporaryString"
-                            }
-                        }
-                    } else {
-                        tryParseNumber(temporaryString)?.also { temporaryNumber ->
-                            if (targetFvvv.value == null) {
-                                targetFvvv.value = temporaryNumber
-                            } else {
-                                targetFvvv.apply {
-                                    link = ""
-                                    value = "${targetFvvv.value}$temporaryString"
-                                }
-                            }
-                        } ?: findKey(temporaryString, scopeStack)?.also { target ->
-                            if (targetFvvv.value != null && target.value is List<*>) throw context.err.plusList()
-                            if (targetFvvv.value == null) {
-                                targetFvvv.apply {
-                                    link = temporaryString
-                                    value = target.value
-                                }
-                            } else {
-                                targetFvvv.apply {
-                                    link = ""
-                                    value = "${targetFvvv.value}${target.value}"
-                                }
-                            }
-                            targetFvvv.nodes = target.nodes
-                        } ?: throw context.err.noValue(temporaryString)
-                    }
+                    targetList.add(targetFvvv)
                 }
 
-                parseDescription(context, keyDescription, scopeStack, skipBlanks = false, sameLine = true)
-                if (context.isEof || !context.isSameLine() || (if (inList) {
-                        context.match(',', '，') || context.prematch(']', '］')
-                    } else {
-                        context.match(';', '；') || context.prematch('}', '｝')
-                    })
-                ) {
-                    return
-                }
-
-                if (context.match('+')) continue else throw context.err.notFound("+")
+                listType = mergeListType(context, listType, targetList.last())
             }
+            if (context.match(']', '］')) break
         }
 
+        coerceListItems(targetList, listType)
+
+        return when (listType) {
+            FVVV::class -> targetList.cast<FVVV>()!!
+            String::class -> targetList.cast<String>()!!
+            Double::class -> targetList.cast<Double>()!!
+            Long::class -> targetList.cast<Long>()!!
+            Boolean::class -> targetList.cast<Boolean>()!!
+            else -> TODO()
+        }
+    }
+
+    private fun parseMain(context: TextCtx, scopeStack: MutableList<FVVV>) {
         scopeStack.add(this)
 
         while (true) {
@@ -787,90 +892,7 @@ open class FVVV(
             var goto = false
             val targetKey = this[name]
             if (context.match('[', '［')) {
-                val targetList = mutableListOf<Any>()
-                var listType = null as KClass<*>?
-                while (true) {
-                    val valueDescription = StringBuilder()
-                    parseDescription(context, valueDescription, scopeStack, skipBlanks = false)
-                    if (!context.isSameLine()) valueDescription.clear()
-
-                    if (context.isEof) throw context.err.whyEOF()
-                    if (context.match('{', '｛')) {
-                        listType = FVVV::class
-                        val temporaryValue = FVVV().apply { parseMain(context, scopeStack) }
-                        if (!context.match('}', '｝')) throw context.err.notFound("}")
-                        parseDescription(context, valueDescription, scopeStack, skipBlanks = false, sameLine = true)
-                        temporaryValue.desc = "$valueDescription"
-                        targetList.add(temporaryValue)
-                        if (context.isSameLine() && !context.match(',', '，') && !context.prematch(']', '］')) {
-                            throw context.err.notFound("EOL")
-                        }
-                    } else {
-                        val targetFvvv = FVVV()
-                        parseValue(context, scopeStack, targetFvvv, keyDescription, inList = true)
-
-                        @Suppress("UNCHECKED_CAST") if (targetFvvv.value is List<*>) {
-                            targetList.addAll(targetFvvv.value as List<Any>)
-                        } else if (targetFvvv.value != null) {
-                            targetList.add(targetFvvv.value!!)
-                        } else {
-                            targetList.add(targetFvvv)
-                        }
-
-                        if (listType == null) {
-                            listType = targetList.last()::class
-                        } else if (listType != targetList.last()::class) {
-                            if (listType == FVVV::class || targetList.last()::class == FVVV::class) {
-                                throw context.err.valuePlusFVVV()
-                            }
-                            when (targetList.last()::class) {
-                                String::class -> listType = String::class
-                                Double::class -> if (listType != String::class) listType = Double::class
-                                Long::class -> if (listType != String::class && listType != Double::class) listType =
-                                    Long::class
-                            }
-                        }
-                    }
-                    if (context.match(']', '］')) break
-                }
-
-                if (listType != FVVV::class) {
-                    targetList.map { item ->
-                        if (item::class == listType) {
-                            item
-                        } else {
-                            when (listType) {
-                                String::class -> "$item"
-                                Double::class -> when (item) {
-                                    is Long -> item.toDouble()
-                                    is Boolean -> if (item) 1.0 else 0.0
-                                    else -> item
-                                }
-
-                                Long::class -> when (item) {
-                                    is Boolean -> if (item) 1 else 0
-                                    else -> item
-                                }
-
-                                else -> item
-                            }
-                        }
-                    }.also { normalizedList ->
-                        targetList.apply {
-                            clear()
-                            addAll(normalizedList)
-                        }
-                    }
-                }
-
-                targetKey.value = when (listType) {
-                    FVVV::class -> targetList.cast<FVVV>()!!
-                    String::class -> targetList.cast<String>()!!
-                    Double::class -> targetList.cast<Double>()!!
-                    Long::class -> targetList.cast<Long>()!!
-                    Boolean::class -> targetList.cast<Boolean>()!!
-                    else -> TODO()
-                }
+                targetKey.value = parseListValue(context, scopeStack, keyDescription)
             } else if (context.match('{', '｛')) {
                 targetKey.parseMain(context, scopeStack)
                 if (!context.match('}', '｝')) throw context.err.notFound("}")
@@ -881,7 +903,9 @@ open class FVVV(
 
             if (!goto) {
                 parseDescription(context, keyDescription, scopeStack, skipBlanks = false, sameLine = true)
-                if (context.isSameLine() && !context.isEof && !context.match(';', '；') && !context.prematch('}', '｝')) {
+                val missingLineEnd = context.isSameLine() && !context.isEof &&
+                    !context.match(';', '；') && !context.prematch('}', '｝')
+                if (missingLineEnd) {
                     throw context.err.notFound("EOL")
                 }
             }
@@ -898,6 +922,148 @@ open class FVVV(
         }
     }
 
+    private fun escapeString(text: String, isDescription: Boolean, fullWidth: Boolean = false) =
+        buildString(text.length + 6) {
+            if (isDescription) append('<') else append(if (fullWidth) '“' else '"')
+            text.forEach { character ->
+                when (character) {
+                    '\\' -> "\\\\"
+                    '\b' -> "\\b"
+                    '\u000C' -> "\\f"
+                    '\n' -> "\\n"
+                    '\r' -> "\\r"
+                    '\t' -> "\\t"
+                    '"' -> if (!fullWidth && !isDescription) "\\\"" else character
+                    '”' -> if (fullWidth && !isDescription) "\\”" else character
+                    '>' -> if (isDescription) "\\>" else character
+                    else -> character
+                }.also { append(it) }
+            }
+            if (isDescription) append('>') else append(if (fullWidth) '”' else '"')
+        }
+
+    private fun toStringFwv(context: FormatCtx, targetFvvv: FVVV, result: StringBuilder, indent: String, level: Int) =
+        result.apply {
+            append(context.fwvBegin)
+            if (!context.minify) append(context.newline)
+            targetFvvv.toStringRoot(context, result, level + 1)
+            if (!context.minify) append(context.newline).append(indent)
+            append(context.fwvEnd)
+        }
+
+    private fun toStringValue(
+        context: FormatCtx,
+        targetValue: Any,
+        result: StringBuilder,
+        indent: String,
+        level: Int = 0,
+    ) {
+        when (targetValue) {
+            is Boolean -> result.append("$targetValue")
+            is Number -> appendNumberValue(context, targetValue, result)
+
+            is String -> result.apply {
+                val useRawMultiline = !context.minify && context.rawMultilineString && targetValue.length >= 3 &&
+                    !targetValue.contains('`') && targetValue.trim().any { it in "\r\n" }
+                if (useRawMultiline) {
+                    appendRawMultilineString(context, targetValue, result, indent)
+                    return
+                }
+
+                if (level == 0 && context.fullWidth && result.last() == ' ') result.setLength(result.lastIndex)
+                append(escapeString(targetValue, isDescription = false, fullWidth = context.fullWidth))
+            }
+
+            is FVVV -> appendFvvvValue(context, targetValue, result, indent, level)
+        }
+    }
+
+    private fun appendFvvvValue(context: FormatCtx, targetValue: FVVV, result: StringBuilder, indent: String, level: Int) {
+        if (context.fwwStyle && targetValue.desc.isNotEmpty()) {
+            result.append(escapeString(targetValue.desc, isDescription = true, fullWidth = context.fullWidth))
+            if (!context.minify && !context.fullWidth) result.append(' ')
+        }
+        toStringFwv(context, targetValue, result, indent, level)
+        if (!context.noDescriptions && !context.fwwStyle && targetValue.desc.isNotEmpty()) {
+            if (!context.minify && !context.fullWidth) result.append(' ')
+            result.append(escapeString(targetValue.desc, isDescription = true, fullWidth = context.fullWidth))
+        }
+    }
+
+    private fun appendRawMultilineString(context: FormatCtx, targetValue: String, result: StringBuilder, indent: String) {
+        val stringIndent = indent + context.indentUnit
+        result.ensureCapacity(result.length + targetValue.length + stringIndent.length * 6)
+        result.append('`').append(context.newline)
+        targetValue.trimIndent().trim().lineSequence().forEach { line ->
+            if (line.isNotEmpty()) result.append(stringIndent)
+            result.append(line).append(context.newline)
+        }
+        result.append(indent).append('`')
+    }
+
+    private fun appendRadixInteger(context: FormatCtx, targetValue: Number, result: StringBuilder) {
+        if (targetValue == 0L) {
+            when (context.integerBase) {
+                16 -> "0x0"
+                8 -> "0o0"
+                2 -> "0b0"
+                else -> TODO()
+            }.also {
+                result.append(it)
+                return
+            }
+        }
+
+        if (targetValue.toLong() < 0) result.append('-')
+        val absoluteValue = targetValue.toLong().absoluteValue
+        when (context.integerBase) {
+            2 -> "0b"
+            8 -> "0o"
+            16 -> "0x"
+            else -> TODO()
+        }.also {
+            result.append(it, absoluteValue.toString(context.integerBase))
+        }
+    }
+
+    private fun appendNumberValue(context: FormatCtx, targetValue: Number, result: StringBuilder) {
+        if ((targetValue is Long || targetValue is Int) && context.integerBase != 10) {
+            appendRadixInteger(context, targetValue, result)
+            return
+        }
+
+        val rawNumber = "$targetValue"
+        if (context.digitSeparatorStep == 0) {
+            result.append(rawNumber)
+            return
+        }
+
+        val parts = rawNumber.split('.')
+        var integerPart = parts[0]
+        var hasSign = false
+        if (integerPart.startsWith('-') || integerPart.startsWith('+')) {
+            hasSign = true
+            integerPart = integerPart.substring(1)
+        }
+        val integerLength = integerPart.length
+
+        if (integerLength <= context.digitSeparatorStep) {
+            result.append(rawNumber)
+            return
+        }
+
+        result.ensureCapacity(result.length + rawNumber.length + integerLength / context.digitSeparatorStep + 1)
+        if (hasSign) result.append(rawNumber[0])
+        integerPart.forEachIndexed { index, character ->
+            if (index > 0 && (integerLength - index) % context.digitSeparatorStep == 0) {
+                result.append(context.digitSeparatorCharacter!!)
+            }
+            result.append(character)
+        }
+
+        if (parts.size >= 2) result.append('.').append(parts[1])
+    }
+
     private fun toStringMain(
         context: FormatCtx,
         name: String,
@@ -905,138 +1071,8 @@ open class FVVV(
         level: Int,
         isBack: Boolean,
     ) {
-        fun escapeString(text: String, isDescription: Boolean, fullWidth: Boolean = false) =
-            buildString(text.length + 6) {
-                if (isDescription) append('<') else append(if (fullWidth) '“' else '"')
-                text.forEach { character ->
-                    when (character) {
-                        '\\' -> "\\\\"
-                        '\b' -> "\\b"
-                        '\u000C' -> "\\f"
-                        '\n' -> "\\n"
-                        '\r' -> "\\r"
-                        '\t' -> "\\t"
-                        '"' -> if (!fullWidth && !isDescription) "\\\"" else character
-                        '”' -> if (fullWidth && !isDescription) "\\”" else character
-                        '>' -> if (isDescription) "\\>" else character
-                        else -> character
-                    }.also { append(it) }
-                }
-                if (isDescription) append('>') else append(if (fullWidth) '”' else '"')
-            }
-
-        fun toStringFwv(context: FormatCtx, targetFvvv: FVVV, result: StringBuilder, indent: String, level: Int) =
-            result.apply {
-                append(context.fwvBegin)
-                if (!context.minify) append(context.newline)
-                targetFvvv.toStringRoot(context, result, level + 1)
-                if (!context.minify) append(context.newline).append(indent)
-                append(context.fwvEnd)
-            }
-
-        fun toStringValue(
-            context: FormatCtx,
-            targetValue: Any,
-            result: StringBuilder,
-            indent: String,
-            level: Int = 0,
-        ) {
-            when (targetValue) {
-                is Boolean -> result.append("$targetValue")
-                is Number -> result.apply {
-                    if ((targetValue is Long || targetValue is Int) && context.integerBase != 10) {
-                        if (targetValue == 0L) {
-                            when (context.integerBase) {
-                                16 -> "0x0"
-                                8 -> "0o0"
-                                2 -> "0b0"
-                                else -> TODO()
-                            }.also {
-                                append(it)
-                                return
-                            }
-                        }
-
-                        if (targetValue < 0) append('-')
-                        val absoluteValue = targetValue.toLong().absoluteValue
-                        when (context.integerBase) {
-                            2 -> "0b"
-                            8 -> "0o"
-                            16 -> "0x"
-                            else -> TODO()
-                        }.also {
-                            append(it, absoluteValue.toString(context.integerBase))
-                        }
-                        return
-                    }
-
-                    val rawNumber = "$targetValue"
-                    if (context.digitSeparatorStep == 0) {
-                        append(rawNumber)
-                        return
-                    }
-
-                    val parts = rawNumber.split('.')
-                    var integerPart = parts[0]
-                    var hasSign = false
-                    if (integerPart.startsWith('-') || integerPart.startsWith('+')) {
-                        hasSign = true
-                        integerPart = integerPart.substring(1)
-                    }
-                    val integerLength = integerPart.length
-
-                    if (integerLength <= context.digitSeparatorStep) {
-                        append(rawNumber)
-                        return
-                    }
-
-                    result.ensureCapacity(result.length + rawNumber.length + integerLength / context.digitSeparatorStep + 1)
-                    if (hasSign) append(rawNumber[0])
-                    integerPart.forEachIndexed { index, character ->
-                        if (index > 0 && (integerLength - index) % context.digitSeparatorStep == 0) {
-                            append(context.digitSeparatorCharacter!!)
-                        }
-                        append(character)
-                    }
-
-                    if (parts.size >= 2) append('.').append(parts[1])
-                }
-
-                is String -> result.apply {
-                    if (!context.minify && context.rawMultilineString && targetValue.length >= 3 && !targetValue.contains(
-                            '`'
-                        ) && targetValue.trim().any { it in "\r\n" }
-                    ) {
-                        val stringIndent = indent + context.indentUnit
-                        result.ensureCapacity(result.length + targetValue.length + stringIndent.length * 6)
-                        append('`').append(context.newline)
-                        targetValue.trimIndent().trim().lineSequence().forEach { line ->
-                            if (line.isNotEmpty()) append(stringIndent)
-                            append(line).append(context.newline)
-                        }
-                        append(indent).append('`')
-                        return
-                    }
-
-                    if (level == 0 && context.fullWidth && result.last() == ' ') result.setLength(result.lastIndex)
-                    append(escapeString(targetValue, isDescription = false, fullWidth = context.fullWidth))
-                }
-
-                is FVVV -> result.apply {
-                    if (context.fwwStyle && targetValue.desc.isNotEmpty()) {
-                        append(escapeString(targetValue.desc, isDescription = true, fullWidth = context.fullWidth))
-                        if (!context.minify && !context.fullWidth) append(' ')
-                    }
-                    toStringFwv(context, targetValue, result, indent, level)
-                    if (!context.noDescriptions && !context.fwwStyle && targetValue.desc.isNotEmpty()) {
-                        if (!context.minify && !context.fullWidth) append(' ')
-                        append(escapeString(targetValue.desc, isDescription = true, fullWidth = context.fullWidth))
-                    }
-                }
-            }
-        }
-
-        if (name.isEmpty() || (value !is String && isEmpty() && nodes.isEmpty())) return
+        val skipEmpty = name.isEmpty() || (value !is String && isEmpty() && nodes.isEmpty())
+        if (skipEmpty) return
         var currentName = name
         result.ensureCapacity(result.length + nodes.size * 6)
 
@@ -1044,7 +1080,11 @@ open class FVVV(
         if (context.flattenPaths) {
             currentName = buildString(currentName.length + 6) {
                 append(currentName)
-                while (targetNode.nodes.size == 1 && (context.noDescriptions || targetNode.desc.isEmpty()) && (context.noLinks || targetNode.link.isEmpty())) {
+                while (true) {
+                    val flattenable = targetNode.nodes.size == 1 &&
+                        (context.noDescriptions || targetNode.desc.isEmpty()) &&
+                        (context.noLinks || targetNode.link.isEmpty())
+                    if (!flattenable) break
                     val nodePair = targetNode.nodes.entries.first()
                     append('.').append(nodePair.key)
                     targetNode = nodePair.value
@@ -1102,8 +1142,14 @@ open class FVVV(
             result.append(context.listEnd)
         }
 
-        if (!context.noDescriptions && targetNode.desc.isNotEmpty() && ((targetNode.nodes.isEmpty() && (!targetNode.`is`<List<FVVV>>())) || targetNode.link.isNotEmpty() || !context.fwwStyle)) {
-            if (!context.minify && (!context.fullWidth || targetNode.link.isNotEmpty() || (targetNode.nodes.isEmpty() && targetNode.value !is List<*> && targetNode.value !is String) || (targetNode.value is String && result.last() == '`'))) {
+        val descriptionVisible = !context.noDescriptions && targetNode.desc.isNotEmpty() &&
+            ((targetNode.nodes.isEmpty() && (!targetNode.`is`<List<FVVV>>())) || targetNode.link.isNotEmpty() || !context.fwwStyle)
+        if (descriptionVisible) {
+            val plainScalar = targetNode.nodes.isEmpty() && targetNode.value !is List<*> && targetNode.value !is String
+            val rawStringTail = targetNode.value is String && result.last() == '`'
+            val needsSpacer = !context.minify &&
+                (!context.fullWidth || targetNode.link.isNotEmpty() || plainScalar || rawStringTail)
+            if (needsSpacer) {
                 result.append(' ')
             }
             result.append(escapeString(targetNode.desc, isDescription = true))

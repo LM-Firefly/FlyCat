@@ -41,6 +41,7 @@ object ServiceClient {
     private var clashManager: IClashManager? = null
     private var profileManager: IProfileManager? = null
 
+    @Suppress("TooGenericExceptionCaught")
     suspend fun connect(ctx: Context) {
         withContext(Dispatchers.IO) {
             mutex.withLock {
@@ -72,6 +73,8 @@ object ServiceClient {
                         "ServiceClient gateway initialized in pid=${android.os.Process.myPid()}, process=${android.app.Application.getProcessName()}, cost=${System.currentTimeMillis() - startedAt}ms"
                     )
                 } catch (error: Exception) {
+                    // fault barrier: gateway init spans MMKV/native/service wiring; reset state,
+                    // log, and rethrow so the caller sees the original failure.
                     if (error is CancellationException) throw error
                     initialized = false
                     clashManager = null

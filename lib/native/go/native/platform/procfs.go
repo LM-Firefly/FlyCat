@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 package platform
@@ -15,12 +16,12 @@ import (
 )
 
 var netIndexOfLocal = -1
-var netIndexOfUid = -1
+var netIndexOfUID = -1
 
 var nativeEndian binary.ByteOrder
 
-func QuerySocketUidFromProcFs(source, _ net.Addr) int {
-	if netIndexOfLocal < 0 || netIndexOfUid < 0 {
+func QuerySocketUIDFromProcFs(source, _ net.Addr) int {
+	if netIndexOfLocal < 0 || netIndexOfUID < 0 {
 		return -1
 	}
 
@@ -87,12 +88,12 @@ func doQuery(path string, sIP net.IP, sPort int) int {
 
 		fields := strings.Fields(string(row))
 
-		if len(fields) <= netIndexOfLocal || len(fields) <= netIndexOfUid {
+		if len(fields) <= netIndexOfLocal || len(fields) <= netIndexOfUID {
 			continue
 		}
 
 		if strings.EqualFold(local, fields[netIndexOfLocal]) {
-			uid, err := strconv.Atoi(fields[netIndexOfUid])
+			uid, err := strconv.Atoi(fields[netIndexOfUID])
 			if err != nil {
 				return -1
 			}
@@ -114,6 +115,43 @@ func nativeEndianIP(ip net.IP) []byte {
 	return result
 }
 
+func procNetColumnOffset(txQueue, rxQueue, tr, tmWhen bool) int {
+	offset := 0
+
+	if txQueue && rxQueue {
+		offset--
+	}
+
+	if tr && tmWhen {
+		offset--
+	}
+
+	return offset
+}
+
+func applyProcNetColumns(columns []string) {
+	var txQueue, rxQueue, tr, tmWhen bool
+
+	for idx, col := range columns {
+		offset := procNetColumnOffset(txQueue, rxQueue, tr, tmWhen)
+
+		switch col {
+		case "tx_queue":
+			txQueue = true
+		case "rx_queue":
+			rxQueue = true
+		case "tr":
+			tr = true
+		case "tm->when":
+			tmWhen = true
+		case "local_address":
+			netIndexOfLocal = idx + offset
+		case "uid":
+			netIndexOfUID = idx + offset
+		}
+	}
+}
+
 func init() {
 	file, err := os.Open("/proc/net/tcp")
 	if err != nil {
@@ -129,36 +167,7 @@ func init() {
 		return
 	}
 
-	columns := strings.Fields(string(header))
-
-	var txQueue, rxQueue, tr, tmWhen bool
-
-	for idx, col := range columns {
-		offset := 0
-
-		if txQueue && rxQueue {
-			offset--
-		}
-
-		if tr && tmWhen {
-			offset--
-		}
-
-		switch col {
-		case "tx_queue":
-			txQueue = true
-		case "rx_queue":
-			rxQueue = true
-		case "tr":
-			tr = true
-		case "tm->when":
-			tmWhen = true
-		case "local_address":
-			netIndexOfLocal = idx + offset
-		case "uid":
-			netIndexOfUid = idx + offset
-		}
-	}
+	applyProcNetColumns(strings.Fields(string(header)))
 }
 
 func init() {

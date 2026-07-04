@@ -18,7 +18,7 @@ func queryTunnelState() *C.char {
 		Mode string `json:"mode"`
 	}{mode}
 
-	return marshalJson(response)
+	return marshalJSON(response)
 }
 
 //export queryNow
@@ -39,7 +39,7 @@ func queryTotal(upload, download *C.uint64_t) {
 
 //export queryConnections
 func queryConnections() *C.char {
-	return marshalJson(tunnel.QueryConnections())
+	return marshalJSON(tunnel.QueryConnections())
 }
 
 //export closeConnection
@@ -58,7 +58,7 @@ func closeAllConnections() {
 
 //export queryGroupNames
 func queryGroupNames(excludeNotSelectable C.int) *C.char {
-	return marshalJson(tunnel.QueryProxyGroupNames(excludeNotSelectable != 0))
+	return marshalJSON(tunnel.QueryProxyGroupNames(excludeNotSelectable != 0))
 }
 
 //export queryGroup
@@ -81,7 +81,7 @@ func queryGroup(name C.c_string, sortMode C.c_string) *C.char {
 		return nil
 	}
 
-	return marshalJson(response)
+	return marshalJSON(response)
 }
 
 //export healthCheck
@@ -107,7 +107,7 @@ func healthCheckProxy(completable unsafe.Pointer, proxyName C.c_string) {
 			Delay int `json:"delay"`
 		}{delay}
 
-		C.complete_with_string(completable, marshalJson(response))
+		C.complete_with_string(completable, marshalJSON(response))
 	}(C.GoString(proxyName))
 }
 
@@ -125,7 +125,7 @@ func patchSelector(selector, name C.c_string) C.int {
 
 //export queryProviders
 func queryProviders() *C.char {
-	return marshalJson(tunnel.QueryProviders())
+	return marshalJSON(tunnel.QueryProviders())
 }
 
 //export updateProvider

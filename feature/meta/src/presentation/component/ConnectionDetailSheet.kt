@@ -351,7 +351,7 @@ private fun calculateDuration(start: String): String {
         val seconds = duration.seconds % 60
 
         "%02d:%02d:%02d".format(hours, minutes, seconds)
-    } catch (error: Exception) {
+    } catch (_: java.time.DateTimeException) {
         "00:00:00"
     }
 }

@@ -86,6 +86,8 @@ android {
             reset()
             val abiList = (gropify.abi.extension.list ?: "arm64-v8a,x86_64")
                 .split(',').map { it.trim() }.filter { it.isNotEmpty() }
+            // AGP Split.include only accepts vararg; copying this tiny ABI list is negligible.
+            @Suppress("SpreadOperator")
             include(*abiList.toTypedArray())
             isUniversalApk = false
         }

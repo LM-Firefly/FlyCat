@@ -83,6 +83,7 @@ class ConnectionViewModel : ViewModel() {
     private var pollingJob: Job? = null
     private var _isPolling = false
 
+    @Suppress("TooGenericExceptionCaught")
     fun startPolling() {
         if (_isPolling) return
         _isPolling = true
@@ -92,7 +93,7 @@ class ConnectionViewModel : ViewModel() {
             PollingTimers.ticks(PollingTimerSpecs.ConnectionsPolling).collect {
                 try {
                     refreshConnections(showRefreshing = true)
-                } catch (error: Exception) {
+                } catch (error: Exception) { // fault barrier: keep the polling loop alive on any failure
                     Timber.w(error, "Failed to poll connections")
                     _state.update { it.copy(error = error.message, isRefreshing = false) }
                 }
@@ -133,6 +134,7 @@ class ConnectionViewModel : ViewModel() {
             }
             .also { refreshConnections(showRefreshing = true) }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun refreshConnections(showRefreshing: Boolean) {
         if (showRefreshing) {
             _state.update { current -> current.copy(isRefreshing = true) }
@@ -149,7 +151,7 @@ class ConnectionViewModel : ViewModel() {
                         isRefreshing = false,
                     )
                 }
-            } catch (error: Exception) {
+            } catch (error: Exception) { // fault barrier: service IPC failure becomes UI error state
                 Timber.w(error, "Failed to query connections")
                 _state.update {
                     it.copy(error = error.message, isLoading = false, isRefreshing = false)

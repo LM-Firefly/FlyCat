@@ -54,6 +54,7 @@ class AccessControlController(
         scheduleApply()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun scheduleApply() {
         applyJob?.cancel()
         applyJob = scope.launch {
@@ -74,7 +75,7 @@ class AccessControlController(
             try {
                 beforeRestart(targetMode)
                 restartProxy(targetMode)
-            } catch (error: Exception) {
+            } catch (error: Exception) { // best-effort restart: any failure keeps the current session running
                 if (error is CancellationException) throw error
             }
         }

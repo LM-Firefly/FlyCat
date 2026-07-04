@@ -146,6 +146,7 @@ internal class LocalClashManager(context: Context) : IClashManager {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun setLogObserver(observer: ILogObserver?) {
         synchronized(this) {
             logReceiver?.apply {
@@ -162,6 +163,8 @@ internal class LocalClashManager(context: Context) : IClashManager {
                                     observer.newItem(receiver.receive())
                                 }
                             } catch (_: CancellationException) {} catch (error: Exception) {
+                                // fault barrier: core log stream / observer may fail arbitrarily;
+                                // the receive loop must end gracefully, not crash the process.
                                 Timber.w(error, "Log observer failed")
                             } finally {
                                 withContext(NonCancellable) {

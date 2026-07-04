@@ -91,18 +91,20 @@ class NetworkInfoService : Closeable {
 
     suspend fun getLocalIp(): String? = NetworkInterfaces.getLocalIpAddress()
 
+    @Suppress("TooGenericExceptionCaught")
     suspend fun getExternalIp(): IpInfo? {
         try {
             val response = httpClient.get("https://api.ip.sb/geoip")
             val body = response.bodyAsText()
             val info = json.decodeFromString<IpInfo>(body)
             return info
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: any network/decode failure degrades to null
             if (error is CancellationException) throw error
             return null
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun startIpMonitoring(
         isProxyActiveFlow: Flow<Boolean>,
         externalRefreshFlow: Flow<Unit> = emptyFlow(),
@@ -115,7 +117,7 @@ class NetworkInfoService : Closeable {
             val newState = IpMonitoringState.Success(localIp, externalIp)
             lastSuccessfulState = newState
             emit(newState)
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: monitoring must survive any network failure
             if (error is CancellationException) throw error
             if (lastSuccessfulState == null) {
                 emit(IpMonitoringState.Error(error.message ?: "Unknown error"))
@@ -137,7 +139,7 @@ class NetworkInfoService : Closeable {
                     val newState = IpMonitoringState.Success(localIp, externalIp, isProxyActive)
                     lastSuccessfulState = newState
                     newState
-                } catch (error: Exception) {
+                } catch (error: Exception) { // fault barrier: keep last known state on any failure
                     if (error is CancellationException) throw error
                     lastSuccessfulState?.copy(isProxyActive = isProxyActive)
                         ?: IpMonitoringState.Error(error.message ?: "Unknown error")

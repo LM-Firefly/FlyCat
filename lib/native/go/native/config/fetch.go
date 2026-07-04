@@ -67,7 +67,7 @@ func GetCustomUserAgent() string {
 	return "ClashMetaForAndroid/" + app.VersionName()
 }
 
-func openUrl(ctx context.Context, url string) (io.ReadCloser, fetchHeader, error) {
+func openURL(ctx context.Context, url string) (io.ReadCloser, fetchHeader, error) {
 	response, err := clashHttp.HttpRequest(ctx, url, http.MethodGet, http.Header{"User-Agent": {GetCustomUserAgent()}}, nil)
 
 	if err != nil {
@@ -97,7 +97,7 @@ func fetch(url *U.URL, file string) (fetchHeader, error) {
 
 	switch url.Scheme {
 	case "http", "https":
-		reader, header, err = openUrl(ctx, url.String())
+		reader, header, err = openURL(ctx, url.String())
 	case "content":
 		reader, err = openContent(url.String())
 	default:
@@ -166,26 +166,36 @@ func parseProfileUpdateInterval(value string) (int64, bool) {
 	return int64(interval / time.Millisecond), true
 }
 
+func decodeTitleBase64(encoded string) string {
+	encoded = strings.Trim(strings.TrimSpace(encoded), `"'`)
+	if encoded == "" {
+		return ""
+	}
+	bytes, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(bytes))
+}
+
+func decodeTitleFallback(value string) string {
+	if decoded, err := U.QueryUnescape(value); err == nil && strings.TrimSpace(decoded) != "" {
+		return strings.TrimSpace(decoded)
+	}
+	if decoded := decodeTitleBase64(value); decoded != "" {
+		return decoded
+	}
+	return value
+}
+
 func decodeSubscriptionTitle(value string) string {
 	value = strings.Trim(strings.TrimSpace(value), `"'`)
 	if value == "" {
 		return ""
 	}
 
-	decodeBase64 := func(encoded string) string {
-		encoded = strings.Trim(strings.TrimSpace(encoded), `"'`)
-		if encoded == "" {
-			return ""
-		}
-		bytes, err := base64.StdEncoding.DecodeString(encoded)
-		if err != nil {
-			return ""
-		}
-		return strings.TrimSpace(string(bytes))
-	}
-
 	if strings.HasPrefix(strings.ToLower(value), "base64:") {
-		if decoded := decodeBase64(value[len("base64:"):]); decoded != "" {
+		if decoded := decodeTitleBase64(value[len("base64:"):]); decoded != "" {
 			return decoded
 		}
 		return value
@@ -197,13 +207,7 @@ func decodeSubscriptionTitle(value string) string {
 		}
 	}
 
-	if decoded, err := U.QueryUnescape(value); err == nil && strings.TrimSpace(decoded) != "" {
-		return strings.TrimSpace(decoded)
-	}
-	if decoded := decodeBase64(value); decoded != "" {
-		return decoded
-	}
-	return value
+	return decodeTitleFallback(value)
 }
 
 func parseFilenameFromContentDisposition(value string) string {
@@ -224,8 +228,37 @@ func parseFilenameFromContentDisposition(value string) string {
 	return ""
 }
 
+func (h fetchHeader) isEmpty() bool {
+	return h.SubscriptionUserInfo == "" && h.ProfileUpdateInterval == "" && h.ProfileTitle == "" && h.SubscriptionTitle == "" && h.ContentDisposition == ""
+}
+
+func applySubscriptionUserInfo(status *Status, userInfo string) {
+	for _, flag := range strings.Split(userInfo, ";") {
+		parts := strings.SplitN(flag, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.ToLower(strings.TrimSpace(parts[0]))
+		value := strings.TrimSpace(parts[1])
+		switch {
+		case strings.Contains(key, "upload"):
+			v := parseSubscriptionInteger(value)
+			status.SubUpload = &v
+		case strings.Contains(key, "download"):
+			v := parseSubscriptionInteger(value)
+			status.SubDownload = &v
+		case strings.Contains(key, "total"):
+			v := parseSubscriptionInteger(value)
+			status.SubTotal = &v
+		case strings.Contains(key, "expire"):
+			v := parseSubscriptionInteger(value) * 1000
+			status.SubExpire = &v
+		}
+	}
+}
+
 func reportSubscriptionInfo(header fetchHeader, reportStatus func(string)) {
-	if header.SubscriptionUserInfo == "" && header.ProfileUpdateInterval == "" && header.ProfileTitle == "" && header.SubscriptionTitle == "" && header.ContentDisposition == "" {
+	if header.isEmpty() {
 		return
 	}
 
@@ -237,28 +270,7 @@ func reportSubscriptionInfo(header fetchHeader, reportStatus func(string)) {
 	}
 
 	if header.SubscriptionUserInfo != "" {
-		for _, flag := range strings.Split(header.SubscriptionUserInfo, ";") {
-			parts := strings.SplitN(flag, "=", 2)
-			if len(parts) != 2 {
-				continue
-			}
-			key := strings.ToLower(strings.TrimSpace(parts[0]))
-			value := strings.TrimSpace(parts[1])
-			switch {
-			case strings.Contains(key, "upload"):
-				v := parseSubscriptionInteger(value)
-				status.SubUpload = &v
-			case strings.Contains(key, "download"):
-				v := parseSubscriptionInteger(value)
-				status.SubDownload = &v
-			case strings.Contains(key, "total"):
-				v := parseSubscriptionInteger(value)
-				status.SubTotal = &v
-			case strings.Contains(key, "expire"):
-				v := parseSubscriptionInteger(value) * 1000
-				status.SubExpire = &v
-			}
-		}
+		applySubscriptionUserInfo(&status, header.SubscriptionUserInfo)
 	}
 
 	if interval, ok := parseProfileUpdateInterval(header.ProfileUpdateInterval); ok {
@@ -317,7 +329,7 @@ func FetchAndValid(
 		return err
 	}
 
-	forEachProviders(rawCfg, func(index int, total int, name string, provider map[string]any, prefix string) {
+	forEachProviders(rawCfg, func(index int, total int, name string, provider map[string]any, _ string) {
 		bytes, _ := json.Marshal(&Status{
 			Action:      "FetchProviders",
 			Args:        []string{name},

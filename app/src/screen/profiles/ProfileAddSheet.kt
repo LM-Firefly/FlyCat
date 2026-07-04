@@ -277,6 +277,8 @@ internal fun AddProfileSheet(
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             uri?.let {
                 scope.launch {
+                    // QR decode fault barrier: any ML Kit/IO failure is surfaced as a toast.
+                    @Suppress("TooGenericExceptionCaught")
                     try {
                         val result = readQrFromImage(context, it)
                         if (result != null) {

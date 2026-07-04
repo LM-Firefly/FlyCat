@@ -40,6 +40,9 @@ import timber.log.Timber
 object ProxyAutoStartHelper {
     private const val TAG = "ProxyAutoStartHelper"
 
+    // Fault barrier: auto start is best-effort across IPC/store/native seams; any failure is
+    // logged and skipped (CancellationException is rethrown at each catch site).
+    @Suppress("TooGenericExceptionCaught")
     suspend fun checkAndAutoStart(
         context: Context,
         featureStore: FeatureStore,
@@ -112,6 +115,8 @@ object ProxyAutoStartHelper {
         }
     }
 
+    // Fault barrier: profile auto update on start is best-effort; failure only logs a warning.
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun tryUpdateActiveProfileOnStart(
         appSettingsStorage: AppSettingsStore,
         profilesRepository: ProfilesRepository,

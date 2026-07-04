@@ -95,6 +95,7 @@ object RootTunController {
         return start(appContext, request, trace, startAt)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun start(
         context: Context,
         request: RootTunStartRequest,
@@ -138,6 +139,8 @@ object RootTunController {
                 trace += "ROOT_TUN controller: total=${System.currentTimeMillis() - startedAt}ms"
                 result
             } catch (error: Throwable) {
+                // fault barrier: post-start status sync spans binder/root process; any failure
+                // must roll the session back instead of leaving a half-started RootTun.
                 val rollbackResult =
                     withContext(Dispatchers.IO) {
                         runCatching {

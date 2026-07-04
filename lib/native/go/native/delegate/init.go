@@ -49,7 +49,7 @@ func Init(home, versionName, gitVersion string, platformVersion int) {
 		return owner.Package, nil
 	}
 
-	dialer.DefaultSocketHook = func(network, address string, conn syscall.RawConn) error {
+	dialer.DefaultSocketHook = func(_, _ string, conn syscall.RawConn) error {
 		if platform.ShouldBlockConnection() {
 			return errBlocked
 		}

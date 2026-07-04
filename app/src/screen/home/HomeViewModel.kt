@@ -212,6 +212,8 @@ class HomeViewModel(
         observeProfileChanges()
     }
 
+    // Fault barrier: repository failure only logs and marks profiles as loaded (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     private fun refreshProfiles() {
         viewModelScope.launch {
             try {
@@ -355,6 +357,8 @@ class HomeViewModel(
         }
     }
 
+    // Fault barrier: any reload failure is surfaced as UI error state (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     suspend fun reloadProfile() {
         try {
             applyLoading(true)
@@ -416,6 +420,8 @@ class HomeViewModel(
         viewModelScope.launch { startProxyInternal(request) }
     }
 
+    // Fault barrier: any stop failure is surfaced as UI error state (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     suspend fun stopProxy() {
         if (
             !controlState.value.canInteract || controlState.value != HomeProxyControlState.Running
@@ -476,6 +482,8 @@ class HomeViewModel(
 
     fun consumeError() = clearErrorState()
 
+    // Fault barrier: any start failure is surfaced as UI error state (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun startProxyInternal(request: PendingStartRequest) {
         val startedAt = System.currentTimeMillis()
         try {
@@ -539,12 +547,11 @@ class HomeViewModel(
         if (owner == RuntimeOwner.RemoteController && phase == RuntimePhase.Failed) {
             return HomeProxyControlState.Lost
         }
-        if (
-            pendingTransition == PendingTransition.Stopping &&
-                phase != RuntimePhase.Stopping &&
+        val phaseStillActive =
+            phase != RuntimePhase.Stopping &&
                 phase != RuntimePhase.Idle &&
                 phase != RuntimePhase.Failed
-        ) {
+        if (pendingTransition == PendingTransition.Stopping && phaseStillActive) {
             return HomeProxyControlState.Disconnecting
         }
         return when (phase) {

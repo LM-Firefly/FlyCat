@@ -162,7 +162,7 @@ class TrafficStatisticsStore(
     }
 
     /** No-op: writes are now immediate (Room row-level upsert + synchronous MMKV scalars). */
-    fun flushNow() {}
+    fun flushNow() = Unit
 
     // endregion
 

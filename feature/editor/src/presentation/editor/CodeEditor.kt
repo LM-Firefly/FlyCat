@@ -40,6 +40,7 @@ import timber.log.Timber
 
 private const val EDITOR_DEFAULT_TEXT_SIZE_SP = 14f
 
+@Suppress("TooGenericExceptionCaught")
 @Composable
 fun CodeEditor(
     state: CodeEditorState,
@@ -69,7 +70,7 @@ fun CodeEditor(
             editorRef.value?.let { editor ->
                 try {
                     editor.release()
-                } catch (error: Exception) {
+                } catch (error: Exception) { // fault barrier: best-effort Sora editor cleanup
                     Timber.e(error, "Failed to release editor")
                 }
             }
@@ -104,7 +105,7 @@ fun CodeEditor(
         onRelease = { editor ->
             try {
                 editor.release()
-            } catch (error: Exception) {
+            } catch (error: Exception) { // fault barrier: best-effort Sora editor cleanup
                 Timber.e(error, "Failed to release editor in onRelease")
             }
         },

@@ -73,6 +73,8 @@ class ProfilesViewModel(
         refreshProfiles()
     }
 
+    // Fault barrier: any refresh failure is surfaced as UI error state (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     fun refreshProfiles() {
         viewModelScope.launch {
             try {
@@ -92,6 +94,9 @@ class ProfilesViewModel(
         }
     }
 
+    // Fault barrier: any create failure rolls back the staged profile and becomes UI error
+    // state (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     fun createProfile(
         type: Profile.Type,
         name: String,
@@ -161,6 +166,8 @@ class ProfilesViewModel(
         }
     }
 
+    // Fault barrier: any clone failure is surfaced as UI error state (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     fun cloneProfile(uuid: UUID) {
         viewModelScope.launch {
             try {
@@ -179,6 +186,8 @@ class ProfilesViewModel(
         }
     }
 
+    // Fault barrier: any delete failure is surfaced as UI error state (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     fun deleteProfile(uuid: UUID) {
         viewModelScope.launch {
             try {
@@ -197,6 +206,8 @@ class ProfilesViewModel(
         }
     }
 
+    // Fault barrier: any activate failure is surfaced as UI error state (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     fun activateProfile(uuid: UUID) {
         viewModelScope.launch {
             try {
@@ -215,6 +226,8 @@ class ProfilesViewModel(
         }
     }
 
+    // Fault barrier: any update/fetch failure is surfaced as UI error state (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     fun updateProfile(uuid: UUID) {
         viewModelScope.launch {
             try {
@@ -248,6 +261,8 @@ class ProfilesViewModel(
         }
     }
 
+    // Fault barrier: any patch failure is surfaced as UI error state (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     fun patchProfile(
         uuid: UUID,
         name: String,
@@ -284,6 +299,8 @@ class ProfilesViewModel(
         createProfile(type = Profile.Type.File, name = name, fileUri = uri)
     }
 
+    // Fault barrier: any reorder failure logs and re-syncs the list from storage (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     fun reorderProfiles(from: Int, to: Int) {
         viewModelScope.launch {
             try {
@@ -305,6 +322,8 @@ class ProfilesViewModel(
         }
     }
 
+    // Fault barrier: any toggle failure is surfaced as UI error state (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     fun toggleProfileEnabled(uuid: UUID) {
         viewModelScope.launch {
             try {

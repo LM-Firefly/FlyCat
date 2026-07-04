@@ -103,7 +103,9 @@ class BottomBarScrollBehavior {
     private fun updateVisibilityFromDelta(deltaY: Float) {
         if (abs(deltaY) < 0.5f) return
 
-        if ((accumulatedScroll > 0f && deltaY < 0f) || (accumulatedScroll < 0f && deltaY > 0f)) {
+        val reversedWhileShowing = accumulatedScroll > 0f && deltaY < 0f
+        val reversedWhileHiding = accumulatedScroll < 0f && deltaY > 0f
+        if (reversedWhileShowing || reversedWhileHiding) {
             accumulatedScroll = 0f
         }
 

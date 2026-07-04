@@ -19,6 +19,27 @@ enum class JniErrorKind : uint8_t {
     OutOfMemory,
 };
 
+namespace detail {
+
+[[nodiscard]] inline std::string throwableMessage(JNIEnv* env, jthrowable ex) {
+    jclass cls = env->FindClass("java/lang/Throwable");
+    if (!cls) { env->ExceptionClear(); return {}; }
+
+    jmethodID mid = env->GetMethodID(cls, "getMessage", "()Ljava/lang/String;");
+    jstring msgObj = mid ? static_cast<jstring>(env->CallObjectMethod(ex, mid)) : nullptr;
+
+    std::string msg;
+    if (msgObj) {
+        const char* chars = env->GetStringUTFChars(msgObj, nullptr);
+        if (chars) { msg = chars; env->ReleaseStringUTFChars(msgObj, chars); }
+        env->DeleteLocalRef(msgObj);
+    }
+    env->DeleteLocalRef(cls);
+    return msg;
+}
+
+} // namespace detail
+
 struct JniError {
     JniErrorKind kind = JniErrorKind::None;
     std::string message;
@@ -34,19 +55,7 @@ struct JniError {
         env->ExceptionClear();
         if (!ex) return {JniErrorKind::Exception, "Unknown exception"};
 
-        jclass cls = env->FindClass("java/lang/Throwable");
-        if (!cls) { env->ExceptionClear(); return {JniErrorKind::Exception, "Exception"}; }
-
-        jmethodID mid = env->GetMethodID(cls, "getMessage", "()Ljava/lang/String;");
-        jstring msgObj = mid ? (jstring)env->CallObjectMethod(ex, mid) : nullptr;
-
-        std::string msg;
-        if (msgObj) {
-            const char* chars = env->GetStringUTFChars(msgObj, nullptr);
-            if (chars) { msg = chars; env->ReleaseStringUTFChars(msgObj, chars); }
-            env->DeleteLocalRef(msgObj);
-        }
-        env->DeleteLocalRef(cls);
+        std::string msg = detail::throwableMessage(env, ex);
         env->DeleteLocalRef(ex);
         return {JniErrorKind::Exception, msg.empty() ? "Exception" : msg};
     }

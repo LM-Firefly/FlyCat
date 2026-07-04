@@ -6,7 +6,7 @@ import (
 	"syscall"
 )
 
-var openContentImpl = func(url string) (int, error) {
+var openContentImpl = func(_ string) (int, error) {
 	return -1, errors.New("not implement")
 }
 

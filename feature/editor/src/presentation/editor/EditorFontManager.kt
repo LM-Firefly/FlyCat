@@ -28,6 +28,7 @@ object EditorFontManager {
     private const val FONT_PATH = "fonts/JetBrainsMono-Regular.ttf"
     private var cachedFont: Typeface? = null
 
+    @Suppress("TooGenericExceptionCaught")
     fun getEditorTypeface(context: Context): Typeface =
         cachedFont
             ?: try {
@@ -35,7 +36,7 @@ object EditorFontManager {
                     cachedFont = it
                     Timber.d("JetBrainsMono font loaded successfully")
                 }
-            } catch (error: Exception) {
+            } catch (error: Exception) { // fault barrier: createFromAsset throws undocumented RuntimeException
                 Timber.w(error, "Failed to load JetBrainsMono font, falling back to MONOSPACE")
                 Typeface.MONOSPACE
             }

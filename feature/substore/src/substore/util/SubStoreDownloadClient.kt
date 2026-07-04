@@ -91,6 +91,7 @@ class SubStoreDownloadClient(
             success
         }
 
+    @Suppress("TooGenericExceptionCaught")
     suspend fun downloadWithSubscriptionInfo(
         url: String,
         targetFile: File,
@@ -155,7 +156,7 @@ class SubStoreDownloadClient(
 
                         Pair(true, subscriptionInfo)
                     }
-            } catch (error: Exception) {
+            } catch (error: Exception) { // fault barrier: ktor/IO/URL failures all map to download-failed
                 Timber.e(error, "Download failed: %s", url)
                 if (targetFile.exists()) targetFile.delete()
                 Pair(false, null)

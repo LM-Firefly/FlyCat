@@ -19,7 +19,7 @@ var processors = []processor{
 	patchExternalController,
 	patchGeneral,
 	patchProfile,
-	patchDns,
+	patchDNS,
 	patchTun,
 	patchListeners,
 	patchProviders,
@@ -28,7 +28,7 @@ var processors = []processor{
 
 type processor func(cfg *config.RawConfig, profileDir string) error
 
-func patchExternalController(cfg *config.RawConfig, _ string) error {
+func patchExternalController(_ *config.RawConfig, _ string) error {
 	// Preserve profile-defined external controller values.
 	return nil
 }
@@ -50,7 +50,7 @@ func patchProfile(cfg *config.RawConfig, _ string) error {
 	return nil
 }
 
-func patchDns(cfg *config.RawConfig, _ string) error {
+func patchDNS(cfg *config.RawConfig, _ string) error {
 	if !cfg.DNS.Enable {
 		cfg.DNS = config.RawDNS{
 			Enable:            true,
@@ -95,7 +95,7 @@ func patchListeners(cfg *config.RawConfig, _ string) error {
 }
 
 func patchProviders(cfg *config.RawConfig, profileDir string) error {
-	forEachProviders(cfg, func(index int, total int, key string, provider map[string]any, prefix string) {
+	forEachProviders(cfg, func(_ int, _ int, _ string, provider map[string]any, prefix string) {
 		path, _ := provider["path"].(string)
 		extension := providerExtension(provider, prefix)
 		if strings.TrimSpace(path) != "" {
@@ -148,13 +148,20 @@ func profileProviderPath(profileDir string, prefix string, relative string) stri
 	return profileProviderBase(profileDir, prefix) + "/" + tail
 }
 
+func isProviderPrefixSegment(head string) bool {
+	switch head {
+	case "providers", "provider", "clash", "ruleset", "rules", "proxies":
+		return true
+	default:
+		return false
+	}
+}
+
 func trimProviderPrefix(path string) string {
 	current := path
 	for {
 		parts := strings.SplitN(current, "/", 2)
-		head := parts[0]
-		if head != "providers" && head != "provider" && head != "clash" &&
-			head != "ruleset" && head != "rules" && head != "proxies" {
+		if !isProviderPrefixSegment(parts[0]) {
 			break
 		}
 		if len(parts) == 1 {

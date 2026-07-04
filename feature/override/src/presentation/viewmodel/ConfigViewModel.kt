@@ -69,6 +69,7 @@ class OverrideConfigViewModel(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun refresh() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -77,7 +78,7 @@ class OverrideConfigViewModel(
                 _userConfigs.value = users
                 _configs.value = users
                 loadUsageCounts()
-            } catch (error: Exception) {
+            } catch (error: Exception) { // fault barrier: top-level ViewModel load handler, log and reset loading
                 Timber.tag(TAG).e(error, "Failed to load overrides")
             } finally {
                 _isLoading.value = false

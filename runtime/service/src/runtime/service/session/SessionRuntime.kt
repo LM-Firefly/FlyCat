@@ -52,6 +52,9 @@ import timber.log.Timber
 import java.util.TimeZone
 import kotlin.math.min
 
+// Established runtime session seam (owner-token lifecycle + snapshot + core control); splitting
+// is tracked separately.
+@Suppress("LargeClass")
 class SessionRuntime(
     private val host: RuntimeHost,
     private val transport: RuntimeTransport,

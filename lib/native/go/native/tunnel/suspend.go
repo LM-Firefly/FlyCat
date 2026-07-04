@@ -1,6 +1,6 @@
 package tunnel
 
-func Suspend(s bool) {
+func Suspend(_ bool) {
 	// cause by ACTION_SCREEN_OFF/ACTION_SCREEN_ON,
 	// but we don't know what should do so just ignored.
 	//

@@ -230,25 +230,30 @@ func PatchSelector(selector, name string) bool {
 	return true
 }
 
+func splitTitleSubtitle(name string, typeName string, isGroup bool, uiSubtitlePattern *regexp2.Regexp) (string, string) {
+	title := name
+	subtitle := typeName
+
+	if uiSubtitlePattern != nil && !isGroup {
+		runes := []rune(name)
+		match, err := uiSubtitlePattern.FindRunesMatch(runes)
+		if err == nil && match != nil {
+			title = string(runes[:match.Index]) + string(runes[match.Index+match.Length:])
+			subtitle = string(runes[match.Index : match.Index+match.Length])
+		}
+	}
+
+	return title, subtitle
+}
+
 func convertProxies(proxies []C.Proxy, uiSubtitlePattern *regexp2.Regexp) []*Proxy {
 	result := make([]*Proxy, 0, 128)
 
 	for _, p := range proxies {
 		name := p.Name()
-		title := name
-		subtitle := p.Type().String()
 		_, isGroup := p.Adapter().(outboundgroup.ProxyGroup)
+		title, subtitle := splitTitleSubtitle(name, p.Type().String(), isGroup, uiSubtitlePattern)
 
-		if uiSubtitlePattern != nil {
-			if !isGroup {
-				runes := []rune(name)
-				match, err := uiSubtitlePattern.FindRunesMatch(runes)
-				if err == nil && match != nil {
-					title = string(runes[:match.Index]) + string(runes[match.Index+match.Length:])
-					subtitle = string(runes[match.Index : match.Index+match.Length])
-				}
-			}
-		}
 		testURL := "https://www.gstatic.com/generate_204"
 		for k := range p.ExtraDelayHistories() {
 			if len(k) > 0 {
@@ -275,20 +280,8 @@ func collectProviders(providers []provider.ProxyProvider, uiSubtitlePattern *reg
 	for _, p := range providers {
 		for _, px := range p.Proxies() {
 			name := px.Name()
-			title := name
-			subtitle := px.Type().String()
 			_, isGroup := px.Adapter().(outboundgroup.ProxyGroup)
-
-			if uiSubtitlePattern != nil {
-				if !isGroup {
-					runes := []rune(name)
-					match, err := uiSubtitlePattern.FindRunesMatch(runes)
-					if err == nil && match != nil {
-						title = string(runes[:match.Index]) + string(runes[match.Index+match.Length:])
-						subtitle = string(runes[match.Index : match.Index+match.Length])
-					}
-				}
-			}
+			title, subtitle := splitTitleSubtitle(name, px.Type().String(), isGroup, uiSubtitlePattern)
 
 			testURL := "https://www.gstatic.com/generate_204"
 			for k := range px.ExtraDelayHistories() {

@@ -32,10 +32,11 @@ class ProvidersController(
     private val context: Context,
     private val queryProvidersAction: suspend () -> List<Provider>,
 ) {
+    @Suppress("TooGenericExceptionCaught")
     suspend fun queryProviders(): Result<List<Provider>> =
         try {
             Result.success(queryProvidersAction())
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: injected bridge action may fail arbitrarily
             Result.failure(error)
         }
 
@@ -55,6 +56,7 @@ class ProvidersController(
         return Result.success(UpdateProvidersResult(failed))
     }
 
+    @Suppress("TooGenericExceptionCaught")
     suspend fun uploadProviderFile(
         context: Context,
         provider: Provider,
@@ -80,17 +82,18 @@ class ProvidersController(
                 }
 
                 Result.success(Unit)
-            } catch (error: Exception) {
+            } catch (error: Exception) { // fault barrier: IO and path-validation failures both become Result.failure
                 Result.failure(error)
             }
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun updateProviderInternal(type: Provider.Type, name: String): Result<Unit> =
         try {
             Clash.updateProvider(type, name).await()
             Result.success(Unit)
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: JNI bridge call may fail arbitrarily
             Result.failure(error)
         }
 

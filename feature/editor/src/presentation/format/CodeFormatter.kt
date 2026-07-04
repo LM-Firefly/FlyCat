@@ -22,6 +22,7 @@ package com.github.yumelira.yumebox.feature.editor.format
 
 import com.github.yumelira.yumebox.feature.editor.language.LanguageScope
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 
 object CodeFormatter {
@@ -49,7 +50,7 @@ object CodeFormatter {
                 trimmed.startsWith("[") -> JSONArray(trimmed).toString(2)
                 else -> null
             }
-        } catch (error: Exception) {
+        } catch (_: JSONException) {
             null
         }
 
@@ -62,15 +63,16 @@ object CodeFormatter {
                 else -> return false
             }
             true
-        } catch (error: Exception) {
+        } catch (_: JSONException) {
             false
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun formatYaml(content: String): String? =
         try {
             content.lines().map { it.trimEnd() }.joinToString("\n").replace(Regex("\n{3,}"), "\n\n")
-        } catch (error: Exception) {
+        } catch (_: Exception) { // fault barrier: formatter must return null instead of crashing the editor
             null
         }
 }

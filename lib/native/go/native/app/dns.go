@@ -6,7 +6,7 @@ import (
 	"github.com/metacubex/mihomo/dns"
 )
 
-func NotifyDnsChanged(dnsList string) {
+func NotifyDNSChanged(dnsList string) {
 	var addr []string
 	if len(dnsList) > 0 {
 		addr = strings.Split(dnsList, ",")

@@ -58,7 +58,7 @@ func subscribeLogcat(remote unsafe.Pointer) {
 				Time:    time.Now().UnixNano() / 1000 / 1000,
 			}
 
-			if C.logcat_received(remote, marshalJson(rMsg)) != 0 {
+			if C.logcat_received(remote, marshalJSON(rMsg)) != 0 {
 				C.release_object(remote)
 
 				log.Debugln("Logcat subscriber closed")

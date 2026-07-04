@@ -34,7 +34,7 @@ func QuerySocketOwner(source, target net.Addr) SocketOwner {
 	}
 
 	if PlatformVersion() < 29 {
-		uid := platform.QuerySocketUidFromProcFs(source, target)
+		uid := platform.QuerySocketUIDFromProcFs(source, target)
 		return SocketOwner{UID: uid}
 	}
 
@@ -46,7 +46,8 @@ func ApplyTunContext(
 	querySocketOwner func(int, string, string) string,
 ) {
 	if markSocket == nil {
-		markSocket = func(fd int) {}
+		// Fallback used until the Android layer wires a real protector; ignoring the fd is intentional.
+		markSocket = func(_ int) {}
 	}
 
 	if querySocketOwner == nil {

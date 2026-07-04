@@ -100,6 +100,8 @@ internal fun StableQrScanner(onScanned: (String) -> Unit) {
             }
 
             coroutineScope.launch {
+                // Camera bind fault barrier: CameraX/OEM failures must not crash the scanner UI.
+                @Suppress("TooGenericExceptionCaught")
                 try {
                     val cameraProvider = context.getStableCameraProvider()
                     cameraProvider.unbindAll()

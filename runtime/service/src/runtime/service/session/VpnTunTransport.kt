@@ -54,103 +54,14 @@ class VpnTunTransport(
                 val explicitRouteExcludes =
                     store.tunRouteExcludeAddress.map(String::trim).filter(String::isNotEmpty)
                 val hasExplicitRouteExcludes = explicitRouteExcludes.isNotEmpty()
-                val canUseExcludeRoute = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                val includedRoutes =
-                    if (hasExplicitRouteExcludes && !canUseExcludeRoute) {
-                        buildIncludedRoutesFromExcludedCidrs(
-                            cidrs = explicitRouteExcludes,
-                            includeIpv6 = store.allowIpv6,
-                        )
-                    } else {
-                        null
-                    }
 
                 addAddress(TUN_GATEWAY, TUN_SUBNET_PREFIX)
                 if (store.allowIpv6) {
                     addAddress(TUN_GATEWAY6, TUN_SUBNET_PREFIX6)
                 }
 
-                if (hasExplicitRouteExcludes && canUseExcludeRoute) {
-                    addRoute(NET_ANY, 0)
-                    if (store.allowIpv6) {
-                        addRoute(NET_ANY6, 0)
-                    }
-                    explicitRouteExcludes.map(::parseCIDR).forEach {
-                        runCatching {
-                            excludeRoute(IpPrefix(InetAddress.getByName(it.ip), it.prefix))
-                        }
-                    }
-                    addRoute(TUN_DNS, 32)
-                    if (store.allowIpv6) {
-                        addRoute(TUN_DNS6, 128)
-                    }
-                } else if (includedRoutes != null) {
-                    includedRoutes.ipv4.forEach { addRoute(it.ip, it.prefix) }
-                    if (store.allowIpv6) {
-                        includedRoutes.ipv6.forEach { addRoute(it.ip, it.prefix) }
-                    }
-                    addRoute(TUN_DNS, 32)
-                    if (store.allowIpv6) {
-                        addRoute(TUN_DNS6, 128)
-                    }
-                } else if (store.bypassPrivateNetwork) {
-                    vpnService.resources
-                        .getStringArray(R.array.bypass_private_route)
-                        .map(::parseCIDR)
-                        .forEach { addRoute(it.ip, it.prefix) }
-                    if (store.allowIpv6) {
-                        vpnService.resources
-                            .getStringArray(R.array.bypass_private_route6)
-                            .map(::parseCIDR)
-                            .forEach { addRoute(it.ip, it.prefix) }
-                    }
-                    addRoute(TUN_DNS, 32)
-                    if (store.allowIpv6) {
-                        addRoute(TUN_DNS6, 128)
-                    }
-                } else {
-                    addRoute(NET_ANY, 0)
-                    if (store.allowIpv6) {
-                        addRoute(NET_ANY6, 0)
-                    }
-                }
-
-                val configInclude = CompiledTunPackages.includePackages
-                val configExclude = CompiledTunPackages.excludePackages
-                if (configInclude.isNotEmpty() || configExclude.isNotEmpty()) {
-                    // Compiled config declares tun.include-package/exclude-package: the config
-                    // fully takes over per-app routing and the UI access control is ignored.
-                    startupLogStore.append(
-                        "LOCAL_TUN per-app routing: config include=${configInclude.size}" +
-                            " exclude=${configExclude.size}"
-                    )
-                    if (configInclude.isNotEmpty()) {
-                        (configInclude.toSet() - configExclude.toSet() + vpnService.packageName)
-                            .forEach { runCatching { addAllowedApplication(it) } }
-                    } else {
-                        (configExclude.toSet() - vpnService.packageName).forEach {
-                            runCatching { addDisallowedApplication(it) }
-                        }
-                    }
-                } else {
-                    startupLogStore.append(
-                        "LOCAL_TUN per-app routing: ui mode=${store.accessControlMode}"
-                    )
-                    when (store.accessControlMode) {
-                        AccessControlMode.AcceptAll -> Unit
-                        AccessControlMode.AcceptSelected -> {
-                            (store.accessControlPackages + vpnService.packageName).forEach {
-                                runCatching { addAllowedApplication(it) }
-                            }
-                        }
-                        AccessControlMode.RejectAll -> Unit
-                        AccessControlMode.RejectSelected -> {
-                            (store.accessControlPackages - vpnService.packageName).forEach {
-                                runCatching { addDisallowedApplication(it) }
-                            }
-                        }
-                    }
-                }
+                configureRoutes(explicitRouteExcludes)
+                configurePerAppRouting()
 
                 setBlocking(false)
                 setMtu(TUN_MTU)
@@ -178,22 +89,7 @@ class VpnTunTransport(
                     setMetered(false)
                 }
 
-                if (Build.VERSION.SDK_INT >= 29 && store.systemProxy) {
-                    listenHttp()?.let {
-                        setHttpProxy(
-                            ProxyInfo.buildDirectProxy(
-                                it.address.hostAddress,
-                                it.port,
-                                HTTP_PROXY_BLACK_LIST +
-                                    if (store.bypassPrivateNetwork || hasExplicitRouteExcludes) {
-                                        HTTP_PROXY_LOCAL_LIST
-                                    } else {
-                                        emptyList()
-                                    },
-                            )
-                        )
-                    }
-                }
+                configureHttpProxy(hasExplicitRouteExcludes)
 
                 if (store.allowBypass) {
                     allowBypass()
@@ -225,6 +121,133 @@ class VpnTunTransport(
             querySocketOwner = ownerResolver::queryOwner,
         )
         startupLogStore.append("LOCAL_TUN transport start: done")
+    }
+
+    /**
+     * Route table: explicit config route excludes win (native excludeRoute on API 33+, computed
+     * included routes below), then the private-network bypass list, otherwise route everything.
+     */
+    private fun VpnService.Builder.configureRoutes(explicitRouteExcludes: List<String>) {
+        val hasExplicitRouteExcludes = explicitRouteExcludes.isNotEmpty()
+        val canUseExcludeRoute = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        val includedRoutes =
+            if (hasExplicitRouteExcludes && !canUseExcludeRoute) {
+                buildIncludedRoutesFromExcludedCidrs(
+                    cidrs = explicitRouteExcludes,
+                    includeIpv6 = store.allowIpv6,
+                )
+            } else {
+                null
+            }
+
+        if (hasExplicitRouteExcludes && canUseExcludeRoute) {
+            addRoute(NET_ANY, 0)
+            if (store.allowIpv6) {
+                addRoute(NET_ANY6, 0)
+            }
+            explicitRouteExcludes.map(::parseCIDR).forEach {
+                runCatching {
+                    excludeRoute(IpPrefix(InetAddress.getByName(it.ip), it.prefix))
+                }
+            }
+            addRoute(TUN_DNS, 32)
+            if (store.allowIpv6) {
+                addRoute(TUN_DNS6, 128)
+            }
+        } else if (includedRoutes != null) {
+            includedRoutes.ipv4.forEach { addRoute(it.ip, it.prefix) }
+            if (store.allowIpv6) {
+                includedRoutes.ipv6.forEach { addRoute(it.ip, it.prefix) }
+            }
+            addRoute(TUN_DNS, 32)
+            if (store.allowIpv6) {
+                addRoute(TUN_DNS6, 128)
+            }
+        } else if (store.bypassPrivateNetwork) {
+            vpnService.resources
+                .getStringArray(R.array.bypass_private_route)
+                .map(::parseCIDR)
+                .forEach { addRoute(it.ip, it.prefix) }
+            if (store.allowIpv6) {
+                vpnService.resources
+                    .getStringArray(R.array.bypass_private_route6)
+                    .map(::parseCIDR)
+                    .forEach { addRoute(it.ip, it.prefix) }
+            }
+            addRoute(TUN_DNS, 32)
+            if (store.allowIpv6) {
+                addRoute(TUN_DNS6, 128)
+            }
+        } else {
+            addRoute(NET_ANY, 0)
+            if (store.allowIpv6) {
+                addRoute(NET_ANY6, 0)
+            }
+        }
+    }
+
+    /**
+     * Per-app routing (spec: runtime/core-bridge). Decision order: config `include-package` wins,
+     * else config `exclude-package`, else UI access control. Exactly one polarity of
+     * addAllowedApplication/addDisallowedApplication ever runs on this Builder, and the app's own
+     * package always stays routed.
+     */
+    private fun VpnService.Builder.configurePerAppRouting() {
+        val configInclude = CompiledTunPackages.includePackages
+        val configExclude = CompiledTunPackages.excludePackages
+        if (configInclude.isNotEmpty() || configExclude.isNotEmpty()) {
+            // Compiled config declares tun.include-package/exclude-package: the config
+            // fully takes over per-app routing and the UI access control is ignored.
+            startupLogStore.append(
+                "LOCAL_TUN per-app routing: config include=${configInclude.size}" +
+                    " exclude=${configExclude.size}"
+            )
+            if (configInclude.isNotEmpty()) {
+                (configInclude.toSet() - configExclude.toSet() + vpnService.packageName)
+                    .forEach { runCatching { addAllowedApplication(it) } }
+            } else {
+                (configExclude.toSet() - vpnService.packageName).forEach {
+                    runCatching { addDisallowedApplication(it) }
+                }
+            }
+        } else {
+            startupLogStore.append(
+                "LOCAL_TUN per-app routing: ui mode=${store.accessControlMode}"
+            )
+            when (store.accessControlMode) {
+                AccessControlMode.AcceptAll -> Unit
+                AccessControlMode.AcceptSelected -> {
+                    (store.accessControlPackages + vpnService.packageName).forEach {
+                        runCatching { addAllowedApplication(it) }
+                    }
+                }
+                AccessControlMode.RejectAll -> Unit
+                AccessControlMode.RejectSelected -> {
+                    (store.accessControlPackages - vpnService.packageName).forEach {
+                        runCatching { addDisallowedApplication(it) }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun VpnService.Builder.configureHttpProxy(hasExplicitRouteExcludes: Boolean) {
+        if (Build.VERSION.SDK_INT >= 29 && store.systemProxy) {
+            listenHttp()?.let {
+                setHttpProxy(
+                    ProxyInfo.buildDirectProxy(
+                        it.address.hostAddress,
+                        it.port,
+                        HTTP_PROXY_BLACK_LIST +
+                            if (store.bypassPrivateNetwork || hasExplicitRouteExcludes) {
+                                HTTP_PROXY_LOCAL_LIST
+                            } else {
+                                emptyList()
+                            },
+                    )
+                )
+            }
+        }
     }
 
     override fun stop() {

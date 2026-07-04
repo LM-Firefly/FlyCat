@@ -157,6 +157,7 @@ class LogRecordService : Service() {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun collectLogs() {
         val observer =
             object : ILogObserver {
@@ -196,6 +197,8 @@ class LogRecordService : Service() {
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
+            // fault barrier: the log source is a mode-dependent gateway (core/binder/HTTP);
+            // recording must end gracefully instead of crashing the service.
             Timber.e(error, "Log observer setup failed")
         } finally {
             runCatching { setObserver(null) }

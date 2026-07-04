@@ -84,6 +84,7 @@ object ProfileProcessor {
         return snapshotName
     }
 
+    @Suppress("TooGenericExceptionCaught")
     suspend fun update(context: Context, uuid: UUID, callback: IFetchObserver?) {
         withContext(Dispatchers.IO + NonCancellable) {
             processLock.withLock {
@@ -129,6 +130,8 @@ object ProfileProcessor {
                             try {
                                 cb?.updateStatus(it)
                             } catch (error: Exception) {
+                                // fault barrier: the observer may live across a binder; reporting
+                                // failures must not abort the profile fetch itself.
                                 cb = null
                                 Timber.w(error, "Report fetch status: %s", error.message)
                             }
@@ -171,6 +174,8 @@ object ProfileProcessor {
                         }
                     }
                 } catch (error: Exception) {
+                    // fault barrier: core fetch runs through the JNI bridge; roll back the staged
+                    // update atomically, then rethrow (with a friendlier message for age errors).
                     profileLock.withLock {
                         if (
                             !snapshot.hasCommittedConfig &&

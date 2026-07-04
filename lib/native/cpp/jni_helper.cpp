@@ -38,7 +38,7 @@ char* jni_get_string(JNIEnv* env, jstring str) {
 jstring jni_new_string(JNIEnv* env, const char* str) {
     if (!env || !str) return nullptr;
 
-    size_t len = strlen(str);
+    size_t len = strlen(str); /* flawfinder: ignore - str is a NUL-terminated C string by contract (Go core / literal callers) */
     jbyteArray arr = env->NewByteArray(static_cast<jsize>(len));
     if (!arr) return nullptr;
 

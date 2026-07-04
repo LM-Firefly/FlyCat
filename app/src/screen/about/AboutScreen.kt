@@ -71,19 +71,23 @@ private val AppNameGradient =
         Color(0xFFC0D5F5),
     )
 
+// Fault barrier at the JNI bridge: any native failure degrades to a fallback version label.
+@Suppress("TooGenericExceptionCaught")
+private fun loadCoreVersionOrFallback(): String =
+    try {
+        Bridge.nativeCoreVersion()
+    } catch (error: Exception) {
+        if (error is CancellationException) throw error
+        MLang.About.App.VersionFailed
+    }
+
 @Composable
 fun AboutScreen(navigator: Navigator) {
     val context = LocalContext.current
     val scrollBehavior = MiuixScrollBehavior()
     val coreVersion by
         produceState(initialValue = MLang.About.App.VersionLoading) {
-            value =
-                try {
-                    Bridge.nativeCoreVersion()
-                } catch (error: Exception) {
-                    if (error is CancellationException) throw error
-                    MLang.About.App.VersionFailed
-                }
+            value = loadCoreVersionOrFallback()
         }
 
     Scaffold(topBar = { TopBar(title = MLang.About.Title, scrollBehavior = scrollBehavior) }) {

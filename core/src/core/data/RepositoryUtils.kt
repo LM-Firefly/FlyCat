@@ -25,19 +25,21 @@ import timber.log.Timber
 
 /** Utility functions for Repository layer to reduce boilerplate code. */
 object RepositoryUtils {
+    @Suppress("TooGenericExceptionCaught")
     suspend fun <T> safeApiCall(tag: String, operation: String, block: suspend () -> T): Result<T> =
         try {
             Result.success(block())
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: any failure must become Result.failure
             if (error is CancellationException) throw error
             Timber.tag(tag).e(error, "Failed to execute $operation")
             Result.failure(error)
         }
 
+    @Suppress("TooGenericExceptionCaught")
     fun <T> safeCall(tag: String, operation: String, block: () -> T): Result<T> =
         try {
             Result.success(block())
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: any failure must become Result.failure
             if (error is CancellationException) throw error
             Timber.tag(tag).e(error, "Failed to execute $operation")
             Result.failure(error)

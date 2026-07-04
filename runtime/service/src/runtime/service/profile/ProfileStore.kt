@@ -24,6 +24,7 @@ package com.github.yumelira.yumebox.runtime.service.profile
 
 import com.github.yumelira.yumebox.runtime.api.UUIDSerializer
 import com.tencent.mmkv.MMKV
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -49,7 +50,9 @@ object ProfileStore {
         val jsonString = mmkv.decodeString(IMPORTED_KEY) ?: return emptyList()
         return try {
             json.decodeFromString(ListSerializer(Imported.serializer()), jsonString)
-        } catch (error: Exception) {
+        } catch (error: SerializationException) {
+            emptyList()
+        } catch (error: IllegalArgumentException) {
             emptyList()
         }
     }
@@ -63,7 +66,9 @@ object ProfileStore {
         val jsonString = mmkv.decodeString(PROFILE_ORDER_KEY) ?: return emptyList()
         return try {
             json.decodeFromString(ListSerializer(UUIDSerializer()), jsonString)
-        } catch (error: Exception) {
+        } catch (error: SerializationException) {
+            emptyList()
+        } catch (error: IllegalArgumentException) {
             emptyList()
         }
     }

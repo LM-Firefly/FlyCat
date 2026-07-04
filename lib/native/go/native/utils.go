@@ -10,10 +10,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func marshalJson(obj any) *C.char {
+func marshalJSON(obj any) *C.char {
 	res, err := json.Marshal(obj)
 	if err != nil {
-		log.Errorln("marshalJson: %v", err)
+		log.Errorln("marshalJSON: %v", err)
 		return nil
 	}
 

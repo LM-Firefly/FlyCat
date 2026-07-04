@@ -152,6 +152,8 @@ android {
             //noinspection WrongGradleMethod
             isEnable = gradle.startParameter.taskNames.none { it.contains("bundle", ignoreCase = true) }
             reset()
+            // AGP Split.include only accepts vararg; copying this tiny ABI list is negligible.
+            @Suppress("SpreadOperator")
             include(*appAbiList.toTypedArray())
             isUniversalApk = true
         }

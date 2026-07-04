@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import java.io.File
+import java.io.IOException
 
 val DRY_RUN = args.contains("--dry-run")
 val VERBOSE = args.contains("--verbose")
@@ -61,7 +62,7 @@ for (file in files) {
             totalComments += result.commentsRemoved
             totalSaved += result.charsSaved
         }
-    } catch (e: Exception) {
+    } catch (e: IOException) {
         println("[ERROR] ${file.path}: ${e.message}")
         if (VERBOSE) e.printStackTrace()
     }

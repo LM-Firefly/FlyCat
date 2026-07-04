@@ -23,6 +23,7 @@
 import org.tukaani.xz.LZMA2Options
 import org.tukaani.xz.XZOutputStream
 import java.io.File
+import java.io.IOException
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
@@ -98,7 +99,9 @@ object SystemDetector {
                 ProcessBuilder("which", cmd).start()
             }
             process.waitFor() == 0
-        } catch (e: Exception) {
+        } catch (_: IOException) {
+            false
+        } catch (_: InterruptedException) {
             false
         }
     }
@@ -149,6 +152,8 @@ data class CommandResult(
     val error: String = ""
 )
 
+// Deliberate fault barrier: any process launch failure must become CommandResult(success=false).
+@Suppress("TooGenericExceptionCaught")
 fun executeCommand(
     command: List<String>,
     workingDir: File? = null,
@@ -215,7 +220,7 @@ class NdkTools(private val config: ProjectConfig) {
             .takeIf { it.isNotEmpty() }
             ?: System.getenv("ANDROID_HOME")
             ?: System.getenv("ANDROID_SDK_ROOT")
-            ?: throw RuntimeException("Android SDK not found. Please configure sdk.dir or ANDROID_HOME.")
+            ?: error("Android SDK not found. Please configure sdk.dir or ANDROID_HOME.")
         File(path).also {
             require(it.isDirectory) { "Android SDK not found: ${it.absolutePath}" }
         }
@@ -269,7 +274,7 @@ class NdkTools(private val config: ProjectConfig) {
             ?.map { File(it, "bin/cmake$ext") }
             ?.firstOrNull { it.isFile }
             ?.absolutePath
-            ?: throw RuntimeException("CMake executable not found under ${cmakeRoot.absolutePath}")
+            ?: error("CMake executable not found under ${cmakeRoot.absolutePath}")
     }
 
     fun getNinjaPath(): String {
@@ -290,7 +295,7 @@ class NdkTools(private val config: ProjectConfig) {
             ?.map { File(it, "bin/ninja$ext") }
             ?.firstOrNull { it.isFile }
             ?.absolutePath
-            ?: throw RuntimeException("Ninja executable not found under ${cmakeRoot.absolutePath}")
+            ?: error("Ninja executable not found under ${cmakeRoot.absolutePath}")
     }
 }
 
@@ -727,7 +732,7 @@ class ResourceDownloader(private val config: ProjectConfig) {
                 tempFile.copyTo(outputFile, overwrite = true)
                 println("[Geo] Downloaded $name to ${outputFile.absolutePath}")
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             println("[Geo] Failed to download $name: ${e.message}")
         }
     }

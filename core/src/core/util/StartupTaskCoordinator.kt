@@ -32,6 +32,7 @@ object StartupTaskCoordinator {
 
     @Volatile private var warmup: Deferred<Unit>? = null
 
+    @Suppress("TooGenericExceptionCaught")
     fun startWarmup(scope: CoroutineScope, block: suspend () -> Unit) {
         if (warmup != null) return
         synchronized(this) {
@@ -39,7 +40,7 @@ object StartupTaskCoordinator {
             warmup = scope.async {
                 try {
                     block()
-                } catch (error: Throwable) {
+                } catch (error: Throwable) { // fault barrier: log any warmup failure before rethrowing
                     if (error is CancellationException) throw error
                     Timber.e(error, "Runtime warmup failed")
                     throw error

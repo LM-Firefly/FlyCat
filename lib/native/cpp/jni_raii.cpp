@@ -22,8 +22,8 @@ ScopedJString::ScopedJString(JNIEnv* env, jstring str) {
     jsize len = env->GetArrayLength(arr);
     if (len < 0) { env->DeleteLocalRef(arr); return; }
 
+    // std::make_unique throws std::bad_alloc on failure; it never returns null.
     data_ = std::make_unique<char[]>(len + 1);
-    if (!data_) { env->DeleteLocalRef(arr); return; }
 
     env->GetByteArrayRegion(arr, 0, len, reinterpret_cast<jbyte*>(data_.get()));
     data_[len] = '\0';

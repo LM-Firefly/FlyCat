@@ -29,6 +29,7 @@ import org.json.JSONObject
 import timber.log.Timber
 
 object JsonDiagnosticsProvider {
+    @Suppress("TooGenericExceptionCaught")
     fun analyze(content: String): DiagnosticsContainer {
         val container = DiagnosticsContainer()
 
@@ -62,7 +63,7 @@ object JsonDiagnosticsProvider {
             if (diagnostic != null) {
                 container.addDiagnostic(diagnostic)
             }
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: diagnostics must never crash the editor
             Timber.w(error, "JSON analysis failed")
         }
 

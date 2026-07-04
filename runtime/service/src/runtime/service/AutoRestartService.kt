@@ -191,6 +191,7 @@ class AutoRestartService : Service() {
             .i("Auto start triggered: reason=$reason profile=${activeProfile.name}, mode=$proxyMode")
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun tryUpdateActiveProfileOnStart(
         activeProfile: Profile,
         reason: String,
@@ -227,6 +228,8 @@ class AutoRestartService : Service() {
             profileManager.update(activeProfile.uuid, null)
             Timber.tag(TAG).i("Boot update ok: ${activeProfile.uuid}")
         } catch (error: Exception) {
+            // fault barrier: best-effort boot update goes through the core fetch bridge; any
+            // failure must not block the auto restart itself.
             Timber.tag(TAG).w(error, "Boot update failed")
         }
     }

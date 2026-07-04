@@ -87,6 +87,7 @@ class ProxyTileService : TileService() {
         updateJob?.cancel()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun onClick() {
         super.onClick()
         if (toggleJob?.isActive == true) return
@@ -101,10 +102,9 @@ class ProxyTileService : TileService() {
             val currentMode = effectiveMode(snapshot)
 
             val tileState = qsTile?.state
-            if (
-                (isRunning && tileState == Tile.STATE_INACTIVE) ||
-                    (!isRunning && tileState == Tile.STATE_ACTIVE)
-            ) {
+            val tileStaleInactive = isRunning && tileState == Tile.STATE_INACTIVE
+            val tileStaleActive = !isRunning && tileState == Tile.STATE_ACTIVE
+            if (tileStaleInactive || tileStaleActive) {
                 updateTileState(isRunning)
                 return@launch
             }
@@ -175,6 +175,8 @@ class ProxyTileService : TileService() {
                     }
                 }
             } catch (error: Exception) {
+                // fault barrier: toggle spans root bridge / service start; the tile must recover
+                // to the real runtime state instead of crashing the SystemUI-bound service.
                 Timber.e(error, "Error toggling proxy from tile")
             } finally {
                 PollingTimers.awaitTick(

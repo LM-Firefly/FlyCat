@@ -33,6 +33,7 @@ class OverrideService(
 ) {
     private val appContext = context.appContextOrSelf
 
+    @Suppress("TooGenericExceptionCaught")
     suspend fun applyOverride(profileId: String): Boolean {
         return try {
             val overrideIds = resolver.resolveIds(profileId)
@@ -60,7 +61,7 @@ class OverrideService(
             notifyRuntimeOverrideChanged()
 
             true
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: any resolver/broadcast failure degrades to false
             Timber.e(error, "Failed to apply override for profile: %s", profileId)
             false
         }

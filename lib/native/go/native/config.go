@@ -67,9 +67,9 @@ func fetchAndValid(callback unsafe.Pointer, path, url C.c_string, force C.int) {
 }
 
 //export loadCompiledRaw
-func loadCompiledRaw(completable unsafe.Pointer, configRawJson *C.char) {
-	rawCopy := C.GoString(configRawJson)
-	C.free(unsafe.Pointer(configRawJson))
+func loadCompiledRaw(completable unsafe.Pointer, configRawJSON *C.char) {
+	rawCopy := C.GoString(configRawJSON)
+	C.free(unsafe.Pointer(configRawJSON))
 	go func(raw string) {
 		defer C.release_object(completable)
 		defer runtime.GC()
@@ -86,8 +86,8 @@ func loadCompiledRaw(completable unsafe.Pointer, configRawJson *C.char) {
 }
 
 //export compiledRawResultError
-func compiledRawResultError(resultJson C.c_string) *C.char {
-	result, err := decodeCompileRawResult(C.GoString(resultJson))
+func compiledRawResultError(resultJSON C.c_string) *C.char {
+	result, err := decodeCompileRawResult(C.GoString(resultJSON))
 	if err != nil {
 		return marshalString(err)
 	}
@@ -102,8 +102,8 @@ func compiledRawResultError(resultJson C.c_string) *C.char {
 }
 
 //export compiledRawResultConfigRaw
-func compiledRawResultConfigRaw(resultJson C.c_string) *C.char {
-	result, err := decodeCompileRawResult(C.GoString(resultJson))
+func compiledRawResultConfigRaw(resultJSON C.c_string) *C.char {
+	result, err := decodeCompileRawResult(C.GoString(resultJSON))
 	if err != nil || !result.Success || strings.TrimSpace(result.ConfigRaw) == "" {
 		return nil
 	}
@@ -111,10 +111,10 @@ func compiledRawResultConfigRaw(resultJson C.c_string) *C.char {
 }
 
 //export compiledRawResultSummary
-func compiledRawResultSummary(resultJson C.c_string) *C.char {
-	result, err := decodeCompileRawResult(C.GoString(resultJson))
+func compiledRawResultSummary(resultJSON C.c_string) *C.char {
+	result, err := decodeCompileRawResult(C.GoString(resultJSON))
 	if err != nil {
-		return marshalJson(compileRawSummary{Success: false, Error: err.Error()})
+		return marshalJSON(compileRawSummary{Success: false, Error: err.Error()})
 	}
 	summary := compileRawSummary{
 		Success:     result.Success,
@@ -132,7 +132,7 @@ func compiledRawResultSummary(resultJson C.c_string) *C.char {
 			summary.TunExcludePackage = excludePackage
 		}
 	}
-	return marshalJson(summary)
+	return marshalJSON(summary)
 }
 
 //export compiledRawFallbackSummary
@@ -141,7 +141,7 @@ func compiledRawFallbackSummary(errorMessage C.c_string) *C.char {
 	if message == "" {
 		message = "compile raw config failed"
 	}
-	return marshalJson(compileRawSummary{Success: false, Error: message})
+	return marshalJSON(compileRawSummary{Success: false, Error: message})
 }
 
 //export inspectErrorResult
@@ -150,45 +150,45 @@ func inspectErrorResult(errorMessage C.c_string) *C.char {
 	if message == "" {
 		message = "native inspect failed"
 	}
-	return marshalJson(inspectResult{Success: false, Error: message})
+	return marshalJSON(inspectResult{Success: false, Error: message})
 }
 
-func decodeCompileRawResult(resultJson string) (*compileRawResult, error) {
+func decodeCompileRawResult(resultJSON string) (*compileRawResult, error) {
 	var result compileRawResult
-	if err := json.Unmarshal([]byte(resultJson), &result); err != nil {
+	if err := json.Unmarshal([]byte(resultJSON), &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 
 //export inspectCompiledGroupsResult
-func inspectCompiledGroupsResult(configRawJson C.c_string, profileDir C.c_string, excludeNotSelectable C.int) *C.char {
+func inspectCompiledGroupsResult(configRawJSON C.c_string, profileDir C.c_string, excludeNotSelectable C.int) *C.char {
 	groups, err := config.QueryProxyGroupsFromCompiledRaw(
-		C.GoString(configRawJson),
+		C.GoString(configRawJSON),
 		C.GoString(profileDir),
 		excludeNotSelectable != 0,
 	)
 	if err != nil {
-		return marshalJson(inspectResult{Success: false, Error: err.Error()})
+		return marshalJSON(inspectResult{Success: false, Error: err.Error()})
 	}
 	payload, err := yamlString(groups)
 	if err != nil {
-		return marshalJson(inspectResult{Success: false, Error: err.Error()})
+		return marshalJSON(inspectResult{Success: false, Error: err.Error()})
 	}
-	return marshalJson(inspectResult{Success: true, Payload: payload})
+	return marshalJSON(inspectResult{Success: true, Payload: payload})
 }
 
 //export inspectCompiledTunRouteExcludeAddressResult
-func inspectCompiledTunRouteExcludeAddressResult(configRawJson C.c_string) *C.char {
-	addresses, err := config.QueryTunRouteExcludeAddressFromCompiledRaw(C.GoString(configRawJson))
+func inspectCompiledTunRouteExcludeAddressResult(configRawJSON C.c_string) *C.char {
+	addresses, err := config.QueryTunRouteExcludeAddressFromCompiledRaw(C.GoString(configRawJSON))
 	if err != nil {
-		return marshalJson(inspectResult{Success: false, Error: err.Error()})
+		return marshalJSON(inspectResult{Success: false, Error: err.Error()})
 	}
 	payload, err := jsonString(addresses)
 	if err != nil {
-		return marshalJson(inspectResult{Success: false, Error: err.Error()})
+		return marshalJSON(inspectResult{Success: false, Error: err.Error()})
 	}
-	return marshalJson(inspectResult{Success: true, Payload: payload})
+	return marshalJSON(inspectResult{Success: true, Payload: payload})
 }
 
 //export setAgeSecretKey
@@ -208,7 +208,7 @@ func genX25519KeyPair() *C.char {
 		return nil
 	}
 
-	return marshalJson(ageKeyPair{SecretKey: secretKey, PublicKey: publicKey})
+	return marshalJSON(ageKeyPair{SecretKey: secretKey, PublicKey: publicKey})
 }
 
 //export genHybridKeyPair
@@ -218,7 +218,7 @@ func genHybridKeyPair() *C.char {
 		return nil
 	}
 
-	return marshalJson(ageKeyPair{SecretKey: secretKey, PublicKey: publicKey})
+	return marshalJSON(ageKeyPair{SecretKey: secretKey, PublicKey: publicKey})
 }
 
 //export verifySecretKeys
@@ -237,7 +237,7 @@ func toPublicKeys(secretKeys C.c_string) *C.char {
 		return nil
 	}
 
-	return marshalJson(publicKeys)
+	return marshalJSON(publicKeys)
 }
 
 //export verifyPublicKeys

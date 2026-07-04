@@ -23,6 +23,7 @@ package com.github.yumelira.yumebox
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -238,27 +239,28 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        intent?.let { safeIntent ->
-            if (safeIntent.getBooleanExtra(EXTRA_EXIT_UI_WHEN_BACKGROUND, false)) {
-                finishAndRemoveTask()
-                return
-            }
-            safeIntent.data?.let { uri ->
-                val scheme = uri.scheme
-                if (scheme == "clash" || scheme == "clashmeta") {
-                    val host = uri.host
-                    if (host == "install-config") {
-                        val configUrl = uri.getQueryParameter("url")
-                        if (!configUrl.isNullOrBlank()) {
-                            _pendingImportUrl.value = configUrl
-                        }
-                    }
-                } else if (scheme == "yumebox") {
-                    _pendingDeepLink.value = uri.toString()
+        val safeIntent = intent ?: return
+        if (safeIntent.getBooleanExtra(EXTRA_EXIT_UI_WHEN_BACKGROUND, false)) {
+            finishAndRemoveTask()
+            return
+        }
+        safeIntent.data?.let { handleDeepLinkUri(it) }
+
+        intentController.handleIntent(safeIntent)
+    }
+
+    private fun handleDeepLinkUri(uri: Uri) {
+        when (uri.scheme) {
+            "clash",
+            "clashmeta" -> {
+                if (uri.host != "install-config") return
+                val configUrl = uri.getQueryParameter("url")
+                if (!configUrl.isNullOrBlank()) {
+                    _pendingImportUrl.value = configUrl
                 }
             }
 
-            intentController.handleIntent(safeIntent)
+            "yumebox" -> _pendingDeepLink.value = uri.toString()
         }
     }
 

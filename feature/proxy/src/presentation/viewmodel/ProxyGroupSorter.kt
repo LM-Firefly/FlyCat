@@ -134,13 +134,10 @@ internal class ProxyGroupSorter {
         val nextCache = HashMap<String, SortedGroupCacheEntry>(groups.size)
         val results = groups.map { group ->
             val originalOrder = originalOrderCache[group.name].orEmpty()
-            val cached = previousCache[group.name]
-            if (
-                cached != null &&
-                    cached.sourceGroup == group &&
-                    cached.sortMode == mode &&
-                    cached.originalOrder == originalOrder
-            ) {
+            val cached = previousCache[group.name]?.takeIf { entry ->
+                entry.sourceGroup == group && entry.sortMode == mode && entry.originalOrder == originalOrder
+            }
+            if (cached != null) {
                 nextCache[group.name] = cached
                 cached.result
             } else {

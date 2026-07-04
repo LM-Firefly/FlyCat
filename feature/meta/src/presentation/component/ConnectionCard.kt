@@ -196,6 +196,7 @@ private fun ConnectionTagChip(
     )
 }
 
+@Suppress("TooGenericExceptionCaught")
 private fun formatRelativeTime(start: String): String {
     if (start.isEmpty()) return ""
 
@@ -220,7 +221,7 @@ private fun formatRelativeTime(start: String): String {
                 MLang.Connection.RelativeTime.Date.format(date.monthValue, date.dayOfMonth)
             }
         }
-    } catch (error: Exception) {
+    } catch (_: Exception) { // fault barrier: date parse or a malformed locale format string must not crash UI
         ""
     }
 }

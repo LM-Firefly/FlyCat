@@ -39,6 +39,7 @@ object TextMateInitializer {
 
     private var initialized = false
 
+    @Suppress("TooGenericExceptionCaught")
     @Synchronized
     fun initialize(context: Context) {
         if (initialized) {
@@ -57,7 +58,7 @@ object TextMateInitializer {
 
             initialized = true
             Timber.tag(TAG).i("TextMate initialized successfully")
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: TextMate/tm4e throws unspecified exceptions
             Timber.e(error, "Failed to initialize TextMate")
         }
     }
@@ -81,6 +82,7 @@ object TextMateInitializer {
         themeRegistry.setTheme(THEME_DARK)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun loadTheme(
         themeRegistry: ThemeRegistry,
         name: String,
@@ -97,21 +99,23 @@ object TextMateInitializer {
             } else {
                 Timber.tag(TAG).w("Theme file not found: $path")
             }
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: TextMate/tm4e throws unspecified exceptions
             Timber.e(error, "Failed to load theme: $name")
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun loadGrammars() {
         Timber.tag(TAG).d("Loading grammars...")
         try {
             GrammarRegistry.getInstance().loadGrammars("textmate/languages.json")
             Timber.tag(TAG).d("Grammars loaded successfully")
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: TextMate/tm4e throws unspecified exceptions
             Timber.e(error, "Failed to load grammars")
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun setLanguage(editor: CodeEditor, language: LanguageScope) {
         if (language == LanguageScope.Text) {
             editor.setEditorLanguage(null)
@@ -122,18 +126,19 @@ object TextMateInitializer {
             val textMateLanguage = TextMateLanguage.create(language.scopeName, true)
             editor.setEditorLanguage(textMateLanguage)
             Timber.tag(TAG).d("Language set to: ${language.displayName}")
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: TextMate/tm4e throws unspecified exceptions
             Timber.e(error, "Failed to set language: ${language.displayName}")
             editor.setEditorLanguage(null)
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun setTheme(isDark: Boolean) {
         try {
             val themeName = if (isDark) THEME_DARK else THEME_LIGHT
             ThemeRegistry.getInstance().setTheme(themeName)
             Timber.tag(TAG).d("Theme switched to: $themeName")
-        } catch (error: Exception) {
+        } catch (error: Exception) { // fault barrier: TextMate/tm4e throws unspecified exceptions
             Timber.e(error, "Failed to switch theme")
         }
     }

@@ -61,6 +61,9 @@ class LogViewModel(private val repository: LogStore) : ViewModel() {
         _tempLogEntries.value = emptyList()
     }
 
+    // Fault barrier: SAF export can fail with IO/security/provider errors; any failure maps
+    // to a false result for the caller (CE rethrown).
+    @Suppress("TooGenericExceptionCaught")
     suspend fun saveTempLog(targetUri: Uri): Boolean =
         withContext(Dispatchers.IO) {
             val entries = _tempLogEntries.value

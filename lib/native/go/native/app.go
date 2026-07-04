@@ -33,7 +33,7 @@ func openRemoteContent(url string) (int, error) {
 func notifyDnsChanged(dnsList C.c_string) {
 	d := C.GoString(dnsList)
 
-	app.NotifyDnsChanged(d)
+	app.NotifyDNSChanged(d)
 }
 
 //export notifyTimeZoneChanged
@@ -41,12 +41,11 @@ func notifyTimeZoneChanged(name C.c_string, offset C.int) {
 	app.NotifyTimeZoneChanged(C.GoString(name), int(offset))
 }
 
-
 //export queryConfiguration
 func queryConfiguration() *C.char {
 	response := &struct{}{}
 
-	return marshalJson(&response)
+	return marshalJSON(&response)
 }
 
 func init() {

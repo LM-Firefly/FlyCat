@@ -165,12 +165,19 @@ class ChinaAppDetector(context: Context) {
                     } catch (_: Exception) {
                         continue
                     }
-                for (clazz in dexFile.classes) {
-                    val descriptor = clazz.type
-                    if (chinaClassDescriptorPrefixList.any { descriptor.startsWith(it) }) {
-                        return true
-                    }
+                if (dexContainsChinaClass(dexFile)) {
+                    return true
                 }
+            }
+        }
+        return false
+    }
+
+    private fun dexContainsChinaClass(dexFile: DexBackedDexFile): Boolean {
+        for (clazz in dexFile.classes) {
+            val descriptor = clazz.type
+            if (chinaClassDescriptorPrefixList.any { descriptor.startsWith(it) }) {
+                return true
             }
         }
         return false

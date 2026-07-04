@@ -231,6 +231,7 @@ class HttpClashManager(
 
     // ---- Selection / connections mutation --------------------------------
 
+    @Suppress("TooGenericExceptionCaught")
     override fun patchSelector(group: String, name: String): Boolean =
         runBlocking(Dispatchers.IO) {
             try {
@@ -241,16 +242,17 @@ class HttpClashManager(
                     body = SelectBody(name),
                 )
                 response.status.isSuccess()
-            } catch (error: Throwable) {
+            } catch (_: Throwable) { // fault barrier: remote REST call must degrade to "not selected"
                 false
             }
         }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun closeConnection(id: String): Boolean =
         runBlocking(Dispatchers.IO) {
             try {
                 request(HttpMethod.Delete, "connections", id).status.isSuccess()
-            } catch (error: Throwable) {
+            } catch (error: Throwable) { // fault barrier: remote REST call must degrade to "not closed"
                 false
             }
         }
@@ -276,6 +278,7 @@ class HttpClashManager(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun healthCheckProxy(group: String, proxyName: String): Int =
         try {
             val response = request(
@@ -290,7 +293,7 @@ class HttpClashManager(
             } else {
                 -1
             }
-        } catch (error: Throwable) {
+        } catch (error: Throwable) { // fault barrier: remote REST delay test must degrade to timeout (-1)
             -1
         }
 

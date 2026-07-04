@@ -54,12 +54,13 @@ class ClashGateway(
 
     private fun useRootRuntime(): Boolean = RootTunStatusFlow.current(appContext).isSessionActive
 
+    @Suppress("TooGenericExceptionCaught")
     private inline fun <T> route(call: (IClashManager) -> T): T {
         if (useRemote()) return call(remote)
         if (!useRootRuntime()) return call(local)
         return try {
             call(root)
-        } catch (error: Throwable) {
+        } catch (error: Throwable) { // fault barrier: root binder may die for any reason; recover then rethrow
             handleRootRuntimeFailure(error)
             throw error
         }

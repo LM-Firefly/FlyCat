@@ -252,13 +252,9 @@ internal fun ProfileSettingsDialog(
             } else {
                 profile.source
             }
-        if (
-            trimmedName.isNotEmpty() &&
-                targetSource.isNotEmpty() &&
-                (trimmedName != profile.name ||
-                    targetSource != profile.source ||
-                    ageSecretKeyEdited)
-        ) {
+        val hasMetaChanges =
+            trimmedName != profile.name || targetSource != profile.source || ageSecretKeyEdited
+        if (trimmedName.isNotEmpty() && targetSource.isNotEmpty() && hasMetaChanges) {
             onSaveProfileMeta(
                 ProfileMetaUpdate(
                     name = trimmedName,
