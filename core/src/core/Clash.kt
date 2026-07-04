@@ -103,17 +103,6 @@ object Clash {
         return YamlCodec.decode(ListSerializer(ProxyGroup.serializer()), result.payload)
     }
 
-    fun compileAndInspectTunRouteExcludeAddress(request: CompileRequest): List<String> {
-        val payload =
-            Bridge.nativeCompileAndInspectTunRouteExcludeAddress(encode(request))
-                ?: error("native compile-and-inspect tun route-exclude-address failed")
-        val result = CompilerJson.decodeFromString(NativeInspectResult.serializer(), payload)
-        check(result.success) {
-            result.error ?: "native compile-and-inspect tun route-exclude-address failed"
-        }
-        return Json.decodeFromString(ListSerializer(String.serializer()), result.payload)
-    }
-
     fun reset() {
         Bridge.nativeReset()
     }

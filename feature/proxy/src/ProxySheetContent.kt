@@ -136,32 +136,83 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
         title = selectedGroup?.name ?: MLang.Proxy.Title,
         backgroundColor = MiuixTheme.colorScheme.surface,
         startAction = {
-            if (selectedGroup != null) {
-                AppBottomSheetIconAction(
-                    action =
-                        AppBottomSheetAction(
-                            icon = MiuixIcons.Back,
-                            contentDescription = MLang.Component.Navigation.Back,
-                            onClick = groupSelection.clearSelection,
-                        )
-                )
-            } else {
-                Box {
+            AnimatedContent(
+                targetState = selectedGroup != null,
+                transitionSpec = {
+                    val slideDuration =
+                        if (targetState) {
+                            AnimationSpecs.Proxy.SheetSlideInDuration
+                        } else {
+                            AnimationSpecs.Proxy.SheetSlideOutDuration
+                        }
+                    val initialOffset: (Int) -> Int =
+                        if (targetState) {
+                            { width -> width / 3 }
+                        } else {
+                            { width -> -width / 3 }
+                        }
+                    val targetOffset: (Int) -> Int =
+                        if (targetState) {
+                            { width -> -width / 3 }
+                        } else {
+                            { width -> width / 3 }
+                        }
+                    (slideInHorizontally(
+                        animationSpec =
+                            tween(
+                                durationMillis = slideDuration,
+                                easing = AnimationSpecs.Legacy,
+                            ),
+                        initialOffsetX = initialOffset,
+                    ) +
+                        fadeIn(
+                            animationSpec =
+                                tween(durationMillis = AnimationSpecs.Proxy.SheetFadeInDuration)
+                        )) togetherWith
+                        (slideOutHorizontally(
+                            animationSpec =
+                                tween(
+                                    durationMillis = AnimationSpecs.Proxy.SheetSlideOutDuration,
+                                    easing = AnimationSpecs.Legacy,
+                                ),
+                            targetOffsetX = targetOffset,
+                        ) +
+                            fadeOut(
+                                animationSpec =
+                                    tween(
+                                        durationMillis = AnimationSpecs.Proxy.SheetFadeOutDuration
+                                    )
+                            ))
+                },
+                label = "notification_node_sheet_start_action",
+            ) { showBackAction ->
+                if (showBackAction) {
                     AppBottomSheetIconAction(
                         action =
                             AppBottomSheetAction(
-                                icon = Yume.`List-chevrons-up-down`,
-                                contentDescription = MLang.Proxy.Action.Sort,
-                                onClick = { showSortPopup.value = true },
+                                icon = MiuixIcons.Back,
+                                contentDescription = MLang.Component.Navigation.Back,
+                                onClick = groupSelection.clearSelection,
                             )
                     )
-                    NodeSortPopup(
-                        show = showSortPopup.value,
-                        onDismiss = { showSortPopup.value = false },
-                        sortMode = sortMode,
-                        alignment = PopupPositionProvider.Align.BottomStart,
-                        onSortSelected = proxyViewModel::setSortMode,
-                    )
+                } else {
+                    Box {
+                        AppBottomSheetIconAction(
+                            action =
+                                AppBottomSheetAction(
+                                    icon = Yume.`List-chevrons-up-down`,
+                                    contentDescription = MLang.Proxy.Action.Sort,
+                                    onClick = { showSortPopup.value = true },
+                                )
+                        )
+                        NodeSortPopup(
+                            show = showSortPopup.value,
+                            onDismiss = { showSortPopup.value = false },
+                            sortMode = sortMode,
+                            alignment = PopupPositionProvider.Align.BottomStart,
+                            onSortSelected = proxyViewModel::setSortMode,
+                        )
+                    }
                 }
             }
         },
