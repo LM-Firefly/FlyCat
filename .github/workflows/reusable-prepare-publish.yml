@@ -243,18 +243,24 @@ jobs:
           name: ${{ inputs.publish_artifact_name }}
           path: publish/*.apk
           if-no-files-found: error
+          # APKs are already zip-compressed; keep the archive (downstream jobs
+          # download-artifact it) but store entries uncompressed.
+          compression-level: 0
 
-      # Per-APK artifacts: artifact downloads are zip archives, so the aggregate artifact
-      # above mixes every ABI into one zip. Uploading each APK separately gives one
-      # downloadable installer per ABI. Names in publish/ are exactly
-      # <artifact_prefix>-<versionName>-<abi>.apk (universal has no ABI suffix), see the
-      # rename loop in "Prepare publish artifacts" above.
+      # Per-APK artifacts: the aggregate artifact above mixes every ABI into one zip, so
+      # each APK is also uploaded separately with archive:false — the raw .apk is stored
+      # as-is (no zip wrapper, no recompression) and downloads directly as an installer.
+      # NOTE: with archive:false the artifact takes the FILE name and the `name:` input is
+      # ignored, so these artifacts appear as <artifact_prefix>-<versionName>-<abi>.apk
+      # (universal has no ABI suffix), from the rename loop in "Prepare publish artifacts".
       - name: Upload arm64-v8a APK artifact
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-arm64-v8a
           path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-arm64-v8a.apk
           if-no-files-found: ignore
+          # Single already-compressed file: upload raw for a direct .apk download.
+          archive: false
 
       - name: Upload armeabi-v7a APK artifact
         uses: actions/upload-artifact@v7
@@ -262,6 +268,7 @@ jobs:
           name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-armeabi-v7a
           path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-armeabi-v7a.apk
           if-no-files-found: ignore
+          archive: false
 
       - name: Upload x86_64 APK artifact
         uses: actions/upload-artifact@v7
@@ -269,6 +276,7 @@ jobs:
           name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86_64
           path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86_64.apk
           if-no-files-found: ignore
+          archive: false
 
       - name: Upload x86 APK artifact
         uses: actions/upload-artifact@v7
@@ -276,6 +284,7 @@ jobs:
           name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86
           path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86.apk
           if-no-files-found: ignore
+          archive: false
 
       - name: Upload universal APK artifact
         uses: actions/upload-artifact@v7
@@ -283,3 +292,4 @@ jobs:
           name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-universal
           path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}.apk
           if-no-files-found: ignore
+          archive: false

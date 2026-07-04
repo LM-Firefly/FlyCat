@@ -199,3 +199,11 @@ jobs:
       meta_asset_name: yumebox-pre-meta.json
       telegram_title: YumeBox Pre
     secrets: inherit
+
+  cleanup-artifacts:
+    needs:
+      - notify-pre
+      - prepare-publish-smart-app
+    permissions:
+      actions: write
+    uses: ./.github/workflows/reusable-cleanup-artifacts.yml

@@ -145,3 +145,5 @@ jobs:
           name: ${{ inputs.raw_apk_artifact_name }}
           path: ${{ inputs.module }}/build/outputs/apk/release/*.apk
           if-no-files-found: error
+          # APKs are already zip-compressed; store them uncompressed in the artifact zip.
+          compression-level: 0

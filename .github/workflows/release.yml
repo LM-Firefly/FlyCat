@@ -111,3 +111,9 @@ jobs:
       publish_artifacts: publish-stable-app
       recreate_release: false
     secrets: inherit
+
+  cleanup-artifacts:
+    needs: publish-release-stable
+    permissions:
+      actions: write
+    uses: ./.github/workflows/reusable-cleanup-artifacts.yml

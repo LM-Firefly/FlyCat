@@ -51,3 +51,5 @@ jobs:
             build/generated/assets/geo/geosite.dat.xz
             build/generated/assets/geo/ASN.mmdb.xz
           if-no-files-found: error
+          # Payload is already XZ-compressed; deflating the artifact zip again wastes CPU.
+          compression-level: 0

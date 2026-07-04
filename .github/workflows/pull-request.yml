@@ -97,3 +97,12 @@ jobs:
       build_hash: ${{ github.event.pull_request.head.sha }}
       build_branch: ${{ github.event.pull_request.head.ref }}
     secrets: inherit
+
+  # Fork PRs get a read-only GITHUB_TOKEN that cannot delete artifacts, so the
+  # cleanup only runs for same-repo PRs; fork-run intermediates simply age out.
+  cleanup-artifacts:
+    needs: prepare-publish-pr-app
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      actions: write
+    uses: ./.github/workflows/reusable-cleanup-artifacts.yml
