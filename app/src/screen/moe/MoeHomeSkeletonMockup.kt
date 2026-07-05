@@ -65,7 +65,7 @@ internal enum class HomeMockupDemo {
     /** The bottom-right "start" chip is highlighted and taps in a repeating rhythm. */
     StartButton,
 
-    /** A plain start chip; instead the hero is tapped and a photo-picker sheet slides up. */
+    /** A plain start chip; instead the hero is long-pressed and a photo-picker sheet slides up. */
     Wallpaper,
 }
 
@@ -84,7 +84,7 @@ internal fun MoeHomeSkeletonMockup(
 
     val wallpaper = demo == HomeMockupDemo.Wallpaper
 
-    // The wallpaper demo drives a single looped cycle: tap the hero, then raise the photo picker.
+    // The wallpaper demo drives a single looped cycle: long-press the hero, then raise the picker.
     val transition = rememberInfiniteTransition(label = "home_wallpaper")
     val sheetProgress by
         transition.animateFloat(
@@ -94,19 +94,19 @@ internal fun MoeHomeSkeletonMockup(
                 infiniteRepeatable(
                     animation =
                         keyframes {
-                            durationMillis = 3600
+                            durationMillis = 4200
                             0f at 0
-                            0f at 900
-                            1f at 1300 using FastOutSlowInEasing
-                            1f at 2900
-                            0f at 3300 using FastOutSlowInEasing
-                            0f at 3600
+                            0f at 1500
+                            1f at 1900 using FastOutSlowInEasing
+                            1f at 3500
+                            0f at 3900 using FastOutSlowInEasing
+                            0f at 4200
                         },
                     repeatMode = RepeatMode.Restart,
                 ),
             label = "wallpaper_sheet_progress",
         )
-    val heroTapScale by
+    val heroLongPressScale by
         transition.animateFloat(
             initialValue = 1f,
             targetValue = 1f,
@@ -114,24 +114,32 @@ internal fun MoeHomeSkeletonMockup(
                 infiniteRepeatable(
                     animation =
                         keyframes {
-                            durationMillis = 3600
+                            durationMillis = 4200
                             1f at 0
-                            1f at 700
-                            0.85f at 850 using FastOutSlowInEasing
-                            1f at 1000
-                            1f at 3600
+                            1f at 500
+                            0.82f at 760 using FastOutSlowInEasing
+                            0.82f at 1450
+                            1f at 1680 using FastOutSlowInEasing
+                            1f at 4200
                         },
                     repeatMode = RepeatMode.Restart,
                 ),
-            label = "wallpaper_hero_tap_scale",
+            label = "wallpaper_hero_long_press_scale",
         )
     val heroRippleScale by
         transition.animateFloat(
             initialValue = 0.6f,
-            targetValue = 2.4f,
+            targetValue = 2.1f,
             animationSpec =
                 infiniteRepeatable(
-                    animation = tween(durationMillis = 3600, easing = FastOutSlowInEasing),
+                    animation =
+                        keyframes {
+                            durationMillis = 4200
+                            0.6f at 0
+                            0.6f at 760
+                            2.1f at 1500 using FastOutSlowInEasing
+                            2.1f at 4200
+                        },
                     repeatMode = RepeatMode.Restart,
                 ),
             label = "wallpaper_hero_ripple_scale",
@@ -142,7 +150,15 @@ internal fun MoeHomeSkeletonMockup(
             targetValue = 0f,
             animationSpec =
                 infiniteRepeatable(
-                    animation = tween(durationMillis = 3600, easing = FastOutSlowInEasing),
+                    animation =
+                        keyframes {
+                            durationMillis = 4200
+                            0f at 0
+                            0f at 650
+                            0.45f at 760
+                            0f at 1500 using FastOutSlowInEasing
+                            0f at 4200
+                        },
                     repeatMode = RepeatMode.Restart,
                 ),
             label = "wallpaper_hero_ripple_alpha",
@@ -250,8 +266,7 @@ internal fun MoeHomeSkeletonMockup(
                         }
                     }
 
-                    // Wallpaper demo: a looping tap effect centered on the hero, just before the
-                    // photo-picker sheet rises.
+                    // Wallpaper demo: a looping long-press effect centered on the hero.
                     if (wallpaper) {
                         Box(
                             modifier = Modifier.align(Alignment.Center),
@@ -268,12 +283,11 @@ internal fun MoeHomeSkeletonMockup(
                                         .clip(CircleShape)
                                         .background(colorScheme.primary)
                             )
-                            // Touch dot pressing on each tap.
                             Box(
                                 modifier =
                                     Modifier.graphicsLayer {
-                                            scaleX = heroTapScale
-                                            scaleY = heroTapScale
+                                            scaleX = heroLongPressScale
+                                            scaleY = heroLongPressScale
                                         }
                                         .size(16.dp)
                                         .clip(CircleShape)

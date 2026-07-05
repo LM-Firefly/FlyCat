@@ -368,11 +368,16 @@ fun MoeHomePage(
                         .fillMaxHeight(0.66f)
                         .pointerInput(Unit) {
                             detectTapGestures(
-                                onTap = { launchWallpaperPicker() },
                                 onDoubleTap = {
                                     appSettingsViewModel.onMoeSidebarExpandedChange(
                                         !sidebarExpanded
                                     )
+                                },
+                                onLongPress = {
+                                    hapticFeedback.performHapticFeedback(
+                                        HapticFeedbackType.LongPress
+                                    )
+                                    launchWallpaperPicker()
                                 },
                             )
                         }
