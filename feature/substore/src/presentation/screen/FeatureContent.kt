@@ -48,6 +48,7 @@ fun FeatureContent(
     onOpenInAppUrl: (String) -> Unit,
     onCreatePanelShortcut: (url: String, label: String) -> Unit = { _, _ -> },
     topSection: @Composable () -> Unit = {},
+    bottomSection: @Composable () -> Unit = {},
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val viewModel = koinViewModel<FeatureViewModel>()
@@ -182,6 +183,8 @@ fun FeatureContent(
                     )
                 }
             }
+
+            item { bottomSection() }
         }
     }
 }

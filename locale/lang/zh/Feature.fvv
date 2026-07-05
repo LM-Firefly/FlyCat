@@ -59,4 +59,28 @@ Feature = {
         BackendDownloadFailed = "Sub-Store 后端下载失败"
         DownloadError = "下载出错：%s"
     }
+
+    BackupRestore = {
+        Section = "数据备份"
+        ExportTitle = "导出备份"
+        ExportSummary = "导出设置、订阅、覆写和 Sub-Store 数据"
+        RestoreTitle = "恢复备份"
+        RestoreSummary = "选择备份文件并覆盖当前配置"
+        Cancel = "取消"
+
+        RestoreDialog = {
+            Title = "恢复备份？"
+            Message = "恢复会停止代理和 Sub-Store，并覆盖当前设置、订阅、覆写和 Sub-Store 数据。"
+        }
+
+        Message = {
+            RestoreSuccess = "恢复完成，建议重启应用以刷新全部界面"
+        }
+
+        Error = {
+            OpenOutputFailed = "无法写入备份文件"
+            OpenInputFailed = "无法读取备份文件"
+            OperationFailed = "操作失败：%s"
+        }
+    }
 }

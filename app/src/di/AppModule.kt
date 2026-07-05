@@ -29,12 +29,29 @@ import com.github.yumelira.yumebox.screen.settings.AccessControlViewModel
 import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
 import com.github.yumelira.yumebox.screen.settings.NetworkSettingsViewModel
 import com.github.yumelira.yumebox.screen.settings.RemoteControllerViewModel
+import com.github.yumelira.yumebox.screen.settings.backup.BackupRepository
+import com.github.yumelira.yumebox.screen.settings.backup.BackupRestoreViewModel
 import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val appIntegrationModule = module { single<LogRecordGateway> { LogRecordServiceGateway() } }
+val appIntegrationModule = module {
+    single<LogRecordGateway> { LogRecordServiceGateway() }
+    single {
+        BackupRepository(
+            application = androidApplication(),
+            appSettings = get(),
+            networkSettings = get(),
+            featureSettings = get(),
+            proxyDisplaySettings = get(),
+            profileLinks = get(),
+            remoteController = get(),
+            proxyFacade = get(),
+            mmkvProvider = get(),
+        )
+    }
+}
 
 val appViewModelModule = module {
     viewModel { AppSettingsViewModel(androidApplication(), get(), get(), get()) }
@@ -44,6 +61,7 @@ val appViewModelModule = module {
     viewModel { RemoteControllerViewModel(androidApplication(), get(), get()) }
     viewModel { AccessControlViewModel(androidApplication(), get(), get()) }
     viewModel { LogViewModel(get()) }
+    viewModel { BackupRestoreViewModel(androidApplication(), get()) }
 }
 
 val appModule: List<Module> =

@@ -116,6 +116,12 @@ android {
                 manifest.srcFile("AndroidManifest.xml")
             }
         }
+        getByName("test") {
+            kotlin.directories.apply {
+                clear()
+                add("test")
+            }
+        }
     }
 
     androidResources {
@@ -287,4 +293,6 @@ dependencies {
 
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.core.ktx)
+
+    testImplementation("junit:junit:4.13.2")
 }

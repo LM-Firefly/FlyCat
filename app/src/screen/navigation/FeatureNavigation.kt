@@ -34,6 +34,7 @@ import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.screen.FeatureContent
 import com.github.yumelira.yumebox.screen.feature.PanelShortcutDialog
 import com.github.yumelira.yumebox.screen.feature.RemoteControllerSection
+import com.github.yumelira.yumebox.screen.settings.backup.BackupRestoreSection
 import kotlinx.coroutines.launch
 
 @Composable
@@ -68,6 +69,9 @@ fun FeatureScreen(navigator: Navigator) {
                     onDismissFinished = { shortcutTarget = null },
                 )
             }
+        },
+        bottomSection = {
+            BackupRestoreSection()
         },
     )
 }
