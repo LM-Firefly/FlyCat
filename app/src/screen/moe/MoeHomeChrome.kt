@@ -32,6 +32,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -49,12 +50,17 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -67,23 +73,33 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.common.util.formatBytesForDisplay
+import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
+import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
+import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
 import com.github.yumelira.yumebox.presentation.component.CountryFlagCircle
-import com.github.yumelira.yumebox.presentation.icon.ShellIcons
+import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
+import com.github.yumelira.yumebox.presentation.component.PreferenceValueItem
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.Waiting
+import com.github.yumelira.yumebox.presentation.icon.yume.Repeat
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.util.extractFlaggedName
 import com.github.yumelira.yumebox.screen.home.HomeProxyControlState
 import dev.oom_wg.purejoy.mlang.MLang
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurBlendMode
 import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.util.Calendar
+import kotlinx.coroutines.delay
 
 @Composable
 internal fun MoeSidebarDecoration(
@@ -154,7 +170,7 @@ internal fun MoeSidebarDecoration(
                     shape = RectangleShape,
                 )
                 .padding(
-                    horizontal = MoeUi.Sidebar.innerHorizontalPadding,
+                    horizontal = 0.dp,
                     vertical = spacing.space24,
                 ),
         content = content,
@@ -165,12 +181,13 @@ internal fun MoeSidebarDecoration(
 internal fun MoeSidebarContent(
     topValue: String,
     bottomValue: String,
+    batteryPercent: Int?,
     icons: List<MoeSidebarIconItem>,
     visibleWidth: Dp,
 ) {
-    // 在「可见条」内居中：扣除 decoration 的左右内边距后定宽，居中即对齐可见区域中线。
-    val laneWidth =
-        (visibleWidth - MoeUi.Sidebar.innerHorizontalPadding * 2).coerceAtLeast(0.dp)
+    // Keep the rail inside the visible sidebar width; the content panel starts immediately after
+    // this width, so adding horizontal decoration padding would push digits under the panel.
+    val laneWidth = visibleWidth.coerceAtLeast(0.dp)
     Box(
         modifier = Modifier.fillMaxHeight().width(laneWidth),
         contentAlignment = Alignment.TopCenter,
@@ -178,6 +195,7 @@ internal fun MoeSidebarContent(
         MoeSidebarRail(
             topValue = topValue,
             bottomValue = bottomValue,
+            batteryPercent = batteryPercent,
             icons = icons,
             modifier = Modifier.fillMaxSize(),
         )
@@ -185,29 +203,212 @@ internal fun MoeSidebarContent(
 }
 
 @Composable
-internal fun MoeQuoteText(quote: MoeQuote, color: Color, modifier: Modifier = Modifier) {
+internal fun MoeHomeCopyBlock(
+    nowMillis: Long,
+    quoteText: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    launchContent: @Composable (() -> Unit)? = null,
+) {
+    val greeting = remember(nowMillis) { moeGreetingText(nowMillis) }
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(MoeUi.Quote.contentGap),
     ) {
         Text(
-            text = quote.text,
-            color = color,
+            text = greeting,
+            color = color.copy(alpha = MoeUi.Quote.eyebrowAlpha),
+            style = MiuixTheme.textStyles.body1,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = MoeUi.Quote.eyebrowSize,
+            maxLines = 1,
+            overflow = TextOverflow.Clip,
+        )
+        Text(
+            text = quoteText,
+            color = color.copy(alpha = 0.88f),
             style = MiuixTheme.textStyles.title2,
             fontWeight = FontWeight.Medium,
             fontSize = MoeUi.Quote.textSize,
             lineHeight = MoeUi.Quote.lineHeight,
             softWrap = true,
+            maxLines = 2,
             overflow = TextOverflow.Clip,
         )
-        Text(
-            text = "— ${quote.author}",
-            modifier = Modifier.align(Alignment.End).padding(top = MoeUi.Quote.authorTopGap),
-            color = color.copy(alpha = MoeUi.Quote.authorAlpha),
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = FontWeight.Medium,
-            fontSize = MoeUi.Quote.authorSize,
-            softWrap = false,
+        launchContent?.let { content ->
+            Box(modifier = Modifier.fillMaxWidth().padding(top = MoeUi.Hero.launchTopGap)) {
+                content()
+            }
+        }
+    }
+}
+
+private fun moeGreetingText(nowMillis: Long): String {
+    val hour =
+        Calendar.getInstance()
+            .apply { timeInMillis = nowMillis }
+            .get(Calendar.HOUR_OF_DAY)
+    return when (hour) {
+        in 5..11 -> "Good morning"
+        in 12..17 -> "Good afternoon"
+        in 18..23 -> "Good evening"
+        else -> "Good night"
+    }
+}
+
+private const val MoeLaunchTextEnterDuration = 360
+private const val MoeLaunchTextExitDuration = 300
+private const val MoeLaunchTextTransientDelay = 220L
+
+private fun HomeProxyControlState.isMoeLaunchTransientState(): Boolean =
+    this == HomeProxyControlState.Connecting || this == HomeProxyControlState.Disconnecting
+
+@Composable
+internal fun MoeHomeSettingsSheet(
+    show: Boolean,
+    quote: String,
+    classicHomeEnabled: Boolean,
+    sidebarExpanded: Boolean,
+    onQuoteChange: (String) -> Unit,
+    onClassicHomeEnabledChange: (Boolean) -> Unit,
+    onSidebarExpandedChange: (Boolean) -> Unit,
+    onChangeWallpaper: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val spacing = AppTheme.spacing
+    var draftQuote by remember(show, quote) { mutableStateOf(quote) }
+    var draftClassicHomeEnabled by remember(show, classicHomeEnabled) {
+        mutableStateOf(classicHomeEnabled)
+    }
+    var draftSidebarExpanded by remember(show, sidebarExpanded) { mutableStateOf(sidebarExpanded) }
+    val saveSettings = {
+        onQuoteChange(draftQuote)
+        onClassicHomeEnabledChange(draftClassicHomeEnabled)
+        onSidebarExpandedChange(draftSidebarExpanded)
+        onDismiss()
+    }
+
+    AppActionBottomSheet(
+        show = show,
+        title = "首页设置",
+        startAction = { AppBottomSheetCloseAction(onClick = onDismiss) },
+        endAction = { AppBottomSheetConfirmAction(onClick = saveSettings) },
+        onDismissRequest = onDismiss,
+        enableNestedScroll = true,
+    ) {
+        LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space16)) {
+            item {
+                TextField(
+                    value = draftQuote,
+                    onValueChange = { draftQuote = it },
+                    label = "一言",
+                    useLabelAsPlaceholder = true,
+                    maxLines = 2,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12),
+                )
+            }
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12),
+                    colors =
+                        CardDefaults.defaultColors(
+                            color = MiuixTheme.colorScheme.secondaryContainer
+                        ),
+                ) {
+                    Column {
+                        PreferenceSwitchItem(
+                            title = "回退经典首页",
+                            checked = draftClassicHomeEnabled,
+                            onCheckedChange = { draftClassicHomeEnabled = it },
+                        )
+                        PreferenceSwitchItem(
+                            title = "展开侧边栏",
+                            checked = draftSidebarExpanded,
+                            onCheckedChange = { draftSidebarExpanded = it },
+                        )
+                        PreferenceValueItem(
+                            title = "更换壁纸",
+                            onClick = onChangeWallpaper,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun MoeLaunchControls(
+    controlState: HomeProxyControlState,
+    enabled: Boolean,
+    isRemoteController: Boolean,
+    surfaceColor: Color,
+    modifier: Modifier = Modifier,
+    onSettingsClick: () -> Unit,
+    onLaunchClick: () -> Unit,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MoeUi.Button.controlGap),
+    ) {
+        MoeLaunchConfigButton(surfaceColor = surfaceColor, onClick = onSettingsClick)
+        MoeLaunchButton(
+            controlState = controlState,
+            enabled = enabled,
+            isRemoteController = isRemoteController,
+            surfaceColor = surfaceColor,
+            modifier = Modifier.weight(1f),
+            onClick = onLaunchClick,
+        )
+    }
+}
+
+@Composable
+private fun MoeLaunchConfigButton(surfaceColor: Color, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressScale by
+        animateFloatAsState(
+            targetValue = if (isPressed) MoeUi.Button.pressedScale else 1f,
+            animationSpec = spring(dampingRatio = 0.42f, stiffness = 520f),
+            label = "moe_launch_config_button_press_scale",
+        )
+    val contentColor = MiuixTheme.colorScheme.onBackground.copy(alpha = 0.62f)
+
+    Box(
+        modifier =
+            Modifier.graphicsLayer {
+                    scaleX = pressScale
+                    scaleY = pressScale
+                }
+                .size(MoeUi.Button.circleSize)
+                .shadow(
+                    elevation = MoeUi.Button.shadowElevation,
+                    shape = MoeUi.Shape.launchButton,
+                    clip = false,
+                    ambientColor = Color.Black.copy(alpha = 0.04f),
+                    spotColor = Color.Black.copy(alpha = 0.08f),
+                )
+                .clip(MoeUi.Shape.launchButton)
+                .background(surfaceColor, MoeUi.Shape.launchButton)
+                .border(
+                    width = MoeUi.Button.borderWidth,
+                    color = MiuixTheme.colorScheme.onBackground.copy(alpha = 0.08f),
+                    shape = MoeUi.Shape.launchButton,
+                )
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Yume.Repeat,
+            contentDescription = null,
+            tint = contentColor,
+            modifier = Modifier.size(MoeUi.Button.iconSize),
         )
     }
 }
@@ -217,40 +418,67 @@ internal fun MoeLaunchButton(
     controlState: HomeProxyControlState,
     enabled: Boolean,
     isRemoteController: Boolean,
+    surfaceColor: Color,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    val spacing = AppTheme.spacing
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val isRunning = controlState == HomeProxyControlState.Running
-    val background =
-        if (isRunning) {
-            MiuixTheme.colorScheme.primary
-        } else {
-            MiuixTheme.colorScheme.onBackground
-        }
     val contentColor =
-        if (isRunning) {
-            MiuixTheme.colorScheme.onPrimary
-        } else {
-            MiuixTheme.colorScheme.background
-        }
+        MiuixTheme.colorScheme.onBackground.copy(alpha = if (enabled) 0.72f else 0.34f)
     val pressScale by
         animateFloatAsState(
             targetValue = if (isPressed && enabled) MoeUi.Button.pressedScale else 1f,
             animationSpec = spring(dampingRatio = 0.42f, stiffness = 520f),
             label = "moe_launch_button_press_scale",
         )
+    val targetLabel =
+        when {
+            isRemoteController && isRunning -> "运行中"
+            !enabled && controlState == HomeProxyControlState.Idle -> MLang.Home.Traffic.NoProfile
+            else ->
+                when (controlState) {
+                    HomeProxyControlState.Idle -> MLang.Home.Control.Start
+                    HomeProxyControlState.Connecting -> MLang.Home.Status.Connecting
+                    HomeProxyControlState.Running ->
+                        if (isRemoteController) "运行中" else MLang.Home.Control.Stop
+                    HomeProxyControlState.Lost -> "失联"
+                    HomeProxyControlState.Disconnecting -> MLang.Home.Status.Disconnecting
+                }
+        }
+    var displayedLabel by remember { mutableStateOf(targetLabel) }
+
+    LaunchedEffect(targetLabel, controlState) {
+        if (targetLabel == displayedLabel) return@LaunchedEffect
+        if (controlState.isMoeLaunchTransientState()) {
+            delay(MoeLaunchTextTransientDelay)
+        }
+        displayedLabel = targetLabel
+    }
 
     Box(
         modifier =
-            Modifier.graphicsLayer {
+            modifier.graphicsLayer {
                     scaleX = pressScale
                     scaleY = pressScale
                 }
-                .width(MoeUi.Button.fixedWidth)
+                .fillMaxWidth()
+                .shadow(
+                    elevation = MoeUi.Button.shadowElevation,
+                    shape = MoeUi.Shape.launchButton,
+                    clip = false,
+                    ambientColor = Color.Black.copy(alpha = 0.04f),
+                    spotColor = Color.Black.copy(alpha = 0.08f),
+                )
+                .height(MoeUi.Button.height)
                 .clip(MoeUi.Shape.launchButton)
-                .background(background, MoeUi.Shape.launchButton)
+                .background(surfaceColor, MoeUi.Shape.launchButton)
+                .border(
+                    width = MoeUi.Button.borderWidth,
+                    color = MiuixTheme.colorScheme.onBackground.copy(alpha = 0.08f),
+                    shape = MoeUi.Shape.launchButton,
+                )
                 .clickable(
                     enabled = enabled,
                     interactionSource = interactionSource,
@@ -262,83 +490,56 @@ internal fun MoeLaunchButton(
                     vertical = MoeUi.Button.verticalPadding,
                 )
     ) {
-        Row(
+        AnimatedContent(
             modifier = Modifier.align(Alignment.Center),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.space10),
-        ) {
-            Icon(
-                imageVector =
-                    when (controlState) {
-                        HomeProxyControlState.Idle -> ShellIcons.StartProxy
-                        HomeProxyControlState.Running -> ShellIcons.StopProxy
-                        HomeProxyControlState.Connecting,
-                        HomeProxyControlState.Lost,
-                        HomeProxyControlState.Disconnecting -> Yume.Waiting
-                    },
-                contentDescription = null,
-                tint = contentColor,
-                modifier = Modifier.size(spacing.space18),
-            )
-            Box(modifier = Modifier.height(22.dp), contentAlignment = Alignment.CenterStart) {
-                AnimatedContent(
-                    targetState = controlState,
-                    transitionSpec = {
-                        (slideInVertically(
-                                initialOffsetY = { it / 2 },
+            targetState = displayedLabel,
+            transitionSpec = {
+                (slideInVertically(
+                        initialOffsetY = { it / 3 },
+                        animationSpec =
+                            tween(
+                                durationMillis = MoeLaunchTextEnterDuration,
+                                easing = AnimationSpecs.EmphasizedDecelerate,
+                            ),
+                    ) +
+                        fadeIn(
+                            animationSpec =
+                                tween(
+                                    durationMillis = MoeLaunchTextEnterDuration,
+                                    easing = AnimationSpecs.EnterEasing,
+                                )
+                        ))
+                    .togetherWith(
+                        slideOutVertically(
+                            targetOffsetY = { -it / 3 },
+                            animationSpec =
+                                tween(
+                                    durationMillis = MoeLaunchTextExitDuration,
+                                    easing = AnimationSpecs.EmphasizedAccelerate,
+                                ),
+                        ) +
+                            fadeOut(
                                 animationSpec =
                                     tween(
-                                        durationMillis = AnimationSpecs.DURATION_FAST,
-                                        easing = AnimationSpecs.EmphasizedDecelerate,
-                                    ),
-                            ) +
-                                fadeIn(
-                                    animationSpec =
-                                        tween(
-                                            durationMillis = AnimationSpecs.DURATION_FAST,
-                                            easing = AnimationSpecs.EnterEasing,
-                                        )
-                                ))
-                            .togetherWith(
-                                slideOutVertically(
-                                    targetOffsetY = { -it / 2 },
-                                    animationSpec =
-                                        tween(
-                                            durationMillis = AnimationSpecs.DURATION_INSTANT,
-                                            easing = AnimationSpecs.EmphasizedAccelerate,
-                                        ),
-                                ) +
-                                    fadeOut(
-                                        animationSpec =
-                                            tween(
-                                                durationMillis = AnimationSpecs.DURATION_INSTANT,
-                                                easing = AnimationSpecs.ExitEasing,
-                                            )
+                                        durationMillis = MoeLaunchTextExitDuration,
+                                        easing = AnimationSpecs.ExitEasing,
                                     )
                             )
-                            .using(SizeTransform(clip = false))
-                    },
-                    label = "moe_launch_button_text",
-                ) { state ->
-                    Text(
-                        text =
-                            when (state) {
-                                HomeProxyControlState.Idle -> MLang.Home.Control.Start
-                                HomeProxyControlState.Connecting -> MLang.Home.Status.Connecting
-                                HomeProxyControlState.Running ->
-                                    if (isRemoteController) "运行中" else MLang.Home.Control.Stop
-                                HomeProxyControlState.Lost -> "失联"
-                                HomeProxyControlState.Disconnecting ->
-                                    MLang.Home.Status.Disconnecting
-                            },
-                        color = contentColor,
-                        style = MiuixTheme.textStyles.body1,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp,
-                        softWrap = false,
                     )
-                }
-            }
+                    .using(SizeTransform(clip = false))
+            },
+            label = "moe_launch_button_text",
+        ) { text ->
+            Text(
+                text = text,
+                color = contentColor,
+                style = MiuixTheme.textStyles.body1,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                softWrap = false,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
+            )
         }
     }
 }

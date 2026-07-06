@@ -139,14 +139,6 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
     val topBarBlurEnabled by viewModel.topBarBlurEnabled.state.collectAsState()
     val pageScale by viewModel.pageScale.state.collectAsState()
     val classicHomeEnabled by viewModel.classicHomeEnabled.state.collectAsState()
-    val homeQuote by viewModel.moeHomeQuote.state.collectAsState()
-    val homeQuoteAuthor by viewModel.moeHomeQuoteAuthor.state.collectAsState()
-    val homeQuoteSummary =
-        remember(homeQuote) { homeQuote.ifBlank { MLang.AppSettings.Interface.HomeQuoteDefault } }
-    val homeQuoteAuthorSummary =
-        remember(homeQuoteAuthor) {
-            homeQuoteAuthor.ifBlank { MLang.AppSettings.Interface.HomeQuoteAuthorDefault }
-        }
 
     Title(MLang.AppSettings.Interface.ColorThemeTitle)
     Card {
@@ -204,20 +196,6 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
             title = MLang.AppSettings.Interface.ClassicHomeTitle,
             checked = classicHomeEnabled,
             onCheckedChange = viewModel::onClassicHomeEnabledChange,
-        )
-        MoeQuotePreferenceItem(
-            title = MLang.AppSettings.Interface.HomeQuoteTitle,
-            summary = homeQuoteSummary,
-            dialogTitle = MLang.AppSettings.Interface.EditHomeQuoteTitle,
-            currentValue = homeQuote,
-            onConfirm = viewModel::onMoeHomeQuoteChange,
-        )
-        MoeQuotePreferenceItem(
-            title = MLang.AppSettings.Interface.HomeQuoteAuthorTitle,
-            summary = homeQuoteAuthorSummary,
-            dialogTitle = MLang.AppSettings.Interface.EditHomeQuoteAuthorTitle,
-            currentValue = homeQuoteAuthor,
-            onConfirm = viewModel::onMoeHomeQuoteAuthorChange,
         )
     }
 }
@@ -363,60 +341,6 @@ private fun HideAppIconPreferenceItem(
             onHideAppIconChange(true)
             AppIconHelper.toggleIcon(context, true)
         },
-    )
-}
-
-@Composable
-private fun MoeQuotePreferenceItem(
-    title: String,
-    summary: String,
-    dialogTitle: String,
-    currentValue: String,
-    onConfirm: (String) -> Unit,
-) {
-    val showEditDialog = remember { mutableStateOf(false) }
-    val focusManager = LocalFocusManager.current
-    var localTextFieldValue by remember {
-        mutableStateOf(
-            TextFieldValue(text = currentValue, selection = TextRange(currentValue.length))
-        )
-    }
-
-    PreferenceValueItem(
-        title = title,
-        summary = summary,
-        onClick = {
-            localTextFieldValue =
-                TextFieldValue(text = currentValue, selection = TextRange(currentValue.length))
-            showEditDialog.value = true
-        },
-    )
-
-    AppTextFieldDialog(
-        show = showEditDialog.value,
-        title = dialogTitle,
-        textFieldValue = localTextFieldValue,
-        onTextFieldValueChange = { updatedTextFieldValue ->
-            localTextFieldValue = updatedTextFieldValue
-        },
-        onDismissRequest = {
-            showEditDialog.value = false
-            focusManager.clearFocus()
-        },
-        onConfirm = {
-            onConfirm(localTextFieldValue.text)
-            focusManager.clearFocus()
-            showEditDialog.value = false
-        },
-        singleLine = true,
-        keyboardActions =
-            KeyboardActions(
-                onDone = {
-                    onConfirm(localTextFieldValue.text)
-                    focusManager.clearFocus()
-                    showEditDialog.value = false
-                }
-            ),
     )
 }
 

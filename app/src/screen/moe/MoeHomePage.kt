@@ -20,10 +20,13 @@
 
 package com.github.yumelira.yumebox.screen.moe
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.BatteryManager
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -62,9 +65,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
@@ -143,11 +148,13 @@ fun MoeHomePage(
     val runtimeSnapshot by homeViewModel.runtimeSnapshot.collectAsState()
     val isRemoteController by homeViewModel.isRemoteController.collectAsState()
     val themeMode by appSettingsViewModel.themeMode.state.collectAsState()
+    val classicHomeEnabled by appSettingsViewModel.classicHomeEnabled.state.collectAsState()
     val moeHomeQuote by appSettingsViewModel.moeHomeQuote.state.collectAsState()
-    val moeHomeQuoteAuthor by appSettingsViewModel.moeHomeQuoteAuthor.state.collectAsState()
     val sidebarExpanded by appSettingsViewModel.moeSidebarExpanded.state.collectAsState()
 
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val batteryPercent = rememberMoeBatteryPercent(context)
+    var showHomeSettingsSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { homeViewModel.refreshProxyMode() }
 
@@ -218,12 +225,7 @@ fun MoeHomePage(
             MoeSidebarIconItem(ShellIcons.OpenSettings) { handlePageChange(3) },
         )
     }
-    val quote =
-        MoeQuote(
-            text = moeHomeQuote.ifBlank { MLang.AppSettings.Interface.HomeQuoteDefault },
-            author =
-                moeHomeQuoteAuthor.ifBlank { MLang.AppSettings.Interface.HomeQuoteAuthorDefault },
-        )
+    val quoteText = moeHomeQuote.ifBlank { MLang.AppSettings.Interface.HomeQuoteDefault }
     val animatedSidebarToggleProgress by
         animateFloatAsState(
             targetValue = if (sidebarExpanded) 1f else 0f,
@@ -285,7 +287,8 @@ fun MoeHomePage(
         val sidebarWidth = maxWidth * MoeUi.Sidebar.fraction
         val contentStart = (sidebarWidth - MoeUi.Sidebar.contentOverlap).coerceAtLeast(UiDp.dp0)
         val collapsedVisibleWidth = MoeUi.Sidebar.collapsedVisibleWidth
-        val heroHeight = maxHeight * 0.66f
+        val heroHeight =
+            (maxHeight - statusBarTop).coerceAtLeast(UiDp.dp0) * MoeUi.Hero.heightFraction
         val clampedPageProgress = pageProgress.coerceIn(0f, 1f)
         val clampedSidebarProgress = sidebarProgress.coerceIn(0f, 1f)
         val effectiveSidebarProgress = clampedSidebarProgress * animatedSidebarToggleProgress
@@ -336,6 +339,7 @@ fun MoeHomePage(
                 MoeSidebarContent(
                     topValue = durationPair.top,
                     bottomValue = durationPair.bottom,
+                    batteryPercent = batteryPercent,
                     icons = sidebarIcons,
                     visibleWidth = sidebarVisibleWidth,
                 )
@@ -365,7 +369,7 @@ fun MoeHomePage(
                             end = MoeUi.Hero.containerHorizontalInset,
                             top = statusBarTop,
                         )
-                        .fillMaxHeight(0.66f)
+                        .fillMaxHeight(MoeUi.Hero.heightFraction)
                         .pointerInput(Unit) {
                             detectTapGestures(
                                 onDoubleTap = {
@@ -459,36 +463,63 @@ fun MoeHomePage(
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.spacedBy(MoeUi.Hero.belowHeroContentGap),
             ) {
-                MoeQuoteText(
-                    quote = quote,
+                MoeHomeCopyBlock(
+                    nowMillis = now,
+                    quoteText = quoteText,
                     color = MiuixTheme.colorScheme.onBackground,
                     modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            Column(
-                modifier =
-                    Modifier.align(Alignment.BottomEnd)
-                        .padding(
-                            end = UiDp.dp12,
-                            bottom =
-                                mainInnerPadding.calculateBottomPadding() +
-                                    MoeUi.Button.bottomInset,
+                    launchContent = {
+                        MoeLaunchControls(
+                            controlState = visualControlState,
+                            enabled =
+                                profilesLoaded &&
+                                    profiles.isNotEmpty() &&
+                                    visualControlState.canInteract &&
+                                    !isRemoteController,
+                            isRemoteController = isRemoteController,
+                            surfaceColor = contentSurface,
+                            modifier = Modifier.fillMaxWidth(),
+                            onSettingsClick = { showHomeSettingsSheet = true },
+                            onLaunchClick = handleProxyAction,
                         )
-            ) {
-                MoeLaunchButton(
-                    controlState = visualControlState,
-                    enabled =
-                        profilesLoaded &&
-                            profiles.isNotEmpty() &&
-                            visualControlState.canInteract &&
-                            !isRemoteController,
-                    isRemoteController = isRemoteController,
-                    onClick = handleProxyAction,
+                    },
                 )
             }
         }
     }
+
+    MoeHomeSettingsSheet(
+        show = showHomeSettingsSheet,
+        quote = moeHomeQuote,
+        classicHomeEnabled = classicHomeEnabled,
+        sidebarExpanded = sidebarExpanded,
+        onQuoteChange = appSettingsViewModel::onMoeHomeQuoteChange,
+        onClassicHomeEnabledChange = appSettingsViewModel::onClassicHomeEnabledChange,
+        onSidebarExpandedChange = appSettingsViewModel::onMoeSidebarExpandedChange,
+        onChangeWallpaper = {
+            showHomeSettingsSheet = false
+            launchWallpaperPicker()
+        },
+        onDismiss = { showHomeSettingsSheet = false },
+    )
+}
+
+@Composable
+private fun rememberMoeBatteryPercent(context: Context): Int? {
+    val percent by
+        produceState<Int?>(initialValue = null, context) {
+            val batteryIntent =
+                context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+            val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+            value =
+                if (level >= 0 && scale > 0) {
+                    ((level / scale.toFloat()) * 100).toInt().coerceIn(0, 100)
+                } else {
+                    null
+                }
+        }
+    return percent
 }
 
 @Composable
@@ -498,7 +529,7 @@ private fun MoeWallpaperBackground(
     wallpaperBiasX: Float = 0f,
     wallpaperBiasY: Float = 0f,
     qualityMode: MoeWallpaperQualityMode = MoeWallpaperQualityMode.Foreground,
-    modifier: Modifier = Modifier,
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier,
 ) {
     val clampedZoom = wallpaperZoom.coerceIn(1f, 5f)
     val context = LocalContext.current

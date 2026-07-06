@@ -25,7 +25,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -36,17 +38,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.presentation.theme.Opacity
 import com.github.yumelira.yumebox.presentation.theme.Radii
 import com.github.yumelira.yumebox.presentation.theme.Sizes
 import com.github.yumelira.yumebox.presentation.theme.Spacing
+import com.github.yumelira.yumebox.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -74,44 +76,57 @@ internal object MoeUi {
         val timeTopGap = moeSpacing.space18
         val dividerWidth = moeSizes.settingsIconGlyphSize
         val dividerHeight = moeSpacing.space2
-        val iconSpacing = moeSpacing.space32 + moeSpacing.space6
-        val iconSize = moeSpacing.space28
-        val digitLetterSpacing = 1.6.sp
+        val statusTopGap = moeSpacing.space18
+        val statusGap = moeSpacing.space8
+        val batteryWidth = moeSpacing.space32 + moeSpacing.space4
+        val batteryHeight = moeSpacing.space16
+        val batteryKnobWidth = moeSpacing.space3
+        val iconSpacing = moeSpacing.space14
+        val iconHitSize = UiDp.dp44
+        val iconSize = UiDp.dp30
+        val digitLetterSpacing = 0.sp
         const val timeAlpha = 0.96f
         const val dividerAlpha = 0.62f
+        const val statusAlpha = 0.82f
         const val iconAlpha = 0.88f
         val collapsedVisibleWidth = moeSpacing.space8
     }
 
     object Hero {
+        const val heightFraction = 0.63f
         val containerHorizontalInset = moeSpacing.space12
         val contentHorizontalInset = moeSpacing.space12
         val trafficRowGap = moeSpacing.space28
         val trafficBottomInset = moeSpacing.space12
         val runtimeInfoTopGap = moeSpacing.space16
         val delayWidth = moeSizes.nodeDelayColumnWidth
-        val belowHeroTopGap = moeSpacing.space8
+        val belowHeroTopGap = moeSpacing.space14
         val belowHeroContentGap = moeSpacing.space12
+        val launchTopGap = moeSpacing.space24
         val infoPlaceholderAlpha = moeOpacity.surfaceSoft
         val infoRowMinHeight = moeSpacing.space24
         val infoPlaceholderNodeWidth = moeSizes.homeIdleTopPadding - moeSpacing.space8
     }
 
     object Button {
-        val bottomInset = moeSpacing.space28
-        val fixedWidth = moeSizes.homeIdleTopPadding + moeSpacing.space4
-        val horizontalPadding = moeSizes.settingsIconGlyphSize
-        val verticalPadding = moeSpacing.space14 + moeSpacing.space2 / 2
+        val bottomInset = moeSpacing.space16
+        val height = UiDp.dp46
+        val circleSize = UiDp.dp46
+        val controlGap = moeSpacing.space10
+        val horizontalPadding = moeSpacing.space20
+        val verticalPadding = moeSpacing.space8
+        val iconSize = UiDp.dp20
+        val shadowElevation = moeSpacing.space3
+        val borderWidth = UiDp.dp0_5
         const val pressedScale = 0.94f
     }
 
     object Quote {
         val contentGap = moeSpacing.space12
-        val authorTopGap = moeSpacing.space14
+        val eyebrowSize = 17.sp
         val textSize = 23.sp
         val lineHeight = 31.sp
-        val authorSize = 16.sp
-        val authorAlpha = moeOpacity.elevatedSurface
+        const val eyebrowAlpha = 0.56f
     }
 
     object Traffic {
@@ -125,27 +140,11 @@ internal object MoeUi {
     }
 }
 
-/**
- * 让水平排版的文本块整体旋转 90° 后仍正确参与布局：先在 [layout] 中交换测量框的宽高，再 [rotate]。
- * [clockwise] 为 true 时顺时针 +90°（顶→底读），false 时逆时针 -90°（底→顶读）。
- */
-internal fun Modifier.rotateVertical(clockwise: Boolean = true): Modifier =
-    this.layout { measurable, _ ->
-            // 短标签按自然尺寸测量，避免被窄轨宽度裁断/换行
-            val placeable = measurable.measure(Constraints())
-            layout(placeable.height, placeable.width) {
-                placeable.place(
-                    x = -(placeable.width / 2 - placeable.height / 2),
-                    y = -(placeable.height / 2 - placeable.width / 2),
-                )
-            }
-        }
-        .rotate(if (clockwise) 90f else -90f)
-
 @Composable
 internal fun MoeSidebarRail(
     topValue: String,
     bottomValue: String,
+    batteryPercent: Int?,
     icons: List<MoeSidebarIconItem>,
     modifier: Modifier = Modifier,
 ) {
@@ -156,6 +155,10 @@ internal fun MoeSidebarRail(
             topValue = topValue,
             bottomValue = bottomValue,
             modifier = Modifier.padding(top = MoeUi.Sidebar.timeTopGap),
+        )
+        MoeSidebarStatusStack(
+            batteryPercent = batteryPercent,
+            modifier = Modifier.padding(top = MoeUi.Sidebar.statusTopGap),
         )
 
         Spacer(modifier = Modifier.weight(1f))
@@ -194,18 +197,18 @@ private fun MoeSidebarIconRail(icons: List<MoeSidebarIconItem>) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(MoeUi.Sidebar.iconSpacing),
     ) {
-        icons.forEach { item -> MoeSidebarIconItemView(item = item) }
+        icons.forEachIndexed { index, item ->
+            if (index > 0) MoeSidebarDivider()
+            MoeSidebarIconItemView(item = item)
+        }
     }
 }
 
 @Composable
 private fun MoeSidebarIconItemView(item: MoeSidebarIconItem) {
-    Icon(
-        imageVector = item.icon,
-        contentDescription = null,
-        tint = Color.White.copy(alpha = MoeUi.Sidebar.iconAlpha),
+    Box(
         modifier =
-            Modifier.size(MoeUi.Sidebar.iconSize)
+            Modifier.size(MoeUi.Sidebar.iconHitSize)
                 .clickable(
                     interactionSource =
                         remember {
@@ -214,7 +217,15 @@ private fun MoeSidebarIconItemView(item: MoeSidebarIconItem) {
                     indication = null,
                     onClick = item.onClick,
                 ),
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = item.icon,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = MoeUi.Sidebar.iconAlpha),
+            modifier = Modifier.size(MoeUi.Sidebar.iconSize),
+        )
+    }
 }
 
 @Composable
@@ -225,7 +236,6 @@ private fun MoeSidebarTimeValue(value: String) {
     ) {
         Text(
             text = value,
-            modifier = Modifier.rotateVertical(),
             color = Color.White.copy(alpha = MoeUi.Sidebar.timeAlpha),
             style = MiuixTheme.textStyles.title1,
             fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
@@ -234,6 +244,66 @@ private fun MoeSidebarTimeValue(value: String) {
             softWrap = false,
         )
     }
+}
+
+@Composable
+private fun MoeSidebarStatusStack(batteryPercent: Int?, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MoeUi.Sidebar.statusGap),
+    ) {
+        MoeBatteryCapsule(percent = batteryPercent)
+        Text(
+            text = batteryPercent?.let { "$it%" } ?: "--%",
+            color = Color.White.copy(alpha = MoeUi.Sidebar.statusAlpha),
+            style = MiuixTheme.textStyles.footnote1,
+            fontSize = 12.sp,
+            softWrap = false,
+        )
+    }
+}
+
+@Composable
+private fun MoeBatteryCapsule(percent: Int?) {
+    val clampedPercent = percent?.coerceIn(0, 100) ?: 66
+    val fillFraction = (clampedPercent / 100f).coerceIn(0.12f, 1f)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier =
+                Modifier.width(MoeUi.Sidebar.batteryWidth)
+                    .height(MoeUi.Sidebar.batteryHeight)
+                    .clip(RoundedCornerShape(moeRadii.full))
+                    .background(Color.White.copy(alpha = 0.36f))
+                    .padding(2.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Box(
+                modifier =
+                    Modifier.fillMaxWidth(fillFraction)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(moeRadii.full))
+                        .background(Color.White.copy(alpha = 0.86f))
+            )
+        }
+        Box(
+            modifier =
+                Modifier.width(MoeUi.Sidebar.batteryKnobWidth)
+                    .height(MoeUi.Sidebar.batteryHeight * 0.46f)
+                    .clip(RoundedCornerShape(moeRadii.full))
+                    .background(Color.White.copy(alpha = 0.54f))
+        )
+    }
+}
+
+@Composable
+private fun MoeSidebarDivider() {
+    Box(
+        modifier =
+            Modifier.width(MoeUi.Sidebar.dividerWidth)
+                .height(MoeUi.Sidebar.dividerHeight)
+                .background(Color.White.copy(alpha = MoeUi.Sidebar.dividerAlpha))
+    )
 }
 
 internal enum class MoeWallpaperQualityMode {
@@ -254,11 +324,6 @@ internal fun calculateHomeVisibility(currentPage: Int, currentPageOffsetFraction
 internal data class MoeSidebarIconItem(
     val icon: ImageVector,
     val onClick: () -> Unit,
-)
-
-internal data class MoeQuote(
-    val text: String,
-    val author: String,
 )
 
 internal data class MoeDurationPair(

@@ -170,6 +170,18 @@ android {
             excludes += listOf("lib/**/libjavet*.so")
             useLegacyPackaging = true
         }
+        resources {
+            excludes.add("META-INF/**")
+            excludes.add("okhttp3/**")
+            excludes.add("schema/**")
+            excludes.add("assets/dexopt/**")
+            excludes.add("DebugProbesKt.bin")
+            excludes.add("kotlin-tooling-metadata.json")
+            excludes.add("**/*.kotlin_builtins")
+            excludes.add("**/*.kotlin_module")
+            excludes.add("**/*.properties")
+            excludes.add("**/*.txt")
+        }
     }
 
     signingConfigs {
