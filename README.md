@@ -1,0 +1,2 @@
+# FlyCat
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/6bdad89c679c4c85a5714b63bb7decb7)](https://app.codacy.com/gh/LM-Firefly/FlyCat?utm_source=github.com&utm_medium=referral&utm_content=LM-Firefly/FlyCat&utm_campaign=Badge_Grade)
