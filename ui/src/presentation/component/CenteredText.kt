@@ -40,7 +40,7 @@ fun CenteredText(
     firstLine: String,
     secondLine: String,
     modifier: Modifier = Modifier,
-    showEmptyResourceIllustration: Boolean = false,
+    showEmptyResourceIllustration: Boolean = true,
 ) {
     val spacing = AppTheme.spacing
     val opacity = AppTheme.opacity

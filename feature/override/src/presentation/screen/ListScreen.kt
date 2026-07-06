@@ -50,6 +50,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -94,6 +95,7 @@ import com.github.yumelira.yumebox.presentation.theme.Spacing
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
 import dev.oom_wg.purejoy.mlang.MLang
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableCollectionItemScope
 import sh.calvin.reorderable.ReorderableItem
@@ -250,6 +252,14 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
                                         color = colorScheme.background,
                                     )
                                 }
+                                Button(
+                                    onClick = {
+                                        createDialogMode = OverrideConfigInputMode.NetworkUrl
+                                        showCreateDialog.value = true
+                                    },
+                                ) {
+                                    Text(MLang.Override.Action.NetworkImport)
+                                }
                             }
                         }
                     }
@@ -301,6 +311,7 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
                         context.toast(error.message ?: MLang.Override.Import.ReadError)
                     }
             },
+            onConfirmNetworkImport = viewModel::importConfigFromUrl,
             onDismiss = { showCreateDialog.value = false },
         )
 
@@ -475,22 +486,27 @@ private fun CreateConfigDialog(
     initialMode: OverrideConfigInputMode,
     onConfirmCreate: (String, OverrideContentType) -> Unit,
     onConfirmImport: (String, String) -> Unit,
+    onConfirmNetworkImport: suspend (String) -> Result<OverrideConfig>,
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val scope = rememberCoroutineScope()
     var inputMode by remember(show.value, initialMode) { mutableStateOf(initialMode) }
     val nameTextFieldValueState = remember(show.value) { mutableStateOf(TextFieldValue()) }
     var contentType by remember(show.value) { mutableStateOf(OverrideContentType.Yaml) }
     var selectedImportUri by remember(show.value) { mutableStateOf<Uri?>(null) }
     var selectedImportFileName by remember(show.value) { mutableStateOf("") }
+    var networkImportUrl by remember(show.value) { mutableStateOf("") }
+    var isNetworkImporting by remember(show.value) { mutableStateOf(false) }
     var stableContentHeightPx by remember(show.value) { mutableStateOf(0) }
     val canConfirm =
         when (inputMode) {
             OverrideConfigInputMode.CreateNew -> nameTextFieldValueState.value.text.isNotBlank()
             OverrideConfigInputMode.LocalFile ->
                 selectedImportUri != null && selectedImportFileName.isNotBlank()
+            OverrideConfigInputMode.NetworkUrl -> networkImportUrl.isNotBlank() && !isNetworkImporting
         }
     val stableContentHeight =
         remember(stableContentHeightPx, density) {
@@ -539,7 +555,7 @@ private fun CreateConfigDialog(
         startAction = { AppBottomSheetCloseAction(onClick = onDismiss) },
         endAction = {
             AppBottomSheetConfirmAction(
-                enabled = canConfirm,
+                enabled = canConfirm && !isNetworkImporting,
                 contentDescription = MLang.Override.Action.Create,
                 onClick = {
                     if (!canConfirm) return@AppBottomSheetConfirmAction
@@ -566,6 +582,23 @@ private fun CreateConfigDialog(
                                         MLang.Override.Import.FileError.format(error.message)
                                     )
                                 }
+                        }
+
+                        OverrideConfigInputMode.NetworkUrl -> {
+                            val url = networkImportUrl.trim()
+                            scope.launch {
+                                isNetworkImporting = true
+                                onConfirmNetworkImport(url)
+                                    .onSuccess { show.value = false }
+                                    .onFailure { error ->
+                                        context.toast(
+                                            MLang.Override.Import.NetworkError.format(
+                                                error.message ?: MLang.Util.Error.UnknownError
+                                            )
+                                        )
+                                    }
+                                isNetworkImporting = false
+                            }
                         }
                     }
                 },
@@ -623,6 +656,19 @@ private fun CreateConfigDialog(
                                     },
                                 fileName = selectedImportFileName,
                                 onPickFile = { importConfigLauncher.launch("*/*") },
+                            )
+                        }
+
+                        OverrideConfigInputMode.NetworkUrl -> {
+                            ImportOverrideNetworkContent(
+                                modifier =
+                                    Modifier.fillMaxWidth().onSizeChanged {
+                                        stableContentHeightPx =
+                                            maxOf(stableContentHeightPx, it.height)
+                                    },
+                                url = networkImportUrl,
+                                enabled = !isNetworkImporting,
+                                onUrlChange = { networkImportUrl = it },
                             )
                         }
                     }
@@ -699,6 +745,24 @@ private fun ImportOverrideFileContent(
 }
 
 @Composable
+private fun ImportOverrideNetworkContent(
+    modifier: Modifier = Modifier,
+    url: String,
+    enabled: Boolean,
+    onUrlChange: (String) -> Unit,
+) {
+    TextField(
+        value = url,
+        onValueChange = onUrlChange,
+        label = MLang.Override.Dialog.Create.Url,
+        useLabelAsPlaceholder = true,
+        singleLine = true,
+        enabled = enabled,
+        modifier = modifier,
+    )
+}
+
+@Composable
 private fun DeleteConfirmDialog(
     show: MutableState<Boolean>,
     config: OverrideConfig?,
@@ -748,6 +812,7 @@ private data class OverrideConfigListItem(
 private enum class OverrideConfigInputMode {
     CreateNew,
     LocalFile,
+    NetworkUrl,
 }
 
 private val OverrideContentType.label: String
@@ -762,4 +827,5 @@ private val OverrideConfigInputMode.label: String
         when (this) {
             OverrideConfigInputMode.CreateNew -> MLang.Override.Action.New
             OverrideConfigInputMode.LocalFile -> MLang.ProfilesPage.Type.LocalFile
+            OverrideConfigInputMode.NetworkUrl -> MLang.Override.Action.NetworkImport
         }

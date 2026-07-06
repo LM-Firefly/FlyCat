@@ -5,6 +5,7 @@ Override = {
     Action = {
         Create = "Create Config"
         New = "New Config"
+        NetworkImport = "Import from URL"
     }
 
     Empty = {
@@ -30,6 +31,9 @@ Override = {
         ReadError = "Cannot read import file"
         Failed = "Import failed: %s"
         FileError = "Failed to read file: %s"
+        NetworkError = "Network import failed: %s"
+        InvalidUrl = "Enter an HTTP or HTTPS URL"
+        HttpError = "HTTP request failed: %d"
     }
 
     Export = {
@@ -41,6 +45,7 @@ Override = {
         Create = {
             Title = "Add Config"
             Name = "Config Name"
+            Url = "Config URL"
         }
         Delete = {
             Title = "Delete Config"

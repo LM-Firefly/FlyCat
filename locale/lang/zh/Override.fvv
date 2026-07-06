@@ -5,6 +5,7 @@ Override = {
     Action = {
         Create = "创建配置"
         New = "新建配置"
+        NetworkImport = "网络导入"
     }
 
     Empty = {
@@ -30,6 +31,9 @@ Override = {
         ReadError = "无法读取导入文件"
         Failed = "导入失败: %s"
         FileError = "读取文件失败: %s"
+        NetworkError = "网络导入失败: %s"
+        InvalidUrl = "请输入 HTTP 或 HTTPS 链接"
+        HttpError = "HTTP 请求失败：%d"
     }
 
     Export = {
@@ -41,6 +45,7 @@ Override = {
         Create = {
             Title = "添加配置"
             Name = "配置名称"
+            Url = "配置链接"
         }
         Delete = {
             Title = "删除配置"

@@ -30,12 +30,18 @@ import com.github.yumelira.yumebox.data.model.OverrideMetadata
 import com.github.yumelira.yumebox.data.store.OverrideConfigStore
 import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
 import dev.oom_wg.purejoy.mlang.MLang
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLDecoder
+import java.util.Locale
 
 class OverrideConfigViewModel(
     private val configRepo: OverrideConfigStore,
@@ -45,6 +51,8 @@ class OverrideConfigViewModel(
 ) : ViewModel() {
     companion object {
         private const val TAG = "OverrideConfigViewModel"
+        private const val NETWORK_IMPORT_CONNECT_TIMEOUT_MS = 15_000
+        private const val NETWORK_IMPORT_READ_TIMEOUT_MS = 30_000
     }
 
     private val _configs = MutableStateFlow<List<OverrideConfig>>(emptyList())
@@ -171,8 +179,20 @@ class OverrideConfigViewModel(
     }
 
     fun importConfig(content: String, sourceName: String?): Result<OverrideConfig> {
+        return importConfig(
+            content = content,
+            sourceName = sourceName,
+            fallbackContentType = null,
+        )
+    }
+
+    private fun importConfig(
+        content: String,
+        sourceName: String?,
+        fallbackContentType: OverrideContentType?,
+    ): Result<OverrideConfig> {
         val contentType =
-            OverrideContentType.fromFileName(sourceName)
+            OverrideContentType.fromFileName(sourceName) ?: fallbackContentType
                 ?: return Result.failure(
                     IllegalArgumentException(MLang.Override.Import.Failed.format("仅支持 YAML 或 JS"))
                 )
@@ -206,6 +226,57 @@ class OverrideConfigViewModel(
         return Result.success(config)
     }
 
+    suspend fun importConfigFromUrl(rawUrl: String): Result<OverrideConfig> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                    val url = URL(rawUrl.trim())
+                    require(url.protocol.equals("http", ignoreCase = true) ||
+                        url.protocol.equals("https", ignoreCase = true)) {
+                        MLang.Override.Import.InvalidUrl
+                    }
+
+                    val connection = (url.openConnection() as HttpURLConnection).apply {
+                        connectTimeout = NETWORK_IMPORT_CONNECT_TIMEOUT_MS
+                        readTimeout = NETWORK_IMPORT_READ_TIMEOUT_MS
+                        instanceFollowRedirects = true
+                        requestMethod = "GET"
+                    }
+
+                    try {
+                        val responseCode = connection.responseCode
+                        require(responseCode in 200..299) {
+                            MLang.Override.Import.HttpError.format(responseCode)
+                        }
+
+                        val contentTypeHeader = connection.contentType.orEmpty()
+                        val sourceName =
+                            resolveNetworkImportSourceName(
+                                url = url,
+                                contentDisposition = connection.getHeaderField("Content-Disposition"),
+                                contentType = contentTypeHeader,
+                            )
+                        val content = connection.inputStream.bufferedReader().use { it.readText() }
+                        val inferredContentType =
+                            OverrideContentType.fromFileName(sourceName)
+                                ?: inferContentTypeFromHeader(contentTypeHeader)
+                                ?: inferContentTypeFromContent(content)
+                        val normalizedSourceName =
+                            ensureSourceNameExtension(sourceName, inferredContentType)
+                        importConfig(
+                            content = content,
+                            sourceName = normalizedSourceName,
+                            fallbackContentType = inferredContentType,
+                        ).getOrThrow()
+                    } finally {
+                        connection.disconnect()
+                    }
+                }
+                .fold(
+                    onSuccess = { Result.success(it) },
+                    onFailure = { Result.failure(it) },
+                )
+        }
+
     suspend fun isConfigInUse(id: String): Boolean = resolver.isOverrideInUse(id)
 
     fun consumePendingRevealConfig(configId: String) {
@@ -222,6 +293,75 @@ class OverrideConfigViewModel(
         _usageCountMap.value = countMap
     }
 }
+
+private fun resolveNetworkImportSourceName(
+    url: URL,
+    contentDisposition: String?,
+    contentType: String,
+): String {
+    parseFilenameFromContentDisposition(contentDisposition)?.let { return it }
+
+    val pathName =
+        url.path
+            .substringAfterLast('/')
+            .takeIf(String::isNotBlank)
+            ?.let { URLDecoder.decode(it, Charsets.UTF_8.name()) }
+            ?.trim()
+            .orEmpty()
+
+    if (pathName.isNotBlank()) return pathName
+
+    val extension =
+        inferContentTypeFromHeader(contentType)?.extension ?: OverrideContentType.Yaml.extension
+    return "${url.host.ifBlank { MLang.Override.Save.ImportDefaultName }}.$extension"
+}
+
+private fun parseFilenameFromContentDisposition(contentDisposition: String?): String? {
+    val value = contentDisposition?.takeIf(String::isNotBlank) ?: return null
+    val encodedMatch =
+        Regex("""filename\*=([^']*)'[^']*'([^;]+)""", RegexOption.IGNORE_CASE).find(value)
+    if (encodedMatch != null) {
+        val charset = encodedMatch.groupValues[1].ifBlank { Charsets.UTF_8.name() }
+        val encodedName = encodedMatch.groupValues[2].trim().trim('"', '\'')
+        return runCatching { URLDecoder.decode(encodedName, charset).trim() }
+            .getOrNull()
+            ?.takeIf(String::isNotBlank)
+    }
+
+    return Regex("""filename=([^;]+)""", RegexOption.IGNORE_CASE)
+        .find(value)
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.trim()
+        ?.trim('"', '\'')
+        ?.takeIf(String::isNotBlank)
+}
+
+private fun inferContentTypeFromHeader(contentType: String): OverrideContentType? {
+    val normalized = contentType.lowercase(Locale.ROOT)
+    return when {
+        "javascript" in normalized || "ecmascript" in normalized -> OverrideContentType.JavaScript
+        "yaml" in normalized || "yml" in normalized -> OverrideContentType.Yaml
+        else -> null
+    }
+}
+
+private fun inferContentTypeFromContent(content: String): OverrideContentType =
+    if (content.trimStart().startsWith("function") || "module.exports" in content) {
+        OverrideContentType.JavaScript
+    } else {
+        OverrideContentType.Yaml
+    }
+
+private fun ensureSourceNameExtension(
+    sourceName: String,
+    contentType: OverrideContentType,
+): String =
+    if (OverrideContentType.fromFileName(sourceName) != null) {
+        sourceName
+    } else {
+        "$sourceName.${contentType.extension}"
+    }
 
 internal fun normalizeImportedConfigSourceName(sourceName: String?): String? {
     var normalizedName =
