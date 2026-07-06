@@ -59,7 +59,6 @@ import com.github.yumelira.yumebox.presentation.component.PreferenceEnumItem
 import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
 import com.github.yumelira.yumebox.presentation.component.PreferenceValueItem
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.TextEditBottomSheet
 import com.github.yumelira.yumebox.presentation.component.Title
 import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.WarningBottomSheet
@@ -121,7 +120,8 @@ private fun AppBehaviorSettingsSection(viewModel: AppSettingsViewModel) {
         )
         if (isChineseLocale) {
             PreferenceSwitchItem(
-                title = MLang.AppSettings.Behavior.OneChinaTitle,                checked = true,
+                title = MLang.AppSettings.Behavior.OneChinaTitle,
+                checked = true,
                 onCheckedChange = {},
                 enabled = false,
             )
@@ -374,23 +374,49 @@ private fun MoeQuotePreferenceItem(
     currentValue: String,
     onConfirm: (String) -> Unit,
 ) {
-    val showEditDialogState = remember { mutableStateOf(false) }
-    val textFieldState = remember { mutableStateOf(TextFieldValue()) }
+    val showEditDialog = remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    var localTextFieldValue by remember {
+        mutableStateOf(
+            TextFieldValue(text = currentValue, selection = TextRange(currentValue.length))
+        )
+    }
 
     PreferenceValueItem(
         title = title,
         summary = summary,
         onClick = {
-            textFieldState.value = TextFieldValue(currentValue)
-            showEditDialogState.value = true
+            localTextFieldValue =
+                TextFieldValue(text = currentValue, selection = TextRange(currentValue.length))
+            showEditDialog.value = true
         },
     )
 
-    TextEditBottomSheet(
-        show = showEditDialogState,
+    AppTextFieldDialog(
+        show = showEditDialog.value,
         title = dialogTitle,
-        textFieldValue = textFieldState,
-        onConfirm = onConfirm,
+        textFieldValue = localTextFieldValue,
+        onTextFieldValueChange = { updatedTextFieldValue ->
+            localTextFieldValue = updatedTextFieldValue
+        },
+        onDismissRequest = {
+            showEditDialog.value = false
+            focusManager.clearFocus()
+        },
+        onConfirm = {
+            onConfirm(localTextFieldValue.text)
+            focusManager.clearFocus()
+            showEditDialog.value = false
+        },
+        singleLine = true,
+        keyboardActions =
+            KeyboardActions(
+                onDone = {
+                    onConfirm(localTextFieldValue.text)
+                    focusManager.clearFocus()
+                    showEditDialog.value = false
+                }
+            ),
     )
 }
 
@@ -442,7 +468,8 @@ private fun PageScalePreferenceItem(pageScale: Float, onApply: (Float) -> Unit) 
     val showPageScaleDialogState = remember { mutableStateOf(false) }
 
     PreferenceArrowItem(
-        title = MLang.AppSettings.Interface.PageScaleTitle,        endActions = {
+        title = MLang.AppSettings.Interface.PageScaleTitle,
+        endActions = {
             Text(
                 text = pageScalePercentText,
                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,

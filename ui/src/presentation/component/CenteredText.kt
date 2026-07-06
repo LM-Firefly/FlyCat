@@ -24,14 +24,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import com.github.yumelira.yumebox.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -39,14 +43,18 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun CenteredText(
     firstLine: String,
     secondLine: String,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.fillMaxSize(),
     showEmptyResourceIllustration: Boolean = true,
 ) {
     val spacing = AppTheme.spacing
     val opacity = AppTheme.opacity
 
-    Box(modifier = modifier.fillMaxWidth().fillMaxHeight(), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = modifier.padding(horizontal = spacing.space24),
+        contentAlignment = Alignment.Center,
+    ) {
         Column(
+            modifier = Modifier.widthIn(max = UiDp.dp360).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -56,15 +64,19 @@ fun CenteredText(
             }
             Text(
                 text = firstLine,
+                modifier = Modifier.fillMaxWidth(),
                 style = MiuixTheme.textStyles.body1,
                 color = MiuixTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(spacing.space8))
             Text(
                 text = secondLine,
-                style = MiuixTheme.textStyles.body1,
+                modifier = Modifier.fillMaxWidth(),
+                style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onBackground.copy(alpha = opacity.subtleText),
+                textAlign = TextAlign.Center,
             )
         }
     }

@@ -39,7 +39,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -218,50 +217,12 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
             when {
                 userConfigs.isEmpty() -> {
                     item(key = "override-empty", contentType = "override-empty") {
-                        Column(
-                            modifier =
-                                Modifier.fillParentMaxSize()
-                                    .padding(horizontal = UiDp.dp24, vertical = UiDp.dp80)
-                                    .wrapContentSize(Alignment.Center),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(UiDp.dp16),
-                        ) {
-                            CenteredText(
-                                firstLine = MLang.Override.Empty.Title,
-                                secondLine = MLang.Override.Empty.Hint,
-                                showEmptyResourceIllustration = true,
-                            )
-                            Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
-                                Button(
-                                    onClick = {
-                                        createDialogMode = OverrideConfigInputMode.CreateNew
-                                        showCreateDialog.value = true
-                                    }
-                                ) {
-                                    Text(MLang.Override.Action.New)
-                                }
-                                Button(
-                                    onClick = {
-                                        createDialogMode = OverrideConfigInputMode.LocalFile
-                                        showCreateDialog.value = true
-                                    },
-                                    colors = ButtonDefaults.buttonColorsPrimary(),
-                                ) {
-                                    Text(
-                                        text = MLang.ProfilesPage.Type.LocalFile,
-                                        color = colorScheme.background,
-                                    )
-                                }
-                                Button(
-                                    onClick = {
-                                        createDialogMode = OverrideConfigInputMode.NetworkUrl
-                                        showCreateDialog.value = true
-                                    },
-                                ) {
-                                    Text(MLang.Override.Action.NetworkImport)
-                                }
-                            }
-                        }
+                        CenteredText(
+                            firstLine = MLang.Override.Empty.Title,
+                            secondLine = MLang.Override.Empty.Hint,
+                            modifier = Modifier.fillParentMaxSize(),
+                            showEmptyResourceIllustration = true,
+                        )
                     }
                 }
 
