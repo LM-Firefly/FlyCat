@@ -21,8 +21,16 @@ on:
       raw_apk_artifact_name:
         required: true
         type: string
+      with_extension:
+        required: false
+        type: boolean
+        default: false
+      checkout_ref:
+        required: false
+        type: string
+        default: ''
       build_number:
-        description: "Monotonic push counter N; versionCode = 5795 + N. Empty = local-style base version."
+        description: "Deprecated compatibility input; versionCode is derived from git commit count in this workflow."
         required: false
         type: string
         default: ""
@@ -45,10 +53,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      NDK_CACHE_ROOT: ${{ github.workspace }}/.ndk
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
           submodules: recursive
           fetch-depth: 0
 
@@ -71,7 +81,7 @@ jobs:
 
       - name: Cache NDK
         id: cache-ndk
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.14904198
           key: ${{ runner.os }}-ndk-30.0.14904198-v2
@@ -130,13 +140,23 @@ jobs:
         run: |
           set -eu
           chmod +x gradlew
+          build_stamp="$(TZ=Asia/Shanghai date +%Y%m%d%H%M)"
+          commit_short="$(git rev-parse --short=6 HEAD)"
+          build_number="$(git rev-list --count HEAD)"
+          ui_build_id="${build_stamp}-${commit_short}"
+          EXTRA_ARGS=""
+          if [ "${{ inputs.with_extension }}" = "true" ]; then
+            EXTRA_ARGS="-PwithExtension=true"
+          fi
           ./gradlew --no-daemon \
             -Pupdate.channel="${{ inputs.channel }}" \
             -Pupdate.tag="${{ inputs.release_tag }}" \
             -Pupdate.metaAssetName="${{ inputs.meta_asset_name }}" \
-            -Pbuild.number="${BUILD_NUMBER}" \
+            -Pupdate.uiBuildId="${ui_build_id}" \
+            -Pbuild.number="${build_number}" \
             -Pbuild.hash="${BUILD_HASH:0:8}" \
             -Pbuild.branch="${BUILD_BRANCH}" \
+            $EXTRA_ARGS \
             :${{ inputs.module }}:assembleRelease
 
       - name: Upload raw APK artifact

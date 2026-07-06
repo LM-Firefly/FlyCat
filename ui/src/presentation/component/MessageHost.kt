@@ -34,6 +34,7 @@ import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import dev.oom_wg.purejoy.mlang.MLang
+import kotlinx.coroutines.flow.first
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 enum class MessageType {
@@ -79,13 +80,13 @@ fun MessageHost(message: Message?, onDismiss: () -> Unit) {
 
         if (message.autoClose) {
             LaunchedEffect(message.title, message.content, message.type, message.autoCloseDelay) {
-                PollingTimers.awaitTick(
+                PollingTimers.ticks(
                     PollingTimerSpecs.dynamic(
                         name = "message_host_autoclose_${message.autoCloseDelay}",
                         intervalMillis = message.autoCloseDelay,
                         initialDelayMillis = message.autoCloseDelay,
                     )
-                )
+                ).first()
                 dismissDialog()
             }
         }

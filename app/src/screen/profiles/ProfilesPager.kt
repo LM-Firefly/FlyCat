@@ -22,12 +22,13 @@ package com.github.yumelira.yumebox.screen.profiles
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,15 +38,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.yumelira.yumebox.App
+import com.github.yumelira.yumebox.core.model.Profile
+import com.github.yumelira.yumebox.core.model.ProfileBinding
+import com.github.yumelira.yumebox.feature.override.presentation.util.OverrideEditorStore
+import com.github.yumelira.yumebox.feature.override.presentation.viewmodel.OverrideConfigViewModel
 import com.github.yumelira.yumebox.MainActivity
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
-import com.github.yumelira.yumebox.data.controller.OverrideService
-import com.github.yumelira.yumebox.data.model.ProfileBinding
-import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
-import com.github.yumelira.yumebox.feature.editor.language.LanguageScope
-import com.github.yumelira.yumebox.feature.meta.presentation.util.CustomRoutingBootstrapper
+import com.github.yumelira.yumebox.platform.util.toast
 import com.github.yumelira.yumebox.presentation.component.CenteredText
 import com.github.yumelira.yumebox.presentation.component.LocalNavigator
 import com.github.yumelira.yumebox.presentation.component.ProfileCard
@@ -53,19 +53,15 @@ import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.icon.ShellIcons
+import com.github.yumelira.yumebox.presentation.language.LanguageScope
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.presentation.util.OverrideEditorStore
-import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
-import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-import org.koin.compose.koinInject
-import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import timber.log.Timber
+import sh.calvin.reorderable.ReorderableItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -77,14 +73,11 @@ fun ProfilesPager(mainInnerPadding: PaddingValues) {
     val navigator = LocalNavigator.current
     val profilesViewModel = koinViewModel<ProfilesViewModel>()
     val homeViewModel = koinViewModel<HomeViewModel>()
-    val profiles by profilesViewModel.profiles.collectAsState()
-    val isRunning by homeViewModel.isRunning.collectAsState()
+    val profiles by profilesViewModel.profiles.collectAsStateWithLifecycle()
+    val isRunning by homeViewModel.isRunning.collectAsStateWithLifecycle()
 
     val overrideConfigViewModel = koinViewModel<OverrideConfigViewModel>()
-    val bindingProvider: ProfileBindingProvider = koinInject()
-    val overrideService: OverrideService = koinInject()
-    val customRoutingBootstrapper: CustomRoutingBootstrapper = koinInject()
-    val userConfigs by overrideConfigViewModel.userConfigs.collectAsState()
+    val userConfigs by overrideConfigViewModel.userConfigs.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val showAddBottomSheet = remember { mutableStateOf(false) }
@@ -101,7 +94,8 @@ fun ProfilesPager(mainInnerPadding: PaddingValues) {
     var isDownloading by remember { mutableStateOf(false) }
 
     var importUrlFromScheme by remember { mutableStateOf<String?>(null) }
-    val pendingImportUrl by MainActivity.pendingImportUrl.collectAsState()
+    val pendingImportUrl by MainActivity.pendingImportUrl.collectAsStateWithLifecycle()
+    val urlProfiles = remember(profiles) { profiles.filter { it.type == Profile.Type.Url } }
     var scannedUrl by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(pendingImportUrl) {
         if (pendingImportUrl != null) {
@@ -127,16 +121,34 @@ fun ProfilesPager(mainInnerPadding: PaddingValues) {
                 title = MLang.ProfilesPage.Title,
                 scrollBehavior = scrollBehavior,
                 actions = {
-                    IconButton(
-                        onClick = {
-                            profileToEdit = null
-                            showAddBottomSheet.value = true
-                        },
-                    ) {
-                        Icon(
-                            imageVector = ShellIcons.AddProfile,
-                            contentDescription = MLang.ProfilesPage.Action.AddProfile,
-                        )
+                    Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp4)) {
+                        IconButton(
+                            onClick = {
+                                if (!isDownloading) {
+                                    isDownloading = true
+                                    scope.launch {
+                                        profilesViewModel.updateAllUrlProfiles()
+                                        isDownloading = false
+                                    }
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = ShellIcons.UpdateProfiles,
+                                contentDescription = MLang.ProfilesPage.Action.UpdateAll,
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                profileToEdit = null
+                                showAddBottomSheet.value = true
+                            },
+                        ) {
+                            Icon(
+                                imageVector = ShellIcons.AddProfile,
+                                contentDescription = MLang.ProfilesPage.Action.AddProfile,
+                            )
+                        }
                     }
                 },
             )
@@ -221,8 +233,8 @@ fun ProfilesPager(mainInnerPadding: PaddingValues) {
         onAddProfile = { name, source, type, interval, fileUri, ageSecretKey ->
             profilesViewModel.createProfile(type, name, source, interval, fileUri, ageSecretKey)
         },
-        onUpdateProfile = { uuid, name, source, interval ->
-            profilesViewModel.patchProfile(uuid, name, source, interval)
+        onUpdateProfile = { uuid, name, source, interval, ageSecretKey ->
+            profilesViewModel.patchProfile(uuid, name, source, interval, ageSecretKey)
         },
         onDownloadComplete = {
             isDownloading = false
@@ -260,54 +272,22 @@ fun ProfilesPager(mainInnerPadding: PaddingValues) {
             onSaveProfileMeta = { update ->
                 if (update.name.isNotBlank() && update.source.isNotBlank()) {
                     profilesViewModel.patchProfile(
-                        uuid = currentProfileToEdit.uuid,
-                        name = update.name,
-                        source = update.source,
-                        interval = currentProfileToEdit.interval,
-                        updateAgeSecretKey = update.updateAgeSecretKey,
-                        ageSecretKey = update.ageSecretKey,
+                        currentProfileToEdit.uuid,
+                        update.name,
+                        update.source,
+                        currentProfileToEdit.interval,
+                        update.ageSecretKey,
                     )
                 }
             },
             onSaveOverrideSettings = { selectedOverrideIds ->
                 scope.launch {
                     val profileId = currentProfileToEdit.uuid.toString()
-                    val normalizedOverrideIds = selectedOverrideIds.distinct()
-
-                    // Persist the binding FIRST so the user's toggle is never lost, even when
-                    // custom-routing content generation fails. Generation runs afterwards and
-                    // its failure is surfaced (log + toast) instead of silently aborting the save.
-                    val currentBinding = profileBinding ?: bindingProvider.getBinding(profileId)
-                    val updatedBinding =
-                        currentBinding?.copy(overrideIds = normalizedOverrideIds)
-                            ?: ProfileBinding(
-                                profileId = profileId,
-                                overrideIds = normalizedOverrideIds,
-                            )
-
-                    bindingProvider.setBinding(updatedBinding)
-                    profileBinding = bindingProvider.getBinding(profileId)
-
-                    if (
-                        OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID in
-                            normalizedOverrideIds
-                    ) {
-                        runCatching { customRoutingBootstrapper.ensureDefaultContent() }
-                            .onFailure { error ->
-                                Timber.e(
-                                    error,
-                                    "Failed to generate custom routing content for profile %s",
-                                    profileId,
-                                )
-                                context.toast(
-                                    error.message ?: MLang.ProfilesPage.SettingsDialog.CustomRouting
-                                )
-                            }
-                    }
-
-                    if (isRunning && homeViewModel.isCurrentProfile(currentProfileToEdit.uuid)) {
-                        overrideService.applyOverride(profileId)
-                    }
+                    profileBinding = profilesViewModel.saveOverrideBinding(
+                        profileId = profileId,
+                        overrideIds = selectedOverrideIds,
+                        applyNow = isRunning && homeViewModel.isCurrentProfile(currentProfileToEdit.uuid),
+                    )
                 }
             },
         )
@@ -404,7 +384,7 @@ fun ProfilesPager(mainInnerPadding: PaddingValues) {
                 isEditOptionsDialogVisible = false
                 profileToEdit = profile
                 scope.launch {
-                    profileBinding = bindingProvider.getBinding(profile.uuid.toString())
+                    profileBinding = profilesViewModel.getBinding(profile.uuid.toString())
                 }
                 showSettingsDialog.value = true
             },

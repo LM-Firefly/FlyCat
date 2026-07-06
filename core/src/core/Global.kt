@@ -23,15 +23,23 @@ package com.github.yumelira.yumebox.core
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import java.io.File
 
-object Global : CoroutineScope by CoroutineScope(Dispatchers.IO) {
+object Global : CoroutineScope {
+    override val coroutineContext = Dispatchers.Main.immediate + SupervisorJob()
+
     val application: Context
-        get() = _application
+        get() = _application ?: throw IllegalStateException(
+            "Global.init() must be called before accessing application context"
+        )
 
-    private lateinit var _application: Context
+    @Volatile
+    private var _application: Context? = null
 
     fun init(application: Context) {
+        if (_application != null) return
         _application = application.applicationContext ?: application
     }
 
@@ -39,3 +47,13 @@ object Global : CoroutineScope by CoroutineScope(Dispatchers.IO) {
         cancel()
     }
 }
+
+interface FirstRunInitializer {
+    fun initialize()
+}
+
+val Context.appContextOrSelf: Context
+    get() = applicationContext ?: this
+
+val Context.importedDir: File
+    get() = filesDir.resolve("imported")

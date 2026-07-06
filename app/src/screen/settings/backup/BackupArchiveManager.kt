@@ -20,13 +20,13 @@
 
 package com.github.yumelira.yumebox.screen.settings.backup
 
-import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import kotlinx.serialization.json.Json
 
 class BackupArchiveManager(
     private val json: Json =

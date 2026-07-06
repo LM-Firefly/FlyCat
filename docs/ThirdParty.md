@@ -7,7 +7,6 @@
 - [mmkv](https://github.com/Tencent/mmkv)
 - [sora-editor](https://github.com/Rosemoe/sora-editor)
 - [sketch](https://github.com/panpf/sketch)
-- [Gropify](https://github.com/HighCapable/Gropify)
 - [Lucide](https://github.com/lucide-icons/lucide)
 - [Circle Flags](https://github.com/HatScripts/circle-flags)
 - [PureJoy-FYL](https://github.com/OOM-WG/PureJoy-FYL)

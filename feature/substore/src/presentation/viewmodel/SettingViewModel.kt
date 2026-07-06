@@ -18,18 +18,18 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.viewmodel
+package com.github.yumelira.yumebox.feature.substore.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.data.store.FeatureStore
-import com.github.yumelira.yumebox.substore.SubStoreServiceController
+import com.github.yumelira.yumebox.core.data.SubStoreSettings
+import com.github.yumelira.yumebox.feature.substore.SubStoreServiceController
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
-class SettingViewModel(private val store: FeatureStore) : ViewModel() {
+class SettingViewModel(private val store: SubStoreSettings) : ViewModel() {
     val backendPort = store.backendPort
     val frontendPort = store.frontendPort
 
@@ -37,7 +37,7 @@ class SettingViewModel(private val store: FeatureStore) : ViewModel() {
     val events: SharedFlow<SettingEvent> = _events.asSharedFlow()
 
     val isSubStoreRunning: Boolean
-        get() = SubStoreServiceController.snapshot.value.isActive
+        get() = SubStoreServiceController.snapshot.value.isRunning
 
     fun onSubStoreCardClicked() {
         if (!isSubStoreRunning) return

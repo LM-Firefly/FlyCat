@@ -1,24 +1,32 @@
 <Providers Page>
 Providers = {
     Title = "External Resources"
-    
+
     Action = {
         UpdateAll = "Update All"
         Update = "Update"
         Upload = "Upload"
         Operation = "Operation"
+        OpenInFiles = "Open FlyCat Files Entry"
     }
-    
+
     Empty = {
         NotRunning = "Proxy not running"
         NotRunningHint = "Please start proxy service to view external resources"
         NoProviders = "No external resources"
         NoProvidersHint = "Current profile doesn't contain external resources"
     }
-    
+
     Type = {
         ProxyProviders = "Proxy Providers (%d)"
         RuleProviders = "Rule Providers (%d)"
+    }
+
+    Info = {
+        ExpireDays = "Expires: %s (%d days left)"
+        Expired = "Expires: %s (expired)"
+        RemainingTraffic = "Remaining: %s"
+        UsedTraffic = "Traffic: %s / %s"
     }
 
     VehicleType = {
@@ -27,7 +35,7 @@ Providers = {
         Inline = "Inline"
         Compatible = "Compatible"
     }
-    
+
     Message = {
         FetchFailed = "Failed to fetch resources: %s"
         UpdateSuccess = "%s updated successfully"
@@ -35,5 +43,9 @@ Providers = {
         AllUpdated = "All updated"
         UploadSuccess = "%s uploaded successfully"
         UploadFailed = "Upload failed: %s"
+        OpenFileFailed = "Open file failed: %s"
     }
+    InfoTitle = "Directory Notes"
+    InfoSummary = "Geo assets and shared runtime files live in: %s (app-private storage, not visible under Android/data). Rule and proxy providers are written into the active profile's private directory (imported/<profile-uuid>/providers), which is accessible from the FlyCat entry in the system file manager."
+    ProviderPath = "Resource path: %s"
 }

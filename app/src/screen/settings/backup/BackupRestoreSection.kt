@@ -20,6 +20,8 @@
 
 package com.github.yumelira.yumebox.screen.settings.backup
 
+import android.app.Activity
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -34,12 +36,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import com.github.yumelira.yumebox.common.util.toast
+import com.github.yumelira.yumebox.platform.util.toast
 import com.github.yumelira.yumebox.presentation.component.AppDialog
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.component.Title
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import dev.oom_wg.purejoy.mlang.MLang
+import kotlin.system.exitProcess
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -54,6 +57,7 @@ fun BackupRestoreSection() {
     val context = LocalContext.current
 
     var restoreUri by remember { mutableStateOf<Uri?>(null) }
+    var showRestartDialog by remember { mutableStateOf(false) }
 
     val exportLauncher =
         rememberLauncherForActivityResult(
@@ -71,24 +75,25 @@ fun BackupRestoreSection() {
         viewModel.events.collect { event ->
             when (event) {
                 is BackupRestoreEvent.Message -> context.toast(event.text)
+                is BackupRestoreEvent.RestoreSuccess -> showRestartDialog = true
             }
         }
     }
 
-    Title(MLang.Feature.BackupRestore.Section)
+    Title(MLang.MetaFeature.Section.BackupRestore)
     Card {
         ArrowPreference(
-            title = MLang.Feature.BackupRestore.ExportTitle,
-            summary = MLang.Feature.BackupRestore.ExportSummary,
+            title = MLang.MetaFeature.Backup.BackupTitle,
+            summary = MLang.MetaFeature.Backup.BackupSummary,
             enabled = !uiState.isBusy,
             onClick = {
                 runCatching { exportLauncher.launch(viewModel.defaultBackupFileName()) }
-                    .onFailure { context.toast(MLang.Feature.BackupRestore.Error.OpenOutputFailed) }
+                    .onFailure { context.toast(MLang.MetaFeature.Backup.BackupFailed.format("")) }
             },
         )
         ArrowPreference(
-            title = MLang.Feature.BackupRestore.RestoreTitle,
-            summary = MLang.Feature.BackupRestore.RestoreSummary,
+            title = MLang.MetaFeature.Backup.RestoreTitle,
+            summary = MLang.MetaFeature.Backup.RestoreSummary,
             enabled = !uiState.isBusy,
             onClick = {
                 runCatching {
@@ -96,21 +101,33 @@ fun BackupRestoreSection() {
                             arrayOf("application/zip", "application/octet-stream", "*/*")
                         )
                     }
-                    .onFailure { context.toast(MLang.Feature.BackupRestore.Error.OpenInputFailed) }
+                    .onFailure { context.toast(MLang.MetaFeature.Backup.RestoreFailed.format("")) }
             },
         )
     }
 
     BackupConfirmDialog(
         show = restoreUri != null,
-        title = MLang.Feature.BackupRestore.RestoreDialog.Title,
-        message = MLang.Feature.BackupRestore.RestoreDialog.Message,
-        confirmText = MLang.Feature.BackupRestore.RestoreTitle,
+        title = MLang.MetaFeature.Backup.RestoreConfirmTitle,
+        message = MLang.MetaFeature.Backup.RestoreConfirmMessage,
+        confirmText = MLang.MetaFeature.Backup.RestoreTitle,
         onDismiss = { restoreUri = null },
         onConfirm = {
             val uri = restoreUri ?: return@BackupConfirmDialog
             restoreUri = null
             viewModel.restoreBackup(uri)
+        },
+    )
+
+    BackupConfirmDialog(
+        show = showRestartDialog,
+        title = MLang.MetaFeature.Backup.RestoreSuccessTitle,
+        message = MLang.MetaFeature.Backup.RestoreSuccess,
+        confirmText = MLang.MetaFeature.Backup.RestartNow,
+        onDismiss = { showRestartDialog = false },
+        onConfirm = {
+            showRestartDialog = false
+            restartApplication(context)
         },
     )
 }
@@ -127,7 +144,7 @@ private fun BackupConfirmDialog(
     AppDialog(show = show, title = title, summary = message, onDismissRequest = onDismiss) {
         Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
             Button(modifier = Modifier.weight(1f), onClick = onDismiss) {
-                Text(MLang.Feature.BackupRestore.Cancel)
+                Text(MLang.Component.Button.Cancel)
             }
             Button(
                 modifier = Modifier.weight(1f),
@@ -138,4 +155,19 @@ private fun BackupConfirmDialog(
             }
         }
     }
+}
+
+private fun restartApplication(context: android.content.Context) {
+    val launchIntent = context.packageManager
+        .getLaunchIntentForPackage(context.packageName)
+        ?.apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }
+    if (launchIntent == null) {
+        context.toast(MLang.MetaFeature.Backup.RestartLaunchNotFound)
+        return
+    }
+    context.startActivity(launchIntent)
+    (context as? Activity)?.finishAffinity()
+    exitProcess(0)
 }

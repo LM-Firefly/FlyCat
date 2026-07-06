@@ -20,7 +20,8 @@
 
 package com.github.yumelira.yumebox.data.store
 
-import com.github.yumelira.yumebox.data.model.RemoteBackend
+import com.github.yumelira.yumebox.core.data.RemoteControllerStoreReader
+import com.github.yumelira.yumebox.core.model.RemoteBackend
 import com.tencent.mmkv.MMKV
 
 /**
@@ -30,9 +31,9 @@ import com.tencent.mmkv.MMKV
  * Stored in its own MMKV file (`remote_controller`) using [MMKV.MULTI_PROCESS_MODE]
  * so both the UI and service processes observe the same configuration.
  */
-class RemoteControllerStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
+class RemoteControllerStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv), RemoteControllerStoreReader {
     /** Master switch — when on (and an active backend exists) the app runs in remote-controller mode. */
-    val controllerEnabled by boolFlow(false)
+    override val controllerEnabled by boolFlow(false)
 
     /** All saved backends. */
     val backends by jsonListFlow(
@@ -45,14 +46,14 @@ class RemoteControllerStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = 
     val activeBackendId by strFlow("")
 
     /** Convenience: resolve the active [RemoteBackend], or null if unset / missing. */
-    fun activeBackend(): RemoteBackend? {
+    override fun activeBackend(): RemoteBackend? {
         val id = activeBackendId.value
         if (id.isBlank()) return null
         return backends.value.firstOrNull { it.id == id }
     }
 
     companion object {
-        const val MMKV_ID = "remote_controller"
+        private const val MMKV_ID = "remote_controller"
 
         private val gate by lazy { RemoteControllerStore(MMKVProvider().getMMKV(MMKV_ID)) }
 

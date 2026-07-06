@@ -20,21 +20,25 @@
 
 package com.github.yumelira.yumebox.data.controller
 
+import com.github.yumelira.yumebox.core.data.ProfileBindingReader
+import com.github.yumelira.yumebox.core.model.OverrideMetadata
 import com.github.yumelira.yumebox.core.model.OverrideSpec
-import com.github.yumelira.yumebox.data.model.OverrideMetadata
-import com.github.yumelira.yumebox.data.model.ProfileBinding
+import com.github.yumelira.yumebox.core.model.ProfileBinding
 import com.github.yumelira.yumebox.data.store.OverrideConfigStore
 import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
-class OverrideResolver(
+class OverrideBindingRepository(
     private val configStore: OverrideConfigStore,
     private val bindingProvider: ProfileBindingProvider,
-) {
+) : ProfileBindingReader {
     suspend fun resolveIds(profileId: UUID): List<String> {
         val binding = bindingProvider.getBinding(profileId.toString())
         return resolveBindingIds(binding)
     }
+
+    override fun getAllBindingsFlow(): Flow<List<ProfileBinding>> = bindingProvider.getAllBindingsFlow()
 
     suspend fun resolveIds(profileId: String): List<String> {
         val binding = bindingProvider.getBinding(profileId)
@@ -47,13 +51,13 @@ class OverrideResolver(
     suspend fun getProfilesUsingOverride(overrideId: String): List<String> =
         bindingProvider.getProfilesUsingOverride(overrideId)
 
-    suspend fun isOverrideInUse(overrideId: String): Boolean =
+    override suspend fun isOverrideInUse(overrideId: String): Boolean =
         bindingProvider.isOverrideInUse(overrideId)
 
-    suspend fun getOverrideUsageCount(overrideId: String): Int =
+    override suspend fun getOverrideUsageCount(overrideId: String): Int =
         bindingProvider.getOverrideUsageCount(overrideId)
 
-    suspend fun getBinding(profileId: String) = bindingProvider.getBinding(profileId)
+    override suspend fun getBinding(profileId: String) = bindingProvider.getBinding(profileId)
 
     suspend fun bindOverride(profileId: String, overrideId: String, index: Int? = null) {
         bindingProvider.addOverride(profileId, overrideId, index)
@@ -71,6 +75,8 @@ class OverrideResolver(
     suspend fun clearBinding(profileId: String) {
         bindingProvider.removeBinding(profileId)
     }
+
+    override suspend fun setBinding(binding: ProfileBinding) = bindingProvider.setBinding(binding)
 
     private suspend fun resolveBindingIds(binding: ProfileBinding?): List<String> {
         if (binding == null) {

@@ -43,7 +43,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,9 +62,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
-import com.github.yumelira.yumebox.data.model.AccessControlSortMode
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.yumelira.yumebox.feature.override.presentation.component.rememberOverrideFabController
 import com.github.yumelira.yumebox.presentation.component.Card
+import com.github.yumelira.yumebox.presentation.component.NavigationBackIcon
 import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.SearchPager
@@ -106,8 +108,9 @@ fun AccessControlScreen(navigator: Navigator) {
     val spacing = spacing
     val mainLikePadding = rememberStandalonePageMainPadding()
     val viewModel = koinViewModel<AccessControlViewModel>()
-    val uiState by viewModel.uiState.collectAsState()
-    val filteredApps by viewModel.filteredApps.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val filteredApps by viewModel.filteredApps.collectAsStateWithLifecycle()
+    val settingsFabController = rememberOverrideFabController()
 
     var showSortMenu by remember { mutableStateOf(false) }
     var showOpsMenu by remember { mutableStateOf(false) }
@@ -177,6 +180,8 @@ fun AccessControlScreen(navigator: Navigator) {
                     TopBar(
                         title = MLang.AccessControl.Title,
                         scrollBehavior = scrollBehavior,
+                        navigationIconPadding = 0.dp,
+                        navigationIcon = { NavigationBackIcon(navigator = navigator) },
                         actions = {
                             Box {
                                 IconButton(
@@ -407,29 +412,18 @@ private fun AccessControlCollapsedSearchBar(
     )
 }
 
-// :data cannot depend on MLang, so the display-name mapping for the persisted sort-mode enum
-// stays here on the :app side.
-private val AccessControlSortMode.displayName: String
-    get() =
-        when (this) {
-            AccessControlSortMode.PACKAGE_NAME -> MLang.AccessControl.SortMode.PackageName
-            AccessControlSortMode.LABEL -> MLang.AccessControl.SortMode.Label
-            AccessControlSortMode.INSTALL_TIME -> MLang.AccessControl.SortMode.InstallTime
-            AccessControlSortMode.UPDATE_TIME -> MLang.AccessControl.SortMode.UpdateTime
-        }
-
 @Composable
 private fun AccessControlSortMenu(
     show: Boolean,
-    sortMode: AccessControlSortMode,
+    sortMode: AccessControlViewModel.SortMode,
     onDismiss: () -> Unit,
-    onSortModeChange: (AccessControlSortMode) -> Unit,
+    onSortModeChange: (AccessControlViewModel.SortMode) -> Unit,
 ) {
     val entries =
         listOf(
             DropdownEntry(
                 items =
-                    AccessControlSortMode.entries.map { mode ->
+                    AccessControlViewModel.SortMode.entries.map { mode ->
                         DropdownItem(
                             text = mode.displayName,
                             selected = mode == sortMode,

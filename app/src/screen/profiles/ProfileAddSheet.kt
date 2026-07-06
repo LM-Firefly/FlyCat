@@ -21,7 +21,10 @@
 package com.github.yumelira.yumebox.screen.profiles
 
 import android.Manifest
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.pm.PackageManager
+import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -42,7 +45,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -60,7 +62,9 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import com.github.yumelira.yumebox.common.util.toast
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.yumelira.yumebox.core.model.Profile
+import com.github.yumelira.yumebox.platform.util.toast
 import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
 import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
@@ -74,9 +78,9 @@ import com.github.yumelira.yumebox.presentation.util.profileNameFromConfigFileNa
 import com.github.yumelira.yumebox.presentation.util.readClipboardSubscriptionUrl
 import com.github.yumelira.yumebox.presentation.util.readDisplayName
 import com.github.yumelira.yumebox.presentation.util.sourceFileName
-import com.github.yumelira.yumebox.runtime.api.Profile
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.UUID
 import kotlin.math.max
 
@@ -94,7 +98,7 @@ internal fun AddProfileSheet(
             fileUri: android.net.Uri?,
             ageSecretKey: String,
         ) -> Unit,
-    onUpdateProfile: (uuid: UUID, name: String, source: String, interval: Long) -> Unit,
+    onUpdateProfile: (uuid: UUID, name: String, source: String, interval: Long, ageSecretKey: String?) -> Unit,
     onDownloadComplete: () -> Unit,
     profilesViewModel: ProfilesViewModel,
 ) {
@@ -106,16 +110,21 @@ internal fun AddProfileSheet(
     val scope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
     var selectedTypeIndex by remember { mutableIntStateOf(0) }
+    var name by remember { mutableStateOf("") }
     var nameTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
+    var url by remember { mutableStateOf("") }
     var urlTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
     var filePath by remember { mutableStateOf("") }
+    var fileName by remember { mutableStateOf("") }
     var fileNameTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
+    var ageSecretKey by remember { mutableStateOf("") }
     var ageSecretKeyTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
+    var initialAgeSecretKey by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
     var isDownloading by remember { mutableStateOf(false) }
 
-    val downloadProgress by profilesViewModel.downloadProgress.collectAsState()
-    val uiState by profilesViewModel.uiState.collectAsState()
+    val downloadProgress by profilesViewModel.downloadProgress.collectAsStateWithLifecycle()
+    val uiState by profilesViewModel.uiState.collectAsStateWithLifecycle()
     var hasShownCompleteAnimation by remember { mutableStateOf(false) }
     var stableSheetHeightPx by remember { mutableIntStateOf(0) }
 
@@ -127,12 +136,15 @@ internal fun AddProfileSheet(
     }
 
     val applyNameText: (String) -> Unit = { updatedText ->
+        name = updatedText
         nameTextFieldValue = textFieldValueAtEnd(updatedText)
     }
     val applyUrlText: (String) -> Unit = { updatedText ->
+        url = updatedText
         urlTextFieldValue = textFieldValueAtEnd(updatedText)
     }
     val applyFileNameText: (String) -> Unit = { updatedText ->
+        fileName = updatedText
         fileNameTextFieldValue = textFieldValueAtEnd(updatedText)
     }
 
@@ -141,7 +153,9 @@ internal fun AddProfileSheet(
         applyUrlText("")
         filePath = ""
         applyFileNameText("")
+        ageSecretKey = ""
         ageSecretKeyTextFieldValue = TextFieldValue()
+        initialAgeSecretKey = ""
         error = ""
         isDownloading = false
         hasShownCompleteAnimation = false
@@ -198,6 +212,12 @@ internal fun AddProfileSheet(
             clearAllState()
             if (profileToEdit != null) {
                 applyNameText(profileToEdit.name)
+                ageSecretKey = profileToEdit.ageSecretKey
+                ageSecretKeyTextFieldValue = TextFieldValue(
+                    profileToEdit.ageSecretKey,
+                    TextRange(profileToEdit.ageSecretKey.length),
+                )
+                initialAgeSecretKey = profileToEdit.ageSecretKey
                 if (profileToEdit.type == Profile.Type.Url) {
                     selectedTypeIndex = PROFILE_IMPORT_TYPE_URL
                     applyUrlText(profileToEdit.source)
@@ -324,38 +344,44 @@ internal fun AddProfileSheet(
 
         if (selectedTypeIndex == PROFILE_IMPORT_TYPE_URL) {
             if (profileToEdit != null) {
+                val trimmedAgeSecretKey = ageSecretKeyTextFieldValue.text.trim()
                 onUpdateProfile(
                     profileToEdit.uuid,
                     nameTextFieldValue.text,
                     urlTextFieldValue.text,
                     profileToEdit.interval,
+                    if (trimmedAgeSecretKey != initialAgeSecretKey) trimmedAgeSecretKey else null,
                 )
             } else {
+                val trimmedAgeSecretKey = ageSecretKeyTextFieldValue.text.trim()
                 onAddProfile(
                     nameTextFieldValue.text.ifBlank { MLang.ProfilesPage.Input.NewProfile },
                     urlTextFieldValue.text,
                     Profile.Type.Url,
                     0L,
                     null,
-                    ageSecretKeyTextFieldValue.text.trim(),
+                    trimmedAgeSecretKey,
                 )
             }
         } else {
             if (profileToEdit != null) {
+                val trimmedAgeSecretKey = ageSecretKeyTextFieldValue.text.trim()
                 onUpdateProfile(
                     profileToEdit.uuid,
-                    nameTextFieldValue.text,
+                    name,
                     profileToEdit.source,
                     profileToEdit.interval,
+                    if (trimmedAgeSecretKey != initialAgeSecretKey) trimmedAgeSecretKey else null,
                 )
             } else {
+                val trimmedAgeSecretKey = ageSecretKeyTextFieldValue.text.trim()
                 onAddProfile(
                     nameTextFieldValue.text.ifBlank { MLang.ProfilesPage.Input.NewProfile },
                     filePath,
                     Profile.Type.File,
                     0L,
                     filePath.toUri(),
-                    ageSecretKeyTextFieldValue.text.trim(),
+                    trimmedAgeSecretKey,
                 )
             }
         }
@@ -450,14 +476,17 @@ internal fun AddProfileSheet(
                         },
                         onNameChange = { updatedTextFieldValue ->
                             nameTextFieldValue = updatedTextFieldValue
+                            name = updatedTextFieldValue.text
                             error = ""
                         },
                         onUrlChange = { updatedTextFieldValue ->
                             urlTextFieldValue = updatedTextFieldValue
+                            url = updatedTextFieldValue.text
                             error = ""
                         },
                         onAgeSecretKeyChange = { updatedTextFieldValue ->
                             ageSecretKeyTextFieldValue = updatedTextFieldValue
+                            ageSecretKey = updatedTextFieldValue.text
                         },
                         onPickFile = { launcher.launch("*/*") },
                         onSelectQrImage = { qrImageLauncher.launch("image/*") },

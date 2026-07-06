@@ -25,7 +25,7 @@ on:
         required: true
         type: string
       build_number:
-        description: "Monotonic push counter N; versionCode = 5795 + N. Empty = base versionCode."
+        description: "Monotonic build counter; versionCode = project.version.code + build_number. Empty = base versionCode."
         required: false
         type: string
         default: ""
@@ -35,10 +35,14 @@ on:
         type: string
         default: ""
       build_branch:
-        description: "Branch name; normalized (lowercase, [^a-z0-9] runs -> '-') into the versionName branch segment."
+        description: "Branch name; normalized into the versionName branch segment."
         required: false
         type: string
         default: ""
+      checkout_ref:
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -52,6 +56,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
           submodules: recursive
           fetch-depth: 0
 
@@ -70,13 +75,12 @@ jobs:
           BUILD_BRANCH: ${{ inputs.build_branch }}
         run: |
           set -eu
-          # Must mirror the versioning logic in app/build.gradle.kts:
-          # versionCode = 5795 + build.number, versionName = <base>[.<branch>].<hash8>,
-          # branch normalized as lowercase, [^a-z0-9] runs -> '-', leading/trailing '-' trimmed.
           base_version_name="$(grep '^project.version.name=' gradle.properties | cut -d= -f2-)"
+          base_version_code="$(grep '^project.version.code=' gradle.properties | cut -d= -f2-)"
           branch_segment="$(printf '%s' "${BUILD_BRANCH}" \
             | tr '[:upper:]' '[:lower:]' \
             | sed -e 's/[^a-z0-9]/-/g' -e 's/--*/-/g' -e 's/^-//' -e 's/-$//')"
+
           if [ -n "${BUILD_HASH}" ]; then
             if [ -n "${branch_segment}" ]; then
               version_name="${base_version_name}.${branch_segment}.${BUILD_HASH:0:8}"
@@ -86,10 +90,11 @@ jobs:
           else
             version_name="${base_version_name}"
           fi
+
           if [ -n "${BUILD_NUMBER}" ]; then
-            version_code=$((5795 + BUILD_NUMBER))
+            version_code=$((base_version_code + BUILD_NUMBER))
           else
-            version_code=5795
+            version_code="${base_version_code}"
           fi
           echo "version_name=${version_name}" >> "$GITHUB_OUTPUT"
           echo "version_code=${version_code}" >> "$GITHUB_OUTPUT"
@@ -128,26 +133,22 @@ jobs:
 
           while IFS= read -r file; do
             base="$(basename "$file")"
-            # Raw names are <name>-<versionName>-<abi>-<buildType>.apk. The versionName may
-            # itself contain ABI-looking substrings (branch segment is [a-z0-9-]), so classify
-            # by the ABI segment anchored at the end: strip ".apk", then the buildType (the
-            # last dash-separated field), and match the remaining suffix exactly.
-            stem="${base%.apk}"
-            stem="${stem%-*}"
             abi="universal"
-            case "$stem" in
-              *-arm64-v8a) abi="arm64-v8a" ;;
-              *-armeabi-v7a) abi="armeabi-v7a" ;;
-              *-x86_64) abi="x86_64" ;;
-              *-x86) abi="x86" ;;
+            case "$base" in
+              *arm64-v8a*) abi="arm64-v8a" ;;
+              *armeabi-v7a*) abi="armeabi-v7a" ;;
+              *x86_64*) abi="x86_64" ;;
+              *x86*) abi="x86" ;;
               *) abi="universal" ;;
             esac
 
-            if [ "$abi" = "universal" ]; then
-              new_name="${{ inputs.artifact_prefix }}-${version_name}.apk"
+            if [[ "$base" =~ -([0-9]{12}-[0-9a-fA-F]{5,8})\.apk$ ]]; then
+              build_id="${BASH_REMATCH[1]}"
             else
-              new_name="${{ inputs.artifact_prefix }}-${version_name}-${abi}.apk"
+              echo "::error::Could not extract build_id from $base" >&2
+              exit 1
             fi
+            new_name="${{ inputs.artifact_prefix }}-${abi}-${build_id}.apk"
             cp -f "$file" "publish/${new_name}"
           done < <(find "${{ inputs.module }}/build/outputs/apk/release" -maxdepth 1 -type f -name '*.apk' | sort)
 
@@ -243,53 +244,3 @@ jobs:
           name: ${{ inputs.publish_artifact_name }}
           path: publish/*.apk
           if-no-files-found: error
-          # APKs are already zip-compressed; keep the archive (downstream jobs
-          # download-artifact it) but store entries uncompressed.
-          compression-level: 0
-
-      # Per-APK artifacts: the aggregate artifact above mixes every ABI into one zip, so
-      # each APK is also uploaded separately with archive:false — the raw .apk is stored
-      # as-is (no zip wrapper, no recompression) and downloads directly as an installer.
-      # NOTE: with archive:false the artifact takes the FILE name and the `name:` input is
-      # ignored, so these artifacts appear as <artifact_prefix>-<versionName>-<abi>.apk
-      # (universal has no ABI suffix), from the rename loop in "Prepare publish artifacts".
-      - name: Upload arm64-v8a APK artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-arm64-v8a
-          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-arm64-v8a.apk
-          if-no-files-found: ignore
-          # Single already-compressed file: upload raw for a direct .apk download.
-          archive: false
-
-      - name: Upload armeabi-v7a APK artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-armeabi-v7a
-          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-armeabi-v7a.apk
-          if-no-files-found: ignore
-          archive: false
-
-      - name: Upload x86_64 APK artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86_64
-          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86_64.apk
-          if-no-files-found: ignore
-          archive: false
-
-      - name: Upload x86 APK artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86
-          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86.apk
-          if-no-files-found: ignore
-          archive: false
-
-      - name: Upload universal APK artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-universal
-          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}.apk
-          if-no-files-found: ignore
-          archive: false

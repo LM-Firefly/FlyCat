@@ -18,10 +18,9 @@
  *
  */
 
-package com.github.yumelira.yumebox.di
+package com.github.yumelira.yumebox.feature.meta.di
 
-import com.github.yumelira.yumebox.data.store.TrafficStatisticsStore
-import com.github.yumelira.yumebox.feature.meta.presentation.util.CustomRoutingBootstrapper
+import com.github.yumelira.yumebox.core.data.ConnectionRepository
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.ConnectionViewModel
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.CustomRoutingViewModel
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.TrafficStatisticsViewModel
@@ -29,10 +28,9 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val featureMetaViewModelModule = module {
-    single { CustomRoutingBootstrapper(get()) }
-    viewModel { ConnectionViewModel() }
-    viewModel { TrafficStatisticsViewModel(get<TrafficStatisticsStore>()) }
-    viewModel { CustomRoutingViewModel(get(), get(), get()) }
+    viewModel { ConnectionViewModel(get<ConnectionRepository>(), get()) }
+    viewModel { TrafficStatisticsViewModel(get()) }
+    viewModel { CustomRoutingViewModel(get(), get()) }
 }
 
 val featureMetaModules = listOf(featureMetaViewModelModule)

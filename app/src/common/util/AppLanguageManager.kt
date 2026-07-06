@@ -26,7 +26,8 @@ import android.content.res.Resources
 import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
-import com.github.yumelira.yumebox.data.model.AppLanguage
+import com.github.yumelira.yumebox.core.model.AppLanguage
+import com.github.yumelira.yumebox.platform.util.LocaleUtil
 import dev.oom_wg.purejoy.mlang.MLang
 import java.util.Locale
 

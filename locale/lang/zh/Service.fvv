@@ -3,10 +3,6 @@ Service = {
     Notification = {
         Running = "运行中"
         UnknownProfile = "未知配置"
-        LogChannel = "日志记录"
-        LogRecording = "正在记录日志"
-        LogRecordingPending = "日志记录中..."
-        Stop = "停止"
     }
 
     Tile = {

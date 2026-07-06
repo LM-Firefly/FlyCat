@@ -1,5 +1,5 @@
 # ========================================
-# YumeBox Extension ProGuard Configuration
+# FlyCat Extension ProGuard Configuration
 # ========================================
 
 # ========================================

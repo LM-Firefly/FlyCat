@@ -18,7 +18,9 @@
  *
  */
 
-package com.github.yumelira.yumebox.common.util
+package com.github.yumelira.yumebox.platform.util
+
+const val APPLICATION_SCOPE_NAME = "applicationScope"
 
 object ByteFormatter {
     private const val KB = 1024L
@@ -78,7 +80,7 @@ object ByteFormatter {
 }
 
 fun formatBytes(bytes: Long): String = ByteFormatter.format(bytes)
-
+fun formatBytes(bytes: ULong): String = ByteFormatter.format(bytes.toLong().coerceAtLeast(0L))
 fun formatSpeed(bytesPerSecond: Long): String = ByteFormatter.formatSpeed(bytesPerSecond)
 
 fun formatBytesForDisplay(bytes: Long): Pair<String, String> = ByteFormatter.formatForDisplay(bytes)

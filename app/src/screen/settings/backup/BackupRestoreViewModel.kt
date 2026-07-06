@@ -42,6 +42,7 @@ data class BackupRestoreUiState(
 
 sealed interface BackupRestoreEvent {
     data class Message(val text: String) : BackupRestoreEvent
+    data object RestoreSuccess : BackupRestoreEvent
 }
 
 class BackupRestoreViewModel(
@@ -60,7 +61,7 @@ class BackupRestoreViewModel(
         launchBusy {
             application.contentResolver.openOutputStream(uri)?.use { output ->
                 repository.exportBackup(output)
-            } ?: error(MLang.Feature.BackupRestore.Error.OpenOutputFailed)
+            } ?: error("Failed to open output stream")
         }
     }
 
@@ -68,8 +69,25 @@ class BackupRestoreViewModel(
         launchBusy {
             application.contentResolver.openInputStream(uri)?.use { input ->
                 repository.restoreBackup(input)
-            } ?: error(MLang.Feature.BackupRestore.Error.OpenInputFailed)
-            emitMessage(MLang.Feature.BackupRestore.Message.RestoreSuccess)
+            } ?: error("Failed to open input stream")
+            _events.emit(BackupRestoreEvent.RestoreSuccess)
+        }
+    }
+
+    fun exportBackupToFile(file: java.io.File) {
+        launchBusy {
+            file.outputStream().use { output ->
+                repository.exportBackup(output)
+            }
+        }
+    }
+
+    fun restoreBackupFromFile(file: java.io.File) {
+        launchBusy {
+            file.inputStream().use { input ->
+                repository.restoreBackup(input)
+            }
+            _events.emit(BackupRestoreEvent.RestoreSuccess)
         }
     }
 
@@ -80,7 +98,7 @@ class BackupRestoreViewModel(
             runCatching { withContext(Dispatchers.IO) { block() } }
                 .onFailure { error ->
                     emitMessage(
-                        MLang.Feature.BackupRestore.Error.OperationFailed.format(
+                        MLang.MetaFeature.Backup.RestoreFailed.format(
                             error.message ?: MLang.Util.Error.UnknownError
                         )
                     )

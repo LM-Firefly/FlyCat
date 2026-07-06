@@ -18,11 +18,11 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.viewmodel
+package com.github.yumelira.yumebox.feature.proxy.presentation.viewmodel
 
 import com.github.yumelira.yumebox.core.model.Proxy
-import com.github.yumelira.yumebox.data.model.ProxySortMode
-import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
+import com.github.yumelira.yumebox.core.model.ProxyGroupInfo
+import com.github.yumelira.yumebox.core.model.ProxySortMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

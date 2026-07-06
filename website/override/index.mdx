@@ -2,12 +2,12 @@
 title: "覆写"
 sidebarTitle: "覆写"
 icon: "file-code"
-description: "YumeBox 运行时覆写系统的使用方式与编译链路。"
+description: "FlyCat 运行时覆写系统的使用方式与编译链路。"
 ---
 
 覆写（Override）位于订阅配置与 mihomo 加载之间，用于在启动时合并本机配置、运行时补丁和脚本化处理。
 
-订阅文件不会被改写。每次启动或重载时，YumeBox 会读取当前订阅，按绑定顺序应用覆写，再把结果加载到 mihomo。
+订阅文件不会被改写。每次启动或重载时，FlyCat 会读取当前订阅，按绑定顺序应用覆写，再把结果加载到 mihomo。
 
 ## 适用场景
 
@@ -54,8 +54,14 @@ rules-end:
   <Step title="绑定订阅">
     将一个或多个覆写绑定到目标订阅。
   </Step>
+  <Step title="启动或重载">
+    FlyCat 解析绑定链，构建 `RuntimeSpec`，再进入 native 编译。
+  </Step>
+  <Step title="加载内核">
+    编译结果以内存形式加载到 mihomo，随后启动 HTTP、TUN 或 Root TUN。
+  </Step>
   <Step title="按链叠加">
-    启动或重载时，YumeBox 按绑定顺序应用覆写链，后一个覆写基于前一个的结果继续处理。
+    启动或重载时，FlyCat 按绑定顺序应用覆写链，后一个覆写基于前一个的结果继续处理。
   </Step>
 </Steps>
 

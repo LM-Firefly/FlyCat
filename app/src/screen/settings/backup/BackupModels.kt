@@ -20,25 +20,23 @@
 
 package com.github.yumelira.yumebox.screen.settings.backup
 
+import com.github.yumelira.yumebox.core.model.AccessControlMode
+import com.github.yumelira.yumebox.core.model.AppColorTheme
+import com.github.yumelira.yumebox.core.model.AppLanguage
+import com.github.yumelira.yumebox.core.model.LinkOpenMode
+import com.github.yumelira.yumebox.core.model.Profile
+import com.github.yumelira.yumebox.core.model.PROXY_SHEET_HEIGHT_FRACTION_DEFAULT
+import com.github.yumelira.yumebox.core.model.ProxyDisplayMode
 import com.github.yumelira.yumebox.core.model.ProxyMode
+import com.github.yumelira.yumebox.core.model.ProxySortMode
+import com.github.yumelira.yumebox.core.model.RemoteBackend
 import com.github.yumelira.yumebox.core.model.RootTunDnsMode
+import com.github.yumelira.yumebox.core.model.ThemeMode
 import com.github.yumelira.yumebox.core.model.TunnelState
-import com.github.yumelira.yumebox.data.model.AccessControlMode
-import com.github.yumelira.yumebox.data.model.AccessControlSortMode
-import com.github.yumelira.yumebox.data.model.AppColorTheme
-import com.github.yumelira.yumebox.data.model.AppLanguage
-import com.github.yumelira.yumebox.data.model.PROXY_SHEET_HEIGHT_FRACTION_DEFAULT
-import com.github.yumelira.yumebox.data.model.ProxyDisplayMode
-import com.github.yumelira.yumebox.data.model.ProxySortMode
-import com.github.yumelira.yumebox.data.model.RemoteBackend
-import com.github.yumelira.yumebox.data.model.ThemeMode
-import com.github.yumelira.yumebox.data.model.TunStack
-import com.github.yumelira.yumebox.data.store.LinkOpenMode
-import com.github.yumelira.yumebox.data.store.ProfileLink
-import com.github.yumelira.yumebox.runtime.api.Profile
-import com.github.yumelira.yumebox.runtime.service.profile.Imported
-import kotlinx.serialization.Serializable
+import com.github.yumelira.yumebox.core.model.TunStack
+import com.github.yumelira.yumebox.runtime.service.runtime.entity.Imported
 import java.util.UUID
+import kotlinx.serialization.Serializable
 
 const val BACKUP_FORMAT_VERSION = 1
 
@@ -58,8 +56,8 @@ data class BackupPayload(
     val networkSettings: NetworkSettingsBackup = NetworkSettingsBackup(),
     val featureSettings: FeatureSettingsBackup = FeatureSettingsBackup(),
     val proxyDisplaySettings: ProxyDisplaySettingsBackup = ProxyDisplaySettingsBackup(),
-    val profileLinks: ProfileLinksBackup = ProfileLinksBackup(),
     val remoteController: RemoteControllerBackup = RemoteControllerBackup(),
+    val webDav: WebDavBackup = WebDavBackup(),
     val profiles: ProfilesBackup = ProfilesBackup(),
     val service: ServiceBackup = ServiceBackup(),
 )
@@ -85,11 +83,14 @@ data class AppSettingsBackup(
     val moeWallpaperZoom: Float = 1.0f,
     val moeWallpaperBiasX: Float = 0.0f,
     val moeWallpaperBiasY: Float = 0.0f,
-    val moeHomeQuote: String = "时间一分一秒流逝而去 终结一步一步迎面而来",
-    val moeHomeQuoteAuthor: String = "恋文",
+    val moeHomeQuote: String = "",
+    val moeHomeQuoteAuthor: String = "",
     val moeSidebarExpanded: Boolean = true,
     val pageScale: Float = 1.0f,
     val singleNodeTest: Boolean = true,
+    val logLevel: Int = 2, // Log.INFO
+    val autoCheckAppUpdate: Boolean = false,
+    val updateSourceKey: String = "Stable",
     val customUserAgent: String = "",
 )
 
@@ -117,7 +118,6 @@ data class NetworkSettingsBackup(
     val accessControlPackages: Set<String> = emptySet(),
     val accessControlSelectedFirst: Boolean = true,
     val accessControlShowSystemApps: Boolean = false,
-    val accessControlSortMode: AccessControlSortMode = AccessControlSortMode.LABEL,
 )
 
 @Serializable
@@ -135,16 +135,9 @@ data class FeatureSettingsBackup(
 @Serializable
 data class ProxyDisplaySettingsBackup(
     val sortMode: ProxySortMode = ProxySortMode.DEFAULT,
-    val displayMode: ProxyDisplayMode = ProxyDisplayMode.SINGLE_DETAILED,
+    val displayMode: ProxyDisplayMode = ProxyDisplayMode.DOUBLE_DETAILED,
     val proxyMode: TunnelState.Mode = TunnelState.Mode.Rule,
     val sheetHeightFraction: Float = PROXY_SHEET_HEIGHT_FRACTION_DEFAULT,
-)
-
-@Serializable
-data class ProfileLinksBackup(
-    val linkOpenMode: LinkOpenMode = LinkOpenMode.IN_APP,
-    val links: List<ProfileLink> = emptyList(),
-    val defaultLinkId: String = "",
 )
 
 @Serializable
@@ -152,6 +145,14 @@ data class RemoteControllerBackup(
     val controllerEnabled: Boolean = false,
     val backends: List<RemoteBackend> = emptyList(),
     val activeBackendId: String = "",
+)
+
+@Serializable
+data class WebDavBackup(
+    val url: String = "",
+    val account: String = "",
+    val password: String = "",
+    val directory: String = "FlyCat",
 )
 
 @Serializable
@@ -172,7 +173,7 @@ data class ImportedBackup(
     val total: Long,
     val expire: Long,
     val createdAt: Long,
-    val ageSecretKey: String? = null,
+    val ageSecretKey: String = "",
 ) {
     fun toImported(): Imported =
         Imported(

@@ -20,32 +20,33 @@
 
 package com.github.yumelira.yumebox.data.controller
 
+import com.github.yumelira.yumebox.core.data.OverrideApplier
+import com.github.yumelira.yumebox.core.model.Profile
 import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
-import com.github.yumelira.yumebox.runtime.api.Profile
 import timber.log.Timber
 
-class ActiveProfileOverrideReloader(
+class ActiveProfileOverrideApplier(
     private val queryActiveProfile: suspend () -> Profile?,
     private val bindingProvider: ProfileBindingProvider,
-    private val overrideService: OverrideService,
-) {
-    suspend fun reapplyActiveProfileOverride(): Boolean {
+    private val overrideApplicator: OverrideApplicator,
+) : OverrideApplier {
+    override suspend fun reapplyActiveProfileOverride(): Boolean {
         val activeProfile = queryActiveProfile() ?: return true
-        val applied = overrideService.applyOverride(activeProfile.uuid.toString())
+        val applied = overrideApplicator.applyOverride(activeProfile.uuid.toString())
         if (!applied) {
             Timber.e("Failed to reapply active profile override: profile=%s", activeProfile.uuid)
         }
         return applied
     }
 
-    suspend fun reapplyActiveProfileIfUsingOverride(overrideId: String): Boolean {
+    override suspend fun reapplyActiveProfileIfUsingOverride(overrideId: String): Boolean {
         val activeProfile = queryActiveProfile() ?: return true
         val binding = bindingProvider.getBinding(activeProfile.uuid.toString()) ?: return true
         if (!binding.overrideIds.contains(overrideId)) {
             return true
         }
 
-        val applied = overrideService.applyOverride(activeProfile.uuid.toString())
+        val applied = overrideApplicator.applyOverride(activeProfile.uuid.toString())
         if (!applied) {
             Timber.e(
                 "Failed to reapply active profile override after config change: profile=%s override=%s",
@@ -56,7 +57,7 @@ class ActiveProfileOverrideReloader(
         return applied
     }
 
-    suspend fun isActiveProfileUsingOverride(overrideId: String): Boolean {
+    override suspend fun isActiveProfileUsingOverride(overrideId: String): Boolean {
         val activeProfile = queryActiveProfile() ?: return false
         val binding = bindingProvider.getBinding(activeProfile.uuid.toString()) ?: return false
         return binding.overrideIds.contains(overrideId)

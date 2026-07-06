@@ -34,4 +34,8 @@ object AppConstants {
         val DEFAULT_VERTICAL_SPACING = UiDp.dp24
         val SPEED_CHART_HEIGHT = UiDp.dp130
     }
+
+    object Limits {
+        const val SPEED_HISTORY_SIZE = 24
+    }
 }

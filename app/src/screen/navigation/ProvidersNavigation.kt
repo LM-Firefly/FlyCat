@@ -22,7 +22,7 @@ package com.github.yumelira.yumebox.screen.navigation
 
 import androidx.compose.runtime.Composable
 import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.screen.ProvidersContent
+import com.github.yumelira.yumebox.feature.proxy.presentation.screen.ProvidersContent
 
 @Composable
 fun ProvidersScreen(navigator: Navigator) {

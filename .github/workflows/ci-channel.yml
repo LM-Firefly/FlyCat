@@ -2,7 +2,7 @@ name: CI Channel
 
 on:
   push:
-    branches: [ "Yume", "Moe", "Dev" ]
+    branches: [ "Moes", "Devs" ]
     paths-ignore:
       - "**.md"
       - "docs/**"
@@ -19,13 +19,6 @@ concurrency:
 permissions:
   contents: write
 
-# Push counter N = this workflow's run_number (versionCode = 5795 + N): it increments once
-# per run (one push -> one run), lives on the GitHub side so squash/rebase/force-push can
-# never make it go backwards, and needs no extra permissions or API calls. Both channels of
-# one run share the same N (same commit -> same versionCode). CAUTION: renaming this
-# workflow FILE resets the run_number sequence to 1 - if that ever happens, bump the 5795
-# base in app/build.gradle.kts and reusable-prepare-publish.yml above the last published
-# versionCode to keep it monotonic.
 jobs:
   build-geo-pre:
     uses: ./.github/workflows/reusable-build-geo.yml
@@ -133,10 +126,41 @@ jobs:
     with:
       channel: pre
       module: app
-      artifact_prefix: yumebox
+      artifact_prefix: FlyCat-pre
       release_tag: Pre-release
-      meta_asset_name: yumebox-pre-meta.json
+      meta_asset_name: FlyCat-pre-meta.json
       raw_apk_artifact_name: apk-raw-pre-app
+      build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+    secrets: inherit
+
+  build-apk-pre-app-with-extension:
+    needs: bundle-native-pre
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: pre
+      module: app
+      artifact_prefix: FlyCat-pre-extension
+      release_tag: Pre-release
+      meta_asset_name: FlyCat-pre-extension-meta.json
+      raw_apk_artifact_name: apk-raw-pre-app-with-extension
+      with_extension: true
+      build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+    secrets: inherit
+
+  build-apk-pre-extension:
+    needs: bundle-native-pre
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: pre
+      module: extension
+      artifact_prefix: FlyCat-pre-extension-standalone
+      release_tag: Pre-release
+      meta_asset_name: FlyCat-pre-extension-standalone-meta.json
+      raw_apk_artifact_name: apk-raw-pre-extension
       build_number: ${{ github.run_number }}
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
@@ -148,10 +172,41 @@ jobs:
     with:
       channel: smart
       module: app
-      artifact_prefix: yumebox-smart
+      artifact_prefix: FlyCat-smart
       release_tag: Smart
-      meta_asset_name: yumebox-smart-meta.json
+      meta_asset_name: FlyCat-smart-meta.json
       raw_apk_artifact_name: apk-raw-smart-app
+      build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+    secrets: inherit
+
+  build-apk-smart-app-with-extension:
+    needs: bundle-native-smart
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: smart
+      module: app
+      artifact_prefix: FlyCat-smart-extension
+      release_tag: Smart
+      meta_asset_name: FlyCat-smart-extension-meta.json
+      raw_apk_artifact_name: apk-raw-smart-app-with-extension
+      with_extension: true
+      build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+    secrets: inherit
+
+  build-apk-smart-extension:
+    needs: bundle-native-smart
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: smart
+      module: extension
+      artifact_prefix: FlyCat-smart-extension-standalone
+      release_tag: Smart
+      meta_asset_name: FlyCat-smart-extension-standalone-meta.json
+      raw_apk_artifact_name: apk-raw-smart-extension
       build_number: ${{ github.run_number }}
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
@@ -163,11 +218,43 @@ jobs:
     with:
       channel: pre
       module: app
-      artifact_prefix: yumebox
+      artifact_prefix: FlyCat-pre
       release_tag: Pre-release
-      meta_asset_name: yumebox-pre-meta.json
+      meta_asset_name: FlyCat-pre-meta.json
       raw_apk_artifact_name: apk-raw-pre-app
       publish_artifact_name: publish-pre-app
+      build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+    secrets: inherit
+
+  prepare-publish-pre-app-with-extension:
+    needs: build-apk-pre-app-with-extension
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: pre
+      module: app
+      artifact_prefix: FlyCat-pre-extension
+      release_tag: Pre-release
+      meta_asset_name: FlyCat-pre-extension-meta.json
+      raw_apk_artifact_name: apk-raw-pre-app-with-extension
+      publish_artifact_name: publish-pre-app-with-extension
+      build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+    secrets: inherit
+
+  prepare-publish-pre-extension:
+    needs: build-apk-pre-extension
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: pre
+      module: extension
+      artifact_prefix: FlyCat-pre-extension-standalone
+      release_tag: Pre-release
+      meta_asset_name: FlyCat-pre-extension-standalone-meta.json
+      raw_apk_artifact_name: apk-raw-pre-extension
+      publish_artifact_name: publish-pre-extension
       build_number: ${{ github.run_number }}
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
@@ -179,9 +266,9 @@ jobs:
     with:
       channel: smart
       module: app
-      artifact_prefix: yumebox-smart
+      artifact_prefix: FlyCat-smart
       release_tag: Smart
-      meta_asset_name: yumebox-smart-meta.json
+      meta_asset_name: FlyCat-smart-meta.json
       raw_apk_artifact_name: apk-raw-smart-app
       publish_artifact_name: publish-smart-app
       build_number: ${{ github.run_number }}
@@ -189,21 +276,92 @@ jobs:
       build_branch: ${{ github.ref_name }}
     secrets: inherit
 
-  notify-pre:
-    needs: prepare-publish-pre-app
-    uses: ./.github/workflows/reusable-notify-telegram.yml
+  prepare-publish-smart-app-with-extension:
+    needs: build-apk-smart-app-with-extension
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: smart
+      module: app
+      artifact_prefix: FlyCat-smart-extension
+      release_tag: Smart
+      meta_asset_name: FlyCat-smart-extension-meta.json
+      raw_apk_artifact_name: apk-raw-smart-app-with-extension
+      publish_artifact_name: publish-smart-app-with-extension
+      build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+    secrets: inherit
+
+  prepare-publish-smart-extension:
+    needs: build-apk-smart-extension
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: smart
+      module: extension
+      artifact_prefix: FlyCat-smart-extension-standalone
+      release_tag: Smart
+      meta_asset_name: FlyCat-smart-extension-standalone-meta.json
+      raw_apk_artifact_name: apk-raw-smart-extension
+      publish_artifact_name: publish-smart-extension
+      build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+    secrets: inherit
+
+  publish-release-pre:
+    needs:
+      - prepare-publish-pre-app
+      - prepare-publish-pre-app-with-extension
+      - prepare-publish-pre-extension
+    uses: ./.github/workflows/reusable-publish-release.yml
     with:
       channel: pre
       release_tag: Pre-release
-      publish_artifact_name: publish-pre-app
-      meta_asset_name: yumebox-pre-meta.json
-      telegram_title: YumeBox Pre
+      release_name: Pre-release
+      prerelease: true
+      publish_artifacts: publish-pre-app,publish-pre-app-with-extension,publish-pre-extension
+      cleanup_assets: true
+      delete_existing_release: true
     secrets: inherit
 
-  cleanup-artifacts:
+  publish-release-smart:
     needs:
-      - notify-pre
       - prepare-publish-smart-app
-    permissions:
-      actions: write
-    uses: ./.github/workflows/reusable-cleanup-artifacts.yml
+      - prepare-publish-smart-app-with-extension
+      - prepare-publish-smart-extension
+    uses: ./.github/workflows/reusable-publish-release.yml
+    with:
+      channel: smart
+      release_tag: Smart
+      release_name: Smart
+      prerelease: true
+      publish_artifacts: publish-smart-app,publish-smart-app-with-extension,publish-smart-extension
+      cleanup_assets: true
+      delete_existing_release: true
+    secrets: inherit
+
+#  notify-pre:
+#    needs:
+#      - prepare-publish-pre-app
+#      - publish-release-pre
+#    uses: ./.github/workflows/reusable-notify-telegram.yml
+#    with:
+#      channel: pre
+#      release_tag: Pre-release
+#      publish_artifact_name: publish-pre-app
+#      meta_asset_name: FlyCat-pre-meta.json
+#      telegram_title: FlyCat Pre
+#    secrets: inherit
+
+#  notify-smart:
+#    needs:
+#      - prepare-publish-smart-app
+#      - publish-release-smart
+#    uses: ./.github/workflows/reusable-notify-telegram.yml
+#    with:
+#      channel: smart
+#      release_tag: Smart
+#      publish_artifact_name: publish-smart-app
+#      meta_asset_name: FlyCat-smart-meta.json
+#      telegram_title: FlyCat Smart
+#    secrets: inherit

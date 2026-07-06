@@ -2,7 +2,7 @@ name: Pull Request CI
 
 on:
   pull_request:
-    branches: [ "Yume", "Moe", "Dev" ]
+    branches: [ "Moes", "Devs" ]
     paths-ignore:
       - "**.md"
       - "docs/**"
@@ -66,21 +66,16 @@ jobs:
       channel: pr
     secrets: inherit
 
-  # PR builds carry no push counter (that is ci-channel.yml's run_number): build_number
-  # stays empty, so versionCode falls back to the 5795 base. The commit hash in versionName
-  # (and the PR number in the release tag) uniquely identifies the build instead.
   build-apk-pr-app:
     needs: bundle-native-pr
     uses: ./.github/workflows/reusable-build-apk-only.yml
     with:
       channel: pr
       module: app
-      artifact_prefix: yumebox-pr
+      artifact_prefix: FlyCat-pr
       release_tag: pr-${{ github.event.pull_request.number }}
-      meta_asset_name: yumebox-pr-meta.json
+      meta_asset_name: FlyCat-pr-meta.json
       raw_apk_artifact_name: apk-raw-pr-app
-      build_hash: ${{ github.event.pull_request.head.sha }}
-      build_branch: ${{ github.event.pull_request.head.ref }}
     secrets: inherit
 
   prepare-publish-pr-app:
@@ -89,13 +84,11 @@ jobs:
     with:
       channel: pr
       module: app
-      artifact_prefix: yumebox-pr
+      artifact_prefix: FlyCat-pr
       release_tag: pr-${{ github.event.pull_request.number }}
-      meta_asset_name: yumebox-pr-meta.json
+      meta_asset_name: FlyCat-pr-meta.json
       raw_apk_artifact_name: apk-raw-pr-app
       publish_artifact_name: publish-pr-app
-      build_hash: ${{ github.event.pull_request.head.sha }}
-      build_branch: ${{ github.event.pull_request.head.ref }}
     secrets: inherit
 
   # Fork PRs get a read-only GITHUB_TOKEN that cannot delete artifacts, so the

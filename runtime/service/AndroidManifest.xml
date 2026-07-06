@@ -83,6 +83,10 @@
         </service>
 
         <service
+            android:name="com.github.yumelira.yumebox.runtime.service.root.RootTunRootService"
+            android:exported="false" />
+
+        <service
             android:name="com.github.yumelira.yumebox.runtime.service.ProxyTileService"
             android:exported="true"
             android:icon="@drawable/ic_logo_service"
@@ -100,6 +104,9 @@
                 <action android:name="android.provider.Telephony.SECRET_CODE" />
                 <data android:host="0721" android:scheme="android_secret_code" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
+            </intent-filter>
         </receiver>
 
         <receiver
@@ -110,5 +117,17 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <provider
+            android:name="com.github.yumelira.yumebox.runtime.service.FilesProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+
     </application>
 </manifest>

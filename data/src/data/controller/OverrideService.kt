@@ -20,20 +20,12 @@
 
 package com.github.yumelira.yumebox.data.controller
 
-import android.content.Context
-import android.content.Intent
-import com.github.yumelira.yumebox.runtime.api.Intents
-import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import timber.log.Timber
 
-class OverrideService(
-    context: Context,
-    private val resolver: OverrideResolver,
+class OverrideApplicator(
+    private val resolver: OverrideBindingRepository,
     private val onRuntimeOverrideChanged: () -> Unit = {},
 ) {
-    private val appContext = context.appContextOrSelf
-
-    @Suppress("TooGenericExceptionCaught")
     suspend fun applyOverride(profileId: String): Boolean {
         return try {
             val overrideIds = resolver.resolveIds(profileId)
@@ -68,10 +60,6 @@ class OverrideService(
     }
 
     private fun notifyRuntimeOverrideChanged() {
-        appContext.sendBroadcast(
-            Intent(Intents.actionOverrideChanged(appContext.packageName))
-                .setPackage(appContext.packageName)
-        )
         onRuntimeOverrideChanged()
     }
 }

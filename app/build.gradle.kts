@@ -21,6 +21,11 @@
 @file:Suppress("UnstableApiUsage")
 
 import java.util.Properties
+import java.time.ZonedDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
+fun String.asBuildConfigString(): String = "\"" + replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
 plugins {
     id("com.android.application")
@@ -33,19 +38,46 @@ plugins {
 
 
 val appAbiList =
-    gropify.abi.app.list.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+    providers.gradleProperty("abi.app.list").get().split(',').map { it.trim() }.filter { it.isNotEmpty() }
 
 val geoFilesAssetsDir = rootProject.layout.buildDirectory.dir("generated/assets/geo")
+val extensionAbiList =
+    providers.gradleProperty("abi.extension.list").get().split(',').map { it.trim() }.filter { it.isNotEmpty() }
+val withExtensionTaskRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.equals("assembleReleaseWithExtension", ignoreCase = true) ||
+        taskName.endsWith(":assembleReleaseWithExtension", ignoreCase = true)
+}
+val withExtension = project.hasProperty("withExtension") || withExtensionTaskRequested
+val packagingAbiList = if (withExtension) extensionAbiList else appAbiList
+val projectApplicationId = providers.gradleProperty("project.applicationId")
+    .orElse(providers.gradleProperty("project.namespace.base"))
+    .get()
+val updateRepository = providers.gradleProperty("update.repository").orNull
+    ?.trim()?.ifEmpty { null } ?: "LM-Firefly/FlyCat"
+val updateSource = providers.gradleProperty("update.source").orNull
+    ?.trim()?.ifEmpty { null } ?: "smart"
+val updateUiBuildId = providers.gradleProperty("update.uiBuildId").orNull
+    ?.trim()?.ifEmpty { null }
+    ?: run {
+        val stamp = ZonedDateTime.now(ZoneId.of("Asia/Shanghai"))
+            .format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"))
+        val commit = runCatching {
+            providers.exec {
+                commandLine("git", "rev-parse", "--short=6", "HEAD")
+                workingDir = rootDir
+            }.standardOutput.asText.get().trim().ifBlank { "000000" }
+        }.getOrDefault("000000")
+        "$stamp-$commit"
+    }
+val updateMirrorTemplates = providers.gradleProperty("update.mirrorTemplates").orNull
+    ?.trim()?.ifEmpty { null } ?: ""
 
-// CI-computed build versioning. CI injects `-Pbuild.number=<N>` (N = ci-channel.yml
-// run_number: +1 per run, one push -> one run, immune to git history rewrites; both
-// channels of one run share the same N), `-Pbuild.hash=<commit sha>` and
-// `-Pbuild.branch=<branch name>`; local builds fall back to the base version.
-// versionName = <base>[.<branch>].<hash8> when a hash is injected. 5795 is the versionCode
-// epoch that replaced the legacy manual `project.version.code` scheme (last manual value:
-// 5200). If ci-channel.yml is ever RENAMED its run_number resets to 1 - bump this base
-// above the last published versionCode to stay monotonic.
-val baseVersionCode = 5795
+// CI-computed build versioning. CI injects `-Pbuild.number=<N>` (monotonic push counter,
+// see .github/workflows), `-Pbuild.hash=<commit sha>` and `-Pbuild.branch=<branch name>`;
+// local builds fall back to the base version. versionName = <base>[.<branch>].<hash8> when
+// a hash is injected.
+val baseVersionCode = providers.gradleProperty("project.version.code").get().toInt()
+val baseVersionName = providers.gradleProperty("project.version.name").get()
 val ciBuildNumber = providers.gradleProperty("build.number").orNull
     ?.trim()?.takeIf { it.isNotEmpty() }?.toInt()
 val ciBuildHash = providers.gradleProperty("build.hash").orNull
@@ -59,23 +91,26 @@ val ciBuildBranch = providers.gradleProperty("build.branch").orNull
     ?.takeIf { it.isNotEmpty() }
 val appVersionCode = baseVersionCode + (ciBuildNumber ?: 0)
 val appVersionName = ciBuildHash
-    ?.let { hash -> listOfNotNull(gropify.project.version.name, ciBuildBranch, hash).joinToString(".") }
-    ?: gropify.project.version.name
+    ?.let { hash -> listOfNotNull(baseVersionName, ciBuildBranch, hash).joinToString(".") }
+    ?: baseVersionName
 
 android {
-    namespace = gropify.project.namespace.base
+    namespace = providers.gradleProperty("project.namespace.base").get()
 
     defaultConfig {
-        applicationId = gropify.project.namespace.base
-        targetSdk = gropify.android.targetSdk
+        applicationId = projectApplicationId
+        targetSdk = providers.gradleProperty("android.targetSdk").get().toInt()
         versionCode = appVersionCode
         versionName = appVersionName
-        buildConfigField("String", "BASE_VERSION", "\"${gropify.project.version.name}\"")
-        manifestPlaceholders["appName"] = gropify.project.name
+        manifestPlaceholders["appName"] = providers.gradleProperty("project.name").get()
+        buildConfigField("String", "UPDATE_REPOSITORY", updateRepository.asBuildConfigString())
+        buildConfigField("String", "UPDATE_SOURCE", updateSource.asBuildConfigString())
+        buildConfigField("String", "UI_BUILD_ID", updateUiBuildId.asBuildConfigString())
+        buildConfigField("String", "UPDATE_MIRROR_TEMPLATES", updateMirrorTemplates.asBuildConfigString())
     }
 
     compileOptions {
-        val javaVer = gropify.android.jvm
+        val javaVer = providers.gradleProperty("android.jvm").get()
         sourceCompatibility = JavaVersion.toVersion(javaVer)
         targetCompatibility = JavaVersion.toVersion(javaVer)
         isCoreLibraryDesugaringEnabled = true
@@ -116,12 +151,6 @@ android {
                 manifest.srcFile("AndroidManifest.xml")
             }
         }
-        getByName("test") {
-            kotlin.directories.apply {
-                clear()
-                add("test")
-            }
-        }
     }
 
     androidResources {
@@ -160,14 +189,16 @@ android {
             reset()
             // AGP Split.include only accepts vararg; copying this tiny ABI list is negligible.
             @Suppress("SpreadOperator")
-            include(*appAbiList.toTypedArray())
+            include(*packagingAbiList.toTypedArray())
             isUniversalApk = true
         }
     }
 
     packaging {
         jniLibs {
-            excludes += listOf("lib/**/libjavet*.so")
+            if (!withExtension) {
+                excludes += listOf("lib/**/libjavet*.so")
+            }
             useLegacyPackaging = true
         }
     }
@@ -204,7 +235,11 @@ android {
                 val buildTypeName = variant.buildType ?: "release"
                 output.versionName.set(appVersionName)
                 (output as com.android.build.api.variant.impl.VariantOutputImpl).outputFileName.set(
-                    "${gropify.project.name}-${appVersionName}-${abiName}-${buildTypeName}.apk"
+                    if (withExtension) {
+                        "${providers.gradleProperty("project.name").get()}_Extension-${abiName}-${buildTypeName}-${updateUiBuildId}.apk"
+                    } else {
+                        "${providers.gradleProperty("project.name").get()}-${abiName}-${buildTypeName}-${updateUiBuildId}.apk"
+                    }
                 )
             }
         }
@@ -212,7 +247,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidx.animation)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     implementation(project(":core"))
@@ -228,6 +262,7 @@ dependencies {
     implementation(project(":feature:override"))
     implementation(project(":feature:editor"))
     implementation(project(":feature:meta"))
+    implementation(project(":feature:update"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -244,6 +279,7 @@ dependencies {
     implementation(libs.miuix.icons)
     implementation(libs.miuix.blur.android)
     implementation(libs.haze)
+    implementation(libs.haze.blur)
     implementation(libs.androidx.navigationevent.compose)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
@@ -263,10 +299,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.timber)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.android)
     implementation(libs.xz)
-    implementation(libs.smali.dexlib2) {
-        exclude(group = "com.google.guava", module = "guava")
-    }
 
     implementation(libs.mlkit.barcode.scanning)
 
@@ -291,8 +326,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.hiddenapibypass)
 
+    implementation(libs.smali.dexlib2) {
+        exclude(group = "com.google.guava", module = "guava")
+    }
+
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.core.ktx)
-
-    testImplementation("junit:junit:4.13.2")
 }

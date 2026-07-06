@@ -38,8 +38,6 @@ dependencies {
     implementation(project(":platform"))
     implementation(project(":locale"))
     implementation(project(":ui"))
-    implementation(project(":data"))
-    implementation(project(":feature:editor"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -48,6 +46,7 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.koin.core)
@@ -59,4 +58,3 @@ dependencies {
     implementation(libs.miuix.icons)
     implementation(libs.reorderable)
 }
-

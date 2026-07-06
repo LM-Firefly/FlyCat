@@ -3,10 +3,6 @@ Service = {
     Notification = {
         Running = "Running"
         UnknownProfile = "Unknown profile"
-        LogChannel = "Log recording"
-        LogRecording = "Recording logs"
-        LogRecordingPending = "Recording..."
-        Stop = "Stop"
     }
 
     Tile = {

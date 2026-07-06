@@ -1,6 +1,6 @@
 <Home Page>
 Home = {
-    Title = "YumeBox"
+    Title = "FlyCat"
 
     Message = {
         ConfigSwitched = "配置已切换"
@@ -53,7 +53,7 @@ Home = {
     }
 
     PreviewGuide = {
-        Title = "欢迎使用 YumeBox"
+        Title = "欢迎使用 FlyCat"
         Description = "点亮右下角「启动」，一键连接"
         Next = "下一个"
         Start = "开始使用"

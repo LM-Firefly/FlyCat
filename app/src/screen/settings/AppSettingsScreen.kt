@@ -20,18 +20,20 @@
 
 package com.github.yumelira.yumebox.screen.settings
 
-import android.content.ComponentName
 import android.content.Intent
+import android.content.ComponentName
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -43,17 +45,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.github.yumelira.yumebox.common.util.AppIconHelper
-import com.github.yumelira.yumebox.common.util.LocaleUtil
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.data.model.AppLanguage
-import com.github.yumelira.yumebox.data.model.ThemeMode
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.yumelira.yumebox.core.model.AppLanguage
+import com.github.yumelira.yumebox.core.model.ThemeMode
+import com.github.yumelira.yumebox.platform.util.AppIconHelper
+import com.github.yumelira.yumebox.platform.util.LocaleUtil
+import com.github.yumelira.yumebox.platform.util.toast
+import com.github.yumelira.yumebox.presentation.component.AppFormDialog
 import com.github.yumelira.yumebox.presentation.component.AppTextFieldDialog
 import com.github.yumelira.yumebox.presentation.component.Card
+import com.github.yumelira.yumebox.presentation.component.LocalNavigator
+import com.github.yumelira.yumebox.presentation.component.NavigationBackIcon
+import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.PreferenceArrowItem
 import com.github.yumelira.yumebox.presentation.component.PreferenceEnumItem
 import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
@@ -65,8 +73,10 @@ import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.WarningBottomSheet
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
+import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.screen.settings.component.ThemeColorPickerItem
+import com.github.yumelira.yumebox.update.UpdateSource
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -76,15 +86,17 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-fun AppSettingsScreen() {
+fun AppSettingsScreen(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
     val viewModel = koinViewModel<AppSettingsViewModel>()
 
     Scaffold(
-        topBar = { TopBar(title = MLang.AppSettings.Title, scrollBehavior = scrollBehavior) }
+        topBar = { TopBar(title = MLang.AppSettings.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(navigator = navigator) }) }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
@@ -102,26 +114,30 @@ fun AppSettingsScreen() {
 
 @Composable
 private fun AppBehaviorSettingsSection(viewModel: AppSettingsViewModel) {
-    val automaticRestart by viewModel.automaticRestart.state.collectAsState()
+    val automaticRestart by viewModel.automaticRestart.state.collectAsStateWithLifecycle()
     val autoUpdateCurrentProfileOnStart by
-        viewModel.autoUpdateCurrentProfileOnStart.state.collectAsState()
+        viewModel.autoUpdateCurrentProfileOnStart.state.collectAsStateWithLifecycle()
     val isChineseLocale = remember { LocaleUtil.isChineseLocale() }
 
     Title(MLang.AppSettings.Section.Behavior)
     Card {
         PreferenceSwitchItem(
             title = MLang.AppSettings.Behavior.AutoStartTitle,
+            summary = MLang.AppSettings.Behavior.AutoStartSummary,
             checked = automaticRestart,
             onCheckedChange = viewModel::onAutomaticRestartChange,
         )
         PreferenceSwitchItem(
             title = MLang.AppSettings.Behavior.AutoUpdateOnStartTitle,
+            summary = MLang.AppSettings.Behavior.AutoUpdateOnStartSummary,
             checked = autoUpdateCurrentProfileOnStart,
             onCheckedChange = viewModel::onAutoUpdateCurrentProfileOnStartChange,
         )
         if (isChineseLocale) {
             PreferenceSwitchItem(
-                title = MLang.AppSettings.Behavior.OneChinaTitle,                checked = true,
+                title = MLang.AppSettings.Behavior.OneChinaTitle,
+                summary = MLang.AppSettings.Behavior.OneChinaSummary,
+                checked = true,
                 onCheckedChange = {},
                 enabled = false,
             )
@@ -131,16 +147,17 @@ private fun AppBehaviorSettingsSection(viewModel: AppSettingsViewModel) {
 
 @Composable
 private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
-    val themeMode by viewModel.themeMode.state.collectAsState()
-    val appLanguage by viewModel.appLanguage.state.collectAsState()
-    val themeSeedColorArgb by viewModel.themeSeedColorArgb.state.collectAsState()
-    val invertOnPrimaryColors by viewModel.invertOnPrimaryColors.state.collectAsState()
-    val bottomBarAutoHide by viewModel.bottomBarAutoHide.state.collectAsState()
-    val topBarBlurEnabled by viewModel.topBarBlurEnabled.state.collectAsState()
-    val pageScale by viewModel.pageScale.state.collectAsState()
-    val classicHomeEnabled by viewModel.classicHomeEnabled.state.collectAsState()
-    val homeQuote by viewModel.moeHomeQuote.state.collectAsState()
-    val homeQuoteAuthor by viewModel.moeHomeQuoteAuthor.state.collectAsState()
+    val context = LocalContext.current
+    val themeMode by viewModel.themeMode.state.collectAsStateWithLifecycle()
+    val appLanguage by viewModel.appLanguage.state.collectAsStateWithLifecycle()
+    val themeSeedColorArgb by viewModel.themeSeedColorArgb.state.collectAsStateWithLifecycle()
+    val invertOnPrimaryColors by viewModel.invertOnPrimaryColors.state.collectAsStateWithLifecycle()
+    val bottomBarAutoHide by viewModel.bottomBarAutoHide.state.collectAsStateWithLifecycle()
+    val topBarBlurEnabled by viewModel.topBarBlurEnabled.state.collectAsStateWithLifecycle()
+    val pageScale by viewModel.pageScale.state.collectAsStateWithLifecycle()
+    val classicHomeEnabled by viewModel.classicHomeEnabled.state.collectAsStateWithLifecycle()
+    val homeQuote by viewModel.moeHomeQuote.state.collectAsStateWithLifecycle()
+    val homeQuoteAuthor by viewModel.moeHomeQuoteAuthor.state.collectAsStateWithLifecycle()
     val homeQuoteSummary =
         remember(homeQuote) { homeQuote.ifBlank { MLang.AppSettings.Interface.HomeQuoteDefault } }
     val homeQuoteAuthorSummary =
@@ -148,10 +165,37 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
             homeQuoteAuthor.ifBlank { MLang.AppSettings.Interface.HomeQuoteAuthorDefault }
         }
 
+    val navigator = LocalNavigator.current
+    val wallpaperZoom by viewModel.moeWallpaperZoom.state.collectAsStateWithLifecycle()
+    val wallpaperBiasX by viewModel.moeWallpaperBiasX.state.collectAsStateWithLifecycle()
+    val wallpaperBiasY by viewModel.moeWallpaperBiasY.state.collectAsStateWithLifecycle()
+    var showUrlInputDialog by remember { mutableStateOf(false) }
+    var urlInput by remember { mutableStateOf("") }
+
+    val wallpaperPickerLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            uri ?: return@rememberLauncherForActivityResult
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }
+            navigator.push(
+                Route.MoeWallpaperCrop(
+                    wallpaperUri = uri.toString(),
+                    initialZoom = wallpaperZoom,
+                    initialBiasX = wallpaperBiasX,
+                    initialBiasY = wallpaperBiasY,
+                )
+            )
+        }
+
     Title(MLang.AppSettings.Interface.ColorThemeTitle)
     Card {
         PreferenceEnumItem(
             title = MLang.AppSettings.Interface.ThemeModeTitle,
+            summary = MLang.AppSettings.Interface.ThemeModeSummary,
             currentValue = themeMode,
             items =
                 listOf(
@@ -164,6 +208,7 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
         )
         PreferenceSwitchItem(
             title = MLang.AppSettings.Interface.ThemeColorPolarityInvertTitle,
+            summary = MLang.AppSettings.Interface.ThemeColorPolarityInvertSummary,
             checked = invertOnPrimaryColors,
             onCheckedChange = viewModel::onInvertOnPrimaryColorsChange,
         )
@@ -176,6 +221,7 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
     Card {
         PreferenceEnumItem(
             title = MLang.AppSettings.Interface.LanguageTitle,
+            summary = MLang.AppSettings.Interface.LanguageSummary,
             currentValue = appLanguage,
             items =
                 listOf(
@@ -188,11 +234,13 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
         )
         PreferenceSwitchItem(
             title = MLang.AppSettings.Interface.AutoHideNavbarTitle,
+            summary = MLang.AppSettings.Interface.AutoHideNavbarSummary,
             checked = bottomBarAutoHide,
             onCheckedChange = viewModel::onBottomBarAutoHideChange,
         )
         PreferenceSwitchItem(
             title = MLang.AppSettings.Interface.TopBarBlurTitle,
+            summary = MLang.AppSettings.Interface.TopBarBlurSummary,
             checked = topBarBlurEnabled,
             onCheckedChange = viewModel::onTopBarBlurEnabledChange,
         )
@@ -219,13 +267,48 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
             currentValue = homeQuoteAuthor,
             onConfirm = viewModel::onMoeHomeQuoteAuthorChange,
         )
+        WindowDropdownPreference(
+            title = MLang.AppSettings.Interface.HomeWallpaperSourceTitle,
+            summary = MLang.AppSettings.Interface.HomeWallpaperSourceSummary,
+            items = listOf(
+                MLang.AppSettings.Interface.HomeWallpaperSourceGallery,
+                MLang.AppSettings.Interface.HomeWallpaperSourceUrl,
+            ),
+            selectedIndex = -1,
+            onSelectedIndexChange = { index ->
+                when (index) {
+                    0 -> wallpaperPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    1 -> showUrlInputDialog = true
+                }
+            },
+        )
+    }
+
+    if (showUrlInputDialog) {
+        RemoteWallpaperUrlDialog(
+            show = showUrlInputDialog,
+            initialUrl = urlInput,
+            onDismiss = { showUrlInputDialog = false },
+            onConfirm = { url ->
+                showUrlInputDialog = false
+                urlInput = url
+                navigator.push(
+                    Route.MoeWallpaperCrop(
+                        wallpaperUri = url,
+                        initialZoom = wallpaperZoom,
+                        initialBiasX = wallpaperBiasX,
+                        initialBiasY = wallpaperBiasY,
+                    )
+                )
+            },
+        )
     }
 }
 
 @Composable
 private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
     val context = LocalContext.current
-    val excludeFromRecents by viewModel.excludeFromRecents.state.collectAsState()
+    val excludeFromRecents by viewModel.excludeFromRecents.state.collectAsStateWithLifecycle()
 
     Title(MLang.AppSettings.Section.Privacy)
     Card {
@@ -236,6 +319,7 @@ private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
         )
         PreferenceSwitchItem(
             title = MLang.AppSettings.Privacy.HideFromRecentsTitle,
+            summary = MLang.AppSettings.Privacy.HideFromRecentsSummary,
             checked = excludeFromRecents,
             onCheckedChange = viewModel::onExcludeFromRecentsChange,
         )
@@ -246,9 +330,10 @@ private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
 private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val showTrafficNotification by viewModel.showTrafficNotification.state.collectAsState()
-    val singleNodeTest by viewModel.singleNodeTest.state.collectAsState()
-    val exitUiWhenBackground by viewModel.exitUiWhenBackground.state.collectAsState()
+    val showTrafficNotification by viewModel.showTrafficNotification.state.collectAsStateWithLifecycle()
+    val singleNodeTest by viewModel.singleNodeTest.state.collectAsStateWithLifecycle()
+    val exitUiWhenBackground by viewModel.exitUiWhenBackground.state.collectAsStateWithLifecycle()
+    val logLevel by viewModel.logLevel.state.collectAsStateWithLifecycle()
     var batteryOptimizationIgnored by remember {
         mutableStateOf(isBatteryOptimizationIgnored(context))
     }
@@ -287,16 +372,27 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
     Card {
         PreferenceSwitchItem(
             title = MLang.AppSettings.ServiceSection.TrafficNotificationTitle,
+            summary = MLang.AppSettings.ServiceSection.TrafficNotificationSummary,
             checked = showTrafficNotification,
             onCheckedChange = viewModel::onShowTrafficNotificationChange,
         )
+        PreferenceEnumItem(
+            title = MLang.AppSettings.ServiceSection.LogLevelTitle,
+            summary = MLang.AppSettings.ServiceSection.LogLevelSummary,
+            currentValue = logLevel,
+            items = listOf("VERBOSE", "DEBUG", "INFO", "WARN", "ERROR", "ASSERT"),
+            values = listOf(Log.VERBOSE, Log.DEBUG, Log.INFO, Log.WARN, Log.ERROR, Log.ASSERT),
+            onValueChange = viewModel::onLogLevelChange,
+        )
         PreferenceSwitchItem(
             title = MLang.AppSettings.ServiceSection.SingleNodeTestTitle,
+            summary = MLang.AppSettings.ServiceSection.SingleNodeTestSummary,
             checked = singleNodeTest,
             onCheckedChange = viewModel::onSingleNodeTestChange,
         )
         PreferenceSwitchItem(
             title = MLang.AppSettings.ServiceSection.ExitUiWhenBackgroundTitle,
+            summary = MLang.AppSettings.ServiceSection.ExitUiWhenBackgroundSummary,
             checked = exitUiWhenBackground,
             onCheckedChange = viewModel::onExitUiWhenBackgroundChange,
         )
@@ -318,10 +414,34 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
 
 @Composable
 private fun AppNetworkSettingsSection(viewModel: AppSettingsViewModel) {
-    val customUserAgent by viewModel.customUserAgent.state.collectAsState()
+    val updateSource by viewModel.updateSource.collectAsStateWithLifecycle()
+    val autoCheckAppUpdate by viewModel.autoCheckAppUpdate.state.collectAsStateWithLifecycle()
+    val customUserAgent by viewModel.customUserAgent.state.collectAsStateWithLifecycle()
 
     Title(MLang.AppSettings.Section.Network)
     Card {
+        PreferenceEnumItem(
+            title = MLang.AppSettings.Network.UpdateChannelTitle,
+            summary = MLang.AppSettings.Network.UpdateChannelSummary,
+            currentValue = updateSource,
+            items = listOf(
+                MLang.AppSettings.Network.UpdateChannelStable,
+                MLang.AppSettings.Network.UpdateChannelPre,
+                MLang.AppSettings.Network.UpdateChannelSmart,
+            ),
+            values = listOf(
+                UpdateSource.Latest,
+                UpdateSource.Prerelease,
+                UpdateSource.Smart,
+            ),
+            onValueChange = viewModel::onUpdateSourceChange,
+        )
+        PreferenceSwitchItem(
+            title = MLang.AppSettings.Network.AutoCheckAppUpdateTitle,
+            summary = MLang.AppSettings.Network.AutoCheckAppUpdateSummary,
+            checked = autoCheckAppUpdate,
+            onCheckedChange = viewModel::onAutoCheckAppUpdateChange,
+        )
         CustomUserAgentPreferenceItem(
             customUserAgent = customUserAgent,
             onConfirm = viewModel::applyCustomUserAgent,
@@ -335,11 +455,12 @@ private fun HideAppIconPreferenceItem(
     onHideAppIconChange: (Boolean) -> Unit,
     context: android.content.Context,
 ) {
-    val hideAppIcon by hideAppIconFlow.collectAsState()
+    val hideAppIcon by hideAppIconFlow.collectAsStateWithLifecycle()
     val showHideIconDialogState = remember { mutableStateOf(false) }
 
     PreferenceSwitchItem(
         title = MLang.AppSettings.Privacy.HideIconTitle,
+        summary = MLang.AppSettings.Privacy.HideIconSummary,
         checked = hideAppIcon,
         onCheckedChange = { checked ->
             if (checked) {
@@ -566,4 +687,33 @@ private fun PageScaleDialog(
             )
         },
     )
+}
+
+@Composable
+private fun RemoteWallpaperUrlDialog(
+    show: Boolean,
+    initialUrl: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var url by remember { mutableStateOf(initialUrl) }
+    AppFormDialog(
+        show = show,
+        title = MLang.AppSettings.Interface.HomeWallpaperUrlDialogTitle,
+        onDismissRequest = onDismiss,
+        onConfirm = {
+            val trimmed = url.trim()
+            if (trimmed.isNotEmpty()) onConfirm(trimmed)
+        },
+        scrollable = false,
+    ) {
+        TextField(
+            value = url,
+            onValueChange = { url = it },
+            label = "https://example.com/image.jpg",
+            useLabelAsPlaceholder = true,
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }

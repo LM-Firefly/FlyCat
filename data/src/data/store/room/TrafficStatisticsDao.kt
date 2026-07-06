@@ -24,8 +24,8 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
-import com.github.yumelira.yumebox.data.model.AppRouteTrafficUsage
-import com.github.yumelira.yumebox.data.model.AppTrafficUsage
+import com.github.yumelira.yumebox.core.model.AppRouteTrafficUsage
+import com.github.yumelira.yumebox.core.model.AppTrafficUsage
 import kotlinx.coroutines.flow.Flow
 
 /**

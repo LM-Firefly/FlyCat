@@ -10,8 +10,12 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:ignore="ForegroundServicesPolicy"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <uses-permission android:name="com.android.permission.GET_INSTALLED_APPS"/>
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="PackageVisibilityPolicy,QueryAllPackagesPermission"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
                      tools:ignore="BatteryLife"/>
@@ -24,6 +28,7 @@
                      android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
                      tools:ignore="AllFilesAccessPolicy,ScopedStorage"/>
+    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" tools:ignore="SmsAndCallLogPolicy"/>
     <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
@@ -33,10 +38,11 @@
             android:icon="@mipmap/ic_launcher"
             android:label="${appName}"
             android:supportsRtl="true"
-            android:theme="@style/Theme.YumeBox"
+            android:theme="@style/Theme.FlyCat"
             android:usesCleartextTraffic="true">
         <activity
                 android:name=".MainActivity"
+                android:enableOnBackInvokedCallback="true"
                 android:exported="true"
                 android:launchMode="singleTop"
                 android:windowSoftInputMode="adjustResize">
@@ -63,11 +69,11 @@
                 <data android:scheme="yumebox"/>
             </intent-filter>
             <intent-filter>
-                <action android:name="com.github.yumelira.yumebox.action.START_CLASH"/>
+                <action android:name="${applicationId}.action.START_CLASH"/>
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
             <intent-filter>
-                <action android:name="com.github.yumelira.yumebox.action.STOP_CLASH"/>
+                <action android:name="${applicationId}.action.STOP_CLASH"/>
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </activity>
@@ -79,7 +85,7 @@
                 android:finishOnTaskLaunch="true"
                 android:launchMode="singleInstance"
                 android:taskAffinity=""
-                android:theme="@style/Theme.YumeBox.Translucent.Popup"/>
+                android:theme="@style/Theme.FlyCat.Translucent.Popup"/>
 
         <activity
             android:name=".WebViewActivity"
@@ -109,6 +115,12 @@
         <meta-data
                 android:name="com.android.stamp.source"
                 android:value="https://play.google.com/store"/>
+
+        <provider
+                android:name=".runtime.service.StatusProvider"
+                android:authorities="${applicationId}.status"
+                android:enabled="true"
+                android:exported="false"/>
 
         <provider
                 android:name="androidx.core.content.FileProvider"

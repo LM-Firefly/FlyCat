@@ -35,9 +35,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.dropUnlessResumed
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme.spacing
+import com.github.yumelira.yumebox.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -48,20 +50,36 @@ fun NavigationBackIcon(
     navigator: Navigator,
     modifier: Modifier = Modifier,
     contentDescription: String = "Back",
+    extraStartPadding: Dp = UiDp.dp24,
+) {
+    NavigationBackIcon(
+        onNavigateBack = { navigator.popBackStack() },
+        modifier = modifier,
+        contentDescription = contentDescription,
+        extraStartPadding = extraStartPadding,
+    )
+}
+
+@Composable
+fun NavigationBackIcon(
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    contentDescription: String = "Back",
+    extraStartPadding: Dp = UiDp.dp24,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by
         animateFloatAsState(
             targetValue = if (pressed) 0.92f else 1f,
-            animationSpec = AnimationSpecs.ButtonPress,
+            animationSpec = AnimationSpecs.ButtonPressSpring,
             label = "back_icon_scale",
         )
 
     Box(
         modifier =
             modifier
-                .padding(start = spacing.space20)
+                .padding(start = extraStartPadding)
                 .semantics { role = Role.Button }
                 .graphicsLayer {
                     scaleX = scale
@@ -70,7 +88,7 @@ fun NavigationBackIcon(
                 .clickable(
                     interactionSource = interactionSource,
                     indication = null,
-                    onClick = dropUnlessResumed { navigator.popBackStack() },
+                    onClick = dropUnlessResumed { onNavigateBack() },
                 ),
         contentAlignment = Alignment.Center,
     ) {

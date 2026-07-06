@@ -1,16 +1,12 @@
 ---
-title: "YumeBox"
+title: "FlyCat"
 sidebarTitle: "介绍"
 description: 基于 mihomo 内核的开源 Android 客户端
 icon: "house"
 ---
 
-<Frame>
-  <img
-    src="/logo/Yume.webp"
-    noZoom={true}
-  />
-</Frame>
+
+## 项目介绍
 
 <Info>如果结局是分开，那相遇的意义是什么 --  **恋×シンアイ彼女**</Info>
 
@@ -18,38 +14,101 @@ icon: "house"
 
 **~~作者对这个项目中的代码一无所知。代码处于可用或不可用状态，没有第三种情况。~~**
 
-**YumeBox 核心理念为尽可能少的覆写掉原配置中的内容，非必要不进行覆写，拒绝将明确的配置[字段](https://wiki.metacubex.one/config/)抽象为模棱两可、含糊其辞的功能开关**
+**FlyCat 核心理念为尽可能少的覆写掉原配置中的内容，非必要不进行覆写，拒绝将明确的配置[字段](https://wiki.metacubex.one/config/)抽象为模棱两可、含糊其辞的功能开关**
 ## 发展
 
-YumeBox 迭代至今逐渐趋于稳定，未来将一直保持 **开源 & 免费**，承诺不会有任何收集隐私及上传或广告行为。
+FlyCat 迭代至今逐渐趋于稳定，未来将一直保持 **开源 & 免费**，承诺不会有任何收集隐私及上传或广告行为。
 
 ### **2026 年6 月 1 日**
 
 ***为保持项目良好的发展，目前已去除签名校验部分部分，此外添加了部分条款，仅作用于Fork发行版，请不要为此项目带来混淆歧义或多余负担***
 
-- YumeBox 应用图标及品牌标识的版权归项目所有者所有
+- FlyCat 应用图标及品牌标识的版权归项目所有者所有
 - Fork 发行版限制
-    - 发行版不得使用 YumeBox 项目名称
-    - 发行版不得沿用 YumeBox 原始图标
-    - 发行版不得包含 YumeBox Issue 反馈渠道
+    - 发行版不得使用 FlyCat 项目名称
+    - 发行版不得沿用 FlyCat 原始图标
+    - 发行版不得包含 FlyCat Issue 反馈渠道
 
 
 ## 下载
 如果需要历史版本，请查看 [更新日志](/update/history.mdx)
-<Card title="下载" icon="square-arrow-down" horizontal href="https://github.com/YumeYucca/YumeBox/releases">
+<Card title="下载" icon="square-arrow-down" horizontal href="https://github.com/YumeYucca/FlyCat/releases">
    前往 Github Release 下载安装包
 </Card>
 
 ## 其他资料
 
 <CardGroup cols={2}>
-    <Card title="Telegram 群组" icon="message-circle" href="https://t.me/OOM_Group">
-        加入讨论，获取最新消息。
+  <Card title="Mihomo 内核" icon="cpu">
+    基于 MetaCubeX/mihomo 内核，稳定可靠。
+  </Card>
+   <Card title="强大的覆写支持" icon="box">
+      使用修饰符的自定义覆写配置,对订阅进行覆写
     </Card>
+  <Card title="SubStore 支持" icon="store">
+    可选 SubStore 支持，配置管理更方便。
+  </Card>
+  <Card title="Web 面板" icon="monitor">
+    内置 Web 面板，便于管理和监控。
+  </Card>
+</CardGroup>
 
-    <Card title="配置文档" icon="settings" href="https://wiki.metacubex.one/config/">
-        查看 mihomo 配置说明与最佳实践。
-    </Card>
+## 快速开始
+
+<CardGroup cols={2}>
+  <Card
+    title="下载发布版本"
+    icon="download"
+    href="https://github.com/LM-Firefly/FlyCat/releases"
+  >
+    在 GitHub Releases 获取最新 APK。
+  </Card>
+  <Card
+    title="GitHub 仓库"
+    icon="github"
+    href="https://github.com/LM-Firefly/FlyCat"
+  >
+    查看源码、提交 Issue、参与贡献。
+  </Card>
+  <Card
+    title="问题反馈"
+    icon="bug"
+    href="https://github.com/LM-Firefly/FlyCat/issues"
+  >
+    遇到问题或有建议时在此反馈。
+  </Card>
+  <Card
+    title="更新日志"
+    icon="clock"
+    href="/update/history"
+  >
+    查看版本更新历史
+  </Card>
+</CardGroup>
+
+## 兼容性
+
+- Android 8.0 及以上
+- 支持 `armeabi-v7a`、`arm64-v8a`、`x86`、`x86_64` 架构
+- 内核：`mihomo`
+
+## 相关链接
+
+<CardGroup cols={2}>
+  <Card
+    title="Telegram 群组"
+    icon="message-circle"
+    href="https://t.me/OOM_Group"
+  >
+    加入讨论，获取最新消息。
+  </Card>
+  <Card
+    title="配置文档"
+    icon="settings"
+    href="https://wiki.metacubex.one/config/"
+  >
+    查看 mihomo 配置说明与最佳实践。
+  </Card>
 </CardGroup>
 
 ## 模块依赖

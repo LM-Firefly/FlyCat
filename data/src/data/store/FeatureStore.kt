@@ -20,21 +20,25 @@
 
 package com.github.yumelira.yumebox.data.store
 
+import com.github.yumelira.yumebox.core.data.FeatureStoreReader
+import com.github.yumelira.yumebox.core.data.SubStoreSettings
+import com.github.yumelira.yumebox.core.model.LinkOpenMode
 import com.tencent.mmkv.MMKV
 
-class FeatureStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
+class FeatureStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv), FeatureStoreReader, SubStoreSettings {
     private companion object {
         const val KEY_LAST_APP_VERSION_CODE = "last_app_version_code"
         const val KEY_POST_UPDATE_COLD_START_PENDING = "post_update_cold_start_pending"
     }
 
-    val allowLanAccess by boolFlow(false)
-    val backendPort by intFlow(8081)
-    val frontendPort by intFlow(8080)
-    val selectedPanelType by intFlow(0)
-    val panelOpenMode by enumFlow(LinkOpenMode.IN_APP)
+    override val allowLanAccess by boolFlow(false)
+    override val backendPort by intFlow(8081)
+    override val frontendPort by intFlow(8080)
+    override val selectedPanelType by intFlow(0)
+    override val panelOpenMode by enumFlow(LinkOpenMode.IN_APP)
     val showWebControlInProxy by boolFlow(false)
-    val exitUiWhenBackground by boolFlow(false)
+    override val exitUiWhenBackground by boolFlow(false)
+    override val subStoreAutoCloseModeOrdinal by intFlow(-1)
 
     var isFirstOpen by bool(true)
 
@@ -58,7 +62,7 @@ class FeatureStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalM
      * Read-and-clear post-update cold-start marker. Returns true only for the first consumer after
      * an app update.
      */
-    fun consumePostUpdateColdStartPending(): Boolean {
+    override fun consumePostUpdateColdStartPending(): Boolean {
         val pending = mmkv.decodeBool(KEY_POST_UPDATE_COLD_START_PENDING, false)
         if (pending) {
             mmkv.removeValueForKey(KEY_POST_UPDATE_COLD_START_PENDING)

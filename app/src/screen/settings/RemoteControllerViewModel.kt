@@ -23,13 +23,14 @@ package com.github.yumelira.yumebox.screen.settings
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.data.model.RemoteBackend
+import com.github.yumelira.yumebox.core.data.add
+import com.github.yumelira.yumebox.core.data.remove
+import com.github.yumelira.yumebox.core.data.update
+import com.github.yumelira.yumebox.core.model.RemoteBackend
+import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
-import com.github.yumelira.yumebox.data.store.add
-import com.github.yumelira.yumebox.data.store.remove
-import com.github.yumelira.yumebox.data.store.update
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
-import com.github.yumelira.yumebox.runtime.client.manager.HttpClashManager
+import com.github.yumelira.yumebox.runtime.client.remote.HttpClashManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -115,7 +116,7 @@ class RemoteControllerViewModel(
 
     fun testConnection(backend: RemoteBackend) {
         viewModelScope.launch {
-            val result =
+            val result: Result<TunnelState> =
                 withContext(Dispatchers.IO) {
                     runCatching {
                         val manager = HttpClashManager(backendProvider = { backend })

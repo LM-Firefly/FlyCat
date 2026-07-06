@@ -31,12 +31,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
 import com.github.yumelira.yumebox.presentation.component.AppConfirmDialog
 import com.github.yumelira.yumebox.presentation.component.AppFormDialog
 import com.github.yumelira.yumebox.presentation.component.AppTextFieldDialog
@@ -45,6 +48,7 @@ import com.github.yumelira.yumebox.presentation.component.EditorEmptyState
 import com.github.yumelira.yumebox.presentation.component.EditorListItem
 import com.github.yumelira.yumebox.presentation.component.EditorScaffold
 import com.github.yumelira.yumebox.presentation.component.LocalTopBarHazeState
+import com.github.yumelira.yumebox.presentation.component.NavigationBackIcon
 import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.PreferenceValueItem
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
@@ -67,16 +71,25 @@ import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import java.util.UUID
 
 object EditorDataHolder {
-    var listEditorTitle: String = ""
-    var listEditorPlaceholder: String = ""
-    var listEditorItems: MutableList<String> = mutableListOf()
-    var listEditorCallback: ((List<String>?) -> Unit)? = null
+    var listEditorTitle by mutableStateOf("")
+        private set
+    var listEditorPlaceholder by mutableStateOf("")
+        private set
+    var listEditorItems by mutableStateOf<List<String>>(emptyList())
+        private set
+    var listEditorCallback by mutableStateOf<((List<String>?) -> Unit)?>(null)
+        private set
 
-    var mapEditorTitle: String = ""
-    var mapEditorKeyPlaceholder: String = ""
-    var mapEditorValuePlaceholder: String = ""
-    var mapEditorItems: MutableMap<String, String> = mutableMapOf()
-    var mapEditorCallback: ((Map<String, String>?) -> Unit)? = null
+    var mapEditorTitle by mutableStateOf("")
+        private set
+    var mapEditorKeyPlaceholder by mutableStateOf("")
+        private set
+    var mapEditorValuePlaceholder by mutableStateOf("")
+        private set
+    var mapEditorItems by mutableStateOf<Map<String, String>>(emptyMap())
+        private set
+    var mapEditorCallback by mutableStateOf<((Map<String, String>?) -> Unit)?>(null)
+        private set
 
     fun setupListEditor(
         title: String,
@@ -86,7 +99,7 @@ object EditorDataHolder {
     ) {
         listEditorTitle = title
         listEditorPlaceholder = placeholder
-        listEditorItems = items?.toMutableList() ?: mutableListOf()
+        listEditorItems = items?.toList() ?: emptyList()
         listEditorCallback = callback
     }
 
@@ -100,14 +113,14 @@ object EditorDataHolder {
         mapEditorTitle = title
         mapEditorKeyPlaceholder = keyPlaceholder
         mapEditorValuePlaceholder = valuePlaceholder
-        mapEditorItems = items?.toMutableMap() ?: mutableMapOf()
+        mapEditorItems = items?.toMap() ?: emptyMap()
         mapEditorCallback = callback
     }
 
     fun clearListEditor() {
         listEditorTitle = ""
         listEditorPlaceholder = ""
-        listEditorItems = mutableListOf()
+        listEditorItems = emptyList()
         listEditorCallback = null
     }
 
@@ -115,7 +128,7 @@ object EditorDataHolder {
         mapEditorTitle = ""
         mapEditorKeyPlaceholder = ""
         mapEditorValuePlaceholder = ""
-        mapEditorItems = mutableMapOf()
+        mapEditorItems = emptyMap()
         mapEditorCallback = null
     }
 }
@@ -187,6 +200,8 @@ fun StringListEditorScreen(navigator: Navigator) {
     EditorScaffold(
         title = title,
         scrollBehavior = scrollBehavior,
+        navigationIconPadding = 0.dp,
+        navigationIcon = { NavigationBackIcon(onNavigateBack = { navigator.popBackStack() }) },
         actions =
             listOf(
                 EditorAction(
@@ -293,7 +308,7 @@ fun StringListEditorScreen(navigator: Navigator) {
                     dialogState = StringListDialogState.None
                     EditorDataHolder.listEditorCallback?.invoke(null)
                     EditorDataHolder.clearListEditor()
-                    navigator.pop()
+                    navigator.popBackStack()
                 },
             )
         }
@@ -343,6 +358,7 @@ fun KeyValueEditorScreen(navigator: Navigator) {
     EditorScaffold(
         title = title,
         scrollBehavior = scrollBehavior,
+        navigationIcon = { NavigationBackIcon(navigator = navigator) },
         actions =
             listOf(
                 EditorAction(
@@ -356,6 +372,7 @@ fun KeyValueEditorScreen(navigator: Navigator) {
                     onClick = { dialogState = KeyValueDialogState.Add },
                 ),
             ),
+            navigationIconPadding = 0.dp,
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         val combinedInnerPadding = combinePaddingValues(innerPadding, mainLikePadding)
@@ -450,7 +467,7 @@ fun KeyValueEditorScreen(navigator: Navigator) {
                     dialogState = KeyValueDialogState.None
                     EditorDataHolder.mapEditorCallback?.invoke(null)
                     EditorDataHolder.clearMapEditor()
-                    navigator.pop()
+                    navigator.popBackStack()
                 },
             )
         }

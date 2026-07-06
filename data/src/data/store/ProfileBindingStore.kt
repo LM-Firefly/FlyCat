@@ -21,10 +21,10 @@
 package com.github.yumelira.yumebox.data.store
 
 import android.content.Context
+import com.github.yumelira.yumebox.core.model.MetadataIndex
+import com.github.yumelira.yumebox.core.model.OverrideMetadata
+import com.github.yumelira.yumebox.core.model.ProfileBinding
 import com.github.yumelira.yumebox.core.util.YamlCodec
-import com.github.yumelira.yumebox.data.model.MetadataIndex
-import com.github.yumelira.yumebox.data.model.OverrideMetadata
-import com.github.yumelira.yumebox.data.model.ProfileBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

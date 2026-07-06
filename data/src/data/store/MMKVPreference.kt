@@ -390,27 +390,4 @@ abstract class MMKVPreference(
     }
 }
 
-data class Preference<T>(
-    val state: StateFlow<T>,
-    private val update: (T) -> Unit,
-    private val get: () -> T,
-    private val refreshState: () -> Unit = { update(get()) },
-) {
-    val value: T
-        get() = get()
-
-    fun set(value: T) = update(value)
-
-    fun refresh() = refreshState()
-
-    fun invalidate() = refresh()
-}
-
-fun Preference<Boolean>.toggle() = set(!value)
-
-fun <T> Preference<List<T>>.add(item: T) = set(value + item)
-
-fun <T> Preference<List<T>>.remove(predicate: (T) -> Boolean) = set(value.filterNot(predicate))
-
-fun <T> Preference<List<T>>.update(predicate: (T) -> Boolean, transform: (T) -> T) =
-    set(value.map { if (predicate(it)) transform(it) else it })
+typealias Preference<T> = com.github.yumelira.yumebox.core.data.Preference<T>

@@ -25,11 +25,19 @@ plugins {
 
 android {
     namespace = "com.github.yumelira.yumebox.runtime.api"
+    buildFeatures {
+        aidl = true
+    }
 }
 
 dependencies {
     implementation(project(":core"))
-    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
-}
 
+    val mmkv64 = libs.versions.mmkv64.get()
+    val mmkv32 = libs.versions.mmkv32.get()
+    val injectedAbi = findProperty("android.injected.build.abi") as? String
+    val mmkvVersion = if (injectedAbi in listOf("arm64-v8a", "x86_64")) mmkv64 else mmkv32
+    implementation("com.tencent:mmkv:$mmkvVersion")
+}

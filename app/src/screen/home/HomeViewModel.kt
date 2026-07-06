@@ -21,47 +21,48 @@
 package com.github.yumelira.yumebox.screen.home
 
 import android.app.Application
-import android.content.Intent
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.core.presentation.AndroidContractStateViewModel
-import com.github.yumelira.yumebox.core.presentation.LoadableState
+import com.github.yumelira.yumebox.core.data.NetworkInfoReader
+import com.github.yumelira.yumebox.core.data.NetworkSettingsReader
+import com.github.yumelira.yumebox.core.model.TrafficData
+import com.github.yumelira.yumebox.core.model.ConnectionInfo
+import com.github.yumelira.yumebox.core.model.IpMonitoringState
+import com.github.yumelira.yumebox.core.model.Profile
+import com.github.yumelira.yumebox.core.model.ProxyMode
+import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.data.gateway.IpMonitoringState
-import com.github.yumelira.yumebox.data.gateway.NetworkInfoService
-import com.github.yumelira.yumebox.data.model.ProxyMode
-import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
-import com.github.yumelira.yumebox.domain.model.TrafficData
-import com.github.yumelira.yumebox.runtime.api.Profile
-import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
-import com.github.yumelira.yumebox.runtime.api.RuntimePhase
+import com.github.yumelira.yumebox.presentation.viewmodel.AndroidContractStateViewModel
+import com.github.yumelira.yumebox.presentation.viewmodel.LoadableState
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimeOwner
+import com.github.yumelira.yumebox.runtime.api.service.runtime.entity.RuntimePhase
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
 import com.github.yumelira.yumebox.runtime.client.ProxyGroupSyncPriority
 import com.github.yumelira.yumebox.runtime.client.RuntimeStateMapper
-import com.github.yumelira.yumebox.runtime.service.root.RootAccessSupport
+import com.github.yumelira.yumebox.runtime.client.VpnProxyController
 import dev.oom_wg.purejoy.mlang.MLang
+import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -77,19 +78,12 @@ enum class HomeProxyControlState {
         get() = this == Idle || this == Running
 }
 
-private enum class PendingTransition {
-    None,
-    AwaitingPermission,
-    Starting,
-    Stopping,
-}
-
 class HomeViewModel(
     application: Application,
     private val proxyFacade: ProxyFacade,
     private val profilesRepository: ProfilesRepository,
-    private val networkInfoService: NetworkInfoService,
-    private val networkSettingsStore: NetworkSettingsStore,
+    private val networkInfoService: NetworkInfoReader,
+    private val networkSettingsStore: NetworkSettingsReader,
     private val remoteControllerStore: com.github.yumelira.yumebox.data.store.RemoteControllerStore,
 ) :
     AndroidContractStateViewModel<HomeViewModel.HomeUiState, HomeViewModel.HomeUiEffect>(
@@ -133,25 +127,21 @@ class HomeViewModel(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     val currentProfile = proxyFacade.currentProfile
-    val trafficNow = proxyFacade.trafficNow
-    val proxyGroups = proxyFacade.proxyGroups
+    val trafficData: StateFlow<TrafficData> = proxyFacade.trafficNow
+        .map(TrafficData::from)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TrafficData.ZERO)
+
+    private val vpnController = VpnProxyController(viewModelScope, proxyFacade)
 
     private val _proxyMode = MutableStateFlow(ProxyMode.Tun)
     val proxyMode: StateFlow<ProxyMode> = _proxyMode.asStateFlow()
 
-    private val _pendingTransition = MutableStateFlow(PendingTransition.None)
     private var pendingStartRequest: PendingStartRequest? = null
 
-    private val _vpnPrepareIntent =
-        MutableSharedFlow<Intent>(
-            replay = 0,
-            extraBufferCapacity = 1,
-            onBufferOverflow = BufferOverflow.DROP_OLDEST,
-        )
-    val vpnPrepareIntent = _vpnPrepareIntent.asSharedFlow()
+    val vpnPrepareIntent = vpnController.vpnPrepareIntent
 
     val controlState: StateFlow<HomeProxyControlState> =
-        combine(runtimeSnapshot, _pendingTransition) { snapshot, pendingTransition ->
+        combine(runtimeSnapshot, vpnController.pendingTransition) { snapshot, pendingTransition ->
                 resolveControlState(snapshot.owner, snapshot.phase, pendingTransition)
             }
             .stateIn(
@@ -160,13 +150,28 @@ class HomeViewModel(
                 resolveControlState(
                     runtimeSnapshot.value.owner,
                     runtimeSnapshot.value.phase,
-                    _pendingTransition.value,
+                    vpnController.pendingTransition.value,
                 ),
             )
 
-    private val _speedHistory = MutableStateFlow<List<Long>>(emptyList())
-    val speedHistory: StateFlow<List<Long>> = _speedHistory.asStateFlow()
+    private val _speedHistory = MutableStateFlow<List<TrafficData>>(emptyList())
+    val speedHistory: StateFlow<List<TrafficData>> = _speedHistory.asStateFlow()
+    private val _homeScreenActive = MutableStateFlow(false)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val connections: StateFlow<List<ConnectionInfo>> = _homeScreenActive
+        .flatMapLatest { active ->
+            if (!active) flowOf(emptyList())
+            else combine(
+                proxyFacade.connectionSnapshot,
+                runtimeSnapshot.map { it.phase.running }.distinctUntilChanged(),
+            ) { snapshot, running ->
+                if (running) snapshot.connections.take(256) else emptyList()
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val tunnelMode: StateFlow<TunnelState.Mode?> = proxyFacade.tunnelMode
     private var reconcileJob: Job? = null
+    private var lastReconcileTime = 0L
 
     private val mainProxyNode: StateFlow<com.github.yumelira.yumebox.core.model.Proxy?> =
         proxyFacade.resolvedPrimaryNode
@@ -188,8 +193,6 @@ class HomeViewModel(
                 if (running) {
                     networkInfoService.startIpMonitoring(
                         isProxyActiveFlow = isRunning,
-                        externalRefreshFlow =
-                            PollingTimers.ticks(PollingTimerSpecs.HomeIpRefresh).map { Unit },
                     )
                 } else {
                     flowOf(IpMonitoringState.Loading)
@@ -205,16 +208,14 @@ class HomeViewModel(
         refreshProfiles()
         reconcileRuntimeState()
         observeControlState()
-        observeRuntimeState()
+        vpnController.observeRuntimeState()
         observeRuntimeFailures()
         syncProxyModeState()
         startSpeedSampling()
         observeProfileChanges()
     }
 
-    // Fault barrier: repository failure only logs and marks profiles as loaded (CE rethrown).
-    @Suppress("TooGenericExceptionCaught")
-    private fun refreshProfiles() {
+    fun refreshProfiles() {
         viewModelScope.launch {
             try {
                 val allProfiles = profilesRepository.queryAllProfiles()
@@ -243,7 +244,7 @@ class HomeViewModel(
         viewModelScope.launch {
             controlState.collect { state ->
                 if (state != HomeProxyControlState.Running) {
-                    _speedHistory.value = List(24) { 0L }
+                    _speedHistory.value = List(24) { TrafficData.ZERO }
                 }
                 _uiState.update {
                     it.copy(
@@ -257,50 +258,6 @@ class HomeViewModel(
                     )
                 }
             }
-        }
-    }
-
-    private fun observeRuntimeState() {
-        viewModelScope.launch {
-            runtimeSnapshot
-                .map { it.phase }
-                .distinctUntilChanged()
-                .collect { phase ->
-                    when (phase) {
-                        RuntimePhase.Starting -> {
-                            clearPendingStart()
-                            if (
-                                _pendingTransition.value == PendingTransition.AwaitingPermission ||
-                                    _pendingTransition.value == PendingTransition.Starting
-                            ) {
-                                _pendingTransition.value = PendingTransition.None
-                            }
-                        }
-
-                        RuntimePhase.Running -> {
-                            clearPendingStart()
-                            if (
-                                _pendingTransition.value == PendingTransition.Starting ||
-                                    _pendingTransition.value == PendingTransition.AwaitingPermission
-                            ) {
-                                _pendingTransition.value = PendingTransition.None
-                            }
-                        }
-
-                        RuntimePhase.Stopping -> {
-                            clearPendingStart()
-                            if (_pendingTransition.value == PendingTransition.Stopping) {
-                                _pendingTransition.value = PendingTransition.None
-                            }
-                        }
-
-                        RuntimePhase.Idle,
-                        RuntimePhase.Failed -> {
-                            clearPendingStart()
-                            _pendingTransition.value = PendingTransition.None
-                        }
-                    }
-                }
         }
     }
 
@@ -336,6 +293,7 @@ class HomeViewModel(
     }
 
     fun setHomeScreenActive(isActive: Boolean) {
+        _homeScreenActive.value = isActive
         proxyFacade.setProxyGroupSyncPriority(
             priority = if (isActive) ProxyGroupSyncPriority.FAST else ProxyGroupSyncPriority.OFF,
             source = "home",
@@ -344,6 +302,9 @@ class HomeViewModel(
 
     fun reconcileRuntimeState() {
         if (reconcileJob?.isActive == true) return
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - lastReconcileTime < RECONCILE_MIN_INTERVAL_MS) return
+        lastReconcileTime = now
         reconcileJob = viewModelScope.launch {
             runCatching {
                     proxyFacade.reconcileRuntimeState()
@@ -357,37 +318,104 @@ class HomeViewModel(
         }
     }
 
-    // Fault barrier: any reload failure is surfaced as UI error state (CE rethrown).
-    @Suppress("TooGenericExceptionCaught")
-    suspend fun reloadProfile() {
-        try {
-            applyLoading(true)
+    fun isCurrentProfile(profileId: UUID): Boolean =
+        proxyFacade.currentProfile.value?.uuid == profileId
 
-            val activeProfile = profilesRepository.queryActiveProfile()
-            if (activeProfile == null) {
-                showError(
-                    MLang.Home.Message.ConfigSwitchFailed.format(
-                        MLang.ProfilesVM.Error.ProfileNotExist
-                    )
-                )
-                return
+    fun switchActiveProfile(profileId: String) {
+        viewModelScope.launch {
+            try {
+                val uuid = UUID.fromString(profileId)
+                if (proxyFacade.currentProfile.value?.uuid == uuid) return@launch
+
+                withContext(Dispatchers.IO) {
+                    profilesRepository.setActiveProfile(uuid)
+                }
+
+                refreshProfiles()
+
+                if (controlState.value == HomeProxyControlState.Running) {
+                    withContext(Dispatchers.IO) {
+                        AutoStartSessionGate.clearManualPaused()
+                        proxyFacade.startProxy(networkSettingsStore.proxyMode.value)
+                    }
+                }
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                Timber.e(error, "Failed to switch active profile")
+                showError(MLang.Home.Message.ConfigSwitchFailed.format(error.message))
             }
-
-            profilesRepository.updateProfile(activeProfile.uuid)
-
-            profilesRepository.setActiveProfile(activeProfile.uuid)
-            showMessage(MLang.Home.Message.ConfigSwitched)
-        } catch (error: Exception) {
-            if (error is CancellationException) throw error
-            Timber.e(error, "Failed to reload profile")
-            showError(MLang.Home.Message.ConfigSwitchFailed.format(error.message))
-        } finally {
-            applyLoading(false)
         }
     }
 
-    fun isCurrentProfile(profileId: java.util.UUID): Boolean =
-        currentProfile.value?.uuid == profileId
+    fun reloadProfile() {
+        viewModelScope.launch {
+            try {
+                refreshProfiles()
+                if (controlState.value == HomeProxyControlState.Running) {
+                    withContext(Dispatchers.IO) {
+                        proxyFacade.startProxy(networkSettingsStore.proxyMode.value)
+                    }
+                }
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                Timber.e(error, "Failed to reload profile")
+                showError(MLang.Home.Message.ConfigSwitchFailed.format(error.message))
+            }
+        }
+    }
+
+    fun switchProxyMode(mode: ProxyMode) {
+        viewModelScope.launch {
+            try {
+                if (networkSettingsStore.proxyMode.value == mode) return@launch
+
+                if (mode == ProxyMode.RootTun) {
+                    val rootStatus = proxyFacade.evaluateRootAccess()
+                    if (!rootStatus.canStartRootTun) {
+                        showError(rootStatus.rootTunBlockedMessage())
+                        return@launch
+                    }
+                }
+
+                networkSettingsStore.proxyMode.set(mode)
+                _proxyMode.value = mode
+
+                if (controlState.value == HomeProxyControlState.Running) {
+                    withContext(Dispatchers.IO) {
+                        AutoStartSessionGate.clearManualPaused()
+                        proxyFacade.startProxy(mode)
+                    }
+                } else {
+                    refreshProxyMode()
+                }
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                Timber.e(error, "Failed to switch proxy mode")
+                showError(MLang.Home.Message.StartFailed.format(error.message))
+            }
+        }
+    }
+
+    fun switchTunnelMode(mode: TunnelState.Mode) {
+        viewModelScope.launch {
+            try {
+                if (tunnelMode.value == mode) return@launch
+                if (controlState.value != HomeProxyControlState.Running) return@launch
+
+                val switched = withContext(Dispatchers.IO) {
+                    proxyFacade.patchTunnelMode(mode)
+                }
+
+                if (!switched) {
+                    showError(MLang.Home.Message.StartFailed.format("patch tunnel mode failed"))
+                }
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                Timber.e(error, "Failed to switch tunnel mode")
+                showError(MLang.Home.Message.StartFailed.format(error.message))
+            }
+        }
+    }
 
     fun startProxy(profileId: String, mode: ProxyMode? = null) {
         if (!controlState.value.canInteract || controlState.value != HomeProxyControlState.Idle) {
@@ -400,24 +428,41 @@ class HomeViewModel(
                 mode = mode ?: networkSettingsStore.proxyMode.value,
             )
         pendingStartRequest = request
-        _pendingTransition.value = PendingTransition.Starting
-
-        viewModelScope.launch { startProxyInternal(request) }
+        vpnController.startProxy(
+            mode = request.mode,
+            onPreStart = {
+                _proxyMode.value = request.mode
+                if (request.mode == ProxyMode.RootTun) {
+                    val rootStatus = proxyFacade.evaluateRootAccess()
+                    if (!rootStatus.canStartRootTun) {
+                        showError(rootStatus.rootTunBlockedMessage())
+                        throw CancellationException("RootTun not available")
+                    }
+                }
+                withContext(Dispatchers.IO) {
+                    if (request.profileId.isNotBlank()) {
+                        profilesRepository.setActiveProfile(
+                            java.util.UUID.fromString(request.profileId)
+                        )
+                    }
+                    AutoStartSessionGate.clearManualPaused()
+                }
+            },
+            onSuccess = {
+                Timber.i("Home startProxy completed, mode=${request.mode}")
+                if (proxyFacade.isRemoteControllerActive()) {
+                    clearPendingStart()
+                    vpnController.clearPendingTransition()
+                }
+            },
+        )
     }
 
     fun onVpnPermissionResult(granted: Boolean) {
         val request = pendingStartRequest ?: return
-        if (_pendingTransition.value != PendingTransition.AwaitingPermission) return
-
-        if (!granted) {
-            clearPendingStart()
-            _pendingTransition.value = PendingTransition.None
-            refreshProxyMode()
-            return
+        vpnController.onVpnPermissionResult(granted) {
+            startProxy(request.profileId, request.mode)
         }
-
-        _pendingTransition.value = PendingTransition.Starting
-        viewModelScope.launch { startProxyInternal(request) }
     }
 
     // Fault barrier: any stop failure is surfaced as UI error state (CE rethrown).
@@ -429,111 +474,40 @@ class HomeViewModel(
             return
         }
 
-        _pendingTransition.value = PendingTransition.Stopping
-
-        try {
-            withContext(Dispatchers.IO) {
-                AutoStartSessionGate.markManualPaused()
-                proxyFacade.stopProxy()
-            }
-        } catch (error: Exception) {
-            if (error is CancellationException) throw error
-            _pendingTransition.value = PendingTransition.None
-            Timber.e(error, "Failed to stop proxy")
-            showError(MLang.Home.Message.StopFailed.format(error.message))
-        }
+        vpnController.stopProxy(
+            onPreStop = { AutoStartSessionGate.markManualPaused() },
+        )
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun startSpeedSampling(sampleLimit: Int = 24) {
         viewModelScope.launch {
-            PollingTimers.ticks(PollingTimerSpecs.HomeSpeedSampling).collect {
+            _homeScreenActive.flatMapLatest { active ->
+                if (active) PollingTimers.ticks(PollingTimerSpecs.HomeSpeedSampling) else emptyFlow()
+            }.collect {
                 val snapshot = runtimeSnapshot.value
                 val sample =
                     when {
-                        snapshot.phase == RuntimePhase.Idle ||
-                            snapshot.phase == RuntimePhase.Failed -> 0L
-                        snapshot.phase.running -> {
-                            val t = proxyFacade.trafficNow.value
-                            val d = TrafficData.from(t)
-                            (d.upload + d.download).coerceAtLeast(0L)
-                        }
-
-                        else -> 0L
-                    }
+                        snapshot.phase.running -> trafficData.value
+                        else -> TrafficData.ZERO
+                }
                 _speedHistory.update { old ->
-                    buildList(sampleLimit) {
-                        repeat((sampleLimit - old.size - 1).coerceAtLeast(0)) { add(0L) }
-                        addAll(old.takeLast(sampleLimit - 1))
-                        add(sample)
-                    }
+                    val deque = ArrayDeque(old)
+                    while (deque.size >= sampleLimit) deque.removeFirst()
+                    deque.addLast(sample)
+                    deque
                 }
             }
         }
     }
 
-    private fun applyLoading(loading: Boolean) = super.setLoading(loading)
-
-    private fun showMessage(message: String) =
-        postMessage(message, HomeUiEffect.ShowMessage(message))
-
     private fun showError(error: String) = postError(error, HomeUiEffect.ShowError(error))
+
+    private fun showMessage(message: String) = postMessage(message, HomeUiEffect.ShowMessage(message))
 
     fun consumeMessage() = clearMessageState()
 
     fun consumeError() = clearErrorState()
-
-    // Fault barrier: any start failure is surfaced as UI error state (CE rethrown).
-    @Suppress("TooGenericExceptionCaught")
-    private suspend fun startProxyInternal(request: PendingStartRequest) {
-        val startedAt = System.currentTimeMillis()
-        try {
-            _proxyMode.value = request.mode
-            Timber.d("Home startProxy kickoff: mode=${request.mode} profileId=${request.profileId}")
-
-            if (request.mode == ProxyMode.RootTun) {
-                val rootStatus = RootAccessSupport.evaluateAsync(getApplication())
-                if (!rootStatus.canStartRootTun) {
-                    clearPendingStart()
-                    _pendingTransition.value = PendingTransition.None
-                    showError(rootStatus.rootTunBlockedMessage())
-                    return
-                }
-            }
-
-            withContext(Dispatchers.IO) {
-                if (request.profileId.isNotBlank()) {
-                    profilesRepository.setActiveProfile(
-                        java.util.UUID.fromString(request.profileId)
-                    )
-                }
-
-                AutoStartSessionGate.clearManualPaused()
-                proxyFacade.startProxy(request.mode)
-            }
-
-            Timber.i(
-                "Home startProxy completed in ${System.currentTimeMillis() - startedAt}ms, mode=${request.mode}"
-            )
-
-            // If the remote controller is active, ProxyFacade.startProxy() is a no-op and no runtime
-            // phase change will arrive to reset the pending transition — clear it so the home button
-            // doesn't stick on "Connecting" forever.
-            if (proxyFacade.isRemoteControllerActive()) {
-                clearPendingStart()
-                _pendingTransition.value = PendingTransition.None
-            }
-        } catch (error: com.github.yumelira.yumebox.runtime.api.VpnPermissionRequired) {
-            _pendingTransition.value = PendingTransition.AwaitingPermission
-            _vpnPrepareIntent.emit(error.intent)
-            Timber.i("VPN permission required")
-        } catch (error: Exception) {
-            if (error is CancellationException) throw error
-            clearPendingStart()
-            _pendingTransition.value = PendingTransition.None
-            Timber.e(error, "Failed to start proxy")
-            showError(MLang.Home.Message.StartFailed.format(error.message))
-        }
-    }
 
     private fun clearPendingStart() {
         pendingStartRequest = null
@@ -542,16 +516,17 @@ class HomeViewModel(
     private fun resolveControlState(
         owner: RuntimeOwner,
         phase: RuntimePhase,
-        pendingTransition: PendingTransition,
+        pendingTransition: VpnProxyController.PendingTransition,
     ): HomeProxyControlState {
         if (owner == RuntimeOwner.RemoteController && phase == RuntimePhase.Failed) {
             return HomeProxyControlState.Lost
         }
-        val phaseStillActive =
-            phase != RuntimePhase.Stopping &&
+        if (
+            pendingTransition == VpnProxyController.PendingTransition.Stopping &&
+                phase != RuntimePhase.Stopping &&
                 phase != RuntimePhase.Idle &&
                 phase != RuntimePhase.Failed
-        if (pendingTransition == PendingTransition.Stopping && phaseStillActive) {
+        ) {
             return HomeProxyControlState.Disconnecting
         }
         return when (phase) {
@@ -561,10 +536,10 @@ class HomeViewModel(
             RuntimePhase.Idle,
             RuntimePhase.Failed ->
                 when (pendingTransition) {
-                    PendingTransition.AwaitingPermission,
-                    PendingTransition.Starting -> HomeProxyControlState.Connecting
-                    PendingTransition.Stopping -> HomeProxyControlState.Idle
-                    PendingTransition.None -> HomeProxyControlState.Idle
+                    VpnProxyController.PendingTransition.AwaitingPermission,
+                    VpnProxyController.PendingTransition.Starting -> HomeProxyControlState.Connecting
+                    VpnProxyController.PendingTransition.Stopping -> HomeProxyControlState.Idle
+                    VpnProxyController.PendingTransition.None -> HomeProxyControlState.Idle
                 }
         }
     }
@@ -573,6 +548,10 @@ class HomeViewModel(
         val profileId: String,
         val mode: ProxyMode,
     )
+
+    companion object {
+        private const val RECONCILE_MIN_INTERVAL_MS = 1_000L
+    }
 
     data class HomeUiState(
         override val isLoading: Boolean = false,
@@ -589,8 +568,7 @@ class HomeViewModel(
     }
 
     sealed interface HomeUiEffect {
-        data class ShowMessage(val message: String) : HomeUiEffect
-
         data class ShowError(val message: String) : HomeUiEffect
+        data class ShowMessage(val message: String) : HomeUiEffect
     }
 }

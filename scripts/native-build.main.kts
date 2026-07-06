@@ -20,14 +20,14 @@
 
 @file:DependsOn("org.tukaani:xz:1.9")
 
-import org.tukaani.xz.LZMA2Options
-import org.tukaani.xz.XZOutputStream
 import java.io.File
 import java.io.IOException
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.concurrent.thread
+import org.tukaani.xz.LZMA2Options
+import org.tukaani.xz.XZOutputStream
 
 class ProjectConfig {
     private val properties = Properties()
@@ -731,7 +731,7 @@ class ResourceDownloader(private val config: ProjectConfig) {
 
 fun printUsage() {
     println("""
-        YumeBox Native Build Tool
+        FlyCat Native Build Tool
 
         Usage: kotlin scripts/native-build.main.kts [options]
 
@@ -765,12 +765,15 @@ fun cleanBuildOutputs() {
 }
 
 val message = """
- __   __                             ____                 
- \ \ / /  _   _   _ __ ___     ___  | __ )    ___   __  __
-  \ V /  | | | | | '_ ` _ \   / _ \ |  _ \   / _ \  \ \/ /
-   | |   | |_| | | | | | | | |  __/ | |_) | | (_) |  >  < 
-   |_|    \__,_| |_| |_| |_|  \___| |____/   \___/  /_/\_\
-                                                          
+  _____ _           ___      _
+ |  ___| |_   _   / ___|__ _| |_
+ | |_  | | | | | | |   / _ `| __|
+ |  _| | | |_| | | |__| (_| | |_
+ |_|   |_|\__,_|  \____\__,_|\__|
+             | |
+         |\__| |
+         \_____/
+
 """.trimIndent()
 
 
@@ -781,7 +784,7 @@ fun main(args: Array<String>) {
     }
 
     println(message)
-    println("=== YumeBox Native Build Tool ===")
+    println("=== FlyCat Native Build Tool ===")
     println("OS: ${SystemDetector.os}, Host: ${SystemDetector.hostTag}")
 
     if (args.contains("--clean")) {

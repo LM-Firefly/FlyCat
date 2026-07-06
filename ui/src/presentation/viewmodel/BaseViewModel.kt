@@ -1,0 +1,98 @@
+/*
+ * This file is part of YumeBox.
+ *
+ * YumeBox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ *
+ */
+
+package com.github.yumelira.yumebox.presentation.viewmodel
+
+import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+
+/**
+ * Base ViewModel providing common state management patterns.
+ *
+ * This class encapsulates the standard MutableStateFlow → StateFlow pattern used across the
+ * application, reducing boilerplate code in ViewModels.
+ *
+ * @param State The UI state data class managed by this ViewModel
+ * @param initialState The initial state value
+ *
+ * Usage example:
+ * ```kotlin
+ * data class MyUiState(
+ *     val isLoading: Boolean = false,
+ *     val data: List<String> = emptyList(),
+ *     val error: String? = null,
+ *     val message: String? = null
+ * )
+ *
+ * class MyViewModel : BaseViewModel<MyUiState>(MyUiState()) {
+ *     fun loadData() {
+ *         setLoading(true)
+ *         viewModelScope.launch {
+ *             try {
+ *                 val result = repository.getData()
+ *                 updateState { it.copy(data = result, isLoading = false) }
+ *             } catch (error: Exception) {
+ *                 showError(error.message ?: "Unknown error")
+ *             }
+ *         }
+ *     }
+ * }
+ * ```
+ */
+abstract class BaseViewModel<State>(initialState: State) : ViewModel() {
+    protected val _uiState = MutableStateFlow(initialState)
+    val uiState: StateFlow<State> = _uiState.asStateFlow()
+
+    /**
+     * Updates the UI state using the provided transform function.
+     *
+     * @param transform Function that receives current state and returns new state
+     */
+    protected fun updateState(transform: (State) -> State) {
+        _uiState.update(transform)
+    }
+
+    /** Gets the current state value synchronously. */
+    protected val currentState: State
+        get() = _uiState.value
+}
+
+/**
+ * Interface for state classes that support loading, error, and message states.
+ *
+ * Implement this interface in your state data class to use [ContractStateViewModel].
+ */
+interface LoadableState<T : LoadableState<T>> {
+    val isLoading: Boolean
+    val error: String?
+    val message: String?
+
+    /** Creates a copy of this state with updated loading status. */
+    fun withLoading(loading: Boolean): T
+
+    /** Creates a copy of this state with updated error message. */
+    fun withError(error: String?): T
+
+    /** Creates a copy of this state with updated transient message. */
+    fun withMessage(message: String?): T
+}

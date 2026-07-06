@@ -27,8 +27,6 @@ object TrafficChartConfig {
 
     const val MIN_VISIBLE_HEIGHT = 0.02f
 
-    const val DEFAULT_SAMPLE_LIMIT = 24
-
     fun calculateBarFraction(speedBytes: Long): Float =
         when {
             speedBytes <= 0 -> MIN_VISIBLE_HEIGHT

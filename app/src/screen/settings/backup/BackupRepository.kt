@@ -23,21 +23,21 @@ package com.github.yumelira.yumebox.screen.settings.backup
 import android.app.Application
 import android.content.Intent
 import com.github.yumelira.yumebox.BuildConfig
+import com.github.yumelira.yumebox.core.model.LinkOpenMode
 import com.github.yumelira.yumebox.core.util.moeWallpaperFile
 import com.github.yumelira.yumebox.data.store.AppSettingsStore
 import com.github.yumelira.yumebox.data.store.FeatureStore
 import com.github.yumelira.yumebox.data.store.MMKVProvider
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
-import com.github.yumelira.yumebox.data.store.ProfileLinksStore
 import com.github.yumelira.yumebox.data.store.ProxyDisplaySettingsStore
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
-import com.github.yumelira.yumebox.runtime.api.Intents
+import com.github.yumelira.yumebox.feature.substore.SubStorePaths
+import com.github.yumelira.yumebox.feature.substore.SubStoreServiceController
+import com.github.yumelira.yumebox.runtime.api.service.common.constants.Intents
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
-import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
-import com.github.yumelira.yumebox.runtime.service.profile.ProfileStore
-import com.github.yumelira.yumebox.runtime.service.util.importedDir
-import com.github.yumelira.yumebox.substore.SubStorePaths
-import com.github.yumelira.yumebox.substore.SubStoreServiceController
+import com.github.yumelira.yumebox.runtime.service.runtime.config.ServiceStore
+import com.github.yumelira.yumebox.runtime.service.runtime.records.ProfileStore
+import com.github.yumelira.yumebox.runtime.service.runtime.util.importedDir
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -54,7 +54,6 @@ class BackupRepository(
     private val networkSettings: NetworkSettingsStore,
     private val featureSettings: FeatureStore,
     private val proxyDisplaySettings: ProxyDisplaySettingsStore,
-    private val profileLinks: ProfileLinksStore,
     private val remoteController: RemoteControllerStore,
     private val proxyFacade: ProxyFacade,
     private val mmkvProvider: MMKVProvider,
@@ -104,7 +103,7 @@ class BackupRepository(
 
     fun defaultBackupFileName(now: Long = System.currentTimeMillis()): String {
         val timestamp = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date(now))
-        return "YumeBox-backup-$timestamp.zip"
+        return "FlyCat-backup-$timestamp.zip"
     }
 
     private fun writeCurrentBackup(output: OutputStream) {
@@ -122,7 +121,6 @@ class BackupRepository(
                             "network_settings",
                             "feature_settings",
                             "proxy_display",
-                            "profile_links",
                             "remote_controller",
                             "profiles",
                             "active_profile",
@@ -165,6 +163,9 @@ class BackupRepository(
                     moeSidebarExpanded = appSettings.moeSidebarExpanded.value,
                     pageScale = appSettings.pageScale.value,
                     singleNodeTest = appSettings.singleNodeTest.value,
+                    logLevel = appSettings.logLevel.value,
+                    autoCheckAppUpdate = appSettings.autoCheckAppUpdate.value,
+                    updateSourceKey = appSettings.updateSourceKey.value,
                     customUserAgent = appSettings.customUserAgent.value,
                 ),
             networkSettings =
@@ -191,7 +192,6 @@ class BackupRepository(
                     accessControlPackages = networkSettings.accessControlPackages.value,
                     accessControlSelectedFirst = networkSettings.accessControlSelectedFirst.value,
                     accessControlShowSystemApps = networkSettings.accessControlShowSystemApps.value,
-                    accessControlSortMode = networkSettings.accessControlSortMode.value,
                 ),
             featureSettings =
                 FeatureSettingsBackup(
@@ -211,17 +211,18 @@ class BackupRepository(
                     proxyMode = proxyDisplaySettings.proxyMode.value,
                     sheetHeightFraction = proxyDisplaySettings.sheetHeightFraction.value,
                 ),
-            profileLinks =
-                ProfileLinksBackup(
-                    linkOpenMode = profileLinks.linkOpenMode.value,
-                    links = profileLinks.links.value,
-                    defaultLinkId = profileLinks.defaultLinkId.value,
-                ),
             remoteController =
                 RemoteControllerBackup(
                     controllerEnabled = remoteController.controllerEnabled.value,
                     backends = remoteController.backends.value,
                     activeBackendId = remoteController.activeBackendId.value,
+                ),
+            webDav =
+                WebDavBackup(
+                    url = appSettings.webDav.webDavUrl.value,
+                    account = appSettings.webDav.webDavAccount.value,
+                    password = appSettings.webDav.webDavPassword.value,
+                    directory = appSettings.webDav.webDavDir.value,
                 ),
             profiles =
                 ProfilesBackup(
@@ -242,13 +243,16 @@ class BackupRepository(
                 extracted.payload.appSettings
             }
 
-        clearConfigurationStores()
+        // Only clear bulk-write stores. Settings stores use Preference.set() which
+        // checks in-memory flow equality — clearing MMKV first would cause set() to
+        // skip writes when the backup value matches the stale in-memory value.
+        clearBulkStores()
         applyAppSettings(appBackup)
         applyNetworkSettings(extracted.payload.networkSettings)
         applyFeatureSettings(extracted.payload.featureSettings)
         applyProxyDisplaySettings(extracted.payload.proxyDisplaySettings)
-        applyProfileLinks(extracted.payload.profileLinks)
         applyRemoteController(extracted.payload.remoteController)
+        applyWebDav(extracted.payload.webDav)
         applyProfiles(extracted.payload.profiles)
         ServiceStore().activeProfile = extracted.payload.service.activeProfile?.let(UUID::fromString)
 
@@ -284,14 +288,8 @@ class BackupRepository(
         runCatching { proxyFacade.reconcileRuntimeState() }
     }
 
-    private fun clearConfigurationStores() {
+    private fun clearBulkStores() {
         listOf(
-                "settings",
-                "network_settings",
-                "substore",
-                "proxy_display",
-                "profile_links",
-                "remote_controller",
                 "profiles",
                 "service",
                 "override_bindings",
@@ -324,6 +322,9 @@ class BackupRepository(
         appSettings.moeSidebarExpanded.set(value.moeSidebarExpanded)
         appSettings.pageScale.set(value.pageScale)
         appSettings.singleNodeTest.set(value.singleNodeTest)
+        appSettings.logLevel.set(value.logLevel)
+        appSettings.autoCheckAppUpdate.set(value.autoCheckAppUpdate)
+        appSettings.updateSourceKey.set(value.updateSourceKey)
         appSettings.customUserAgent.set(value.customUserAgent)
     }
 
@@ -350,7 +351,6 @@ class BackupRepository(
         networkSettings.accessControlPackages.set(value.accessControlPackages)
         networkSettings.accessControlSelectedFirst.set(value.accessControlSelectedFirst)
         networkSettings.accessControlShowSystemApps.set(value.accessControlShowSystemApps)
-        networkSettings.accessControlSortMode.set(value.accessControlSortMode)
     }
 
     private fun applyFeatureSettings(value: FeatureSettingsBackup) {
@@ -371,17 +371,18 @@ class BackupRepository(
         proxyDisplaySettings.sheetHeightFraction.set(value.sheetHeightFraction)
     }
 
-    private fun applyProfileLinks(value: ProfileLinksBackup) {
-        profileLinks.linkOpenMode.set(value.linkOpenMode)
-        profileLinks.links.set(value.links)
-        profileLinks.defaultLinkId.set(value.defaultLinkId)
-    }
-
     private fun applyRemoteController(value: RemoteControllerBackup) {
         remoteController.controllerEnabled.set(value.controllerEnabled)
         remoteController.backends.set(value.backends)
         remoteController.activeBackendId.set(value.activeBackendId)
         proxyFacade.applyRemoteControllerState()
+    }
+
+    private fun applyWebDav(value: WebDavBackup) {
+        appSettings.webDav.webDavUrl.set(value.url)
+        appSettings.webDav.webDavAccount.set(value.account)
+        appSettings.webDav.webDavPassword.set(value.password)
+        appSettings.webDav.webDavDir.set(value.directory)
     }
 
     private fun applyProfiles(value: ProfilesBackup) {
@@ -402,7 +403,6 @@ class BackupRepository(
             deleteRecursively()
             mkdirs()
         }
-
 }
 
 internal fun replaceBackupDirectory(source: File, target: File) {
