@@ -28,6 +28,7 @@ import com.github.yumelira.yumebox.data.store.AppSettingsStore
 import com.github.yumelira.yumebox.data.store.FeatureStore
 import com.github.yumelira.yumebox.data.store.MMKVProvider
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
+import com.github.yumelira.yumebox.data.store.Preference
 import com.github.yumelira.yumebox.data.store.ProfileLinksStore
 import com.github.yumelira.yumebox.data.store.ProxyDisplaySettingsStore
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
@@ -297,6 +298,87 @@ class BackupRepository(
                 "override_bindings",
             )
             .forEach { id -> mmkvProvider.getMMKV(id).clearAll() }
+        refreshPreferenceCachesAfterRawClear()
+    }
+
+    private fun refreshPreferenceCachesAfterRawClear() {
+        refreshAfterRawStoreClear(
+            appSettings.themeMode,
+            appSettings.appLanguage,
+            appSettings.colorTheme,
+            appSettings.themeAccentColorArgb,
+            appSettings.invertOnPrimaryColors,
+            appSettings.homePreviewGuideShown,
+            appSettings.automaticRestart,
+            appSettings.autoUpdateCurrentProfileOnStart,
+            appSettings.hideAppIcon,
+            appSettings.excludeFromRecents,
+            appSettings.showTrafficNotification,
+            appSettings.bottomBarAutoHide,
+            appSettings.topBarBlurEnabled,
+            appSettings.classicHomeEnabled,
+            appSettings.moeWallpaperUri,
+            appSettings.moeWallpaperSourceUri,
+            appSettings.moeWallpaperZoom,
+            appSettings.moeWallpaperBiasX,
+            appSettings.moeWallpaperBiasY,
+            appSettings.moeHomeQuote,
+            appSettings.moeHomeQuoteAuthor,
+            appSettings.moeSidebarExpanded,
+            appSettings.pageScale,
+            appSettings.singleNodeTest,
+            appSettings.customUserAgent,
+        )
+        refreshAfterRawStoreClear(
+            networkSettings.proxyMode,
+            networkSettings.bypassPrivateNetwork,
+            networkSettings.dnsHijack,
+            networkSettings.allowBypass,
+            networkSettings.enableIPv6,
+            networkSettings.systemProxy,
+            networkSettings.tunStack,
+            networkSettings.tunRouteExcludeAddress,
+            networkSettings.rootTunIfName,
+            networkSettings.rootTunMtu,
+            networkSettings.rootTunAutoRoute,
+            networkSettings.rootTunStrictRoute,
+            networkSettings.rootTunAutoRedirect,
+            networkSettings.rootTunIncludeAndroidUser,
+            networkSettings.rootTunRouteExcludeAddress,
+            networkSettings.rootTunDnsMode,
+            networkSettings.rootTunFakeIpRange,
+            networkSettings.rootTunFakeIpRange6,
+            networkSettings.accessControlMode,
+            networkSettings.accessControlPackages,
+            networkSettings.accessControlSelectedFirst,
+            networkSettings.accessControlShowSystemApps,
+            networkSettings.accessControlSortMode,
+        )
+        refreshAfterRawStoreClear(
+            featureSettings.allowLanAccess,
+            featureSettings.backendPort,
+            featureSettings.frontendPort,
+            featureSettings.selectedPanelType,
+            featureSettings.panelOpenMode,
+            featureSettings.showWebControlInProxy,
+            featureSettings.exitUiWhenBackground,
+        )
+        refreshAfterRawStoreClear(
+            proxyDisplaySettings.sortMode,
+            proxyDisplaySettings.displayMode,
+            proxyDisplaySettings.proxyMode,
+            proxyDisplaySettings.sheetHeightFraction,
+        )
+        refreshAfterRawStoreClear(
+            profileLinks.linkOpenMode,
+            profileLinks.links,
+            profileLinks.defaultLinkId,
+        )
+        refreshAfterRawStoreClear(
+            remoteController.controllerEnabled,
+            remoteController.backends,
+            remoteController.activeBackendId,
+        )
     }
 
     private fun applyAppSettings(value: AppSettingsBackup) {
@@ -378,9 +460,9 @@ class BackupRepository(
     }
 
     private fun applyRemoteController(value: RemoteControllerBackup) {
-        remoteController.controllerEnabled.set(value.controllerEnabled)
         remoteController.backends.set(value.backends)
         remoteController.activeBackendId.set(value.activeBackendId)
+        remoteController.controllerEnabled.set(value.controllerEnabled)
         proxyFacade.applyRemoteControllerState()
     }
 
@@ -421,4 +503,8 @@ private fun File.copyToBackupTarget(target: File) {
         target.parentFile?.mkdirs()
         copyTo(target, overwrite = true)
     }
+}
+
+internal fun refreshAfterRawStoreClear(vararg preferences: Preference<*>) {
+    preferences.forEach { it.refresh() }
 }
