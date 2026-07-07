@@ -19,13 +19,16 @@ concurrency:
 permissions:
   contents: write
 
-# Push counter N = this workflow's run_number (versionCode = 5795 + N): it increments once
-# per run (one push -> one run), lives on the GitHub side so squash/rebase/force-push can
-# never make it go backwards, and needs no extra permissions or API calls. Both channels of
-# one run share the same N (same commit -> same versionCode). CAUTION: renaming this
-# workflow FILE resets the run_number sequence to 1 - if that ever happens, bump the 5795
-# base in app/build.gradle.kts and reusable-prepare-publish.yml above the last published
-# versionCode to keep it monotonic.
+# Version counter N = commit count of the built commit (`git rev-list --count HEAD`),
+# computed inside reusable-build-apk-only.yml / reusable-prepare-publish.yml after their
+# fetch-depth:0 checkouts - no build_number input is passed from here anymore. versionCode
+# = project.version.code (gradle.properties) + N, one formula shared by channel, PR and
+# official release builds, so releases get unique versionCodes in the same sequence as
+# channel packages. Unlike the retired run_number scheme this survives workflow-file
+# renames, and it stays monotonic vs already-published packages because the commit count
+# grows with every commit and is >= the number of pushes >= run_number. Both channels of
+# one run build the same commit -> same versionCode. If history is ever rewritten so the
+# count shrinks, bump project.version.code above the last published versionCode.
 jobs:
   build-geo-pre:
     uses: ./.github/workflows/reusable-build-geo.yml
@@ -137,7 +140,6 @@ jobs:
       release_tag: Pre-release
       meta_asset_name: yumebox-pre-meta.json
       raw_apk_artifact_name: apk-raw-pre-app
-      build_number: ${{ github.run_number }}
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
     secrets: inherit
@@ -152,7 +154,6 @@ jobs:
       release_tag: Smart
       meta_asset_name: yumebox-smart-meta.json
       raw_apk_artifact_name: apk-raw-smart-app
-      build_number: ${{ github.run_number }}
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
     secrets: inherit
@@ -168,7 +169,6 @@ jobs:
       meta_asset_name: yumebox-pre-meta.json
       raw_apk_artifact_name: apk-raw-pre-app
       publish_artifact_name: publish-pre-app
-      build_number: ${{ github.run_number }}
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
     secrets: inherit
@@ -184,7 +184,6 @@ jobs:
       meta_asset_name: yumebox-smart-meta.json
       raw_apk_artifact_name: apk-raw-smart-app
       publish_artifact_name: publish-smart-app
-      build_number: ${{ github.run_number }}
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
     secrets: inherit

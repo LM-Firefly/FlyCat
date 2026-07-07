@@ -24,11 +24,6 @@ on:
       publish_artifact_name:
         required: true
         type: string
-      build_number:
-        description: "Monotonic push counter N; versionCode = 5795 + N. Empty = base versionCode."
-        required: false
-        type: string
-        default: ""
       build_hash:
         description: "Commit sha of the build; first 8 chars go into versionName (<base>[.<branch>].<hash8>)."
         required: false
@@ -65,15 +60,19 @@ jobs:
         id: version
         shell: bash
         env:
-          BUILD_NUMBER: ${{ inputs.build_number }}
           BUILD_HASH: ${{ inputs.build_hash }}
           BUILD_BRANCH: ${{ inputs.build_branch }}
         run: |
           set -eu
           # Must mirror the versioning logic in app/build.gradle.kts:
-          # versionCode = 5795 + build.number, versionName = <base>[.<branch>].<hash8>,
-          # branch normalized as lowercase, [^a-z0-9] runs -> '-', leading/trailing '-' trimmed.
+          # versionCode = project.version.code (gradle.properties) + `git rev-list --count
+          # HEAD` (needs the fetch-depth:0 checkout above; same commit count as the one
+          # reusable-build-apk-only.yml baked into the APK, since both jobs of a run check
+          # out the same github.sha), versionName = <base>[.<branch>].<hash8>, branch
+          # normalized as lowercase, [^a-z0-9] runs -> '-', leading/trailing '-' trimmed.
           base_version_name="$(grep '^project.version.name=' gradle.properties | cut -d= -f2-)"
+          base_version_code="$(grep '^project.version.code=' gradle.properties | cut -d= -f2-)"
+          build_number="$(git rev-list --count HEAD)"
           branch_segment="$(printf '%s' "${BUILD_BRANCH}" \
             | tr '[:upper:]' '[:lower:]' \
             | sed -e 's/[^a-z0-9]/-/g' -e 's/--*/-/g' -e 's/^-//' -e 's/-$//')"
@@ -86,11 +85,7 @@ jobs:
           else
             version_name="${base_version_name}"
           fi
-          if [ -n "${BUILD_NUMBER}" ]; then
-            version_code=$((5795 + BUILD_NUMBER))
-          else
-            version_code=5795
-          fi
+          version_code=$((base_version_code + build_number))
           echo "version_name=${version_name}" >> "$GITHUB_OUTPUT"
           echo "version_code=${version_code}" >> "$GITHUB_OUTPUT"
 

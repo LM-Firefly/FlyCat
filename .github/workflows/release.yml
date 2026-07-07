@@ -20,8 +20,13 @@ permissions:
   contents: write
 
 # Manual official-release pipeline: mirrors the ci-channel pre pipeline with channel=stable
-# and kernel_channel=alpha. build_number/build_hash/build_branch are intentionally NOT passed
-# so the release uses the clean base versionName (e.g. 0.5.2) and base versionCode (5795).
+# and kernel_channel=alpha. build_hash/build_branch are intentionally NOT passed so the
+# release keeps the clean base versionName (e.g. 0.5.2, no hash/branch suffix). The
+# versionCode is NOT the bare epoch anymore: reusable-build-apk-only.yml /
+# reusable-prepare-publish.yml compute versionCode = project.version.code
+# (gradle.properties) + `git rev-list --count HEAD` themselves, so every release gets a
+# unique versionCode in the same sequence as channel packages - upgrading from a channel
+# build of an older commit to a release of a newer commit is no longer a downgrade.
 # publish-release runs with prerelease=false -> generate_release_notes=false (empty body,
 # edited by hand afterwards) and make_latest=true (channel == 'stable').
 jobs:

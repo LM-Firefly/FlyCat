@@ -21,11 +21,6 @@ on:
       raw_apk_artifact_name:
         required: true
         type: string
-      build_number:
-        description: "Monotonic push counter N; versionCode = 5795 + N. Empty = local-style base version."
-        required: false
-        type: string
-        default: ""
       build_hash:
         description: "Commit sha of the build; first 8 chars go into versionName (<base>[.<branch>].<hash8>)."
         required: false
@@ -51,6 +46,18 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+
+      # Build number N = commit count of the built commit's parent chain. Computed here
+      # instead of taken from the caller so ci-channel, pull-request and release all share
+      # one versionCode formula: epoch (project.version.code in gradle.properties) + N.
+      # Requires the fetch-depth:0 checkout above - a shallow clone would count 1.
+      # Monotonic vs the retired ci-channel run_number scheme (commit count >= pushes >=
+      # run_number) and immune to workflow-file renames. reusable-prepare-publish.yml
+      # recomputes the same N from the same github.sha.
+      - name: Compute build number
+        id: build_number
+        shell: bash
+        run: echo "value=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -124,7 +131,7 @@ jobs:
       - name: Build Release APKs
         shell: bash
         env:
-          BUILD_NUMBER: ${{ inputs.build_number }}
+          BUILD_NUMBER: ${{ steps.build_number.outputs.value }}
           BUILD_HASH: ${{ inputs.build_hash }}
           BUILD_BRANCH: ${{ inputs.build_branch }}
         run: |

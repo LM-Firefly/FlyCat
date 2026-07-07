@@ -12,7 +12,7 @@
   },
   "favicon": "/logo/logo.webp",
   "banner": {
-    "content": "0.5.2 版本现已上线！查看[更新日志](/update/history)了解详情",
+    "content": "0.5.3 版本现已上线！查看[更新日志](/update/history)了解详情",
     "dismissible": true
   },
   "navigation": {

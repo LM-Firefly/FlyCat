@@ -66,9 +66,11 @@ jobs:
       channel: pr
     secrets: inherit
 
-  # PR builds carry no push counter (that is ci-channel.yml's run_number): build_number
-  # stays empty, so versionCode falls back to the 5795 base. The commit hash in versionName
-  # (and the PR number in the release tag) uniquely identifies the build instead.
+  # PR builds use the same versionCode formula as channel and release builds: epoch
+  # (project.version.code in gradle.properties) + `git rev-list --count HEAD`, computed
+  # inside reusable-build-apk-only.yml / reusable-prepare-publish.yml (the count covers the
+  # PR merge commit's whole parent chain). The commit hash in versionName (and the PR
+  # number in the release tag) additionally identifies the build.
   build-apk-pr-app:
     needs: bundle-native-pr
     uses: ./.github/workflows/reusable-build-apk-only.yml
