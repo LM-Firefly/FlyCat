@@ -22,12 +22,9 @@ package com.github.yumelira.yumebox.screen.moe
 
 import android.os.Build
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -60,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -256,8 +254,8 @@ private fun moeGreetingText(nowMillis: Long): String {
     }
 }
 
-private const val MoeLaunchTextEnterDuration = 360
-private const val MoeLaunchTextExitDuration = 300
+private const val MoeLaunchTextExitDuration = 180
+private const val MoeLaunchTextEnterDuration = 220
 private const val MoeLaunchTextTransientDelay = 220L
 
 private fun HomeProxyControlState.isMoeLaunchTransientState(): Boolean =
@@ -491,45 +489,31 @@ internal fun MoeLaunchButton(
                 )
     ) {
         Box(
-            modifier = Modifier.align(Alignment.Center).height(22.dp),
+            modifier = Modifier.align(Alignment.Center).height(22.dp).clipToBounds(),
             contentAlignment = Alignment.Center,
         ) {
             AnimatedContent(
                 targetState = displayedLabel,
                 transitionSpec = {
-                    (slideInVertically(
-                            initialOffsetY = { it / 2 },
+                    slideInVertically(
+                            initialOffsetY = { it },
                             animationSpec =
                                 tween(
                                     durationMillis = MoeLaunchTextEnterDuration,
+                                    delayMillis = MoeLaunchTextExitDuration,
                                     easing = AnimationSpecs.EmphasizedDecelerate,
                                 ),
-                        ) +
-                            fadeIn(
-                                animationSpec =
-                                    tween(
-                                        durationMillis = MoeLaunchTextEnterDuration,
-                                        easing = AnimationSpecs.EnterEasing,
-                                    )
-                            ))
+                        )
                         .togetherWith(
                             slideOutVertically(
-                                targetOffsetY = { -it / 2 },
+                                targetOffsetY = { -it },
                                 animationSpec =
                                     tween(
                                         durationMillis = MoeLaunchTextExitDuration,
-                                        easing = AnimationSpecs.EmphasizedAccelerate,
+                                        easing = AnimationSpecs.EmphasizedDecelerate,
                                     ),
-                            ) +
-                                fadeOut(
-                                    animationSpec =
-                                        tween(
-                                            durationMillis = MoeLaunchTextExitDuration,
-                                            easing = AnimationSpecs.ExitEasing,
-                                        )
-                                )
+                            )
                         )
-                        .using(SizeTransform(clip = false))
                 },
                 label = "moe_launch_button_text",
             ) { text ->
