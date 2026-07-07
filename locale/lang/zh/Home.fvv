@@ -54,7 +54,7 @@ Home = {
 
     PreviewGuide = {
         Title = "欢迎使用 YumeBox"
-        Description = "点亮右下角「启动」，一键连接"
+        Description = "点亮底部「启动」，一键连接"
         Next = "下一个"
         Start = "开始使用"
         WallpaperTitle = "更换壁纸"

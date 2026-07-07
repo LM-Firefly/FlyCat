@@ -62,10 +62,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** Which guided demo the home skeleton mockup plays. */
 internal enum class HomeMockupDemo {
-    /** The bottom-right "start" chip is highlighted and taps in a repeating rhythm. */
+    /** The bottom launch capsule is highlighted and taps in a repeating rhythm. */
     StartButton,
 
-    /** A plain start chip; instead the hero is long-pressed and a photo-picker sheet slides up. */
+    /** A plain launch row; instead the hero is long-pressed and a photo-picker sheet slides up. */
     Wallpaper,
 }
 
@@ -204,7 +204,7 @@ internal fun MoeHomeSkeletonMockup(
                 Spacer(Modifier.height(10.dp))
             }
 
-            // Right content (~78%): hero (traffic + node info) + quote + highlighted start chip.
+            // Right content (~78%): hero (traffic + node info) + quote + launch controls row.
             Column(
                 modifier = Modifier.fillMaxHeight().weight(0.78f),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -298,7 +298,7 @@ internal fun MoeHomeSkeletonMockup(
                     }
                 }
 
-                // Bottom third: quote block + a right-aligned highlighted start chip.
+                // Bottom third: quote block + the launch controls row (config circle + capsule).
                 Column(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -337,9 +337,9 @@ internal fun MoeHomeSkeletonMockup(
 
                     Spacer(Modifier.weight(1f))
 
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                        if (wallpaper) PlainStartChip() else HighlightedStartChip()
-                    }
+                    if (wallpaper) PlainLaunchRow() else HighlightedLaunchRow()
+
+                    Spacer(Modifier.height(5.dp))
                 }
             }
         }
@@ -363,8 +363,12 @@ internal fun MoeHomeSkeletonMockup(
 }
 
 @Composable
-private fun HighlightedStartChip(modifier: Modifier = Modifier) {
+private fun HighlightedLaunchRow(modifier: Modifier = Modifier) {
     val colorScheme = MiuixTheme.colorScheme
+    val opacity = AppTheme.opacity
+
+    val maskStrong = colorScheme.onSurface.copy(alpha = opacity.subtleStrong)
+    val frameBorder = colorScheme.outline.copy(alpha = opacity.surfaceSoft)
 
     val transition = rememberInfiniteTransition(label = "start_chip")
     // A press that reads as a tap: hold, snap down, snap back, then rest until the next cycle.
@@ -410,82 +414,123 @@ private fun HighlightedStartChip(modifier: Modifier = Modifier) {
             label = "ripple_alpha",
         )
 
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        // Config button: a bordered surface circle with an icon glyph in the middle.
         Box(
             modifier =
-                Modifier.align(Alignment.BottomEnd)
-                    .offset(x = 6.dp, y = 6.dp)
-                    .graphicsLayer {
-                        scaleX = rippleScale
-                        scaleY = rippleScale
-                        alpha = rippleAlpha
-                    }
-                    .size(26.dp)
+                Modifier.size(22.dp)
                     .clip(CircleShape)
-                    .background(colorScheme.primary)
-        )
-
-        // Primary capsule that presses on each tap.
-        Box(
-            modifier =
-                Modifier.graphicsLayer {
-                        scaleX = pressScale
-                        scaleY = pressScale
-                    }
-                    .clip(RoundedCornerShape(50))
-                    .background(colorScheme.primary)
-                    .padding(horizontal = 18.dp, vertical = 9.dp),
+                    .background(colorScheme.surface)
+                    .border(1.dp, frameBorder, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = MLang.Home.Control.Start,
-                color = colorScheme.onPrimary,
-                style =
-                    MiuixTheme.textStyles.footnote1.copy(
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-            )
+            Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(maskStrong))
         }
 
-        // Prominent touch dot overlapping the chip's right end, pressing in sync with the capsule.
-        Box(
-            modifier =
-                Modifier.align(Alignment.BottomEnd)
-                    .offset(x = 4.dp, y = 4.dp)
-                    .graphicsLayer {
-                        scaleX = pressScale
-                        scaleY = pressScale
-                    }
-                    .size(20.dp)
-                    .clip(CircleShape)
-                    .background(colorScheme.primary)
-                    .border(2.dp, colorScheme.surface, CircleShape)
-        )
+        // Launch capsule filling the remaining width, pressing on each tap.
+        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+            Box(
+                modifier =
+                    Modifier.graphicsLayer {
+                            scaleX = rippleScale
+                            scaleY = rippleScale
+                            alpha = rippleAlpha
+                        }
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .background(colorScheme.primary)
+            )
+
+            Box(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .graphicsLayer {
+                            scaleX = pressScale
+                            scaleY = pressScale
+                        }
+                        .height(22.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(colorScheme.surface)
+                        .border(1.dp, frameBorder, RoundedCornerShape(50)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = MLang.Home.Control.Start,
+                    color = colorScheme.onSurface.copy(alpha = 0.72f),
+                    style =
+                        MiuixTheme.textStyles.footnote1.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                )
+            }
+
+            // Prominent touch dot over the capsule's center, pressing in sync with it.
+            Box(
+                modifier =
+                    Modifier.offset(x = 4.dp, y = 4.dp)
+                        .graphicsLayer {
+                            scaleX = pressScale
+                            scaleY = pressScale
+                        }
+                        .size(20.dp)
+                        .clip(CircleShape)
+                        .background(colorScheme.primary)
+                        .border(2.dp, colorScheme.surface, CircleShape)
+            )
+        }
     }
 }
 
 @Composable
-private fun PlainStartChip(modifier: Modifier = Modifier) {
+private fun PlainLaunchRow(modifier: Modifier = Modifier) {
     val colorScheme = MiuixTheme.colorScheme
+    val opacity = AppTheme.opacity
 
-    Box(
-        modifier =
-            modifier
-                .clip(RoundedCornerShape(50))
-                .background(colorScheme.primary)
-                .padding(horizontal = 18.dp, vertical = 9.dp),
-        contentAlignment = Alignment.Center,
+    val maskStrong = colorScheme.onSurface.copy(alpha = opacity.subtleStrong)
+    val frameBorder = colorScheme.outline.copy(alpha = opacity.surfaceSoft)
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        Text(
-            text = MLang.Home.Control.Start,
-            color = colorScheme.onPrimary,
-            style =
-                MiuixTheme.textStyles.footnote1.copy(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                ),
-        )
+        // Config button: a bordered surface circle with an icon glyph in the middle.
+        Box(
+            modifier =
+                Modifier.size(22.dp)
+                    .clip(CircleShape)
+                    .background(colorScheme.surface)
+                    .border(1.dp, frameBorder, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(maskStrong))
+        }
+
+        // Launch capsule filling the remaining width, without any tap animation.
+        Box(
+            modifier =
+                Modifier.weight(1f)
+                    .height(22.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(colorScheme.surface)
+                    .border(1.dp, frameBorder, RoundedCornerShape(50)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = MLang.Home.Control.Start,
+                color = colorScheme.onSurface.copy(alpha = 0.72f),
+                style =
+                    MiuixTheme.textStyles.footnote1.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+            )
+        }
     }
 }
 
@@ -777,13 +822,26 @@ private fun HomePagePreview(
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                Box(
-                    Modifier.align(Alignment.End)
-                        .width(62.dp)
-                        .height(30.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(colorScheme.primary)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Box(
+                        Modifier.size(18.dp)
+                            .clip(CircleShape)
+                            .background(colorScheme.surfaceVariant.copy(alpha = opacity.surfaceVariant))
+                            .border(1.dp, frameBorder, CircleShape)
+                    )
+                    Box(
+                        Modifier.weight(1f)
+                            .height(18.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(colorScheme.surfaceVariant.copy(alpha = opacity.surfaceVariant))
+                            .border(1.dp, frameBorder, RoundedCornerShape(50))
+                    )
+                }
+                Spacer(Modifier.height(3.dp))
             }
         }
     }

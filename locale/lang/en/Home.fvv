@@ -54,7 +54,7 @@ Home = {
 
     PreviewGuide = {
         Title = "Welcome to YumeBox"
-        Description = "Tap Start at the bottom-right to connect"
+        Description = "Tap Start at the bottom to connect"
         Next = "Next"
         Start = "Get started"
         WallpaperTitle = "Change wallpaper"
