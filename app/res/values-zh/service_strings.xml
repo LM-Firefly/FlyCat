@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="clash_service_status_channel">Clash 状态</string>
+    <string name="clash_meta_for_android">YumeBox</string>
+    <string name="profiles_and_providers">配置和提供者</string>
+    <string name="configuration_yaml">配置文件</string>
+    <string name="provider_files">Provider 文件</string>
+</resources>

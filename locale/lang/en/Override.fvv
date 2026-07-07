@@ -34,6 +34,8 @@ Override = {
         NetworkError = "Link import failed: %s"
         InvalidUrl = "Enter an HTTP or HTTPS URL"
         HttpError = "HTTP request failed: %d"
+        UnsupportedType = "Only YAML or JS is supported"
+        EmptyJavaScript = "JS file is empty"
     }
 
     Export = {
@@ -46,6 +48,7 @@ Override = {
             Title = "Add Config"
             Name = "Config Name"
             Url = "Config URL"
+            Type = "Creation Type"
         }
         Delete = {
             Title = "Delete Config"

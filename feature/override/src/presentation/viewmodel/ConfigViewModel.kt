@@ -194,11 +194,15 @@ class OverrideConfigViewModel(
         val contentType =
             OverrideContentType.fromFileName(sourceName) ?: fallbackContentType
                 ?: return Result.failure(
-                    IllegalArgumentException(MLang.Override.Import.Failed.format("仅支持 YAML 或 JS"))
+                    IllegalArgumentException(
+                        MLang.Override.Import.Failed.format(MLang.Override.Import.UnsupportedType)
+                    )
                 )
         if (contentType == OverrideContentType.JavaScript && content.isBlank()) {
             return Result.failure(
-                IllegalArgumentException(MLang.Override.Import.Failed.format("JS 文件为空"))
+                IllegalArgumentException(
+                    MLang.Override.Import.Failed.format(MLang.Override.Import.EmptyJavaScript)
+                )
             )
         }
 

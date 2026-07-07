@@ -669,7 +669,7 @@ private fun OverrideTypeSelector(
 
     top.yukonga.miuix.kmp.basic.Card {
         WindowDropdownPreference(
-            title = "创建类型",
+            title = MLang.Override.Dialog.Create.Type,
             items = contentTypeOptions.map { it.label },
             selectedIndex = selectedTypeIndex,
             onSelectedIndexChange = { index ->
