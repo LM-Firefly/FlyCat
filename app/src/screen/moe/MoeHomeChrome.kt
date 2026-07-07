@@ -68,6 +68,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.common.util.formatBytesForDisplay
@@ -86,7 +87,6 @@ import com.github.yumelira.yumebox.presentation.util.extractFlaggedName
 import com.github.yumelira.yumebox.screen.home.HomeProxyControlState
 import dev.oom_wg.purejoy.mlang.MLang
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -254,8 +254,7 @@ private fun moeGreetingText(nowMillis: Long): String {
     }
 }
 
-private const val MoeLaunchTextExitDuration = 180
-private const val MoeLaunchTextEnterDuration = 220
+private const val MoeLaunchTextSlideDuration = 450
 private const val MoeLaunchTextTransientDelay = 220L
 
 private fun HomeProxyControlState.isMoeLaunchTransientState(): Boolean =
@@ -308,10 +307,6 @@ internal fun MoeHomeSettingsSheet(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12),
-                    colors =
-                        CardDefaults.defaultColors(
-                            color = MiuixTheme.colorScheme.secondaryContainer
-                        ),
                 ) {
                     Column {
                         PreferenceSwitchItem(
@@ -495,24 +490,15 @@ internal fun MoeLaunchButton(
             AnimatedContent(
                 targetState = displayedLabel,
                 transitionSpec = {
-                    slideInVertically(
-                            initialOffsetY = { it },
-                            animationSpec =
-                                tween(
-                                    durationMillis = MoeLaunchTextEnterDuration,
-                                    delayMillis = MoeLaunchTextExitDuration,
-                                    easing = AnimationSpecs.EmphasizedDecelerate,
-                                ),
+                    // 同一时长同一缓动、无延迟：新旧文本锁成一列同步上移，呈整体平移感
+                    val slideSpec =
+                        tween<IntOffset>(
+                            durationMillis = MoeLaunchTextSlideDuration,
+                            easing = AnimationSpecs.StandardEasing,
                         )
+                    slideInVertically(initialOffsetY = { it }, animationSpec = slideSpec)
                         .togetherWith(
-                            slideOutVertically(
-                                targetOffsetY = { -it },
-                                animationSpec =
-                                    tween(
-                                        durationMillis = MoeLaunchTextExitDuration,
-                                        easing = AnimationSpecs.EmphasizedDecelerate,
-                                    ),
-                            )
+                            slideOutVertically(targetOffsetY = { -it }, animationSpec = slideSpec)
                         )
                 },
                 label = "moe_launch_button_text",

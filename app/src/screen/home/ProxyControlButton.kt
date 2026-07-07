@@ -22,8 +22,6 @@ package com.github.yumelira.yumebox.screen.home
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FiniteAnimationSpec
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -89,20 +87,28 @@ fun ProxyControlButton(
             onClick = {
                 coroutineScope.launch {
                     scaleAnim.animateTo(
-                        targetValue = 0.90f,
+                        targetValue = 0.92f,
                         animationSpec =
                             tween(
-                                AnimationSpecs.DURATION_INSTANT,
+                                ControlButtonPressInDurationMillis,
                                 easing = AnimationSpecs.EmphasizedAccelerate,
                             ),
                     )
                     scaleAnim.animateTo(
-                        targetValue = 1.02f,
-                        animationSpec = AnimationSpecs.ButtonPressSpring,
+                        targetValue = 1.03f,
+                        animationSpec =
+                            tween(
+                                ControlButtonPressOutDurationMillis,
+                                easing = AnimationSpecs.EmphasizedDecelerate,
+                            ),
                     )
                     scaleAnim.animateTo(
                         targetValue = 1f,
-                        animationSpec = spring(dampingRatio = 1f, stiffness = 500f),
+                        animationSpec =
+                            tween(
+                                ControlButtonSettleDurationMillis,
+                                easing = AnimationSpecs.StandardEasing,
+                            ),
                     )
                 }
                 onClick()
@@ -128,20 +134,24 @@ fun ProxyControlButton(
             AnimatedContent(
                 targetState = isRunning,
                 transitionSpec = {
-                    val iconTransition = AnimationSpecs.IconTransition as FiniteAnimationSpec<Float>
+                    val iconTransition =
+                        tween<Float>(
+                            ControlButtonIconScaleDurationMillis,
+                            easing = AnimationSpecs.Legacy,
+                        )
                     val enterTransition =
                         slideInVertically(
                             initialOffsetY = { it / 5 },
                             animationSpec =
                                 tween(
-                                    AnimationSpecs.DURATION_INSTANT + 40,
+                                    ControlButtonIconEnterDurationMillis,
                                     easing = AnimationSpecs.EnterEasing,
                                 ),
                         ) +
                             fadeIn(
                                 animationSpec =
                                     tween(
-                                        AnimationSpecs.DURATION_INSTANT + 40,
+                                        ControlButtonIconEnterDurationMillis,
                                         easing = AnimationSpecs.EnterEasing,
                                     )
                             ) +
@@ -152,14 +162,14 @@ fun ProxyControlButton(
                             targetOffsetY = { -it / 5 },
                             animationSpec =
                                 tween(
-                                    AnimationSpecs.DURATION_INSTANT + 20,
+                                    ControlButtonIconExitDurationMillis,
                                     easing = AnimationSpecs.ExitEasing,
                                 ),
                         ) +
                             fadeOut(
                                 animationSpec =
                                     tween(
-                                        AnimationSpecs.DURATION_INSTANT + 20,
+                                        ControlButtonIconExitDurationMillis,
                                         easing = AnimationSpecs.ExitEasing,
                                     )
                             ) +
@@ -187,3 +197,10 @@ private fun HintText(text: String) {
         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
     )
 }
+
+private const val ControlButtonPressInDurationMillis = 180
+private const val ControlButtonPressOutDurationMillis = 220
+private const val ControlButtonSettleDurationMillis = 180
+private const val ControlButtonIconEnterDurationMillis = 260
+private const val ControlButtonIconExitDurationMillis = 220
+private const val ControlButtonIconScaleDurationMillis = 340
