@@ -40,12 +40,15 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.PathParser
 import com.github.yumelira.yumebox.presentation.theme.UiDp
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun EmptyResourceIllustration(modifier: Modifier = Modifier) {
     val paths = remember { EmptyResourcePaths.create() }
+    val outline = MiuixTheme.colorScheme.primary.copy(alpha = 0.55f)
+    val fill = MiuixTheme.colorScheme.primary.copy(alpha = 0.14f)
 
-    Canvas(modifier = modifier.size(UiDp.dp180)) {
+    Canvas(modifier = modifier.size(UiDp.dp220)) {
         val viewportWidth = 142f
         val viewportHeight = 166.58142f
         val scale = minOf(size.width / viewportWidth, size.height / viewportHeight)
@@ -54,23 +57,23 @@ fun EmptyResourceIllustration(modifier: Modifier = Modifier) {
 
         translate(left = left, top = top) {
             scale(scaleX = scale, scaleY = scale, pivot = Offset.Zero) {
-                drawCircle(color = Color.White, radius = 71f, center = Offset(71f, 71f))
+                drawCircle(color = Color.Transparent, radius = 71f, center = Offset(71f, 71f))
                 clipPath(paths.mask) {
-                    drawPath(paths.topPaper, Color.White)
-                    drawPath(paths.topPaperOutline, EmptyResourceColor.Outline)
+                    drawPath(paths.topPaper, Color.Transparent)
+                    drawPath(paths.topPaperOutline, outline)
                     drawOval(
-                        color = EmptyResourceColor.Fill,
+                        color = fill,
                         topLeft = Offset(80.53735f, 80.05969f),
                         size = Size(10.597015f, 10.597015f),
                     )
-                    drawPath(paths.smallRing, EmptyResourceColor.Outline, style = Fill)
+                    drawPath(paths.smallRing, outline, style = Fill)
                     drawPath(
                         paths.smallPatch,
-                        EmptyResourceColor.Fill,
+                        fill,
                     )
                     drawPath(
                         paths.smallPatch,
-                        EmptyResourceColor.Fill,
+                        fill,
                         style =
                             Stroke(
                                 width = 3f,
@@ -78,24 +81,24 @@ fun EmptyResourceIllustration(modifier: Modifier = Modifier) {
                                 join = StrokeJoin.Round,
                             ),
                     )
-                    drawPath(paths.leftPaper, Color.White)
-                    drawPath(paths.leftPaperOutline, EmptyResourceColor.Outline)
-                    drawPath(paths.rightPaper, Color.White)
-                    drawPath(paths.rightPaperOutline, EmptyResourceColor.Outline)
+                    drawPath(paths.leftPaper, Color.Transparent)
+                    drawPath(paths.leftPaperOutline, outline)
+                    drawPath(paths.rightPaper, Color.Transparent)
+                    drawPath(paths.rightPaperOutline, outline)
                     rotate(degrees = -55f, pivot = Offset(104.06152f, 87.72424f)) {
                         drawRect(
-                            color = EmptyResourceColor.Fill,
+                            color = fill,
                             topLeft = Offset(104.06152f, 87.72424f),
                             size = Size(11f, 21.72388f),
                         )
                     }
                     drawOval(
-                        color = EmptyResourceColor.Fill,
+                        color = fill,
                         topLeft = Offset(30.07434f, 66.28357f),
                         size = Size(9.865805f, 9.865805f),
                     )
                     drawOval(
-                        color = EmptyResourceColor.Outline,
+                        color = outline,
                         topLeft = Offset(30.07434f, 66.28357f),
                         size = Size(9.865805f, 9.865805f),
                         style =
@@ -107,7 +110,7 @@ fun EmptyResourceIllustration(modifier: Modifier = Modifier) {
                     )
                     drawPath(
                         paths.waveBase,
-                        EmptyResourceColor.Fill,
+                        fill,
                         style =
                             Stroke(
                                 width = 3f,
@@ -115,14 +118,14 @@ fun EmptyResourceIllustration(modifier: Modifier = Modifier) {
                                 join = StrokeJoin.Round,
                             ),
                     )
-                    drawPathLine(paths.shortLineA)
-                    drawPathLine(paths.shortLineB)
-                    drawPathLine(paths.shortLineC)
-                    drawPathLine(paths.handleA)
-                    drawPathLine(paths.handleB)
+                    drawPathLine(paths.shortLineA, outline)
+                    drawPathLine(paths.shortLineB, outline)
+                    drawPathLine(paths.shortLineC, outline)
+                    drawPathLine(paths.handleA, outline)
+                    drawPathLine(paths.handleB, outline)
                     drawPath(
                         paths.centerHand,
-                        EmptyResourceColor.Fill,
+                        fill,
                         style =
                             Stroke(
                                 width = 3f,
@@ -132,13 +135,13 @@ fun EmptyResourceIllustration(modifier: Modifier = Modifier) {
                     )
                     drawPath(
                         paths.leftConnector,
-                        EmptyResourceColor.Outline,
+                        outline,
                         style = Stroke(width = 3f, join = StrokeJoin.Round),
                     )
-                    drawPathLine(paths.leftHandle)
+                    drawPathLine(paths.leftHandle, outline)
                     rotate(degrees = 35f, pivot = Offset(46.7207f, 38.18323f)) {
                         drawRect(
-                            color = EmptyResourceColor.Outline,
+                            color = outline,
                             topLeft = Offset(46.7207f, 38.18323f),
                             size = Size(14.83582f, 8.477612f),
                             style =
@@ -155,17 +158,12 @@ fun EmptyResourceIllustration(modifier: Modifier = Modifier) {
     }
 }
 
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPathLine(path: Path) {
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPathLine(path: Path, color: Color) {
     drawPath(
         path = path,
-        color = EmptyResourceColor.Outline,
+        color = color,
         style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round),
     )
-}
-
-private object EmptyResourceColor {
-    val Outline = Color(0xFFA0B8CB)
-    val Fill = Color(0xFFD7DFE5)
 }
 
 private data class EmptyResourcePaths(

@@ -358,6 +358,13 @@ internal fun MoeLaunchControls(
 }
 
 @Composable
+private fun moeLaunchButtonBorderColor(): Color {
+    val onBackground = MiuixTheme.colorScheme.onBackground
+    val isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f
+    return onBackground.copy(alpha = if (isDark) 0.22f else 0.08f)
+}
+
+@Composable
 private fun MoeLaunchConfigButton(surfaceColor: Color, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -368,6 +375,7 @@ private fun MoeLaunchConfigButton(surfaceColor: Color, onClick: () -> Unit) {
             label = "moe_launch_config_button_press_scale",
         )
     val contentColor = MiuixTheme.colorScheme.onBackground.copy(alpha = 0.62f)
+    val borderColor = moeLaunchButtonBorderColor()
 
     Box(
         modifier =
@@ -387,7 +395,7 @@ private fun MoeLaunchConfigButton(surfaceColor: Color, onClick: () -> Unit) {
                 .background(surfaceColor, MoeUi.Shape.launchButton)
                 .border(
                     width = MoeUi.Button.borderWidth,
-                    color = MiuixTheme.colorScheme.onBackground.copy(alpha = 0.08f),
+                    color = borderColor,
                     shape = MoeUi.Shape.launchButton,
                 )
                 .clickable(
@@ -420,6 +428,7 @@ internal fun MoeLaunchButton(
     val isRunning = controlState == HomeProxyControlState.Running
     val contentColor =
         MiuixTheme.colorScheme.onBackground.copy(alpha = if (enabled) 0.72f else 0.34f)
+    val borderColor = moeLaunchButtonBorderColor()
     val pressScale by
         animateFloatAsState(
             targetValue = if (isPressed && enabled) MoeUi.Button.pressedScale else 1f,
@@ -469,7 +478,7 @@ internal fun MoeLaunchButton(
                 .background(surfaceColor, MoeUi.Shape.launchButton)
                 .border(
                     width = MoeUi.Button.borderWidth,
-                    color = MiuixTheme.colorScheme.onBackground.copy(alpha = 0.08f),
+                    color = borderColor,
                     shape = MoeUi.Shape.launchButton,
                 )
                 .clickable(
