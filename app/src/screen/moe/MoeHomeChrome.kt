@@ -490,56 +490,60 @@ internal fun MoeLaunchButton(
                     vertical = MoeUi.Button.verticalPadding,
                 )
     ) {
-        AnimatedContent(
-            modifier = Modifier.align(Alignment.Center),
-            targetState = displayedLabel,
-            transitionSpec = {
-                (slideInVertically(
-                        initialOffsetY = { it / 3 },
-                        animationSpec =
-                            tween(
-                                durationMillis = MoeLaunchTextEnterDuration,
-                                easing = AnimationSpecs.EmphasizedDecelerate,
-                            ),
-                    ) +
-                        fadeIn(
+        Box(
+            modifier = Modifier.align(Alignment.Center).height(22.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            AnimatedContent(
+                targetState = displayedLabel,
+                transitionSpec = {
+                    (slideInVertically(
+                            initialOffsetY = { it / 2 },
                             animationSpec =
                                 tween(
                                     durationMillis = MoeLaunchTextEnterDuration,
-                                    easing = AnimationSpecs.EnterEasing,
-                                )
-                        ))
-                    .togetherWith(
-                        slideOutVertically(
-                            targetOffsetY = { -it / 3 },
-                            animationSpec =
-                                tween(
-                                    durationMillis = MoeLaunchTextExitDuration,
-                                    easing = AnimationSpecs.EmphasizedAccelerate,
+                                    easing = AnimationSpecs.EmphasizedDecelerate,
                                 ),
                         ) +
-                            fadeOut(
+                            fadeIn(
+                                animationSpec =
+                                    tween(
+                                        durationMillis = MoeLaunchTextEnterDuration,
+                                        easing = AnimationSpecs.EnterEasing,
+                                    )
+                            ))
+                        .togetherWith(
+                            slideOutVertically(
+                                targetOffsetY = { -it / 2 },
                                 animationSpec =
                                     tween(
                                         durationMillis = MoeLaunchTextExitDuration,
-                                        easing = AnimationSpecs.ExitEasing,
-                                    )
-                            )
-                    )
-                    .using(SizeTransform(clip = false))
-            },
-            label = "moe_launch_button_text",
-        ) { text ->
-            Text(
-                text = text,
-                color = contentColor,
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
-                softWrap = false,
-                maxLines = 1,
-                overflow = TextOverflow.Clip,
-            )
+                                        easing = AnimationSpecs.EmphasizedAccelerate,
+                                    ),
+                            ) +
+                                fadeOut(
+                                    animationSpec =
+                                        tween(
+                                            durationMillis = MoeLaunchTextExitDuration,
+                                            easing = AnimationSpecs.ExitEasing,
+                                        )
+                                )
+                        )
+                        .using(SizeTransform(clip = false))
+                },
+                label = "moe_launch_button_text",
+            ) { text ->
+                Text(
+                    text = text,
+                    color = contentColor,
+                    style = MiuixTheme.textStyles.body1,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    softWrap = false,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                )
+            }
         }
     }
 }
