@@ -124,20 +124,17 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val bottomBarVisible by
         remember(classicHomeEnabled, settledMainPage, mainPagerState.selectedPage) {
             derivedStateOf {
-                if (classicHomeEnabled) {
-                    true
-                } else if (mainPagerState.selectedPage == 0) {
-                    false
-                } else {
-                    settledMainPage != 0
+                when {
+                    classicHomeEnabled -> true
+                    mainPagerState.selectedPage == 0 -> false
+                    settledMainPage != 0 -> true
+                    else -> false
                 }
             }
         }
     val bottomBarBackground =
-        if (MiuixTheme.colorScheme.background.luminance() < 0.5f) {
-            MiuixTheme.colorScheme.surface
-        } else {
-            MiuixTheme.colorScheme.background
+        MiuixTheme.colorScheme.run {
+            surface.takeIf { background.luminance() < 0.5f } ?: background
         }
     val opacity = AppTheme.opacity
     val bottomBarHazeStyle =
@@ -218,8 +215,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         Scaffold { innerPadding ->
             Box(Modifier.fillMaxSize()) {
                 val layoutDirection = LocalLayoutDirection.current
-                val visibleBottomBarReservedHeight =
-                    rememberBottomBarReservedHeight()
+                val visibleBottomBarReservedHeight = rememberBottomBarReservedHeight()
                 val bottomBarReservedHeight by
                     animateDpAsState(
                         targetValue =
@@ -315,7 +311,10 @@ private fun MainRootPageContent(
     when (page) {
         0 -> {
             if (classicHomeEnabled) {
-                HomePager(mainInnerPadding = mainInnerPadding, isActive = selectedPage == 0)
+                HomePager(
+                    mainInnerPadding = mainInnerPadding,
+                    isActive = selectedPage == 0,
+                )
             } else {
                 MoeHomePage(
                     mainInnerPadding = mainInnerPadding,
