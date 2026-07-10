@@ -12,19 +12,14 @@
     native <methods>;
 }
 
-# Keep JNI bridge classes
+# JNI bridge callbacks use FindClass/GetMethodID with these exact names.
 -keep class com.github.yumelira.yumebox.core.bridge.** { *; }
--keep class com.github.yumelira.yumebox.core.Clash { *; }
 
-# JNI in core/src/cpp/main.c reflects these exact Kotlin/coroutines symbols by name.
-# They must keep original names/members in release builds.
+# JNI in lib/native/cpp/bridge_callbacks.cpp resolves these exact symbols.
 -keep class kotlin.Unit {
     public static final kotlin.Unit INSTANCE;
 }
--keep interface kotlinx.coroutines.CompletableDeferred { *; }
-
-# Serialization metadata
--keepattributes Signature
--keepattributes *Annotation*
-
--dontwarn kotlinx.serialization.**
+-keep,allowoptimization interface kotlinx.coroutines.CompletableDeferred {
+    boolean complete(java.lang.Object);
+    boolean completeExceptionally(java.lang.Throwable);
+}

@@ -1,68 +1,21 @@
 # ========================================
 # R8 Configuration: Shrink, Optimize, Obfuscate
 # ========================================
--optimizationpasses 5
--allowaccessmodification
 -repackageclasses
 -adaptclassstrings
 
 # ========================================
 # Native / Android Core
 # ========================================
--keepclasseswithmembernames class * {
-    native <methods>;
-}
-
-# JNI bridge entry points
--keep class com.github.yumelira.yumebox.core.bridge.** { *; }
--keep class com.github.yumelira.yumebox.core.Global {
-    public static ** INSTANCE;
-    public final android.content.Context getApplication();
-    public final void init(android.content.Context);
-    public final void destroy();
-}
-
-# Parcelable CREATOR
--keepclassmembers class * implements android.os.Parcelable {
-    public static final android.os.Parcelable$Creator *;
-}
+# JNI keep rules are exported by :core, which owns the bridge contract.
 
 # ========================================
 # Kotlin / Serialization (targeted)
 # ========================================
--keep class kotlin.Metadata { *; }
--keepattributes *Annotation*, Signature, InnerClasses, EnclosingMethod
--keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations, RuntimeVisibleTypeAnnotations
-
-# kotlinx.serialization generated serializers / companions
--dontnote kotlinx.serialization.AnnotationsKt
--dontwarn kotlinx.serialization.**
+# kotlinx.serialization and the Android optimized default configuration supply
+# the required serializer and attribute rules. Keep only the unrelated warning
+# suppression required by animal-sniffer's optional JRE annotation.
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
-
--keepclassmembers @kotlinx.serialization.Serializable class ** {
-    *** Companion;
-    *** INSTANCE;
-    kotlinx.serialization.KSerializer serializer(...);
-}
--keepclasseswithmembers class ** {
-    kotlinx.serialization.KSerializer serializer(...);
-}
--keepclassmembers class **$$serializer {
-    static ** INSTANCE;
-}
-
-# Enum serializers often rely on these members
--keepclassmembers enum * {
-    public static **[] values();
-    public static ** valueOf(java.lang.String);
-}
-
-# JNI bridge (core/src/cpp/main.c) reflects these exact Kotlin/coroutines types by name.
-# Do not obfuscate/remove them.
--keep class kotlin.Unit {
-    public static final kotlin.Unit INSTANCE;
-}
--keep interface kotlinx.coroutines.CompletableDeferred { *; }
 
 # Optional micro-optimization: strip Kotlin runtime null-check helpers
 -assumenosideeffects class kotlin.jvm.internal.Intrinsics {
@@ -73,13 +26,6 @@
     public static void checkFieldIsNotNull(...);
     public static void checkParameterIsNotNull(...);
     public static void checkNotNullParameter(...);
-}
-
-# Coroutines debug flags (safe shrinking)
--assumenosideeffects class kotlinx.coroutines.DebugKt {
-    boolean getASSERTIONS_ENABLED() return false;
-    boolean getDEBUG() return false;
-    boolean getRECOVER_STACK_TRACES() return false;
 }
 
 # ========================================
@@ -113,7 +59,7 @@
 -keepclassmembernames class **.R { *; }
 
 # ========================================
-# ML Kit (Google) - Component registration only
+# ML Kit (Google) - Component registration and native barcode bridge
 # ========================================
 -keep class * implements com.google.firebase.components.ComponentRegistrar { *; }
 -keep @com.google.firebase.components.ComponentRegistrar class * { *; }
