@@ -29,7 +29,7 @@ private const val OFFICIAL_MRS_URL_TEST_INTERVAL = 300
 private const val OFFICIAL_MRS_URL_TEST_URL = "https://www.gstatic.com/generate_204"
 private const val OFFICIAL_MRS_EXCLUDE_FILTER = "(?i)GB|Traffic|Expire|Premium|频道|订阅|ISP|流量|到期|重置"
 private const val OFFICIAL_MRS_POPULAR_REGION_EXCLUDE_FILTER =
-    "(?i)(香港|HK|Hong Kong|🇭🇰|台湾|TW|Taiwan|🇹🇼|日本|JP|Japan|东京|大阪|🇯🇵|新加坡|SG|Singapore|狮城|🇸🇬|美国|US|United States|America|洛杉矶|硅谷|🇺🇸)"
+    "(?i)(香港|HK|Hong Kong|\\x{1F1ED}\\x{1F1F0}|台湾|TW|Taiwan|\\x{1F1F9}\\x{1F1FC}|日本|JP|Japan|东京|大阪|\\x{1F1EF}\\x{1F1F5}|新加坡|SG|Singapore|狮城|\\x{1F1F8}\\x{1F1EC}|美国|US|United States|America|洛杉矶|硅谷|\\x{1F1FA}\\x{1F1F8})"
 private const val OFFICIAL_MRS_GEOSITE_URL =
     "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/%s.mrs"
 private const val OFFICIAL_MRS_GEOIP_URL =
@@ -68,7 +68,7 @@ enum class OverridePresetRegion(
         displayName = "香港自动组",
         groupName = "HK Auto",
         fallbackGroupName = "HK Fallback",
-        filter = "(?i)(香港|HK|Hong Kong|🇭🇰)",
+        filter = "(?i)(香港|HK|Hong Kong|\\x{1F1ED}\\x{1F1F0})",
         icon = officialMrsCatalogIconUrl("HK").orEmpty(),
     ),
     TW(
@@ -76,7 +76,7 @@ enum class OverridePresetRegion(
         displayName = "台湾自动组",
         groupName = "TW Auto",
         fallbackGroupName = "TW Fallback",
-        filter = "(?i)(台湾|TW|Taiwan|🇹🇼)",
+        filter = "(?i)(台湾|TW|Taiwan|\\x{1F1F9}\\x{1F1FC})",
         icon = officialMrsCatalogIconUrl("TW").orEmpty(),
     ),
     JP(
@@ -84,7 +84,7 @@ enum class OverridePresetRegion(
         displayName = "日本自动组",
         groupName = "JP Auto",
         fallbackGroupName = "JP Fallback",
-        filter = "(?i)(日本|JP|Japan|东京|大阪|🇯🇵)",
+        filter = "(?i)(日本|JP|Japan|东京|大阪|\\x{1F1EF}\\x{1F1F5})",
         icon = officialMrsCatalogIconUrl("JP").orEmpty(),
     ),
     SG(
@@ -92,7 +92,7 @@ enum class OverridePresetRegion(
         displayName = "新加坡自动组",
         groupName = "SG Auto",
         fallbackGroupName = "SG Fallback",
-        filter = "(?i)(新加坡|SG|Singapore|狮城|🇸🇬)",
+        filter = "(?i)(新加坡|SG|Singapore|狮城|\\x{1F1F8}\\x{1F1EC})",
         icon = officialMrsCatalogIconUrl("SG").orEmpty(),
     ),
     US(
@@ -100,7 +100,7 @@ enum class OverridePresetRegion(
         displayName = "美国自动组",
         groupName = "US Auto",
         fallbackGroupName = "US Fallback",
-        filter = "(?i)(美国|US|United States|America|洛杉矶|硅谷|🇺🇸)",
+        filter = "(?i)(美国|US|United States|America|洛杉矶|硅谷|\\x{1F1FA}\\x{1F1F8})",
         icon = officialMrsCatalogIconUrl("US").orEmpty(),
     ),
     Other(
