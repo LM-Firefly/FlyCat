@@ -25,19 +25,6 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -45,38 +32,25 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
-import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_FILE
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_URL
 import com.github.yumelira.yumebox.presentation.util.importTypeIndexFor
-import com.github.yumelira.yumebox.presentation.util.isYamlConfigFileName
 import com.github.yumelira.yumebox.presentation.util.profileNameFromConfigFileName
 import com.github.yumelira.yumebox.presentation.util.readClipboardSubscriptionUrl
-import com.github.yumelira.yumebox.presentation.util.readDisplayName
 import com.github.yumelira.yumebox.presentation.util.sourceFileName
 import com.github.yumelira.yumebox.runtime.api.Profile
 import dev.oom_wg.purejoy.mlang.MLang
-import kotlinx.coroutines.launch
 import java.util.UUID
 import kotlin.math.max
 
@@ -102,22 +76,21 @@ internal fun AddProfileSheet(
     val downloadSheetContentHeight = configuration.screenHeightDp.dp * 0.3f
     val downloadCompleteSheetContentHeight = configuration.screenHeightDp.dp * 0.42f
     val context = LocalContext.current
-    val density = LocalDensity.current
-    val scope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
-    var selectedTypeIndex by remember { mutableIntStateOf(0) }
-    var nameTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
-    var urlTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
-    var filePath by remember { mutableStateOf("") }
-    var fileNameTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
-    var ageSecretKeyTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
-    var error by remember { mutableStateOf("") }
-    var isDownloading by remember { mutableStateOf(false) }
+    val form = rememberProfileAddFormState()
+    var selectedTypeIndex by form.typeIndex
+    var nameTextFieldValue by form.name
+    var urlTextFieldValue by form.url
+    var filePath by form.filePath
+    var fileNameTextFieldValue by form.fileName
+    var ageSecretKeyTextFieldValue by form.ageSecretKey
+    var error by form.error
+    var isDownloading by form.isDownloading
 
     val downloadProgress by profilesViewModel.downloadProgress.collectAsState()
     val uiState by profilesViewModel.uiState.collectAsState()
-    var hasShownCompleteAnimation by remember { mutableStateOf(false) }
-    var stableSheetHeightPx by remember { mutableIntStateOf(0) }
+    var hasShownCompleteAnimation by form.hasShownComplete
+    var stableSheetHeightPx by form.stableHeightPx
 
     LaunchedEffect(show.value) {
         if (!show.value) {
@@ -127,38 +100,17 @@ internal fun AddProfileSheet(
     }
 
     val applyNameText: (String) -> Unit = { updatedText ->
-        nameTextFieldValue = textFieldValueAtEnd(updatedText)
+        nameTextFieldValue = textValueAtEnd(updatedText)
     }
     val applyUrlText: (String) -> Unit = { updatedText ->
-        urlTextFieldValue = textFieldValueAtEnd(updatedText)
+        urlTextFieldValue = textValueAtEnd(updatedText)
     }
     val applyFileNameText: (String) -> Unit = { updatedText ->
-        fileNameTextFieldValue = textFieldValueAtEnd(updatedText)
+        fileNameTextFieldValue = textValueAtEnd(updatedText)
     }
 
-    val clearAllState = {
-        applyNameText("")
-        applyUrlText("")
-        filePath = ""
-        applyFileNameText("")
-        ageSecretKeyTextFieldValue = TextFieldValue()
-        error = ""
-        isDownloading = false
-        hasShownCompleteAnimation = false
-    }
-
-    val clearCurrentTypeState = {
-        when (selectedTypeIndex) {
-            PROFILE_IMPORT_TYPE_URL -> applyUrlText("")
-            PROFILE_IMPORT_TYPE_FILE -> {
-                filePath = ""
-                applyFileNameText("")
-            }
-
-            PROFILE_IMPORT_TYPE_QR -> {}
-        }
-        error = ""
-    }
+    val clearAllState = form::reset
+    val clearCurrentTypeState = form::clearTypeInput
 
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -245,232 +197,99 @@ internal fun AddProfileSheet(
         }
     }
 
-    val launcher =
-        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            uri?.let {
-                val actualFileName =
-                    readDisplayName(context, it, MLang.ProfilesPage.Message.UnknownFile)
-
-                if (!isYamlConfigFileName(actualFileName)) {
-                    error = MLang.ProfilesPage.Validation.YamlOnly
-                    return@let
-                }
-
-                filePath = it.toString()
+    val launchers =
+        rememberProfileImportLaunchers(
+            context = context,
+            onFileSelected = { uri, fileName ->
+                filePath = uri.toString()
                 error = ""
-                applyFileNameText(actualFileName)
-
-                if (
-                    nameTextFieldValue.text.isBlank() || nameTextFieldValue.text == actualFileName
-                ) {
+                applyFileNameText(fileName)
+                if (nameTextFieldValue.text.isBlank() || nameTextFieldValue.text == fileName) {
                     applyNameText(
                         profileNameFromConfigFileName(
-                            actualFileName,
+                            fileName,
                             MLang.ProfilesPage.Input.NewProfile,
                         )
                     )
                 }
-            }
-        }
-
-    val qrImageLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            uri?.let {
-                scope.launch {
-                    // QR decode fault barrier: any ML Kit/IO failure is surfaced as a toast.
-                    @Suppress("TooGenericExceptionCaught")
-                    try {
-                        val result = readQrFromImage(context, it)
-                        if (result != null) {
-                            applyUrlText(result)
-                            selectedTypeIndex = PROFILE_IMPORT_TYPE_URL
-                            context.toast(MLang.ProfilesPage.QrScanner.RecognizeSuccess)
-                        } else {
-                            context.toast(MLang.ProfilesPage.QrScanner.RecognizeFailed)
-                        }
-                    } catch (error: Exception) {
-                        context.toast(
-                            MLang.ProfilesPage.QrScanner.RecognizeError.format(error.message ?: "")
-                        )
-                    }
-                }
-            }
-        }
-
-    val dismissSheet = {
-        if (!isDownloading) {
-            show.value = false
-            profilesViewModel.clearDownloadProgress()
-        }
-    }
-
-    fun submitProfile() {
-        if (selectedTypeIndex == PROFILE_IMPORT_TYPE_QR || isDownloading) {
-            return
-        }
-        if (selectedTypeIndex == PROFILE_IMPORT_TYPE_URL && urlTextFieldValue.text.isBlank()) {
-            error = MLang.ProfilesPage.Validation.EnterUrl
-            return
-        }
-        if (selectedTypeIndex == PROFILE_IMPORT_TYPE_FILE && filePath.isBlank()) {
-            error = MLang.ProfilesPage.Validation.SelectFile
-            return
-        }
-
-        keyboardController?.hide()
-        profilesViewModel.clearError()
-        hasShownCompleteAnimation = false
-        isDownloading = true
-
-        if (selectedTypeIndex == PROFILE_IMPORT_TYPE_URL) {
-            if (profileToEdit != null) {
-                onUpdateProfile(
-                    profileToEdit.uuid,
-                    nameTextFieldValue.text,
-                    urlTextFieldValue.text,
-                    profileToEdit.interval,
-                )
-            } else {
-                onAddProfile(
-                    nameTextFieldValue.text.ifBlank { MLang.ProfilesPage.Input.NewProfile },
-                    urlTextFieldValue.text,
-                    Profile.Type.Url,
-                    0L,
-                    null,
-                    ageSecretKeyTextFieldValue.text.trim(),
-                )
-            }
-        } else {
-            if (profileToEdit != null) {
-                onUpdateProfile(
-                    profileToEdit.uuid,
-                    nameTextFieldValue.text,
-                    profileToEdit.source,
-                    profileToEdit.interval,
-                )
-            } else {
-                onAddProfile(
-                    nameTextFieldValue.text.ifBlank { MLang.ProfilesPage.Input.NewProfile },
-                    filePath,
-                    Profile.Type.File,
-                    0L,
-                    filePath.toUri(),
-                    ageSecretKeyTextFieldValue.text.trim(),
-                )
-            }
-        }
-    }
-
-    AppActionBottomSheet(
-        show = show.value,
-        title =
-            if (profileToEdit != null) {
-                MLang.ProfilesPage.Sheet.EditTitle
-            } else {
-                MLang.ProfilesPage.Sheet.AddTitle
             },
-        startAction = {
-            if (!isDownloading) {
-                AppBottomSheetCloseAction(contentDescription = "Cancel", onClick = dismissSheet)
-            }
-        },
-        endAction = {
-            if (!isDownloading && selectedTypeIndex != PROFILE_IMPORT_TYPE_QR) {
-                AppBottomSheetConfirmAction(
-                    contentDescription = "Confirm",
-                    onClick = { submitProfile() },
-                )
-            }
-        },
-        onDismissRequest = dismissSheet,
-    ) {
-        val stableSheetHeight =
-            remember(stableSheetHeightPx, density) {
-                if (stableSheetHeightPx <= 0) {
-                    UiDp.dp0
-                } else {
-                    with(density) { stableSheetHeightPx.toDp() }
-                }
-            }
-        Column(
-            modifier =
-                Modifier.fillMaxWidth()
-                    .wrapContentHeight()
-                    .animateContentSize(animationSpec = tween(300, easing = FastOutSlowInEasing))
-                    .padding(bottom = UiDp.dp16)
-        ) {
-            AnimatedContent(
-                targetState = isDownloading,
-                transitionSpec = {
-                    if (targetState) {
-                        (slideInHorizontally(animationSpec = tween(260), initialOffsetX = { it }) +
-                            fadeIn()) togetherWith
-                            (slideOutHorizontally(
-                                animationSpec = tween(220),
-                                targetOffsetX = { -it / 3 },
-                            ) + fadeOut())
-                    } else {
-                        (slideInHorizontally(
-                            animationSpec = tween(220),
-                            initialOffsetX = { -it / 3 },
-                        ) + fadeIn()) togetherWith
-                            (slideOutHorizontally(
-                                animationSpec = tween(260),
-                                targetOffsetX = { it },
-                            ) + fadeOut())
-                    }
-                },
-                label = "ProfileImportContentSwitch",
-            ) { downloading ->
-                if (downloading) {
-                    DownloadProgressContent(
-                        downloadProgress = downloadProgress,
-                        stableSheetHeightPx = stableSheetHeightPx,
-                        stableSheetHeight = stableSheetHeight,
-                        downloadSheetContentHeight = downloadSheetContentHeight,
-                        downloadCompleteSheetContentHeight = downloadCompleteSheetContentHeight,
+            onUnsupportedFile = { error = MLang.ProfilesPage.Validation.YamlOnly },
+            onQrDecoded = { url ->
+                applyUrlText(url)
+                selectedTypeIndex = PROFILE_IMPORT_TYPE_URL
+            },
+        )
+
+    val dismissSheet = { dismissProfileAddSheet(show, isDownloading, profilesViewModel) }
+
+    val actions =
+        ProfileAddSheetActions(
+            dismiss = dismissSheet,
+            submit = {
+                val draft =
+                    ProfileDraft(
+                        typeIndex = selectedTypeIndex,
+                        name = nameTextFieldValue.text,
+                        url = urlTextFieldValue.text,
+                        filePath = filePath,
+                        ageSecretKey = ageSecretKeyTextFieldValue.text,
+                        profileToEdit = profileToEdit,
+                        isDownloading = isDownloading,
                     )
-                } else {
-                    ProfileFormContent(
-                        selectedTypeIndex = selectedTypeIndex,
-                        profileLocked = profileToEdit != null,
-                        nameTextFieldValue = nameTextFieldValue,
-                        urlTextFieldValue = urlTextFieldValue,
-                        fileNameTextFieldValue = fileNameTextFieldValue,
-                        ageSecretKeyTextFieldValue = ageSecretKeyTextFieldValue,
-                        error = error,
-                        hasCameraPermission = hasCameraPermission,
-                        showCameraPreview = showCameraPreview,
-                        onContainerMeasured = {
-                            stableSheetHeightPx = max(stableSheetHeightPx, it.height)
+                with(
+                    ProfileSubmissionActions(
+                        hideKeyboard = { keyboardController?.hide() },
+                        clearError = profilesViewModel::clearError,
+                        startDownload = {
+                            hasShownCompleteAnimation = false
+                            isDownloading = true
                         },
-                        onTypeSelected = {
-                            selectedTypeIndex = it
-                            clearCurrentTypeState()
-                        },
-                        onNameChange = { updatedTextFieldValue ->
-                            nameTextFieldValue = updatedTextFieldValue
-                            error = ""
-                        },
-                        onUrlChange = { updatedTextFieldValue ->
-                            urlTextFieldValue = updatedTextFieldValue
-                            error = ""
-                        },
-                        onAgeSecretKeyChange = { updatedTextFieldValue ->
-                            ageSecretKeyTextFieldValue = updatedTextFieldValue
-                        },
-                        onPickFile = { launcher.launch("*/*") },
-                        onSelectQrImage = { qrImageLauncher.launch("image/*") },
-                        onQrScanned = { scannedUrl ->
-                            applyUrlText(scannedUrl)
-                            selectedTypeIndex = PROFILE_IMPORT_TYPE_URL
-                        },
+                        showError = { error = it },
+                        addProfile = onAddProfile,
+                        updateProfile = onUpdateProfile,
                     )
+                ) {
+                    submitProfile(draft)
                 }
-            }
-        }
+            },
+            selectType = {
+            selectedTypeIndex = it
+            clearCurrentTypeState()
+            },
+            changeName = { value ->
+                nameTextFieldValue = value
+                error = ""
+            },
+            changeUrl = { value ->
+                urlTextFieldValue = value
+                error = ""
+            },
+            changeAgeSecretKey = { ageSecretKeyTextFieldValue = it },
+            updateHeight = { height -> stableSheetHeightPx = max(stableSheetHeightPx, height) },
+            pickFile = launchers.pickFile,
+            selectQrImage = launchers.selectQrImage,
+            qrScanned = { url ->
+                applyUrlText(url)
+                selectedTypeIndex = PROFILE_IMPORT_TYPE_URL
+            },
+        )
+    with(actions) {
+        ProfileAddSheetContent(
+            show = show.value,
+            isEditing = profileToEdit != null,
+            isDownloading = isDownloading,
+            selectedTypeIndex = selectedTypeIndex,
+            nameValue = nameTextFieldValue,
+            urlValue = urlTextFieldValue,
+            fileNameValue = fileNameTextFieldValue,
+            ageSecretKeyValue = ageSecretKeyTextFieldValue,
+            error = error,
+            hasCameraPermission = hasCameraPermission,
+            showCameraPreview = showCameraPreview,
+            downloadProgress = downloadProgress,
+            stableHeightPx = stableSheetHeightPx,
+            downloadHeight = downloadSheetContentHeight,
+            downloadCompleteHeight = downloadCompleteSheetContentHeight,
+        )
     }
 }
-
-private fun textFieldValueAtEnd(text: String): TextFieldValue =
-    TextFieldValue(text = text, selection = TextRange(text.length))

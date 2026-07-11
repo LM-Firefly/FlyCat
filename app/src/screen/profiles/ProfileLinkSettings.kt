@@ -20,12 +20,7 @@
 
 package com.github.yumelira.yumebox.screen.profiles
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -33,31 +28,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextOverflow
 import com.github.yumelira.yumebox.data.store.LinkOpenMode
 import com.github.yumelira.yumebox.data.store.ProfileLink
 import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumelira.yumebox.presentation.component.AppFormDialog
-import com.github.yumelira.yumebox.presentation.component.PreferenceEnumItem
-import com.github.yumelira.yumebox.presentation.component.SectionCard
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.theme.UiDp
 import dev.oom_wg.purejoy.mlang.MLang
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Delete
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun LinkSettingsDialog(
@@ -71,136 +50,23 @@ internal fun LinkSettingsDialog(
     onDeleteLink: (String) -> Unit,
     onOpenLink: (ProfileLink) -> Unit,
 ) {
-    val spacing = AppTheme.spacing
-    val opacity = AppTheme.opacity
-    val componentSizes = AppTheme.sizes
-
-    val openModeOptions =
-        listOf(
-            MLang.ProfilesPage.LinkSettings.OpenModeInApp,
-            MLang.ProfilesPage.LinkSettings.OpenModeExternal,
-        )
-    val openModeIndex =
-        when (linkOpenMode) {
-            LinkOpenMode.IN_APP -> 0
-            LinkOpenMode.EXTERNAL_BROWSER -> 1
-        }
-
-    val defaultLinkIndex =
-        if (defaultLinkId.isEmpty() || links.isEmpty()) {
-            0
-        } else {
-            links.indexOfFirst { it.id == defaultLinkId }.let { if (it == -1) 0 else it }
-        }
-
     AppActionBottomSheet(
         show = show.value,
-        modifier = Modifier,
         title = MLang.ProfilesPage.LinkSettings.Title,
         onDismissRequest = { show.value = false },
         enableNestedScroll = true,
         content = {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space16),
-                verticalArrangement = Arrangement.spacedBy(UiDp.dp12),
-            ) {
-                SectionCard(title = MLang.ProfilesPage.LinkSettings.OpenMode) {
-                    PreferenceEnumItem(
-                        title = MLang.ProfilesPage.LinkSettings.OpenMode,
-                        currentValue = linkOpenMode,
-                        items = openModeOptions,
-                        values = listOf(LinkOpenMode.IN_APP, LinkOpenMode.EXTERNAL_BROWSER),
-                        onValueChange = onOpenModeChange,
-                    )
-                }
-
-                if (links.isNotEmpty()) {
-                    SectionCard(title = MLang.ProfilesPage.LinkSettings.DefaultLink) {
-                        PreferenceEnumItem(
-                            title = MLang.ProfilesPage.LinkSettings.DefaultLink,
-                            summary = MLang.ProfilesPage.LinkSettings.DefaultLinkSummary,
-                            currentValue = links.getOrNull(defaultLinkIndex)?.id ?: "",
-                            items = links.map { it.name },
-                            values = links.map { it.id },
-                            onValueChange = onDefaultLinkChange,
-                        )
-                    }
-                }
-
-                if (links.isNotEmpty()) {
-                    SectionCard(title = MLang.ProfilesPage.LinkSettings.Title) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            links.forEachIndexed { index, link ->
-                                Row(
-                                    modifier =
-                                        Modifier.fillMaxWidth()
-                                            .clickable { onOpenLink(link) }
-                                            .padding(
-                                                horizontal = spacing.space16,
-                                                vertical = spacing.space12,
-                                            ),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(text = link.name, style = MiuixTheme.textStyles.body1)
-                                        Text(
-                                            text = link.url,
-                                            style = MiuixTheme.textStyles.body2,
-                                            color =
-                                                MiuixTheme.colorScheme.onSurface.copy(
-                                                    alpha = opacity.secondaryText
-                                                ),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    }
-
-                                    IconButton(onClick = { onDeleteLink(link.id) }) {
-                                        Icon(
-                                            imageVector = MiuixIcons.Delete,
-                                            contentDescription = "Delete",
-                                            tint = MiuixTheme.colorScheme.error,
-                                        )
-                                    }
-                                }
-
-                                if (index < links.size - 1) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = spacing.space16),
-                                        thickness = componentSizes.thinDividerThickness,
-                                        color =
-                                            MiuixTheme.colorScheme.outline.copy(
-                                                alpha = opacity.outline
-                                            ),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(spacing.space12),
-                ) {
-                    TextButton(
-                        text = MLang.ProfilesPage.LinkSettings.Close,
-                        onClick = { show.value = false },
-                        modifier = Modifier.weight(1f),
-                    )
-                    Button(
-                        onClick = onAddLink,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            MLang.ProfilesPage.LinkSettings.AddLink,
-                            color = MiuixTheme.colorScheme.onPrimary,
-                        )
-                    }
-                }
-            }
+            LinkSettingsContent(
+                links = links,
+                linkOpenMode = linkOpenMode,
+                defaultLinkId = defaultLinkId,
+                onOpenModeChange = onOpenModeChange,
+                onDefaultLinkChange = onDefaultLinkChange,
+                onAddLink = onAddLink,
+                onDeleteLink = onDeleteLink,
+                onOpenLink = onOpenLink,
+                onClose = { show.value = false },
+            )
         },
     )
 }

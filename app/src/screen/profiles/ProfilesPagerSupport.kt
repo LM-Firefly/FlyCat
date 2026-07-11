@@ -25,10 +25,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.github.yumelira.yumebox.App
 import com.github.yumelira.yumebox.presentation.component.AppDialog
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.runtime.api.Profile
 import dev.oom_wg.purejoy.mlang.MLang
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -105,9 +103,3 @@ internal fun ProfileEditOptionsDialog(
         }
     }
 }
-
-internal fun importedProfileDir(profile: Profile): File =
-    App.instance.filesDir.resolve("imported").resolve(profile.uuid.toString())
-
-internal fun importedConfigFile(profile: Profile): File =
-    importedProfileDir(profile).resolve("config.yaml")

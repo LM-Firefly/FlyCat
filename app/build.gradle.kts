@@ -31,6 +31,12 @@ plugins {
     id("com.mikepenz.aboutlibraries.plugin.android")
 }
 
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xcontext-parameters")
+    }
+}
+
 
 val appAbiList =
     gropify.abi.app.list.split(',').map { it.trim() }.filter { it.isNotEmpty() }

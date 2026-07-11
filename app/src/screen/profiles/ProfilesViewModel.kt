@@ -23,9 +23,7 @@ package com.github.yumelira.yumebox.screen.profiles
 import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.core.model.FetchStatus
 import com.github.yumelira.yumebox.core.presentation.AndroidContractStateViewModel
-import com.github.yumelira.yumebox.core.presentation.LoadableState
 import com.github.yumelira.yumebox.data.store.LinkOpenMode
 import com.github.yumelira.yumebox.data.store.Preference
 import com.github.yumelira.yumebox.data.store.ProfileLink
@@ -35,14 +33,11 @@ import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
 import java.util.UUID
 
 class ProfilesViewModel(
@@ -50,7 +45,7 @@ class ProfilesViewModel(
     private val profilesRepository: ProfilesRepository,
     profileLinksStorage: ProfileLinksStore,
 ) :
-    AndroidContractStateViewModel<ProfilesUiState, ProfilesViewModel.ProfilesUiEffect>(
+    AndroidContractStateViewModel<ProfilesUiState, ProfilesUiEffect>(
         application,
         ProfilesUiState(),
     ) {
@@ -78,7 +73,7 @@ class ProfilesViewModel(
     fun refreshProfiles() {
         viewModelScope.launch {
             try {
-                applyLoading(true)
+                setLoading(true)
                 val allProfiles = profilesRepository.queryAllProfiles()
                 val active = profilesRepository.queryActiveProfile()
 
@@ -89,7 +84,7 @@ class ProfilesViewModel(
                 Timber.e(error, "Failed to refresh profiles")
                 showError(MLang.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown"))
             } finally {
-                applyLoading(false)
+                setLoading(false)
             }
         }
     }
@@ -108,7 +103,7 @@ class ProfilesViewModel(
         viewModelScope.launch {
             var createdUuid: UUID? = null
             try {
-                applyLoading(true)
+                setLoading(true)
                 val uuid = profilesRepository.createProfile(type, name, source, ageSecretKey)
                 createdUuid = uuid
 
@@ -120,7 +115,7 @@ class ProfilesViewModel(
                 }
 
                 if (type == Profile.Type.File && fileUri != null) {
-                    copyFileToImportedDir(fileUri, uuid)
+                    getApplication<Application>().copyProfileImport(fileUri, uuid)
                 }
 
                 profilesRepository.updateProfile(uuid, observer)
@@ -147,22 +142,8 @@ class ProfilesViewModel(
                 showError(MLang.ProfilesVM.Message.AddFailed.format(error.message ?: "Unknown"))
                 _downloadProgress.value = null
             } finally {
-                applyLoading(false)
+                setLoading(false)
             }
-        }
-    }
-
-    private suspend fun copyFileToImportedDir(uri: Uri, uuid: UUID) {
-        withContext(Dispatchers.IO) {
-            val context = getApplication<Application>()
-            val importedDir = File(context.filesDir, "imported/$uuid")
-            importedDir.mkdirs()
-
-            val outputFile = File(importedDir, "config.yaml")
-            context.contentResolver.openInputStream(uri)?.use { input ->
-                outputFile.outputStream().use { output -> input.copyTo(output) }
-            } ?: throw IllegalArgumentException("Failed to open file: $uri")
-            Timber.d("File copied: ${outputFile.absolutePath}")
         }
     }
 
@@ -171,7 +152,7 @@ class ProfilesViewModel(
     fun cloneProfile(uuid: UUID) {
         viewModelScope.launch {
             try {
-                applyLoading(true)
+                setLoading(true)
                 val newUuid = profilesRepository.cloneProfile(uuid)
                 showMessage(MLang.ProfilesVM.Message.ProfileAdded.format("Clone"))
                 refreshProfiles()
@@ -181,7 +162,7 @@ class ProfilesViewModel(
                 Timber.e(error, "Failed to clone profile")
                 showError(MLang.ProfilesVM.Message.AddFailed.format(error.message ?: "Unknown"))
             } finally {
-                applyLoading(false)
+                setLoading(false)
             }
         }
     }
@@ -191,7 +172,7 @@ class ProfilesViewModel(
     fun deleteProfile(uuid: UUID) {
         viewModelScope.launch {
             try {
-                applyLoading(true)
+                setLoading(true)
                 profilesRepository.deleteProfile(uuid)
                 showMessage(MLang.ProfilesVM.Message.ProfileDeleted)
                 refreshProfiles()
@@ -201,7 +182,7 @@ class ProfilesViewModel(
                 Timber.e(error, "Failed to delete profile")
                 showError(MLang.ProfilesVM.Message.DeleteFailed.format(error.message ?: "Unknown"))
             } finally {
-                applyLoading(false)
+                setLoading(false)
             }
         }
     }
@@ -211,7 +192,7 @@ class ProfilesViewModel(
     fun activateProfile(uuid: UUID) {
         viewModelScope.launch {
             try {
-                applyLoading(true)
+                setLoading(true)
                 profilesRepository.setActiveProfile(uuid)
                 showMessage(MLang.ProfilesVM.Message.ProfileUpdated.format("Active"))
                 refreshProfiles()
@@ -221,7 +202,7 @@ class ProfilesViewModel(
                 Timber.e(error, "Failed to activate profile")
                 showError(MLang.ProfilesVM.Message.ToggleFailed.format(error.message ?: "Unknown"))
             } finally {
-                applyLoading(false)
+                setLoading(false)
             }
         }
     }
@@ -231,7 +212,7 @@ class ProfilesViewModel(
     fun updateProfile(uuid: UUID) {
         viewModelScope.launch {
             try {
-                applyLoading(true)
+                setLoading(true)
                 _downloadProgress.value =
                     DownloadProgress(percent = 0, message = MLang.ProfilesVM.Progress.Preparing)
 
@@ -256,7 +237,7 @@ class ProfilesViewModel(
                 showError(MLang.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown"))
                 _downloadProgress.value = null
             } finally {
-                applyLoading(false)
+                setLoading(false)
             }
         }
     }
@@ -273,7 +254,7 @@ class ProfilesViewModel(
     ) {
         viewModelScope.launch {
             try {
-                applyLoading(true)
+                setLoading(true)
                 profilesRepository.patchProfile(
                     uuid = uuid,
                     name = name,
@@ -290,7 +271,7 @@ class ProfilesViewModel(
                 Timber.e(error, "Failed to patch profile")
                 showError(MLang.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown"))
             } finally {
-                applyLoading(false)
+                setLoading(false)
             }
         }
     }
@@ -359,10 +340,6 @@ class ProfilesViewModel(
         clearMessageState()
     }
 
-    private fun applyLoading(loading: Boolean) {
-        super.setLoading(loading)
-    }
-
     private fun showError(message: String) {
         postError(message, ProfilesUiEffect.ShowError(message))
     }
@@ -370,58 +347,4 @@ class ProfilesViewModel(
     private fun showMessage(message: String) {
         postMessage(message, ProfilesUiEffect.ShowMessage(message))
     }
-
-    sealed interface ProfilesUiEffect {
-        data class ShowMessage(val message: String) : ProfilesUiEffect
-
-        data class ShowError(val message: String) : ProfilesUiEffect
-    }
-}
-
-data class ProfilesUiState(
-    override val isLoading: Boolean = false,
-    override val error: String? = null,
-    override val message: String? = null,
-) : LoadableState<ProfilesUiState> {
-    override fun withLoading(loading: Boolean): ProfilesUiState = copy(isLoading = loading)
-
-    override fun withError(error: String?): ProfilesUiState = copy(error = error)
-
-    override fun withMessage(message: String?): ProfilesUiState = copy(message = message)
-}
-
-data class DownloadProgress(
-    val percent: Int?,
-    val message: String,
-    val isCompleted: Boolean = false,
-)
-
-private fun FetchStatus.toDownloadProgress(): DownloadProgress {
-    val percent = if (max > 0) ((progress * 100) / max).coerceIn(0, 100) else null
-    val detail = args.firstOrNull().orEmpty().trim()
-
-    val message =
-        when (action) {
-            FetchStatus.Action.FetchConfiguration -> {
-                if (percent == null || percent <= 5) {
-                    MLang.ProfilesVM.Progress.Preparing
-                } else {
-                    detail.ifBlank { MLang.ProfilesPage.Progress.Downloading }
-                }
-            }
-
-            FetchStatus.Action.FetchProviders -> {
-                if (detail.isNotBlank()) detail else ""
-            }
-
-            FetchStatus.Action.SubscriptionInfo -> {
-                ""
-            }
-
-            FetchStatus.Action.Verifying -> {
-                detail.ifBlank { MLang.ProfilesVM.Progress.Verifying }
-            }
-        }
-
-    return DownloadProgress(percent = percent, message = message)
 }
