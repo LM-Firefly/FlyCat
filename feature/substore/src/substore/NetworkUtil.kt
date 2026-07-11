@@ -18,10 +18,11 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore
+package com.github.yumelira.yumebox.feature.substore
 
 import java.io.IOException
 import java.net.ServerSocket
+import java.net.Socket
 
 object NetworkUtil {
     fun isPortInUse(port: Int): Boolean =
@@ -30,4 +31,26 @@ object NetworkUtil {
         } catch (_: IOException) {
             true
         }
+
+    fun waitForPortReady(
+        host: String,
+        port: Int,
+        timeoutMs: Long = 5000,
+        probeIntervalMs: Long = 120,
+    ): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            val connected =
+                runCatching {
+                        Socket().use { socket ->
+                            socket.connect(java.net.InetSocketAddress(host, port), 300)
+                            true
+                        }
+                    }
+                    .getOrElse { false }
+            if (connected) return true
+            Thread.sleep(probeIntervalMs)
+        }
+        return false
+    }
 }

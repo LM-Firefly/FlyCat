@@ -24,6 +24,10 @@
 *.iml
 .navigation/
 captures/
+scripts/__pycache__/
+.vs/
+.vscode/
+CppProperties.json
 
 # Native build
 .cxx/
@@ -34,6 +38,13 @@ cmake-build-*/
 *.a
 *.o
 *.obj
+/core/pkg/
+/data/pkg/
+/feature/meta/pkg/
+/feature/override/pkg/
+/platform/pkg/
+/runtime/client/pkg/
+/runtime/service/pkg/
 
 # Signing & secrets
 *.jks
@@ -85,3 +96,4 @@ Thumbs.db
 .agents
 .codex
 .trellis
+app/pkg/sumdb/sum.golang.org/latest

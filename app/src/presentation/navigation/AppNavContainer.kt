@@ -52,7 +52,8 @@ import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.screen.about.AboutScreen
 import com.github.yumelira.yumebox.screen.about.OpenSourceLicensesScreen
 import com.github.yumelira.yumebox.screen.connection.ConnectionScreen
-import com.github.yumelira.yumebox.screen.log.LogScreen
+import com.github.yumelira.yumebox.feature.log.presentation.screen.LogDetailScreen
+import com.github.yumelira.yumebox.feature.log.presentation.screen.LogScreen
 import com.github.yumelira.yumebox.screen.navigation.CustomRoutingRoute
 import com.github.yumelira.yumebox.screen.navigation.FeatureScreen
 import com.github.yumelira.yumebox.screen.navigation.KeyValueEditorScreen
@@ -60,11 +61,11 @@ import com.github.yumelira.yumebox.screen.navigation.OverrideConfigPreviewRoute
 import com.github.yumelira.yumebox.screen.navigation.OverrideScreen
 import com.github.yumelira.yumebox.screen.navigation.ProvidersScreen
 import com.github.yumelira.yumebox.screen.navigation.StringListEditorScreen
-import com.github.yumelira.yumebox.screen.settings.AccessControlScreen
-import com.github.yumelira.yumebox.screen.settings.AppSettingsScreen
-import com.github.yumelira.yumebox.screen.settings.MetaFeatureScreen
-import com.github.yumelira.yumebox.screen.settings.MoeWallpaperCropScreen
-import com.github.yumelira.yumebox.screen.settings.NetworkSettingsScreen
+import com.github.yumelira.yumebox.feature.settings.presentation.screen.AccessControlScreen
+import com.github.yumelira.yumebox.feature.settings.presentation.screen.AppSettingsScreen
+import com.github.yumelira.yumebox.feature.settings.presentation.screen.MetaFeatureScreen
+import com.github.yumelira.yumebox.feature.settings.presentation.screen.MoeWallpaperCropScreen
+import com.github.yumelira.yumebox.feature.settings.presentation.screen.NetworkSettingsScreen
 import com.github.yumelira.yumebox.screen.traffic.TrafficStatisticsScreen
 
 private const val DURATION = 340
@@ -115,7 +116,7 @@ fun AppNavContainer() {
                             initialBiasY = route.initialBiasY,
                         )
                     }
-                    entry<Route.AppSettings> { AppSettingsScreen() }
+                    entry<Route.AppSettings> { AppSettingsScreen(navigator) }
                     entry<Route.NetworkSettings> { NetworkSettingsScreen(navigator) }
                     entry<Route.AccessControl> { AccessControlScreen(navigator) }
                     entry<Route.MetaFeature> { MetaFeatureScreen(navigator) }
@@ -131,6 +132,7 @@ fun AppNavContainer() {
                     entry<Route.CustomRouting> { CustomRoutingRoute(navigator) }
                     entry<Route.StringListEditor> { StringListEditorScreen(navigator) }
                     entry<Route.KeyValueEditor> { KeyValueEditorScreen(navigator) }
+                    entry<Route.LogDetail> { route -> LogDetailScreen(navigator, fileName = route.fileName) }
                 },
         )
 

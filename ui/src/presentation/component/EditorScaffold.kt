@@ -31,6 +31,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -50,6 +52,8 @@ fun EditorScaffold(
     title: String,
     scrollBehavior: ScrollBehavior,
     actions: List<EditorAction>,
+    navigationIconPadding: Dp = 16.dp,
+    navigationIcon: @Composable () -> Unit = {},
     content: @Composable (androidx.compose.foundation.layout.PaddingValues) -> Unit,
 ) {
     Scaffold(
@@ -57,6 +61,8 @@ fun EditorScaffold(
             TopBar(
                 title = title,
                 scrollBehavior = scrollBehavior,
+                navigationIconPadding = navigationIconPadding,
+                navigationIcon = navigationIcon,
                 actions = {
                     actions.forEachIndexed { index, action ->
                         IconButton(onClick = action.onClick) {

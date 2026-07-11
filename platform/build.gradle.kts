@@ -25,7 +25,13 @@ plugins {
 }
 
 android {
-    namespace = "com.github.yumelira.yumebox.core.android"
+    namespace = "com.github.yumelira.yumebox.platform"
+
+    sourceSets {
+        getByName("main") {
+            kotlin.srcDirs("src")
+        }
+    }
 
     buildFeatures {
         compose = true
@@ -38,8 +44,5 @@ dependencies {
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.apksig)
     implementation(libs.timber)
 }
-
-

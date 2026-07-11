@@ -62,7 +62,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -87,27 +86,28 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.panpf.sketch.cache.CachePolicy
 import com.github.panpf.sketch.rememberAsyncImagePainter
 import com.github.panpf.sketch.request.ImageRequest
 import com.github.panpf.sketch.resize.Precision
 import com.github.panpf.sketch.resize.Scale
 import com.github.panpf.sketch.util.Size
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
+import com.github.yumelira.yumebox.core.model.TrafficData
+import com.github.yumelira.yumebox.core.model.ThemeMode
 import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.data.model.ThemeMode
-import com.github.yumelira.yumebox.domain.model.TrafficData
+import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
+import com.github.yumelira.yumebox.platform.util.toast
 import com.github.yumelira.yumebox.presentation.component.LocalHandlePageChange
 import com.github.yumelira.yumebox.presentation.component.LocalNavigator
 import com.github.yumelira.yumebox.presentation.component.calculateWallpaperViewportLayout
 import com.github.yumelira.yumebox.presentation.icon.ShellIcons
-import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.screen.home.HomeProxyControlState
-import com.github.yumelira.yumebox.screen.home.HomeViewModel
-import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
+import com.github.yumelira.yumebox.feature.home.presentation.viewmodel.HomeProxyControlState
+import com.github.yumelira.yumebox.feature.home.presentation.viewmodel.HomeViewModel
+import com.github.yumelira.yumebox.feature.settings.presentation.viewmodel.AppSettingsViewModel
+import com.github.yumelira.yumebox.presentation.navigation.Route
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -121,14 +121,15 @@ import java.io.File
 @Composable
 fun MoeHomePage(
     mainInnerPadding: PaddingValues,
-    wallpaperUri: String,
-    wallpaperZoom: Float = 1f,
-    wallpaperBiasX: Float = 0f,
-    wallpaperBiasY: Float = 0f,
+    mainScreenSettings: AppSettingsViewModel.MainScreenSettings,
     isActive: Boolean,
     pageProgress: Float = 1f,
     sidebarProgress: Float = pageProgress,
 ) {
+    val wallpaperUri = mainScreenSettings.moeWallpaperUri
+    val wallpaperZoom = mainScreenSettings.moeWallpaperZoom
+    val wallpaperBiasX = mainScreenSettings.moeWallpaperBiasX
+    val wallpaperBiasY = mainScreenSettings.moeWallpaperBiasY
     val homeViewModel = koinViewModel<HomeViewModel>()
     val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
     val context = LocalContext.current
@@ -137,20 +138,21 @@ fun MoeHomePage(
     val density = LocalDensity.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val controlState by homeViewModel.controlState.collectAsState()
-    val profiles by homeViewModel.profiles.collectAsState()
-    val profilesLoaded by homeViewModel.profilesLoaded.collectAsState()
-    val recommendedProfile by homeViewModel.recommendedProfile.collectAsState()
-    val hasEnabledProfile by homeViewModel.hasEnabledProfile.collectAsState(initial = false)
-    val selectedServerName by homeViewModel.selectedServerName.collectAsState()
-    val selectedServerPing by homeViewModel.selectedServerPing.collectAsState()
-    val trafficNow by homeViewModel.trafficNow.collectAsState()
-    val runtimeSnapshot by homeViewModel.runtimeSnapshot.collectAsState()
-    val isRemoteController by homeViewModel.isRemoteController.collectAsState()
-    val themeMode by appSettingsViewModel.themeMode.state.collectAsState()
-    val classicHomeEnabled by appSettingsViewModel.classicHomeEnabled.state.collectAsState()
-    val moeHomeQuote by appSettingsViewModel.moeHomeQuote.state.collectAsState()
-    val sidebarExpanded by appSettingsViewModel.moeSidebarExpanded.state.collectAsState()
+    val controlState by homeViewModel.controlState.collectAsStateWithLifecycle()
+    val profiles by homeViewModel.profiles.collectAsStateWithLifecycle()
+    val profilesLoaded by homeViewModel.profilesLoaded.collectAsStateWithLifecycle()
+    val recommendedProfile by homeViewModel.recommendedProfile.collectAsStateWithLifecycle()
+    val hasEnabledProfile by homeViewModel.hasEnabledProfile.collectAsStateWithLifecycle(initialValue = false)
+    val selectedServerName by homeViewModel.selectedServerName.collectAsStateWithLifecycle()
+    val selectedServerPing by homeViewModel.selectedServerPing.collectAsStateWithLifecycle()
+    val trafficData by homeViewModel.trafficData.collectAsStateWithLifecycle()
+    val runtimeSnapshot by homeViewModel.runtimeSnapshot.collectAsStateWithLifecycle()
+    val isRemoteController by homeViewModel.isRemoteController.collectAsStateWithLifecycle()
+    val themeMode by appSettingsViewModel.themeMode.state.collectAsStateWithLifecycle()
+    val classicHomeEnabled by appSettingsViewModel.classicHomeEnabled.state.collectAsStateWithLifecycle()
+    val moeHomeQuote by appSettingsViewModel.moeHomeQuote.state.collectAsStateWithLifecycle()
+    val moeHomeQuoteAuthor by appSettingsViewModel.moeHomeQuoteAuthor.state.collectAsStateWithLifecycle()
+    val sidebarExpanded by appSettingsViewModel.moeSidebarExpanded.state.collectAsStateWithLifecycle()
 
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val batteryPercent = rememberMoeBatteryPercent(context)
@@ -204,9 +206,9 @@ fun MoeHomePage(
                 formatMoeClock(now)
             }
         }
-    val trafficData =
-        remember(trafficNow, isRunning) {
-            if (isRunning) TrafficData.from(trafficNow) else TrafficData.ZERO
+    val displayTrafficData =
+        remember(trafficData, isRunning) {
+            if (isRunning) trafficData else TrafficData.ZERO
         }
     val systemDark = isSystemInDarkTheme()
     val isDarkHomeSurface =
@@ -225,7 +227,12 @@ fun MoeHomePage(
             MoeSidebarIconItem(ShellIcons.OpenSettings) { handlePageChange(3) },
         )
     }
-    val quoteText = moeHomeQuote.ifBlank { MLang.AppSettings.Interface.HomeQuoteDefault }
+    val quote =
+        MoeQuote(
+            text = moeHomeQuote.ifBlank { MLang.AppSettings.Interface.HomeQuoteDefault },
+            author =
+                moeHomeQuoteAuthor.ifBlank { MLang.AppSettings.Interface.HomeQuoteAuthorDefault },
+        )
     val animatedSidebarToggleProgress by
         animateFloatAsState(
             targetValue = if (sidebarExpanded) 1f else 0f,
@@ -244,13 +251,13 @@ fun MoeHomePage(
 
     val handleProxyAction: () -> Unit = {
         if (isRemoteController) {
-            Unit
+            // no-op
         } else if (!hasEnabledProfile || recommendedProfile == null) {
             context.toast(MLang.ProfilesVM.Error.ProfileNotExist, Toast.LENGTH_SHORT)
         } else if (visualControlState == HomeProxyControlState.Idle) {
             recommendedProfile?.let { profile ->
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.VirtualKey)
-                homeViewModel.startProxy(profileId = profile.uuid.toString(), mode = null)
+                scope.launch { homeViewModel.startProxy(profileId = profile.uuid.toString()) }
             }
         } else if (visualControlState == HomeProxyControlState.Running) {
             hapticFeedback.performHapticFeedback(HapticFeedbackType.VirtualKey)
@@ -465,7 +472,7 @@ fun MoeHomePage(
             ) {
                 MoeHomeCopyBlock(
                     nowMillis = now,
-                    quoteText = quoteText,
+                    quote = quote,
                     color = MiuixTheme.colorScheme.onBackground,
                     modifier = Modifier.fillMaxWidth(),
                     launchContent = {
@@ -491,14 +498,27 @@ fun MoeHomePage(
     MoeHomeSettingsSheet(
         show = showHomeSettingsSheet,
         quote = moeHomeQuote,
+        quoteAuthor = moeHomeQuoteAuthor,
         classicHomeEnabled = classicHomeEnabled,
         sidebarExpanded = sidebarExpanded,
         onQuoteChange = appSettingsViewModel::onMoeHomeQuoteChange,
+        onQuoteAuthorChange = appSettingsViewModel::onMoeHomeQuoteAuthorChange,
         onClassicHomeEnabledChange = appSettingsViewModel::onClassicHomeEnabledChange,
         onSidebarExpandedChange = appSettingsViewModel::onMoeSidebarExpandedChange,
-        onChangeWallpaper = {
+        onLaunchGalleryPicker = {
             showHomeSettingsSheet = false
             launchWallpaperPicker()
+        },
+        onNavigateToWallpaperCrop = { url ->
+            showHomeSettingsSheet = false
+            navigator.push(
+                Route.MoeWallpaperCrop(
+                    wallpaperUri = url,
+                    initialZoom = wallpaperZoom,
+                    initialBiasX = wallpaperBiasX,
+                    initialBiasY = wallpaperBiasY,
+                )
+            )
         },
         onDismiss = { showHomeSettingsSheet = false },
     )
@@ -635,6 +655,7 @@ private const val MOE_BUNDLED_WALLPAPER = "file:///android_asset/wallpaper.jpg"
  */
 private fun resolveMoeWallpaperModel(context: Context, wallpaperUri: String): String {
     if (wallpaperUri.isBlank()) return MOE_BUNDLED_WALLPAPER
+    if (wallpaperUri.startsWith("http://") || wallpaperUri.startsWith("https://")) { return wallpaperUri }
     if (wallpaperUri.startsWith("file://")) {
         val path = wallpaperUri.removePrefix("file://")
         if (path.startsWith("/android_asset/")) return wallpaperUri

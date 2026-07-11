@@ -10,6 +10,7 @@ Connection = {
 
     Search = "Search"
     SearchHint = "Search host, process..."
+    CloseAll = "Close all connections"
 
     SortBy = "Sort by:"
     Sort = {

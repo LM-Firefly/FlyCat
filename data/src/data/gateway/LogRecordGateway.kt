@@ -21,19 +21,19 @@
 package com.github.yumelira.yumebox.data.gateway
 
 import android.app.Application
-import com.github.yumelira.yumebox.core.util.PollingTimerSpec
+import com.github.yumelira.yumebox.core.data.LogRecordGateway
 import java.io.File
 
-interface LogRecordGateway {
-    val isRecording: Boolean
-    val currentLogFileName: String?
-    val logPrefix: String
-    val logSuffix: String
-    val stopWaitSpec: PollingTimerSpec
-
-    fun start(application: Application)
-
-    fun stop(application: Application)
-
-    fun getLogDir(application: Application): File
+/** No-op fallback when no real implementation is registered. */
+object NoOpLogRecordGateway : LogRecordGateway {
+    override val isRecording: Boolean get() = false
+    override val currentLogFileName: String? get() = null
+    override val logPrefix: String get() = ""
+    override val logSuffix: String get() = ".log"
+    override val stopWaitMillis: Long get() = 300L
+    override fun start(application: Application) = Unit
+    override fun stop(application: Application) = Unit
+    override fun getLogDir(application: Application): File {
+        return File(application.filesDir, "logs").apply { mkdirs() }
+    }
 }

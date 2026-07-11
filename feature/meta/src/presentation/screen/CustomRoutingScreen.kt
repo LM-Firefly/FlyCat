@@ -23,7 +23,6 @@ package com.github.yumelira.yumebox.feature.meta.presentation.screen
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -31,17 +30,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetItem
-import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetRegion
-import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetTemplateSelection
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.yumelira.yumebox.feature.meta.presentation.util.orderedBasePresetItems
 import com.github.yumelira.yumebox.feature.meta.presentation.util.orderedPresetRegions
 import com.github.yumelira.yumebox.feature.meta.presentation.util.orderedServicePresetItems
+import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetItem
+import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetRegion
+import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetTemplateSelection
 import com.github.yumelira.yumebox.feature.meta.presentation.util.presetGroupTypeIconUrl
 import com.github.yumelira.yumebox.feature.meta.presentation.util.sortPresetItems
 import com.github.yumelira.yumebox.feature.meta.presentation.util.sortPresetRegions
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.CustomRoutingViewModel
+import com.github.yumelira.yumebox.platform.util.toast
 import com.github.yumelira.yumebox.presentation.component.RoutingSwitchCard
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.TopBar
@@ -63,9 +63,9 @@ fun CustomRoutingScreen(
     onOpenYamlEditor: (title: String, content: String, onSave: suspend (String) -> Unit) -> Unit,
 ) {
     val viewModel: CustomRoutingViewModel = koinViewModel()
-    val presetSelection by viewModel.presetSelection.collectAsState()
-    val customRoutingContent by viewModel.customRoutingContent.collectAsState()
-    val templateRoundTripSafe by viewModel.templateRoundTripSafe.collectAsState()
+    val presetSelection by viewModel.presetSelection.collectAsStateWithLifecycle()
+    val customRoutingContent by viewModel.customRoutingContent.collectAsStateWithLifecycle()
+    val templateRoundTripSafe by viewModel.templateRoundTripSafe.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val selectedUrlTestRegions = remember { mutableStateListOf<OverridePresetRegion>() }

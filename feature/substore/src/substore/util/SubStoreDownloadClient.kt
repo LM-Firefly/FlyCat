@@ -18,11 +18,12 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore.util
+package com.github.yumelira.yumebox.feature.substore.util
 
 import android.app.Application
-import com.github.yumelira.yumebox.common.util.ByteFormatter.formatSpeed
-import com.github.yumelira.yumebox.data.store.AppSettingsStore
+import com.github.yumelira.yumebox.core.data.AppSettingsReader
+import com.github.yumelira.yumebox.core.util.AssetDownloader
+import com.github.yumelira.yumebox.platform.util.ByteFormatter.formatSpeed
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.HttpTimeout
@@ -64,11 +65,16 @@ data class SubscriptionInfo(
 
 class SubStoreDownloadClient(
     private val application: Application,
-    private val appSettings: AppSettingsStore,
-) {
+    private val appSettings: AppSettingsReader,
+) : AssetDownloader {
     companion object {
         private const val DEFAULT_USER_AGENT = "ClashMetaForAndroid"
         private const val UPDATE_INTERVAL_MS = 500L
+        private val REGEX_DIGITS = Regex("\\d+")
+        private val REGEX_BASE64 = Regex("^[A-Za-z0-9+/=]+$")
+        private val REGEX_RFC5987 = Regex("""^([^']*)'[^']*'(.*)$""")
+        private val REGEX_FILENAME_STAR = Regex("""filename\*=([^']*)'([^']*)'([^;]+)""", RegexOption.IGNORE_CASE)
+        private val REGEX_FILENAME = Regex("""filename=([^;]+)""", RegexOption.IGNORE_CASE)
     }
 
     private val client: HttpClient by lazy {
@@ -81,10 +87,13 @@ class SubStoreDownloadClient(
         }
     }
 
+    override suspend fun download(url: String, targetFile: File): Boolean =
+        download(url, targetFile, onProgress = null)
+
     suspend fun download(
         url: String,
         targetFile: File,
-        onProgress: ((DownloadProgress) -> Unit)? = null,
+        onProgress: ((DownloadProgress) -> Unit)?,
     ): Boolean =
         withContext(Dispatchers.IO) {
             val (success, _) = downloadWithSubscriptionInfo(url, targetFile, onProgress)
@@ -228,7 +237,7 @@ class SubStoreDownloadClient(
         fun parseExpireDate(value: String): Long? =
             runCatching {
                     when {
-                        value.matches(Regex("\\d+")) -> value.toLong() * 1000L
+                        value.matches(REGEX_DIGITS) -> value.toLong() * 1000L
                         value.contains("-") -> {
                             val parts = value.split("-")
                             if (parts.size < 3) return@runCatching null
@@ -308,7 +317,7 @@ class SubStoreDownloadClient(
         fun decodeBase64(encoded: String): String? {
             val candidate = encoded.trim().trim('"', '\'')
             if (candidate.isBlank()) return null
-            if (!candidate.matches(Regex("^[A-Za-z0-9+/=]+$"))) return null
+            if (!candidate.matches(REGEX_BASE64)) return null
             return runCatching {
                     String(Base64.getDecoder().decode(candidate), StandardCharsets.UTF_8).trim()
                 }
@@ -316,7 +325,7 @@ class SubStoreDownloadClient(
         }
 
         fun decodeRfc5987(candidate: String): String? {
-            val match = Regex("""^([^']*)'[^']*'(.*)$""").find(candidate.trim()) ?: return null
+            val match = REGEX_RFC5987.find(candidate.trim()) ?: return null
             val charset = match.groupValues[1].ifBlank { "UTF-8" }
             val encoded = match.groupValues[2]
 
@@ -353,10 +362,7 @@ class SubStoreDownloadClient(
             headers["Content-Disposition"] ?: fallbackContentDisposition ?: return null
         return runCatching {
                 if (contentDisposition.contains("filename*=", ignoreCase = true)) {
-                        val regex =
-                            """filename\*=([^']*)'([^']*)'([^;]+)"""
-                                .toRegex(RegexOption.IGNORE_CASE)
-                        regex.find(contentDisposition)?.let { match ->
+                        REGEX_FILENAME_STAR.find(contentDisposition)?.let { match ->
                             val charset = match.groupValues[1].ifBlank { "UTF-8" }
                             val encodedFilename = match.groupValues[3].trim().trim('"', '\'')
                             val safeCharset =
@@ -365,8 +371,7 @@ class SubStoreDownloadClient(
                             URLDecoder.decode(encodedFilename, safeCharset).trim()
                         }
                     } else {
-                        val regex = """filename=([^;]+)""".toRegex(RegexOption.IGNORE_CASE)
-                        regex
+                        REGEX_FILENAME
                             .find(contentDisposition)
                             ?.groupValues
                             ?.getOrNull(1)

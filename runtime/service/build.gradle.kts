@@ -25,6 +25,13 @@ plugins {
 
 android {
     namespace = "com.github.yumelira.yumebox.runtime.service"
+
+    sourceSets {
+        getByName("main") {
+            kotlin.srcDirs("src")
+        }
+    }
+
     buildFeatures {
         aidl = true
     }
@@ -34,7 +41,6 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":platform"))
     implementation(project(":locale"))
-    implementation(project(":data"))
     implementation(project(":runtime:api"))
 
     implementation(libs.androidx.core.ktx)
@@ -48,6 +54,9 @@ dependencies {
     implementation("com.tencent:mmkv:$mmkvVersion")
 
     implementation(libs.timber)
+    implementation(libs.koin.core)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.android)
     implementation(libs.libsu.core)
     implementation(libs.libsu.service)
 }

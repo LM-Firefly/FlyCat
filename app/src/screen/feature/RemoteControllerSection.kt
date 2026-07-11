@@ -29,6 +29,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,15 +38,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.data.model.RemoteBackend
+import com.github.yumelira.yumebox.core.model.RemoteBackend
+import com.github.yumelira.yumebox.platform.util.toast
 import com.github.yumelira.yumebox.presentation.component.AppDialog
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.component.PreferenceArrowItem
 import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
 import com.github.yumelira.yumebox.presentation.component.Title
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.screen.settings.RemoteControllerViewModel
+import com.github.yumelira.yumebox.feature.settings.presentation.viewmodel.RemoteControllerViewModel
 import dev.oom_wg.purejoy.mlang.MLang
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -61,9 +62,9 @@ fun RemoteControllerSection(
 ) {
     val context = LocalContext.current
 
-    val controllerEnabled by viewModel.controllerEnabled.collectAsState()
-    val backends by viewModel.backends.collectAsState()
-    val activeBackendId by viewModel.activeBackendId.collectAsState()
+    val controllerEnabled by viewModel.controllerEnabled.collectAsStateWithLifecycle()
+    val backends by viewModel.backends.collectAsStateWithLifecycle()
+    val activeBackendId by viewModel.activeBackendId.collectAsStateWithLifecycle()
 
     var sheetState by remember { mutableStateOf<BackendSheetState?>(null) }
     var sheetVisible by remember { mutableStateOf(false) }

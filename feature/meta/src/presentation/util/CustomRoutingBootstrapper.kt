@@ -20,10 +20,10 @@
 
 package com.github.yumelira.yumebox.feature.meta.presentation.util
 
+import com.github.yumelira.yumebox.core.data.OverrideConfigRepository
 import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
-import com.github.yumelira.yumebox.data.store.OverrideConfigStore
 
-class CustomRoutingBootstrapper(private val overrideConfigRepository: OverrideConfigStore) {
+class CustomRoutingBootstrapper(private val overrideConfigRepository: OverrideConfigRepository) {
     suspend fun ensureDefaultContent(): String {
         val existingContent = overrideConfigRepository.loadCustomRoutingContent()
         if (!existingContent.isNullOrBlank()) {

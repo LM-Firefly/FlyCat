@@ -27,6 +27,12 @@ plugins {
 android {
     namespace = "com.github.yumelira.yumebox.feature.proxy"
 
+    sourceSets {
+        getByName("main") {
+            kotlin.srcDirs("src")
+        }
+    }
+
     buildFeatures {
         compose = true
     }
@@ -37,8 +43,6 @@ dependencies {
     implementation(project(":platform"))
     implementation(project(":locale"))
     implementation(project(":ui"))
-    implementation(project(":data"))
-    implementation(project(":runtime:client"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -47,6 +51,7 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.koin.core)
     implementation(libs.koin.android)
@@ -54,10 +59,10 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.timber)
     implementation(libs.haze)
+    implementation(libs.haze.blur)
     implementation(libs.sketch.compose)
     implementation(libs.sketch.http)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)
     implementation(libs.miuix.icons)
 }
-

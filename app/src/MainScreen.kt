@@ -54,9 +54,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.core.net.toUri
-import androidx.navigationevent.NavigationEventInfo
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import androidx.navigationevent.NavigationEventInfo
+import com.github.yumelira.yumebox.core.data.SubStoreSettings
+import com.github.yumelira.yumebox.feature.proxy.presentation.screen.ProxyPager
 import com.github.yumelira.yumebox.presentation.component.BottomBarContent
 import com.github.yumelira.yumebox.presentation.component.LocalBottomBarHazeState
 import com.github.yumelira.yumebox.presentation.component.LocalBottomBarHazeStyle
@@ -72,21 +75,24 @@ import com.github.yumelira.yumebox.presentation.component.rememberBottomBarScrol
 import com.github.yumelira.yumebox.presentation.component.rememberMainPagerFlingBehavior
 import com.github.yumelira.yumebox.presentation.component.rememberMainPagerState
 import com.github.yumelira.yumebox.presentation.navigation.Route
-import com.github.yumelira.yumebox.presentation.screen.ProxyPager
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.screen.home.HomePager
-import com.github.yumelira.yumebox.screen.home.HomeViewModel
-import com.github.yumelira.yumebox.screen.moe.MoeHomePage
+import com.github.yumelira.yumebox.presentation.webview.WebViewUtils
+import com.github.yumelira.yumebox.presentation.webview.WebViewUtils.getPanelUrl
+import com.github.yumelira.yumebox.feature.home.presentation.screen.HomePager
+import com.github.yumelira.yumebox.feature.home.presentation.viewmodel.HomeViewModel
 import com.github.yumelira.yumebox.screen.moe.calculateHomeVisibility
-import com.github.yumelira.yumebox.screen.profiles.ProfilesPager
-import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
-import com.github.yumelira.yumebox.screen.settings.SettingPager
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
+import com.github.yumelira.yumebox.screen.moe.MoeHomePage
+import com.github.yumelira.yumebox.feature.profiles.presentation.screen.ProfilesPager
+import com.github.yumelira.yumebox.feature.settings.presentation.viewmodel.AppSettingsViewModel
+import com.github.yumelira.yumebox.feature.settings.presentation.screen.SettingPager
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.HazeColorEffect
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.HazeState
+import kotlinx.coroutines.flow.collect
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -98,16 +104,12 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val hazeState = remember { HazeState() }
 
     val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
+    val featureStore = koinInject<SubStoreSettings>()
     val homeViewModel = koinViewModel<HomeViewModel>()
-    val bottomBarAutoHideEnabled by appSettingsViewModel.bottomBarAutoHide.state.collectAsState()
-    val topBarBlurEnabled by appSettingsViewModel.topBarBlurEnabled.state.collectAsState()
-    val classicHomeEnabled by appSettingsViewModel.classicHomeEnabled.state.collectAsState()
-    val moeWallpaperUri by appSettingsViewModel.moeWallpaperUri.state.collectAsState()
-    val moeWallpaperZoom by appSettingsViewModel.moeWallpaperZoom.state.collectAsState()
-    val moeWallpaperBiasX by appSettingsViewModel.moeWallpaperBiasX.state.collectAsState()
-    val moeWallpaperBiasY by appSettingsViewModel.moeWallpaperBiasY.state.collectAsState()
-    val bottomBarScrollBehavior =
-        rememberBottomBarScrollBehavior(autoHideEnabled = bottomBarAutoHideEnabled)
+    val mainScreenSettings by appSettingsViewModel.mainScreenSettings.collectAsStateWithLifecycle()
+    val selectedPanelType by featureStore.selectedPanelType.state.collectAsStateWithLifecycle()
+    val panelOpenMode by featureStore.panelOpenMode.state.collectAsStateWithLifecycle()
+    val bottomBarScrollBehavior = rememberBottomBarScrollBehavior(autoHideEnabled = mainScreenSettings.bottomBarAutoHide)
     val pagerFlingBehavior = rememberMainPagerFlingBehavior(mainPagerState.pagerState)
     var settledMainPage by remember { mutableIntStateOf(initialMainPage) }
     val homeVisibility by
@@ -122,10 +124,10 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     // Floating nav bar (with the proxy FAB) shows on the classic home and every other page; the
     // default home has its own chrome, so it stays hidden there.
     val bottomBarVisible by
-        remember(classicHomeEnabled, settledMainPage, mainPagerState.selectedPage) {
+        remember(mainScreenSettings.moeMainUiEnabled, settledMainPage, mainPagerState.selectedPage) {
             derivedStateOf {
                 when {
-                    classicHomeEnabled -> true
+                    mainScreenSettings.moeMainUiEnabled -> true
                     mainPagerState.selectedPage == 0 -> false
                     settledMainPage != 0 -> true
                     else -> false
@@ -139,9 +141,9 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val opacity = AppTheme.opacity
     val bottomBarHazeStyle =
         remember(bottomBarBackground) {
-            HazeStyle(
+            HazeBlurStyle(
                 backgroundColor = bottomBarBackground.copy(alpha = opacity.subtle),
-                tint = HazeTint(bottomBarBackground.copy(alpha = opacity.softOverlay)),
+                colorEffects = listOf(HazeColorEffect.tint(bottomBarBackground.copy(alpha = opacity.softOverlay))),
             )
         }
 
@@ -170,7 +172,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val handlePageChange: (Int) -> Unit =
         remember(mainPagerState) { { targetPage -> mainPagerState.animateToPage(targetPage) } }
 
-    val pendingDeepLink by MainActivity.pendingDeepLink.collectAsState()
+    val pendingDeepLink by MainActivity.pendingDeepLink.collectAsStateWithLifecycle()
     LaunchedEffect(pendingDeepLink) {
         val uri = pendingDeepLink?.toUri() ?: return@LaunchedEffect
         when (uri.host) {
@@ -209,8 +211,8 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         LocalMainPagerState provides mainPagerState,
         LocalHandlePageChange provides handlePageChange,
         LocalBottomBarScrollBehavior provides bottomBarScrollBehavior,
-        LocalBottomBarHazeState provides if (topBarBlurEnabled) hazeState else null,
-        LocalBottomBarHazeStyle provides if (topBarBlurEnabled) bottomBarHazeStyle else null,
+        LocalBottomBarHazeState provides if (mainScreenSettings.topBarBlurEnabled) hazeState else null,
+        LocalBottomBarHazeStyle provides if (mainScreenSettings.topBarBlurEnabled) bottomBarHazeStyle else null,
     ) {
         Scaffold { innerPadding ->
             Box(Modifier.fillMaxSize()) {
@@ -239,7 +241,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                 HorizontalPager(
                     modifier =
                         Modifier.fillMaxSize().let { modifier ->
-                            if (topBarBlurEnabled) {
+                            if (mainScreenSettings.topBarBlurEnabled) {
                                 modifier.hazeSource(state = hazeState)
                             } else {
                                 modifier
@@ -259,14 +261,11 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                     MainRootPageContent(
                         page = page,
                         mainInnerPadding = mainInnerPadding,
-                        classicHomeEnabled = classicHomeEnabled,
-                        moeWallpaperUri = moeWallpaperUri,
-                        moeWallpaperZoom = moeWallpaperZoom,
-                        moeWallpaperBiasX = moeWallpaperBiasX,
-                        moeWallpaperBiasY = moeWallpaperBiasY,
+                        mainScreenSettings = mainScreenSettings,
                         navigator = navigator,
                         homePageProgress = homeVisibility,
                         selectedPage = settledMainPage,
+                        selectedPanelType = selectedPanelType,
                     )
                 }
 
@@ -275,7 +274,9 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Bottom,
                 ) {
-                    BottomBarContent(isVisible = bottomBarVisible)
+                    BottomBarContent(
+                        isVisible = bottomBarVisible,
+                    )
                 }
             }
         }
@@ -299,18 +300,15 @@ private fun MainScreenBackHandler(mainPagerState: MainPagerState) {
 private fun MainRootPageContent(
     page: Int,
     mainInnerPadding: PaddingValues,
-    classicHomeEnabled: Boolean,
-    moeWallpaperUri: String,
-    moeWallpaperZoom: Float,
-    moeWallpaperBiasX: Float,
-    moeWallpaperBiasY: Float,
+    mainScreenSettings: AppSettingsViewModel.MainScreenSettings,
     navigator: Navigator,
     homePageProgress: Float,
     selectedPage: Int,
+    selectedPanelType: Int = 0,
 ) {
     when (page) {
         0 -> {
-            if (classicHomeEnabled) {
+            if (mainScreenSettings.moeMainUiEnabled) {
                 HomePager(
                     mainInnerPadding = mainInnerPadding,
                     isActive = selectedPage == 0,
@@ -318,24 +316,29 @@ private fun MainRootPageContent(
             } else {
                 MoeHomePage(
                     mainInnerPadding = mainInnerPadding,
-                    wallpaperUri = moeWallpaperUri,
-                    wallpaperZoom = moeWallpaperZoom,
-                    wallpaperBiasX = moeWallpaperBiasX,
-                    wallpaperBiasY = moeWallpaperBiasY,
+                    mainScreenSettings = mainScreenSettings,
                     isActive = selectedPage == 0,
                     pageProgress = homePageProgress,
                 )
             }
         }
 
-        1 ->
+        1 -> {
+            val context = androidx.compose.ui.platform.LocalContext.current
             ProxyPager(
                 mainInnerPadding = mainInnerPadding,
                 onNavigateToProviders = {
                     navigator.push(Route.Providers)
                 },
+                onOpenDashboard = {
+                    val panelUrl = WebViewUtils.getPanelUrl(selectedPanelType)
+                    if (panelUrl.isNotBlank()) {
+                        WebViewActivity.start(context, panelUrl)
+                    }
+                },
                 isActive = selectedPage == 1,
             )
+        }
 
         2 -> ProfilesPager(mainInnerPadding)
         3 -> SettingPager(mainInnerPadding)

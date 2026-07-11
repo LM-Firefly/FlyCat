@@ -184,12 +184,12 @@ private fun ConfigTextInputDialog(
                 label = label,
                 modifier = Modifier.fillMaxWidth(),
             )
-            DialogFilledButtonRow(
-                onSecondary = {
+            DialogButtonRow(
+                onCancel = {
                     onClear()
                     show.value = false
                 },
-                onPrimary = {
+                onConfirm = {
                     onConfirm()
                     show.value = false
                 },

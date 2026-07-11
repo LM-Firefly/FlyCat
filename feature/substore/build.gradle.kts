@@ -28,6 +28,12 @@ plugins {
 android {
     namespace = "com.github.yumelira.yumebox.feature.substore"
 
+    sourceSets {
+        getByName("main") {
+            kotlin.srcDirs("src")
+        }
+    }
+
     buildFeatures {
         compose = true
     }
@@ -38,7 +44,6 @@ dependencies {
     implementation(project(":platform"))
     implementation(project(":locale"))
     implementation(project(":ui"))
-    implementation(project(":data"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -50,6 +55,7 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.android)
     implementation(libs.commons.compress)
@@ -58,4 +64,3 @@ dependencies {
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)
 }
-

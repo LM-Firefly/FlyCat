@@ -2,7 +2,7 @@ name: Pull Request CI
 
 on:
   pull_request:
-    branches: [ "Yume", "Moe", "Dev" ]
+    branches: [ "Moes", "Devs" ]
     paths-ignore:
       - "**.md"
       - "docs/**"
@@ -66,23 +66,16 @@ jobs:
       channel: pr
     secrets: inherit
 
-  # PR builds use the same versionCode formula as channel and release builds: epoch
-  # (project.version.code in gradle.properties) + `git rev-list --count HEAD`, computed
-  # inside reusable-build-apk-only.yml / reusable-prepare-publish.yml (the count covers the
-  # PR merge commit's whole parent chain). The commit hash in versionName (and the PR
-  # number in the release tag) additionally identifies the build.
   build-apk-pr-app:
     needs: bundle-native-pr
     uses: ./.github/workflows/reusable-build-apk-only.yml
     with:
       channel: pr
       module: app
-      artifact_prefix: yumebox-pr
+      artifact_prefix: FlyCat-pr
       release_tag: pr-${{ github.event.pull_request.number }}
-      meta_asset_name: yumebox-pr-meta.json
+      meta_asset_name: FlyCat-pr-meta.json
       raw_apk_artifact_name: apk-raw-pr-app
-      build_hash: ${{ github.event.pull_request.head.sha }}
-      build_branch: ${{ github.event.pull_request.head.ref }}
     secrets: inherit
 
   prepare-publish-pr-app:
@@ -91,13 +84,11 @@ jobs:
     with:
       channel: pr
       module: app
-      artifact_prefix: yumebox-pr
+      artifact_prefix: FlyCat-pr
       release_tag: pr-${{ github.event.pull_request.number }}
-      meta_asset_name: yumebox-pr-meta.json
+      meta_asset_name: FlyCat-pr-meta.json
       raw_apk_artifact_name: apk-raw-pr-app
       publish_artifact_name: publish-pr-app
-      build_hash: ${{ github.event.pull_request.head.sha }}
-      build_branch: ${{ github.event.pull_request.head.ref }}
     secrets: inherit
 
   # Fork PRs get a read-only GITHUB_TOKEN that cannot delete artifacts, so the

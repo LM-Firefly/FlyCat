@@ -48,6 +48,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -71,33 +72,36 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.common.util.formatBytesForDisplay
+import com.github.yumelira.yumebox.platform.util.formatBytesForDisplay
 import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
 import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
+import com.github.yumelira.yumebox.presentation.component.AppFormDialog
 import com.github.yumelira.yumebox.presentation.component.CountryFlagCircle
 import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
-import com.github.yumelira.yumebox.presentation.component.PreferenceValueItem
+import com.github.yumelira.yumebox.presentation.icon.ShellIcons
 import com.github.yumelira.yumebox.presentation.icon.Yume
+import com.github.yumelira.yumebox.presentation.icon.yume.`Settings-2`
 import com.github.yumelira.yumebox.presentation.icon.yume.Repeat
+import com.github.yumelira.yumebox.presentation.icon.yume.Waiting
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.util.extractFlaggedName
-import com.github.yumelira.yumebox.screen.home.HomeProxyControlState
+import com.github.yumelira.yumebox.feature.home.presentation.viewmodel.HomeProxyControlState
 import dev.oom_wg.purejoy.mlang.MLang
+import java.util.Calendar
+import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurBlendMode
 import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.util.Calendar
-import kotlinx.coroutines.delay
 
 @Composable
 internal fun MoeSidebarDecoration(
@@ -203,7 +207,7 @@ internal fun MoeSidebarContent(
 @Composable
 internal fun MoeHomeCopyBlock(
     nowMillis: Long,
-    quoteText: String,
+    quote: MoeQuote,
     color: Color,
     modifier: Modifier = Modifier,
     launchContent: @Composable (() -> Unit)? = null,
@@ -223,8 +227,9 @@ internal fun MoeHomeCopyBlock(
             overflow = TextOverflow.Clip,
         )
         Text(
-            text = quoteText,
+            text = quote.text,
             color = color.copy(alpha = 0.88f),
+            modifier = Modifier.align(Alignment.End).padding(top = MoeUi.Quote.authorTopGap),
             style = MiuixTheme.textStyles.title2,
             fontWeight = FontWeight.Medium,
             fontSize = MoeUi.Quote.textSize,
@@ -233,6 +238,18 @@ internal fun MoeHomeCopyBlock(
             maxLines = 2,
             overflow = TextOverflow.Clip,
         )
+        if (quote.author.isNotBlank()) {
+            Text(
+                text = "—— ${quote.author}",
+                color = color.copy(alpha = MoeUi.Quote.authorAlpha),
+                modifier = Modifier.align(Alignment.End),
+                style = MiuixTheme.textStyles.body1,
+                fontWeight = FontWeight.Normal,
+                fontSize = MoeUi.Quote.authorSize,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
+            )
+        }
         launchContent?.let { content ->
             Box(modifier = Modifier.fillMaxWidth().padding(top = MoeUi.Hero.launchTopGap)) {
                 content()
@@ -264,22 +281,29 @@ private fun HomeProxyControlState.isMoeLaunchTransientState(): Boolean =
 internal fun MoeHomeSettingsSheet(
     show: Boolean,
     quote: String,
+    quoteAuthor: String,
     classicHomeEnabled: Boolean,
     sidebarExpanded: Boolean,
     onQuoteChange: (String) -> Unit,
+    onQuoteAuthorChange: (String) -> Unit,
     onClassicHomeEnabledChange: (Boolean) -> Unit,
     onSidebarExpandedChange: (Boolean) -> Unit,
-    onChangeWallpaper: () -> Unit,
+    onLaunchGalleryPicker: () -> Unit,
+    onNavigateToWallpaperCrop: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val spacing = AppTheme.spacing
     var draftQuote by remember(show, quote) { mutableStateOf(quote) }
+    var draftQuoteAuthor by remember(show, quoteAuthor) { mutableStateOf(quoteAuthor) }
     var draftClassicHomeEnabled by remember(show, classicHomeEnabled) {
         mutableStateOf(classicHomeEnabled)
     }
     var draftSidebarExpanded by remember(show, sidebarExpanded) { mutableStateOf(sidebarExpanded) }
+    var showUrlInputDialog by remember { mutableStateOf(false) }
+    var urlInput by remember { mutableStateOf("") }
     val saveSettings = {
         onQuoteChange(draftQuote)
+        onQuoteAuthorChange(draftQuoteAuthor)
         onClassicHomeEnabledChange(draftClassicHomeEnabled)
         onSidebarExpandedChange(draftSidebarExpanded)
         onDismiss()
@@ -287,7 +311,7 @@ internal fun MoeHomeSettingsSheet(
 
     AppActionBottomSheet(
         show = show,
-        title = "首页设置",
+        title = MLang.AppSettings.Section.Home,
         startAction = { AppBottomSheetCloseAction(onClick = onDismiss) },
         endAction = { AppBottomSheetConfirmAction(onClick = saveSettings) },
         onDismissRequest = onDismiss,
@@ -295,22 +319,12 @@ internal fun MoeHomeSettingsSheet(
     ) {
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space16)) {
             item {
-                TextField(
-                    value = draftQuote,
-                    onValueChange = { draftQuote = it },
-                    label = "一言",
-                    useLabelAsPlaceholder = true,
-                    maxLines = 2,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12),
-                )
-            }
-            item {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12),
                 ) {
                     Column {
                         PreferenceSwitchItem(
-                            title = "回退经典首页",
+                            title = MLang.AppSettings.Interface.ClassicHomeTitle,
                             checked = draftClassicHomeEnabled,
                             onCheckedChange = { draftClassicHomeEnabled = it },
                         )
@@ -319,14 +333,95 @@ internal fun MoeHomeSettingsSheet(
                             checked = draftSidebarExpanded,
                             onCheckedChange = { draftSidebarExpanded = it },
                         )
-                        PreferenceValueItem(
-                            title = "更换壁纸",
-                            onClick = onChangeWallpaper,
+                    }
+                }
+            }
+            if (!draftClassicHomeEnabled) {
+                item {
+                    TextField(
+                        value = draftQuote,
+                        onValueChange = { draftQuote = it },
+                        label = MLang.AppSettings.Interface.HomeQuoteTitle,
+                        useLabelAsPlaceholder = true,
+                        maxLines = 2,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12),
+                    )
+                }
+                item {
+                    TextField(
+                        value = draftQuoteAuthor,
+                        onValueChange = { draftQuoteAuthor = it },
+                        label = MLang.AppSettings.Interface.HomeQuoteAuthorTitle,
+                        useLabelAsPlaceholder = true,
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12),
+                    )
+                }
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12),
+                    ) {
+                        WindowDropdownPreference(
+                            title = MLang.AppSettings.Interface.HomeWallpaperSourceTitle,
+                            summary = MLang.AppSettings.Interface.HomeWallpaperSourceSummary,
+                            items = listOf(
+                                MLang.AppSettings.Interface.HomeWallpaperSourceGallery,
+                                MLang.AppSettings.Interface.HomeWallpaperSourceUrl,
+                            ),
+                            selectedIndex = -1,
+                            onSelectedIndexChange = { index ->
+                                when (index) {
+                                    0 -> onLaunchGalleryPicker()
+                                    1 -> showUrlInputDialog = true
+                                }
+                            },
                         )
                     }
                 }
             }
         }
+    }
+
+    if (showUrlInputDialog) {
+        MoeHomeRemoteWallpaperUrlDialog(
+            show = showUrlInputDialog,
+            initialUrl = urlInput,
+            onDismiss = { showUrlInputDialog = false },
+            onConfirm = { url ->
+                showUrlInputDialog = false
+                urlInput = url
+                onNavigateToWallpaperCrop(url)
+            },
+        )
+    }
+}
+
+@Composable
+private fun MoeHomeRemoteWallpaperUrlDialog(
+    show: Boolean,
+    initialUrl: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var url by remember { mutableStateOf(initialUrl) }
+    AppFormDialog(
+        show = show,
+        title = MLang.AppSettings.Interface.HomeWallpaperUrlDialogTitle,
+        onDismissRequest = onDismiss,
+        onConfirm = {
+            val trimmed = url.trim()
+            if (trimmed.isNotEmpty()) onConfirm(trimmed)
+        },
+        scrollable = false,
+    ) {
+        TextField(
+            value = url,
+            onValueChange = { url = it },
+            label = "https://example.com/image.jpg",
+            useLabelAsPlaceholder = true,
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 

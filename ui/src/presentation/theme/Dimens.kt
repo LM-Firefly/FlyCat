@@ -156,7 +156,6 @@ data class Sizes(
     val speedChartBarGap: Dp = UiDp.dp5,
     val speedChartBarCornerRadius: Dp = UiDp.dp6,
     val trafficChartHeight: Dp = UiDp.dp188,
-    val trafficBarChartHeight: Dp = UiDp.dp140,
     val trafficBarWidth: Dp = UiDp.dp20,
     val trafficBarLabelHeight: Dp = UiDp.dp18,
     val trafficDonutDiameter: Dp = UiDp.dp168,

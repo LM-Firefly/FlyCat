@@ -20,27 +20,33 @@
 
 package com.github.yumelira.yumebox.data.controller
 
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
+import com.github.yumelira.yumebox.core.model.AccessControlMode
+import com.github.yumelira.yumebox.core.model.ProxyMode
 import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.data.model.AccessControlMode
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AccessControlController(
     private val store: NetworkSettingsStore,
     private val isRunning: () -> Boolean,
     private val resolveActiveMode: () -> ProxyMode?,
-    private val restartProxy: suspend (ProxyMode) -> Unit,
-    private val beforeRestart: suspend (ProxyMode) -> Unit = {},
-) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val commandExecutor: AccessControlCommandExecutor,
+) : java.io.Closeable {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var applyJob: Job? = null
+    override fun close() {
+        scope.cancel()
+    }
 
     fun setAccessControlMode(mode: AccessControlMode) {
         if (store.accessControlMode.value == mode) return
@@ -73,10 +79,23 @@ class AccessControlController(
             if (store.accessControlMode.value == AccessControlMode.ALLOW_ALL) return@launch
 
             try {
-                beforeRestart(targetMode)
-                restartProxy(targetMode)
-            } catch (error: Exception) { // best-effort restart: any failure keeps the current session running
+                commandExecutor.restartProxy(targetMode)
+            } catch (error: Exception) {
                 if (error is CancellationException) throw error
+            }
+        }
+    }
+}
+
+class AccessControlCommandExecutor(
+    private val restartProxy: suspend (ProxyMode) -> Unit,
+    private val beforeRestart: suspend (ProxyMode) -> Unit = {},
+) {
+    suspend fun restartProxy(mode: ProxyMode) {
+        withContext(NonCancellable) {
+            beforeRestart(mode)
+            withContext(Dispatchers.IO) {
+                restartProxy.invoke(mode)
             }
         }
     }

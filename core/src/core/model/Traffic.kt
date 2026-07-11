@@ -21,3 +21,29 @@
 package com.github.yumelira.yumebox.core.model
 
 typealias Traffic = Long
+
+fun decodeTrafficValue(value: Long): Long {
+    val type = (value ushr 30) and 0x3
+    val payload = value and 0x3FFFFFFFL
+
+    return when (type) {
+        0L -> payload
+        1L -> (payload * 1024L) / 100L
+        2L -> (payload * 1024L * 1024L) / 100L
+        3L -> (payload * 1024L * 1024L * 1024L) / 100L
+        else -> 0L
+    }
+}
+
+fun encodeTrafficValue(bytes: Long): Long {
+    val value = bytes.coerceAtLeast(0L)
+    return when {
+        value < 0x40000000L -> value // type 0: raw bytes
+        value < 0x40000000L * 1024L / 100L -> // type 1: KiB/100
+            (1L shl 30) or ((value * 100L / 1024L) and 0x3FFFFFFFL)
+        value < 0x40000000L * 1024L * 1024L / 100L -> // type 2: MiB/100
+            (2L shl 30) or ((value * 100L / (1024L * 1024L)) and 0x3FFFFFFFL)
+        else -> // type 3: GiB/100
+            (3L shl 30) or ((value * 100L / (1024L * 1024L * 1024L)).coerceAtMost(0x3FFFFFFFL))
+    }
+}

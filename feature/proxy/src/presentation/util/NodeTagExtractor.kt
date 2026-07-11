@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.util
+package com.github.yumelira.yumebox.feature.proxy.presentation.util
 
 private val NODE_KEYWORDS =
     listOf(

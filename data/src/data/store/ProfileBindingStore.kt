@@ -21,15 +21,20 @@
 package com.github.yumelira.yumebox.data.store
 
 import android.content.Context
+import com.github.yumelira.yumebox.core.model.MetadataIndex
+import com.github.yumelira.yumebox.core.model.OverrideMetadata
+import com.github.yumelira.yumebox.core.model.ProfileBinding
 import com.github.yumelira.yumebox.core.util.YamlCodec
-import com.github.yumelira.yumebox.data.model.MetadataIndex
-import com.github.yumelira.yumebox.data.model.OverrideMetadata
-import com.github.yumelira.yumebox.data.model.ProfileBinding
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
@@ -37,11 +42,12 @@ import java.io.File
 class ProfileBindingStore(context: Context) : ProfileBindingProvider {
     private val metadataFile = File(context.filesDir, "overrides/metadata.yaml")
 
+    @Volatile
+    private var cachedMetadataIndex: MetadataIndex? = null
+
     private val bindingsStateFlow = MutableStateFlow<Map<String, ProfileBinding>>(emptyMap())
 
-    init {
-        bindingsStateFlow.value = loadBindings()
-    }
+    private val initJob: Job = CoroutineScope(SupervisorJob() + Dispatchers.IO).launch { bindingsStateFlow.value = loadBindings() }
 
     override suspend fun getBinding(profileId: String): ProfileBinding? =
         withContext(Dispatchers.IO) { loadBindings()[profileId] }
@@ -51,6 +57,7 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
 
     override suspend fun setBinding(binding: ProfileBinding) =
         withContext(Dispatchers.IO) {
+            initJob.join()
             val map = loadBindings().toMutableMap()
             map[binding.profileId] = binding
             saveBindings(map)
@@ -102,6 +109,7 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
 
     override suspend fun removeOverrideFromAllBindings(overrideId: String) =
         withContext(Dispatchers.IO) {
+            initJob.join()
             val currentIndex = loadMetadataIndex()
             val updatedIndex = currentIndex.removeOverrideFromProfileChains(overrideId)
             if (updatedIndex != currentIndex) {
@@ -117,6 +125,7 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
 
     suspend fun clearAll() =
         withContext(Dispatchers.IO) {
+            initJob.join()
             val index = loadMetadataIndex()
             saveMetadataIndex(index.copy(profileChains = emptyMap()))
         }
@@ -153,6 +162,7 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
     }
 
     private fun loadMetadataIndex(): MetadataIndex {
+        cachedMetadataIndex?.let { return it }
         if (!metadataFile.exists()) return MetadataIndex()
         val index =
             runCatching { YamlCodec.decode(MetadataIndex.serializer(), metadataFile.readText()) }
@@ -163,6 +173,8 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
         val sanitized = sanitizeMetadataIndex(index)
         if (sanitized != index) {
             saveMetadataIndex(sanitized)
+        } else {
+            cachedMetadataIndex = sanitized
         }
         return sanitized
     }
@@ -170,6 +182,7 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
     private fun saveMetadataIndex(index: MetadataIndex) {
         metadataFile.parentFile?.mkdirs()
         metadataFile.writeText(YamlCodec.encode(MetadataIndex.serializer(), index))
+        cachedMetadataIndex = index
     }
 
     private fun sanitizeMetadataIndex(index: MetadataIndex): MetadataIndex =

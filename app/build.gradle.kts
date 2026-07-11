@@ -21,6 +21,11 @@
 @file:Suppress("UnstableApiUsage")
 
 import java.util.Properties
+import java.time.ZonedDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
+fun String.asBuildConfigString(): String = "\"" + replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
 plugins {
     id("com.android.application")
@@ -33,28 +38,42 @@ plugins {
 
 
 val appAbiList =
-    gropify.abi.app.list.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+    providers.gradleProperty("abi.app.list").get().split(',').map { it.trim() }.filter { it.isNotEmpty() }
 
 val geoFilesAssetsDir = rootProject.layout.buildDirectory.dir("generated/assets/geo")
+val extensionAbiList =
+    providers.gradleProperty("abi.extension.list").get().split(',').map { it.trim() }.filter { it.isNotEmpty() }
+val withExtensionTaskRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.equals("assembleReleaseWithExtension", ignoreCase = true) ||
+        taskName.endsWith(":assembleReleaseWithExtension", ignoreCase = true)
+}
+val withExtension = project.hasProperty("withExtension") || withExtensionTaskRequested
+val packagingAbiList = if (withExtension) extensionAbiList else appAbiList
+val projectApplicationId = providers.gradleProperty("project.applicationId")
+    .orElse(providers.gradleProperty("project.namespace.base"))
+    .get()
+val updateRepository = providers.gradleProperty("update.repository").orNull
+    ?.trim()?.ifEmpty { null } ?: "LM-Firefly/FlyCat"
+val updateSource = providers.gradleProperty("update.source").orNull
+    ?.trim()?.ifEmpty { null } ?: "smart"
+val updateUiBuildId = providers.gradleProperty("update.uiBuildId").orNull
+    ?.trim()?.ifEmpty { null }
+    ?: run {
+        val stamp = ZonedDateTime.now(ZoneId.of("Asia/Shanghai"))
+            .format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"))
+        val commit = runCatching {
+            providers.exec {
+                commandLine("git", "rev-parse", "--short=6", "HEAD")
+                workingDir = rootDir
+            }.standardOutput.asText.get().trim().ifBlank { "000000" }
+        }.getOrDefault("000000")
+        "$stamp-$commit"
+    }
+val updateMirrorTemplates = providers.gradleProperty("update.mirrorTemplates").orNull
+    ?.trim()?.ifEmpty { null } ?: ""
 
-// CI-computed build versioning. CI injects `-Pbuild.number=<N>` where N is the commit
-// count of the built commit's parent chain (`git rev-list --count HEAD`, computed inside
-// reusable-build-apk-only.yml / reusable-prepare-publish.yml after a fetch-depth:0
-// checkout), plus `-Pbuild.hash=<commit sha>` and `-Pbuild.branch=<branch name>`; local
-// builds fall back to the epoch alone. versionCode = epoch + N, where the epoch is
-// `project.version.code` from gradle.properties (do not hardcode it here). Channel, PR and
-// official release builds all share this one formula, so every published APK gets a unique,
-// comparable versionCode (releases are no longer stuck at the bare epoch below channel
-// packages). Monotonic vs the retired ci-channel run_number scheme: the commit count only
-// grows along a branch and is >= the number of pushes >= run_number, so the new sequence
-// never sorts below the already-published epoch+run_number packages; if history is ever
-// rewritten so the count shrinks, bump project.version.code above the last published
-// versionCode instead. versionName = <base>[.<branch>].<hash8> only when a hash is
-// injected - official releases pass no hash/branch, so they keep the clean base version
-// (e.g. 0.5.2) while still getting a unique versionCode.
-val baseVersionCode = gropify.project.version.code
-val ciBuildNumber = providers.gradleProperty("build.number").orNull
-    ?.trim()?.takeIf { it.isNotEmpty() }?.toInt()
+// CI-injected build metadata used only for versionName composition.
+val baseVersionName = providers.gradleProperty("project.version.name").get()
 val ciBuildHash = providers.gradleProperty("build.hash").orNull
     ?.trim()?.takeIf { it.isNotEmpty() }?.take(8)
 // Branch segment normalization (must stay in sync with reusable-prepare-publish.yml):
@@ -64,25 +83,28 @@ val ciBuildBranch = providers.gradleProperty("build.branch").orNull
     ?.replace(Regex("[^a-z0-9]+"), "-")
     ?.trim('-')
     ?.takeIf { it.isNotEmpty() }
-val appVersionCode = baseVersionCode + (ciBuildNumber ?: 0)
+val appVersionCode = updateUiBuildId.takeWhile { it.isDigit() }.take(8).toInt()
 val appVersionName = ciBuildHash
-    ?.let { hash -> listOfNotNull(gropify.project.version.name, ciBuildBranch, hash).joinToString(".") }
-    ?: gropify.project.version.name
+    ?.let { hash -> listOfNotNull(baseVersionName, ciBuildBranch, hash).joinToString(".") }
+    ?: baseVersionName
 
 android {
-    namespace = gropify.project.namespace.base
+    namespace = providers.gradleProperty("project.namespace.base").get()
 
     defaultConfig {
-        applicationId = gropify.project.namespace.base
-        targetSdk = gropify.android.targetSdk
+        applicationId = projectApplicationId
+        targetSdk = providers.gradleProperty("android.targetSdk").get().toInt()
         versionCode = appVersionCode
         versionName = appVersionName
-        buildConfigField("String", "BASE_VERSION", "\"${gropify.project.version.name}\"")
-        manifestPlaceholders["appName"] = gropify.project.name
+        manifestPlaceholders["appName"] = providers.gradleProperty("project.name").get()
+        buildConfigField("String", "UPDATE_REPOSITORY", updateRepository.asBuildConfigString())
+        buildConfigField("String", "UPDATE_SOURCE", updateSource.asBuildConfigString())
+        buildConfigField("String", "UI_BUILD_ID", updateUiBuildId.asBuildConfigString())
+        buildConfigField("String", "UPDATE_MIRROR_TEMPLATES", updateMirrorTemplates.asBuildConfigString())
     }
 
     compileOptions {
-        val javaVer = gropify.android.jvm
+        val javaVer = providers.gradleProperty("android.jvm").get()
         sourceCompatibility = JavaVersion.toVersion(javaVer)
         targetCompatibility = JavaVersion.toVersion(javaVer)
         isCoreLibraryDesugaringEnabled = true
@@ -123,12 +145,6 @@ android {
                 manifest.srcFile("AndroidManifest.xml")
             }
         }
-        getByName("test") {
-            kotlin.directories.apply {
-                clear()
-                add("test")
-            }
-        }
     }
 
     androidResources {
@@ -167,27 +183,17 @@ android {
             reset()
             // AGP Split.include only accepts vararg; copying this tiny ABI list is negligible.
             @Suppress("SpreadOperator")
-            include(*appAbiList.toTypedArray())
+            include(*packagingAbiList.toTypedArray())
             isUniversalApk = true
         }
     }
 
     packaging {
         jniLibs {
-            excludes += listOf("lib/**/libjavet*.so")
+            if (!withExtension) {
+                excludes += listOf("lib/**/libjavet*.so")
+            }
             useLegacyPackaging = true
-        }
-        resources {
-            excludes.add("META-INF/**")
-            excludes.add("okhttp3/**")
-            excludes.add("schema/**")
-            excludes.add("assets/dexopt/**")
-            excludes.add("DebugProbesKt.bin")
-            excludes.add("kotlin-tooling-metadata.json")
-            excludes.add("**/*.kotlin_builtins")
-            excludes.add("**/*.kotlin_module")
-            excludes.add("**/*.properties")
-            excludes.add("**/*.txt")
         }
     }
 
@@ -223,7 +229,11 @@ android {
                 val buildTypeName = variant.buildType ?: "release"
                 output.versionName.set(appVersionName)
                 (output as com.android.build.api.variant.impl.VariantOutputImpl).outputFileName.set(
-                    "${gropify.project.name}-${appVersionName}-${abiName}-${buildTypeName}.apk"
+                    if (withExtension) {
+                        "${providers.gradleProperty("project.name").get()}_Extension-${abiName}-${buildTypeName}-${updateUiBuildId}.apk"
+                    } else {
+                        "${providers.gradleProperty("project.name").get()}-${abiName}-${buildTypeName}-${updateUiBuildId}.apk"
+                    }
                 )
             }
         }
@@ -231,7 +241,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidx.animation)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     implementation(project(":core"))
@@ -242,11 +251,16 @@ dependencies {
     implementation(project(":runtime:api"))
     implementation(project(":runtime:client"))
     implementation(project(":runtime:service"))
+    implementation(project(":feature:home"))
+    implementation(project(":feature:log"))
+    implementation(project(":feature:profiles"))
+    implementation(project(":feature:settings"))
     implementation(project(":feature:substore"))
     implementation(project(":feature:proxy"))
     implementation(project(":feature:override"))
     implementation(project(":feature:editor"))
     implementation(project(":feature:meta"))
+    implementation(project(":feature:update"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -263,6 +277,7 @@ dependencies {
     implementation(libs.miuix.icons)
     implementation(libs.miuix.blur.android)
     implementation(libs.haze)
+    implementation(libs.haze.blur)
     implementation(libs.androidx.navigationevent.compose)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
@@ -282,10 +297,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.timber)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.android)
     implementation(libs.xz)
-    implementation(libs.smali.dexlib2) {
-        exclude(group = "com.google.guava", module = "guava")
-    }
 
     implementation(libs.mlkit.barcode.scanning)
 
@@ -310,8 +324,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.hiddenapibypass)
 
+    implementation(libs.smali.dexlib2) {
+        exclude(group = "com.google.guava", module = "guava")
+    }
+
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.core.ktx)
-
-    testImplementation("junit:junit:4.13.2")
 }

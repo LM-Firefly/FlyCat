@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.common.runtime
+package com.github.yumelira.yumebox.platform.runtime
 
 object StartupGate {
     @Volatile private var primaryLoaded = false

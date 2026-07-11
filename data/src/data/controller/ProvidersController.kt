@@ -22,8 +22,9 @@ package com.github.yumelira.yumebox.data.controller
 
 import android.content.Context
 import android.net.Uri
-import com.github.yumelira.yumebox.core.Clash
+import com.github.yumelira.yumebox.core.data.ProvidersRepository
 import com.github.yumelira.yumebox.core.model.Provider
+import com.github.yumelira.yumebox.core.model.UpdateProvidersResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -31,19 +32,19 @@ import java.io.File
 class ProvidersController(
     private val context: Context,
     private val queryProvidersAction: suspend () -> List<Provider>,
-) {
-    @Suppress("TooGenericExceptionCaught")
-    suspend fun queryProviders(): Result<List<Provider>> =
+    private val updateProviderAction: suspend (Provider.Type, String) -> Unit,
+) : ProvidersRepository {
+    override suspend fun queryProviders(): Result<List<Provider>> =
         try {
             Result.success(queryProvidersAction())
         } catch (error: Exception) { // fault barrier: injected bridge action may fail arbitrarily
             Result.failure(error)
         }
 
-    suspend fun updateProvider(provider: Provider): Result<Unit> =
+    override suspend fun updateProvider(provider: Provider): Result<Unit> =
         updateProviderInternal(provider.type, provider.name)
 
-    suspend fun updateAllProviders(providers: List<Provider>): Result<UpdateProvidersResult> {
+    override suspend fun updateAllProviders(providers: List<Provider>): Result<UpdateProvidersResult> {
         if (providers.isEmpty()) return Result.success(UpdateProvidersResult(emptyList()))
 
         val failed = mutableListOf<String>()
@@ -56,8 +57,14 @@ class ProvidersController(
         return Result.success(UpdateProvidersResult(failed))
     }
 
-    @Suppress("TooGenericExceptionCaught")
-    suspend fun uploadProviderFile(
+    override suspend fun uploadProviderFile(
+        context: Any,
+        provider: Provider,
+        uri: Any,
+        maxBytes: Long,
+    ): Result<Unit> = uploadProviderFile(context as Context, provider, uri as Uri, maxBytes)
+
+    private suspend fun uploadProviderFile(
         context: Context,
         provider: Provider,
         uri: Uri,
@@ -91,9 +98,9 @@ class ProvidersController(
     @Suppress("TooGenericExceptionCaught")
     private suspend fun updateProviderInternal(type: Provider.Type, name: String): Result<Unit> =
         try {
-            Clash.updateProvider(type, name).await()
+            updateProviderAction(type, name)
             Result.success(Unit)
-        } catch (error: Exception) { // fault barrier: JNI bridge call may fail arbitrarily
+        } catch (error: Exception) { // fault barrier: injected bridge action may fail arbitrarily
             Result.failure(error)
         }
 
@@ -108,7 +115,7 @@ class ProvidersController(
                 targetFile
                     .toRelativeString(importedRoot)
                     .replace('\\', '/')
-                    .matches(Regex("""^[^/]+/providers/(rules|proxies)/.+"""))
+                    .matches(REGEX_PROVIDER_PATH)
         if (!inImportedProviders) {
             throw IllegalStateException(
                 "Provider path must live under profile provider directories: ${provider.path}"
@@ -118,9 +125,8 @@ class ProvidersController(
         return targetFile
     }
 
-    data class UpdateProvidersResult(val failedProviders: List<String>)
-
     companion object {
         private const val MAX_UPLOAD_SIZE_BYTES = 50L * 1024 * 1024
+        private val REGEX_PROVIDER_PATH = Regex("""^[^/]+/providers/(rules|proxies)/.+""")
     }
 }

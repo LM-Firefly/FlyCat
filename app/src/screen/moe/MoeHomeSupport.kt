@@ -39,8 +39,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -110,7 +113,8 @@ internal object MoeUi {
 
     object Button {
         val bottomInset = moeSpacing.space16
-        val height = UiDp.dp46
+        val height = UiDp.dp52
+        val fixedWidth = moeSizes.homeIdleTopPadding + moeSpacing.space4
         val circleSize = UiDp.dp46
         val controlGap = moeSpacing.space10
         val horizontalPadding = moeSpacing.space20
@@ -123,10 +127,13 @@ internal object MoeUi {
 
     object Quote {
         val contentGap = moeSpacing.space12
-        val eyebrowSize = 17.sp
+        val eyebrowSize = 14.sp
+        val authorTopGap = moeSpacing.space14
         val textSize = 23.sp
         val lineHeight = 31.sp
         const val eyebrowAlpha = 0.56f
+        val authorSize = 16.sp
+        val authorAlpha = moeOpacity.elevatedSurface
     }
 
     object Traffic {
@@ -324,6 +331,11 @@ internal fun calculateHomeVisibility(currentPage: Int, currentPageOffsetFraction
 internal data class MoeSidebarIconItem(
     val icon: ImageVector,
     val onClick: () -> Unit,
+)
+
+internal data class MoeQuote(
+    val text: String,
+    val author: String,
 )
 
 internal data class MoeDurationPair(

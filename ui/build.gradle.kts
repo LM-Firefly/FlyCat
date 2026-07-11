@@ -20,12 +20,19 @@
 
 plugins {
     id("com.android.library")
+    kotlin("plugin.serialization")
     kotlin("plugin.compose")
     id("org.jetbrains.compose")
 }
 
 android {
-    namespace = "com.github.yumelira.yumebox.core.ui"
+    namespace = "com.github.yumelira.yumebox.ui"
+
+    sourceSets {
+        getByName("main") {
+            kotlin.srcDirs("src")
+        }
+    }
 
     buildFeatures {
         compose = true
@@ -36,15 +43,15 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":platform"))
     implementation(project(":locale"))
-    implementation(project(":data"))
-    implementation(project(":runtime:api"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.sketch.compose)
@@ -54,10 +61,9 @@ dependencies {
     implementation(libs.sketch.animated.webp)
     implementation(libs.sketch.compose.resources)
     implementation(libs.haze)
+    implementation(libs.haze.blur)
     implementation(libs.shapes)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)
     implementation(libs.miuix.icons)
 }
-
-
