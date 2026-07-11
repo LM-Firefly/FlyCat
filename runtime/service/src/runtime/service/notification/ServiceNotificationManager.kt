@@ -156,14 +156,14 @@ class ServiceNotificationManager(
     }
 
     companion object {
-        val VPN_CONFIG =
+        val vpnConfig =
             Config(
                 notificationId = 1001,
                 channelId = "clash_vpn_service",
                 channelName = "Clash VPN Service",
             )
 
-        val HTTP_CONFIG =
+        val httpConfig =
             Config(
                 notificationId = 1002,
                 channelId = "clash_http_service",

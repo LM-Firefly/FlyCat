@@ -41,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import com.github.yumelira.yumebox.common.AppConstants
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Play
 import com.github.yumelira.yumebox.presentation.icon.yume.Square
@@ -67,7 +66,7 @@ fun ProxyControlButton(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val scaleAnim = remember { Animatable(1f) }
-    val cornerRadius = AppConstants.UI.BUTTON_CORNER_RADIUS
+    val cornerRadius = UiDp.dp32
     val buttonWidthFraction = 0.3f
 
     Column(

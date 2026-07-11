@@ -211,12 +211,12 @@ class AppTrafficStatisticsCollector(
 
         if (baseline == null) {
             connectionBaselines[connection.id] = updatedBaseline
-            return TrafficData.ZERO
+            return TrafficData.zero
         }
 
         if (connection.upload < baseline.upload || connection.download < baseline.download) {
             connectionBaselines[connection.id] = updatedBaseline
-            return TrafficData.ZERO
+            return TrafficData.zero
         }
 
         val uploadDelta = connection.upload - baseline.upload

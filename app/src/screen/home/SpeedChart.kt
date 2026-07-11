@@ -41,9 +41,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import com.github.yumelira.yumebox.common.AppConstants
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.TrafficChartConfig
+import com.github.yumelira.yumebox.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val SPEED_CHART_SAMPLE_LIMIT = 24
@@ -83,8 +83,8 @@ fun SpeedChart(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(AppConstants.UI.SPEED_CHART_HEIGHT)
-                .clip(RoundedCornerShape(AppConstants.UI.CARD_CORNER_RADIUS))
+                .height(UiDp.dp130)
+                .clip(RoundedCornerShape(UiDp.dp12))
                 .clickable(onClick = onClick)
     ) {
         val barGapPx = componentSizes.speedChartBarGap.toPx()
@@ -126,7 +126,7 @@ internal fun buildSpeedChartFractions(
 ): FloatArray {
     require(sampleLimit > 0) { "sampleLimit must be greater than 0" }
 
-    val fractions = FloatArray(sampleLimit) { TrafficChartConfig.MIN_VISIBLE_HEIGHT }
+    val fractions = FloatArray(sampleLimit) { TrafficChartConfig.minimumVisibleFraction }
     val recentHistory = speedHistory.takeLast(sampleLimit)
     val offset = (sampleLimit - recentHistory.size).coerceAtLeast(0)
     recentHistory.forEachIndexed { index, sample ->
@@ -200,7 +200,7 @@ private fun DrawScope.drawChartBar(
     barColor: Color,
     barCornerRadius: CornerRadius,
 ) {
-    val clampedFraction = fraction.coerceIn(TrafficChartConfig.MIN_VISIBLE_HEIGHT, 1f)
+    val clampedFraction = fraction.coerceIn(TrafficChartConfig.minimumVisibleFraction, 1f)
     val barHeightPx = size.height * clampedFraction
     drawRoundRect(
         color = barColor,

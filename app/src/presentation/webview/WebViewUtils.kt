@@ -21,12 +21,12 @@
 package com.github.yumelira.yumebox.presentation.webview
 
 object WebViewUtils {
-    private val ONLINE_PANEL_URLS =
+    private val onlinePanelUrls =
         listOf(
             "https://board.zash.run.place",
             "https://metacubex.github.io/metacubexd",
             "https://yacd.haishan.me",
         )
 
-    fun getPanelUrl(panelType: Int): String = ONLINE_PANEL_URLS.getOrElse(panelType) { "" }
+    fun getPanelUrl(panelType: Int): String = onlinePanelUrls.getOrElse(panelType) { "" }
 }

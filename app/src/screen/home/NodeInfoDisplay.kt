@@ -67,7 +67,7 @@ fun NodeInfoDisplay(serverName: String?, serverPing: Int?, modifier: Modifier = 
             if (hasKnownNode) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth().height(INFO_TEXT_HEIGHT),
+                    modifier = Modifier.fillMaxWidth().height(infoTextHeight),
                 ) {
                     val countryCode = flagged?.countryCode
                     if (countryCode != null) {
@@ -87,7 +87,7 @@ fun NodeInfoDisplay(serverName: String?, serverPing: Int?, modifier: Modifier = 
                     text = MLang.Home.NodeInfo.Unknown,
                     style = MiuixTheme.textStyles.body1.copy(lineHeight = 20.sp),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier.height(INFO_TEXT_HEIGHT),
+                    modifier = Modifier.height(infoTextHeight),
                 )
             }
         }
@@ -122,14 +122,14 @@ private fun PingValue(ping: Int?) {
             text = MLang.Home.NodeInfo.DelayValue.format(ping),
             style = MiuixTheme.textStyles.body1.copy(lineHeight = 20.sp),
             color = color,
-            modifier = Modifier.height(INFO_TEXT_HEIGHT),
+            modifier = Modifier.height(infoTextHeight),
         )
     } else {
         Text(
             text = "--",
             style = MiuixTheme.textStyles.body1.copy(lineHeight = 20.sp),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.height(INFO_TEXT_HEIGHT),
+            modifier = Modifier.height(infoTextHeight),
         )
     }
 }

@@ -185,7 +185,7 @@ class HttpClashManager(
             val nodes = fetchProxies()
             val groups = orderGroups(fetchGroups(), nodes)
             groups
-                .filter { !excludeNotSelectable || it.type in Proxy.Type.MANUALLY_SELECTABLE }
+                .filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }
                 .map { buildGroup(it, nodes, ProxySort.Default) }
         }
 
@@ -193,7 +193,7 @@ class HttpClashManager(
         runBlocking(Dispatchers.IO) {
             val nodes = fetchProxies()
             orderGroups(fetchGroups(), nodes)
-                .filter { !excludeNotSelectable || it.type in Proxy.Type.MANUALLY_SELECTABLE }
+                .filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }
                 .map { it.name }
         }
 
@@ -273,7 +273,7 @@ class HttpClashManager(
                 "group",
                 group,
                 "delay",
-                query = DELAY_QUERY,
+                query = delayQuery,
             )
         }
     }
@@ -286,7 +286,7 @@ class HttpClashManager(
                 "proxies",
                 proxyName,
                 "delay",
-                query = DELAY_QUERY,
+                query = delayQuery,
             )
             if (response.status.isSuccess()) {
                 json.decodeFromString<RawDelayResult>(response.bodyAsText()).delay
@@ -410,7 +410,7 @@ class HttpClashManager(
         const val CONNECT_TIMEOUT_MS = 5_000L
         const val SOCKET_TIMEOUT_MS = 10_000L
 
-        val DELAY_QUERY = mapOf(
+        val delayQuery = mapOf(
             "url" to "http://www.gstatic.com/generate_204",
             "timeout" to "5000",
         )

@@ -32,7 +32,7 @@ data class Proxy(
     val subtitle: String,
     val type: String,
     val delay: Int,
-    val isGroup: Boolean = type in Type.GROUP_TYPES,
+    val isGroup: Boolean = type in Type.groupTypes,
 ) : Parcelable {
     @Suppress("unused")
     object Type {
@@ -72,8 +72,8 @@ data class Proxy(
         const val PassRule = "PassRule"
         const val Unknown = "Unknown"
 
-        val GROUP_TYPES = setOf(Relay, Selector, Fallback, URLTest, LoadBalance, Smart)
-        val MANUALLY_SELECTABLE = setOf(Selector, URLTest, Fallback)
+        val groupTypes = setOf(Relay, Selector, Fallback, URLTest, LoadBalance, Smart)
+        val manuallySelectable = setOf(Selector, URLTest, Fallback)
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
@@ -91,7 +91,7 @@ data class Proxy(
 }
 
 val Proxy.isProxyGroup: Boolean
-    get() = isGroup || type in Proxy.Type.GROUP_TYPES
+    get() = isGroup || type in Proxy.Type.groupTypes
 
 internal val String.isManuallySelectable: Boolean
-    get() = this in Proxy.Type.MANUALLY_SELECTABLE
+    get() = this in Proxy.Type.manuallySelectable

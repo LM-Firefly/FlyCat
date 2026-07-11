@@ -191,7 +191,7 @@ fun MoeHomePage(
         }
     val trafficData =
         remember(trafficNow, isRunning) {
-            if (isRunning) TrafficData.from(trafficNow) else TrafficData.ZERO
+            if (isRunning) TrafficData.from(trafficNow) else TrafficData.zero
         }
     val systemDark = isSystemInDarkTheme()
     val isDarkHomeSurface =

@@ -84,4 +84,4 @@ val ProxyGroup.isSelectable: Boolean
     get() = type.isManuallySelectable
 
 val ProxyGroup.isProxyGroup: Boolean
-    get() = type in Proxy.Type.GROUP_TYPES || now.isNotBlank() || proxies.isNotEmpty()
+    get() = type in Proxy.Type.groupTypes || now.isNotBlank() || proxies.isNotEmpty()

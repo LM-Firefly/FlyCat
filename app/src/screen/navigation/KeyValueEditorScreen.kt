@@ -457,7 +457,7 @@ fun KeyValueEditorScreen(navigator: Navigator) {
     }
 }
 
-private val RULE_TYPE_PRESETS =
+private val ruleTypePresets =
     listOf(
         "DOMAIN",
         "DOMAIN-SUFFIX",
@@ -497,11 +497,11 @@ private val RULE_TYPE_PRESETS =
         "MATCH",
     )
 
-private val RULE_EXTRA_SUPPORTED_TYPES =
+private val ruleExtraSupportedTypes =
     setOf("IP-CIDR", "IP-CIDR6", "IP-SUFFIX", "IP-ASN", "GEOIP")
 
 private fun supportsRuleExtra(ruleType: String): Boolean =
-    ruleType.uppercase() in RULE_EXTRA_SUPPORTED_TYPES
+    ruleType.uppercase() in ruleExtraSupportedTypes
 
 @Composable
 private fun SimpleTextEditorDialog(
@@ -619,7 +619,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
     }
     val selectedRuleTypeIndex =
         remember(ruleType) {
-            RULE_TYPE_PRESETS.indexOfFirst { it.equals(ruleType, ignoreCase = true) }
+            ruleTypePresets.indexOfFirst { it.equals(ruleType, ignoreCase = true) }
                 .coerceAtLeast(0)
         }
     val selectedTargetIndex = remember(target) { targetItems.indexOf(target).coerceAtLeast(0) }
@@ -658,10 +658,10 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
     ) {
         WindowDropdownPreference(
             title = MLang.Component.Editor.Rule.Type,
-            items = RULE_TYPE_PRESETS,
+            items = ruleTypePresets,
             selectedIndex = selectedRuleTypeIndex,
             onSelectedIndexChange = { index ->
-                ruleType = RULE_TYPE_PRESETS.getOrElse(index) { ruleType }
+                ruleType = ruleTypePresets.getOrElse(index) { ruleType }
                 error = null
             },
         )

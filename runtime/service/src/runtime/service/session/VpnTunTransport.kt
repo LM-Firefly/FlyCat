@@ -238,9 +238,9 @@ class VpnTunTransport(
                     ProxyInfo.buildDirectProxy(
                         it.address.hostAddress,
                         it.port,
-                        HTTP_PROXY_BLACK_LIST +
+                        httpProxyBlackList +
                             if (store.bypassPrivateNetwork || hasExplicitRouteExcludes) {
-                                HTTP_PROXY_LOCAL_LIST
+                                httpProxyLocalList
                             } else {
                                 emptyList()
                             },
@@ -289,7 +289,7 @@ class VpnTunTransport(
         private const val NET_ANY = "0.0.0.0"
         private const val NET_ANY6 = "::"
 
-        private val HTTP_PROXY_LOCAL_LIST =
+        private val httpProxyLocalList =
             listOf(
                 "localhost",
                 "*.local",
@@ -304,7 +304,7 @@ class VpnTunTransport(
                 "172.31.*",
                 "192.168.*",
             )
-        private val HTTP_PROXY_BLACK_LIST =
+        private val httpProxyBlackList =
             listOf(
                 "*zhihu.com",
                 "*zhimg.com",

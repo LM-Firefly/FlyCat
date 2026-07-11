@@ -28,7 +28,7 @@ data class TrafficData(
     val download: Long,
 ) {
     companion object {
-        val ZERO = TrafficData(0, 0)
+        val zero = TrafficData(0, 0)
 
         fun from(traffic: Traffic): TrafficData {
             val upload = decodeTrafficValue(traffic ushr 32)

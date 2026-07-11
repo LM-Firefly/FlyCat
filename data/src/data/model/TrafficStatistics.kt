@@ -32,7 +32,7 @@ data class DailyTrafficSummary(
         get() = totalUpload + totalDownload
 
     companion object {
-        val EMPTY = DailyTrafficSummary(0L, 0L, 0L)
+        val empty = DailyTrafficSummary(0L, 0L, 0L)
     }
 }
 

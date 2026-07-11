@@ -40,7 +40,7 @@ private fun Char.isNameSeparator(): Boolean =
         this == '—' ||
         this == ':'
 
-private val COUNTRY_NAME_TO_CODE =
+private val countryNameToCode =
     mapOf(
         "中国" to "CN",
         "香港" to "HK",
@@ -301,20 +301,20 @@ private val COUNTRY_NAME_TO_CODE =
         "Timor" to "TL",
     )
 
-private val COUNTRY_NAME_REGEX: Regex = run {
-    val sortedNames = COUNTRY_NAME_TO_CODE.keys.sortedByDescending { it.length }
+private val countryNameRegex: Regex = run {
+    val sortedNames = countryNameToCode.keys.sortedByDescending { it.length }
     val pattern = sortedNames.joinToString("|") { Regex.escape(it) }
     Regex("(?:$pattern)", RegexOption.IGNORE_CASE)
 }
 
 private fun extractCountryCodeFromName(name: String): Pair<String?, String> {
-    val match = COUNTRY_NAME_REGEX.find(name)
+    val match = countryNameRegex.find(name)
     match ?: return null to name
 
     val countryName = match.value
     val countryCode =
-        COUNTRY_NAME_TO_CODE[countryName]
-            ?: COUNTRY_NAME_TO_CODE.entries
+        countryNameToCode[countryName]
+            ?: countryNameToCode.entries
                 .find { it.key.equals(countryName, ignoreCase = true) }
                 ?.value
 

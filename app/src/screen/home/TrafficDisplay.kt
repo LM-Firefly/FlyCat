@@ -50,7 +50,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.common.AppConstants
 import com.github.yumelira.yumebox.common.util.formatBytesForDisplay
 import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.data.model.ProxyMode
@@ -201,9 +200,9 @@ private fun SpeedValue(speed: Long) {
             text = value,
             style =
                 MiuixTheme.textStyles.headline1.copy(
-                    fontSize = AppConstants.UI.TRAFFIC_FONT_SIZE,
-                    lineHeight = AppConstants.UI.TRAFFIC_FONT_SIZE,
-                    letterSpacing = AppConstants.UI.TRAFFIC_LETTER_SPACING,
+                    fontSize = trafficValueFontSize,
+                    lineHeight = trafficValueFontSize,
+                    letterSpacing = trafficValueLetterSpacing,
                 ),
             color = MiuixTheme.colorScheme.primary,
         )
@@ -211,13 +210,17 @@ private fun SpeedValue(speed: Long) {
             text = unit,
             style =
                 MiuixTheme.textStyles.title2.copy(
-                    fontSize = AppConstants.UI.TRAFFIC_UNIT_FONT_SIZE
+                    fontSize = trafficUnitFontSize
                 ),
             color = MiuixTheme.colorScheme.primary.copy(alpha = opacity.medium),
             modifier = Modifier.padding(bottom = spacing.space14, start = spacing.space8),
         )
     }
 }
+
+private val trafficValueFontSize = 96.sp
+private val trafficValueLetterSpacing = (-3).sp
+private val trafficUnitFontSize = 24.sp
 
 @Composable
 private fun UploadSection(

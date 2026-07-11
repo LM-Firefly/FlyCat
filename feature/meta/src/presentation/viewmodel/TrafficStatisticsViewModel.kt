@@ -169,7 +169,7 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
 
 data class TrafficStatisticsUiState(
     val selectedTimeRange: StatisticsTimeRange = StatisticsTimeRange.TODAY,
-    val summary: DailyTrafficSummary = DailyTrafficSummary.EMPTY,
+    val summary: DailyTrafficSummary = DailyTrafficSummary.empty,
     val topApps: List<AppTrafficUsage> = emptyList(),
     val donutSlices: List<TrafficDonutSlice> = emptyList(),
 )

@@ -280,7 +280,7 @@ class RootTunConfigFactory(
 
     private fun resolveDnsHijack(): List<String> {
         if (!store.dnsHijacking) return emptyList()
-        return RootTunConstants.DEFAULT_DNS_HIJACK
+        return RootTunConstants.defaultDnsHijack
     }
 
     private fun resolveRouteAddress(allowIpv6: Boolean): List<String> {

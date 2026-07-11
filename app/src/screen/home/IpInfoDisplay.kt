@@ -51,9 +51,9 @@ import dev.oom_wg.purejoy.mlang.MLang
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private val INFO_VALUE_CORNER_RADIUS = RoundedCornerShape(UiDp.dp10)
-private val INFO_VALUE_MAX_WIDTH = UiDp.dp220
-internal val INFO_TEXT_HEIGHT = UiDp.dp24
+private val infoValueCornerRadius = RoundedCornerShape(UiDp.dp10)
+private val infoValueMaxWidth = UiDp.dp220
+internal val infoTextHeight = UiDp.dp24
 
 @Composable
 fun IpInfoDisplay(state: IpMonitoringState, modifier: Modifier = Modifier) {
@@ -121,12 +121,12 @@ private fun IpInfoRow(
                 overflow = TextOverflow.Ellipsis,
                 modifier =
                     if (isRevealable) {
-                        Modifier.widthIn(max = INFO_VALUE_MAX_WIDTH)
-                            .height(INFO_TEXT_HEIGHT)
-                            .clip(INFO_VALUE_CORNER_RADIUS)
+                        Modifier.widthIn(max = infoValueMaxWidth)
+                            .height(infoTextHeight)
+                            .clip(infoValueCornerRadius)
                             .clickable(onClick = onToggleVisibility)
                     } else {
-                        Modifier.height(INFO_TEXT_HEIGHT)
+                        Modifier.height(infoTextHeight)
                     },
             )
         }

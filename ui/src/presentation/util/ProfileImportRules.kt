@@ -31,10 +31,10 @@ const val PROFILE_IMPORT_TYPE_URL = 0
 const val PROFILE_IMPORT_TYPE_FILE = 1
 const val PROFILE_IMPORT_TYPE_QR = 2
 
-private val SUBSCRIPTION_URL_PATTERN =
+private val subscriptionUrlPattern =
     Regex(pattern = "^https?://\\S+$", options = setOf(RegexOption.IGNORE_CASE))
 
-fun isSubscriptionUrl(value: String): Boolean = SUBSCRIPTION_URL_PATTERN.matches(value.trim())
+fun isSubscriptionUrl(value: String): Boolean = subscriptionUrlPattern.matches(value.trim())
 
 fun readClipboardSubscriptionUrl(context: Context): String? {
     return runCatching {

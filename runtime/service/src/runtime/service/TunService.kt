@@ -40,7 +40,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             scope = this,
             mode = ProxyMode.Tun,
             label = "Tun",
-            notificationConfig = ServiceNotificationManager.VPN_CONFIG,
+            notificationConfig = ServiceNotificationManager.vpnConfig,
             logScope = RuntimeStartupLogStore.Scope.LOCAL_TUN,
             createTransport = { VpnTunTransport(this) },
             createSpec = { SessionRuntimeSpecFactory(appContextOrSelf).createTunSpec() },

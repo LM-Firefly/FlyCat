@@ -30,5 +30,5 @@ internal object RootTunConstants {
     const val FAKE_IP_RANGE = "198.18.0.1/16"
     const val FAKE_IP_RANGE6 = "fc00::/18"
 
-    val DEFAULT_DNS_HIJACK = listOf("any:53", "tcp://any:53")
+    val defaultDnsHijack = listOf("any:53", "tcp://any:53")
 }

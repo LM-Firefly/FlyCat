@@ -239,7 +239,7 @@ class CompiledConfigPipeline(private val context: Context) {
         val runtimeHomeDir = context.runtimeHomeDir
         val expectedRuleBase = profileDir.resolve("providers/rules").canonicalFile
         val expectedProxyBase = profileDir.resolve("providers/proxies").canonicalFile
-        PATH_PATTERN.findAll(finalYaml).forEach { match ->
+        pathPattern.findAll(finalYaml).forEach { match ->
             val pathValue = match.groupValues[1].replace('\\', '/').trim()
             if (
                 !pathValue.endsWith(".yaml") &&
@@ -269,7 +269,7 @@ class CompiledConfigPipeline(private val context: Context) {
             }
             error("Compiled provider path escaped profile scope")
         }
-        if (PATH_PATTERN.containsMatchIn(finalYaml)) {
+        if (pathPattern.containsMatchIn(finalYaml)) {
             Log.i(TAG, "Compiled provider paths validated")
         }
     }
@@ -337,7 +337,7 @@ class CompiledConfigPipeline(private val context: Context) {
             }
         }
 
-        return USER_OVERRIDE_EXTENSIONS.asSequence()
+        return userOverrideExtensions.asSequence()
             .map { extension -> overridesDir.resolve("configs/$overrideId.$extension") }
             .firstOrNull(File::exists)
     }
@@ -437,8 +437,8 @@ class CompiledConfigPipeline(private val context: Context) {
 
     private companion object {
         private const val TAG = "CompiledConfigPipeline"
-        private val PATH_PATTERN = Regex("""(?m)path:\s*["']?([^"'\n]+)["']?""")
-        private val USER_OVERRIDE_EXTENSIONS = listOf("yaml", "yml", "js")
+        private val pathPattern = Regex("""(?m)path:\s*["']?([^"'\n]+)["']?""")
+        private val userOverrideExtensions = listOf("yaml", "yml", "js")
         const val INTERNAL_RUNTIME_PREFIX = "__runtime__"
         const val LEGACY_PRESET_PREFIX = "preset-"
     }

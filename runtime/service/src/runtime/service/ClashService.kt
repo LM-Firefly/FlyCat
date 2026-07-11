@@ -36,7 +36,7 @@ class ClashService : BaseService() {
             scope = this,
             mode = ProxyMode.Http,
             label = "HTTP",
-            notificationConfig = ServiceNotificationManager.HTTP_CONFIG,
+            notificationConfig = ServiceNotificationManager.httpConfig,
             logScope = RuntimeStartupLogStore.Scope.LOCAL_HTTP,
             createTransport = { LocalHttpTransport(this) },
             createSpec = { SessionRuntimeSpecFactory(appContextOrSelf).createHttpSpec() },

@@ -37,8 +37,8 @@ class LogStore(
 ) {
     companion object {
         private const val DEFAULT_MAX_ENTRIES = 2000
-        private val LOG_LINE_REGEX = """\[(.+?)] \[(.+?)] (.+)""".toRegex()
-        private val LOG_LEVELS = enumEntries<LogMessage.Level>().associateBy { it.name }
+        private val logLineRegex = """\[(.+?)] \[(.+?)] (.+)""".toRegex()
+        private val logLevels = enumEntries<LogMessage.Level>().associateBy { it.name }
     }
 
     private val logDir: File
@@ -172,9 +172,9 @@ class LogStore(
 
     private fun parseLogLine(line: String): LogEntry? {
         if (line.isBlank()) return null
-        val match = LOG_LINE_REGEX.find(line) ?: return null
+        val match = logLineRegex.find(line) ?: return null
         val (timeStr, levelStr, message) = match.destructured
-        val level = LOG_LEVELS[levelStr] ?: LogMessage.Level.Unknown
+        val level = logLevels[levelStr] ?: LogMessage.Level.Unknown
         return LogEntry(time = timeStr, level = level, message = message)
     }
 

@@ -20,7 +20,7 @@
 
 package com.github.yumelira.yumebox.presentation.util
 
-private val NODE_KEYWORDS =
+private val nodeKeywords =
     listOf(
         "IEPL",
         "BGP",
@@ -40,7 +40,7 @@ private val NODE_KEYWORDS =
         "GPT",
     )
 
-private val MULTIPLIER_REGEX =
+private val multiplierRegex =
     Regex("""(?<![.\d])[xX×✕](\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)[xX×✕](?![.\d])""")
 
 data class NodeTags(
@@ -50,8 +50,8 @@ data class NodeTags(
 
 fun extractNodeTags(name: String): NodeTags {
     val upperName = name.uppercase()
-    val keywords = NODE_KEYWORDS.filter { keyword -> upperName.contains(keyword.uppercase()) }
-    val multiplierMatch = MULTIPLIER_REGEX.find(name)
+    val keywords = nodeKeywords.filter { keyword -> upperName.contains(keyword.uppercase()) }
+    val multiplierMatch = multiplierRegex.find(name)
     val multiplier = multiplierMatch?.let { match ->
         val value = match.groupValues[1].ifEmpty { match.groupValues[2] }
         value.toFloatOrNull()

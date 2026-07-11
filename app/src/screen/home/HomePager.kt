@@ -42,7 +42,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.github.yumelira.yumebox.common.AppConstants
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.domain.model.TrafficData
 import com.github.yumelira.yumebox.presentation.component.LocalNavigator
@@ -129,17 +128,17 @@ fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
                 Column(
                     modifier =
                         Modifier.fillMaxWidth()
-                            .padding(horizontal = AppConstants.UI.DEFAULT_HORIZONTAL_PADDING),
+                            .padding(horizontal = UiDp.dp24),
                     horizontalAlignment = Alignment.Start,
                     verticalArrangement =
-                        Arrangement.spacedBy(AppConstants.UI.DEFAULT_VERTICAL_SPACING),
+                        Arrangement.spacedBy(UiDp.dp24),
                 ) {
                     TrafficDisplay(
                         trafficNow =
                             if (isRunning) {
                                 TrafficData.from(trafficNow)
                             } else {
-                                TrafficData.ZERO
+                                TrafficData.zero
                             },
                         // TODO(i18n M7): localize the "控制器" backend label.
                         profileName =
