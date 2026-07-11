@@ -200,135 +200,11 @@ internal fun MoeSidebarContent(
     }
 }
 
-@Composable
-internal fun MoeHomeCopyBlock(
-    nowMillis: Long,
-    quoteText: String,
-    color: Color,
-    modifier: Modifier = Modifier,
-    launchContent: @Composable (() -> Unit)? = null,
-) {
-    val greeting = remember(nowMillis) { moeGreetingText(nowMillis) }
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(MoeUi.Quote.contentGap),
-    ) {
-        Text(
-            text = greeting,
-            color = color.copy(alpha = MoeUi.Quote.eyebrowAlpha),
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = MoeUi.Quote.eyebrowSize,
-            maxLines = 1,
-            overflow = TextOverflow.Clip,
-        )
-        Text(
-            text = quoteText,
-            color = color.copy(alpha = 0.88f),
-            style = MiuixTheme.textStyles.title2,
-            fontWeight = FontWeight.Medium,
-            fontSize = MoeUi.Quote.textSize,
-            lineHeight = MoeUi.Quote.lineHeight,
-            softWrap = true,
-            maxLines = 2,
-            overflow = TextOverflow.Clip,
-        )
-        launchContent?.let { content ->
-            Box(modifier = Modifier.fillMaxWidth().padding(top = MoeUi.Hero.launchTopGap)) {
-                content()
-            }
-        }
-    }
-}
-
-private fun moeGreetingText(nowMillis: Long): String {
-    val hour =
-        Calendar.getInstance()
-            .apply { timeInMillis = nowMillis }
-            .get(Calendar.HOUR_OF_DAY)
-    return when (hour) {
-        in 5..11 -> "Good morning"
-        in 12..17 -> "Good afternoon"
-        in 18..23 -> "Good evening"
-        else -> "Good night"
-    }
-}
-
-private const val MoeLaunchTextSlideDuration = 450
-private const val MoeLaunchTextTransientDelay = 220L
+private const val MOE_LAUNCH_TEXT_SLIDE_DURATION = 450
+private const val MOE_LAUNCH_TEXT_TRANSIENT_DELAY = 220L
 
 private fun HomeProxyControlState.isMoeLaunchTransientState(): Boolean =
     this == HomeProxyControlState.Connecting || this == HomeProxyControlState.Disconnecting
-
-@Composable
-internal fun MoeHomeSettingsSheet(
-    show: Boolean,
-    quote: String,
-    classicHomeEnabled: Boolean,
-    sidebarExpanded: Boolean,
-    onQuoteChange: (String) -> Unit,
-    onClassicHomeEnabledChange: (Boolean) -> Unit,
-    onSidebarExpandedChange: (Boolean) -> Unit,
-    onChangeWallpaper: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val spacing = AppTheme.spacing
-    var draftQuote by remember(show, quote) { mutableStateOf(quote) }
-    var draftClassicHomeEnabled by remember(show, classicHomeEnabled) {
-        mutableStateOf(classicHomeEnabled)
-    }
-    var draftSidebarExpanded by remember(show, sidebarExpanded) { mutableStateOf(sidebarExpanded) }
-    val saveSettings = {
-        onQuoteChange(draftQuote)
-        onClassicHomeEnabledChange(draftClassicHomeEnabled)
-        onSidebarExpandedChange(draftSidebarExpanded)
-        onDismiss()
-    }
-
-    AppActionBottomSheet(
-        show = show,
-        title = "首页设置",
-        startAction = { AppBottomSheetCloseAction(onClick = onDismiss) },
-        endAction = { AppBottomSheetConfirmAction(onClick = saveSettings) },
-        onDismissRequest = onDismiss,
-        enableNestedScroll = true,
-    ) {
-        LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space16)) {
-            item {
-                TextField(
-                    value = draftQuote,
-                    onValueChange = { draftQuote = it },
-                    label = "一言",
-                    useLabelAsPlaceholder = true,
-                    maxLines = 2,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12),
-                )
-            }
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12),
-                ) {
-                    Column {
-                        PreferenceSwitchItem(
-                            title = "回退经典首页",
-                            checked = draftClassicHomeEnabled,
-                            onCheckedChange = { draftClassicHomeEnabled = it },
-                        )
-                        PreferenceSwitchItem(
-                            title = "展开侧边栏",
-                            checked = draftSidebarExpanded,
-                            onCheckedChange = { draftSidebarExpanded = it },
-                        )
-                        PreferenceValueItem(
-                            title = "更换壁纸",
-                            onClick = onChangeWallpaper,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 internal fun MoeLaunchControls(
@@ -454,7 +330,7 @@ internal fun MoeLaunchButton(
     LaunchedEffect(targetLabel, controlState) {
         if (targetLabel == displayedLabel) return@LaunchedEffect
         if (controlState.isMoeLaunchTransientState()) {
-            delay(MoeLaunchTextTransientDelay)
+            delay(MOE_LAUNCH_TEXT_TRANSIENT_DELAY)
         }
         displayedLabel = targetLabel
     }
@@ -502,7 +378,7 @@ internal fun MoeLaunchButton(
                     // 同一时长同一缓动、无延迟：新旧文本锁成一列同步上移，呈整体平移感
                     val slideSpec =
                         tween<IntOffset>(
-                            durationMillis = MoeLaunchTextSlideDuration,
+                            durationMillis = MOE_LAUNCH_TEXT_SLIDE_DURATION,
                             easing = AnimationSpecs.StandardEasing,
                         )
                     slideInVertically(initialOffsetY = { it }, animationSpec = slideSpec)
@@ -524,142 +400,5 @@ internal fun MoeLaunchButton(
                 )
             }
         }
-    }
-}
-
-@Composable
-internal fun MoeTrafficStrip(
-    downloadSpeed: Long,
-    uploadSpeed: Long,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(MoeUi.Hero.trafficRowGap),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-            MoeTrafficItem(label = MLang.Home.Traffic.UpShort, speed = uploadSpeed)
-        }
-        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-            MoeTrafficItem(label = MLang.Home.Traffic.DownShort, speed = downloadSpeed)
-        }
-    }
-}
-
-@Composable
-private fun MoeTrafficItem(label: String, speed: Long) {
-    val (value, unit) = formatBytesForDisplay(speed)
-    val onSurface = MiuixTheme.colorScheme.onSurface
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(MoeUi.Traffic.itemGap),
-        verticalAlignment = Alignment.Bottom,
-    ) {
-        Text(
-            text = label,
-            color = onSurface.copy(alpha = 0.62f),
-            style = MiuixTheme.textStyles.footnote1,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.8.sp,
-            modifier = Modifier.padding(bottom = MoeUi.Traffic.labelBottomPadding),
-        )
-        Text(
-            text = value,
-            color = onSurface,
-            style = MiuixTheme.textStyles.title1,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 24.sp,
-        )
-        Text(
-            text = unit,
-            color = onSurface.copy(alpha = 0.55f),
-            style = MiuixTheme.textStyles.footnote1,
-            fontSize = 12.sp,
-            modifier = Modifier.padding(bottom = MoeUi.Traffic.labelBottomPadding),
-        )
-    }
-}
-
-@Composable
-internal fun MoeHomeInfoPanel(
-    serverName: String?,
-    serverPing: Int?,
-    modifier: Modifier = Modifier,
-) {
-    val flaggedNode = remember(serverName) { serverName?.let(::extractFlaggedName) }
-    val resolvedNodeName = flaggedNode?.displayName ?: serverName.orEmpty().ifBlank { "" }
-    val resolvedPing =
-        serverPing
-            ?.takeIf { it in 1..1000 }
-            ?.let { ping ->
-                MLang.Home.NodeInfo.DelayValue.format(ping)
-            }
-    Row(
-        modifier = modifier.fillMaxWidth().heightIn(min = MoeUi.Hero.infoRowMinHeight),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (resolvedNodeName.isNotBlank()) {
-            MoeInfoBlock(
-                value = resolvedNodeName,
-                modifier = Modifier.weight(1f).padding(end = MoeUi.Info.trailingPadding),
-                leading = {
-                    flaggedNode?.countryCode?.let { countryCode ->
-                        CountryFlagCircle(
-                            countryCode = countryCode,
-                            size = AppTheme.spacing.space16,
-                        )
-                    }
-                },
-            )
-        } else {
-            Spacer(modifier = Modifier.weight(1f).padding(end = MoeUi.Info.trailingPadding))
-        }
-
-        if (resolvedPing != null) {
-            MoeInfoBlock(
-                value = resolvedPing,
-                modifier = Modifier.width(MoeUi.Hero.delayWidth),
-                valueColor =
-                    when {
-                        serverPing < 500 -> AppTheme.colors.moe.pingExcellent
-                        else -> AppTheme.colors.moe.pingWarning
-                    },
-                alignEnd = true,
-            )
-        }
-    }
-}
-
-@Composable
-private fun MoeInfoBlock(
-    value: String,
-    modifier: Modifier = Modifier,
-    valueColor: Color = MiuixTheme.colorScheme.onBackground,
-    valueFontFamily: FontFamily? = null,
-    alignEnd: Boolean = false,
-    leading: (@Composable () -> Unit)? = null,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement =
-            Arrangement.spacedBy(
-                space = MoeUi.Info.blockGap,
-                alignment = if (alignEnd) Alignment.End else Alignment.Start,
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        leading?.invoke()
-        Text(
-            text = value,
-            color = valueColor,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
-            fontFamily = valueFontFamily,
-            maxLines = 1,
-            overflow = TextOverflow.Clip,
-            modifier = if (alignEnd) Modifier else Modifier.weight(1f),
-        )
     }
 }
