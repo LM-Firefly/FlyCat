@@ -59,6 +59,7 @@ import com.github.yumelira.yumebox.data.model.ProxySortMode
 import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
 import com.github.yumelira.yumebox.domain.model.isSelectable
 import com.github.yumelira.yumebox.presentation.component.CenteredText
+import com.github.yumelira.yumebox.presentation.component.LocalPagerState
 import com.github.yumelira.yumebox.presentation.component.LocalTopBarHazeState
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.TopBar
@@ -108,6 +109,7 @@ fun ProxyPager(
     val sortMode by proxyViewModel.sortMode.collectAsState()
     val singleNodeTest by proxyViewModel.singleNodeTest.collectAsState()
     val groupScrollBehavior = MiuixScrollBehavior(snapAnimationSpec = null)
+    val pagerState = LocalPagerState.current
     val topBarHazeState = LocalTopBarHazeState.current
 
     var showSortPopup by rememberSaveable { mutableStateOf(false) }
@@ -152,39 +154,13 @@ fun ProxyPager(
         floatingActionButton = {
             AnimatedVisibility(
                 visible =
-                    selectedGroupName != null && fabGroup != null && !fabHidden && !isFabTesting,
-                enter =
-                    scaleIn(
-                        animationSpec =
-                            tween(
-                                durationMillis = AnimationSpecs.Proxy.FabDuration,
-                                easing = AnimationSpecs.EmphasizedDecelerate,
-                            ),
-                        initialScale = AnimationSpecs.Proxy.VisibilityInitialScale,
-                    ) +
-                        fadeIn(
-                            animationSpec =
-                                tween(
-                                    durationMillis = AnimationSpecs.Proxy.FabFadeDuration,
-                                    easing = AnimationSpecs.EmphasizedDecelerate,
-                                )
-                        ),
-                exit =
-                    scaleOut(
-                        animationSpec =
-                            tween(
-                                durationMillis = AnimationSpecs.Proxy.FabDuration,
-                                easing = AnimationSpecs.EmphasizedDecelerate,
-                            ),
-                        targetScale = AnimationSpecs.Proxy.VisibilityTargetScale,
-                    ) +
-                        fadeOut(
-                            animationSpec =
-                                tween(
-                                    durationMillis = AnimationSpecs.Proxy.FabFadeDuration,
-                                    easing = AnimationSpecs.EmphasizedDecelerate,
-                                )
-                        ),
+                    selectedGroupName != null &&
+                        fabGroup != null &&
+                        !fabHidden &&
+                        !isFabTesting &&
+                        !pagerState.isScrollInProgress,
+                enter = scaleIn(),
+                exit = scaleOut(),
                 label = "proxy_test_fab_visibility",
             ) {
                 FloatingActionButton(
