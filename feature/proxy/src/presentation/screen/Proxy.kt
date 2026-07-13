@@ -65,12 +65,14 @@ import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Folders
+import com.github.yumelira.yumebox.presentation.icon.yume.Eye
 import com.github.yumelira.yumebox.presentation.icon.yume.`List-chevrons-up-down`
 import com.github.yumelira.yumebox.presentation.icon.yume.Speed
 import com.github.yumelira.yumebox.presentation.screen.node.NodeSortPopup
 import com.github.yumelira.yumebox.presentation.screen.node.nodeGridItems
 import com.github.yumelira.yumebox.presentation.screen.node.nodeGroupItems
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
+import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.LocalSpacing
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.util.KeepLazyListTopAnchorOnReorder
@@ -141,6 +143,23 @@ fun ProxyPager(
                 }
             }
         }
+    val locateCurrentProxy =
+        remember(coroutineScope, displayGroup, nodeListState, selectedGroupName) {
+            if (selectedGroupName == null) {
+                null
+            } else {
+                displayGroup?.takeIf { group -> group.name == selectedGroupName }?.let { group ->
+                    fun() {
+                        val proxyIndex =
+                            group.proxies.indexOfFirst { proxy -> proxy.name == group.now }
+                        if (proxyIndex < 0) return
+                        coroutineScope.launch {
+                            nodeListState.animateScrollToItem(proxyIndex + 1)
+                        }
+                    }
+                }
+            }
+        }
 
     BackHandler(enabled = selectedGroupName != null) { groupSelection.clearSelection() }
 
@@ -185,6 +204,7 @@ fun ProxyPager(
                 showBack = false,
                 onBack = {},
                 onNavigateToProviders = onNavigateToProviders,
+                onLocateCurrentProxy = locateCurrentProxy,
                 showSortPopup = showSortPopup,
                 onShowSortPopupChange = { showSortPopup = it },
                 sortMode = sortMode,
@@ -280,11 +300,14 @@ private fun ProxyTopBar(
     showBack: Boolean,
     onBack: () -> Unit,
     onNavigateToProviders: (() -> Unit)?,
+    onLocateCurrentProxy: (() -> Unit)?,
     showSortPopup: Boolean,
     onShowSortPopupChange: (Boolean) -> Unit,
     sortMode: ProxySortMode,
     onSortSelected: (ProxySortMode) -> Unit,
 ) {
+    val spacing = AppTheme.spacing
+
     TopBar(
         title = title,
         scrollBehavior = scrollBehavior,
@@ -306,6 +329,14 @@ private fun ProxyTopBar(
             }
         },
         actions = {
+            if (onLocateCurrentProxy != null) {
+                IconButton(
+                    modifier = Modifier.padding(end = spacing.space12),
+                    onClick = onLocateCurrentProxy,
+                ) {
+                    Icon(Yume.Eye, contentDescription = "Eye current proxy")
+                }
+            }
             Box {
                 IconButton(onClick = { onShowSortPopupChange(true) }) {
                     Icon(Yume.`List-chevrons-up-down`, contentDescription = MLang.Proxy.Action.Sort)

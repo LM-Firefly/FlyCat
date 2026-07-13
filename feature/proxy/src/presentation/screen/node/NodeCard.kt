@@ -22,7 +22,6 @@ package com.github.yumelira.yumebox.presentation.screen.node
 
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -50,7 +49,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -180,51 +178,20 @@ internal fun NodeSelectableCard(
     val interactionSource = remember { MutableInteractionSource() }
     val shape = RoundedCornerShape(radii.radius18)
     val primary = MiuixTheme.colorScheme.primary
-    val surfaceColor = MiuixTheme.colorScheme.background
+    val backgroundColor = MiuixTheme.colorScheme.background
     val transition = updateTransition(targetState = isSelected, label = "node_card_selection")
-    val selectionSpec =
-        tween<Float>(
-            durationMillis = 220,
-            easing = FastOutSlowInEasing,
-        )
-    val selectionProgress by
-        transition.animateFloat(
-            transitionSpec = { selectionSpec },
-            label = "node_card_selection_progress",
-        ) { selected ->
-            if (selected) 1f else 0f
-        }
-    val backgroundColor by
-        transition.animateColor(
-            transitionSpec = { tween(durationMillis = 220, easing = FastOutSlowInEasing) },
-            label = "node_card_background_color",
-        ) { selected ->
-            if (selected) primary.copy(alpha = opacity.subtle) else surfaceColor
-        }
     val borderColor by
         transition.animateColor(
             transitionSpec = { tween(durationMillis = 220, easing = FastOutSlowInEasing) },
             label = "node_card_border_color",
         ) { selected ->
-            if (selected) primary else Color.Transparent
-        }
-    val borderWidth by
-        transition.animateDp(
-            transitionSpec = { tween(durationMillis = 220, easing = FastOutSlowInEasing) },
-            label = "node_card_border_width",
-        ) { selected ->
-            if (selected) sizes.nodeCardBorderWidth * 2 else sizes.nodeCardBorderWidth
+            if (selected) primary.copy(alpha = opacity.disabled) else Color.Transparent
         }
 
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .graphicsLayer {
-                    val scale = 1f + (0.01f * selectionProgress)
-                    scaleX = scale
-                    scaleY = scale
-                }
                 .let {
                     if (onClick != null) {
                         it.pressable(
@@ -237,7 +204,7 @@ internal fun NodeSelectableCard(
                 }
                 .clip(shape)
                 .background(backgroundColor)
-                .border(borderWidth, borderColor, shape)
+                .border(sizes.nodeCardBorderWidth, borderColor, shape)
                 .let {
                     if (onClick != null) {
                         it.clickable(
