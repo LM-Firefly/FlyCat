@@ -103,6 +103,17 @@ object RuntimeServiceLauncher {
             }
     }
 
+    fun stop(context: Context, mode: ProxyMode) {
+        require(mode != ProxyMode.RootTun) { "RuntimeServiceLauncher does not stop RootTun" }
+
+        val appContext = context.appContextOrSelf
+        runCatching { appContext.stopService(Intent(appContext, serviceClassFor(mode))) }
+        if (mode == ProxyMode.Tun) {
+            StatusProvider.clearTunStarting()
+        }
+        StatusProvider.markRuntimeIdle(mode)
+    }
+
     private fun serviceClassFor(mode: ProxyMode): Class<*> =
         when (mode) {
             ProxyMode.Tun -> TunService::class.java

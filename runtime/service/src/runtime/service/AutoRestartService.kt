@@ -42,9 +42,14 @@ import com.github.yumelira.yumebox.data.store.RemoteControllerStore
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.service.profile.ProfileManager
 import com.github.yumelira.yumebox.runtime.service.root.RootTunServiceBridge
+import com.github.yumelira.yumebox.runtime.service.root.RootTunStatusFlow
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
+import com.github.yumelira.yumebox.runtime.service.session.RuntimeStartupLogStore
 import com.github.yumelira.yumebox.runtime.service.util.AutoStartExecutionGate
 import com.github.yumelira.yumebox.runtime.service.util.AutoStartUpdatePolicy
+import com.github.yumelira.yumebox.runtime.service.util.RuntimeActivationAwaiter
+import com.github.yumelira.yumebox.runtime.service.util.RuntimeActivationResult
+import com.github.yumelira.yumebox.runtime.service.util.RuntimeActivationState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -74,6 +79,7 @@ class AutoRestartService : Service() {
     private val serviceCache by lazy { mmkvProvider.getMMKV("service_cache") }
     private val profileManager by lazy { ProfileManager(applicationContext) }
     private val foregroundStarted = AtomicBoolean(false)
+    private val runtimeActivationAwaiter = RuntimeActivationAwaiter()
     private var autoStartJob: Job? = null
 
     // Duplicate triggers (boot + replaced racing) are merged into one job; the finally block
@@ -187,8 +193,76 @@ class AutoRestartService : Service() {
             }
         }
 
-        Timber.tag(TAG)
-            .i("Auto start triggered: reason=$reason profile=${activeProfile.name}, mode=$proxyMode")
+        val activation = awaitRuntimeActivation(proxyMode)
+        val startupLog =
+            RuntimeStartupLogStore(
+                this,
+                RuntimeStartupLogStore.scopeForMode(proxyMode),
+            )
+        when (activation) {
+            is RuntimeActivationResult.Running -> {
+                startupLog.append(
+                    "${RuntimeStartupLogStore.scopeForMode(proxyMode).tag} auto-start: running reason=$reason"
+                )
+                Timber.tag(TAG)
+                    .i(
+                        "Auto start active: reason=$reason profile=${activeProfile.name}, " +
+                            "mode=$proxyMode"
+                    )
+            }
+            is RuntimeActivationResult.Failed -> {
+                cleanupIncompleteRuntime(proxyMode)
+                val message = activation.error ?: "runtime entered Failed"
+                startupLog.append(
+                    "${RuntimeStartupLogStore.scopeForMode(proxyMode).tag} auto-start: failed " +
+                        "reason=$reason error=$message"
+                )
+                error(message)
+            }
+            is RuntimeActivationResult.TimedOut -> {
+                cleanupIncompleteRuntime(proxyMode)
+                val message =
+                    "runtime activation timed out in ${activation.lastState.phase}" +
+                        activation.lastState.error?.let { ": $it" }.orEmpty()
+                startupLog.append(
+                    "${RuntimeStartupLogStore.scopeForMode(proxyMode).tag} auto-start: timeout " +
+                        "reason=$reason phase=${activation.lastState.phase} " +
+                        "error=${activation.lastState.error}"
+                )
+                error(message)
+            }
+        }
+    }
+
+    private suspend fun awaitRuntimeActivation(mode: ProxyMode): RuntimeActivationResult =
+        runtimeActivationAwaiter.await(mode) {
+            when (mode) {
+                ProxyMode.RootTun -> {
+                    val status = RootTunServiceBridge.queryStatus(this)
+                    RootTunStatusFlow.update(status)
+                    RuntimeActivationState(
+                        phase = status.state,
+                        error = status.lastError,
+                    )
+                }
+                ProxyMode.Tun,
+                ProxyMode.Http ->
+                    RuntimeActivationState(
+                        phase = StatusProvider.queryRuntimePhase(mode),
+                    )
+            }
+        }
+
+    private suspend fun cleanupIncompleteRuntime(mode: ProxyMode) {
+        when (mode) {
+            ProxyMode.RootTun -> {
+                runCatching { RootTunServiceBridge.stop(this) }
+                RootTunService.stop(this)
+                StatusProvider.markRuntimeIdle(ProxyMode.RootTun)
+            }
+            ProxyMode.Tun,
+            ProxyMode.Http -> RuntimeServiceLauncher.stop(this, mode)
+        }
     }
 
     @Suppress("TooGenericExceptionCaught")

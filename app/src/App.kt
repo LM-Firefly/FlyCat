@@ -23,6 +23,7 @@ package com.github.yumelira.yumebox
 import android.app.Application
 import android.content.ComponentName
 import android.content.res.Configuration
+import com.github.yumelira.yumebox.common.runtime.StartupGate
 import com.github.yumelira.yumebox.common.util.AppLanguageManager
 import com.github.yumelira.yumebox.common.util.PlatformIdentifier
 import com.github.yumelira.yumebox.core.Global
@@ -68,6 +69,7 @@ class App : Application() {
         }
 
         Global.init(this)
+        StartupGate.loadPrimary()
         MMKV.initialize(this)
 
         // Runtime notifications/tiles jump to these activities; the runtime layer must not
