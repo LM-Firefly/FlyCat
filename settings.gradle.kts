@@ -46,6 +46,16 @@ pluginManagement {
     }
 }
 
+// The settings plugin classpath (gropify pulls in Jackson 3) resolves outside the root
+// project's buildscript block, so vulnerable-version floors are enforced here separately.
+buildscript {
+    configurations["classpath"].resolutionStrategy.eachDependency {
+        if (requested.group.startsWith("tools.jackson")) {
+            useVersion("3.1.4")
+        }
+    }
+}
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
 

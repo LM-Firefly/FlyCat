@@ -53,6 +53,24 @@ plugins {
     id("com.diffplug.spotless") version "8.7.0" apply false
 }
 
+// AGP-created tool configurations (unified-test-platform-*, androidLintTool) and test
+// classpaths resolve independently of the buildscript classpath above, so the same
+// vulnerable-version floors must be enforced on project configurations as well.
+allprojects {
+    configurations.configureEach {
+        resolutionStrategy.eachDependency {
+            when {
+                requested.group == "org.bouncycastle" -> useVersion("1.84")
+                requested.group == "io.netty" -> useVersion("4.1.135.Final")
+                requested.group == "org.apache.httpcomponents" &&
+                    requested.name == "httpclient" -> useVersion("4.5.14")
+                requested.group == "org.apache.commons" && requested.name == "commons-lang3" ->
+                    useVersion("3.20.0")
+            }
+        }
+    }
+}
+
 val androidCompileSdk = providers.gradleProperty("android.compileSdk").map(String::toInt).get()
 val androidCompileSdkMinor =
     providers.gradleProperty("android.compileSdkMinor").map(String::toInt).orElse(0).get()
