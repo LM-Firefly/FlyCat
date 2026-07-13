@@ -25,10 +25,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -36,6 +39,8 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
@@ -51,8 +56,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Dp
 import androidx.core.net.toUri
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
@@ -135,6 +144,14 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val bottomBarBackground =
         MiuixTheme.colorScheme.run {
             surface.takeIf { background.luminance() < 0.5f } ?: background
+        }
+    // Key off the actual theme background, not isSystemInDarkTheme(): the in-app theme can
+    // disagree with the system setting, and a white scrim on a dark UI is glaring.
+    val bottomBarScrimColor =
+        if (MiuixTheme.colorScheme.background.luminance() < 0.5f) {
+            bottomBarBackground
+        } else {
+            Color.White
         }
     val opacity = AppTheme.opacity
     val bottomBarHazeStyle =
@@ -270,6 +287,12 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                     )
                 }
 
+                BottomEdgeScrim(
+                    color = bottomBarScrimColor,
+                    visible = bottomBarVisible && bottomBarScrollBehavior.isBottomBarVisible,
+                    height = visibleBottomBarReservedHeight + UiDp.dp28,
+                )
+
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -280,6 +303,36 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
             }
         }
     }
+}
+
+// Edge fade behind the floating nav bar: page content scrolling into the bottom of the screen
+// dissolves into the page background (white in light theme) instead of colliding with the bar
+// and the system navigation area. Transparent at the top, opaque at the screen edge; purely
+// decorative, so it never intercepts touch input.
+@Composable
+private fun BoxScope.BottomEdgeScrim(color: Color, visible: Boolean, height: Dp) {
+    val alpha by
+        animateFloatAsState(
+            targetValue = if (visible) 1f else 0f,
+            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+            label = "main_bottom_edge_scrim",
+        )
+    if (alpha <= 0f) return
+    Box(
+        modifier =
+            Modifier.align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(height)
+                .graphicsLayer { this.alpha = alpha }
+                .background(
+                    Brush.verticalGradient(
+                        0f to color.copy(alpha = 0f),
+                        0.25f to color.copy(alpha = 0.55f),
+                        0.55f to color.copy(alpha = 0.88f),
+                        1f to color,
+                    )
+                )
+    )
 }
 
 @Composable

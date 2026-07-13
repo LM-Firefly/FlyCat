@@ -22,7 +22,6 @@ package com.github.yumelira.yumebox.presentation.component
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateFloatAsState
@@ -70,7 +69,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.White
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
@@ -177,7 +175,6 @@ object MainBottomBarDefaults {
     val HorizontalPadding = UiDp.dp48
     val TopPadding = UiDp.dp6
     val FloatingBottomPadding = UiDp.dp12
-    val EnterOffset = UiDp.dp68
     val ExitOffset = UiDp.dp84
     val FloatingReservedHeight = UiDp.dp68
     val PagerAnimationSpec: AnimationSpec<Float> =
@@ -246,26 +243,9 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
     val bottomBarVisible = isVisible && (bottomBarScrollBehavior?.isBottomBarVisible ?: true)
     val density = LocalDensity.current
     val opacity = AppTheme.opacity
-    val enterOffsetPx =
-        remember(density) { with(density) { MainBottomBarDefaults.EnterOffset.toPx() } }
     val exitOffsetPx =
         remember(density) { with(density) { MainBottomBarDefaults.ExitOffset.toPx() } }
     val animatedTranslationY = remember { Animatable(if (bottomBarVisible) 0f else exitOffsetPx) }
-    val animatedScale by
-        animateFloatAsState(
-            targetValue = if (bottomBarVisible) 1f else 0.98f,
-            animationSpec =
-                tween(
-                    durationMillis = 240,
-                    easing =
-                        if (bottomBarVisible) {
-                            AnimationSpecs.EmphasizedDecelerate
-                        } else {
-                            AnimationSpecs.EmphasizedAccelerate
-                        },
-                ),
-            label = "legacy_bottom_bar_scale",
-        )
     val animatedAlpha by
         animateFloatAsState(
             targetValue = if (bottomBarVisible) 1f else 0f,
@@ -282,12 +262,12 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
             label = "legacy_bottom_bar_alpha",
         )
 
-    LaunchedEffect(bottomBarVisible, enterOffsetPx, exitOffsetPx) {
+    LaunchedEffect(bottomBarVisible, exitOffsetPx) {
         if (bottomBarVisible) {
-            animatedTranslationY.snapTo(enterOffsetPx)
             animatedTranslationY.animateTo(
                 targetValue = 0f,
-                animationSpec = spring(dampingRatio = 0.78f, stiffness = 520f),
+                animationSpec =
+                    tween(durationMillis = 280, easing = AnimationSpecs.EmphasizedDecelerate),
             )
         } else {
             animatedTranslationY.animateTo(
@@ -317,7 +297,6 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
     val indicatorContainerColor = selectedColor.copy(alpha = opacity.subtle)
 
     LegacyBottomNavigationBar(
-        selectedIndex = page,
         indicatorProgress = indicatorProgress,
         tabsCount = BottomBarDestination.entries.size,
         containerColor = containerColor,
@@ -332,10 +311,7 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
                 )
                 .graphicsLayer {
                     alpha = animatedAlpha
-                    scaleX = animatedScale
-                    scaleY = animatedScale
                     translationY = animatedTranslationY.value
-                    transformOrigin = TransformOrigin(0.5f, 1f)
                 },
     ) {
         BottomBarDestination.entries.forEachIndexed { index, destination ->
@@ -368,7 +344,6 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
 
 @Composable
 private fun LegacyBottomNavigationBar(
-    selectedIndex: Int,
     indicatorProgress: Float,
     tabsCount: Int,
     containerColor: Color,
@@ -381,7 +356,6 @@ private fun LegacyBottomNavigationBar(
     val isLightTheme = !isSystemInDarkTheme()
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val surfaceWidthPx = remember { mutableIntStateOf(0) }
-    val safeSelectedIndex = selectedIndex.coerceIn(0, tabsCount - 1)
     val safeIndicatorProgress = indicatorProgress.coerceIn(0f, (tabsCount - 1).toFloat())
     val contentInsetPx = with(density) { (UiDp.dp4 * 2).toPx() }
     val innerWidthPx = (surfaceWidthPx.intValue - contentInsetPx).coerceAtLeast(0f)
@@ -392,7 +366,6 @@ private fun LegacyBottomNavigationBar(
         } else {
             innerWidthPx - (safeIndicatorProgress + 1f) * tabWidthPx
         }
-    val indicatorScale = remember { Animatable(1f) }
     val borderShadowColor =
         if (isLightTheme) {
             // White capsule on the near-white page (surface #F7F7F7) has almost no tonal
@@ -416,13 +389,6 @@ private fun LegacyBottomNavigationBar(
             White.copy(alpha = opacity.verySubtle)
         }
 
-    LaunchedEffect(safeSelectedIndex) {
-        launch {
-            indicatorScale.animateTo(0.9f, tween(120, easing = FastOutSlowInEasing))
-            indicatorScale.animateTo(1f, tween(220, easing = FastOutSlowInEasing))
-        }
-    }
-
     Box(
         modifier =
             modifier
@@ -444,7 +410,6 @@ private fun LegacyBottomNavigationBar(
                 modifier = Modifier.padding(UiDp.dp4).align(Alignment.CenterStart),
                 indicatorOffsetPx = indicatorOffsetPx,
                 indicatorWidthPx = tabWidthPx,
-                indicatorScale = indicatorScale.value,
                 indicatorContainerColor = indicatorContainerColor,
             )
         }
@@ -471,7 +436,6 @@ private fun LegacyBottomNavigationIndicator(
     modifier: Modifier = Modifier,
     indicatorOffsetPx: Float,
     indicatorWidthPx: Float,
-    indicatorScale: Float,
     indicatorContainerColor: Color,
 ) {
     val density = LocalDensity.current
@@ -481,10 +445,6 @@ private fun LegacyBottomNavigationIndicator(
                 .offset { IntOffset(indicatorOffsetPx.roundToInt(), 0) }
                 .width(with(density) { indicatorWidthPx.toDp() })
                 .height(UiDp.dp48)
-                .graphicsLayer {
-                    scaleX = indicatorScale
-                    scaleY = indicatorScale
-                }
                 .background(indicatorContainerColor, Capsule())
     )
 }

@@ -50,7 +50,7 @@ require (
 	github.com/metacubex/amneziawg-go v0.0.0-20260612143004-19b4f1cdd5ec // indirect
 	github.com/metacubex/ascon v0.1.0 // indirect
 	github.com/metacubex/bart v0.26.0 // indirect
-	github.com/metacubex/bbolt v0.0.0-20260628143611-ef0ff34681c8 // indirect
+	github.com/metacubex/bbolt v0.0.0-20260706163408-d4ec34ad7c48 // indirect
 	github.com/metacubex/blake3 v0.1.0 // indirect
 	github.com/metacubex/chacha v0.1.5 // indirect
 	github.com/metacubex/chi v0.1.1 // indirect
@@ -63,6 +63,8 @@ require (
 	github.com/metacubex/hkdf v0.1.0 // indirect
 	github.com/metacubex/hpke v0.1.0 // indirect
 	github.com/metacubex/http v0.1.6 // indirect
+	github.com/metacubex/jls-quic-go v0.0.0-20260712113821-d34e6f9b4c7f // indirect
+	github.com/metacubex/jls-tls v0.0.0-20260712171131-15870a03ac51 // indirect
 	github.com/metacubex/jsonv2 v0.0.0-20260518173308-f4597c22f1df // indirect
 	github.com/metacubex/kcp-go v0.0.0-20260105040817-550693377604 // indirect
 	github.com/metacubex/mhurl v0.1.0 // indirect
@@ -72,7 +74,7 @@ require (
 	github.com/metacubex/qpack v0.6.0 // indirect
 	github.com/metacubex/quic-go v0.59.1-0.20260606115121-0662b57ad5bf // indirect
 	github.com/metacubex/randv2 v0.2.0 // indirect
-	github.com/metacubex/restls-client-go v0.1.7 // indirect
+	github.com/metacubex/restls-client-go v0.1.8 // indirect
 	github.com/metacubex/sevenzip v1.6.4 // indirect
 	github.com/metacubex/sing v0.5.7 // indirect
 	github.com/metacubex/sing-mux v0.3.10 // indirect
@@ -85,7 +87,7 @@ require (
 	github.com/metacubex/sing-wireguard v0.0.0-20260520151737-7e7c7c1b854c // indirect
 	github.com/metacubex/smux v0.0.0-20260105030934-d0c8756d3141 // indirect
 	github.com/metacubex/ssh v0.1.0 // indirect
-	github.com/metacubex/tailscale v0.0.0-20260623094802-1ab893d4162c // indirect
+	github.com/metacubex/tailscale v0.0.0-20260711142031-e2257fe61058 // indirect
 	github.com/metacubex/tailscale-wireguard-go v0.0.0-20260623093519-06ea214022e4 // indirect
 	github.com/metacubex/tfo-go v0.0.0-20260623020846-376a77860b8c // indirect
 	github.com/metacubex/tls v0.1.7 // indirect
