@@ -2,7 +2,6 @@
 soraEditor = "0.24.6"
 composeBom = "2026.06.00"
 desugarJdkLibs = "2.1.5"
-apksig = "9.2.1"
 coroutines = "1.11.0"
 serializationJson = "1.11.0"
 annotationJvm = "1.10.0"
@@ -89,7 +88,6 @@ aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref
 aboutlibraries-compose = { module = "com.mikepenz:aboutlibraries-compose", version.ref = "aboutLibraries" }
 hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenApiBypass" }
 shapes = { module = "io.github.kyant0:shapes", version.ref = "shapes" }
-apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
 snake-yaml = { module = "com.github.bmoliveira:snake-yaml", version.ref = "snakeYaml" }
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 javet-node-android = { module = "com.caoccao.javet:javet-node-android", version.ref = "javetNodeAndroid" }

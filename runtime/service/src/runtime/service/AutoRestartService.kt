@@ -79,7 +79,7 @@ class AutoRestartService : Service() {
     private val serviceCache by lazy { mmkvProvider.getMMKV("service_cache") }
     private val profileManager by lazy { ProfileManager(applicationContext) }
     private val foregroundStarted = AtomicBoolean(false)
-    private val runtimeActivationAwaiter = RuntimeActivationAwaiter()
+    private val activationAwaiter = RuntimeActivationAwaiter()
     private var autoStartJob: Job? = null
 
     // Duplicate triggers (boot + replaced racing) are merged into one job; the finally block
@@ -132,7 +132,11 @@ class AutoRestartService : Service() {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
                 else -> 0
             }
-        startForeground(NOTIFICATION_ID, notification, foregroundFlags)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, foregroundFlags)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     private suspend fun checkAndAutoStart(reason: String) {
@@ -193,17 +197,17 @@ class AutoRestartService : Service() {
             }
         }
 
-        val activation = awaitRuntimeActivation(proxyMode)
-        val startupLog =
-            RuntimeStartupLogStore(
-                this,
-                RuntimeStartupLogStore.scopeForMode(proxyMode),
-            )
-        when (activation) {
+        val activationResult =
+            runCatching { awaitRuntimeActivation(proxyMode) }
+                .getOrElse { error ->
+                    cleanupIncompleteRuntime(proxyMode)
+                    throw error
+                }
+        val logScope = RuntimeStartupLogStore.scopeForMode(proxyMode)
+        val startupLogStore = RuntimeStartupLogStore(this, logScope)
+        when (activationResult) {
             is RuntimeActivationResult.Running -> {
-                startupLog.append(
-                    "${RuntimeStartupLogStore.scopeForMode(proxyMode).tag} auto-start: running reason=$reason"
-                )
+                startupLogStore.append("${logScope.tag} auto-start: running reason=$reason")
                 Timber.tag(TAG)
                     .i(
                         "Auto start active: reason=$reason profile=${activeProfile.name}, " +
@@ -212,22 +216,21 @@ class AutoRestartService : Service() {
             }
             is RuntimeActivationResult.Failed -> {
                 cleanupIncompleteRuntime(proxyMode)
-                val message = activation.error ?: "runtime entered Failed"
-                startupLog.append(
-                    "${RuntimeStartupLogStore.scopeForMode(proxyMode).tag} auto-start: failed " +
-                        "reason=$reason error=$message"
+                val message = activationResult.error ?: "runtime entered Failed"
+                startupLogStore.append(
+                    "${logScope.tag} auto-start: failed reason=$reason error=$message"
                 )
                 error(message)
             }
             is RuntimeActivationResult.TimedOut -> {
                 cleanupIncompleteRuntime(proxyMode)
                 val message =
-                    "runtime activation timed out in ${activation.lastState.phase}" +
-                        activation.lastState.error?.let { ": $it" }.orEmpty()
-                startupLog.append(
-                    "${RuntimeStartupLogStore.scopeForMode(proxyMode).tag} auto-start: timeout " +
-                        "reason=$reason phase=${activation.lastState.phase} " +
-                        "error=${activation.lastState.error}"
+                    "runtime activation timed out in ${activationResult.lastState.phase}" +
+                        activationResult.lastState.error?.let { ": $it" }.orEmpty()
+                startupLogStore.append(
+                    "${logScope.tag} auto-start: timeout reason=$reason " +
+                        "phase=${activationResult.lastState.phase} " +
+                        "error=${activationResult.lastState.error}"
                 )
                 error(message)
             }
@@ -235,16 +238,17 @@ class AutoRestartService : Service() {
     }
 
     private suspend fun awaitRuntimeActivation(mode: ProxyMode): RuntimeActivationResult =
-        runtimeActivationAwaiter.await(mode) {
+        activationAwaiter.await(mode) {
             when (mode) {
-                ProxyMode.RootTun -> {
-                    val status = RootTunServiceBridge.queryStatus(this)
-                    RootTunStatusFlow.update(status)
-                    RuntimeActivationState(
-                        phase = status.state,
-                        error = status.lastError,
-                    )
-                }
+                ProxyMode.RootTun ->
+                    RootTunServiceBridge.queryStatus(this)
+                        .also(RootTunStatusFlow::update)
+                        .let { status ->
+                            RuntimeActivationState(
+                                phase = status.state,
+                                error = status.lastError,
+                            )
+                        }
                 ProxyMode.Tun,
                 ProxyMode.Http ->
                     RuntimeActivationState(

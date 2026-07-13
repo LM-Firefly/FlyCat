@@ -44,30 +44,27 @@ object RuntimeServiceLauncher {
         require(mode != ProxyMode.RootTun) { "RuntimeServiceLauncher does not start RootTun" }
 
         val appContext = context.appContextOrSelf
-        val store = RuntimeStartupLogStore(appContext, RuntimeStartupLogStore.scopeForMode(mode))
-        store.clear()
-        store.append(
-            "${RuntimeStartupLogStore.scopeForMode(mode).tag} launcher: request start source=$source mode=${mode.name}"
+        val logScope = RuntimeStartupLogStore.scopeForMode(mode)
+        val startupLogStore = RuntimeStartupLogStore(appContext, logScope)
+        startupLogStore.clear()
+        startupLogStore.append(
+            "${logScope.tag} launcher: request start source=$source mode=${mode.name}"
         )
 
         if (RemoteControllerStore.isActive()) {
-            store.append(
-                "${RuntimeStartupLogStore.scopeForMode(mode).tag} launcher: skipped, remote controller active"
-            )
+            startupLogStore.append("${logScope.tag} launcher: skipped, remote controller active")
             return
         }
 
         // A redundant start against an already-running service would re-mark the persisted
         // phase as Starting with nothing to flip it back to Running afterwards.
         if (StatusProvider.queryRuntimePhase(mode) == RuntimePhase.Running) {
-            store.append(
-                "${RuntimeStartupLogStore.scopeForMode(mode).tag} launcher: skipped, already running"
-            )
+            startupLogStore.append("${logScope.tag} launcher: skipped, already running")
             return
         }
 
         if (mode == ProxyMode.Tun && StatusProvider.isTunStarting()) {
-            store.append("LOCAL_TUN launcher: skipped, already starting")
+            startupLogStore.append("LOCAL_TUN launcher: skipped, already starting")
             return
         }
 
@@ -76,8 +73,8 @@ object RuntimeServiceLauncher {
         // otherwise the new session tears the core down underneath the old foreground service.
         val otherMode = if (mode == ProxyMode.Tun) ProxyMode.Http else ProxyMode.Tun
         if (StatusProvider.queryRuntimePhase(otherMode).isNotIdle) {
-            store.append(
-                "${RuntimeStartupLogStore.scopeForMode(mode).tag} launcher: stopping previous ${otherMode.name} runtime"
+            startupLogStore.append(
+                "${logScope.tag} launcher: stopping previous ${otherMode.name} runtime"
             )
             runCatching { appContext.stopService(Intent(appContext, serviceClassFor(otherMode))) }
         }
@@ -96,9 +93,7 @@ object RuntimeServiceLauncher {
                     StatusProvider.clearTunStarting()
                 }
                 StatusProvider.markRuntimeIdle(mode)
-                store.append(
-                    "${RuntimeStartupLogStore.scopeForMode(mode).tag} launcher: failed=${error.message}"
-                )
+                startupLogStore.append("${logScope.tag} launcher: failed=${error.message}")
                 throw error
             }
     }
