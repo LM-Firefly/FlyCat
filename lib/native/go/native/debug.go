@@ -11,8 +11,8 @@ import (
 
 func init() {
 	go func() {
-		log.Debugln("pprof service listen at: 0.0.0.0:8888")
+		log.Debugln("pprof service listen at: 127.0.0.1:8888")
 
-		_ = http.ListenAndServe("0.0.0.0:8888", nil)
+		_ = http.ListenAndServe("127.0.0.1:8888", nil)
 	}()
 }

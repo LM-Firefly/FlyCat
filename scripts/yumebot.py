@@ -1,6 +1,7 @@
 import requests
 import os
 import glob
+import re
 import shutil
 import subprocess  # nosec B404 - only runs fixed git commands from CI env
 import html
@@ -29,9 +30,13 @@ COMMIT_MESSAGE = os.environ.get("COMMIT_MESSAGE", "")
 def get_commit_message():
     msg = (COMMIT_MESSAGE or "").strip()
     if not msg and COMMIT_SHA:
+        if not re.fullmatch(r"[0-9a-fA-F]{7,64}", COMMIT_SHA):
+            print("[-] COMMIT_SHA is not a valid git sha, skipping git log")
+            return msg
         git = shutil.which("git") or "git"
         try:
-            result = subprocess.run(  # noqa: S603 - fixed git command, sha from CI env
+            # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit, python.lang.security.audit.dangerous-subprocess-use-tainted-env-args.dangerous-subprocess-use-tainted-env-args
+            result = subprocess.run(  # noqa: S603 # nosec B603 - fixed git argv, sha validated above
                 [git, "log", "-1", "--format=%B", COMMIT_SHA],
                 cwd=os.environ.get("GITHUB_WORKSPACE") or ".",
                 capture_output=True, text=True, timeout=15,

@@ -1,4 +1,5 @@
 #include <jni.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "bridge_helper.h"
@@ -177,8 +178,7 @@ static void copy_error_message(char *error, int error_length, const char *messag
     if (message == NULL) {
         message = "unknown";
     }
-    strncpy(error, message, error_length - 1); /* flawfinder: ignore - bounded copy, NUL-terminated on the next line */
-    error[error_length - 1] = '\0';
+    snprintf(error, (size_t) error_length, "%s", message);
 }
 
 static int open_content_impl(const char *url, char *error, int error_length) {

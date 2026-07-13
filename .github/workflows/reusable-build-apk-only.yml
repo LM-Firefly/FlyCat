@@ -66,13 +66,13 @@ jobs:
           java-version: "24"
 
       - name: Setup Kotlin
-        uses: fwilhe2/setup-kotlin@main
+        uses: fwilhe2/setup-kotlin@88d53291848568823e529973af5d0cdb8ddf8d87 # main
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
         with:
           packages: ""
 

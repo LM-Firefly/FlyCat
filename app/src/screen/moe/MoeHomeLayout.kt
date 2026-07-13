@@ -193,12 +193,10 @@ private fun BoxScope.MoeHero(state: MoeHomeLayoutState, scale: Float) {
         Box(
             Modifier.matchParentSize().background(
                 Brush.verticalGradient(
-                    *arrayOf(
-                        0f to Color.Transparent,
-                        0.64f to Color.Transparent,
-                        0.80f to state.contentSurface.copy(alpha = 0.90f),
-                        1f to state.contentSurface,
-                    )
+                    0f to Color.Transparent,
+                    0.64f to Color.Transparent,
+                    0.80f to state.contentSurface.copy(alpha = 0.90f),
+                    1f to state.contentSurface,
                 )
             )
         )

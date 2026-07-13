@@ -29,7 +29,7 @@ jobs:
           java-version: "24"
 
       - name: Setup Kotlin
-        uses: fwilhe2/setup-kotlin@main
+        uses: fwilhe2/setup-kotlin@88d53291848568823e529973af5d0cdb8ddf8d87 # main
 
       - name: Build geo assets
         run: kotlin scripts/native-build.main.kts --geo
