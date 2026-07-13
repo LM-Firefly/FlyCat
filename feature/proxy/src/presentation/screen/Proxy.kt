@@ -41,6 +41,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -93,9 +95,45 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.abs
 
 private fun LazyListState.isScrolledFromTop(): Boolean =
     firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
+
+// animateScrollToItem races across arbitrary distances at full speed, so locating a far-away
+// node reads as a blink. Cap the animated stretch at roughly one viewport: snap silently to
+// just outside it, then glide the remainder in with a fixed-duration decelerating tween.
+private suspend fun LazyListState.animateLocateToItem(targetIndex: Int) {
+    if (layoutInfo.visibleItemsInfo.isEmpty()) {
+        scrollToItem(targetIndex)
+        return
+    }
+    val viewport = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
+    val visible = layoutInfo.visibleItemsInfo
+    val avgItemSize =
+        (visible.sumOf { it.size } / visible.size + layoutInfo.mainAxisItemSpacing).coerceAtLeast(1)
+    val approachItems = viewport / avgItemSize + 1
+    val distanceItems = targetIndex - firstVisibleItemIndex
+    if (abs(distanceItems) > approachItems) {
+        val preIndex =
+            if (distanceItems > 0) targetIndex - approachItems else targetIndex + approachItems
+        scrollToItem(preIndex.coerceAtLeast(0))
+    }
+    val remaining =
+        layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset?.toFloat()
+            ?: ((targetIndex - firstVisibleItemIndex) * avgItemSize.toFloat() -
+                firstVisibleItemScrollOffset)
+    animateScrollBy(
+        value = remaining,
+        animationSpec = tween(durationMillis = 650, easing = AnimationSpecs.EmphasizedDecelerate),
+    )
+    // Node cards are uniform so the estimate lands exactly; settle any residual drift quietly.
+    val residual = layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset
+    when {
+        residual == null -> scrollToItem(targetIndex)
+        residual != 0 -> scrollBy(residual.toFloat())
+    }
+}
 
 @Composable
 fun ProxyPager(
@@ -154,7 +192,7 @@ fun ProxyPager(
                             group.proxies.indexOfFirst { proxy -> proxy.name == group.now }
                         if (proxyIndex < 0) return
                         coroutineScope.launch {
-                            nodeListState.animateScrollToItem(proxyIndex + 1)
+                            nodeListState.animateLocateToItem(proxyIndex + 1)
                         }
                     }
                 }
