@@ -36,7 +36,7 @@
           {
             "group": "覆写",
             "pages": [
-              "/override/index",
+              "/override/override",
               "/override/fields"
             ]
           },
@@ -138,7 +138,7 @@
     "primary": {
       "type": "button",
       "label": "Github",
-      "href": "https://github.com/YumeRiMoe/YumeBox"
+      "href": "https://github.com/YumeYucca/YumeBox"
     }
   },
   "contextual": {
@@ -176,7 +176,7 @@
       "application-name": "YumeBox",
       "msapplication-TileColor": "#f56c6c",
       "og:type": "website",
-      "og:image": "/logo/Yume.webp",
+      "og:image": "https://yumebox.gal.tf/logo/Yume.webp",
       "og:site_name": "YumeBox",
       "og:locale": "en_US"
     },
