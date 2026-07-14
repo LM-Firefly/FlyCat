@@ -23,7 +23,7 @@ VERSION_CODE = os.environ.get("VERSION_CODE", "")
 RELEASE_URL = os.environ.get("RELEASE_URL", "")
 META_URL = os.environ.get("META_URL", "")
 PUBLISH_DIR = os.environ.get("PUBLISH_DIR", "")
-LOGO_URL = os.environ.get("LOGO_URL", "https://yumebox.oom-wg.dev/logo/Yume.webp")
+LOGO_URL = os.environ.get("LOGO_URL", "https://yumebox.gal.tf/logo/Yume.webp")
 COMMIT_MESSAGE = os.environ.get("COMMIT_MESSAGE", "")
 
 

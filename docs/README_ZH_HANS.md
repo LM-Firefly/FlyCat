@@ -2,13 +2,15 @@
 
 **简体中文** | [English](README.md)
 
-<img src="logo.webp" style="width: 96px;" alt="logo">
+<img src="logo.webp" width="96" alt="YumeBox logo">
 
-## YumeBox
+# YumeBox
 
 [![Latest release](https://img.shields.io/github/v/release/YumeYucca/YumeBox?style=flat-square&label=Release&logo=github)](https://github.com/YumeYucca/YumeBox/releases/latest) [![GitHub License](https://img.shields.io/github/license/YumeYucca/YumeBox?style=flat-square&logo=gnu)](/LICENSE) ![Downloads](https://img.shields.io/github/downloads/YumeYucca/YumeBox/total?style=flat-square) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/731d810dd0f6423bb61b7c140653bc32)](https://app.codacy.com/gh/YumeYucca/YumeBox/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 **一个基于 [mihomo](https://github.com/MetaCubeX/mihomo) 内核的开源 Android 客户端**
+
+[官方文档](https://yumebox.gal.tf) · [下载](https://github.com/YumeYucca/YumeBox/releases) · [反馈](https://github.com/YumeYucca/YumeBox/issues) · [Telegram 群组](https://t.me/OOM_Group)
 
 </div>
 
@@ -16,27 +18,29 @@
 
 YumeBox 目前仅支持 **Android 8.0（API 26）及以上系统**。
 
-请前往 Release 页面下载对应架构的安装包：[Release](https://github.com/YumeYucca/YumeBox/releases)更多内容请访问官网：[YumeBox](https://yumebox.oom-wg.dev)
-覆写配置语法参考：[override 文档](https://yumebox.oom-wg.dev/override?utm_source=chatgpt.com)如果这个项目对你有帮助，请点下 Star ，这是持续更新的动力
+- 前往 [Release](https://github.com/YumeYucca/YumeBox/releases) 页面下载对应架构的安装包
+- 更多内容请访问官方文档：[yumebox.gal.tf](https://yumebox.gal.tf)
+- 覆写配置语法参考：[覆写文档](https://yumebox.gal.tf/override/override)
+
+如果这个项目对你有帮助，请点一个 Star，这是持续更新的动力。
 
 ### 反馈与建议
 
-如果遇到 Bug，请在 Issues 页面提交：
-[Issues](https://github.com/YumeYucca/YumeBox/issues)
+如果遇到 Bug，或有想法与改进建议，请在 [Issues](https://github.com/YumeYucca/YumeBox/issues) 页面提交。
 
-有想法或改进建议也可以在这里提出
 更多讨论与反馈可加入群组：[@OOM_WG](https://t.me/OOM_Group)
 
 ### 参与贡献
 
-如果您希望将 YumeBox 变的更好，请参阅 [CONTRIBUTING](CONTRIBUTING.md),如果希望将 YumeBox 翻译为更多语言，或改进现有翻译，请
-Fork 本项目，并在 `locale/lang` 目录下创建或更新对应的翻译文件。
+如果您希望让 YumeBox 变得更好，请参阅 [CONTRIBUTING](../CONTRIBUTING.md)。
 
-### 特别
+如果希望将 YumeBox 翻译为更多语言，或改进现有翻译，请 Fork 本项目，并在 `locale/lang` 目录下创建或更新对应的翻译文件。
+
+### 特别声明
 
 > ~~作者对这个项目中的代码一无所知。代码处于可用或不可用状态，没有第三种情况。~~
 
-以及该项目中使用的 [第三方](ThirdParty.md) 库。
+本项目使用的第三方库见 [ThirdParty](ThirdParty.md)。
 
 1. **图标版权**：YumeBox 应用图标及品牌标识的版权归项目所有者所有
 2. **Fork 发行版限制**：
