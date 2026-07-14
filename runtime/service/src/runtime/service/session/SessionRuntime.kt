@@ -43,10 +43,8 @@ import com.github.yumelira.yumebox.runtime.service.root.rootTunEncode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 import java.util.TimeZone
@@ -69,8 +67,6 @@ class SessionRuntime(
     private var currentSpec: RuntimeSpec? = null
     @Volatile private var currentSnapshot: RuntimeSnapshot = RuntimeSnapshot(targetMode = host.mode)
     private var networkObserver: ServiceNetworkObserver? = null
-    private var powerController: ServicePowerController? = null
-    private var suspendJob: Job? = null
     private var timeZoneReceiver: BroadcastReceiver? = null
     private val queryCache = SessionRuntimeQueryCache()
     private val telemetry =
@@ -545,20 +541,6 @@ class SessionRuntime(
                     }
                     .also { it.start() }
         }
-        if (powerController == null) {
-            val controller = ServicePowerController(appContext).also { it.start() }
-            powerController = controller
-            suspendJob = scope.launch {
-                var suspended = false
-                controller.screenOn.collect { screenOn ->
-                    val shouldSuspend = !screenOn
-                    if (shouldSuspend != suspended) {
-                        suspended = shouldSuspend
-                        runCatching { Clash.suspendCore(shouldSuspend) }
-                    }
-                }
-            }
-        }
         if (timeZoneReceiver == null) {
             val receiver =
                 object : BroadcastReceiver() {
@@ -581,16 +563,10 @@ class SessionRuntime(
     private fun stopObservers() {
         runCatching { networkObserver?.stop() }
         networkObserver = null
-        suspendJob?.cancel()
-        suspendJob = null
-        runCatching { powerController?.stop() }
-        powerController = null
         timeZoneReceiver?.let { receiver ->
             runCatching { host.context.appContextOrSelf.unregisterReceiver(receiver) }
         }
         timeZoneReceiver = null
-        // Mirrors the legacy suspend behavior: never leave the core suspended after stop.
-        runCatching { Clash.suspendCore(false) }
     }
 
     private fun notifyCurrentTimeZone() {

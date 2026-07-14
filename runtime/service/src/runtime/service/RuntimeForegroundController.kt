@@ -79,7 +79,7 @@ class RuntimeForegroundController(
     private var notificationJob: Job? = null
     private var runtime: SessionRuntime? = null
     private var reloadJob: Job? = null
-    private var stopRequested = false
+    @Volatile private var stopRequested = false
 
     private val runtimeEventsReceiver =
         object : BroadcastReceiver() {
@@ -89,26 +89,7 @@ class RuntimeForegroundController(
                     Intents.ACTION_OVERRIDE_CHANGED -> scheduleReload()
 
                     Intents.ACTION_CLASH_REQUEST_STOP -> {
-                        if (stopRequested) return
-                        reason = intent.getStringExtra(Intents.EXTRA_STOP_REASON)
-                        stopRequested = true
-                        reloadJob?.cancel()
-                        reloadJob = null
-                        StatusProvider.markRuntimeStopping(mode)
-                        notificationJob?.cancel()
-                        notificationJob = null
-                        thread(name = "session-runtime-stop") {
-                            val stopResult = runtime?.stop(reason)
-                            if (stopResult?.success == false) {
-                                val error = stopResult.error ?: "${label.lowercase()} runtime stop failed"
-                                this@RuntimeForegroundController.reason = error
-                                StatusProvider.markRuntimeFailed(mode)
-                                service.sendClashStopped(error)
-                                Timber.e("$label runtime stop failed: $error")
-                            }
-                            stopForegroundService()
-                            service.stopSelf()
-                        }
+                        requestStop(intent.getStringExtra(Intents.EXTRA_STOP_REASON))
                     }
                 }
             }
@@ -215,6 +196,10 @@ class RuntimeForegroundController(
         return Service.START_STICKY
     }
 
+    fun onVpnRevoked() {
+        requestStop("VPN connection revoked by system")
+    }
+
     fun onDestroy() {
         runCatching { service.unregisterReceiver(runtimeEventsReceiver) }
         reloadJob?.cancel()
@@ -250,6 +235,29 @@ class RuntimeForegroundController(
 
     fun onTrimMemory() {
         com.github.yumelira.yumebox.core.Clash.forceGc()
+    }
+
+    private fun requestStop(stopReason: String?) {
+        if (stopRequested) return
+        stopRequested = true
+        reason = stopReason
+        reloadJob?.cancel()
+        reloadJob = null
+        StatusProvider.markRuntimeStopping(mode)
+        notificationJob?.cancel()
+        notificationJob = null
+        thread(name = "session-runtime-stop") {
+            val stopResult = runtime?.stop(reason)
+            if (stopResult?.success == false) {
+                val error = stopResult.error ?: "${label.lowercase()} runtime stop failed"
+                this@RuntimeForegroundController.reason = error
+                StatusProvider.markRuntimeFailed(mode)
+                service.sendClashStopped(error)
+                Timber.e("$label runtime stop failed: $error")
+            }
+            stopForegroundService()
+            service.stopSelf()
+        }
     }
 
     private fun registerRuntimeReceiver() {

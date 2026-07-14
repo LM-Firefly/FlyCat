@@ -61,6 +61,11 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         cancelAndJoinBlocking()
     }
 
+    override fun onRevoke() {
+        controller.onVpnRevoked()
+        super.onRevoke()
+    }
+
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         controller.onTrimMemory()
