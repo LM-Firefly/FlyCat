@@ -51,6 +51,7 @@ import com.github.yumelira.yumebox.screen.home.HomeProxyControlState
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.getRoundedCorner
 
 internal data class MoeHomeLayoutState(
     val wallpaperUri: String,
@@ -138,7 +139,8 @@ private fun MoeHomePanel(
     heroHeight: Dp,
     sidebar: Float,
 ) {
-    val corner = lerpDp(UiDp.dp0, UiDp.dp30, sidebar)
+    val screenCorner = getRoundedCorner()
+    val corner = lerpDp(UiDp.dp0, screenCorner, sidebar)
     val heroScale =
         if (state.pageProgress >= 0.999f) 1f
         else lerpFloat(1f, 0.965f, FastOutSlowInEasing.transform(1f - state.pageProgress.coerceIn(0f, 1f)))
@@ -146,7 +148,11 @@ private fun MoeHomePanel(
         Modifier.fillMaxSize()
             .padding(start = lerpDp(UiDp.dp0, contentStart, sidebar))
             .graphicsLayer {
-                shape = RoundedCornerShape(topStart = corner, bottomStart = corner)
+                shape =
+                    RoundedCornerShape(
+                        topStart = corner,
+                        bottomStart = corner,
+                    )
                 clip = true
             }
             .background(state.contentSurface)
