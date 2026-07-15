@@ -23,6 +23,7 @@ package com.github.yumelira.yumebox.screen.settings
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.yumelira.yumebox.common.util.stateInWhileSubscribed
 import com.github.yumelira.yumebox.data.model.RemoteBackend
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
 import com.github.yumelira.yumebox.data.store.add
@@ -33,10 +34,8 @@ import com.github.yumelira.yumebox.runtime.client.manager.HttpClashManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -47,25 +46,13 @@ class RemoteControllerViewModel(
 ) : AndroidViewModel(application) {
 
     val controllerEnabled: StateFlow<Boolean> =
-        store.controllerEnabled.state.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = store.controllerEnabled.value,
-        )
+        store.controllerEnabled.state.stateInWhileSubscribed(viewModelScope, store.controllerEnabled.value)
 
     val backends: StateFlow<List<RemoteBackend>> =
-        store.backends.state.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = store.backends.value,
-        )
+        store.backends.state.stateInWhileSubscribed(viewModelScope, store.backends.value)
 
     val activeBackendId: StateFlow<String> =
-        store.activeBackendId.state.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = store.activeBackendId.value,
-        )
+        store.activeBackendId.state.stateInWhileSubscribed(viewModelScope, store.activeBackendId.value)
 
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val messages: SharedFlow<String> = _messages.asSharedFlow()

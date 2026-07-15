@@ -23,6 +23,7 @@ package com.github.yumelira.yumebox.screen.home
 import android.app.Application
 import android.content.Intent
 import androidx.lifecycle.viewModelScope
+import com.github.yumelira.yumebox.common.util.stateInWhileSubscribed
 import com.github.yumelira.yumebox.core.presentation.AndroidContractStateViewModel
 import com.github.yumelira.yumebox.core.presentation.LoadableState
 import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
@@ -50,7 +51,6 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -60,7 +60,6 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -111,19 +110,11 @@ class HomeViewModel(
     val isRunning =
         runtimeSnapshot
             .map(RuntimeStateMapper::isActuallyRunning)
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                RuntimeStateMapper.isActuallyRunning(runtimeSnapshot.value),
-            )
+            .stateInWhileSubscribed(viewModelScope, RuntimeStateMapper.isActuallyRunning(runtimeSnapshot.value))
     val isRemoteController: StateFlow<Boolean> =
         runtimeSnapshot
             .map { it.owner == RuntimeOwner.RemoteController }
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                runtimeSnapshot.value.owner == RuntimeOwner.RemoteController,
-            )
+            .stateInWhileSubscribed(viewModelScope, runtimeSnapshot.value.owner == RuntimeOwner.RemoteController)
     val controllerBackendName: StateFlow<String?> =
         combine(
                 remoteControllerStore.activeBackendId.state,
@@ -131,7 +122,7 @@ class HomeViewModel(
             ) { id, list ->
                 list.firstOrNull { it.id == id }?.let { it.name.ifBlank { "${it.host}:${it.port}" } }
             }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+            .stateInWhileSubscribed(viewModelScope, null)
     val currentProfile = proxyFacade.currentProfile
     val trafficNow = proxyFacade.trafficNow
     val proxyGroups = proxyFacade.proxyGroups
@@ -154,9 +145,8 @@ class HomeViewModel(
         combine(runtimeSnapshot, _pendingTransition) { snapshot, pendingTransition ->
                 resolveControlState(snapshot.owner, snapshot.phase, pendingTransition)
             }
-            .stateIn(
+            .stateInWhileSubscribed(
                 viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
                 resolveControlState(
                     runtimeSnapshot.value.owner,
                     runtimeSnapshot.value.phase,
@@ -174,12 +164,12 @@ class HomeViewModel(
     val selectedServerName: StateFlow<String?> =
         mainProxyNode
             .map { it?.name }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+            .stateInWhileSubscribed(viewModelScope, null)
 
     val selectedServerPing: StateFlow<Int?> =
         mainProxyNode
             .map { node -> node?.delay?.takeIf { delay -> delay > 0 } }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+            .stateInWhileSubscribed(viewModelScope, null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val ipMonitoringState: StateFlow<IpMonitoringState> =
@@ -195,11 +185,7 @@ class HomeViewModel(
                     flowOf(IpMonitoringState.Loading)
                 }
             }
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                IpMonitoringState.Loading,
-            )
+            .stateInWhileSubscribed(viewModelScope, IpMonitoringState.Loading)
 
     init {
         refreshProfiles()
