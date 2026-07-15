@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -208,15 +209,20 @@ fun AccessControlScreen(navigator: Navigator) {
                                     show = showOpsMenu,
                                     uiState = uiState,
                                     onDismiss = { showOpsMenu = false },
-                                    onShowSystemAppsChange = viewModel::onShowSystemAppsChange,
-                                    onSelectedFirstChange = viewModel::onSelectedFirstChange,
-                                    onSelectAll = viewModel::selectAll,
-                                    onDeselectAll = viewModel::deselectAll,
-                                    onInvertSelection = viewModel::invertSelection,
-                                    onSelectChinaApps = viewModel::selectChinaAppsInCurrentList,
-                                    onSelectNonChinaApps = viewModel::selectNonChinaAppsInCurrentList,
-                                    onImportPackages = viewModel::importPackages,
-                                    onExportPackages = viewModel::exportPackages,
+                                    actions =
+                                        remember(viewModel) {
+                                            AccessControlMenuActions(
+                                                onShowSystemAppsChange = viewModel::onShowSystemAppsChange,
+                                                onSelectedFirstChange = viewModel::onSelectedFirstChange,
+                                                onSelectAll = viewModel::selectAll,
+                                                onDeselectAll = viewModel::deselectAll,
+                                                onInvertSelection = viewModel::invertSelection,
+                                                onSelectChinaApps = viewModel::selectChinaAppsInCurrentList,
+                                                onSelectNonChinaApps = viewModel::selectNonChinaAppsInCurrentList,
+                                                onImportPackages = viewModel::importPackages,
+                                                onExportPackages = viewModel::exportPackages,
+                                            )
+                                        },
                                 )
                             }
                         },
@@ -303,21 +309,7 @@ fun AccessControlScreen(navigator: Navigator) {
                             end = listEndPadding,
                         ),
                 ) {
-                    items(items = filteredApps, key = { it.packageName }) { app ->
-                        AppCard(
-                            app = app,
-                            selected = app.packageName in uiState.selectedPackages,
-                            onSelectionChange = { checked ->
-                                viewModel.onAppSelectionChange(app.packageName, checked)
-                            },
-                            onClick = {
-                                viewModel.onAppSelectionChange(
-                                    app.packageName,
-                                    app.packageName !in uiState.selectedPackages,
-                                )
-                            },
-                        )
-                    }
+                    accessControlAppItems(filteredApps, uiState, viewModel)
                 }
             }
 
@@ -355,21 +347,7 @@ fun AccessControlScreen(navigator: Navigator) {
                         bottom = maxOf(mainLikePadding.calculateBottomPadding(), imeBottomPadding),
                     ),
             ) {
-                items(items = filteredApps, key = { it.packageName }) { app ->
-                    AppCard(
-                        app = app,
-                        selected = app.packageName in uiState.selectedPackages,
-                        onSelectionChange = { checked ->
-                            viewModel.onAppSelectionChange(app.packageName, checked)
-                        },
-                        onClick = {
-                            viewModel.onAppSelectionChange(
-                                app.packageName,
-                                app.packageName !in uiState.selectedPackages,
-                            )
-                        },
-                    )
-                }
+                accessControlAppItems(filteredApps, uiState, viewModel)
             }
         }
     }
@@ -447,20 +425,25 @@ private fun AccessControlSortMenu(
     )
 }
 
+/** Operations-menu callbacks bundled so the menu keeps a flat four-parameter signature. */
+private data class AccessControlMenuActions(
+    val onShowSystemAppsChange: (Boolean) -> Unit,
+    val onSelectedFirstChange: (Boolean) -> Unit,
+    val onSelectAll: () -> Unit,
+    val onDeselectAll: () -> Unit,
+    val onInvertSelection: () -> Unit,
+    val onSelectChinaApps: () -> Unit,
+    val onSelectNonChinaApps: () -> Unit,
+    val onImportPackages: (String) -> Int,
+    val onExportPackages: () -> String,
+)
+
 @Composable
 private fun AccessControlOperationsMenu(
     show: Boolean,
     uiState: AccessControlViewModel.UiState,
     onDismiss: () -> Unit,
-    onShowSystemAppsChange: (Boolean) -> Unit,
-    onSelectedFirstChange: (Boolean) -> Unit,
-    onSelectAll: () -> Unit,
-    onDeselectAll: () -> Unit,
-    onInvertSelection: () -> Unit,
-    onSelectChinaApps: () -> Unit,
-    onSelectNonChinaApps: () -> Unit,
-    onImportPackages: (String) -> Int,
-    onExportPackages: () -> String,
+    actions: AccessControlMenuActions,
 ) {
     val context = LocalContext.current
     val clipboardManager =
@@ -477,12 +460,12 @@ private fun AccessControlOperationsMenu(
                         DropdownItem(
                             text = settings.ShowSystemApps,
                             selected = uiState.showSystemApps,
-                            onClick = { onShowSystemAppsChange(!uiState.showSystemApps) },
+                            onClick = { actions.onShowSystemAppsChange(!uiState.showSystemApps) },
                         ),
                         DropdownItem(
                             text = settings.SelectedFirst,
                             selected = uiState.selectedFirst,
-                            onClick = { onSelectedFirstChange(!uiState.selectedFirst) },
+                            onClick = { actions.onSelectedFirstChange(!uiState.selectedFirst) },
                         ),
                     )
             ),
@@ -493,14 +476,17 @@ private fun AccessControlOperationsMenu(
                             text = settings.BatchOperation,
                             children =
                                 listOf(
-                                    DropdownItem(text = settings.SelectAll, onClick = onSelectAll),
+                                    DropdownItem(
+                                        text = settings.SelectAll,
+                                        onClick = actions.onSelectAll,
+                                    ),
                                     DropdownItem(
                                         text = settings.DeselectAll,
-                                        onClick = onDeselectAll,
+                                        onClick = actions.onDeselectAll,
                                     ),
                                     DropdownItem(
                                         text = settings.Invert,
-                                        onClick = onInvertSelection,
+                                        onClick = actions.onInvertSelection,
                                     ),
                                 ),
                         ),
@@ -510,11 +496,11 @@ private fun AccessControlOperationsMenu(
                                 listOf(
                                     DropdownItem(
                                         text = settings.ChinaApps,
-                                        onClick = { onSelectChinaApps() },
+                                        onClick = { actions.onSelectChinaApps() },
                                     ),
                                     DropdownItem(
                                         text = settings.OverseasApps,
-                                        onClick = { onSelectNonChinaApps() },
+                                        onClick = { actions.onSelectNonChinaApps() },
                                     ),
                                 ),
                         ),
@@ -533,7 +519,7 @@ private fun AccessControlOperationsMenu(
                                                     ?.toString()
                                                     .orEmpty()
                                             if (text.isNotEmpty()) {
-                                                onImportPackages(text)
+                                                actions.onImportPackages(text)
                                             }
                                         },
                                     ),
@@ -543,7 +529,7 @@ private fun AccessControlOperationsMenu(
                                             clipboardManager.setPrimaryClip(
                                                 ClipData.newPlainText(
                                                     "packages",
-                                                    onExportPackages(),
+                                                    actions.onExportPackages(),
                                                 )
                                             )
                                         },
@@ -562,6 +548,28 @@ private fun AccessControlOperationsMenu(
         entries = entries,
         onDismissRequest = onDismiss,
     )
+}
+
+private fun LazyListScope.accessControlAppItems(
+    apps: List<AccessControlViewModel.AppInfo>,
+    uiState: AccessControlViewModel.UiState,
+    viewModel: AccessControlViewModel,
+) {
+    items(items = apps, key = { it.packageName }) { app ->
+        AppCard(
+            app = app,
+            selected = app.packageName in uiState.selectedPackages,
+            onSelectionChange = { checked ->
+                viewModel.onAppSelectionChange(app.packageName, checked)
+            },
+            onClick = {
+                viewModel.onAppSelectionChange(
+                    app.packageName,
+                    app.packageName !in uiState.selectedPackages,
+                )
+            },
+        )
+    }
 }
 
 @Composable
