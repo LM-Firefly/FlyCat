@@ -74,70 +74,48 @@ class SessionRuntime(
             updateSnapshot { it.copy(logReady = ready) }
         }
 
-    fun start(spec: RuntimeSpec): RuntimeOperationResult =
-        synchronized(lock) {
-            clearInterruptRequest()
-            runCatching {
-                    stopInternal(reason = null, notifyHost = false)
-                    startupLog(spec, "session: start begin")
-                    startInternal(spec)
-                    RuntimeOperationResult(success = true)
-                }
-                .getOrElse { error ->
-                    if (error is RuntimeInterruptedException) {
-                        startupLog(spec, "session: start interrupted reason=${error.message}")
-                        RuntimeOperationResult(success = true)
-                    } else {
-                        rollback(spec, error.message ?: "start runtime failed")
-                        RuntimeOperationResult(
-                            success = false,
-                            error = error.message ?: "start runtime failed",
-                        )
-                    }
-                }
-        }
+    fun start(spec: RuntimeSpec): RuntimeOperationResult = startFresh(spec, name = "start")
 
     fun reload(spec: RuntimeSpec): RuntimeOperationResult =
-        synchronized(lock) {
-            clearInterruptRequest()
-            runCatching {
-                    startupLog(spec, "session: reload begin")
-                    reloadInternal(spec)
-                    RuntimeOperationResult(success = true)
-                }
-                .getOrElse { error ->
-                    if (error is RuntimeInterruptedException) {
-                        startupLog(spec, "session: reload interrupted reason=${error.message}")
-                        RuntimeOperationResult(success = true)
-                    } else {
-                        startupLog(spec, "failed=${error.message ?: "reload runtime failed"}")
-                        RuntimeOperationResult(
-                            success = false,
-                            error = error.message ?: "reload runtime failed",
-                        )
-                    }
-                }
+        runGuarded(spec, name = "reload", onFailure = { startupLog(spec, "failed=$it") }) {
+            startupLog(spec, "session: reload begin")
+            reloadInternal(spec)
         }
 
-    fun restart(spec: RuntimeSpec): RuntimeOperationResult =
+    fun restart(spec: RuntimeSpec): RuntimeOperationResult = startFresh(spec, name = "restart")
+
+    private fun startFresh(spec: RuntimeSpec, name: String): RuntimeOperationResult =
+        runGuarded(spec, name = name, onFailure = { rollback(spec, it) }) {
+            stopInternal(reason = null, notifyHost = false)
+            startupLog(spec, "session: $name begin")
+            startInternal(spec)
+        }
+
+    /**
+     * Shared interrupt-aware wrapper for the lifecycle entry points: serializes on [lock], treats
+     * [RuntimeInterruptedException] as a successful no-op, and routes any other failure through
+     * [onFailure] before surfacing it in the result.
+     */
+    private fun runGuarded(
+        spec: RuntimeSpec,
+        name: String,
+        onFailure: (String) -> Unit,
+        body: () -> Unit,
+    ): RuntimeOperationResult =
         synchronized(lock) {
             clearInterruptRequest()
             runCatching {
-                    stopInternal(reason = null, notifyHost = false)
-                    startupLog(spec, "session: restart begin")
-                    startInternal(spec)
+                    body()
                     RuntimeOperationResult(success = true)
                 }
                 .getOrElse { error ->
                     if (error is RuntimeInterruptedException) {
-                        startupLog(spec, "session: restart interrupted reason=${error.message}")
+                        startupLog(spec, "session: $name interrupted reason=${error.message}")
                         RuntimeOperationResult(success = true)
                     } else {
-                        rollback(spec, error.message ?: "restart runtime failed")
-                        RuntimeOperationResult(
-                            success = false,
-                            error = error.message ?: "restart runtime failed",
-                        )
+                        val message = error.message ?: "$name runtime failed"
+                        onFailure(message)
+                        RuntimeOperationResult(success = false, error = message)
                     }
                 }
         }
@@ -173,36 +151,25 @@ class SessionRuntime(
     fun snapshot(): RuntimeSnapshot = currentSnapshot
 
     fun queryTunnelState(): TunnelState =
-        if (currentSnapshot.phase == RuntimePhase.Running) {
-            Clash.queryTunnelState()
-        } else {
-            TunnelState(TunnelState.Mode.Rule)
-        }
+        ifRunning(TunnelState(TunnelState.Mode.Rule)) { Clash.queryTunnelState() }
 
-    fun queryTrafficNow(): Long =
-        if (currentSnapshot.phase == RuntimePhase.Running) {
-            Clash.queryTrafficNow().also {
-                queryCache.updateTrafficNow(it)
-                updateSnapshot { it.copy(trafficReady = true) }
-            }
-        } else {
-            0L
-        }
+    fun queryTrafficNow(): Long = queryTraffic(Clash::queryTrafficNow, queryCache::updateTrafficNow)
 
     fun queryTrafficTotal(): Long =
-        if (currentSnapshot.phase == RuntimePhase.Running) {
-            Clash.queryTrafficTotal().also {
-                queryCache.updateTrafficTotal(it)
-                updateSnapshot { it.copy(trafficReady = true) }
-            }
-        } else {
-            0L
-        }
+        queryTraffic(Clash::queryTrafficTotal, queryCache::updateTrafficTotal)
 
-    fun queryConnections(): ConnectionSnapshot {
-        if (currentSnapshot.phase != RuntimePhase.Running) return ConnectionSnapshot()
-        return Clash.queryConnections()
+    private fun queryTraffic(fetch: () -> Long, cache: (Long) -> Unit): Long {
+        if (currentSnapshot.phase != RuntimePhase.Running) return 0L
+        return fetch().also { value ->
+            cache(value)
+            updateSnapshot { it.copy(trafficReady = true) }
+        }
     }
+
+    private inline fun <T> ifRunning(fallback: T, block: () -> T): T =
+        if (currentSnapshot.phase == RuntimePhase.Running) block() else fallback
+
+    fun queryConnections(): ConnectionSnapshot = ifRunning(ConnectionSnapshot()) { Clash.queryConnections() }
 
     fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> {
         if (currentSnapshot.phase != RuntimePhase.Running) return emptyList()
@@ -238,27 +205,16 @@ class SessionRuntime(
         return group
     }
 
-    fun queryConfiguration(): UiConfiguration {
-        if (currentSnapshot.phase != RuntimePhase.Running) return UiConfiguration()
-        return ensureRuntimeSnapshot().configuration
-    }
+    fun queryConfiguration(): UiConfiguration =
+        ifRunning(UiConfiguration()) { ensureRuntimeSnapshot().configuration }
 
-    fun queryProviders(): List<Provider> {
-        if (currentSnapshot.phase != RuntimePhase.Running) return emptyList()
-        return ensureRuntimeSnapshot().providers
-    }
+    fun queryProviders(): List<Provider> = ifRunning(emptyList()) { ensureRuntimeSnapshot().providers }
 
     fun patchSelector(group: String, name: String): Boolean = Clash.patchSelector(group, name)
 
-    fun closeConnection(id: String): Boolean {
-        if (currentSnapshot.phase != RuntimePhase.Running) return false
-        return Clash.closeConnection(id)
-    }
+    fun closeConnection(id: String): Boolean = ifRunning(false) { Clash.closeConnection(id) }
 
-    fun closeAllConnections() {
-        if (currentSnapshot.phase != RuntimePhase.Running) return
-        Clash.closeAllConnections()
-    }
+    fun closeAllConnections() = ifRunning(Unit) { Clash.closeAllConnections() }
 
     suspend fun healthCheck(group: String): String? {
         Timber.d(
