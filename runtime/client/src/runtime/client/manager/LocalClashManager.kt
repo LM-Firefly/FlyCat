@@ -56,10 +56,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
 
 /**
@@ -122,10 +118,8 @@ internal class LocalClashManager(context: Context) : IClashManager {
         Clash.healthCheck(group).await()
     }
 
-    override suspend fun healthCheckProxy(group: String, proxyName: String): Int {
-        val json = Clash.healthCheckProxy(proxyName).await()
-        return Json.parseToJsonElement(json).jsonObject["delay"]?.jsonPrimitive?.int ?: -1
-    }
+    override suspend fun healthCheckProxy(group: String, proxyName: String): Int =
+        parseDelayMillis(Clash.healthCheckProxy(proxyName).await())
 
     override suspend fun updateProvider(type: Provider.Type, name: String) {
         Clash.updateProvider(type, name).await()

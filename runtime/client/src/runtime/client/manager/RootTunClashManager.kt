@@ -42,10 +42,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
 
 /**
@@ -102,10 +98,8 @@ internal class RootTunClashManager(context: Context) : IClashManager {
     override suspend fun healthCheck(group: String) =
         RootTunController.healthCheck(appContext, group)
 
-    override suspend fun healthCheckProxy(group: String, proxyName: String): Int {
-        val payload = RootTunController.healthCheckProxy(appContext, group, proxyName)
-        return Json.parseToJsonElement(payload).jsonObject["delay"]?.jsonPrimitive?.int ?: -1
-    }
+    override suspend fun healthCheckProxy(group: String, proxyName: String): Int =
+        parseDelayMillis(RootTunController.healthCheckProxy(appContext, group, proxyName))
 
     override suspend fun updateProvider(type: Provider.Type, name: String) =
         RootTunController.updateProvider(appContext, type, name)
