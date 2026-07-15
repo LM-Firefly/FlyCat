@@ -33,24 +33,17 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
@@ -60,22 +53,16 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -90,12 +77,18 @@ import com.github.yumelira.yumebox.presentation.theme.Sizes
 import com.github.yumelira.yumebox.presentation.theme.Spacing
 import dev.oom_wg.purejoy.mlang.MLang
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Search
 import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+
+/** Search-bar padding trio threaded from the screen; unspecified fields fall back to theme values. */
+data class SearchBarPadding(
+    val top: Dp = Dp.Unspecified,
+    val start: Dp = Dp.Unspecified,
+    val end: Dp = Dp.Unspecified,
+)
 
 @Composable
 fun SearchStatus.TopAppBarAnim(
@@ -120,135 +113,21 @@ fun SearchStatus.TopAppBarAnim(
 }
 
 @Composable
-fun SearchStatus.SearchBox(
-    onSearchStatusChange: (SearchStatus) -> Unit,
-    searchBarTopPadding: Dp? = null,
-    startPadding: Dp = Dp.Unspecified,
-    endPadding: Dp = Dp.Unspecified,
-    contentPadding: PaddingValues = PaddingValues(),
-    collapseBar: (@Composable (SearchStatus, Dp, PaddingValues) -> Unit)? = null,
-    content: @Composable (Dp) -> Unit,
-) {
-    val searchStatus = this
-    val spacing = AppTheme.spacing
-    val componentSizes = AppTheme.sizes
-    val density = LocalDensity.current
-    val isCollapsed = searchStatus.isCollapsed()
-    val offsetY = remember { mutableIntStateOf(0) }
-    val resolvedSearchBarTopPadding = searchBarTopPadding ?: componentSizes.searchBarTopPadding
-    val resolvedStartPadding = startPadding.takeOrElse { spacing.space0 }
-    val resolvedEndPadding = endPadding.takeOrElse { spacing.space0 }
-    val boxHeight = remember { mutableStateOf(spacing.space0) }
-
-    Box(
-        modifier =
-            Modifier.fillMaxWidth()
-                .zIndex(10f)
-                .alpha(if (isCollapsed) 1f else 0f)
-                .offset(y = contentPadding.calculateTopPadding())
-                .pointerInput(searchStatus.current) {
-                    detectTapGestures {
-                        onSearchStatusChange(
-                            searchStatus.copy(current = SearchStatus.Status.EXPANDING)
-                        )
-                    }
-                }
-                .background(colorScheme.surface)
-    ) {
-        SearchBoxCollapsedBar(
-            searchStatus = searchStatus,
-            searchBarTopPadding = resolvedSearchBarTopPadding,
-            startPadding = resolvedStartPadding,
-            endPadding = resolvedEndPadding,
-            contentPadding = contentPadding,
-            collapseBar = collapseBar,
-            onMeasured = { coordinates ->
-                coordinates.positionInWindow().y.apply {
-                    offsetY.intValue = (this * 0.9f).toInt()
-                    with(density) {
-                        val newOffsetY = this@apply.toDp()
-                        val newBoxHeight = coordinates.size.height.toDp()
-                        if (searchStatus.offsetY != newOffsetY) {
-                            onSearchStatusChange(searchStatus.copy(offsetY = newOffsetY))
-                        }
-                        boxHeight.value = newBoxHeight
-                    }
-                }
-            },
-        )
-        SearchBoxContentLayer(
-            shouldCollapsed = searchStatus.shouldCollapse(),
-            offsetY = offsetY.intValue,
-            boxHeight = boxHeight.value,
-            content = content,
-        )
-    }
-}
-
-@Composable
-private fun SearchBoxCollapsedBar(
-    searchStatus: SearchStatus,
-    searchBarTopPadding: Dp,
-    startPadding: Dp,
-    endPadding: Dp,
-    contentPadding: PaddingValues,
-    collapseBar: (@Composable (SearchStatus, Dp, PaddingValues) -> Unit)?,
-    onMeasured: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit,
-) {
-    Box(modifier = Modifier.onGloballyPositioned(onMeasured)) {
-        val collapsedBar =
-            collapseBar
-                ?: {
-                    collapsedSearchStatus: SearchStatus,
-                    topPadding: Dp,
-                    innerPadding: PaddingValues ->
-                    SearchBarCollapsed(
-                        label = collapsedSearchStatus.label,
-                        searchBarTopPadding = topPadding,
-                        startPadding = startPadding,
-                        endPadding = endPadding,
-                        innerPadding = innerPadding,
-                    )
-                }
-        collapsedBar(searchStatus, searchBarTopPadding, contentPadding)
-    }
-}
-
-@Composable
-private fun SearchBoxContentLayer(
-    shouldCollapsed: Boolean,
-    offsetY: Int,
-    boxHeight: Dp,
-    content: @Composable (Dp) -> Unit,
-) {
-    AnimatedVisibility(
-        visible = shouldCollapsed,
-        enter =
-            fadeIn(tween(300, easing = LinearOutSlowInEasing)) +
-                slideInVertically(tween(300, easing = LinearOutSlowInEasing)) { -offsetY },
-        exit =
-            fadeOut(tween(300, easing = LinearOutSlowInEasing)) +
-                slideOutVertically(tween(300, easing = LinearOutSlowInEasing)) { -offsetY },
-    ) {
-        Box(modifier = Modifier.fillMaxSize().zIndex(0f)) { content(boxHeight) }
-    }
-}
-
-@Composable
 fun SearchStatus.SearchPager(
     onSearchStatusChange: (SearchStatus) -> Unit,
     defaultResult: @Composable () -> Unit = {},
     emptyResult: @Composable () -> Unit = {},
-    searchBarTopPadding: Dp? = null,
-    startPadding: Dp = Dp.Unspecified,
-    endPadding: Dp = Dp.Unspecified,
+    padding: SearchBarPadding = SearchBarPadding(),
     result: @Composable () -> Unit,
 ) {
     val spacing = AppTheme.spacing
     val componentSizes = AppTheme.sizes
-    val resolvedSearchBarTopPadding = searchBarTopPadding ?: componentSizes.searchBarTopPadding
-    val resolvedStartPadding = startPadding.takeOrElse { spacing.space0 }
-    val resolvedEndPadding = endPadding.takeOrElse { spacing.space0 }
+    val resolvedPadding =
+        SearchBarPadding(
+            top = padding.top.takeOrElse { componentSizes.searchBarTopPadding },
+            start = padding.start.takeOrElse { spacing.space0 },
+            end = padding.end.takeOrElse { spacing.space0 },
+        )
 
     val searchStatus = this
     val isCollapsed = searchStatus.isCollapsed()
@@ -300,9 +179,7 @@ fun SearchStatus.SearchPager(
             searchStatus = searchStatus,
             onSearchStatusChange = onSearchStatusChange,
             topPadding = topPadding,
-            searchBarTopPadding = resolvedSearchBarTopPadding,
-            startPadding = resolvedStartPadding,
-            endPadding = resolvedEndPadding,
+            barPadding = resolvedPadding,
         )
         SearchPagerResultsLayer(
             searchStatus = searchStatus,
@@ -319,9 +196,7 @@ private fun SearchPagerTopRow(
     searchStatus: SearchStatus,
     onSearchStatusChange: (SearchStatus) -> Unit,
     topPadding: Dp,
-    searchBarTopPadding: Dp,
-    startPadding: Dp,
-    endPadding: Dp,
+    barPadding: SearchBarPadding,
 ) {
     val isCollapsed = searchStatus.isCollapsed()
     Row(
@@ -342,9 +217,7 @@ private fun SearchPagerTopRow(
             SearchBar(
                 searchStatus = searchStatus,
                 onSearchStatusChange = onSearchStatusChange,
-                searchBarTopPadding = searchBarTopPadding,
-                startPadding = startPadding,
-                endPadding = endPadding,
+                padding = barPadding,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -352,7 +225,7 @@ private fun SearchPagerTopRow(
         SearchPagerCancelButton(
             searchStatus = searchStatus,
             onSearchStatusChange = onSearchStatusChange,
-            searchBarTopPadding = searchBarTopPadding,
+            searchBarTopPadding = barPadding.top,
         )
     }
 }
@@ -428,9 +301,7 @@ private fun SearchPagerResultsLayer(
 private fun SearchBar(
     searchStatus: SearchStatus,
     onSearchStatusChange: (SearchStatus) -> Unit,
-    searchBarTopPadding: Dp,
-    startPadding: Dp,
-    endPadding: Dp,
+    padding: SearchBarPadding,
     modifier: Modifier = Modifier,
 ) {
     val spacing = AppTheme.spacing
@@ -469,8 +340,8 @@ private fun SearchBar(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(start = startPadding, end = endPadding)
-                .padding(top = searchBarTopPadding, bottom = componentSizes.searchBarBottomPadding)
+                .padding(start = padding.start, end = padding.end)
+                .padding(top = padding.top, bottom = componentSizes.searchBarBottomPadding)
                 .heightIn(min = componentSizes.searchFieldMinHeight)
                 .background(colorScheme.secondaryContainer, CircleShape)
                 .focusRequester(focusRequester),
@@ -529,46 +400,4 @@ private fun SearchBarClearButton(
                     .clickable(interactionSource = null, indication = null) { onClear() },
         )
     }
-}
-
-@Composable
-private fun SearchBarCollapsed(
-    label: String,
-    searchBarTopPadding: Dp,
-    startPadding: Dp,
-    endPadding: Dp,
-    innerPadding: PaddingValues = PaddingValues(),
-) {
-    val spacing = AppTheme.spacing
-    val componentSizes = AppTheme.sizes
-
-    val layoutDirection = LocalLayoutDirection.current
-    InputField(
-        query = "",
-        onQueryChange = {},
-        label = label,
-        leadingIcon = {
-            Icon(
-                imageVector = MiuixIcons.Basic.Search,
-                contentDescription = MLang.Component.Editor.Action.Search,
-                modifier =
-                    Modifier.size(componentSizes.searchIconTouchTarget)
-                        .padding(start = spacing.space16, end = spacing.space8),
-                tint = colorScheme.onSurfaceVariantSummary,
-            )
-        },
-        modifier =
-            Modifier.background(colorScheme.surface)
-                .fillMaxWidth()
-                .padding(start = startPadding, end = endPadding)
-                .padding(
-                    start = innerPadding.calculateStartPadding(layoutDirection),
-                    end = innerPadding.calculateEndPadding(layoutDirection),
-                )
-                .padding(top = searchBarTopPadding, bottom = componentSizes.searchBarBottomPadding),
-        onSearch = {},
-        enabled = false,
-        expanded = false,
-        onExpandedChange = {},
-    )
 }

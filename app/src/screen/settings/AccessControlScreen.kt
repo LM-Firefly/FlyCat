@@ -69,6 +69,7 @@ import com.github.yumelira.yumebox.data.model.AccessControlSortMode
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
+import com.github.yumelira.yumebox.presentation.component.SearchBarPadding
 import com.github.yumelira.yumebox.presentation.component.SearchPager
 import com.github.yumelira.yumebox.presentation.component.SearchStatus
 import com.github.yumelira.yumebox.presentation.component.TopAppBarAnim
@@ -317,9 +318,12 @@ fun AccessControlScreen(navigator: Navigator) {
 
         currentSearchStatus.SearchPager(
             onSearchStatusChange = { searchStatus = it },
-            searchBarTopPadding = dynamicTopPadding,
-            startPadding = listStartPadding,
-            endPadding = listEndPadding,
+            padding =
+                SearchBarPadding(
+                    top = dynamicTopPadding,
+                    start = listStartPadding,
+                    end = listEndPadding,
+                ),
             emptyResult = {
                 SearchEmptyState(
                     text = MLang.AccessControl.Search.Empty,
