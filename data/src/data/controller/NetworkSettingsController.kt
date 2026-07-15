@@ -20,26 +20,24 @@
 
 package com.github.yumelira.yumebox.data.controller
 
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
-import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.data.model.ProxyMode
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.Preference
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class NetworkSettingsController(
     private val store: NetworkSettingsStore,
-    private val isRunning: () -> Boolean,
+    isRunning: () -> Boolean,
     private val restartProxy: suspend (ProxyMode) -> Unit,
     private val beforeRestart: suspend (ProxyMode) -> Unit = {},
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var restartJob: Job? = null
+    private val restarter =
+        DebouncedProxyRestarter(
+            timerName = "network_settings_restart_debounce",
+            debounceMillis = RESTART_DEBOUNCE_DELAY_MS,
+            isRunning = isRunning,
+        )
 
     fun setProxyMode(mode: ProxyMode) {
         store.proxyMode.set(mode)
@@ -62,16 +60,7 @@ class NetworkSettingsController(
     }
 
     private fun scheduleRestart() {
-        restartJob?.cancel()
-        restartJob = scope.launch {
-            PollingTimers.awaitTick(
-                PollingTimerSpecs.dynamic(
-                    name = "network_settings_restart_debounce",
-                    intervalMillis = RESTART_DEBOUNCE_DELAY_MS,
-                    initialDelayMillis = RESTART_DEBOUNCE_DELAY_MS,
-                )
-            )
-            if (!isRunning()) return@launch
+        restarter.schedule {
             val targetMode = store.proxyMode.value
             beforeRestart(targetMode)
             startService(targetMode)
