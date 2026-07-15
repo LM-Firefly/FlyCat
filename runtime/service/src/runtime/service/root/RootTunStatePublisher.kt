@@ -22,7 +22,6 @@ package com.github.yumelira.yumebox.runtime.service.root
 
 import android.os.RemoteCallbackList
 import com.github.yumelira.yumebox.runtime.api.RootTunStatus
-import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 
 /**
  * Single root-side write path for [RootTunStateStore]. Wraps every store mutation with a fan-out
@@ -49,14 +48,7 @@ class RootTunStatePublisher(private val store: RootTunStateStore) {
 
     @Synchronized
     fun markIdle(error: String? = null) {
-        update(
-            RootTunStatus(
-                state = RuntimePhase.Idle,
-                lastError = error,
-                runtimeReady = false,
-                controllerReady = true,
-            )
-        )
+        update(RootTunStatus.idle(error))
     }
 
     fun register(observer: IRootTunStateObserver) {

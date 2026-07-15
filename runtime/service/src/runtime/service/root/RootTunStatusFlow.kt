@@ -22,7 +22,6 @@ package com.github.yumelira.yumebox.runtime.service.root
 
 import android.content.Context
 import com.github.yumelira.yumebox.runtime.api.RootTunStatus
-import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.service.root.RootTunStatusFlow.ensureSeeded
 import com.github.yumelira.yumebox.runtime.service.root.RootTunStatusFlow.markIdle
 import com.github.yumelira.yumebox.runtime.service.root.RootTunStatusFlow.update
@@ -73,13 +72,5 @@ object RootTunStatusFlow {
         _flow.value = status.copy(running = status.state.isActiveOrStopping)
     }
 
-    fun markIdle(error: String? = null) =
-        update(
-            RootTunStatus(
-                state = RuntimePhase.Idle,
-                lastError = error,
-                runtimeReady = false,
-                controllerReady = true,
-            )
-        )
+    fun markIdle(error: String? = null) = update(RootTunStatus.idle(error))
 }

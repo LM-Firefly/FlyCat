@@ -68,14 +68,7 @@ class RootTunStateStore {
     }
 
     fun markIdle(error: String? = null) {
-        updateStatus(
-            RootTunStatus(
-                state = RuntimePhase.Idle,
-                lastError = error,
-                runtimeReady = false,
-                controllerReady = true,
-            )
-        )
+        updateStatus(RootTunStatus.idle(error))
     }
 
     fun clear() {

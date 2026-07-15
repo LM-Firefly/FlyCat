@@ -42,4 +42,15 @@ data class RootTunStatus(
     /** A root session counts as live while its phase is active/stopping or the runtime is ready. */
     val isSessionActive: Boolean
         get() = state.isActiveOrStopping || runtimeReady
+
+    companion object {
+        /** Canonical idle status every markIdle writer publishes (store, publisher, main-process flow). */
+        fun idle(error: String? = null): RootTunStatus =
+            RootTunStatus(
+                state = RuntimePhase.Idle,
+                lastError = error,
+                runtimeReady = false,
+                controllerReady = true,
+            )
+    }
 }
