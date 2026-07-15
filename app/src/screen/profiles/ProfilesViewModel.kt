@@ -30,6 +30,7 @@ import com.github.yumelira.yumebox.data.store.ProfileLink
 import com.github.yumelira.yumebox.data.store.ProfileLinksStore
 import com.github.yumelira.yumebox.runtime.api.IFetchObserver
 import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumelira.yumebox.runtime.client.ProfilePatch
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.CancellationException
@@ -244,26 +245,12 @@ class ProfilesViewModel(
 
     // Fault barrier: any patch failure is surfaced as UI error state (CE rethrown).
     @Suppress("TooGenericExceptionCaught")
-    fun patchProfile(
-        uuid: UUID,
-        name: String,
-        source: String,
-        interval: Long,
-        updateAgeSecretKey: Boolean = false,
-        ageSecretKey: String? = null,
-    ) {
+    fun patchProfile(uuid: UUID, patch: ProfilePatch) {
         viewModelScope.launch {
             try {
                 setLoading(true)
-                profilesRepository.patchProfile(
-                    uuid = uuid,
-                    name = name,
-                    source = source,
-                    interval = interval,
-                    updateAgeSecretKey = updateAgeSecretKey,
-                    ageSecretKey = ageSecretKey,
-                )
-                showMessage(MLang.ProfilesVM.Message.ProfileUpdated.format(name))
+                profilesRepository.patchProfile(uuid, patch)
+                showMessage(MLang.ProfilesVM.Message.ProfileUpdated.format(patch.name))
                 refreshProfiles()
                 Timber.i("Profile patched: $uuid")
             } catch (error: Exception) {

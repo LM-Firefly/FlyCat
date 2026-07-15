@@ -31,6 +31,7 @@ import com.github.yumelira.yumebox.data.model.ProfileBinding
 import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
 import com.github.yumelira.yumebox.feature.meta.presentation.util.CustomRoutingBootstrapper
 import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumelira.yumebox.runtime.client.ProfilePatch
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
@@ -59,7 +60,7 @@ internal fun ProfilesDialogHost(
             profilesViewModel.createProfile(type, name, source, interval, fileUri, ageSecretKey)
         },
         onUpdateProfile = { uuid, name, source, interval ->
-            profilesViewModel.patchProfile(uuid, name, source, interval)
+            profilesViewModel.patchProfile(uuid, ProfilePatch(name = name, source = source, interval = interval))
         },
         onDownloadComplete = {
             state.isDownloading = false
@@ -148,11 +149,14 @@ private fun ProfileSettingsDialogHost(
             if (update.name.isNotBlank() && update.source.isNotBlank()) {
                 profilesViewModel.patchProfile(
                     uuid = profile.uuid,
-                    name = update.name,
-                    source = update.source,
-                    interval = profile.interval,
-                    updateAgeSecretKey = update.updateAgeSecretKey,
-                    ageSecretKey = update.ageSecretKey,
+                    patch =
+                        ProfilePatch(
+                            name = update.name,
+                            source = update.source,
+                            interval = profile.interval,
+                            updateAgeSecretKey = update.updateAgeSecretKey,
+                            ageSecretKey = update.ageSecretKey,
+                        ),
                 )
             }
         },

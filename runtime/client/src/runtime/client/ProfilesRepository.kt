@@ -159,25 +159,18 @@ class ProfilesRepository(private val context: Context) {
             .getOrThrow()
     }
 
-    suspend fun patchProfile(
-        uuid: UUID,
-        name: String,
-        source: String,
-        interval: Long,
-        updateAgeSecretKey: Boolean = false,
-        ageSecretKey: String? = null,
-    ) {
+    suspend fun patchProfile(uuid: UUID, patch: ProfilePatch) {
         safeApiCall(TAG, "patchProfile") {
                 Timber.d("Patching profile: uuid=$uuid")
                 ServiceClient.connect(context)
                 ServiceClient.profile()
                     .patch(
                         uuid = uuid,
-                        name = name,
-                        source = source,
-                        interval = interval,
-                        updateAgeSecretKey = updateAgeSecretKey,
-                        ageSecretKey = ageSecretKey,
+                        name = patch.name,
+                        source = patch.source,
+                        interval = patch.interval,
+                        updateAgeSecretKey = patch.updateAgeSecretKey,
+                        ageSecretKey = patch.ageSecretKey,
                     )
             }
             .getOrThrow()
