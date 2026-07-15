@@ -20,61 +20,41 @@
 
 package com.github.yumelira.yumebox.common.util
 
-object ByteFormatter {
-    private const val KB = 1024L
-    private const val MB = KB * 1024
-    private const val GB = MB * 1024
-    private const val TB = GB * 1024
-    private const val PB = TB * 1024
+import com.github.yumelira.yumebox.core.util.scaleBytes
 
-    private const val KB_D = 1024.0
-    private const val MB_D = KB_D * 1024
-    private const val GB_D = MB_D * 1024
-    private const val TB_D = GB_D * 1024
-    private const val PB_D = TB_D * 1024
+object ByteFormatter {
+    private val SI_UNITS = arrayOf("B", "KB", "MB", "GB", "TB", "PB")
 
     @JvmStatic
     fun format(bytes: Long, decimals: Int? = null): String {
-        val value = bytes.coerceAtLeast(0L)
-        return when {
-            value < KB -> "$value B"
-            value < MB -> formatValue(value / KB_D, "KB", decimals ?: 1)
-            value < GB -> formatValue(value / MB_D, "MB", decimals ?: 1)
-            value < TB -> formatValue(value / GB_D, "GB", decimals ?: 2)
-            value < PB -> formatValue(value / TB_D, "TB", decimals ?: 2)
-            else -> formatValue(value / PB_D, "PB", decimals ?: 2)
-        }
+        val scaled = scaleBytes(bytes)
+        if (scaled.rank == 0) return "${bytes.coerceAtLeast(0L)} B"
+        val digits = decimals ?: if (scaled.rank <= 2) 1 else 2
+        return "%.${digits}f ${SI_UNITS[scaled.rank]}".format(scaled.value)
     }
 
     @JvmStatic
     fun formatSpeed(bytesPerSecond: Long): String {
-        val value = bytesPerSecond.coerceAtLeast(0L)
-        return when {
-            value < KB -> "$value B/s"
-            value < MB -> formatValue(value / KB_D, "KB/s", 1)
-            value < GB -> formatValue(value / MB_D, "MB/s", 1)
-            else -> formatValue(value / GB_D, "GB/s", 2)
-        }
+        val scaled = scaleBytes(bytesPerSecond, maxRank = 3)
+        if (scaled.rank == 0) return "${bytesPerSecond.coerceAtLeast(0L)} B/s"
+        val digits = if (scaled.rank <= 2) 1 else 2
+        return "%.${digits}f ${SI_UNITS[scaled.rank]}/s".format(scaled.value)
     }
 
     @JvmStatic
     fun formatForDisplay(bytes: Long, isSpeed: Boolean = false): Pair<String, String> {
-        val value = bytes.coerceAtLeast(0L)
         val suffix = if (isSpeed) "/s" else ""
-        return when {
-            value < KB -> Pair("$value", "B$suffix")
-            value < MB -> Pair(adaptive(value / KB_D), "KB$suffix")
-            value < GB -> Pair(adaptive(value / MB_D), "MB$suffix")
-            else -> Pair("%.2f".format(value / GB_D), "GB$suffix")
+        val scaled = scaleBytes(bytes, maxRank = 3)
+        return when (scaled.rank) {
+            0 -> Pair("${bytes.coerceAtLeast(0L)}", "B$suffix")
+            3 -> Pair("%.2f".format(scaled.value), "GB$suffix")
+            else -> Pair(adaptive(scaled.value), "${SI_UNITS[scaled.rank]}$suffix")
         }
     }
 
     /** One decimal below 10, none above — keeps the displayed number short. */
     private fun adaptive(num: Double): String =
         if (num < 10) "%.1f".format(num) else "%.0f".format(num)
-
-    private fun formatValue(value: Double, unit: String, decimals: Int): String =
-        "%.${decimals}f $unit".format(value)
 }
 
 fun formatBytes(bytes: Long): String = ByteFormatter.format(bytes)

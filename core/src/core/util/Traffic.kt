@@ -23,25 +23,13 @@ package com.github.yumelira.yumebox.core.util
 import android.annotation.SuppressLint
 import com.github.yumelira.yumebox.core.model.Traffic
 
+private val IEC_UNITS = arrayOf("Bytes", "KiB", "MiB", "GiB")
+
 @SuppressLint("DefaultLocale")
-private fun trafficString(scaled: Long): String =
-    when {
-        scaled >= 1024L * 1024L * 1024L -> {
-            String.format("%.2f GiB", scaled.toDouble() / (1024.0 * 1024.0 * 1024.0))
-        }
-
-        scaled >= 1024L * 1024L -> {
-            String.format("%.2f MiB", scaled.toDouble() / (1024.0 * 1024.0))
-        }
-
-        scaled >= 1024L -> {
-            String.format("%.2f KiB", scaled.toDouble() / 1024.0)
-        }
-
-        else -> {
-            "$scaled Bytes"
-        }
-    }
+private fun trafficString(scaled: Long): String {
+    val s = scaleBytes(scaled, maxRank = 3)
+    return if (s.rank == 0) "$scaled Bytes" else String.format("%.2f %s", s.value, IEC_UNITS[s.rank])
+}
 
 fun decodeTrafficValue(value: Long): Long {
     val type = (value ushr 30) and 0x3

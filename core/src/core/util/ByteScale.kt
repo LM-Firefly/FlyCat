@@ -18,27 +18,21 @@
  *
  */
 
-plugins {
-    id("com.android.library")
-    kotlin("plugin.compose")
-    id("org.jetbrains.compose")
-}
+package com.github.yumelira.yumebox.core.util
 
-android {
-    namespace = "com.github.yumelira.yumebox.core.android"
+/** A byte count scaled down the shared 1024 ladder: [value] in the unit at [rank] (0 = bytes, 1 = K…, 5 = P…). */
+data class ScaledBytes(val value: Double, val rank: Int)
 
-    buildFeatures {
-        compose = true
+/**
+ * Walks the 1024 ladder shared by every byte formatter (SI-labelled "KB" UI text and IEC-labelled
+ * "KiB" core traffic text). [maxRank] caps the unit range, e.g. 3 keeps everything at GB and below.
+ */
+fun scaleBytes(bytes: Long, maxRank: Int = 5): ScaledBytes {
+    var value = bytes.coerceAtLeast(0L).toDouble()
+    var rank = 0
+    while (rank < maxRank && value >= 1024.0) {
+        value /= 1024.0
+        rank++
     }
+    return ScaledBytes(value, rank)
 }
-
-dependencies {
-    implementation(project(":core"))
-    val composeBom = platform(libs.androidx.compose.bom)
-    implementation(composeBom)
-    implementation(libs.androidx.compose.runtime)
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.timber)
-}
-
