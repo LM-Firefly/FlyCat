@@ -21,7 +21,6 @@
 package com.github.yumelira.yumebox.data.controller
 
 import com.github.yumelira.yumebox.core.model.ConnectionInfo
-import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.data.model.AppTrafficDeltaRecord
@@ -34,19 +33,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class AppTrafficStatisticsCollector(
-    private val isRunningFlow: Flow<Boolean>,
-    private val currentProfileId: () -> String?,
+    private val gateway: TrafficQueryGateway,
     private val trafficStatisticsStore: TrafficStatisticsStore,
     private val appIdentityResolver: AppIdentityResolver,
-    private val queryTrafficTotal: suspend () -> TrafficData,
-    private val queryConnections: suspend () -> ConnectionSnapshot,
-    private val queryActiveProfileId: suspend () -> String?,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
     private var collectionJob: Job? = null
@@ -63,7 +57,7 @@ class AppTrafficStatisticsCollector(
     private fun startCollection() {
         collectionJob?.cancel()
         collectionJob = scope.launch {
-            isRunningFlow.collectLatest { isRunning ->
+            gateway.isRunning.collectLatest { isRunning ->
                 monitoringJob?.cancel()
                 if (isRunning) {
                     monitoringJob = startTrafficMonitoring(this)
@@ -89,11 +83,11 @@ class AppTrafficStatisticsCollector(
     }
 
     private suspend fun collectTrafficData() {
-        val totalTraffic = queryTrafficTotal()
-        val snapshot = queryConnections()
+        val totalTraffic = gateway.queryTrafficTotal()
+        val snapshot = gateway.queryConnections()
         val timestamp = System.currentTimeMillis()
         val currentProfileId =
-            currentProfileId() ?: runCatching { queryActiveProfileId() }.getOrNull()
+            gateway.currentProfileId() ?: runCatching { gateway.queryActiveProfileId() }.getOrNull()
 
         if (lastTotalUpload < 0L || lastTotalDownload < 0L) {
             initializeTotals(

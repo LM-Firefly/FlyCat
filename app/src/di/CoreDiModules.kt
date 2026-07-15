@@ -21,6 +21,7 @@
 package com.github.yumelira.yumebox.di
 
 import com.github.yumelira.yumebox.common.util.AppLanguageManager
+import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
 import com.github.yumelira.yumebox.data.controller.AccessControlController
 import com.github.yumelira.yumebox.data.controller.ActiveProfileOverrideReloader
 import com.github.yumelira.yumebox.data.controller.AppIdentityResolver
@@ -31,6 +32,7 @@ import com.github.yumelira.yumebox.data.controller.OverrideResolver
 import com.github.yumelira.yumebox.data.controller.OverrideService
 import com.github.yumelira.yumebox.data.controller.ProvidersController
 import com.github.yumelira.yumebox.data.controller.RuntimeOverrideController
+import com.github.yumelira.yumebox.data.controller.TrafficQueryGateway
 import com.github.yumelira.yumebox.data.gateway.NetworkInfoService
 import com.github.yumelira.yumebox.data.store.AppSettingsStore
 import com.github.yumelira.yumebox.data.store.FeatureStore
@@ -55,6 +57,7 @@ import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
@@ -160,18 +163,26 @@ val appDataRuntimeModule = module {
     single {
         val proxyFacade = get<ProxyFacade>()
         AppTrafficStatisticsCollector(
-            isRunningFlow = proxyFacade.isRunning,
-            currentProfileId = {
-                proxyFacade.currentProfile.value?.uuid?.toString()
-            },
+            gateway =
+                object : TrafficQueryGateway {
+                    override val isRunning: Flow<Boolean> = proxyFacade.isRunning
+
+                    override fun currentProfileId(): String? =
+                        proxyFacade.currentProfile.value?.uuid?.toString()
+
+                    override suspend fun queryTrafficTotal(): TrafficData =
+                        TrafficData.from(proxyFacade.queryTrafficTotal())
+
+                    override suspend fun queryConnections(): ConnectionSnapshot =
+                        proxyFacade.queryConnections()
+
+                    override suspend fun queryActiveProfileId(): String? {
+                        proxyFacade.refreshCurrentProfile()
+                        return proxyFacade.currentProfile.value?.uuid?.toString()
+                    }
+                },
             trafficStatisticsStore = get(),
             appIdentityResolver = get(),
-            queryTrafficTotal = { TrafficData.from(proxyFacade.queryTrafficTotal()) },
-            queryConnections = { proxyFacade.queryConnections() },
-            queryActiveProfileId = {
-                proxyFacade.refreshCurrentProfile()
-                proxyFacade.currentProfile.value?.uuid?.toString()
-            },
         )
     }
 }
