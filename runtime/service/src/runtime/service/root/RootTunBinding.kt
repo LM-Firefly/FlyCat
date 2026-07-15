@@ -31,13 +31,14 @@ import com.github.yumelira.yumebox.runtime.api.RootTunStatus
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.service.root.RootTunBinding.Companion.shared
 import com.topjohnwu.superuser.ipc.RootService
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.withTimeout
 
 /**
  * libsu [RootService] binding machinery for [RootTunRootService].
@@ -48,6 +49,8 @@ import kotlin.coroutines.resumeWithException
  */
 class RootTunBinding {
     companion object {
+        private const val BIND_TIMEOUT_MS = 15_000L
+
         // Declared before `shared`: companion properties initialize top to bottom.
         private val statusObserver =
             object : IRootTunStateObserver.Stub() {
@@ -74,6 +77,7 @@ class RootTunBinding {
     }
 
     private val mutex = Mutex()
+    private val connectionStateLock = Any()
 
     @Volatile private var binder: IRootTunService? = null
 
@@ -120,87 +124,94 @@ class RootTunBinding {
     }
 
     suspend fun bind(context: Context): IRootTunService {
-        cachedBinder(context)?.let {
+        val appContext = context.appContextOrSelf
+        cachedBinder(appContext)?.let {
             return it
         }
 
         return mutex.withLock {
-            cachedBinder(context)?.let {
+            cachedBinder(appContext)?.let {
                 return it
             }
 
-            suspendCancellableCoroutine { continuation ->
-                val appContext = context.appContextOrSelf
-                val intent = createIntent(appContext)
-                val mainHandler = Handler(Looper.getMainLooper())
-
-                val newConnection =
-                    object : ServiceConnection {
-                        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                            val remote = IRootTunService.Stub.asInterface(service)
-                            if (remote == null) {
-                                invalidateConnection(appContext, "root tun binder is null")
-                                if (continuation.isActive) {
-                                    continuation.resumeWithException(
-                                        IllegalStateException("root tun binder is null")
-                                    )
-                                }
-                                return
-                            }
-
-                            binder = remote
-                            connection = this
-                            runCatching { afterBind?.invoke(remote) }
-                            if (continuation.isActive) {
-                                continuation.resume(remote)
-                            }
-                        }
-
-                        override fun onServiceDisconnected(name: ComponentName?) {
-                            invalidateConnection(appContext, null)
-                        }
-
-                        override fun onNullBinding(name: ComponentName?) {
-                            invalidateConnection(
-                                appContext,
-                                "root tun service returned null binding",
-                            )
-                            if (continuation.isActive) {
-                                continuation.resumeWithException(
-                                    IllegalStateException("root tun service returned null binding")
-                                )
-                            }
-                        }
-
-                        override fun onBindingDied(name: ComponentName?) {
-                            invalidateConnection(appContext, "RootTun binding died")
-                        }
-                    }
-
-                connection = newConnection
-                continuation.invokeOnCancellation {
-                    mainHandler.post { runCatching { RootService.unbind(newConnection) } }
-                    if (connection === newConnection) {
-                        connection = null
-                    }
-                    if (binder != null && connection == null) {
-                        binder = null
-                    }
-                }
-
-                mainHandler.post {
-                    runCatching { RootService.bind(intent, newConnection) }
-                        .onFailure { error ->
-                            connection = null
-                            binder = null
-                            if (continuation.isActive) {
-                                continuation.resumeWithException(error)
-                            }
-                        }
-                }
+            withTimeout(BIND_TIMEOUT_MS) {
+                RootAccessSupport.requireRootTunAccess(appContext)
+                awaitBinding(appContext)
             }
         }
     }
+
+    // tryResume/completeResume (internal API) are the only two-phase resume that can hand the
+    // race between onServiceConnected and cancellation without leaking a live binding.
+    @OptIn(InternalCoroutinesApi::class)
+    private suspend fun awaitBinding(appContext: Context): IRootTunService =
+        suspendCancellableCoroutine { continuation ->
+            val intent = createIntent(appContext)
+            val mainHandler = Handler(Looper.getMainLooper())
+
+            val newConnection =
+                object : ServiceConnection {
+                    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                        val remote = IRootTunService.Stub.asInterface(service)
+                        if (remote == null) {
+                            invalidateConnection(
+                                appContext,
+                                "root tun binder is null",
+                                this,
+                            )
+                            resumeWithException(
+                                continuation,
+                                IllegalStateException("root tun binder is null"),
+                            )
+                            return
+                        }
+
+                        val resumeToken = adoptConnection(this, remote, continuation)
+                        if (resumeToken == null) {
+                            mainHandler.post { runCatching { RootService.unbind(this) } }
+                            return
+                        }
+                        runCatching { afterBind?.invoke(remote) }
+                        continuation.completeResume(resumeToken)
+                    }
+
+                    override fun onServiceDisconnected(name: ComponentName?) {
+                        invalidateConnection(appContext, null, this)
+                    }
+
+                    override fun onNullBinding(name: ComponentName?) {
+                        invalidateConnection(
+                            appContext,
+                            "root tun service returned null binding",
+                            this,
+                        )
+                        resumeWithException(
+                            continuation,
+                            IllegalStateException("root tun service returned null binding"),
+                        )
+                    }
+
+                    override fun onBindingDied(name: ComponentName?) {
+                        invalidateConnection(appContext, "RootTun binding died", this)
+                    }
+                }
+
+            expectConnection(newConnection)
+            continuation.invokeOnCancellation {
+                mainHandler.post {
+                    clearConnection(newConnection)
+                    runCatching { RootService.unbind(newConnection) }
+                }
+            }
+
+            mainHandler.post {
+                runCatching { RootService.bind(intent, newConnection) }
+                    .onFailure { error ->
+                        clearConnection(newConnection)
+                        resumeWithException(continuation, error)
+                    }
+            }
+        }
 
     suspend fun disconnect() {
         mutex.withLock {
@@ -208,8 +219,7 @@ class RootTunBinding {
 
             binder?.let { service -> runCatching { beforeUnbind?.invoke(service) } }
             withContext(Dispatchers.Main) { runCatching { RootService.unbind(current) } }
-            connection = null
-            binder = null
+            clearConnection(current)
         }
     }
 
@@ -223,9 +233,7 @@ class RootTunBinding {
     }
 
     fun invalidateConnection(context: Context, reason: String?) {
-        val staleConnection = connection
-        binder = null
-        connection = null
+        val staleConnection = clearCurrentConnection()
         // Unbind the stale ServiceConnection, otherwise libsu keeps it registered for
         // reconnection and repeated failures accumulate dead connections.
         if (staleConnection != null) {
@@ -234,6 +242,66 @@ class RootTunBinding {
             }
         }
         RootTunRuntimeRecovery.handleBinderGone(context, reason)
+    }
+
+    private fun expectConnection(expected: ServiceConnection) {
+        synchronized(connectionStateLock) {
+            connection = expected
+            binder = null
+        }
+    }
+
+    @OptIn(InternalCoroutinesApi::class)
+    private fun adoptConnection(
+        expected: ServiceConnection,
+        remote: IRootTunService,
+        continuation: CancellableContinuation<IRootTunService>,
+    ): Any? =
+        synchronized(connectionStateLock) {
+            if (connection !== expected) return@synchronized null
+            val resumeToken = continuation.tryResume(remote)
+            if (resumeToken == null) {
+                connection = null
+                binder = null
+                return@synchronized null
+            }
+            binder = remote
+            resumeToken
+        }
+
+    private fun clearConnection(expected: ServiceConnection): Boolean =
+        synchronized(connectionStateLock) {
+            if (connection !== expected) return@synchronized false
+            connection = null
+            binder = null
+            true
+        }
+
+    private fun clearCurrentConnection(): ServiceConnection? =
+        synchronized(connectionStateLock) {
+            val current = connection
+            connection = null
+            binder = null
+            current
+        }
+
+    private fun invalidateConnection(
+        context: Context,
+        reason: String?,
+        expected: ServiceConnection,
+    ) {
+        if (!clearConnection(expected)) return
+        Handler(Looper.getMainLooper()).post { runCatching { RootService.unbind(expected) } }
+        RootTunRuntimeRecovery.handleBinderGone(context, reason)
+    }
+
+    @OptIn(InternalCoroutinesApi::class)
+    private fun resumeWithException(
+        continuation: CancellableContinuation<IRootTunService>,
+        error: Throwable,
+    ) {
+        val resumeToken = continuation.tryResumeWithException(error) ?: return
+        continuation.completeResume(resumeToken)
     }
 
     fun createIntent(context: Context): Intent = Intent(context, RootTunRootService::class.java)

@@ -262,7 +262,7 @@ class RootTunService : BaseService() {
                     .setSummaryText(presentation.subText)
             )
             .setSmallIcon(R.drawable.ic_logo_service)
-            .setColor(getColor(R.color.color_clash))
+            .setColor(getColor(R.color.color_yumebox))
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -274,6 +274,7 @@ class RootTunService : BaseService() {
     }
 
     private fun createChannel() {
+        notificationManager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
         notificationManager.createNotificationChannel(
             NotificationChannelCompat.Builder(CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_LOW)
                 .setName(CHANNEL_NAME)
@@ -304,8 +305,10 @@ class RootTunService : BaseService() {
         private const val ACTION_START = "com.github.yumelira.yumebox.ROOT_TUN_SERVICE_START"
         private const val ACTION_STOP = "com.github.yumelira.yumebox.ROOT_TUN_SERVICE_STOP"
         private const val NOTIFICATION_ID = 1003
-        private const val CHANNEL_ID = "clash_root_tun_service"
-        private const val CHANNEL_NAME = "Clash RootTun Service"
+        private const val CHANNEL_ID = "yumebox_root_tun_service"
+        private const val CHANNEL_NAME = "YumeBox RootTun Service"
+        // Pre-rebrand channel id, deleted on channel creation to avoid an orphaned entry.
+        private const val LEGACY_CHANNEL_ID = "clash_root_tun_service"
 
         fun start(context: Context) {
             val intent = Intent(context, RootTunService::class.java).setAction(ACTION_START)

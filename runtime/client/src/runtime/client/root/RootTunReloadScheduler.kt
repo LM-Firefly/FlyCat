@@ -37,9 +37,7 @@ import timber.log.Timber
 object RootTunReloadScheduler {
     enum class Reason {
         PROFILE_CHANGED,
-        PROFILE_OVERRIDE_CHANGED,
-        SESSION_OVERRIDE_CHANGED,
-        ROOT_TUN_CONFIG_CHANGED,
+        PROFILE_OVERRIDE_CHANGED
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -48,10 +46,6 @@ object RootTunReloadScheduler {
     private var reloadJob: Job? = null
     private val pendingReasons = linkedSetOf<Reason>()
     private var dirtyWhileRunning = false
-
-    @Volatile private var suppressNestedSchedule = false
-
-    fun isInternalOverrideSyncInProgress(): Boolean = suppressNestedSchedule
 
     fun schedule(context: Context, reason: Reason) {
         val appContext = context.appContextOrSelf
@@ -69,7 +63,7 @@ object RootTunReloadScheduler {
         }
     }
 
-    private suspend fun runReload(context: Context) {
+    private fun runReload(context: Context) {
         val reasons =
             synchronized(lock) {
                 if (reloadJob?.isActive == true) {

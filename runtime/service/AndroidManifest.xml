@@ -40,7 +40,7 @@
             android:permission="android.permission.BIND_VPN_SERVICE">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="clash_vpn" />
+                android:value="yumebox_vpn" />
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
@@ -52,7 +52,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="clash_proxy" />
+                android:value="yumebox_proxy" />
         </service>
 
         <service
@@ -79,7 +79,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="clash_root_tun" />
+                android:value="yumebox_root_tun" />
         </service>
 
         <service
@@ -104,7 +104,7 @@
 
         <receiver
             android:name="com.github.yumelira.yumebox.runtime.service.RestartReceiver"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />

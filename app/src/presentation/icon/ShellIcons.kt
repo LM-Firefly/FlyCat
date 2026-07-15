@@ -31,12 +31,8 @@ import com.github.yumelira.yumebox.presentation.icon.yume.Play
 import com.github.yumelira.yumebox.presentation.icon.yume.Square
 
 object ShellIcons {
-    val NavigateForward: ImageVector = Yume.ArrowRight
     val AddProfile: ImageVector = Yume.`Badge-plus`
-    val UpdateProfiles: ImageVector = Yume.`Circle-fading-arrow-up`
     val OpenProxy: ImageVector = Yume.`Arrow-down-up`
     val OpenProfiles: ImageVector = Yume.`Package-check`
     val OpenSettings: ImageVector = Yume.Bolt
-    val StartProxy: ImageVector = Yume.Play
-    val StopProxy: ImageVector = Yume.Square
 }

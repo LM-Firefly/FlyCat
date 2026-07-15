@@ -65,7 +65,7 @@ class VpnTunTransport(
 
                 setBlocking(false)
                 setMtu(TUN_MTU)
-                setSession("Clash")
+                setSession("YumeBox")
                 addDnsServer(TUN_DNS)
                 if (store.allowIpv6) {
                     addDnsServer(TUN_DNS6)

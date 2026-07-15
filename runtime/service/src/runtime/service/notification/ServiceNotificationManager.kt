@@ -57,6 +57,7 @@ class ServiceNotificationManager(
     private var lastNotificationFingerprint: String? = null
 
     fun createChannel() {
+        legacyChannelIds.forEach(notificationManager::deleteNotificationChannel)
         notificationManager.createNotificationChannel(
             NotificationChannelCompat.Builder(
                     config.channelId,
@@ -144,7 +145,7 @@ class ServiceNotificationManager(
                     .setSummaryText(presentation.subText)
             )
             .setSmallIcon(R.drawable.ic_logo_service)
-            .setColor(service.getColor(R.color.color_clash))
+            .setColor(service.getColor(R.color.color_yumebox))
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -169,18 +170,22 @@ class ServiceNotificationManager(
     }
 
     companion object {
+        // Channel ids shipped before the YumeBox rebrand; deleted on channel creation so
+        // upgraded installs don't keep orphaned "Clash ..." entries in notification settings.
+        private val legacyChannelIds = listOf("clash_vpn_service", "clash_http_service")
+
         val vpnConfig =
             Config(
                 notificationId = 1001,
-                channelId = "clash_vpn_service",
-                channelName = "Clash VPN Service",
+                channelId = "yumebox_vpn_service",
+                channelName = "YumeBox VPN Service",
             )
 
         val httpConfig =
             Config(
                 notificationId = 1002,
-                channelId = "clash_http_service",
-                channelName = "Clash HTTP Service",
+                channelId = "yumebox_http_service",
+                channelName = "YumeBox HTTP Service",
             )
     }
 }

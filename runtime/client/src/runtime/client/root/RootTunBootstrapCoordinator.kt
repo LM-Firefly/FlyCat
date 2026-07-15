@@ -32,9 +32,9 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
- * Attach-and-probe loop for a root session that outlives the app process (extracted from
- * [com.github.yumelira.yumebox.runtime.client.ProxyFacade]): keeps the RootTun foreground
- * service attached while a session is live and probes the root binder until the runtime
+ * Coordinates startup-time attach and probe work while the app process is alive (extracted
+ * from [com.github.yumelira.yumebox.runtime.client.ProxyFacade]): attaches the RootTun
+ * foreground service for an active session and probes the root binder until the runtime
  * reports Running. Observed statuses are handed back via [onRootStatus], which returns true
  * once the runtime is running and the loop may stop.
  */

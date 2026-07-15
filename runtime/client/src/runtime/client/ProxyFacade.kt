@@ -29,10 +29,8 @@ import androidx.core.content.ContextCompat
 import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
 import com.github.yumelira.yumebox.core.model.Proxy
-import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.model.ProxySort
 import com.github.yumelira.yumebox.core.model.Traffic
-import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.data.model.ProxyMode
@@ -70,6 +68,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.UUID
+import kotlin.time.Duration.Companion.milliseconds
 
 enum class ProxyGroupSyncPriority {
     OFF,
@@ -327,7 +326,7 @@ class ProxyFacade(
             val deadline = System.currentTimeMillis() + CONTROLLER_SWITCH_STOP_TIMEOUT_MS
             while (System.currentTimeMillis() < deadline) {
                 if (!StatusProvider.isLocalRuntimeServiceAlive(mode)) break
-                delay(CONTROLLER_SWITCH_STOP_POLL_MS)
+                delay(CONTROLLER_SWITCH_STOP_POLL_MS.milliseconds)
             }
         }
         StatusProvider.reconcilePersistedRuntimeState()
@@ -521,16 +520,6 @@ class ProxyFacade(
         operationMutex.withLock { stopProxyInternal(targetMode) }
     }
 
-    suspend fun queryProxyGroupNames(excludeNotSelectable: Boolean = false): List<String> =
-        resolveClashManager().queryProxyGroupNames(excludeNotSelectable)
-
-    suspend fun queryProfileProxyGroups(excludeNotSelectable: Boolean = false): List<ProxyGroup> {
-        return resolveClashManager().queryProfileProxyGroups(excludeNotSelectable)
-    }
-
-    suspend fun queryProxyGroup(name: String, sort: ProxySort = ProxySort.Default): ProxyGroup =
-        resolveClashManager().queryProxyGroup(name, sort)
-
     suspend fun selectProxy(group: String, proxyName: String): Boolean {
         Timber.d("Select proxy: group=$group proxy=$proxyName")
         val ok = resolveClashManager().patchSelector(group, proxyName)
@@ -607,9 +596,6 @@ class ProxyFacade(
         scheduleRuntimeProxyGroupsRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
         return delay
     }
-
-    suspend fun queryTunnelState(): TunnelState = resolveClashManager().queryTunnelState()
-
     suspend fun queryConnections(): ConnectionSnapshot {
         if (!_runtimeSnapshot.value.running) {
             return ConnectionSnapshot()
@@ -659,24 +645,6 @@ class ProxyFacade(
             markRemoteControllerOnline()
         }
         return traffic
-    }
-
-    suspend fun reloadCurrentProfile(): Result<Unit> = runCatching {
-        if (isRemoteControllerActive()) return Result.success(Unit)
-        val profileManager = ServiceClient.profile()
-        val currentProfile = profileManager.queryActive()
-        if (currentProfile != null) {
-            profileManager.setActive(currentProfile)
-            _currentProfile.value = currentProfile
-            PollingTimers.awaitTick(
-                PollingTimerSpecs.dynamic(
-                    name = "runtime_profile_reload_refresh",
-                    intervalMillis = 600L,
-                    initialDelayMillis = 600L,
-                )
-            )
-            refreshAll()
-        }
     }
 
     suspend fun refreshProxyGroups() {
@@ -1026,7 +994,7 @@ class ProxyFacade(
         refreshAllSafely()
     }
 
-    private suspend fun handleRuntimeStopped(reason: String?) {
+    private fun handleRuntimeStopped(reason: String?) {
         if (isRemoteControllerActive()) {
             applyRemoteControllerState()
             return

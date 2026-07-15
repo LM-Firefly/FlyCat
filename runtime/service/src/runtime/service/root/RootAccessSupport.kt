@@ -21,9 +21,10 @@
 package com.github.yumelira.yumebox.runtime.service.root
 
 import android.content.Context
+import com.topjohnwu.superuser.Shell
 import dev.oom_wg.purejoy.mlang.MLang
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 data class RootAccessStatus(val rootAccessGranted: Boolean) {
     val canStartRootTun: Boolean
@@ -38,8 +39,24 @@ object RootAccessSupport {
         return RootAccessStatus(rootAccessGranted = rootAccessGranted)
     }
 
-    suspend fun evaluateAsync(context: Context): RootAccessStatus =
-        withContext(Dispatchers.IO) { evaluate(context) }
+    // tryResume/completeResume (internal API): the libsu shell callback may fire after the
+    // caller was cancelled, so the resume must be race-safe rather than throw.
+    @OptIn(InternalCoroutinesApi::class)
+    suspend fun evaluateAsync(@Suppress("UNUSED_PARAMETER") context: Context): RootAccessStatus =
+        suspendCancellableCoroutine { continuation ->
+            fun resume(rootAccessGranted: Boolean) {
+                val status = RootAccessStatus(rootAccessGranted = rootAccessGranted)
+                val resumeToken = continuation.tryResume(status) ?: return
+                continuation.completeResume(resumeToken)
+            }
+
+            runCatching {
+                    Shell.getShell(Shell.EXECUTOR) { shell ->
+                        resume(runCatching { shell.isRoot }.getOrDefault(false))
+                    }
+                }
+                .onFailure { resume(false) }
+        }
 
     suspend fun requireRootTunAccess(context: Context): RootAccessStatus =
         evaluateAsync(context).also { status ->
