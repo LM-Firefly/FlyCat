@@ -309,10 +309,7 @@ private val countryNameRegex: Regex = run {
 
 private val countryCodes = countryNameToCode.values.toSet()
 
-private val wrappedCountryCodeRegex =
-    Regex("^(?:\\[([A-Z]{2})\\]|\\(([A-Z]{2})\\))")
-
-private val delimitedCountryCodeRegex = Regex("^([A-Z]{2})(?=\\s*[-|·•—:])")
+private val countryCodeAbbreviationRegex = Regex("(?<![A-Za-z])([A-Z]{2})(?![A-Za-z])")
 
 private fun extractCountryCodeFromName(name: String): Pair<String?, String> {
     val match = countryNameRegex.find(name)
@@ -345,15 +342,11 @@ private fun extractCountryCodeFromName(name: String): Pair<String?, String> {
     return countryCode to displayName.ifEmpty { name }
 }
 
-private fun extractCountryCodeAbbreviation(name: String): Pair<String, String>? {
-    val match =
-        wrappedCountryCodeRegex.find(name) ?: delimitedCountryCodeRegex.find(name) ?: return null
-    val countryCode = match.groupValues.drop(1).firstOrNull { it.isNotEmpty() } ?: return null
-    if (countryCode !in countryCodes) return null
-
-    val displayName = name.substring(match.range.last + 1).trim { it.isNameSeparator() }
-    return countryCode to displayName.ifEmpty { name }
-}
+private fun findCountryCodeAbbreviation(name: String): String? =
+    countryCodeAbbreviationRegex
+        .findAll(name)
+        .map { it.groupValues[1] }
+        .firstOrNull(countryCodes::contains)
 
 private fun findFlagEmojiCountryCode(text: String): Pair<String, IntRange>? {
     var i = 0
@@ -404,8 +397,8 @@ fun extractFlaggedName(rawName: String): FlaggedName {
         return FlaggedName(countryCode = codeFromName, displayName = displayName)
     }
 
-    extractCountryCodeAbbreviation(trimmed)?.let { (countryCode, displayName) ->
-        return FlaggedName(countryCode = countryCode, displayName = displayName)
+    findCountryCodeAbbreviation(trimmed)?.let { countryCode ->
+        return FlaggedName(countryCode = countryCode, displayName = trimmed)
     }
 
     return FlaggedName(countryCode = null, displayName = trimmed)
