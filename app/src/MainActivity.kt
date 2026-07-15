@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.Density
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.github.yumelira.yumebox.common.util.AppLanguageManager
+import com.github.yumelira.yumebox.common.util.AutoStartDependencies
 import com.github.yumelira.yumebox.common.util.IntentController
 import com.github.yumelira.yumebox.common.util.ProxyAutoStartHelper
 import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
@@ -202,15 +203,18 @@ class MainActivity : FragmentActivity() {
             var handled = false
             try {
                 StartupTaskCoordinator.awaitWarmup()
-                ProxyAutoStartHelper.checkAndAutoStart(
-                    context = this@MainActivity,
-                    featureStore = featureStore,
-                    proxyFacade = proxyFacade,
-                    profilesRepository = profilesRepository,
-                    appSettingsStorage = appSettingsStorage,
-                    networkSettingsStorage = networkSettingsStorage,
-                    serviceCache = serviceCache,
-                )
+                with(
+                    AutoStartDependencies(
+                        featureStore = featureStore,
+                        proxyFacade = proxyFacade,
+                        profilesRepository = profilesRepository,
+                        appSettingsStorage = appSettingsStorage,
+                        networkSettingsStorage = networkSettingsStorage,
+                        serviceCache = serviceCache,
+                    )
+                ) {
+                    ProxyAutoStartHelper.checkAndAutoStart(this@MainActivity)
+                }
                 handled = true
             } finally {
                 AutoStartSessionGate.finishAutoActions(markHandled = handled)

@@ -24,16 +24,10 @@ import android.content.Context
 import android.net.VpnService
 import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
 import com.github.yumelira.yumebox.data.model.ProxyMode
-import com.github.yumelira.yumebox.data.store.AppSettingsStore
-import com.github.yumelira.yumebox.data.store.FeatureStore
-import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.runtime.api.Profile
-import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
-import com.github.yumelira.yumebox.runtime.client.ProxyFacade
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.util.AutoStartExecutionGate
 import com.github.yumelira.yumebox.runtime.service.util.AutoStartUpdatePolicy
-import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 
@@ -42,55 +36,44 @@ object ProxyAutoStartHelper {
 
     // Fault barrier: auto start is best-effort across IPC/store/native seams; any failure is
     // logged and skipped (CancellationException is rethrown at each catch site).
+    context(deps: AutoStartDependencies)
     @Suppress("TooGenericExceptionCaught")
-    suspend fun checkAndAutoStart(
-        context: Context,
-        featureStore: FeatureStore,
-        proxyFacade: ProxyFacade,
-        profilesRepository: ProfilesRepository,
-        appSettingsStorage: AppSettingsStore,
-        networkSettingsStorage: NetworkSettingsStore,
-        serviceCache: MMKV,
-    ) {
-        if (proxyFacade.isRemoteControllerActive()) {
+    suspend fun checkAndAutoStart(context: Context) {
+        if (deps.proxyFacade.isRemoteControllerActive()) {
             Timber.tag(TAG).i("Skip auto start: external controller mode active")
-            proxyFacade.applyRemoteControllerState()
+            deps.proxyFacade.applyRemoteControllerState()
             return
         }
         if (AutoStartSessionGate.shouldSkipAutoStart()) {
             Timber.tag(TAG).i("Skip auto start: manual pause gate is active in current session")
             return
         }
-        if (AutoStartExecutionGate.isExecuting(serviceCache)) {
+        if (AutoStartExecutionGate.isExecuting(deps.serviceCache)) {
             Timber.tag(TAG).i("Skip auto start: background auto-restart is still executing")
             return
         }
-        if (featureStore.consumePostUpdateColdStartPending()) {
+        if (deps.featureStore.consumePostUpdateColdStartPending()) {
             Timber.tag(TAG).i("Skip auto start/update: post-update cold-start protection is active")
             return
         }
 
         val activeProfile =
             try {
-                profilesRepository.queryActiveProfile()
+                deps.profilesRepository.queryActiveProfile()
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.tag(TAG).e(error, "Failed to load active profile")
                 return
             }
 
-        tryUpdateActiveProfileOnStart(
-            appSettingsStorage = appSettingsStorage,
-            profilesRepository = profilesRepository,
-            activeProfile = activeProfile,
-        )
+        tryUpdateActiveProfileOnStart(activeProfile)
 
-        val automaticRestart = appSettingsStorage.automaticRestart.value
+        val automaticRestart = deps.appSettingsStorage.automaticRestart.value
         if (!automaticRestart) {
             return
         }
 
-        if (proxyFacade.runtimeSnapshot.value.running || StatusProvider.serviceRunning) {
+        if (deps.proxyFacade.runtimeSnapshot.value.running || StatusProvider.serviceRunning) {
             return
         }
 
@@ -99,15 +82,15 @@ object ProxyAutoStartHelper {
             return
         }
 
-        val mode = networkSettingsStorage.proxyMode.value
+        val mode = deps.networkSettingsStorage.proxyMode.value
         if (mode == ProxyMode.Tun && VpnService.prepare(context) != null) {
             Timber.tag(TAG).i("Skip auto start: VPN permission is missing for Tun mode")
             return
         }
 
         try {
-            profilesRepository.setActiveProfile(activeProfile.uuid)
-            proxyFacade.startProxy(mode)
+            deps.profilesRepository.setActiveProfile(activeProfile.uuid)
+            deps.proxyFacade.startProxy(mode)
             Timber.tag(TAG).i("Auto start ok: profile=${activeProfile.uuid}, mode=$mode")
         } catch (error: Exception) {
             if (error is CancellationException) throw error
@@ -116,15 +99,12 @@ object ProxyAutoStartHelper {
     }
 
     // Fault barrier: profile auto update on start is best-effort; failure only logs a warning.
+    context(deps: AutoStartDependencies)
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun tryUpdateActiveProfileOnStart(
-        appSettingsStorage: AppSettingsStore,
-        profilesRepository: ProfilesRepository,
-        activeProfile: Profile?,
-    ) {
+    private suspend fun tryUpdateActiveProfileOnStart(activeProfile: Profile?) {
         when (
             AutoStartUpdatePolicy.decide(
-                autoUpdateEnabled = appSettingsStorage.autoUpdateCurrentProfileOnStart.value,
+                autoUpdateEnabled = deps.appSettingsStorage.autoUpdateCurrentProfileOnStart.value,
                 activeProfile = activeProfile,
                 skipForPostUpdateColdStart = false,
             )
@@ -149,7 +129,7 @@ object ProxyAutoStartHelper {
 
         val target = activeProfile ?: return
         try {
-            profilesRepository.updateProfile(target.uuid)
+            deps.profilesRepository.updateProfile(target.uuid)
             Timber.tag(TAG).i("Auto update on start ok: ${target.uuid}")
         } catch (error: Exception) {
             if (error is CancellationException) throw error
