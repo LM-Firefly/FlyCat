@@ -47,3 +47,71 @@ See [ThirdParty](ThirdParty.md) for the third-party libraries used in this proje
    - Releases must not use the YumeBox project name.
    - Releases must not use the original YumeBox icon.
    - Releases must not include YumeBox's official issue feedback channels.
+
+## Build
+
+YumeBox does not use Git submodules. A clean checkout needs the mihomo source and generated assets before Gradle can build the app.
+
+1. Install **OpenJDK 24**, **Android SDK 37**, **NDK 30.0.14904198**, **CMake 3.22.1**, **Kotlin CLI**, **Go 1.26**, **Rust nightly**, Git, and `patch`.
+
+   ```bash
+   sdkmanager "platforms;android-37" "ndk;30.0.14904198" "cmake;3.22.1"
+   ```
+
+2. Create `local.properties` in the project root:
+
+   ```properties
+   sdk.dir=/path/to/android-sdk
+   # ndk.dir=/path/to/android-sdk/ndk/30.0.14904198
+   ```
+
+3. Fetch the mihomo source. Available channels are `alpha`, `meta`, and `smart`.
+
+   ```bash
+   chmod +x scripts/sync-kernel.sh
+   ./scripts/sync-kernel.sh alpha
+   ```
+
+4. Prepare Rust. Release builds should use MetaCubeX Go 1.26 with the patches in `.github/patch`, matching CI.
+
+   ```bash
+   rustup toolchain install nightly --component rust-src
+   rustup target add --toolchain nightly \
+     armv7-linux-androideabi \
+     aarch64-linux-android \
+     i686-linux-android \
+     x86_64-linux-android
+   cargo install cargo-ndk
+   ```
+
+5. Generate locale sources, native libraries, and bundled Geo assets:
+
+   ```bash
+   kotlin scripts/generate-locale.main.kts .
+   kotlin scripts/native-build.main.kts --all
+   ```
+
+   Run the native script with `--help` to build Go, Rust, C++, or Geo assets separately.
+
+6. Optionally sign release builds. Place the keystore at `release.keystore` in the project root, then create `signing.properties`:
+
+   ```properties
+   keystore.password=<keystore password>
+   key.alias=<key alias>
+   key.password=<key password>
+   ```
+
+7. Build the APK:
+
+   ```bash
+   # arm64-v8a debug APK without bundled Geo data (local default)
+   ./gradlew :app:assembleDebug
+
+   # arm64-v8a debug APK with Geo databases and BundleMRS.7z
+   ./gradlew -Pgeo.bundle=true :app:assembleDebug
+
+   # release APKs for every configured ABI plus a universal APK
+   ./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
+   ```
+
+   APKs are written to `app/build/outputs/apk/<build-type>/`. External builds omit Geo assets and `BundleMRS.7z`; mihomo downloads them when needed. On Windows, use `gradlew.bat`.

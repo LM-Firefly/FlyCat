@@ -47,3 +47,71 @@ YumeBox 目前仅支持 **Android 8.0（API 26）及以上系统**。
    - 发行版不得使用 YumeBox 项目名称
    - 发行版不得沿用 YumeBox 原始图标
    - 发行版不得包含 YumeBox Issue 反馈渠道
+
+## 构建
+
+YumeBox 不使用 Git submodule。从干净检出开始构建前，需要先准备 Mihomo 源码和生成资源。
+
+1. 安装 **OpenJDK 24**、**Android SDK 37**、**NDK 30.0.14904198**、**CMake 3.22.1**、**Kotlin CLI**、**Go 1.26**、**Rust nightly**、Git 和 `patch`。
+
+   ```bash
+   sdkmanager "platforms;android-37" "ndk;30.0.14904198" "cmake;3.22.1"
+   ```
+
+2. 在项目根目录创建 `local.properties`：
+
+   ```properties
+   sdk.dir=/path/to/android-sdk
+   # ndk.dir=/path/to/android-sdk/ndk/30.0.14904198
+   ```
+
+3. 拉取 Mihomo 源码，可选择 `alpha`、`meta` 或 `smart`。
+
+   ```bash
+   chmod +x scripts/sync-kernel.sh
+   ./scripts/sync-kernel.sh alpha
+   ```
+
+4. 准备 Rust。Release 构建应使用 MetaCubeX Go 1.26，并与 CI 一样应用 `.github/patch` 中的补丁。
+
+   ```bash
+   rustup toolchain install nightly --component rust-src
+   rustup target add --toolchain nightly \
+     armv7-linux-androideabi \
+     aarch64-linux-android \
+     i686-linux-android \
+     x86_64-linux-android
+   cargo install cargo-ndk
+   ```
+
+5. 生成本地化源码、原生库和内置 Geo 资源：
+
+   ```bash
+   kotlin scripts/generate-locale.main.kts .
+   kotlin scripts/native-build.main.kts --all
+   ```
+
+   使用 `--help` 可以单独构建 Go、Rust、C++ 或 Geo 资源。
+
+6. 可选：为 Release 构建签名。将密钥库放置为项目根目录下的 `release.keystore`，然后创建 `signing.properties`：
+
+   ```properties
+   keystore.password=<密钥库密码>
+   key.alias=<密钥别名>
+   key.password=<密钥密码>
+   ```
+
+7. 构建 APK：
+
+   ```bash
+   # 本地默认：不内置 Geo 数据的 arm64-v8a Debug APK
+   ./gradlew :app:assembleDebug
+
+   # 内置 Geo 数据库与 BundleMRS.7z 的 arm64-v8a Debug APK
+   ./gradlew -Pgeo.bundle=true :app:assembleDebug
+
+   # 为所有已配置 ABI 构建 Release APK，并额外生成通用 APK
+   ./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
+   ```
+
+   APK 输出到 `app/build/outputs/apk/<build-type>/`。外置版本不包含 Geo 资源和 `BundleMRS.7z`，Mihomo 会按需下载。Windows 请使用 `gradlew.bat`。
