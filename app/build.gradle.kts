@@ -41,6 +41,18 @@ kotlin {
 val appAbiList =
     gropify.abi.app.list.split(',').map { it.trim() }.filter { it.isNotEmpty() }
 
+// Packaging matrix switches. CLI -P properties (same pattern as build.number below), NOT
+// gropify keys, so CI can flip them per invocation:
+//  - build.allAbis=true -> per-ABI splits for the full abi.app.list plus a universal APK
+//    (CI). Default (local dev) builds only arm64-v8a and skips the universal APK.
+//  - geo.bundle=false   -> keep the XZ geo databases out of assets; App.extractGeoFiles
+//    skips them and the mihomo core downloads each database on first use instead.
+val buildAllAbis = providers.gradleProperty("build.allAbis").orNull?.toBoolean() ?: false
+val geoBundle = providers.gradleProperty("geo.bundle").orNull?.toBoolean() ?: true
+val splitAbiList = if (buildAllAbis) appAbiList else listOf("arm64-v8a")
+// Raw output name segment; reusable-prepare-publish.yml parses it, keep them in sync.
+val geoVariantSegment = if (geoBundle) "geo" else "nogeo"
+
 val geoFilesAssetsDir = rootProject.layout.buildDirectory.dir("generated/assets/geo")
 
 // CI-computed build versioning. CI injects `-Pbuild.number=<N>` where N is the commit
@@ -106,12 +118,10 @@ android {
             }
             assets.directories.apply {
                 clear()
-                addAll(
-                    listOf(
-                        "assets",
-                        geoFilesAssetsDir.get().asFile.invariantSeparatorsPath,
-                    )
-                )
+                add("assets")
+                if (geoBundle) {
+                    add(geoFilesAssetsDir.get().asFile.invariantSeparatorsPath)
+                }
             }
             aidl.directories.apply {
                 clear()
@@ -173,8 +183,8 @@ android {
             reset()
             // AGP Split.include only accepts vararg; copying this tiny ABI list is negligible.
             @Suppress("SpreadOperator")
-            include(*appAbiList.toTypedArray())
-            isUniversalApk = true
+            include(*splitAbiList.toTypedArray())
+            isUniversalApk = buildAllAbis
         }
     }
 
@@ -229,7 +239,7 @@ android {
                 val buildTypeName = variant.buildType ?: "release"
                 output.versionName.set(appVersionName)
                 (output as com.android.build.api.variant.impl.VariantOutputImpl).outputFileName.set(
-                    "${gropify.project.name}-${appVersionName}-${abiName}-${buildTypeName}.apk"
+                    "${gropify.project.name}-${appVersionName}-${abiName}-${geoVariantSegment}-${buildTypeName}.apk"
                 )
             }
         }
