@@ -6,13 +6,8 @@ on:
       channel:
         required: true
         type: string
-      release_tag:
-        required: true
-        type: string
-      publish_artifact_name:
-        required: true
-        type: string
-      meta_asset_name:
+      artifact_prefix:
+        description: "Publish file-name prefix (e.g. yumebox); combined with the branch/sha into the per-APK artifact name via scripts/ci-apk-stem.sh."
         required: true
         type: string
       telegram_title:
@@ -33,10 +28,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download publish artifact
+      # Telegram gets exactly one file: the unmarked arm64-v8a APK (no bundled geo).
+      # The artifact name equals the publish file name (archive:false uploads in
+      # reusable-prepare-publish.yml); the stem must be computed from the same
+      # branch/sha the caller passed to prepare-publish (github.ref_name / github.sha).
+      - name: Resolve APK artifact name
+        id: apk
+        shell: bash
+        run: |
+          set -eu
+          stem="$(bash scripts/ci-apk-stem.sh "${{ inputs.artifact_prefix }}" "${{ github.ref_name }}" "${{ github.sha }}" "")"
+          echo "name=${stem}.apk" >> "$GITHUB_OUTPUT"
+
+      - name: Download arm64-v8a (nogeo) APK artifact
         uses: actions/download-artifact@v8
         with:
-          name: ${{ inputs.publish_artifact_name }}
+          name: ${{ steps.apk.outputs.name }}
           path: publish
 
       - name: Check upload availability

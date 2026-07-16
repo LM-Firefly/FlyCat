@@ -136,7 +136,7 @@ def check_environ():
 
 def find_apk_files():
     if PUBLISH_DIR:
-        pattern = os.path.join(PUBLISH_DIR, "*arm64-v8a*.apk")
+        pattern = os.path.join(PUBLISH_DIR, "*.apk")
         found = sorted(glob.glob(pattern))
         if found:
             print(f"[+] Found {len(found)} files in {pattern}")
