@@ -19,8 +19,9 @@
 #
 # Prints the publish APK file stem shared by reusable-prepare-publish.yml and
 # reusable-notify-telegram.yml. Channel/PR builds (hash present) drop the version
-# from the file name: <prefix>-<branch_segment>-<hash8>. Official releases (no
-# hash) keep the clean version: <prefix>-<version_name>. The branch segment
+# from the file name: <prefix>-<branch_segment>-<hash7>. Official releases (no
+# hash) keep the clean version: <prefix>-<version_name>. Callers encode the
+# builtin-geo variant by passing "<prefix>-builtin" as PREFIX. The branch segment
 # normalization must mirror app/build.gradle.kts (lowercase, [^a-z0-9] runs -> '-',
 # leading/trailing '-' trimmed).
 #
@@ -38,9 +39,9 @@ branch_segment="$(printf '%s' "${branch}" \
 
 if [ -n "${hash}" ]; then
   if [ -n "${branch_segment}" ]; then
-    printf '%s-%s-%s\n' "${prefix}" "${branch_segment}" "${hash:0:8}"
+    printf '%s-%s-%s\n' "${prefix}" "${branch_segment}" "${hash:0:7}"
   else
-    printf '%s-%s\n' "${prefix}" "${hash:0:8}"
+    printf '%s-%s\n' "${prefix}" "${hash:0:7}"
   fi
 else
   printf '%s-%s\n' "${prefix}" "${version_name}"

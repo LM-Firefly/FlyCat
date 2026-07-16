@@ -100,7 +100,9 @@ jobs:
         run: |
           set -eu
           stem="$(bash scripts/ci-apk-stem.sh "${{ inputs.artifact_prefix }}" "${BUILD_BRANCH}" "${BUILD_HASH}" "${{ steps.version.outputs.version_name }}")"
+          stem_builtin="$(bash scripts/ci-apk-stem.sh "${{ inputs.artifact_prefix }}-builtin" "${BUILD_BRANCH}" "${BUILD_HASH}" "${{ steps.version.outputs.version_name }}")"
           echo "value=${stem}" >> "$GITHUB_OUTPUT"
+          echo "builtin=${stem_builtin}" >> "$GITHUB_OUTPUT"
 
       - name: Generate release notes
         shell: bash
@@ -132,6 +134,7 @@ jobs:
           version_name="${{ steps.version.outputs.version_name }}"
           version_code="${{ steps.version.outputs.version_code }}"
           file_stem="${{ steps.stem.outputs.value }}"
+          file_stem_builtin="${{ steps.stem.outputs.builtin }}"
           release_url="https://github.com/${{ github.repository }}/releases/tag/${{ inputs.release_tag }}"
           publish_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -141,27 +144,23 @@ jobs:
             # outputFileName rule in app/build.gradle.kts). Strip ".apk", then the buildType
             # and geo fields from the end; the versionName may contain ABI-looking substrings
             # (branch segment is [a-z0-9-]), so the ABI is matched anchored at the end of
-            # what remains.
+            # what remains. Publish names carry no ABI segment: arm64-v8a is the unmarked
+            # default, universal gets a -universal suffix, and the builtin-geo variant is
+            # encoded in the stem prefix (<prefix>-builtin-...).
             core="${base%.apk}"
             core="${core%-*}"
             geo_segment="${core##*-}"
             core="${core%-*}"
             case "$geo_segment" in
-              geo) variant_suffix="-geo" ;;
-              nogeo) variant_suffix="" ;;
+              geo) name_stem="${file_stem_builtin}" ;;
+              nogeo) name_stem="${file_stem}" ;;
               *) echo "Unrecognized geo segment in ${base}" >&2; exit 1 ;;
             esac
             case "$core" in
-              *-arm64-v8a) abi="arm64-v8a" ;;
-              *-universal) abi="universal" ;;
+              *-arm64-v8a) new_name="${name_stem}.apk" ;;
+              *-universal) new_name="${name_stem}-universal.apk" ;;
               *) continue ;;  # armeabi-v7a / x86 / x86_64: covered by the universal APK, not published
             esac
-
-            if [ "$abi" = "universal" ]; then
-              new_name="${file_stem}${variant_suffix}.apk"
-            else
-              new_name="${file_stem}-${abi}${variant_suffix}.apk"
-            fi
             cp -f "$file" "publish/${new_name}"
           done < <(find raw-apk -maxdepth 1 -type f -name '*.apk' | sort)
 
@@ -206,9 +205,8 @@ jobs:
           packages = []
           for apk in sorted(publish_dir.glob("*.apk")):
               name = apk.name
-              geo_bundled = name.endswith("-geo.apk")
-              core = name[: -len("-geo.apk")] if geo_bundled else name[: -len(".apk")]
-              abi = "arm64-v8a" if core.endswith("-arm64-v8a") else "universal"
+              geo_bundled = name.startswith(f"{artifact_prefix}-builtin-")
+              abi = "universal" if name.endswith("-universal.apk") else "arm64-v8a"
 
               h = hashlib.sha256()
               with apk.open("rb") as f:
@@ -264,35 +262,35 @@ jobs:
       # directly as an installer. NOTE: with archive:false the artifact takes the FILE
       # name and the `name:` input is ignored, so these artifacts appear exactly as the
       # publish file names from "Prepare publish artifacts". reusable-notify-telegram.yml
-      # downloads <stem>-arm64-v8a.apk by that computed name.
-      - name: Upload arm64-v8a APK artifact (nogeo)
+      # downloads <stem>.apk (the unmarked arm64-v8a, no bundled geo) by that computed name.
+      - name: Upload arm64-v8a APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ steps.stem.outputs.value }}-arm64-v8a
-          path: publish/${{ steps.stem.outputs.value }}-arm64-v8a.apk
-          if-no-files-found: error
-          archive: false
-
-      - name: Upload arm64-v8a APK artifact (geo)
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ steps.stem.outputs.value }}-arm64-v8a-geo
-          path: publish/${{ steps.stem.outputs.value }}-arm64-v8a-geo.apk
-          if-no-files-found: error
-          archive: false
-
-      - name: Upload universal APK artifact (nogeo)
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ steps.stem.outputs.value }}-universal
+          name: ${{ steps.stem.outputs.value }}
           path: publish/${{ steps.stem.outputs.value }}.apk
           if-no-files-found: error
           archive: false
 
-      - name: Upload universal APK artifact (geo)
+      - name: Upload arm64-v8a APK artifact (builtin geo)
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ steps.stem.outputs.value }}-universal-geo
-          path: publish/${{ steps.stem.outputs.value }}-geo.apk
+          name: ${{ steps.stem.outputs.builtin }}
+          path: publish/${{ steps.stem.outputs.builtin }}.apk
+          if-no-files-found: error
+          archive: false
+
+      - name: Upload universal APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.stem.outputs.value }}-universal
+          path: publish/${{ steps.stem.outputs.value }}-universal.apk
+          if-no-files-found: error
+          archive: false
+
+      - name: Upload universal APK artifact (builtin geo)
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.stem.outputs.builtin }}-universal
+          path: publish/${{ steps.stem.outputs.builtin }}-universal.apk
           if-no-files-found: error
           archive: false
