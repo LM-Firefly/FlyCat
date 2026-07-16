@@ -128,7 +128,7 @@ jobs:
           kotlin scripts/generate-locale.main.kts .
           test -f "locale/build/generated/fytxt/kotlin/commonMain/kotlin/fytxt.kt"
 
-      - name: Build Release APKs
+      - name: Build Release APKs (geo + nogeo)
         shell: bash
         env:
           BUILD_NUMBER: ${{ steps.build_number.outputs.value }}
@@ -137,20 +137,39 @@ jobs:
         run: |
           set -eu
           chmod +x gradlew
-          ./gradlew --no-daemon \
-            -Pupdate.channel="${{ inputs.channel }}" \
-            -Pupdate.tag="${{ inputs.release_tag }}" \
-            -Pupdate.metaAssetName="${{ inputs.meta_asset_name }}" \
-            -Pbuild.number="${BUILD_NUMBER}" \
-            -Pbuild.hash="${BUILD_HASH:0:8}" \
-            -Pbuild.branch="${BUILD_BRANCH}" \
-            :${{ inputs.module }}:assembleRelease
+          common_args=(
+            -Pupdate.channel="${{ inputs.channel }}"
+            -Pupdate.tag="${{ inputs.release_tag }}"
+            -Pupdate.metaAssetName="${{ inputs.meta_asset_name }}"
+            -Pbuild.number="${BUILD_NUMBER}"
+            -Pbuild.hash="${BUILD_HASH:0:8}"
+            -Pbuild.branch="${BUILD_BRANCH}"
+            -Pbuild.allAbis=true
+          )
+          ./gradlew --no-daemon "${common_args[@]}" :${{ inputs.module }}:assembleRelease
+          # Stage the geo APKs before the second pass: the package task cleans stale files
+          # it owns, so the two variants cannot share the outputs directory.
+          mkdir -p apk-stage
+          cp ${{ inputs.module }}/build/outputs/apk/release/*.apk apk-stage/
+          # Second pass only re-merges assets and re-packages; compile and R8 stay
+          # up to date because geo.bundle feeds no compiler input (no BuildConfig field).
+          ./gradlew --no-daemon "${common_args[@]}" -Pgeo.bundle=false :${{ inputs.module }}:assembleRelease
+          cp ${{ inputs.module }}/build/outputs/apk/release/*.apk apk-stage/
+
+      - name: Verify staged APK matrix
+        shell: bash
+        run: |
+          set -eu
+          for variant in geo nogeo; do
+            ls apk-stage/*-arm64-v8a-${variant}-release.apk
+            ls apk-stage/*-universal-${variant}-release.apk
+          done
 
       - name: Upload raw APK artifact
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.raw_apk_artifact_name }}
-          path: ${{ inputs.module }}/build/outputs/apk/release/*.apk
+          path: apk-stage/*.apk
           if-no-files-found: error
           # APKs are already zip-compressed; store them uncompressed in the artifact zip.
           compression-level: 0
