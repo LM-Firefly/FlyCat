@@ -92,6 +92,8 @@ internal fun MoeHomeLayout(state: MoeHomeLayoutState) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val sidebarWidth = maxWidth * MoeUi.Sidebar.fraction
         val contentStart = (sidebarWidth - MoeUi.Sidebar.contentOverlap).coerceAtLeast(UiDp.dp0)
+        val screenCorner = getRoundedCorner()
+        val sidebarDecorationWidth = maxOf(sidebarWidth, contentStart + screenCorner)
         val page = state.pageProgress.coerceIn(0f, 1f)
         val sidebar = state.sidebarProgress.coerceIn(0f, 1f) * state.sidebarToggleProgress
         val sidebarWidthVisible = lerpDp(MoeUi.Sidebar.collapsedVisibleWidth, contentStart, sidebar)
@@ -114,7 +116,7 @@ internal fun MoeHomeLayout(state: MoeHomeLayoutState) {
             backdrop = backdrop,
             blurEnabled = blurReady,
             blurProgress = sidebar,
-            modifier = Modifier.align(Alignment.CenterStart).width(sidebarWidth).fillMaxHeight().graphicsLayer {
+            modifier = Modifier.align(Alignment.CenterStart).width(sidebarDecorationWidth).fillMaxHeight().graphicsLayer {
                 translationX = with(density) { lerpDp((-56).dp, UiDp.dp0, sidebar).toPx() }
                 alpha = lerpFloat(0.78f, 1f, sidebar) * page
             },
@@ -127,7 +129,7 @@ internal fun MoeHomeLayout(state: MoeHomeLayoutState) {
                 visibleWidth = sidebarWidthVisible,
             )
         }
-        MoeHomePanel(state, contentStart, heroHeight, sidebar)
+        MoeHomePanel(state, contentStart, heroHeight, sidebar, screenCorner)
     }
 }
 
@@ -138,8 +140,8 @@ private fun MoeHomePanel(
     contentStart: Dp,
     heroHeight: Dp,
     sidebar: Float,
+    screenCorner: Dp,
 ) {
-    val screenCorner = getRoundedCorner()
     val corner = lerpDp(UiDp.dp0, screenCorner, sidebar)
     val heroScale =
         if (state.pageProgress >= 0.999f) 1f
