@@ -95,7 +95,6 @@ jobs:
       release_tag: pr-${{ github.event.pull_request.number }}
       meta_asset_name: yumebox-pr-meta.json
       raw_apk_artifact_name: apk-raw-pr-app
-      publish_artifact_name: publish-pr-app
       build_hash: ${{ github.event.pull_request.head.sha }}
       build_branch: ${{ github.event.pull_request.head.ref }}
     secrets: inherit

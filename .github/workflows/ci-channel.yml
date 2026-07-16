@@ -168,7 +168,6 @@ jobs:
       release_tag: Pre-release
       meta_asset_name: yumebox-pre-meta.json
       raw_apk_artifact_name: apk-raw-pre-app
-      publish_artifact_name: publish-pre-app
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
     secrets: inherit
@@ -183,7 +182,6 @@ jobs:
       release_tag: Smart
       meta_asset_name: yumebox-smart-meta.json
       raw_apk_artifact_name: apk-raw-smart-app
-      publish_artifact_name: publish-smart-app
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
     secrets: inherit
@@ -193,9 +191,7 @@ jobs:
     uses: ./.github/workflows/reusable-notify-telegram.yml
     with:
       channel: pre
-      release_tag: Pre-release
-      publish_artifact_name: publish-pre-app
-      meta_asset_name: yumebox-pre-meta.json
+      artifact_prefix: yumebox
       telegram_title: YumeBox Pre
     secrets: inherit
 
