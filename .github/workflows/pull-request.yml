@@ -77,32 +77,18 @@ jobs:
     with:
       channel: pr
       module: app
-      artifact_prefix: yumebox-pr
       release_tag: pr-${{ github.event.pull_request.number }}
-      meta_asset_name: yumebox-pr-meta.json
+      meta_asset_name: YumeBox-pr-meta.json
       raw_apk_artifact_name: apk-raw-pr-app
       build_hash: ${{ github.event.pull_request.head.sha }}
       build_branch: ${{ github.event.pull_request.head.ref }}
     secrets: inherit
 
-  prepare-publish-pr-app:
-    needs: build-apk-pr-app
-    uses: ./.github/workflows/reusable-prepare-publish.yml
-    with:
-      channel: pr
-      module: app
-      artifact_prefix: yumebox-pr
-      release_tag: pr-${{ github.event.pull_request.number }}
-      meta_asset_name: yumebox-pr-meta.json
-      raw_apk_artifact_name: apk-raw-pr-app
-      build_hash: ${{ github.event.pull_request.head.sha }}
-      build_branch: ${{ github.event.pull_request.head.ref }}
-    secrets: inherit
-
-  # Fork PRs get a read-only GITHUB_TOKEN that cannot delete artifacts, so the
-  # cleanup only runs for same-repo PRs; fork-run intermediates simply age out.
+  # PR builds validate the APK matrix but intentionally do not publish direct
+  # installer artifacts. Fork-run intermediates simply age out because their
+  # read-only GITHUB_TOKEN cannot delete artifacts.
   cleanup-artifacts:
-    needs: prepare-publish-pr-app
+    needs: build-apk-pr-app
     if: github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       actions: write

@@ -18,6 +18,8 @@ concurrency:
 
 permissions:
   contents: write
+  attestations: write
+  id-token: write
 
 # Manual official-release pipeline: mirrors the ci-channel pre pipeline with channel=stable
 # and kernel_channel=alpha. build_hash/build_branch are intentionally NOT passed so the
@@ -86,9 +88,8 @@ jobs:
     with:
       channel: stable
       module: app
-      artifact_prefix: yumebox
       release_tag: ${{ inputs.release_tag }}
-      meta_asset_name: yumebox-stable-meta.json
+      meta_asset_name: YumeBox-stable-meta.json
       raw_apk_artifact_name: apk-raw-stable-app
     secrets: inherit
 
@@ -98,11 +99,12 @@ jobs:
     with:
       channel: stable
       module: app
-      artifact_prefix: yumebox
+      artifact_prefix: YumeBox
       release_tag: ${{ inputs.release_tag }}
-      meta_asset_name: yumebox-stable-meta.json
+      meta_asset_name: YumeBox-stable-meta.json
       raw_apk_artifact_name: apk-raw-stable-app
       publish_artifact_name: publish-stable-app
+      apk_name_tail: ${{ needs.build-apk-stable-app.outputs.apk_name_tail }}
     secrets: inherit
 
   publish-release-stable:

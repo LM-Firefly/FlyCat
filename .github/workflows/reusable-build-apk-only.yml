@@ -9,9 +9,6 @@ on:
       module:
         required: true
         type: string
-      artifact_prefix:
-        required: true
-        type: string
       release_tag:
         required: true
         type: string
@@ -31,6 +28,10 @@ on:
         required: false
         type: string
         default: ""
+    outputs:
+      apk_name_tail:
+        description: "Tail used in Gradle's published APK file names; channel and PR builds use one Asia/Shanghai packaging date, stable builds use the clean version name."
+        value: ${{ jobs.build.outputs.apk_name_tail }}
 
 permissions:
   contents: read
@@ -38,6 +39,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      apk_name_tail: ${{ steps.apk_name.outputs.tail }}
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -128,6 +131,26 @@ jobs:
           kotlin scripts/generate-locale.main.kts .
           test -f "locale/build/generated/fytxt/kotlin/commonMain/kotlin/fytxt.kt"
 
+      - name: Compute APK output name
+        id: apk_name
+        shell: bash
+        env:
+          BUILD_HASH: ${{ inputs.build_hash }}
+        run: |
+          set -eu
+          if [ -n "${BUILD_HASH}" ]; then
+            tail="$(TZ=Asia/Shanghai date +%y.%m.%d)"
+          else
+            tail="$(grep '^project.version.name=' gradle.properties | cut -d= -f2-)"
+          fi
+          case "${{ inputs.channel }}" in
+            smart|pr) channel_segment="${{ inputs.channel }}" ;;
+            pre|stable) channel_segment="" ;;
+            *) echo "Unsupported APK output channel: ${{ inputs.channel }}" >&2; exit 1 ;;
+          esac
+          echo "tail=${tail}" >> "$GITHUB_OUTPUT"
+          echo "channel_segment=${channel_segment}" >> "$GITHUB_OUTPUT"
+
       - name: Build Release APKs (geo + nogeo)
         shell: bash
         env:
@@ -145,8 +168,10 @@ jobs:
             -Pbuild.hash="${BUILD_HASH:0:8}"
             -Pbuild.branch="${BUILD_BRANCH}"
             -Pbuild.allAbis=true
+            -Papk.output.tail="${{ steps.apk_name.outputs.tail }}"
+            -Papk.output.channel="${{ steps.apk_name.outputs.channel_segment }}"
           )
-          ./gradlew --no-daemon "${common_args[@]}" :${{ inputs.module }}:assembleRelease
+          ./gradlew --no-daemon "${common_args[@]}" -Pgeo.bundle=true :${{ inputs.module }}:assembleRelease
           # Stage the geo APKs before the second pass: the package task cleans stale files
           # it owns, so the two variants cannot share the outputs directory.
           mkdir -p apk-stage
@@ -160,10 +185,13 @@ jobs:
         shell: bash
         run: |
           set -eu
-          for variant in geo nogeo; do
-            ls apk-stage/*-arm64-v8a-${variant}-release.apk
-            ls apk-stage/*-universal-${variant}-release.apk
-          done
+          tail="${{ steps.apk_name.outputs.tail }}"
+          channel_segment="${{ steps.apk_name.outputs.channel_segment }}"
+          channel_suffix="${channel_segment:+-${channel_segment}}"
+          ls "apk-stage/YumeBox-external${channel_suffix}-${tail}.apk"
+          ls "apk-stage/YumeBox-external-universal${channel_suffix}-${tail}.apk"
+          ls "apk-stage/YumeBox-builtin${channel_suffix}-${tail}.apk"
+          ls "apk-stage/YumeBox-builtin-universal${channel_suffix}-${tail}.apk"
 
       - name: Upload raw APK artifact
         uses: actions/upload-artifact@v7

@@ -45,14 +45,11 @@ val appAbiList =
 // gropify keys, so CI can flip them per invocation:
 //  - build.allAbis=true -> per-ABI splits for the full abi.app.list plus a universal APK
 //    (CI). Default (local dev) builds only arm64-v8a and skips the universal APK.
-//  - geo.bundle=false   -> keep the XZ geo databases out of assets; App.extractGeoFiles
-//    skips them and the mihomo core downloads each database on first use instead.
+//  - geo.bundle=false   -> keep the XZ geo databases out of assets (the local default);
+//    App.extractGeoFiles skips them and the mihomo core downloads each database on first use.
 val buildAllAbis = providers.gradleProperty("build.allAbis").orNull?.toBoolean() ?: false
-val geoBundle = providers.gradleProperty("geo.bundle").orNull?.toBoolean() ?: true
+val geoBundle = providers.gradleProperty("geo.bundle").orNull?.toBoolean() ?: false
 val splitAbiList = if (buildAllAbis) appAbiList else listOf("arm64-v8a")
-// Raw output name segment; reusable-prepare-publish.yml parses it, keep them in sync.
-val geoVariantSegment = if (geoBundle) "geo" else "nogeo"
-
 val geoFilesAssetsDir = rootProject.layout.buildDirectory.dir("generated/assets/geo")
 
 // CI-computed build versioning. CI injects `-Pbuild.number=<N>` where N is the commit
@@ -86,6 +83,16 @@ val appVersionCode = baseVersionCode + (ciBuildNumber ?: 0)
 val appVersionName = ciBuildHash
     ?.let { hash -> listOfNotNull(gropify.project.version.name, ciBuildBranch, hash).joinToString(".") }
     ?: gropify.project.version.name
+
+// Published APK file names are produced directly by Gradle. CI supplies the tail and
+// optional channel segment once per workflow run; local builds omit both.
+val apkOutputPrefix = providers.gradleProperty("apk.output.prefix").orNull
+    ?.trim()?.takeIf { it.isNotEmpty() } ?: gropify.project.name
+val apkOutputTail = providers.gradleProperty("apk.output.tail").orNull
+    ?.trim()?.takeIf { it.isNotEmpty() }
+val apkChannelSegment = providers.gradleProperty("apk.output.channel").orNull
+    ?.trim()?.takeIf { it.isNotEmpty() }
+val apkGeoSegment = if (geoBundle) "builtin" else "external"
 
 android {
     namespace = gropify.project.namespace.base
@@ -232,10 +239,16 @@ android {
                 val abiName = output.filters.find {
                     it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI
                 }?.identifier ?: "universal"
-                val buildTypeName = variant.buildType ?: "release"
+                val outputName = buildList {
+                    add(apkOutputPrefix)
+                    add(apkGeoSegment)
+                    if (abiName != "arm64-v8a") add(abiName)
+                    apkChannelSegment?.let(::add)
+                    apkOutputTail?.let(::add)
+                }.joinToString("-") + ".apk"
                 output.versionName.set(appVersionName)
                 (output as com.android.build.api.variant.impl.VariantOutputImpl).outputFileName.set(
-                    "${gropify.project.name}-${appVersionName}-${abiName}-${geoVariantSegment}-${buildTypeName}.apk"
+                    outputName
                 )
             }
         }

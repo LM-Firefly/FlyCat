@@ -136,9 +136,8 @@ jobs:
     with:
       channel: pre
       module: app
-      artifact_prefix: yumebox
       release_tag: Pre-release
-      meta_asset_name: yumebox-pre-meta.json
+      meta_asset_name: YumeBox-pre-meta.json
       raw_apk_artifact_name: apk-raw-pre-app
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
@@ -150,9 +149,8 @@ jobs:
     with:
       channel: smart
       module: app
-      artifact_prefix: yumebox-smart
       release_tag: Smart
-      meta_asset_name: yumebox-smart-meta.json
+      meta_asset_name: YumeBox-smart-meta.json
       raw_apk_artifact_name: apk-raw-smart-app
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
@@ -164,12 +162,13 @@ jobs:
     with:
       channel: pre
       module: app
-      artifact_prefix: yumebox
+      artifact_prefix: YumeBox
       release_tag: Pre-release
-      meta_asset_name: yumebox-pre-meta.json
+      meta_asset_name: YumeBox-pre-meta.json
       raw_apk_artifact_name: apk-raw-pre-app
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
+      apk_name_tail: ${{ needs.build-apk-pre-app.outputs.apk_name_tail }}
     secrets: inherit
 
   prepare-publish-smart-app:
@@ -178,12 +177,14 @@ jobs:
     with:
       channel: smart
       module: app
-      artifact_prefix: yumebox-smart
+      artifact_prefix: YumeBox
+      channel_segment: smart
       release_tag: Smart
-      meta_asset_name: yumebox-smart-meta.json
+      meta_asset_name: YumeBox-smart-meta.json
       raw_apk_artifact_name: apk-raw-smart-app
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
+      apk_name_tail: ${{ needs.build-apk-smart-app.outputs.apk_name_tail }}
     secrets: inherit
 
   notify-pre:
@@ -191,7 +192,7 @@ jobs:
     uses: ./.github/workflows/reusable-notify-telegram.yml
     with:
       channel: pre
-      artifact_prefix: yumebox
+      apk_artifact_name: ${{ needs.prepare-publish-pre-app.outputs.default_apk_name }}
       telegram_title: YumeBox Pre
     secrets: inherit
 
