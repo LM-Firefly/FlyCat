@@ -108,13 +108,26 @@ class App : Application() {
         for (name in listOf("geoip.metadb", "geosite.dat", "ASN.mmdb")) {
             val target = File(dir, name)
             if (!target.exists()) {
-                extractXzAsset("$name.xz", target) ?: copyAsset(name, target)
+                extractXzAsset("$name.xz", target) ?: copyAssetIfExists(name, target)
             }
         }
     }
 
-    private fun copyAsset(name: String, target: File) {
-        assets.open(name).use { it.copyTo(target.outputStream()) }
+    /**
+     * nogeo builds ship without the bundled geo databases; a missing asset is expected there
+     * and the mihomo core downloads the database on first use instead. Partial writes are
+     * removed so the core never treats a truncated file as present.
+     */
+    private fun copyAssetIfExists(name: String, target: File) {
+        runCatching {
+                assets.open(name).use { input ->
+                    target.outputStream().use { input.copyTo(it) }
+                }
+            }
+            .onFailure {
+                target.delete()
+                Timber.i("Geo asset %s not bundled, deferring to core download", name)
+            }
     }
 
     /**
@@ -147,6 +160,7 @@ class App : Application() {
                 }
                 Unit
             }
+            .onFailure { target.delete() }
             .getOrNull()
 
     private fun scheduleDeferredStartupTasks(
