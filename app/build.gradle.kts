@@ -183,6 +183,7 @@ android {
             reset()
             // AGP Split.include only accepts vararg; copying this tiny ABI list is negligible.
             @Suppress("SpreadOperator")
+            //noinspection ChromeOsAbiSupport
             include(*splitAbiList.toTypedArray())
             isUniversalApk = buildAllAbis
         }
