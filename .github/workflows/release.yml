@@ -104,6 +104,7 @@ jobs:
       meta_asset_name: YumeBox-stable-meta.json
       raw_apk_artifact_name: apk-raw-stable-app
       publish_artifact_name: publish-stable-app
+      publish_universal: false
       apk_name_tail: ${{ needs.build-apk-stable-app.outputs.apk_name_tail }}
     secrets: inherit
 

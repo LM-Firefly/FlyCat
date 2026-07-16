@@ -31,6 +31,11 @@ on:
         required: false
         type: string
         default: ""
+      publish_universal:
+        description: "Whether to publish universal APKs in addition to the arm64-v8a packages."
+        required: false
+        type: boolean
+        default: true
       build_hash:
         description: "Commit sha of the build; first 8 chars go into versionName (<base>[.<branch>].<hash8>)."
         required: false
@@ -159,18 +164,28 @@ jobs:
           release_url="https://github.com/${{ github.repository }}/releases/tag/${{ inputs.release_tag }}"
           publish_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-          for name in \
-            "${stem_external}.apk" \
-            "${stem_external_universal}.apk" \
-            "${stem_builtin}.apk" \
-            "${stem_builtin_universal}.apk"; do
+          names=(
+            "${stem_external}.apk"
+            "${stem_builtin}.apk"
+          )
+          if [ "${{ inputs.publish_universal }}" = "true" ]; then
+            names+=(
+              "${stem_external_universal}.apk"
+              "${stem_builtin_universal}.apk"
+            )
+          fi
+          for name in "${names[@]}"; do
             test -f "raw-apk/${name}"
             cp -f "raw-apk/${name}" "publish/${name}"
           done
 
           actual="$(find publish -maxdepth 1 -type f -name '*.apk' | wc -l)"
-          if [ "${actual}" -ne 4 ]; then
-            echo "Expected 4 publish APKs (arm64-v8a/universal x builtin/external), got ${actual}:" >&2
+          expected=2
+          if [ "${{ inputs.publish_universal }}" = "true" ]; then
+            expected=4
+          fi
+          if [ "${actual}" -ne "${expected}" ]; then
+            echo "Expected ${expected} publish APKs, got ${actual}:" >&2
             ls publish >&2
             exit 1
           fi
@@ -284,6 +299,7 @@ jobs:
           archive: false
 
       - name: Upload universal APK artifact (external geo)
+        if: inputs.publish_universal
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.stem.outputs.external_universal }}
@@ -292,6 +308,7 @@ jobs:
           archive: false
 
       - name: Upload universal APK artifact (builtin geo)
+        if: inputs.publish_universal
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.stem.outputs.builtin_universal }}
