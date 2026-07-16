@@ -22,8 +22,10 @@ on:
         required: true
         type: string
       publish_artifact_name:
-        required: true
+        description: "When non-empty, also upload one aggregate artifact with all publish APKs (only the stable release pipeline consumes it via the publish-<channel>-* pattern)."
+        required: false
         type: string
+        default: ""
       build_hash:
         description: "Commit sha of the build; first 8 chars go into versionName (<base>[.<branch>].<hash8>)."
         required: false
@@ -54,7 +56,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.raw_apk_artifact_name }}
-          path: ${{ inputs.module }}/build/outputs/apk/release
+          path: raw-apk
 
       - name: Read version info
         id: version
@@ -89,6 +91,17 @@ jobs:
           echo "version_name=${version_name}" >> "$GITHUB_OUTPUT"
           echo "version_code=${version_code}" >> "$GITHUB_OUTPUT"
 
+      - name: Compute publish file stem
+        id: stem
+        shell: bash
+        env:
+          BUILD_HASH: ${{ inputs.build_hash }}
+          BUILD_BRANCH: ${{ inputs.build_branch }}
+        run: |
+          set -eu
+          stem="$(bash scripts/ci-apk-stem.sh "${{ inputs.artifact_prefix }}" "${BUILD_BRANCH}" "${BUILD_HASH}" "${{ steps.version.outputs.version_name }}")"
+          echo "value=${stem}" >> "$GITHUB_OUTPUT"
+
       - name: Generate release notes
         shell: bash
         run: |
@@ -118,36 +131,44 @@ jobs:
           mkdir -p publish
           version_name="${{ steps.version.outputs.version_name }}"
           version_code="${{ steps.version.outputs.version_code }}"
+          file_stem="${{ steps.stem.outputs.value }}"
           release_url="https://github.com/${{ github.repository }}/releases/tag/${{ inputs.release_tag }}"
           publish_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
           while IFS= read -r file; do
             base="$(basename "$file")"
-            # Raw names are <name>-<versionName>-<abi>-<buildType>.apk. The versionName may
-            # itself contain ABI-looking substrings (branch segment is [a-z0-9-]), so classify
-            # by the ABI segment anchored at the end: strip ".apk", then the buildType (the
-            # last dash-separated field), and match the remaining suffix exactly.
-            stem="${base%.apk}"
-            stem="${stem%-*}"
-            abi="universal"
-            case "$stem" in
+            # Raw names are <name>-<versionName>-<abi>-<geo|nogeo>-<buildType>.apk (see the
+            # outputFileName rule in app/build.gradle.kts). Strip ".apk", then the buildType
+            # and geo fields from the end; the versionName may contain ABI-looking substrings
+            # (branch segment is [a-z0-9-]), so the ABI is matched anchored at the end of
+            # what remains.
+            core="${base%.apk}"
+            core="${core%-*}"
+            geo_segment="${core##*-}"
+            core="${core%-*}"
+            case "$geo_segment" in
+              geo) variant_suffix="-geo" ;;
+              nogeo) variant_suffix="" ;;
+              *) echo "Unrecognized geo segment in ${base}" >&2; exit 1 ;;
+            esac
+            case "$core" in
               *-arm64-v8a) abi="arm64-v8a" ;;
-              *-armeabi-v7a) abi="armeabi-v7a" ;;
-              *-x86_64) abi="x86_64" ;;
-              *-x86) abi="x86" ;;
-              *) abi="universal" ;;
+              *-universal) abi="universal" ;;
+              *) continue ;;  # armeabi-v7a / x86 / x86_64: covered by the universal APK, not published
             esac
 
             if [ "$abi" = "universal" ]; then
-              new_name="${{ inputs.artifact_prefix }}-${version_name}.apk"
+              new_name="${file_stem}${variant_suffix}.apk"
             else
-              new_name="${{ inputs.artifact_prefix }}-${version_name}-${abi}.apk"
+              new_name="${file_stem}-${abi}${variant_suffix}.apk"
             fi
             cp -f "$file" "publish/${new_name}"
-          done < <(find "${{ inputs.module }}/build/outputs/apk/release" -maxdepth 1 -type f -name '*.apk' | sort)
+          done < <(find raw-apk -maxdepth 1 -type f -name '*.apk' | sort)
 
-          if [ ! -d publish ] || [ -z "$(ls -A publish)" ]; then
-            echo "No APK generated" >&2
+          actual="$(find publish -maxdepth 1 -type f -name '*.apk' | wc -l)"
+          if [ "${actual}" -ne 4 ]; then
+            echo "Expected 4 publish APKs (arm64-v8a/universal x geo/nogeo), got ${actual}:" >&2
+            ls publish >&2
             exit 1
           fi
 
@@ -185,15 +206,9 @@ jobs:
           packages = []
           for apk in sorted(publish_dir.glob("*.apk")):
               name = apk.name
-              abi = "universal"
-              if "-arm64-v8a.apk" in name:
-                  abi = "arm64-v8a"
-              elif "-armeabi-v7a.apk" in name:
-                  abi = "armeabi-v7a"
-              elif "-x86_64.apk" in name:
-                  abi = "x86_64"
-              elif "-x86.apk" in name:
-                  abi = "x86"
+              geo_bundled = name.endswith("-geo.apk")
+              core = name[: -len("-geo.apk")] if geo_bundled else name[: -len(".apk")]
+              abi = "arm64-v8a" if core.endswith("-arm64-v8a") else "universal"
 
               h = hashlib.sha256()
               with apk.open("rb") as f:
@@ -202,6 +217,7 @@ jobs:
 
               packages.append({
                   "abi": abi,
+                  "geoBundled": geo_bundled,
                   "fileName": name,
                   "downloadUrl": f"https://github.com/{repo}/releases/download/{release_tag}/{name}",
                   "size": apk.stat().st_size,
@@ -210,7 +226,7 @@ jobs:
               })
 
           meta = {
-              "schemaVersion": 1,
+              "schemaVersion": 2,
               "channel": channel,
               "module": module,
               "artifactPrefix": artifact_prefix,
@@ -233,6 +249,7 @@ jobs:
           PY
 
       - name: Upload publish artifact
+        if: inputs.publish_artifact_name != ''
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.publish_artifact_name }}
@@ -242,49 +259,40 @@ jobs:
           # download-artifact it) but store entries uncompressed.
           compression-level: 0
 
-      # Per-APK artifacts: the aggregate artifact above mixes every ABI into one zip, so
-      # each APK is also uploaded separately with archive:false — the raw .apk is stored
-      # as-is (no zip wrapper, no recompression) and downloads directly as an installer.
-      # NOTE: with archive:false the artifact takes the FILE name and the `name:` input is
-      # ignored, so these artifacts appear as <artifact_prefix>-<versionName>-<abi>.apk
-      # (universal has no ABI suffix), from the rename loop in "Prepare publish artifacts".
-      - name: Upload arm64-v8a APK artifact
+      # Per-APK artifacts: each published APK is uploaded separately with archive:false —
+      # the raw .apk is stored as-is (no zip wrapper, no recompression) and downloads
+      # directly as an installer. NOTE: with archive:false the artifact takes the FILE
+      # name and the `name:` input is ignored, so these artifacts appear exactly as the
+      # publish file names from "Prepare publish artifacts". reusable-notify-telegram.yml
+      # downloads <stem>-arm64-v8a.apk by that computed name.
+      - name: Upload arm64-v8a APK artifact (nogeo)
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-arm64-v8a
-          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-arm64-v8a.apk
-          if-no-files-found: ignore
-          # Single already-compressed file: upload raw for a direct .apk download.
+          name: ${{ steps.stem.outputs.value }}-arm64-v8a
+          path: publish/${{ steps.stem.outputs.value }}-arm64-v8a.apk
+          if-no-files-found: error
           archive: false
 
-      - name: Upload armeabi-v7a APK artifact
+      - name: Upload arm64-v8a APK artifact (geo)
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-armeabi-v7a
-          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-armeabi-v7a.apk
-          if-no-files-found: ignore
+          name: ${{ steps.stem.outputs.value }}-arm64-v8a-geo
+          path: publish/${{ steps.stem.outputs.value }}-arm64-v8a-geo.apk
+          if-no-files-found: error
           archive: false
 
-      - name: Upload x86_64 APK artifact
+      - name: Upload universal APK artifact (nogeo)
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86_64
-          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86_64.apk
-          if-no-files-found: ignore
+          name: ${{ steps.stem.outputs.value }}-universal
+          path: publish/${{ steps.stem.outputs.value }}.apk
+          if-no-files-found: error
           archive: false
 
-      - name: Upload x86 APK artifact
+      - name: Upload universal APK artifact (geo)
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86
-          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-x86.apk
-          if-no-files-found: ignore
-          archive: false
-
-      - name: Upload universal APK artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}-universal
-          path: publish/${{ inputs.artifact_prefix }}-${{ steps.version.outputs.version_name }}.apk
-          if-no-files-found: ignore
+          name: ${{ steps.stem.outputs.value }}-universal-geo
+          path: publish/${{ steps.stem.outputs.value }}-geo.apk
+          if-no-files-found: error
           archive: false
