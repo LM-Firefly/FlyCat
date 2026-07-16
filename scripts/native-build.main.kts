@@ -672,19 +672,20 @@ class ResourceDownloader(private val config: ProjectConfig) {
         outputDir.mkdirs()
 
         val assets = listOf(
-            AssetInfo("geoip.metadb", config.getString("asset.geoip.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb")),
-            AssetInfo("geosite.dat", config.getString("asset.geosite.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat")),
-            AssetInfo("ASN.mmdb", config.getString("asset.asn.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"))
+            AssetInfo("geoip.metadb", config.getString("asset.geoip.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb"), compress = true),
+            AssetInfo("geosite.dat", config.getString("asset.geosite.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"), compress = true),
+            AssetInfo("ASN.mmdb", config.getString("asset.asn.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"), compress = true),
+            AssetInfo("BundleMRS.7z", config.getString("asset.bundleMRS.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/BundleMRS.7z"), compress = false)
         )
 
         assets.forEach { asset ->
             if (asset.url.isNotEmpty() && asset.url.startsWith("https://")) {
-                downloadFile(asset.name, asset.url, compress = true)
+                downloadFile(asset.name, asset.url, compress = asset.compress)
             }
         }
     }
 
-    private data class AssetInfo(val name: String, val url: String)
+    private data class AssetInfo(val name: String, val url: String, val compress: Boolean)
 
     private fun downloadFile(name: String, url: String, compress: Boolean = false) {
         try {
@@ -739,7 +740,7 @@ fun printUsage() {
           --go       Build Go native libraries
           --rust     Build Rust config compiler
           --cpp      Generate CMake/git info
-          --geo      Download and compress GeoIP/GeoSite assets into app/assets with XZ
+          --geo      Download Geo databases and BundleMRS.7z into generated assets
           --clean    Clean build outputs
           --all      Build everything (default)
           --help     Show this help

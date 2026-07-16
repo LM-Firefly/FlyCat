@@ -20,6 +20,7 @@ import (
 	"cfa/native/app"
 
 	clashHttp "github.com/metacubex/mihomo/component/http"
+	RB "github.com/metacubex/mihomo/rules/bundle"
 )
 
 type Status struct {
@@ -110,11 +111,15 @@ func fetch(url *U.URL, file string) (fetchHeader, error) {
 
 	defer reader.Close()
 
+	return header, writeFile(file, reader)
+}
+
+func writeFile(file string, reader io.Reader) error {
 	_ = os.MkdirAll(P.Dir(file), 0700)
 
 	f, err := os.OpenFile(file, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
 	if err != nil {
-		return fetchHeader{}, err
+		return err
 	}
 
 	defer f.Close()
@@ -124,7 +129,7 @@ func fetch(url *U.URL, file string) (fetchHeader, error) {
 		_ = os.Remove(file)
 	}
 
-	return header, err
+	return err
 }
 
 func parseSubscriptionInteger(value string) int64 {
@@ -329,7 +334,7 @@ func FetchAndValid(
 		return err
 	}
 
-	forEachProviders(rawCfg, func(index int, total int, name string, provider map[string]any, _ string) {
+	forEachProviders(rawCfg, func(index int, total int, name string, provider map[string]any, prefix string) {
 		bytes, _ := json.Marshal(&Status{
 			Action:      "FetchProviders",
 			Args:        []string{name},
@@ -360,6 +365,17 @@ func FetchAndValid(
 		url, err := U.Parse(us)
 		if err != nil {
 			return
+		}
+
+		if prefix == RULES {
+			if pathInBundle, ok := provider["path-in-bundle"].(string); ok && pathInBundle != "" {
+				if file, err := RB.Open(pathInBundle); err == nil {
+					defer file.Close()
+					if err := writeFile(ps, file); err == nil {
+						return
+					}
+				}
+			}
 		}
 
 		_, _ = fetch(url, ps)

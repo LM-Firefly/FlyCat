@@ -114,6 +114,7 @@ jobs:
           test -f "build/generated/assets/geo/geoip.metadb.xz"
           test -f "build/generated/assets/geo/geosite.dat.xz"
           test -f "build/generated/assets/geo/ASN.mmdb.xz"
+          test -f "build/generated/assets/geo/BundleMRS.7z"
 
       - name: Write signing config
         run: |

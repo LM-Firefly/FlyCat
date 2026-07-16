@@ -105,7 +105,7 @@ class App : Application() {
 
     private fun extractGeoFiles() {
         val dir = runtimeHomeDir.apply { mkdirs() }
-        for (name in listOf("geoip.metadb", "geosite.dat", "ASN.mmdb")) {
+        for (name in listOf("geoip.metadb", "geosite.dat", "ASN.mmdb", "BundleMRS.7z")) {
             val target = File(dir, name)
             if (!target.exists()) {
                 extractXzAsset("$name.xz", target) ?: copyAssetIfExists(name, target)
@@ -114,9 +114,8 @@ class App : Application() {
     }
 
     /**
-     * nogeo builds ship without the bundled geo databases; a missing asset is expected there
-     * and the mihomo core downloads the database on first use instead. Partial writes are
-     * removed so the core never treats a truncated file as present.
+     * External-geo builds omit these runtime assets. A missing asset is expected there, so remove
+     * partial writes and let mihomo download the database or provider content when needed.
      */
     private fun copyAssetIfExists(name: String, target: File) {
         runCatching {
@@ -126,7 +125,7 @@ class App : Application() {
             }
             .onFailure {
                 target.delete()
-                Timber.i("Geo asset %s not bundled, deferring to core download", name)
+                Timber.i("Runtime asset %s not bundled, deferring to remote data", name)
             }
     }
 

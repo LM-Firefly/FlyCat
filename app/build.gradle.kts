@@ -45,8 +45,8 @@ val appAbiList =
 // gropify keys, so CI can flip them per invocation:
 //  - build.allAbis=true -> per-ABI splits for the full abi.app.list plus a universal APK
 //    (CI). Default (local dev) builds only arm64-v8a and skips the universal APK.
-//  - geo.bundle=false   -> keep the XZ geo databases out of assets (the local default);
-//    App.extractGeoFiles skips them and the mihomo core downloads each database on first use.
+//  - geo.bundle=false   -> keep the XZ geo databases and BundleMRS.7z out of assets (the local
+//    default); App.extractGeoFiles skips them and mihomo falls back to remote provider data.
 val buildAllAbis = providers.gradleProperty("build.allAbis").orNull?.toBoolean() ?: false
 val geoBundle = providers.gradleProperty("geo.bundle").orNull?.toBoolean() ?: false
 val splitAbiList = if (buildAllAbis) appAbiList else listOf("arm64-v8a")

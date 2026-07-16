@@ -41,6 +41,7 @@ jobs:
           test -f "build/generated/assets/geo/geoip.metadb.xz"
           test -f "build/generated/assets/geo/geosite.dat.xz"
           test -f "build/generated/assets/geo/ASN.mmdb.xz"
+          test -f "build/generated/assets/geo/BundleMRS.7z"
 
       - name: Upload geo artifact
         uses: actions/upload-artifact@v7
@@ -50,6 +51,7 @@ jobs:
             build/generated/assets/geo/geoip.metadb.xz
             build/generated/assets/geo/geosite.dat.xz
             build/generated/assets/geo/ASN.mmdb.xz
+            build/generated/assets/geo/BundleMRS.7z
           if-no-files-found: error
-          # Payload is already XZ-compressed; deflating the artifact zip again wastes CPU.
+          # Payloads are already XZ/7z-compressed; deflating the artifact zip again wastes CPU.
           compression-level: 0
