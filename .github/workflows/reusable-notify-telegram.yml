@@ -76,5 +76,5 @@ jobs:
           SERVER_URL: ${{ github.server_url }}
           PUBLISH_DIR: publish
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-          LOGO_URL: https://yumebox.gal.tf/logo/Yume.webp
+          LOGO_URL: https://yumebox.gal.tf/images/og.webp
         run: python3 $GITHUB_WORKSPACE/scripts/yumebot.py

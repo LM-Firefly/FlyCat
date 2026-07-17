@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "An open-source Android client based on the mihomo kernel",
+  "name": "YumeBox",
   "colors": {
     "primary": "#16A34A",
     "light": "#07C983",
@@ -10,7 +10,7 @@
   "icons": {
     "library": "lucide"
   },
-  "favicon": "/logo/logo.webp",
+  "favicon": "/images/logo.webp",
   "banner": {
     "content": "0.5.3 版本现已上线！查看[更新日志](/update/history)了解详情",
     "dismissible": true
@@ -18,115 +18,145 @@
   "navigation": {
     "languages": [
       {
-        "language": "cn",
+        "language": "zh-Hans",
         "groups": [
           {
             "group": "开始",
-            "pages": [
-              "/index",
-              "/update/history"
-            ]
+            "pages": ["/index", "/update/history"]
           },
           {
             "group": "指南",
-            "pages": [
-              "/guide/app"
-            ]
+            "pages": ["/guide/app"]
           },
           {
             "group": "覆写",
+            "pages": ["/override/override", "/override/fields"]
+          },
+          {
+            "group": "API",
             "pages": [
-              "/override/override",
-              "/override/fields"
+              {
+                "group": "日志",
+                "openapi": "api/openapi.json",
+                "pages": ["GET /logs"]
+              },
+              {
+                "group": "流量信息",
+                "openapi": "api/openapi.json",
+                "pages": ["GET /traffic"]
+              },
+              {
+                "group": "内存信息",
+                "openapi": "api/openapi.json",
+                "pages": ["GET /memory"]
+              },
+              {
+                "group": "版本信息",
+                "openapi": "api/openapi.json",
+                "pages": ["GET /version"]
+              },
+              {
+                "group": "缓存",
+                "openapi": "api/openapi.json",
+                "pages": ["POST /cache/fakeip/flush", "POST /cache/dns/flush"]
+              },
+              {
+                "group": "运行配置",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /configs",
+                  "PUT /configs",
+                  "PATCH /configs",
+                  "POST /configs/geo",
+                  "POST /restart"
+                ]
+              },
+              {
+                "group": "更新",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "POST /upgrade",
+                  "POST /upgrade/ui",
+                  "POST /upgrade/geo"
+                ]
+              },
+              {
+                "group": "策略组",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /group",
+                  "GET /group/{name}",
+                  "GET /group/{name}/delay"
+                ]
+              },
+              {
+                "group": "代理",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /proxies",
+                  "GET /proxies/{name}",
+                  "PUT /proxies/{name}",
+                  "DELETE /proxies/{name}",
+                  "GET /proxies/{name}/delay"
+                ]
+              },
+              {
+                "group": "代理集合",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /providers/proxies",
+                  "GET /providers/proxies/{name}",
+                  "PUT /providers/proxies/{name}",
+                  "GET /providers/proxies/{name}/healthcheck"
+                ]
+              },
+              {
+                "group": "规则",
+                "openapi": "api/openapi.json",
+                "pages": ["GET /rules", "PATCH /rules/disable"]
+              },
+              {
+                "group": "规则集合",
+                "openapi": "api/openapi.json",
+                "pages": ["GET /providers/rules", "PUT /providers/rules/{name}"]
+              },
+              {
+                "group": "连接",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /connections",
+                  "DELETE /connections",
+                  "DELETE /connections/{id}"
+                ]
+              },
+              {
+                "group": "域名查询",
+                "openapi": "api/openapi.json",
+                "pages": ["GET /dns/query"]
+              },
+              {
+                "group": "存储",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /storage/{key}",
+                  "PUT /storage/{key}",
+                  "DELETE /storage/{key}"
+                ]
+              },
+              {
+                "group": "DEBUG",
+                "openapi": "api/openapi.json",
+                "pages": ["PUT /debug/gc"]
+              }
             ]
-          },
-          {
-            "group": "日志",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /logs"]
-          },
-          {
-            "group": "流量信息",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /traffic"]
-          },
-          {
-            "group": "内存信息",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /memory"]
-          },
-          {
-            "group": "版本信息",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /version"]
-          },
-          {
-            "group": "缓存",
-            "openapi": "api/openapi.json",
-            "pages": ["POST /cache/fakeip/flush", "POST /cache/dns/flush"]
-          },
-          {
-            "group": "运行配置",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /configs", "PUT /configs", "PATCH /configs", "POST /configs/geo", "POST /restart"]
-          },
-          {
-            "group": "更新",
-            "openapi": "api/openapi.json",
-            "pages": ["POST /upgrade", "POST /upgrade/ui", "POST /upgrade/geo"]
-          },
-          {
-            "group": "策略组",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /group", "GET /group/{name}", "GET /group/{name}/delay"]
-          },
-          {
-            "group": "代理",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /proxies", "GET /proxies/{name}", "PUT /proxies/{name}", "DELETE /proxies/{name}", "GET /proxies/{name}/delay"]
-          },
-          {
-            "group": "代理集合",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /providers/proxies", "GET /providers/proxies/{name}", "PUT /providers/proxies/{name}", "GET /providers/proxies/{name}/healthcheck"]
-          },
-          {
-            "group": "规则",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /rules", "PATCH /rules/disable"]
-          },
-          {
-            "group": "规则集合",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /providers/rules", "PUT /providers/rules/{name}"]
-          },
-          {
-            "group": "连接",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /connections", "DELETE /connections", "DELETE /connections/{id}"]
-          },
-          {
-            "group": "域名查询",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /dns/query"]
-          },
-          {
-            "group": "存储",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /storage/{key}", "PUT /storage/{key}", "DELETE /storage/{key}"]
-          },
-          {
-            "group": "DEBUG",
-            "openapi": "api/openapi.json",
-            "pages": ["PUT /debug/gc"]
           }
         ]
       }
     ]
   },
   "logo": {
-    "light": "/logo/logo.webp",
-    "dark": "/logo/logo.webp"
+    "light": "/images/logo.webp",
+    "dark": "/images/logo.webp"
   },
   "navbar": {
     "links": [
@@ -142,43 +172,22 @@
     }
   },
   "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+    "options": ["copy", "view", "chatgpt", "claude", "grok", "aistudio"]
   },
   "seo": {
     "metatags": {
-      "robots": "index, follow",
-      "charset": "UTF-8",
-      "viewport": "width=device-width, initial-scale=1.0",
-      "googlebot": "index, follow",
-      "generator": "YumeBox",
-      "theme-color": "#f56c6c",
-      "format-detection": "telephone=no",
-      "referrer": "origin",
-      "rating": "general",
-      "revisit-after": "7 days",
-      "language": "en-US",
-      "copyright": "YumeYucca",
-      "distribution": "global",
-      "HandheldFriendly": "True",
-      "MobileOptimized": "320",
-      "apple-mobile-web-app-capable": "yes",
-      "apple-mobile-web-app-status-bar-style": "black",
-      "apple-mobile-web-app-title": "YumeBox",
-      "application-name": "YumeBox",
-      "msapplication-TileColor": "#f56c6c",
-      "og:type": "website",
-      "og:image": "https://yumebox.gal.tf/logo/Yume.webp",
-      "og:site_name": "YumeBox",
-      "og:locale": "en_US"
+      "canonical": "https://yumebox.gal.tf",
+      "og:image": "https://yumebox.gal.tf/images/og.webp"
+    },
+    "organization": {
+      "id": "https://www.yumeyuka.moe/#person",
+      "url": "https://www.yumeyuka.moe",
+      "sameAs": [
+        "https://github.com/YumeYuka",
+        "https://gitcode.com/YumeYuka",
+        "https://yumeyuka.plus.my.id/"
+      ],
+      "name": "YumeYuka"
     },
     "indexing": "all"
   },
@@ -197,16 +206,9 @@
       "github": "https://github.com/YumeYuka"
     }
   },
-  "errors": {
-    "404": {
-      "redirect": true,
-      "title": "Page not found",
-      "description": "The page you requested does not exist."
-    }
-  },
   "fonts": {
     "heading": {
-      "family": "Inter"
+      "family": "Ubuntu Sans"
     }
   }
 }
