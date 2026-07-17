@@ -96,13 +96,9 @@ fun FullscreenEditorScreen(
 
                     IconButton(
                         onClick = {
-                            if (editorState.validate()) {
-                                onSave(editorState.content)
-                                editorState.resetModified()
-                                navigator.navigateUp()
-                            } else {
-                                context.toast("语法错误，请检查内容")
-                            }
+                            onSave(editorState.content)
+                            editorState.resetModified()
+                            navigator.navigateUp()
                         }
                     ) {
                         Icon(imageVector = Yume.Save, contentDescription = "Save")

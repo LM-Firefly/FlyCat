@@ -40,4 +40,5 @@ dependencies {
     implementation(libs.snake.yaml)
     implementation(libs.androidx.annotation.jvm)
     implementation(libs.timber)
+    implementation(libs.xz)
 }

@@ -22,17 +22,17 @@ package com.github.yumelira.yumebox.feature.editor.editor
 
 import android.content.Context
 import android.graphics.Typeface
+import com.github.yumelira.yumebox.feature.editor.R
 import timber.log.Timber
 
 object EditorFontManager {
-    private const val FONT_PATH = "fonts/JetBrainsMono-Regular.ttf"
     private var cachedFont: Typeface? = null
 
     @Suppress("TooGenericExceptionCaught")
     fun getEditorTypeface(context: Context): Typeface =
         cachedFont
             ?: try {
-                Typeface.createFromAsset(context.assets, FONT_PATH).also {
+                context.resources.getFont(R.font.jetbrains_mono_regular).also {
                     cachedFont = it
                     Timber.d("JetBrainsMono font loaded successfully")
                 }

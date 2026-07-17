@@ -34,14 +34,6 @@ object CodeFormatter {
             LanguageScope.Text -> content
         }
 
-    fun validate(content: String, language: LanguageScope): Boolean =
-        when (language) {
-            LanguageScope.Json -> validateJson(content)
-            LanguageScope.Yaml -> true
-            LanguageScope.JavaScript -> true
-            LanguageScope.Text -> true
-        }
-
     private fun formatJson(content: String): String? =
         try {
             val trimmed = content.trim()
@@ -53,20 +45,6 @@ object CodeFormatter {
         } catch (_: JSONException) {
             null
         }
-
-    private fun validateJson(content: String): Boolean {
-        return try {
-            val trimmed = content.trim()
-            when {
-                trimmed.startsWith("{") -> JSONObject(trimmed)
-                trimmed.startsWith("[") -> JSONArray(trimmed)
-                else -> return false
-            }
-            true
-        } catch (_: JSONException) {
-            false
-        }
-    }
 
     @Suppress("TooGenericExceptionCaught")
     private fun formatYaml(content: String): String? =

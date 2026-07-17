@@ -20,6 +20,14 @@
 
 @file:Suppress("UnstableApiUsage")
 
+import com.android.build.api.artifact.ArtifactTransformationRequest
+import com.android.build.api.artifact.SingleArtifact
+import dev.yume.packer.BuildLoaderDexTask
+import dev.yume.packer.PackApkTask
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.TaskAction
+import java.io.File
 import java.util.Properties
 
 plugins {
@@ -29,6 +37,24 @@ plugins {
     id("org.jetbrains.compose")
     id("com.google.devtools.ksp")
     id("com.mikepenz.aboutlibraries.plugin.android")
+}
+
+abstract class TransformPackedApksTask : PackApkTask() {
+    @get:Internal
+    abstract val transformationRequest: Property<ArtifactTransformationRequest<TransformPackedApksTask>>
+
+    @TaskAction
+    fun transform() {
+        val outputRoot = outputApkDirectory.get().asFile
+        outputRoot.deleteRecursively()
+        outputRoot.mkdirs()
+        transformationRequest.get().submit(this) { artifact ->
+            val input = File(artifact.outputFile)
+            val output = outputRoot.resolve(input.name)
+            packApk(input, output)
+            output
+        }
+    }
 }
 
 kotlin {
@@ -47,10 +73,23 @@ val appAbiList =
 //    (CI). Default (local dev) builds only arm64-v8a and skips the universal APK.
 //  - geo.bundle=false   -> keep the XZ geo databases and BundleMRS.7z out of assets (the local
 //    default); App.extractGeoFiles skips them and mihomo falls back to remote provider data.
+//  - nativelibs.compress=true -> ship the three core libs (libclash/liboverride/libbridge) only
+//    as XZ-compressed `<base>.xz.so` blobs (from `native-build --compress`) instead of raw libs;
+//    smaller download (LZMA2 beats the APK's DEFLATE), extracted + loaded at runtime by
+//    NativeLibraryLoader. The blobs stay under lib/<abi>/ (a generated jniLibs dir) so AGP's ABI
+//    splits filter them per arch — shipping them in assets/ leaks every ABI into every split APK.
 val buildAllAbis = providers.gradleProperty("build.allAbis").orNull?.toBoolean() ?: false
 val geoBundle = providers.gradleProperty("geo.bundle").orNull?.toBoolean() ?: false
+val nativeLibsCompress = providers.gradleProperty("nativelibs.compress").orNull?.toBoolean() ?: false
 val splitAbiList = if (buildAllAbis) appAbiList else listOf("arm64-v8a")
 val geoFilesAssetsDir = rootProject.layout.buildDirectory.dir("generated/assets/geo")
+val nativeLibsJniDir = rootProject.layout.buildDirectory.dir("generated/nativelibs-jni")
+// Kept in sync with NativeLibCompressor.coreLibs and NativeLibraryLoader.CORE_LIBS.
+val compressedCoreLibs = listOf("liboverride.so", "libclash.so", "libbridge.so")
+val signingPropertiesFile = rootProject.file("signing.properties")
+val releaseSigningProperties = signingPropertiesFile.takeIf(File::isFile)?.let { file ->
+    Properties().apply { file.inputStream().use(::load) }
+}
 
 // CI-computed build versioning. CI injects `-Pbuild.number=<N>` where N is the commit
 // count of the built commit's parent chain (`git rev-list --count HEAD`, computed inside
@@ -104,6 +143,8 @@ android {
         versionName = appVersionName
         buildConfigField("String", "BASE_VERSION", "\"${gropify.project.version.name}\"")
         manifestPlaceholders["appName"] = gropify.project.name
+        manifestPlaceholders["applicationClass"] = ".App"
+        manifestPlaceholders["componentFactory"] = "androidx.core.app.CoreComponentFactory"
     }
 
     compileOptions {
@@ -141,6 +182,10 @@ android {
             jniLibs.directories.apply {
                 clear()
                 add("../jniLibs")
+                // Compressed <base>.xz.so blobs live here; ABI splits filter them via lib/<abi>/.
+                if (nativeLibsCompress) {
+                    add(nativeLibsJniDir.get().asFile.invariantSeparatorsPath)
+                }
             }
             if (project.file("AndroidManifest.xml").isFile) {
                 manifest.srcFile("AndroidManifest.xml")
@@ -173,8 +218,17 @@ android {
             isDebuggable = true
         }
         release {
-            optimization.enable = true
+            isMinifyEnabled = true
+            isShrinkResources = true
             vcsInfo.include = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-loader.pro",
+            )
+            if (releaseSigningProperties != null) {
+                manifestPlaceholders["applicationClass"] = "dev.yume.loader.LoaderApplication"
+                manifestPlaceholders["componentFactory"] = "dev.yume.loader.LoaderComponentFactory"
+            }
         }
     }
 
@@ -194,6 +248,19 @@ android {
     packaging {
         jniLibs {
             excludes += listOf("lib/**/libjavet*.so")
+            // Ship the core libs only as compressed blobs; keeping the raw libs in jniLibs too
+            // would double their download cost and defeat the compression.
+            if (nativeLibsCompress) {
+                //noinspection WrongGradleMethod
+                excludes += compressedCoreLibs.map { "lib/**/$it" }
+                // The `.xz.so` blobs are XZ payloads, not ELF. AGP's native-lib strip step runs
+                // llvm-strip on every lib/**/*.so, errors on these ("not recognized as a valid
+                // object file") and DROPS them from packaging — so the blob never reaches the APK
+                // and the runtime probe silently falls back to the (excluded) raw lib. keepDebugSymbols
+                // tells AGP to skip stripping them, letting them pass through intact.
+                //noinspection WrongGradleMethod
+                keepDebugSymbols += compressedCoreLibs.map { "**/" + it.removeSuffix(".so") + ".xz.so" }
+            }
             useLegacyPackaging = true
         }
         resources {
@@ -201,6 +268,7 @@ android {
             excludes.add("okhttp3/**")
             excludes.add("schema/**")
             excludes.add("assets/dexopt/**")
+            excludes.add("tables/**")
             excludes.add("DebugProbesKt.bin")
             excludes.add("kotlin-tooling-metadata.json")
             excludes.add("**/*.kotlin_builtins")
@@ -211,14 +279,12 @@ android {
     }
 
     signingConfigs {
-        val keystore = rootProject.file("signing.properties")
-        if (keystore.exists()) {
+        if (releaseSigningProperties != null) {
             create("release") {
-                val prop = Properties().apply { keystore.inputStream().use(::load) }
                 storeFile = rootProject.file("release.keystore")
-                storePassword = prop.getProperty("keystore.password")!!
-                keyAlias = prop.getProperty("key.alias")!!
-                keyPassword = prop.getProperty("key.password")!!
+                storePassword = releaseSigningProperties.getProperty("keystore.password")!!
+                keyAlias = releaseSigningProperties.getProperty("key.alias")!!
+                keyPassword = releaseSigningProperties.getProperty("key.password")!!
             }
         }
     }
@@ -255,6 +321,52 @@ android {
     }
 }
 
+if (releaseSigningProperties != null) {
+    val loaderRuntime = configurations.detachedConfiguration(
+        dependencies.create("org.lsposed.hiddenapibypass:hiddenapibypass:6.1"),
+    )
+    androidComponents {
+        onVariants(selector().withBuildType("release")) { variant ->
+            val capitalized = variant.name.replaceFirstChar(Char::uppercaseChar)
+            val loaderDexTask = tasks.register<BuildLoaderDexTask>("build${capitalized}LoaderDex") {
+                group = "build"
+                description = "Builds the standalone loader DEX for ${variant.name}"
+                loaderAar.set(
+                    project(":pack").layout.buildDirectory.file(
+                        "outputs/aar/pack-release.aar"
+                    )
+                )
+                runtimeArtifacts.from(loaderRuntime)
+                sdkDirectory.set(sdkComponents.sdkDirectory)
+                minSdk.set(variant.minSdk.apiLevel)
+                outputDirectory.set(layout.buildDirectory.dir("intermediates/yumePacker/${variant.name}/loaderDex"))
+                dependsOn(":pack:bundleReleaseAar")
+            }
+            val packApkTask = tasks.register<TransformPackedApksTask>("pack${capitalized}Apk") {
+                group = "build"
+                description = "Compresses DEX payloads and installs the loader in ${variant.name} APKs"
+                loaderDex.set(loaderDexTask.flatMap { it.outputDirectory.file("classes.dex") })
+                sdkDirectory.set(sdkComponents.sdkDirectory)
+                originalApplication.set("com.github.yumelira.yumebox.App")
+                originalComponentFactory.set("androidx.core.app.CoreComponentFactory")
+                keyStoreFile.set(rootProject.layout.projectDirectory.file("release.keystore"))
+                keyStorePassword.set(releaseSigningProperties.getProperty("keystore.password"))
+                keyAlias.set(releaseSigningProperties.getProperty("key.alias"))
+                keyPassword.set(releaseSigningProperties.getProperty("key.password"))
+            }
+            val artifactRequest = variant.artifacts.use(packApkTask)
+                .wiredWithDirectories(
+                    TransformPackedApksTask::inputApkDirectory,
+                    TransformPackedApksTask::outputApkDirectory,
+                )
+                .toTransformMany(SingleArtifact.APK)
+            packApkTask.configure {
+                transformationRequest.set(artifactRequest)
+            }
+        }
+    }
+}
+
 dependencies {
     implementation(libs.androidx.animation)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
@@ -272,6 +384,7 @@ dependencies {
     implementation(project(":feature:override"))
     implementation(project(":feature:editor"))
     implementation(project(":feature:meta"))
+    compileOnly(project(":pack"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -337,6 +450,7 @@ dependencies {
 
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
 
     testImplementation("junit:junit:4.13.2")
 }

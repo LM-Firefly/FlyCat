@@ -6,6 +6,7 @@ coroutines = "1.11.0"
 serializationJson = "1.11.0"
 annotationJvm = "1.10.0"
 coreKtx = "1.19.0"
+coreSplashscreen = "1.2.0"
 activityCompose = "1.13.0"
 lifecycle = "2.11.0"
 camera = "1.6.1"
@@ -45,6 +46,7 @@ androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling
 androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-annotation-jvm = { module = "androidx.annotation:annotation-jvm", version.ref = "annotationJvm" }
 androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 androidx-navigationevent-compose = { module = "androidx.navigationevent:navigationevent-compose", version.ref = "navigationevent" }
@@ -97,9 +99,8 @@ ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negoti
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 editor-bom = { module = "io.github.rosemoe:editor-bom", version.ref = "soraEditor" }
 rosemoe-editor = { module = "io.github.rosemoe:editor" }
-rosemoe-editor-lsp = { module = "io.github.rosemoe:editor-lsp" }
 rosemoe-language-textmate = { module = "io.github.rosemoe:language-textmate" }
-rosemoe-language-treesitter = { module = "io.github.rosemoe:language-treesitter" }
+rosemoe-oniguruma = { module = "io.github.rosemoe:oniguruma-native" }
 libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu" }
 libsu-service = { module = "com.github.topjohnwu.libsu:service", version.ref = "libsu" }
 androidx-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }

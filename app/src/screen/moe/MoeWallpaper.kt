@@ -28,11 +28,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import com.github.panpf.sketch.cache.CachePolicy
+import com.github.panpf.sketch.fetch.newResourceUri
 import com.github.panpf.sketch.rememberAsyncImagePainter
 import com.github.panpf.sketch.request.ImageRequest
 import com.github.panpf.sketch.resize.Precision
 import com.github.panpf.sketch.resize.Scale
 import com.github.panpf.sketch.util.Size
+import com.github.yumelira.yumebox.R
 import com.github.yumelira.yumebox.presentation.component.calculateWallpaperViewportLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -49,12 +51,13 @@ internal fun MoeWallpaperBackground(
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
+    val bundledWallpaper = newResourceUri(R.drawable.wallpaper)
     val model by
-        produceState(wallpaperUri.ifBlank { BUNDLED_WALLPAPER }, wallpaperUri) {
+        produceState(bundledWallpaper, wallpaperUri) {
             value = withContext(Dispatchers.IO) { resolveWallpaperModel(context, wallpaperUri) }
         }
     val imageBounds by produceState<Pair<Int, Int>?>(null, model) {
-        value = if (model.startsWith("file:///android_asset/")) null else readImageBounds(context, model)
+        value = if (model == bundledWallpaper) null else readImageBounds(context, model)
     }
 
     BoxWithConstraints(modifier = modifier) {
@@ -115,17 +118,16 @@ private suspend fun readImageBounds(context: Context, model: String): Pair<Int, 
         }.getOrNull()
     }
 
-private const val BUNDLED_WALLPAPER = "file:///android_asset/wallpaper.jpg"
-
 private fun resolveWallpaperModel(context: Context, uri: String): String {
-    if (uri.isBlank()) return BUNDLED_WALLPAPER
+    val bundledWallpaper = newResourceUri(R.drawable.wallpaper)
+    if (uri.isBlank()) return bundledWallpaper
     if (uri.startsWith("file://")) {
         val path = uri.removePrefix("file://")
-        return if (path.startsWith("/android_asset/") || File(path).exists()) uri else BUNDLED_WALLPAPER
+        return if (File(path).exists()) uri else bundledWallpaper
     }
     val readable =
         runCatching {
             context.contentResolver.openInputStream(Uri.parse(uri))?.use { true } ?: false
         }.getOrDefault(false)
-    return if (readable) uri else BUNDLED_WALLPAPER
+    return if (readable) uri else bundledWallpaper
 }

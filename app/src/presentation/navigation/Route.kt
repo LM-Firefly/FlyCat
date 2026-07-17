@@ -25,13 +25,9 @@ import kotlinx.serialization.Serializable
 
 /**
  * Navigation keys for the whole app, replacing compose-destinations' generated `*Destination`
- * objects. Flat graph; the start route is [AppStart]. The arg-carrying screens are data classes,
- * the rest are objects.
+ * objects. The arg-carrying screens are data classes, the rest are objects.
  */
 sealed interface Route : NavKey {
-    @Serializable
-    data object AppStart : Route
-
     @Serializable
     data class Main(val initialPage: Int = 0) : Route
 

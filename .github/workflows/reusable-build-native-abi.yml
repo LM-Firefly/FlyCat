@@ -115,7 +115,9 @@ jobs:
           ./scripts/sync-kernel.sh "${{ inputs.kernel_channel }}"
 
       - name: Verify Rust sources
-        run: test -f lib/native/rust/Cargo.toml
+        run: |
+          test -f lib/native/rust/Cargo.toml
+          test -f pack/native/CMakeLists.txt
 
       - name: Build native libraries for ABI
         env:
@@ -123,7 +125,7 @@ jobs:
           ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.14904198
-        run: kotlin scripts/native-build.main.kts --go --rust --cpp
+        run: kotlin scripts/native-build.main.kts --go --rust --cpp --loader
 
       - name: Verify native outputs
         shell: bash
@@ -132,6 +134,7 @@ jobs:
           test -f "jniLibs/${{ inputs.abi }}/libclash.so"
           test -f "jniLibs/${{ inputs.abi }}/liboverride.so"
           test -f "jniLibs/${{ inputs.abi }}/libbridge.so"
+          test -f "jniLibs/${{ inputs.abi }}/libloader.so"
 
       - name: Upload ABI artifact
         uses: actions/upload-artifact@v7
@@ -141,4 +144,5 @@ jobs:
             jniLibs/${{ inputs.abi }}/libclash.so
             jniLibs/${{ inputs.abi }}/liboverride.so
             jniLibs/${{ inputs.abi }}/libbridge.so
+            jniLibs/${{ inputs.abi }}/libloader.so
           if-no-files-found: error

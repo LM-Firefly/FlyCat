@@ -127,4 +127,5 @@ include(
     ":runtime:api",
     ":runtime:client",
     ":runtime:service",
+    ":pack",
 )

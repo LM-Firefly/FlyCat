@@ -136,10 +136,9 @@ object Bridge {
     private external fun nativeInit(home: String, versionName: String, sdkVersion: Int)
 
     init {
-        System.loadLibrary("override")
-        System.loadLibrary("bridge")
-
         val ctx = Global.application
+
+        NativeLibraryLoader.loadCoreLibraries(ctx)
 
         ParcelFileDescriptor.open(File(ctx.packageCodePath), ParcelFileDescriptor.MODE_READ_ONLY)
             .detachFd()

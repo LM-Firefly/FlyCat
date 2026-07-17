@@ -86,7 +86,7 @@ private fun slideExit(offset: (Int) -> Int): ExitTransition =
  */
 @Composable
 fun AppNavContainer() {
-    val backStack = rememberNavBackStack(Route.AppStart)
+    val backStack = rememberNavBackStack(Route.Main(initialPage = 0))
     val navigator = remember(backStack) { Navigator(backStack) }
 
     val entries =
@@ -104,7 +104,6 @@ fun AppNavContainer() {
                 ),
             entryProvider =
                 entryProvider {
-                    entry<Route.AppStart> { AppStartScreen(navigator) }
                     entry<Route.Main> { route -> MainScreen(navigator, initialPage = route.initialPage) }
                     entry<Route.MoeWallpaperCrop> { route ->
                         MoeWallpaperCropScreen(

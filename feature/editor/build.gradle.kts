@@ -56,9 +56,10 @@ dependencies {
     // Sora Editor
     implementation(platform(libs.editor.bom))
     implementation(libs.rosemoe.editor)
-    implementation(libs.rosemoe.editor.lsp)
-    implementation(libs.rosemoe.language.textmate)
-    implementation(libs.rosemoe.language.treesitter)
+    implementation(libs.rosemoe.language.textmate) {
+        exclude(group = "org.jruby.joni", module = "joni")
+    }
+    implementation(libs.rosemoe.oniguruma)
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)

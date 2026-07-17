@@ -309,7 +309,7 @@ class GoBuilder(private val config: ProjectConfig, private val ndkTools: NdkTool
             add("build")
             add("-buildmode")
             add("c-shared")
-            addAll(buildFlags)
+            addAll(withSoname(buildFlags, "libclash.so"))
             if (buildTags.isNotEmpty()) {
                 add("-tags")
                 add(buildTags.joinToString(","))
@@ -334,6 +334,27 @@ class GoBuilder(private val config: ProjectConfig, private val ndkTools: NdkTool
             val reason = result.error.ifBlank { result.output }.trim()
             println("[building] Failed to build $abi: $reason")
         }
+    }
+
+    // Force a DT_SONAME onto libclash.so. Go's c-shared output has no soname, so when libbridge is
+    // loaded from a non-standard dir (the `nativelibs.compress` variant extracts + System.load()s the
+    // core libs from filesDir) the linker can't match the already-loaded libclash by soname and
+    // fails libbridge's `NEEDED libclash.so` with "library libclash.so not found". Merge the
+    // -soname arg into the existing -ldflags value (Go honours only the last -ldflags, so a second
+    // one would drop -s -w) or add a fresh -ldflags when none is configured.
+    private fun withSoname(flags: List<String>, soname: String): List<String> {
+        val extldflags = "-extldflags=-Wl,-soname,$soname"
+        val result = flags.toMutableList()
+        val idx = result.indexOf("-ldflags")
+        if (idx >= 0 && idx + 1 < result.size) {
+            if (!result[idx + 1].contains("-soname")) {
+                result[idx + 1] = (result[idx + 1] + " " + extldflags).trim()
+            }
+        } else {
+            result.add("-ldflags")
+            result.add(extldflags)
+        }
+        return result
     }
 
     private fun buildGoEnv(abi: String): Map<String, String> {
@@ -415,6 +436,9 @@ class RustBuilder(private val config: ProjectConfig) {
                     "-Cpanic=immediate-abort",
                     "-C", "link-arg=-Wl,--gc-sections",
                     "-C", "link-arg=-Wl,--icf=all",
+                    // The compressed variant System.loads liboverride from filesDir. Give it a
+                    // stable identity so libbridge's later dlopen("liboverride.so") reuses it.
+                    "-C", "link-arg=-Wl,-soname,liboverride.so",
                 ).joinToString(" "),
             ),
             stdoutPrefix = "[building][$abi]",
@@ -441,6 +465,76 @@ class RustBuilder(private val config: ProjectConfig) {
         val destLib = File(destDir, "liboverride.so")
         sourceLib.copyTo(destLib, overwrite = true)
         println("[Rust] Copied to ${destLib.absolutePath}")
+    }
+}
+
+class LoaderCBuilder(private val config: ProjectConfig, private val ndkTools: NdkTools) {
+    private val sourceDir = File("pack/native")
+    private val outputDir = File("build/native/loader")
+    private val appJniRoot = File("jniLibs")
+    private val outputLibraryName = "libloader.so"
+
+    fun buildAll() {
+        require(File(sourceDir, "CMakeLists.txt").isFile) {
+            "[Loader] Source directory not ready: missing ${File(sourceDir, "CMakeLists.txt").absolutePath}"
+        }
+
+        val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
+        println("[Loader] Building native payload extractor for ABIs: ${abis.joinToString()}")
+        abis.forEach(::buildForAbi)
+    }
+
+    private fun buildForAbi(abi: String) {
+        println("[building] Building for $abi (Loader C/liblzma)...")
+        val objDir = File(outputDir, "obj/$abi")
+        val libDir = File(outputDir, abi)
+        objDir.mkdirs()
+        libDir.mkdirs()
+        val toolchain = File(ndkTools.ndkDir, "build/cmake/android.toolchain.cmake")
+        val configure = executeCommand(
+            command = listOf(
+                ndkTools.getCmakePath(),
+                "-S", sourceDir.absolutePath,
+                "-B", objDir.absolutePath,
+                "-G", "Ninja",
+                "-DCMAKE_MAKE_PROGRAM=${ndkTools.getNinjaPath()}",
+                "-DCMAKE_TOOLCHAIN_FILE=${toolchain.absolutePath}",
+                "-DANDROID_ABI=$abi",
+                "-DANDROID_PLATFORM=android-${ndkTools.getMinAndroidApi()}",
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${libDir.absolutePath}",
+            ),
+            stdoutPrefix = "[building][$abi]",
+            stderrPrefix = "[building][$abi]",
+            stderrIsError = false,
+        )
+        if (!configure.success) {
+            val reason = configure.error.ifBlank { configure.output }.trim()
+            error("[building] Failed to configure $abi (Loader C): $reason")
+        }
+        val build = executeCommand(
+            command = listOf(
+                ndkTools.getCmakePath(),
+                "--build", objDir.absolutePath,
+                "--target", "loader",
+            ),
+            stdoutPrefix = "[building][$abi]",
+            stderrPrefix = "[building][$abi]",
+            stderrIsError = false,
+        )
+        if (!build.success) {
+            val reason = build.error.ifBlank { build.output }.trim()
+            error("[building] Failed to build $abi (Loader C): $reason")
+        }
+
+        val sourceLib = File(outputDir, "$abi/$outputLibraryName")
+        require(sourceLib.isFile) {
+            "[building] Output library not found: ${sourceLib.absolutePath}"
+        }
+        val destination = File(appJniRoot, "$abi/$outputLibraryName")
+        destination.parentFile.mkdirs()
+        sourceLib.copyTo(destination, overwrite = true)
+        println("[Loader] Copied to ${destination.absolutePath}")
     }
 }
 
@@ -730,6 +824,63 @@ class ResourceDownloader(private val config: ProjectConfig) {
     }
 }
 
+/**
+ * XZ-compresses the three core libraries from jniLibs/<abi>/ into a generated jniLibs tree under
+ * build/generated/nativelibs-jni/<abi>/. The compressed packaging variant ships these blobs
+ * instead of the raw libraries and extracts + loads them at runtime (NativeLibraryLoader).
+ *
+ * The blob keeps a `.so` suffix and lives under lib/<abi>/ on purpose: AGP's ABI splits filter only
+ * lib/<abi>/, and AGP only packages `*.so` from jniLibs. Putting it in assets/ (an earlier
+ * attempt) leaked every ABI into every split APK, because assets are not ABI-split.
+ */
+class NativeLibCompressor(private val config: ProjectConfig) {
+    private val appJniRoot = File("jniLibs")
+    private val outputRoot = File("build/generated/nativelibs-jni")
+    private val coreLibs = listOf("liboverride.so", "libclash.so", "libbridge.so")
+
+    fun compressAll() {
+        val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
+        println("[NativeLibs] Compressing core libraries for ABIs: ${abis.joinToString()}")
+        abis.forEach { abi -> compressForAbi(abi) }
+    }
+
+    // libclash.so -> libclash.xz.so : keeps the .so suffix (so AGP packages it and ABI splits
+    // filter it) while staying distinct from the excluded raw lib. Mirrored in NativeLibraryLoader.
+    private fun compressedName(name: String) = name.removeSuffix(".so") + ".xz.so"
+
+    private fun compressForAbi(abi: String) {
+        val srcDir = File(appJniRoot, abi)
+        val destDir = File(outputRoot, abi)
+        coreLibs.forEach { name ->
+            val srcLib = File(srcDir, name)
+            require(srcLib.isFile) {
+                "[NativeLibs][$abi] Missing $name at ${srcLib.absolutePath}"
+            }
+            destDir.mkdirs()
+            val outFile = File(destDir, compressedName(name))
+            compressToXz(srcLib, outFile)
+            val saved = if (srcLib.length() > 0) 100 - (outFile.length() * 100 / srcLib.length()) else 0
+            println("[NativeLibs][$abi] $name ${srcLib.length()} -> ${outFile.length()} bytes (-$saved%)")
+        }
+    }
+
+    private fun compressToXz(sourceFile: File, outputFile: File) {
+        if (outputFile.exists()) {
+            outputFile.delete()
+        }
+        // Default preset (6, 8 MiB dictionary), same as the geo databases. Higher presets (9 =
+        // 64 MiB dict) OOM the standalone-script JVM on the ~20 MB Go lib; preset 6 already beats
+        // the APK's DEFLATE comfortably.
+        sourceFile.inputStream().buffered().use { input ->
+            outputFile.outputStream().buffered().use { fileOutput ->
+                XZOutputStream(fileOutput, LZMA2Options()).use { xzOutput ->
+                    input.copyTo(xzOutput)
+                }
+            }
+        }
+    }
+}
+
 fun printUsage() {
     println("""
         YumeBox Native Build Tool
@@ -739,8 +890,10 @@ fun printUsage() {
         Options:
           --go       Build Go native libraries
           --rust     Build Rust config compiler
+          --loader   Build the C/liblzma native payload extractor
           --cpp      Generate CMake/git info
           --geo      Download Geo databases and BundleMRS.7z into generated assets
+          --compress XZ-compress the built core libs into generated nativelibs assets
           --clean    Clean build outputs
           --all      Build everything (default)
           --help     Show this help
@@ -761,6 +914,7 @@ fun cleanBuildOutputs() {
         File("jniLibs/$abi/libclash.so").delete()
         File("jniLibs/$abi/liboverride.so").delete()
         File("jniLibs/$abi/libbridge.so").delete()
+        File("jniLibs/$abi/libloader.so").delete()
     }
     println("[Clean] Done")
 }
@@ -794,10 +948,12 @@ fun main(args: Array<String>) {
 
     val buildGo = args.isEmpty() || args.contains("--all") || args.contains("--go")
     val buildRust = args.isEmpty() || args.contains("--all") || args.contains("--rust")
+    val buildLoader = args.isEmpty() || args.contains("--all") || args.contains("--loader")
     val buildCpp = args.isEmpty() || args.contains("--all") || args.contains("--cpp")
     val downloadGeo = args.isEmpty() || args.contains("--all") || args.contains("--geo")
+    val compressLibs = args.isEmpty() || args.contains("--all") || args.contains("--compress")
 
-    val needsNdk = buildGo || buildCpp
+    val needsNdk = buildGo || buildCpp || buildLoader
     val ndkTools by lazy { NdkTools(config) }
 
     if (needsNdk) {
@@ -815,8 +971,17 @@ fun main(args: Array<String>) {
         RustBuilder(config).buildAll()
     }
 
+    if (buildLoader) {
+        LoaderCBuilder(config, ndkTools).buildAll()
+    }
+
     if (buildCpp) {
         CppBuilder(config, ndkTools).buildAll()
+    }
+
+    // Must run after the Go/Rust/C++ libs have been copied into jniLibs/.
+    if (compressLibs) {
+        NativeLibCompressor(config).compressAll()
     }
 
     if (downloadGeo) {

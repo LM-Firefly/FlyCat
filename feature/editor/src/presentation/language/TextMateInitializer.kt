@@ -25,9 +25,12 @@ import io.github.rosemoe.sora.langs.textmate.TextMateLanguage
 import io.github.rosemoe.sora.langs.textmate.registry.FileProviderRegistry
 import io.github.rosemoe.sora.langs.textmate.registry.GrammarRegistry
 import io.github.rosemoe.sora.langs.textmate.registry.ThemeRegistry
+import io.github.rosemoe.sora.langs.textmate.registry.model.GrammarDefinition
 import io.github.rosemoe.sora.langs.textmate.registry.model.ThemeModel
 import io.github.rosemoe.sora.langs.textmate.registry.provider.AssetsFileResolver
+import io.github.rosemoe.sora.langs.textmate.registry.reader.LanguageDefinitionReader
 import io.github.rosemoe.sora.widget.CodeEditor
+import org.eclipse.tm4e.core.internal.oniguruma.impl.onig.NativeOnigConfig
 import org.eclipse.tm4e.core.registry.IThemeSource
 import timber.log.Timber
 
@@ -38,6 +41,7 @@ object TextMateInitializer {
     private const val THEME_LIGHT = "light"
 
     private var initialized = false
+    private var grammarDefinitions: Map<LanguageScope, GrammarDefinition> = emptyMap()
 
     @Suppress("TooGenericExceptionCaught")
     @Synchronized
@@ -49,6 +53,8 @@ object TextMateInitializer {
 
         try {
             Timber.tag(TAG).i("Initializing TextMate...")
+
+            NativeOnigConfig.setSearchInBatch(false)
 
             registerFileProvider(context)
 
@@ -108,8 +114,16 @@ object TextMateInitializer {
     private fun loadGrammars() {
         Timber.tag(TAG).d("Loading grammars...")
         try {
-            GrammarRegistry.getInstance().loadGrammars("textmate/languages.json")
-            Timber.tag(TAG).d("Grammars loaded successfully")
+            val definitions = LanguageDefinitionReader.read("textmate/languages.json")
+            grammarDefinitions = LanguageScope.entries
+                .filterNot { it == LanguageScope.Text }
+                .associateWith { language ->
+                    definitions.firstOrNull {
+                        it.name.equals(language.displayName, ignoreCase = true)
+                    } ?: error("Grammar definition not found: ${language.displayName}")
+                }
+            check(grammarDefinitions.isNotEmpty()) { "No TextMate grammar definitions found" }
+            Timber.tag(TAG).d("Grammar definitions loaded successfully")
         } catch (error: Exception) { // fault barrier: TextMate/tm4e throws unspecified exceptions
             Timber.e(error, "Failed to load grammars")
         }
@@ -123,7 +137,18 @@ object TextMateInitializer {
         }
 
         try {
-            val textMateLanguage = TextMateLanguage.create(language.scopeName, true)
+            val definition = grammarDefinitions[language]
+                ?: error("Grammar not found: ${language.scopeName}")
+            val themeRegistry = ThemeRegistry.getInstance()
+            val grammarRegistry = GrammarRegistry(GrammarRegistry.getInstance()).apply {
+                setTheme(themeRegistry.currentThemeModel)
+            }
+            val textMateLanguage = TextMateLanguage.create(
+                definition,
+                grammarRegistry,
+                themeRegistry,
+                false,
+            )
             editor.setEditorLanguage(textMateLanguage)
             Timber.tag(TAG).d("Language set to: ${language.displayName}")
         } catch (error: Exception) { // fault barrier: TextMate/tm4e throws unspecified exceptions

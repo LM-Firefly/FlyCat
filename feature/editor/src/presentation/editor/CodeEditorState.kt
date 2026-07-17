@@ -23,7 +23,6 @@ package com.github.yumelira.yumebox.feature.editor.editor
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.github.yumelira.yumebox.feature.editor.diagnostic.JsonDiagnosticsProvider
 import com.github.yumelira.yumebox.feature.editor.format.CodeFormatter
 import com.github.yumelira.yumebox.feature.editor.language.LanguageScope
 import io.github.rosemoe.sora.widget.CodeEditor
@@ -109,24 +108,4 @@ class CodeEditorState(
         }
     }
 
-    fun validate(): Boolean = CodeFormatter.validate(content, language)
-
-    fun updateDiagnostics() {
-        val editor = editor ?: return
-
-        when (language) {
-            LanguageScope.Json -> {
-                editor.diagnostics = JsonDiagnosticsProvider.analyze(content)
-            }
-            LanguageScope.Yaml,
-            LanguageScope.JavaScript,
-            LanguageScope.Text -> {
-                editor.diagnostics = null
-            }
-        }
-    }
-
-    fun clearDiagnostics() {
-        editor?.diagnostics = null
-    }
 }

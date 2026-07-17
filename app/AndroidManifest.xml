@@ -27,18 +27,21 @@
     <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
-            android:name=".App"
+            android:name="${applicationClass}"
+            android:appComponentFactory="${componentFactory}"
             android:allowBackup="true"
             android:enableOnBackInvokedCallback="true"
             android:icon="@mipmap/ic_launcher"
             android:label="${appName}"
             android:supportsRtl="true"
             android:theme="@style/Theme.YumeBox"
-            android:usesCleartextTraffic="true">
+            android:usesCleartextTraffic="true"
+            tools:replace="android:appComponentFactory">
         <activity
                 android:name=".MainActivity"
                 android:exported="true"
                 android:launchMode="singleTop"
+                android:theme="@style/Theme.YumeBox.Starting"
                 android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES"/>

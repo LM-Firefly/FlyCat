@@ -143,22 +143,17 @@ private fun createCodeEditor(
 
         nonPrintablePaintingFlags = CodeEditor.FLAG_DRAW_LINE_SEPARATOR
 
+        setText(state.content)
+
         TextMateInitializer.setLanguage(this, state.language)
 
         EditorThemeManager.applyTheme(this)
         EditorThemeManager.updateTheme(this, isDark)
 
-        setText(state.content)
-
         subscribeAlways<ContentChangeEvent> {
             state.syncContentFromEditor()
-
-            state.updateDiagnostics()
-
             onTextChange?.invoke(state.content)
         }
-
-        state.updateDiagnostics()
 
         Timber.d("CodeEditor created: language=${state.language}, readOnly=${state.readOnly}")
     }
