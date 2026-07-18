@@ -1,0 +1,65 @@
+<Connection Page>
+Connection = {
+    Title = "Соединения"
+    Summary = "Просмотр активных соединений"
+
+    Tab = {
+        Active = "Активные"
+        Closed = "Закрытые"
+    }
+
+    Search = "Поиск"
+    SearchHint = "Поиск хоста, процесса..."
+    CloseAll = "Закрыть все соединения"
+
+    SortBy = "Сортировка:"
+    Sort = {
+        Time = "Время"
+        Upload = "Отдача"
+        Download = "Загрузка"
+        Host = "Хост"
+    }
+
+    ChainCount = "x%d"
+
+    RelativeTime = {
+        JustNow = "Только что"
+        MinutesAgo = "%d мин. назад"
+        HoursAgo = "%d ч. назад"
+        DaysAgo = "%d дн. назад"
+        Date = "%02d-%02d"
+    }
+
+    Detail = {
+        Action = {
+            Interrupting = "Прерывание соединения..."
+            Interrupt = "Прервать соединение"
+        }
+
+        Section = {
+            Info = "Информация о соединении"
+            Rule = "Правило"
+        }
+
+        Label = {
+            Protocol = "Протокол"
+            Process = "Процесс"
+            SourceAddress = "Адрес источника"
+            DestinationAddress = "Адрес назначения"
+            Duration = "Длительность"
+            Upload = "Отдача"
+            Download = "Загрузка"
+            Type = "Тип"
+            Content = "Содержимое"
+        }
+    }
+
+    Loading = "Загрузка..."
+    Empty = "Нет активных соединений"
+    NoResults = "Нет подходящих соединений"
+
+    Topology = {
+        EmptyMessage = "Нет активных соединений. Нажмите, чтобы открыть подробности"
+        OpenPage = "Открыть страницу соединений"
+    }
+}

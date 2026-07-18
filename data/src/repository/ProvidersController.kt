@@ -1,0 +1,129 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+package com.github.lmfirefly.flycat.data.repository
+
+import android.content.Context
+import android.net.Uri
+import com.github.lmfirefly.flycat.core.contract.ProvidersRepository
+import com.github.lmfirefly.flycat.core.model.Provider
+import com.github.lmfirefly.flycat.core.model.UpdateProvidersResult
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import com.github.lmfirefly.flycat.locale.FlyTxt
+
+class ProvidersController(
+    private val context: Context,
+    private val queryProvidersAction: suspend () -> List<Provider>,
+    private val updateProviderAction: suspend (Provider.Type, String) -> Unit,
+) : ProvidersRepository {
+    override suspend fun queryProviders(): Result<List<Provider>> =
+        try {
+            Result.success(queryProvidersAction())
+        } catch (error: Exception) { // fault barrier: injected bridge action may fail arbitrarily
+            Result.failure(error)
+        }
+
+    override suspend fun updateProvider(provider: Provider): Result<Unit> =
+        updateProviderInternal(provider.type, provider.name)
+
+    override suspend fun updateAllProviders(providers: List<Provider>): Result<UpdateProvidersResult> {
+        if (providers.isEmpty()) return Result.success(UpdateProvidersResult(emptyList()))
+
+        val failed = mutableListOf<String>()
+        providers.forEach { provider ->
+            val result = updateProviderInternal(provider.type, provider.name)
+            if (result.isFailure) {
+                failed.add(provider.name)
+            }
+        }
+        return Result.success(UpdateProvidersResult(failed))
+    }
+
+    override suspend fun uploadProviderFile(context: Any, provider: Provider, uri: Any, maxBytes: Long): Result<Unit> = uploadProviderFile(context as Context, provider, uri as Uri, maxBytes)
+
+    private suspend fun uploadProviderFile(
+        context: Context,
+        provider: Provider,
+        uri: Uri,
+        maxBytes: Long = MAX_UPLOAD_SIZE_BYTES,
+    ): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val targetFile = buildTargetFile(provider)
+                val inputStream =
+                    context.contentResolver.openInputStream(uri)
+                        ?: return@withContext Result.failure(IllegalStateException(FlyTxt.Providers.Message.CannotReadFile.format(uri)))
+
+                inputStream.use { input ->
+                    val size = input.available().toLong()
+                    if (size > maxBytes) {
+                        return@withContext Result.failure(
+                            IllegalStateException(FlyTxt.Providers.Message.FileExceedsLimit.format(maxBytes / (1024 * 1024)))
+                        )
+                    }
+
+                    targetFile.outputStream().use { output -> input.copyTo(output) }
+                }
+
+                Result.success(Unit)
+            } catch (error: Exception) { // fault barrier: IO and path-validation failures both become Result.failure
+                Result.failure(error)
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun updateProviderInternal(type: Provider.Type, name: String): Result<Unit> =
+        try {
+            updateProviderAction(type, name)
+            Result.success(Unit)
+        } catch (error: Exception) { // fault barrier: injected bridge action may fail arbitrarily
+            Result.failure(error)
+        }
+
+    private fun buildTargetFile(provider: Provider): File {
+        if (provider.path.isBlank()) {
+            throw IllegalStateException("Provider path is empty")
+        }
+        val targetFile = File(provider.path).canonicalFile
+        val importedRoot = context.filesDir.resolve("imported").canonicalFile
+        val inImportedProviders =
+            targetFile.toPath().startsWith(importedRoot.toPath()) &&
+                targetFile
+                    .toRelativeString(importedRoot)
+                    .replace('\\', '/')
+                    .matches(REGEX_PROVIDER_PATH)
+        if (!inImportedProviders) {
+            throw IllegalStateException(
+                "Provider path must live under profile provider directories: ${provider.path}"
+            )
+        }
+        targetFile.parentFile?.mkdirs()
+        return targetFile
+    }
+
+    companion object {
+        private const val MAX_UPLOAD_SIZE_BYTES = 50L * 1024 * 1024
+        private val REGEX_PROVIDER_PATH = Regex("""^[^/]+/providers/(rules|proxies)/.+""")
+    }
+}

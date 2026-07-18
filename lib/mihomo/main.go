@@ -1,3 +1,4 @@
+// Package golang wraps the cfa native bridge so a plain go build type-checks against mihomo.
 package golang
 
 import (

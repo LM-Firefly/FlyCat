@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,10 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.presentation.theme
+package com.github.lmfirefly.flycat.presentation.theme
 
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
@@ -74,6 +75,7 @@ data class LatencyColors(
     val fast: Color = Color(0xFF007906),
     val moderate: Color = Color(0xFFFFB300),
     val slow: Color = Color(0xFFE53935),
+    val terrible: Color = Color(0xFF961919),
     val timeout: Color = Color(0xFF9E9E9E),
 )
 

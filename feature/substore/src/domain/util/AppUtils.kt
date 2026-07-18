@@ -1,0 +1,96 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+package com.github.lmfirefly.flycat.feature.substore.util
+
+import android.app.Application
+import com.github.lmfirefly.flycat.core.FirstRunInitializer
+import com.github.lmfirefly.flycat.core.util.path.SubStorePaths
+import java.io.File
+import com.github.lmfirefly.flycat.locale.FlyTxt
+
+object AppUtils : FirstRunInitializer {
+    lateinit var application: Application
+
+    override fun initialize() {
+        SubStorePaths.ensureStructure()
+        createRootJson()
+        extractBackendFile()
+        extractFrontendDist()
+    }
+
+    private fun createRootJson() {
+        runCatching {
+                val rootJsonFile = File(SubStorePaths.dataDir, "root.json")
+                rootJsonFile.parentFile?.mkdirs()
+                if (!rootJsonFile.exists()) rootJsonFile.writeText("{}")
+            }
+            .onFailure { error -> timber.log.Timber.e(error, "Create root.json failed") }
+    }
+
+    private fun extractBackendFile() {
+        runCatching {
+                val assetManager = application.assets
+                SubStorePaths.backendDir.mkdirs()
+                assetManager.open("backend/sub-store.bundle.js").use { inputStream ->
+                    SubStorePaths.backendBundle.outputStream().use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+            }
+            .onFailure { error -> timber.log.Timber.e(error, "Extract backend bundle failed") }
+    }
+
+    private fun extractFrontendDist() {
+        runCatching {
+                val assetManager = application.assets
+                val cacheDir = application.cacheDir
+
+                val zipPath = File(cacheDir, "substore_frontend.zip")
+                assetManager.open("frontend/dist.zip").use { inputStream ->
+                    zipPath.outputStream().use { outputStream -> inputStream.copyTo(outputStream) }
+                }
+
+                val stagingDir =
+                    File(cacheDir, "substore_frontend_stage").apply {
+                        if (exists()) deleteRecursively()
+                        mkdirs()
+                    }
+
+                val unzipSuccess = ArchiveUtils.unzipZip(zipPath, stagingDir)
+                if (!unzipSuccess) {
+                    throw IllegalStateException(FlyTxt.Feature.SubStore.FrontendExtractFailed)
+                }
+
+                val extractedRoot = File(stagingDir, "dist").takeIf { it.exists() } ?: stagingDir
+                val targetDir = SubStorePaths.frontendDir
+                targetDir.parentFile?.mkdirs()
+                if (targetDir.exists()) {
+                    targetDir.deleteRecursively()
+                }
+                extractedRoot.copyRecursively(targetDir, overwrite = true)
+
+                stagingDir.deleteRecursively()
+                zipPath.delete()
+            }
+            .onFailure { error -> timber.log.Timber.e(error, "Extract frontend assets failed") }
+    }
+}

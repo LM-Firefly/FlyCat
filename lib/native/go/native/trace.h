@@ -6,9 +6,8 @@
 
 #pragma once
 
-#include"bridge.h"
-
-#include<android/log.h>
+#include "bridge.h"
+#include <android/log.h>
 
 #define ENABLE_TRACE 0
 

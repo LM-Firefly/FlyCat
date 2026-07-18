@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,10 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.presentation.theme
+package com.github.lmfirefly.flycat.presentation.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -156,7 +157,6 @@ data class Sizes(
     val speedChartBarGap: Dp = UiDp.dp5,
     val speedChartBarCornerRadius: Dp = UiDp.dp6,
     val trafficChartHeight: Dp = UiDp.dp188,
-    val trafficBarChartHeight: Dp = UiDp.dp140,
     val trafficBarWidth: Dp = UiDp.dp20,
     val trafficBarLabelHeight: Dp = UiDp.dp18,
     val trafficDonutDiameter: Dp = UiDp.dp168,

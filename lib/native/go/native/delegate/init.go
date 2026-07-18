@@ -1,8 +1,10 @@
+// Package delegate initializes the mihomo core and registers native socket hooks.
 package delegate
 
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"syscall"
 
@@ -18,17 +20,19 @@ import (
 
 var errBlocked = errors.New("blocked")
 
+// Init initializes the mihomo core with the given home directory, version info, and Android SDK version.
 func Init(home, versionName, gitVersion string, platformVersion int) {
 	log.Infoln("Init core, home: %s, versionName: %s, gitVersion: %s, platformVersion: %d", home, versionName, gitVersion, platformVersion)
 	constant.SetHomeDir(home)
 	// gitVersion = ${CURRENT_BRANCH}_${COMMIT_HASH}_${COMPILE_TIME}
-	if versions := strings.Split(gitVersion, "_"); len(versions) == 3 {
-		constant.Version = fmt.Sprintf("%s-%s-%s", strings.ToLower(versions[0]), versions[1], strings.ToLower(versionName))
-		constant.BuildTime = versions[2]
+	if versions := strings.Split(gitVersion, "_"); len(versions) >= 2 {
+		constant.Version = fmt.Sprintf("%s.%s", versions[0], versions[1])
+		if len(versions) == 3 {
+			constant.BuildTime = versions[2]
+		}
 	} else {
 		constant.Version = gitVersion
 	}
-	constant.Version = strings.ToLower(constant.Version)
 	app.ApplyVersionName(versionName)
 	app.ApplyPlatformVersion(platformVersion)
 
@@ -40,7 +44,7 @@ func Init(home, versionName, gitVersion string, platformVersion int) {
 		}
 
 		owner := app.QuerySocketOwner(metadata.RawSrcAddr, metadata.RawDstAddr)
-		if owner.UID >= 0 {
+		if owner.UID >= 0 && int64(owner.UID) <= int64(math.MaxUint32) {
 			metadata.Uid = uint32(owner.UID)
 		}
 

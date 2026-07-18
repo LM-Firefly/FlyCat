@@ -1,3 +1,4 @@
+// Package tunnel provides proxy tunnel management for the native bridge.
 package tunnel
 
 import (
@@ -5,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	C "github.com/metacubex/mihomo/constant"
 	"github.com/metacubex/mihomo/adapter/outboundgroup"
+	C "github.com/metacubex/mihomo/constant"
 	"github.com/metacubex/mihomo/log"
 	"github.com/metacubex/mihomo/tunnel"
 )
@@ -14,6 +15,7 @@ import (
 const defaultTestURL = "https://www.gstatic.com/generate_204"
 const healthCheckTimeout = 5 * time.Second
 
+// HealthCheck performs a latency test on all proxies in the specified group.
 func HealthCheck(name string) {
 	log.Infoln("HealthCheck: request group=%s", name)
 	p := tunnel.Proxies()[name]
@@ -55,6 +57,7 @@ func HealthCheck(name string) {
 	log.Infoln("HealthCheck: done group=%s", name)
 }
 
+// HealthCheckAll triggers a health check on all proxy groups concurrently.
 func HealthCheckAll() {
 	log.Infoln("HealthCheckAll: begin")
 	for _, g := range QueryProxyGroupNames(false) {
@@ -64,6 +67,8 @@ func HealthCheckAll() {
 	}
 }
 
+// HealthCheckProxy tests the latency of a single proxy by name.
+// Returns the delay in milliseconds, or -1 if the proxy is not found or timed out.
 func HealthCheckProxy(proxyName string) int {
 	p := tunnel.Proxies()[proxyName]
 	if p != nil {

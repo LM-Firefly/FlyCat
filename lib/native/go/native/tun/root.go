@@ -1,3 +1,4 @@
+// Package tun manages TUN device creation and configuration for the VPN tunnel.
 package tun
 
 import (
@@ -14,6 +15,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// RootTunConfig holds the configuration for a root-mode TUN device.
 type RootTunConfig struct {
 	IfName             string   `json:"ifName" yaml:"ifName"`
 	MTU                int      `json:"mtu" yaml:"mtu"`
@@ -35,6 +37,7 @@ type RootTunConfig struct {
 	AllowIPv6          bool     `json:"allowIpv6" yaml:"allowIpv6"`
 }
 
+// StartRoot creates and starts a TUN device from a YAML configuration string.
 func StartRoot(configYaml string) (io.Closer, error) {
 	var cfg RootTunConfig
 	if err := yaml.Unmarshal([]byte(configYaml), &cfg); err != nil {

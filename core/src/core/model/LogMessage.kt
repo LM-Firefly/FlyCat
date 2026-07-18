@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,17 +15,18 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
 @file:UseSerializers(DateSerializer::class)
 
-package com.github.yumelira.yumebox.core.model
+package com.github.lmfirefly.flycat.core.model
 
 import android.os.Parcel
 import android.os.Parcelable
-import com.github.yumelira.yumebox.core.util.DateSerializer
-import com.github.yumelira.yumebox.core.util.Parcelizer
+import com.github.lmfirefly.flycat.core.util.serialization.DateSerializer
+import com.github.lmfirefly.flycat.core.util.serialization.Parcelizer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
@@ -64,3 +65,16 @@ data class LogMessage(
             }
     }
 }
+
+data class LogFileInfo(
+    val name: String,
+    val createdAt: Long,
+    val size: Long,
+    val isRecording: Boolean,
+)
+
+data class LogEntry(
+    val time: String,
+    val level: LogMessage.Level,
+    val message: String,
+)

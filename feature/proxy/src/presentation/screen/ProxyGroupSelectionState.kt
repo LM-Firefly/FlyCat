@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,17 +15,18 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.presentation.screen
+package com.github.lmfirefly.flycat.feature.proxy.presentation.screen
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
+import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 
 data class ProxyGroupSelectionState(
     val selectedGroupName: String?,
@@ -40,24 +41,40 @@ fun rememberProxyGroupSelectionState(
     proxyGroups: List<ProxyGroupInfo>,
     onRefreshGroup: (String) -> Unit,
     retainLastKnownGroup: Boolean,
+    /** When non-null, selection is controlled by the caller (e.g. shared ViewModel for dual-pane). */
+    controlledSelectedGroupName: String? = null,
+    onControlledSelectedGroupNameChange: ((String?) -> Unit)? = null,
 ): ProxyGroupSelectionState {
-    val selectedGroupNameState = rememberSaveable { mutableStateOf<String?>(null) }
+    val uncontrolledNameState = rememberSaveable { mutableStateOf<String?>(null) }
+    val controlledSetter = onControlledSelectedGroupNameChange
+    val selectedGroupName = if (controlledSetter != null) controlledSelectedGroupName else uncontrolledNameState.value
     val selectedGroupSnapshotState = remember { mutableStateOf<ProxyGroupInfo?>(null) }
-    val selectGroup = remember {
-        { group: ProxyGroupInfo -> selectedGroupNameState.value = group.name }
-    }
-    val clearSelection = remember { { selectedGroupNameState.value = null } }
-    val selectedGroupName = selectedGroupNameState.value
-    val selectedGroup =
-        remember(selectedGroupName, proxyGroups) {
-            selectedGroupName?.let { groupName ->
-                proxyGroups.firstOrNull { group -> group.name == groupName }
+    val selectGroup = remember(controlledSetter) {
+        { group: ProxyGroupInfo ->
+            if (controlledSetter != null) {
+                controlledSetter(group.name)
+            } else {
+                uncontrolledNameState.value = group.name
             }
         }
-    val displayGroup =
-        remember(selectedGroup, selectedGroupSnapshotState.value, retainLastKnownGroup) {
-            selectedGroup ?: selectedGroupSnapshotState.value.takeIf { retainLastKnownGroup }
+    }
+    val clearSelection = remember(controlledSetter) {
+        {
+            if (controlledSetter != null) {
+                controlledSetter(null)
+            } else {
+                uncontrolledNameState.value = null
+            }
         }
+    }
+    val selectedGroup = remember(selectedGroupName, proxyGroups) {
+        selectedGroupName?.let { groupName ->
+            proxyGroups.firstOrNull { group -> group.name == groupName }
+        }
+    }
+    val displayGroup = remember(selectedGroup, selectedGroupSnapshotState.value, retainLastKnownGroup) {
+        selectedGroup ?: selectedGroupSnapshotState.value.takeIf { retainLastKnownGroup }
+    }
 
     LaunchedEffect(selectedGroup, retainLastKnownGroup) {
         if (retainLastKnownGroup) {
@@ -65,9 +82,13 @@ fun rememberProxyGroupSelectionState(
         }
     }
 
-    LaunchedEffect(selectedGroupName, selectedGroup, retainLastKnownGroup) {
+    LaunchedEffect(selectedGroupName, selectedGroup, retainLastKnownGroup, controlledSetter) {
         if (!retainLastKnownGroup && selectedGroupName != null && selectedGroup == null) {
-            selectedGroupNameState.value = null
+            if (controlledSetter != null) {
+                controlledSetter(null)
+            } else {
+                uncontrolledNameState.value = null
+            }
         }
     }
 

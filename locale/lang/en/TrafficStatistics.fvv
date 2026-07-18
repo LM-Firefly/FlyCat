@@ -5,18 +5,25 @@ TrafficStatistics = {
 
     TimeRange = {
         Today = "Today"
-        Week = "This Week"
+        Week = "Last 2 Weeks"
     }
 
     Summary = {
         TodayTraffic = "Today's Traffic"
-        WeekTraffic = "This Week's Traffic"
+        WeekTraffic = "Last 2 Weeks Traffic"
     }
 
 
 
     Donut = {
         Other = "Other"
+    }
+
+    Sort = {
+        ByName = "App Name"
+        ByUpload = "Upload"
+        ByDownload = "Download"
+        ByTotal = "Traffic"
     }
 
     Action = {
@@ -26,13 +33,20 @@ TrafficStatistics = {
 
     Section = {
         Traffic = "Traffic"
-        TopApps = "Top Apps"
+        PerAppTraffic = "Per-App Traffic"
         EmptyApps = "No app traffic statistics"
     }
 
     Metric = {
         Download = "Download"
         Upload = "Upload"
+        Total = "Total"
         UsageLine = "Down %s  Up %s"
+    }
+
+    Buckets = {
+        UnknownAppName = "Unknown app"
+        UnattributedTrafficName = "Unattributed traffic"
+        UnattributedRouteName = "Unattributed route"
     }
 }

@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,11 +15,13 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.presentation.screen
+package com.github.lmfirefly.flycat.feature.override.presentation.screen
 
+import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -45,7 +47,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,39 +62,44 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.data.model.OverrideConfig
-import com.github.yumelira.yumebox.data.model.OverrideContentType
-import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
-import com.github.yumelira.yumebox.presentation.component.AppDialog
-import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.CenteredText
-import com.github.yumelira.yumebox.presentation.component.OverrideAnimatedFab
-import com.github.yumelira.yumebox.presentation.component.OverrideCardActionIconButton
-import com.github.yumelira.yumebox.presentation.component.OverrideStatusBadge
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberOverrideFabController
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
-import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.`Badge-plus`
-import com.github.yumelira.yumebox.presentation.icon.yume.Copy
-import com.github.yumelira.yumebox.presentation.icon.yume.Delete
-import com.github.yumelira.yumebox.presentation.icon.yume.Edit
-import com.github.yumelira.yumebox.presentation.icon.yume.Share
-import com.github.yumelira.yumebox.presentation.icon.yume.ShieldCheck
-import com.github.yumelira.yumebox.presentation.icon.yume.ShieldMinus
-import com.github.yumelira.yumebox.presentation.theme.Spacing
-import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
-import dev.oom_wg.purejoy.mlang.MLang
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.lmfirefly.flycat.core.model.override.OverrideConfig
+import com.github.lmfirefly.flycat.core.model.override.OverrideContentType
+import com.github.lmfirefly.flycat.feature.override.presentation.component.OverrideAnimatedFab
+import com.github.lmfirefly.flycat.feature.override.presentation.component.OverrideCardActionIconButton
+import com.github.lmfirefly.flycat.feature.override.presentation.component.OverrideStatusBadge
+import com.github.lmfirefly.flycat.feature.override.presentation.viewmodel.OverrideConfigViewModel
+import com.github.lmfirefly.flycat.feature.override.presentation.component.rememberOverrideFabController
+import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.card.Card
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetCloseAction
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetConfirmAction
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppDialog
+import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
+import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
+import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
+import com.github.lmfirefly.flycat.presentation.component.misc.CenteredText
+import com.github.lmfirefly.flycat.presentation.component.misc.Title
+import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
+import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
+import com.github.lmfirefly.flycat.presentation.icon.FlyCat
+import com.github.lmfirefly.flycat.presentation.icon.flycat.BadgePlus
+import com.github.lmfirefly.flycat.presentation.icon.flycat.Delete
+import com.github.lmfirefly.flycat.presentation.icon.flycat.Diff
+import com.github.lmfirefly.flycat.presentation.icon.flycat.Edit
+import com.github.lmfirefly.flycat.presentation.icon.flycat.Share
+import com.github.lmfirefly.flycat.presentation.icon.flycat.ShieldCheck
+import com.github.lmfirefly.flycat.presentation.icon.flycat.ShieldMinus
+import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
+import com.github.lmfirefly.flycat.presentation.theme.Spacing
+import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import com.github.lmfirefly.flycat.presentation.util.toast
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableCollectionItemScope
@@ -109,18 +115,18 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 private val overrideConfigItemGap = Spacing().space12
 
 @Composable
-fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
+fun OverrideListScreen(onNavigateBack: () -> Unit, onOpenCodeEditor: (OverrideConfig) -> Unit) {
     val viewModel: OverrideConfigViewModel = koinViewModel()
-    val userConfigs by viewModel.userConfigs.collectAsState()
-    val usageCountMap by viewModel.usageCountMap.collectAsState()
-    val pendingRevealConfigId by viewModel.pendingRevealConfigId.collectAsState()
+    val userConfigs by viewModel.userConfigs.collectAsStateWithLifecycle()
+    val builtInConfigs by viewModel.builtInConfigs.collectAsStateWithLifecycle()
+    val usageCountMap by viewModel.usageCountMap.collectAsStateWithLifecycle()
+    val pendingRevealConfigId by viewModel.pendingRevealConfigId.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -131,6 +137,7 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
     val showDeleteDialog = remember { mutableStateOf(false) }
     val deleteTargetConfig = remember { mutableStateOf<OverrideConfig?>(null) }
     val exportTargetConfig = remember { mutableStateOf<OverrideConfig?>(null) }
+    val applyTargetConfig = remember { mutableStateOf<OverrideConfig?>(null) }
 
     val listState = rememberLazyListState()
     val createFabController = rememberOverrideFabController()
@@ -150,8 +157,9 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
 
     val exportConfigLauncher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.CreateDocument("text/plain")
-        ) { uri ->
+            contract = ActivityResultContracts.StartActivityForResult(),
+        ) { result ->
+            val uri = result.data?.data
             val targetConfig = exportTargetConfig.value
             if (uri == null || targetConfig == null) {
                 exportTargetConfig.value = null
@@ -162,13 +170,13 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
                     context.contentResolver.openOutputStream(uri)?.use { output ->
                         output.write(targetConfig.content.toByteArray())
                         output.flush()
-                    } ?: error(MLang.Override.Export.Failed.format(targetConfig.name))
+                    } ?: error(FlyTxt.Override.Export.Failed.format(targetConfig.name))
                 }
                 .onSuccess {
-                    context.toast(MLang.Override.Export.Success.format(targetConfig.name))
+                    context.toast(FlyTxt.Override.Export.Success.format(targetConfig.name))
                 }
                 .onFailure { error ->
-                    context.toast(MLang.Override.Export.Failed.format(error.message))
+                    context.toast(FlyTxt.Override.Export.Failed.format(error.message))
                 }
 
             exportTargetConfig.value = null
@@ -197,15 +205,15 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
             OverrideAnimatedFab(
                 controller = createFabController,
                 visible = !showCreateDialog.value,
-                imageVector = Yume.`Badge-plus`,
-                contentDescription = MLang.Override.Action.Create,
+                imageVector = FlyCat.BadgePlus,
+                contentDescription = FlyTxt.Override.Action.Create,
                 onClick = {
                     createDialogMode = OverrideConfigInputMode.CreateNew
                     showCreateDialog.value = true
                 },
             )
         },
-        topBar = { TopBar(title = MLang.Override.Title, scrollBehavior = scrollBehavior) },
+        topBar = { TopBar(title = FlyTxt.Override.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(onNavigateBack = onNavigateBack) }) },
     ) { paddingValues ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
@@ -215,11 +223,11 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
             onScrollDirectionChanged = createFabController::onScrollDirectionChanged,
         ) {
             when {
-                userConfigs.isEmpty() -> {
+                userConfigs.isEmpty() && builtInConfigs.isEmpty() -> {
                     item(key = "override-empty", contentType = "override-empty") {
                         CenteredText(
-                            firstLine = MLang.Override.Empty.Title,
-                            secondLine = MLang.Override.Empty.Hint,
+                            firstLine = FlyTxt.Override.Empty.Title,
+                            secondLine = FlyTxt.Override.Empty.Hint,
                             modifier = Modifier.fillParentMaxSize(),
                             showEmptyResourceIllustration = true,
                         )
@@ -227,30 +235,73 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
                 }
 
                 else -> {
-                    items(
-                        items = configItems,
-                        key = { it.config.id },
-                        contentType = { "override-config-card" },
-                    ) { item ->
-                        val config = item.config
-                        ReorderableItem(state = reorderState, key = config.id) { isDragging ->
-                            OverrideConfigCard(
+                    // Built-in overrides section
+                    if (builtInConfigs.isNotEmpty()) {
+                        item(key = "builtin-section-header", contentType = "section-header") {
+                            Title(FlyTxt.Override.Section.BuiltIn)
+                        }
+                        items(
+                            items = builtInConfigs,
+                            key = { it.id },
+                            contentType = { "builtin-override-card" },
+                        ) { config ->
+                            OverrideBuiltInConfigCard(
                                 config = config,
-                                isDragging = isDragging,
-                                isInUse = item.isInUse,
-                                onCopy = { viewModel.duplicateConfig(config.id) },
                                 onExport = {
                                     exportTargetConfig.value = config
                                     exportConfigLauncher.launch(
-                                        "${config.name}.${config.contentType.extension}"
+                                        Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                                            addCategory(Intent.CATEGORY_OPENABLE)
+                                            type = config.contentType.exportMimeType
+                                            putExtra(
+                                                Intent.EXTRA_TITLE,
+                                                "${config.name}.${config.contentType.extension}",
+                                            )
+                                        },
                                     )
                                 },
+                                onApply = { applyTargetConfig.value = config },
                                 onEdit = { onOpenCodeEditor(config) },
-                                onDelete = {
-                                    deleteTargetConfig.value = config
-                                    showDeleteDialog.value = true
-                                },
                             )
+                        }
+                    }
+                    // User overrides section
+                    if (userConfigs.isNotEmpty()) {
+                        item(key = "user-section-header", contentType = "section-header") {
+                            Title(FlyTxt.Override.Section.User)
+                        }
+                        items(
+                            items = configItems,
+                            key = { it.config.id },
+                            contentType = { "override-config-card" },
+                        ) { item ->
+                            val config = item.config
+                            ReorderableItem(state = reorderState, key = config.id) { isDragging ->
+                                OverrideConfigCard(
+                                    config = config,
+                                    isDragging = isDragging,
+                                    isInUse = item.isInUse,
+                                    onExport = {
+                                        exportTargetConfig.value = config
+                                        exportConfigLauncher.launch(
+                                            Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                                                addCategory(Intent.CATEGORY_OPENABLE)
+                                                type = config.contentType.exportMimeType
+                                                putExtra(
+                                                    Intent.EXTRA_TITLE,
+                                                    "${config.name}.${config.contentType.extension}",
+                                                )
+                                            },
+                                        )
+                                    },
+                                    onDelete = {
+                                        deleteTargetConfig.value = config
+                                        showDeleteDialog.value = true
+                                    },
+                                    onApply = { applyTargetConfig.value = config },
+                                    onEdit = { onOpenCodeEditor(config) },
+                                )
+                            }
                         }
                     }
                 }
@@ -269,7 +320,7 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
                     .importConfig(content, sourceName)
                     .onSuccess { showCreateDialog.value = false }
                     .onFailure { error ->
-                        context.toast(error.message ?: MLang.Override.Import.ReadError)
+                        context.toast(error.message ?: FlyTxt.Override.Import.ReadError)
                     }
             },
             onConfirmNetworkImport = viewModel::importConfigFromUrl,
@@ -290,6 +341,12 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
                 showDeleteDialog.value = false
             },
         )
+
+        OverrideApplyToProfilesSheet(
+            target = applyTargetConfig.value,
+            viewModel = viewModel,
+            onDismiss = { applyTargetConfig.value = null },
+        )
     }
 }
 
@@ -298,8 +355,8 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
     config: OverrideConfig,
     isDragging: Boolean,
     isInUse: Boolean,
-    onCopy: () -> Unit,
     onExport: () -> Unit,
+    onApply: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -353,21 +410,49 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp8)) {
                     OverrideCardActionIconButton(
-                        imageVector = Yume.Copy,
-                        contentDescription = MLang.Override.Card.Copy,
-                        onClick = onCopy,
+                        imageVector = FlyCat.Share,
+                        contentDescription = FlyTxt.Override.Card.Export,
+                        onClick = onExport,
                     )
                     OverrideCardActionIconButton(
-                        imageVector = Yume.Share,
-                        contentDescription = MLang.Override.Card.Export,
-                        onClick = onExport,
+                        imageVector = FlyCat.Delete,
+                        contentDescription = FlyTxt.Override.Card.Delete,
+                        onClick = onDelete,
                     )
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
                 IconButton(
-                    modifier = Modifier.padding(end = UiDp.dp8),
+                    modifier = Modifier.padding(start = UiDp.dp4),
+                    backgroundColor = colorScheme.secondaryContainer.copy(alpha = 0.78f),
+                    minHeight = UiDp.dp35,
+                    minWidth = UiDp.dp35,
+                    onClick = onApply,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = UiDp.dp10),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(UiDp.dp2),
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(UiDp.dp20),
+                            imageVector = FlyCat.Diff,
+                            tint = colorScheme.onSurface.copy(alpha = 0.85f),
+                            contentDescription = FlyTxt.Override.Card.Apply,
+                        )
+                        Text(
+                            modifier = Modifier.padding(end = UiDp.dp3),
+                            text = FlyTxt.Override.Card.ApplyButton,
+                            color = colorScheme.onSurface.copy(alpha = 0.85f),
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 15.sp,
+                        )
+                    }
+                }
+
+                IconButton(
+                    modifier = Modifier.padding(start = UiDp.dp4, end = UiDp.dp8),
                     backgroundColor = colorScheme.primary.copy(alpha = 0.1f),
                     minHeight = UiDp.dp35,
                     minWidth = UiDp.dp35,
@@ -380,40 +465,14 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
                     ) {
                         Icon(
                             modifier = Modifier.size(UiDp.dp20),
-                            imageVector = Yume.Edit,
+                            imageVector = FlyCat.Edit,
                             tint = accentTintColor,
-                            contentDescription = MLang.Override.Card.Edit,
+                            contentDescription = FlyTxt.Override.Card.Edit,
                         )
                         Text(
                             modifier = Modifier.padding(end = UiDp.dp3),
-                            text = MLang.Override.Card.EditButton,
+                            text = FlyTxt.Override.Card.EditButton,
                             color = accentTintColor,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 15.sp,
-                        )
-                    }
-                }
-
-                IconButton(
-                    backgroundColor = colorScheme.secondaryContainer.copy(alpha = 0.78f),
-                    minHeight = UiDp.dp35,
-                    minWidth = UiDp.dp35,
-                    onClick = onDelete,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = UiDp.dp10),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(UiDp.dp20),
-                            imageVector = Yume.Delete,
-                            tint = colorScheme.onSurface.copy(alpha = 0.85f),
-                            contentDescription = MLang.Override.Card.Delete,
-                        )
-                        Text(
-                            modifier = Modifier.padding(start = UiDp.dp4, end = UiDp.dp3),
-                            text = MLang.Override.Card.DeleteButton,
-                            color = colorScheme.onSurface.copy(alpha = 0.85f),
                             fontWeight = FontWeight.Medium,
                             fontSize = 15.sp,
                         )
@@ -428,9 +487,9 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
 private fun OverrideConfigStateIndicator(inUse: Boolean) {
     val tint = if (inUse) colorScheme.primary else colorScheme.onSurfaceVariantSummary
     OverrideStatusBadge(
-        imageVector = if (inUse) Yume.ShieldCheck else Yume.ShieldMinus,
+        imageVector = if (inUse) FlyCat.ShieldCheck else FlyCat.ShieldMinus,
         contentDescription =
-            if (inUse) MLang.Override.Status.InUse else MLang.Override.Status.NotInUse,
+            if (inUse) FlyTxt.Override.Status.InUse else FlyTxt.Override.Status.NotInUse,
         tint = tint,
         backgroundColor =
             if (inUse) {
@@ -438,6 +497,138 @@ private fun OverrideConfigStateIndicator(inUse: Boolean) {
             } else {
                 colorScheme.secondaryContainer.copy(alpha = 0.78f)
             },
+    )
+}
+
+@Composable
+private fun OverrideBuiltInConfigCard(
+    config: OverrideConfig,
+    onExport: () -> Unit,
+    onApply: () -> Unit,
+    onEdit: () -> Unit,
+) {
+    val accentTintColor = colorScheme.primary
+
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = overrideConfigItemGap / 2),
+        insideMargin = PaddingValues(UiDp.dp16),
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(UiDp.dp12),
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(UiDp.dp8),
+                ) {
+                    Text(
+                        text = config.name,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight(550),
+                        color = colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = config.contentType.label,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colorScheme.onSurfaceVariantSummary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                OverrideBuiltInIndicator()
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = UiDp.dp12),
+                thickness = UiDp.dp0_5,
+                color = colorScheme.outline.copy(alpha = 0.5f),
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp8)) {
+                    OverrideCardActionIconButton(
+                        imageVector = FlyCat.Share,
+                        contentDescription = FlyTxt.Override.Card.Export,
+                        onClick = onExport,
+                    )
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                IconButton(
+                    modifier = Modifier.padding(start = UiDp.dp4),
+                    backgroundColor = colorScheme.secondaryContainer.copy(alpha = 0.78f),
+                    minHeight = UiDp.dp35,
+                    minWidth = UiDp.dp35,
+                    onClick = onApply,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = UiDp.dp10),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(UiDp.dp2),
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(UiDp.dp20),
+                            imageVector = FlyCat.Diff,
+                            tint = colorScheme.onSurface.copy(alpha = 0.85f),
+                            contentDescription = FlyTxt.Override.Card.Apply,
+                        )
+                        Text(
+                            modifier = Modifier.padding(end = UiDp.dp3),
+                            text = FlyTxt.Override.Card.ApplyButton,
+                            color = colorScheme.onSurface.copy(alpha = 0.85f),
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 15.sp,
+                        )
+                    }
+                }
+
+                IconButton(
+                    modifier = Modifier.padding(start = UiDp.dp4),
+                    backgroundColor = colorScheme.primary.copy(alpha = 0.1f),
+                    minHeight = UiDp.dp35,
+                    minWidth = UiDp.dp35,
+                    onClick = onEdit,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = UiDp.dp10),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(UiDp.dp2),
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(UiDp.dp20),
+                            imageVector = FlyCat.Edit,
+                            tint = accentTintColor,
+                            contentDescription = FlyTxt.Override.Card.Edit,
+                        )
+                        Text(
+                            modifier = Modifier.padding(end = UiDp.dp3),
+                            text = FlyTxt.Override.Card.EditButton,
+                            color = accentTintColor,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 15.sp,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OverrideBuiltInIndicator() {
+    val tint = colorScheme.primary
+    OverrideStatusBadge(
+        imageVector = FlyCat.ShieldCheck,
+        contentDescription = FlyTxt.Override.Status.BuiltIn,
+        tint = tint,
+        backgroundColor = tint.copy(alpha = 0.15f),
     )
 }
 
@@ -512,12 +703,12 @@ private fun CreateConfigDialog(
 
     AppActionBottomSheet(
         show = show.value,
-        title = MLang.Override.Dialog.Create.Title,
+        title = FlyTxt.Override.Dialog.Create.Title,
         startAction = { AppBottomSheetCloseAction(onClick = onDismiss) },
         endAction = {
             AppBottomSheetConfirmAction(
                 enabled = canConfirm && !isNetworkImporting,
-                contentDescription = MLang.Override.Action.Create,
+                contentDescription = FlyTxt.Override.Action.Create,
                 onClick = {
                     if (!canConfirm) return@AppBottomSheetConfirmAction
                     keyboardController?.hide()
@@ -533,14 +724,14 @@ private fun CreateConfigDialog(
                                         .openInputStream(importUri)
                                         ?.bufferedReader()
                                         ?.use { reader -> reader.readText() }
-                                        ?: error(MLang.Override.Import.ReadError)
+                                        ?: error(FlyTxt.Override.Import.ReadError)
                                 }
                                 .onSuccess { content ->
                                     onConfirmImport(content, selectedImportFileName)
                                 }
                                 .onFailure { error ->
                                     context.toast(
-                                        MLang.Override.Import.FileError.format(error.message)
+                                        FlyTxt.Override.Import.FileError.format(error.message)
                                     )
                                 }
                         }
@@ -553,8 +744,8 @@ private fun CreateConfigDialog(
                                     .onSuccess { show.value = false }
                                     .onFailure { error ->
                                         context.toast(
-                                            MLang.Override.Import.NetworkError.format(
-                                                error.message ?: MLang.Util.Error.UnknownError
+                                            FlyTxt.Override.Import.NetworkError.format(
+                                                error.message ?: FlyTxt.Util.Error.UnknownError
                                             )
                                         )
                                     }
@@ -584,7 +775,7 @@ private fun CreateConfigDialog(
             Box(modifier = Modifier.fillMaxWidth().heightIn(min = stableContentHeight)) {
                 Crossfade(
                     targetState = inputMode,
-                    animationSpec = tween(200),
+                    animationSpec = tween(AnimationSpecs.DURATION_CROSSFADE),
                     label = "OverrideInputModeContent",
                 ) { currentInputMode ->
                     when (currentInputMode) {
@@ -602,7 +793,7 @@ private fun CreateConfigDialog(
                                     onValueChange = { updatedTextFieldValue ->
                                         nameTextFieldValueState.value = updatedTextFieldValue
                                     },
-                                    label = MLang.Override.Dialog.Create.Name,
+                                    label = FlyTxt.Override.Dialog.Create.Name,
                                     useLabelAsPlaceholder = true,
                                 )
                             }
@@ -646,11 +837,12 @@ private fun OverrideInputModeSelector(
 ) {
     val inputModeOptions = remember { OverrideConfigInputMode.entries.toList() }
     val selectedModeIndex = inputModeOptions.indexOf(selectedMode).coerceAtLeast(0)
+    val inputModeItems = remember { inputModeOptions.map { inputMode -> DropdownItem(title = inputMode.label) } }
 
     top.yukonga.miuix.kmp.basic.Card {
         WindowSpinnerPreference(
-            title = MLang.ProfilesPage.Type.Title,
-            items = inputModeOptions.map { inputMode -> DropdownItem(title = inputMode.label) },
+            title = FlyTxt.ProfilesPage.Type.Title,
+            items = inputModeItems,
             selectedIndex = selectedModeIndex,
             onSelectedIndexChange = { index ->
                 inputModeOptions.getOrNull(index)?.let(onSelectedModeChange)
@@ -666,11 +858,12 @@ private fun OverrideTypeSelector(
 ) {
     val contentTypeOptions = remember { OverrideContentType.entries.toList() }
     val selectedTypeIndex = contentTypeOptions.indexOf(selectedType).coerceAtLeast(0)
+    val contentTypeItems = remember { contentTypeOptions.map { contentType -> DropdownItem(title = contentType.label) } }
 
     top.yukonga.miuix.kmp.basic.Card {
-        WindowDropdownPreference(
-            title = MLang.Override.Dialog.Create.Type,
-            items = contentTypeOptions.map { it.label },
+        WindowSpinnerPreference(
+            title = FlyTxt.Override.Dialog.Create.Type,
+            items = contentTypeItems,
             selectedIndex = selectedTypeIndex,
             onSelectedIndexChange = { index ->
                 contentTypeOptions.getOrNull(index)?.let(onSelectedTypeChange)
@@ -696,7 +889,7 @@ private fun ImportOverrideFileContent(
         TextField(
             value = fileName,
             onValueChange = {},
-            label = MLang.ProfilesPage.Input.SelectFile,
+            label = FlyTxt.ProfilesPage.Input.SelectFile,
             useLabelAsPlaceholder = true,
             readOnly = true,
             enabled = false,
@@ -715,7 +908,7 @@ private fun ImportOverrideNetworkContent(
     TextField(
         value = url,
         onValueChange = onUrlChange,
-        label = MLang.Override.Dialog.Create.Url,
+        label = FlyTxt.Override.Dialog.Create.Url,
         useLabelAsPlaceholder = true,
         singleLine = true,
         enabled = enabled,
@@ -740,26 +933,26 @@ private fun DeleteConfirmDialog(
     val summary =
         when {
             config == null -> ""
-            isInUse -> MLang.Override.Dialog.Delete.InUseMessage.format(config.name)
-            else -> MLang.Override.Dialog.Delete.Message.format(config.name)
+            isInUse -> FlyTxt.Override.Dialog.Delete.InUseMessage.format(config.name)
+            else -> FlyTxt.Override.Dialog.Delete.Message.format(config.name)
         }
 
     AppDialog(
         show = show.value,
-        title = MLang.Override.Dialog.Delete.Title,
+        title = FlyTxt.Override.Dialog.Delete.Title,
         summary = summary,
         onDismissRequest = onDismiss,
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
             Button(modifier = Modifier.weight(1f), onClick = onDismiss) {
-                Text(MLang.Override.Dialog.Button.Cancel)
+                Text(FlyTxt.Override.Dialog.Button.Cancel)
             }
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
-                Text(text = MLang.Override.Dialog.Button.Delete, color = colorScheme.onPrimary)
+                Text(text = FlyTxt.Override.Dialog.Button.Delete, color = colorScheme.onPrimary)
             }
         }
     }
@@ -783,10 +976,16 @@ private val OverrideContentType.label: String
             OverrideContentType.JavaScript -> "JavaScript"
         }
 
+private val OverrideContentType.exportMimeType: String
+    get() = when (this) {
+        OverrideContentType.Yaml -> "application/x-yaml"
+        OverrideContentType.JavaScript -> "application/javascript"
+    }
+
 private val OverrideConfigInputMode.label: String
     get() =
         when (this) {
-            OverrideConfigInputMode.CreateNew -> MLang.Override.Action.New
-            OverrideConfigInputMode.LocalFile -> MLang.ProfilesPage.Type.LocalFile
-            OverrideConfigInputMode.NetworkUrl -> MLang.Override.Action.NetworkImport
+            OverrideConfigInputMode.CreateNew -> FlyTxt.Override.Action.New
+            OverrideConfigInputMode.LocalFile -> FlyTxt.ProfilesPage.Type.LocalFile
+            OverrideConfigInputMode.NetworkUrl -> FlyTxt.Override.Action.NetworkImport
         }

@@ -1,0 +1,18 @@
+<Service>
+Service = {
+    Notification = {
+        Running = "実行中"
+        UnknownProfile = "不明なプロファイル"
+        SpeedLine = "下り %s  上り %s"
+        TotalTraffic = "合計 %s"
+    }
+
+    Tile = {
+        ClickToOpen = "タップしてアプリを開く"
+        ClickToStartProxy = "プロキシを開始"
+        ClickToStopProxy = "プロキシを停止"
+        Connecting = "接続中..."
+        Disconnecting = "切断中..."
+    }
+
+}

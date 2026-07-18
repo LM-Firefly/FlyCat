@@ -1,0 +1,412 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+package com.github.lmfirefly.flycat.feature.proxy.presentation.screen
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.DpSize
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.lmfirefly.flycat.core.model.proxy.Proxy
+import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.ProxyChainIndicator
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeGroupSheetContent
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSheetContent
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSortPopup
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.rememberProxyGroupSelectionState
+import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProxyViewModel
+import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetAction
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetIconAction
+import com.github.lmfirefly.flycat.presentation.icon.FlyCat
+import com.github.lmfirefly.flycat.presentation.icon.flycat.ListChevronsUpDown
+import com.github.lmfirefly.flycat.presentation.icon.flycat.Speed
+import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
+import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
+
+private const val NOTIFICATION_PROXY_SHEET_HEIGHT_FRACTION = 0.55f
+
+private fun LazyListState.isScrolledFromTop(): Boolean =
+    firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
+
+@Composable
+fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = koinViewModel()) {
+    val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsStateWithLifecycle()
+    val sortMode by proxyViewModel.sortMode.collectAsStateWithLifecycle()
+    val displayMode by proxyViewModel.displayMode.collectAsStateWithLifecycle()
+
+    val showSheet = remember { mutableStateOf(true) }
+    val showSortPopup = remember { mutableStateOf(false) }
+    val groupSelection =
+        rememberProxyGroupSelectionState(
+            proxyGroups = proxyGroups,
+            onRefreshGroup = proxyViewModel::refreshGroup,
+            retainLastKnownGroup = false,
+        )
+    val selectedGroupName = groupSelection.selectedGroupName
+    val selectedGroup = groupSelection.selectedGroup
+    val coroutineScope = rememberCoroutineScope()
+    val groupListState = rememberLazyListState()
+    val nodeListState =
+        rememberSaveable(selectedGroupName, saver = LazyListState.Saver) { LazyListState() }
+
+    DisposableEffect(Unit) {
+        proxyViewModel.ensureCoreLoaded(true, source = "proxy_sheet")
+        onDispose { proxyViewModel.ensureCoreLoaded(false, source = "proxy_sheet") }
+    }
+
+    val dismissSheet =
+        remember(onDismiss) {
+            {
+                showSortPopup.value = false
+                showSheet.value = false
+            }
+        }
+    val triggerTopDelayTest =
+        remember(coroutineScope, groupListState, proxyViewModel) {
+            {
+                coroutineScope.launch {
+                    if (groupListState.isScrolledFromTop()) {
+                        groupListState.animateScrollToItem(0)
+                    }
+                    proxyViewModel.testDelay()
+                }
+            }
+        }
+    val triggerSelectedGroupDelayTest =
+        remember(coroutineScope, nodeListState, proxyViewModel, selectedGroupName) {
+            {
+                val groupName = selectedGroupName ?: return@remember
+                coroutineScope.launch {
+                    if (nodeListState.isScrolledFromTop()) {
+                        nodeListState.animateScrollToItem(0)
+                    }
+                    proxyViewModel.testDelay(groupName)
+                }
+            }
+        }
+    LaunchedEffect(showSheet.value) {
+        if (!showSheet.value) {
+            onDismiss()
+        }
+    }
+
+    WindowBottomSheet(
+        show = showSheet.value,
+        title = selectedGroup?.name ?: FlyTxt.Proxy.Title,
+        backgroundColor = MiuixTheme.colorScheme.surface,
+        startAction = {
+            AnimatedContent(
+                targetState = selectedGroup != null,
+                transitionSpec = {
+                    val slideDuration =
+                        if (targetState) {
+                            AnimationSpecs.Proxy.SheetSlideInDuration
+                        } else {
+                            AnimationSpecs.Proxy.SheetSlideOutDuration
+                        }
+                    val initialOffset: (Int) -> Int =
+                        if (targetState) {
+                            { width -> width / 3 }
+                        } else {
+                            { width -> -width / 3 }
+                        }
+                    val targetOffset: (Int) -> Int =
+                        if (targetState) {
+                            { width -> -width / 3 }
+                        } else {
+                            { width -> width / 3 }
+                        }
+                    (slideInHorizontally(
+                        animationSpec =
+                            tween(
+                                durationMillis = slideDuration,
+                                easing = AnimationSpecs.Legacy,
+                            ),
+                        initialOffsetX = initialOffset,
+                    ) +
+                        fadeIn(
+                            animationSpec =
+                                tween(durationMillis = AnimationSpecs.Proxy.SheetFadeInDuration)
+                        )) togetherWith
+                        (slideOutHorizontally(
+                            animationSpec =
+                                tween(
+                                    durationMillis = AnimationSpecs.Proxy.SheetSlideOutDuration,
+                                    easing = AnimationSpecs.Legacy,
+                                ),
+                            targetOffsetX = targetOffset,
+                        ) +
+                            fadeOut(
+                                animationSpec =
+                                    tween(
+                                        durationMillis = AnimationSpecs.Proxy.SheetFadeOutDuration
+                                    )
+                            ))
+                },
+                label = "notification_node_sheet_start_action",
+            ) { showBackAction ->
+                if (showBackAction) {
+                    AppBottomSheetIconAction(
+                        action =
+                            AppBottomSheetAction(
+                                icon = MiuixIcons.Back,
+                                contentDescription = FlyTxt.Component.Navigation.Back,
+                                onClick = groupSelection.clearSelection,
+                            )
+                    )
+                } else {
+                    Box {
+                        AppBottomSheetIconAction(
+                            action =
+                                AppBottomSheetAction(
+                                    icon = FlyCat.ListChevronsUpDown,
+                                    contentDescription = FlyTxt.Proxy.Action.Sort,
+                                    onClick = { showSortPopup.value = true },
+                                )
+                        )
+                        NodeSortPopup(
+                            show = showSortPopup.value,
+                            onDismiss = { showSortPopup.value = false },
+                            displayMode = displayMode,
+                            sortMode = sortMode,
+                            alignment = PopupPositionProvider.Align.BottomStart,
+                            onDisplayModeSelected = proxyViewModel::setDisplayMode,
+                            onSortSelected = proxyViewModel::setSortMode,
+                        )
+                    }
+                }
+            }
+        },
+        endAction = {
+            AppBottomSheetIconAction(
+                action =
+                    AppBottomSheetAction(
+                        icon = FlyCat.Speed,
+                        contentDescription = FlyTxt.Proxy.Action.Test,
+                        onClick = {
+                            if (selectedGroup == null) {
+                                triggerTopDelayTest()
+                            } else {
+                                triggerSelectedGroupDelayTest()
+                            }
+                        },
+                    )
+            )
+        },
+        onDismissRequest = { dismissSheet() },
+        enableWindowDim = true,
+        insideMargin = DpSize(UiDp.dp16, UiDp.dp16),
+        enableNestedScroll = false,
+    ) {
+        AnimatedContent(
+            targetState = selectedGroupName,
+            transitionSpec = {
+                if (targetState != null) {
+                    (slideInHorizontally(
+                        animationSpec =
+                            tween(
+                                durationMillis = AnimationSpecs.Proxy.SheetSlideInDuration,
+                                easing = AnimationSpecs.Legacy,
+                            ),
+                        initialOffsetX = { it },
+                    ) +
+                        fadeIn(
+                            animationSpec =
+                                tween(durationMillis = AnimationSpecs.Proxy.SheetFadeInDuration)
+                        )) togetherWith
+                        (slideOutHorizontally(
+                            animationSpec =
+                                tween(
+                                    durationMillis = AnimationSpecs.Proxy.SheetSlideOutDuration,
+                                    easing = AnimationSpecs.Legacy,
+                                ),
+                            targetOffsetX = { -it / 3 },
+                        ) +
+                            fadeOut(
+                                animationSpec =
+                                    tween(
+                                        durationMillis = AnimationSpecs.Proxy.SheetFadeOutDuration
+                                    )
+                            ))
+                } else {
+                    (slideInHorizontally(
+                        animationSpec =
+                            tween(
+                                durationMillis = AnimationSpecs.Proxy.SheetSlideOutDuration,
+                                easing = AnimationSpecs.Legacy,
+                            ),
+                        initialOffsetX = { -it / 3 },
+                    ) +
+                        fadeIn(
+                            animationSpec =
+                                tween(
+                                    durationMillis = AnimationSpecs.Proxy.SheetFadeInDuration - 20
+                                )
+                        )) togetherWith
+                        (slideOutHorizontally(
+                            animationSpec =
+                                tween(
+                                    durationMillis = AnimationSpecs.Proxy.SheetSlideInDuration - 20,
+                                    easing = AnimationSpecs.Legacy,
+                                ),
+                            targetOffsetX = { it },
+                        ) +
+                            fadeOut(
+                                animationSpec =
+                                    tween(
+                                        durationMillis = AnimationSpecs.Proxy.SheetFadeOutDuration
+                                    )
+                            ))
+                }
+            },
+            label = "notification_node_sheet_content",
+        ) { targetGroupName ->
+            val targetGroup = targetGroupName?.let { name ->
+                proxyGroups.firstOrNull { group -> group.name == name }
+            }
+            if (targetGroup == null) {
+                val testingGroupNames by proxyViewModel.testingGroupNames.collectAsStateWithLifecycle()
+                NodeGroupSheetContent(
+                    groups = proxyGroups,
+                    displayMode = displayMode,
+                    onGroupClick = groupSelection.selectGroup,
+                    testingGroupNames = testingGroupNames,
+                    sheetHeightFraction = NOTIFICATION_PROXY_SHEET_HEIGHT_FRACTION,
+                    listState = groupListState,
+                )
+            } else {
+                ProxySheetNodeContent(
+                    proxyViewModel = proxyViewModel,
+                    group = targetGroup,
+                    displayMode = displayMode,
+                    onTestDelay = triggerSelectedGroupDelayTest,
+                    sheetHeightFraction = NOTIFICATION_PROXY_SHEET_HEIGHT_FRACTION,
+                    listState = nodeListState,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProxySheetNodeContent(
+    proxyViewModel: ProxyViewModel,
+    group: com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo,
+    displayMode: ProxyDisplayMode,
+    onTestDelay: () -> Unit,
+    sheetHeightFraction: Float,
+    listState: LazyListState,
+) {
+    val groupProxyNames = remember(group.proxies) { group.proxies.mapTo(linkedSetOf()) { it.name } }
+    val isDelayTesting by
+        remember(group.name, proxyViewModel) {
+                proxyViewModel.testingGroupNames
+                    .map { testingGroupNames -> testingGroupNames.contains(group.name) }
+                    .distinctUntilChanged()
+            }
+            .collectAsStateWithLifecycle(initialValue = false)
+    val testingProxyNames by
+        remember(group.name, groupProxyNames, proxyViewModel) {
+                if (groupProxyNames.isEmpty()) {
+                    flowOf(emptySet<String>())
+                } else {
+                    proxyViewModel.testingProxyNames
+                        .map { names ->
+                            names.filterTo(linkedSetOf()) { proxyName ->
+                                proxyName in groupProxyNames
+                            }
+                        }
+                        .distinctUntilChanged()
+                }
+            }
+            .collectAsStateWithLifecycle(initialValue = emptySet())
+    val onSelectProxy =
+        remember(group.name, group.type, proxyViewModel, onTestDelay) {
+            { proxyName: String ->
+                if (group.type == Proxy.Type.Selector) {
+                    proxyViewModel.selectProxy(group.name, proxyName)
+                } else {
+                    onTestDelay()
+                }
+            }
+        }
+    val onForceSelectProxy =
+        remember(group.name, proxyViewModel) {
+            { proxyName: String -> proxyViewModel.forceSelectProxy(group.name, proxyName) }
+        }
+    val onSingleNodeTestClick = remember(group.name, proxyViewModel) {
+        { proxyName: String ->
+            proxyViewModel.testProxyDelay(group.name, proxyName)
+        }
+    }
+    Column {
+        if (group.chainPath.isNotEmpty()) {
+            ProxyChainIndicator(
+                chain = group.chainPath,
+                modifier = Modifier
+                    .fillMaxWidth(),
+            )
+        }
+        NodeSheetContent(
+            group = group,
+            displayMode = displayMode,
+            isDelayTesting = isDelayTesting,
+            testingProxyNames = testingProxyNames,
+            onSelectProxy = onSelectProxy,
+            onForceSelectProxy = onForceSelectProxy,
+            onTestDelay = onTestDelay,
+            onTestProxyDelay = onSingleNodeTestClick,
+            sheetHeightFraction = sheetHeightFraction,
+            listState = listState,
+            pinnedProxyName = group.fixed,
+        )
+    }
+}

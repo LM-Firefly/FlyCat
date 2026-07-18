@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,17 +15,16 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
 plugins {
-    id("com.android.library")
-    kotlin("plugin.compose")
-    id("org.jetbrains.compose")
+    id("flycat-compose-library")
 }
 
 android {
-    namespace = "com.github.yumelira.yumebox.feature.editor"
+    namespace = "com.github.lmfirefly.flycat.feature.editor"
 
     packaging {
         jniLibs {
@@ -41,24 +40,17 @@ android {
             }
         }
     }
-
-    buildFeatures {
-        compose = true
-    }
 }
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":platform"))
     implementation(project(":locale"))
     implementation(project(":ui"))
 
     // Sora Editor
     implementation(platform(libs.editor.bom))
     implementation(libs.rosemoe.editor)
-    implementation(libs.rosemoe.editor.lsp)
     implementation(libs.rosemoe.language.textmate)
-    implementation(libs.rosemoe.language.treesitter)
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -67,11 +59,8 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.koin.core)
-    implementation(libs.koin.android)
-    implementation(libs.koin.androidx.compose)
-    implementation(libs.androidx.navigation3.runtime)
     implementation(libs.timber)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)

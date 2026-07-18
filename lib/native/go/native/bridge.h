@@ -11,7 +11,7 @@
 #include <malloc.h>
 #include <android/log.h>
 
-#define TAG "YumeBox"
+#define TAG "FlyCat"
 
 typedef const char *c_string;
 
@@ -29,9 +29,32 @@ extern void (*fetch_complete_func)(void *fetch_callback, const char *error);
 
 extern int (*logcat_received_func)(void *logcat_interface, const char *payload);
 
+extern int (*connection_close_received_func)(void *callback, const char *payload);
+
+extern int (*connection_join_received_func)(void *callback, const char *payload);
+
+extern int (*traffic_update_received_func)(void *callback, const char *payload);
+
+extern int (*traffic_update_received_packed_func)(void *callback, long long upload_total, long long download_total, long long upload_speed, long long download_speed);
+
 extern void (*release_object_func)(void *obj);
 
 extern int (*open_content_func)(const char *url, char *error, int error_length);
+
+// Optional callback registration helpers for non-C++ bridge owners.
+extern void set_complete_callback(void (*callback)(void *completable, const char *exception));
+extern void set_complete_with_string_callback(void (*callback)(void *completable, const char *result));
+extern void set_release_object_callback(void (*callback)(void *obj));
+extern void set_open_content_callback(int (*callback)(const char *url, char *error, int error_length));
+extern void set_fetch_report_callback(void (*callback)(void *fetch_callback, const char *status_json));
+extern void set_fetch_complete_callback(void (*callback)(void *fetch_callback, const char *error));
+extern void set_logcat_received_callback(int (*callback)(void *logcat_interface, const char *payload));
+extern void set_connection_close_received_callback(int (*callback)(void *callback, const char *payload));
+extern void set_connection_join_received_callback(int (*callback)(void *callback, const char *payload));
+extern void set_traffic_update_received_callback(int (*callback)(void *callback, const char *payload));
+extern void set_traffic_update_received_packed_callback(int (*callback)(void *callback, long long upload_total, long long download_total, long long upload_speed, long long download_speed));
+extern void set_mark_socket_callback(void (*callback)(void *tun_interface, int fd));
+extern void set_query_socket_owner_callback(char *(*callback)(void *tun_interface, int protocol, const char *source, const char *target));
 
 // cgo
 extern void mark_socket(void *interface, int fd);
@@ -48,16 +71,14 @@ extern void fetch_report(void *fetch_callback, char *status_json);
 
 extern int logcat_received(void *logcat_interface, char *payload);
 
+extern int connection_close_received(void *callback, char *payload);
+
+extern int connection_join_received(void *callback, char *payload);
+
+extern int traffic_update_received(void *callback, char *payload);
+
+extern int traffic_update_received_packed(void *callback, long long upload_total, long long download_total, long long upload_speed, long long download_speed);
+
 extern void release_object(void *obj);
 
 extern int open_content(char *url, char *error, int error_length);
-
-extern void log_info(char *msg);
-
-extern void log_error(char *msg);
-
-extern void log_warn(char *msg);
-
-extern void log_debug(char *msg);
-
-extern void log_verbose(char *msg);

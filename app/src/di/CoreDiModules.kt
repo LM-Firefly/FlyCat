@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,92 +15,182 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.di
+package com.github.lmfirefly.flycat.di
 
-import com.github.yumelira.yumebox.common.util.AppLanguageManager
-import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
-import com.github.yumelira.yumebox.data.controller.AccessControlController
-import com.github.yumelira.yumebox.data.controller.ActiveProfileOverrideReloader
-import com.github.yumelira.yumebox.data.controller.AppIdentityResolver
-import com.github.yumelira.yumebox.data.controller.AppSettingsController
-import com.github.yumelira.yumebox.data.controller.AppTrafficStatisticsCollector
-import com.github.yumelira.yumebox.data.controller.NetworkSettingsController
-import com.github.yumelira.yumebox.data.controller.OverrideResolver
-import com.github.yumelira.yumebox.data.controller.OverrideService
-import com.github.yumelira.yumebox.data.controller.ProvidersController
-import com.github.yumelira.yumebox.data.controller.RuntimeOverrideController
-import com.github.yumelira.yumebox.data.controller.TrafficQueryGateway
-import com.github.yumelira.yumebox.data.gateway.NetworkInfoService
-import com.github.yumelira.yumebox.data.store.AppSettingsStore
-import com.github.yumelira.yumebox.data.store.FeatureStore
-import com.github.yumelira.yumebox.data.store.LogStore
-import com.github.yumelira.yumebox.data.store.MMKVProvider
-import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
-import com.github.yumelira.yumebox.data.store.OverrideConfigProvider
-import com.github.yumelira.yumebox.data.store.OverrideConfigStore
-import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
-import com.github.yumelira.yumebox.data.store.ProfileBindingStore
-import com.github.yumelira.yumebox.data.store.ProfileLinksStore
-import com.github.yumelira.yumebox.data.store.ProxyDisplaySettingsStore
-import com.github.yumelira.yumebox.data.store.RemoteControllerStore
-import com.github.yumelira.yumebox.data.store.TrafficStatisticsStore
-import com.github.yumelira.yumebox.data.store.room.createTrafficStatisticsDao
-import com.github.yumelira.yumebox.domain.model.TrafficData
-import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
-import com.github.yumelira.yumebox.runtime.client.ProxyFacade
-import com.github.yumelira.yumebox.runtime.client.RuntimeStateMapper
-import com.github.yumelira.yumebox.runtime.client.root.RootTunReloadScheduler
+import com.github.lmfirefly.flycat.common.util.AppLanguageManager
+import com.github.lmfirefly.flycat.core.contract.AccessControlControllerContract
+import com.github.lmfirefly.flycat.core.contract.AppIdentityReader
+import com.github.lmfirefly.flycat.core.contract.AppLogSettings
+import com.github.lmfirefly.flycat.core.contract.AppSettingsControllerContract
+import com.github.lmfirefly.flycat.core.contract.AppSettingsReader
+import com.github.lmfirefly.flycat.core.contract.AppShutdownHandler
+import com.github.lmfirefly.flycat.core.contract.BroadcastNotifier
+import com.github.lmfirefly.flycat.core.contract.BulkStoreReset
+import com.github.lmfirefly.flycat.core.contract.ConnectionRepository
+import com.github.lmfirefly.flycat.core.contract.FeatureStoreReader
+import com.github.lmfirefly.flycat.core.contract.LanguageApplier
+import com.github.lmfirefly.flycat.core.contract.LogStoreReader
+import com.github.lmfirefly.flycat.core.contract.NetworkInfoReader
+import com.github.lmfirefly.flycat.core.contract.NetworkSettingsControllerContract
+import com.github.lmfirefly.flycat.core.contract.NetworkSettingsReader
+import com.github.lmfirefly.flycat.core.contract.OverrideApplier
+import com.github.lmfirefly.flycat.core.contract.OverrideApplyExecutor
+import com.github.lmfirefly.flycat.core.contract.OverrideConfigRepository
+import com.github.lmfirefly.flycat.core.contract.ProfileBindingReader
+import com.github.lmfirefly.flycat.core.contract.ProvidersRepository
+import com.github.lmfirefly.flycat.core.contract.ProxyDisplaySettingsReader
+import com.github.lmfirefly.flycat.core.contract.ProxyGroupRepository
+import com.github.lmfirefly.flycat.core.contract.RemoteControllerStoreReader
+import com.github.lmfirefly.flycat.core.contract.RuntimeLifecycleCommand
+import com.github.lmfirefly.flycat.core.contract.RuntimeRuleRepository
+import com.github.lmfirefly.flycat.core.contract.ServiceBootstrapReader
+import com.github.lmfirefly.flycat.core.contract.StoreSynchronizer
+import com.github.lmfirefly.flycat.core.contract.SubStoreSettings
+import com.github.lmfirefly.flycat.core.contract.TrafficStatisticsRepository
+import com.github.lmfirefly.flycat.core.contract.UpdateSettings
+import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
+import com.github.lmfirefly.flycat.core.util.path.APPLICATION_SCOPE_NAME
+import com.github.lmfirefly.flycat.data.collector.AppTrafficStatisticsCollector
+import com.github.lmfirefly.flycat.data.controller.AccessControlCommandExecutor
+import com.github.lmfirefly.flycat.data.controller.AccessControlController
+import com.github.lmfirefly.flycat.data.controller.AppSettingsController
+import com.github.lmfirefly.flycat.data.controller.NetworkSettingsCommandExecutor
+import com.github.lmfirefly.flycat.data.controller.NetworkSettingsController
+import com.github.lmfirefly.flycat.data.executor.ActiveProfileOverrideApplier
+import com.github.lmfirefly.flycat.data.executor.OverrideApplicator
+import com.github.lmfirefly.flycat.data.gateway.NetworkInfoService
+import com.github.lmfirefly.flycat.data.logging.AppLogBuffer
+import com.github.lmfirefly.flycat.data.repository.AppIdentityResolver
+import com.github.lmfirefly.flycat.data.repository.OverrideBindingRepository
+import com.github.lmfirefly.flycat.data.repository.ProvidersController
+import com.github.lmfirefly.flycat.data.store.AppSettingsStore
+import com.github.lmfirefly.flycat.data.store.AppStateManager
+import com.github.lmfirefly.flycat.data.store.BuiltInOverrideFileStore
+import com.github.lmfirefly.flycat.data.store.FeatureStore
+import com.github.lmfirefly.flycat.data.store.LogStore
+import com.github.lmfirefly.flycat.data.store.MetadataIndexStore
+import com.github.lmfirefly.flycat.data.store.MMKVProvider
+import com.github.lmfirefly.flycat.data.store.NetworkSettingsStore
+import com.github.lmfirefly.flycat.data.store.OverrideConfigStore
+import com.github.lmfirefly.flycat.data.store.ProfileBindingProvider
+import com.github.lmfirefly.flycat.data.store.ProfileBindingStore
+import com.github.lmfirefly.flycat.data.store.ProxyDisplaySettingsStore
+import com.github.lmfirefly.flycat.data.store.RemoteControllerStore
+import com.github.lmfirefly.flycat.data.store.TrafficStatisticsStore
+import com.github.lmfirefly.flycat.data.store.room.createTrafficStatisticsDao
+import com.github.lmfirefly.flycat.runtime.api.constants.Intents.actionOverrideChanged
+import com.github.lmfirefly.flycat.runtime.api.constants.Intents.actionProfileChanged
+import com.github.lmfirefly.flycat.runtime.api.contract.AutoStartExecutionGate
+import com.github.lmfirefly.flycat.runtime.api.contract.ProfileRepositoryContract
+import com.github.lmfirefly.flycat.runtime.api.contract.ProxyControlContract
+import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeStateMapper
+import com.github.lmfirefly.flycat.runtime.client.ProfilesRepository
+import com.github.lmfirefly.flycat.runtime.client.ProxyFacade
+import com.github.lmfirefly.flycat.runtime.client.remote.ServiceClient
+import com.github.lmfirefly.flycat.runtime.client.root.RootTunReloadScheduler
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
-const val APPLICATION_SCOPE_NAME = "applicationScope"
+// ─────────────────────────────────────────────────────────────────────────────
+// ServiceBootstrapReaderImpl (merged from ServiceBootstrapReaderImpl.kt)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * [ServiceBootstrapReader] implementation backed by concrete data stores.
+ *
+ * Created once in [App] and registered in [ServiceBootstrapHolder] so that Android framework-instantiated Services can read settings without directly depending on data-store implementations.
+ */
+class ServiceBootstrapReaderImpl(
+    private val appSettingsStore: AppSettingsStore,
+    private val featureStore: FeatureStore,
+    private val networkSettingsStore: NetworkSettingsStore,
+    mmkvProvider: MMKVProvider,
+) : ServiceBootstrapReader {
+    private val serviceCache = mmkvProvider.getMMKV("service_cache")
+    override val automaticRestart: Boolean
+        get() = appSettingsStore.automaticRestart.value
+    override val autoUpdateCurrentProfileOnStart: Boolean
+        get() = appSettingsStore.autoUpdateCurrentProfileOnStart.value
+    override val runMode: RunMode
+        get() = networkSettingsStore.runMode.value
+    override fun isRemoteControllerActive(): Boolean = RemoteControllerStore.isActive()
+    override fun consumePostUpdateColdStartPending(): Boolean = featureStore.consumePostUpdateColdStartPending()
+    override fun markAutoStartStarted() = AutoStartExecutionGate.markStarted(serviceCache)
+    override fun clearAutoStart() = AutoStartExecutionGate.clear(serviceCache)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// appFoundationModule (merged from FoundationModule.kt)
+// ─────────────────────────────────────────────────────────────────────────────
 
 val appFoundationModule = module {
+    // ── Infrastructure ────────────────────────────────────────────────────────
     single<CoroutineScope>(named(APPLICATION_SCOPE_NAME)) {
         CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
-
     single { MMKVProvider() }
-    single<MMKV>(named("profiles")) { get<MMKVProvider>().getMMKV("profiles") }
-    single<MMKV>(named("settings")) { get<MMKVProvider>().getMMKV("settings") }
-    single<MMKV>(named("network_settings")) { get<MMKVProvider>().getMMKV("network_settings") }
-    single<MMKV>(named("substore")) { get<MMKVProvider>().getMMKV("substore") }
-    single<MMKV>(named("proxy_display")) { get<MMKVProvider>().getMMKV("proxy_display") }
-    single<MMKV>(named("traffic_statistics")) { get<MMKVProvider>().getMMKV("traffic_statistics") }
-    single<MMKV>(named("profile_links")) { get<MMKVProvider>().getMMKV("profile_links") }
-    single<MMKV>(named("service_cache")) { get<MMKVProvider>().getMMKV("service_cache") }
-    single<MMKV>(named("override_bindings")) { get<MMKVProvider>().getMMKV("override_bindings") }
-    single<MMKV>(named("remote_controller")) { get<MMKVProvider>().getMMKV("remote_controller") }
-
-    single { AppSettingsStore(get<MMKV>(named("settings"))) }
-    single { NetworkSettingsStore(get(named("network_settings"))) }
-    single { RemoteControllerStore(get(named("remote_controller"))) }
-    single { ProfileLinksStore(get(named("profile_links"))) }
-    single { FeatureStore(get(named("substore"))) }
-    single { ProxyDisplaySettingsStore(get(named("proxy_display"))) }
-
+    single<BulkStoreReset> { get<MMKVProvider>() }
+    single<StoreSynchronizer> { get<MMKVProvider>() }
+    // ── Context-dependent stores (need androidApplication) ────────────────────
+    single { RemoteControllerStore(get(named(MMKVProvider.ID_REMOTE_CONTROLLER))) }
+    single<RemoteControllerStoreReader> {
+        get<RemoteControllerStore>().also {
+            ServiceClient.configure(it)
+        }
+    }
     single { createTrafficStatisticsDao(androidApplication()) }
-    single { TrafficStatisticsStore(get(named("traffic_statistics")), get()) }
+    single { LogStore(androidApplication(), get()) }
+    single<LogStoreReader> { get<LogStore>() }
+    single { NetworkInfoService() }
+    single<NetworkInfoReader> { get<NetworkInfoService>() }
+    single {
+        AppStateManager(
+            appSettingsStore = get(),
+            networkSettingsStore = get(),
+            featureStore = get(),
+            proxyDisplaySettingsStore = get(),
+            trafficStatisticsStore = get(),
+        )
+    }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// appDataRuntimeModule (merged from RuntimeModule.kt)
+// ─────────────────────────────────────────────────────────────────────────────
+
 val appDataRuntimeModule = module {
-    single { AppSettingsController(get(), applyLanguage = AppLanguageManager::apply) }
+    // ── Settings Controllers ──────────────────────────────────────────────────
+    single { AppSettingsController(get(), languageApplier = LanguageApplier(AppLanguageManager::apply)) }
+    single<AppSettingsControllerContract> { get<AppSettingsController>() }
+    single {
+        NetworkSettingsCommandExecutor(
+            store = get(),
+            restartProxy = { mode -> get<ProxyFacade>().startProxy(mode) },
+        )
+    }
     single {
         val proxyFacade = get<ProxyFacade>()
         NetworkSettingsController(
             store = get(),
             isRunning = { RuntimeStateMapper.isActuallyRunning(proxyFacade.runtimeSnapshot.value) },
+            commandExecutor = get(),
+        )
+    }
+    single<NetworkSettingsControllerContract> { get<NetworkSettingsController>() }
+    single {
+        val proxyFacade = get<ProxyFacade>()
+        AccessControlCommandExecutor(
             restartProxy = { mode -> proxyFacade.startProxy(mode) },
         )
     }
@@ -112,36 +202,42 @@ val appDataRuntimeModule = module {
             resolveActiveMode = {
                 RuntimeStateMapper.modeForOwner(proxyFacade.runtimeSnapshot.value.owner)
             },
-            restartProxy = { mode -> proxyFacade.startProxy(mode) },
+            commandExecutor = get(),
         )
     }
+    single<AccessControlControllerContract> { get<AccessControlController>() }
+    // ── Data Services ─────────────────────────────────────────────────────────
     single { LogStore(androidApplication(), get()) }
     single { NetworkInfoService() }
     single {
-        val profilesRepository = get<ProfilesRepository>()
-        RuntimeOverrideController(
-            configStore = get(),
-            queryActiveProfile = { profilesRepository.queryActiveProfile() },
+        val appContext = androidContext()
+        ProvidersController(
+            context = appContext,
+            queryProvidersAction = {
+                ServiceClient.connect(appContext)
+                ServiceClient.clash().queryProviders()
+            },
+            updateProviderAction = { type, name ->
+                ServiceClient.connect(appContext)
+                ServiceClient.clash().updateProvider(type, name)
+            },
         )
     }
-    single {
-        val appContext = androidContext()
-        ProvidersController(appContext) {
-            com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.connect(appContext)
-            com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.clash().queryProviders()
-        }
-    }
-
-    single { ProfileBindingStore(androidContext()) }
+    // ── Override & Profile Binding Stores ─────────────────────────────────────
+    single { MetadataIndexStore(androidContext()) }
+    single { ProfileBindingStore(androidContext(), get()) }
     single<ProfileBindingProvider> { get<ProfileBindingStore>() }
-
+    single { BuiltInOverrideFileStore(androidContext()) }
     single { OverrideConfigStore(androidContext(), get()) }
-    single<OverrideConfigProvider> { get<OverrideConfigStore>() }
-
-    single { OverrideResolver(get(), get()) }
+    single { OverrideBindingRepository(get(), get()) }
     single {
         val appContext = androidContext()
-        OverrideService(appContext, get()) {
+        OverrideApplicator(get()) {
+            appContext.sendBroadcast(
+                android.content.Intent(
+                    actionOverrideChanged(appContext.packageName)
+                ).setPackage(appContext.packageName)
+            )
             RootTunReloadScheduler.schedule(
                 appContext,
                 RootTunReloadScheduler.Reason.PROFILE_OVERRIDE_CHANGED,
@@ -150,41 +246,84 @@ val appDataRuntimeModule = module {
     }
     single {
         val profilesRepository = get<ProfilesRepository>()
-        ActiveProfileOverrideReloader(
+        ActiveProfileOverrideApplier(
             queryActiveProfile = { profilesRepository.queryActiveProfile() },
             bindingProvider = get(),
-            overrideService = get(),
+            overrideApplicator = get(),
         )
     }
-
+    // Bind controller reader interfaces
+    single<OverrideApplier> { get<ActiveProfileOverrideApplier>() }
+    single<OverrideApplyExecutor> { get<OverrideApplicator>() }
+    single<OverrideConfigRepository> { get<OverrideConfigStore>() }
+    single<ProfileBindingReader> { get<OverrideBindingRepository>() }
+    single<ProvidersRepository> { get<ProvidersController>() }
+    single<AppIdentityReader> { get<AppIdentityResolver>() }
     single { ProxyFacade(androidContext(), get(), get()) }
+    single<ProxyGroupRepository> { get<ProxyFacade>() }
+    single<ConnectionRepository> { get<ProxyFacade>() }
+    single<RuntimeRuleRepository> { get<ProxyFacade>() }
+    single<ProxyControlContract> { get<ProxyFacade>() }
+    single<RuntimeLifecycleCommand> {
+        val facade = get<ProxyFacade>()
+        object : RuntimeLifecycleCommand {
+            override suspend fun stopProxy() = facade.stopProxy()
+            override suspend fun reconcileRuntimeState() = facade.reconcileRuntimeState()
+            override suspend fun applyRemoteControllerState() = facade.applyRemoteControllerState()
+        }
+    }
+    single<BroadcastNotifier> {
+        val ctx = androidContext()
+        object : BroadcastNotifier {
+            override fun notifyProfileChanged() {
+                ctx.sendBroadcast(
+                    android.content.Intent(
+                        actionProfileChanged(ctx.packageName)
+                    ).setPackage(ctx.packageName)
+                )
+            }
+            override fun notifyOverrideChanged() {
+                ctx.sendBroadcast(
+                    android.content.Intent(
+                        actionOverrideChanged(ctx.packageName)
+                    ).setPackage(ctx.packageName)
+                )
+            }
+        }
+    }
     single { AppIdentityResolver(androidContext()) }
     single { ProfilesRepository(androidContext()) }
+    single<ProfileRepositoryContract> { get<ProfilesRepository>() }
     single {
-        val proxyFacade = get<ProxyFacade>()
+        val facade = get<ProxyFacade>()
         AppTrafficStatisticsCollector(
-            gateway =
-                object : TrafficQueryGateway {
-                    override val isRunning: Flow<Boolean> = proxyFacade.isRunning
-
-                    override fun currentProfileId(): String? =
-                        proxyFacade.currentProfile.value?.uuid?.toString()
-
-                    override suspend fun queryTrafficTotal(): TrafficData =
-                        TrafficData.from(proxyFacade.queryTrafficTotal())
-
-                    override suspend fun queryConnections(): ConnectionSnapshot =
-                        proxyFacade.queryConnections()
-
-                    override suspend fun queryActiveProfileId(): String? {
-                        proxyFacade.refreshCurrentProfile()
-                        return proxyFacade.currentProfile.value?.uuid?.toString()
-                    }
-                },
+            isRunningFlow = facade.isRunning,
+            currentProfileId = { facade.currentProfile.value?.uuid?.toString() },
             trafficStatisticsStore = get(),
             appIdentityResolver = get(),
+            trafficTotalFlow = facade.trafficTotal,
+            connectionJoinFlow = facade.reliableConnectionJoinEvents,
+            connectionCloseFlow = facade.reliableConnectionCloseEvents,
+            queryActiveProfileId = {
+                facade.refreshCurrentProfile()
+                facade.currentProfile.value?.uuid?.toString()
+            },
         )
     }
+    // ── Shutdown Handlers ─────────────────────────────────────────────────────
+    single<AppShutdownHandler>(qualifier = named("proxy_facade_shutdown")) {
+        AppShutdownHandler { get<ProxyFacade>().shutdown() }
+    }
+    single<AppShutdownHandler>(qualifier = named("identity_resolver_shutdown")) {
+        AppShutdownHandler { get<AppIdentityResolver>().close() }
+    }
+    single<AppShutdownHandler>(qualifier = named("network_info_shutdown")) {
+        AppShutdownHandler { get<NetworkInfoService>().close() }
+    }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Combined module list
+// ─────────────────────────────────────────────────────────────────────────────
 
 val coreDiModules: List<Module> = listOf(appFoundationModule, appDataRuntimeModule)

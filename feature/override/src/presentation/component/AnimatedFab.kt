@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,10 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.presentation.component
+package com.github.lmfirefly.flycat.feature.override.presentation.component
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
@@ -32,31 +33,22 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
-import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.lmfirefly.flycat.presentation.component.navigation.ScrollAwareFabController
+import com.github.lmfirefly.flycat.presentation.component.navigation.rememberScrollAwareFabController
+import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
+import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@Stable
-class OverrideFabController internal constructor() {
-    var isHiddenByScroll by mutableStateOf(false)
-        private set
-
-    fun onScrollDirectionChanged(hidden: Boolean) {
-        isHiddenByScroll = hidden
-    }
-}
+/** Backward-compatible alias for [ScrollAwareFabController]. */
+typealias OverrideFabController = ScrollAwareFabController
 
 @Composable
-fun rememberOverrideFabController(): OverrideFabController = remember { OverrideFabController() }
+fun rememberOverrideFabController(): OverrideFabController = rememberScrollAwareFabController()
 
 @Composable
 fun OverrideAnimatedFab(

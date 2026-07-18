@@ -1,3 +1,4 @@
+// Package main provides the native bridge entry point for the Android application.
 package main
 
 //#include "bridge.h"
@@ -18,6 +19,7 @@ func openRemoteContent(url string) (int, error) {
 
 	log.Debugln("Open remote url: %s", url)
 
+	defer C.free(unsafe.Pointer(u))
 	defer C.free(unsafe.Pointer(e))
 
 	fd := C.open_content(u, e, 1024)
@@ -39,13 +41,6 @@ func notifyDnsChanged(dnsList C.c_string) {
 //export notifyTimeZoneChanged
 func notifyTimeZoneChanged(name C.c_string, offset C.int) {
 	app.NotifyTimeZoneChanged(C.GoString(name), int(offset))
-}
-
-//export queryConfiguration
-func queryConfiguration() *C.char {
-	response := &struct{}{}
-
-	return marshalJSON(&response)
 }
 
 func init() {

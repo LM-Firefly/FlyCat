@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,41 +15,36 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
 plugins {
-    id("com.android.library")
-    kotlin("plugin.compose")
-    id("org.jetbrains.compose")
-
+    id("flycat-compose-library")
+    id("ren.shiror.fyl.fytxt") version "2.+"
 }
 
+fytxt {
+    packageName = "com.github.lmfirefly.flycat.locale"
+    objectName = "FlyTxt"
+
+    langSrcs = mapOf("Locale" to layout.projectDirectory.dir("lang"))
+    langAliases = mapOf(
+        "ZH_HANS" to "^ZH_.*(HANS|CN|SG)",
+        "ZH" to "^ZH_(?!.*(HANS|CN|SG)).*"
+    )
+    defaultLang = "ZH_HANS"
+
+    composeGen = true
+    internalClass = false
+    exportDeps = true
+}
 
 android {
-    namespace = "com.github.yumelira.yumebox.core.locale"
-
-    sourceSets {
-        getByName("main") {
-            kotlin.directories.apply {
-                clear()
-                addAll(
-                    listOf(
-                        "src",
-                        "build/generated/fytxt/kotlin/commonMain/kotlin",
-                    )
-                )
-            }
-        }
-    }
-
-    buildFeatures {
-        compose = true
-    }
+    namespace = "com.github.lmfirefly.flycat.locale"
 }
 
 dependencies {
-    val composeBom = platform(libs.androidx.compose.bom)
-    implementation(composeBom)
+    implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.runtime)
 }

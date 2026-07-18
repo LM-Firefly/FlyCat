@@ -1,0 +1,26 @@
+package com.github.lmfirefly.flycat.core.model
+
+data class AppIdentity(
+    val appKey: String,
+    val packageName: String? = null,
+    val appName: String,
+)
+
+enum class ThemeMode {
+    Auto,
+    Light,
+    Dark,
+}
+
+enum class AppLanguage {
+    System,
+    Zh,
+    ZhHant,
+    En,
+    Ja,
+    Ru,
+}
+
+enum class AppColorTheme {
+    ClassicMonochrome
+}

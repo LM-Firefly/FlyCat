@@ -1,0 +1,49 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+package com.github.lmfirefly.flycat.presentation.component.input
+
+import androidx.compose.runtime.Composable
+import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
+
+@Composable
+fun <T> EnumSelector(
+    title: String,
+    summary: String? = null,
+    currentValue: T,
+    items: List<String>,
+    values: List<T>,
+    onValueChange: (T) -> Unit,
+) {
+    val selectedIndex = values.indexOf(currentValue).coerceAtLeast(0)
+
+    WindowDropdownPreference(
+        title = title,
+        summary = summary,
+        items = items,
+        selectedIndex = selectedIndex,
+        onSelectedIndexChange = { index ->
+            if (index >= 0 && index < values.size) {
+                onValueChange(values[index])
+            }
+        },
+    )
+}

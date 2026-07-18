@@ -1,0 +1,124 @@
+<App Settings Page>
+AppSettings = {
+    Title = "应用设置"
+
+    Section = {
+        Behavior = "行为"
+        Interface = "界面"
+        Navigation = "导航"
+        Privacy = "隐私"
+        Service = "服务"
+        Network = "网络"
+        Home = "首页"
+    }
+
+    Behavior = {
+        AutoStartTitle = "自动启动"
+        AutoStartSummary = "应用启动和开机时自动启动代理服务"
+        AutoUpdateOnStartTitle = "启动更新配置"
+        AutoUpdateOnStartSummary = "启动时自动更新当前订阅配置"
+        OneChinaTitle = "坚持一个中国原则"
+        OneChinaSummary = "自动将台湾地区旗帜及区域码显示为中国"
+    }
+
+    Interface = {
+        ThemeModeTitle = "主题模式"
+        ThemeModeSummary = "选择应用的主题样式"
+        ThemeModeSystem = "跟随系统"
+        ThemeModeLight = "浅色"
+        ThemeModeDark = "深色"
+        LanguageTitle = "应用语言"
+        LanguageSummary = "选择应用语言"
+        LanguageSystem = "跟随系统"
+        LanguageChinese = "简体中文"
+        LanguageChineseTraditional = "繁體中文"
+        LanguageEnglish = "English"
+        LanguageJapanese = "日本語"
+        LanguageRussian = "Русский"
+
+        ColorThemeTitle = "主题配色"
+        ColorThemePickerTitle = "选择主题色"
+        ColorThemeCodeLabel = "主题色代码（#AARRGGBB）"
+        ColorThemeCustomSummary = "当前主题色：%s"
+        ThemeColorPolarityInvertTitle = "反转主题前景色"
+        ThemeColorPolarityInvertSummary = "当主题取色看起来怪异时可尝试开启"
+        TopBarBlurTitle = "背景模糊"
+        TopBarBlurSummary = "应用模糊背景"
+        AutoHideNavbarTitle = "滑动隐藏底栏"
+        AutoHideNavbarSummary = "向下滑动时自动隐藏底栏，向上滑动时显示"
+
+        PageScaleTitle = "页面缩放"
+        PageScaleDialogSummary = "80% - 120%"
+
+        ClassicHomeTitle = "经典首页"
+        HitokotoTitle = "一言"
+        HitokotoSummary = "在经典首页TopBar显示一言内容"
+        SidebarExpandedTitle = "展开侧边栏"
+        HomeQuoteTitle = "首页一言"
+        HomeQuoteDefault = "永远相信美好的事情即将发生"
+        HomeQuoteAuthorTitle = "一言作者"
+        HomeQuoteAuthorDefault = "Firefly"
+        EditHomeQuoteTitle = "编辑一言"
+        EditHomeQuoteAuthorTitle = "编辑一言作者"
+        HomeWallpaperImportFailed = "无法将壁纸复制到本地，已改用原始来源"
+        HomeWallpaperSourceTitle = "壁纸来源"
+        HomeWallpaperSourceSummary = "从相册选择或输入URL"
+        HomeWallpaperSourceGallery = "从相册选择"
+        HomeWallpaperSourceUrl = "URL输入"
+        HomeWallpaperUrlDialogTitle = "设置远程壁纸"
+    }
+
+    Privacy = {
+
+        HideIconTitle = "隐藏应用图标"
+        HideIconSummary = "隐藏后可通过拨号盘 *#*#0721#*#* 打开"
+        HideFromRecentsTitle = "隐藏后台卡片"
+        HideFromRecentsSummary = "启用后不在最近任务列表（后台卡片）中显示应用"
+    }
+
+    ServiceSection = {
+        TrafficNotificationTitle = "显示流量通知"
+        TrafficNotificationSummary = "在通知栏中显示流量使用情况"
+        LogLevelTitle = "日志级别"
+        LogLevelSummary = "设置最低软件运行日志记录级别"
+        SingleNodeTestTitle = "单节点测试"
+        SingleNodeTestSummary = "点击节点卡片右侧图标测试单个节点延迟"
+        ExitUiWhenBackgroundTitle = "后台隐藏时释放界面"
+        ExitUiWhenBackgroundSummary = "应用退到后台且界面不可见时主动释放 UI，仅保留运行中的代理服务"
+        BatteryOptimizationTitle = "电池优化无限制"
+        BatteryOptimizationSummaryEnabled = "已允许后台无限制运行"
+        BatteryOptimizationSummaryDisabled = "受电池优化限制，点击前往设置"
+    }
+
+    Network = {
+        UpdateChannelTitle = "更新通道"
+        UpdateChannelSummary = "选择检查更新时使用的 GitHub Release 通道"
+        UpdateChannelStable = "Stable"
+        UpdateChannelPre = "Pre-release"
+        UpdateChannelSmart = "Smart"
+        AutoCheckAppUpdateTitle = "自动检查应用更新"
+        AutoCheckAppUpdateSummary = "后台每 1 小时自动检查一次 GitHub Release 更新"
+        CustomUserAgentTitle = "自定义 User-Agent"
+        CustomUserAgentSummaryDefault = "未设置，使用默认值"
+    }
+
+    PredictiveBack = {
+        Title = "预测返回手势"
+        RestartSummary = "下次启动应用后生效"
+        ProgressTitle = "预测返回幅度"
+    }
+
+    WarningDialog = {
+        Title = "警告"
+        HideIconMsg1 = "请在隐藏之前确认你能够访问本应用的设置界面！"
+        HideIconMsg2 = "对于 HyperOS, 请开启 自启动 和 后台弹出界面 权限，以接受拨号界面代码！"
+    }
+
+    EditDialog = {
+        UserAgentTitle = "编辑 User-Agent"
+    }
+
+    Button = {
+        Apply = "应用"
+    }
+}

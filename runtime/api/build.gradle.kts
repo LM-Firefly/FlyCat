@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,21 +15,25 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
 plugins {
-    id("com.android.library")
+    id("flycat-android-library")
     kotlin("plugin.serialization")
 }
 
 android {
-    namespace = "com.github.yumelira.yumebox.runtime.api"
+    namespace = "com.github.lmfirefly.flycat.runtime.api"
+    buildFeatures {
+        aidl = true
+    }
 }
 
 dependencies {
     implementation(project(":core"))
-    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
+    implementation("com.tencent:mmkv:${rootProject.extra["mmkvVersion"]}")
 }
-

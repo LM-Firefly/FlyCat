@@ -5,10 +5,12 @@ import re
 import shutil
 import subprocess  # nosec B404 - only runs fixed git commands from CI env
 import html
+import json
+from contextlib import ExitStack
+from pathlib import Path
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
-MESSAGE_THREAD_ID = os.environ.get("MESSAGE_THREAD_ID")
 TITLE = os.environ.get("TITLE")
 BRANCH = os.environ.get("BRANCH")
 WORKFLOW_NAME = os.environ.get("WORKFLOW_NAME", "")
@@ -23,8 +25,12 @@ VERSION_CODE = os.environ.get("VERSION_CODE", "")
 RELEASE_URL = os.environ.get("RELEASE_URL", "")
 META_URL = os.environ.get("META_URL", "")
 PUBLISH_DIR = os.environ.get("PUBLISH_DIR", "")
-LOGO_URL = os.environ.get("LOGO_URL", "https://yumebox.gal.tf/logo/Yume.webp")
+LOGO_PATH = os.environ.get("LOGO_PATH", "website/images/og.webp")
+LOGO_URL = os.environ.get("LOGO_URL", "https://yumebox.gal.tf/images/og.webp")
 COMMIT_MESSAGE = os.environ.get("COMMIT_MESSAGE", "")
+BOT_API_BASE_URL = os.environ.get("BOT_API_BASE_URL", "https://api.telegram.org").rstrip("/")
+
+MAX_LOGO_BYTES = 10 * 1024 * 1024
 
 
 def get_commit_message():
@@ -53,8 +59,6 @@ def html_escape(text):
 
 def _workflow_label():
     workflow_name_lower = WORKFLOW_NAME.lower()
-    if "smart" in workflow_name_lower or "smart" in TITLE.lower():
-        return "Smart"
     if "test" in workflow_name_lower:
         return "Test"
     return "Normal"
@@ -155,7 +159,7 @@ def find_apk_files():
             files.extend(found)
             print(f"[+] Found {len(found)} files in {pattern}")
 
-    files = list(set(files))
+    files = sorted(set(files))
 
     if not files:
         print("[-] No APK files found!")
@@ -168,6 +172,51 @@ def find_apk_files():
     return files
 
 
+def _validate_logo(data, source):
+    if not data:
+        raise ValueError(f"Logo is empty: {source}")
+    if len(data) > MAX_LOGO_BYTES:
+        raise ValueError(f"Logo exceeds {MAX_LOGO_BYTES} bytes: {source}")
+    return data
+
+
+def load_logo():
+    if LOGO_PATH:
+        path = Path(LOGO_PATH)
+        if path.is_file():
+            data = _validate_logo(path.read_bytes(), path)
+            content_type = "image/webp" if path.suffix.lower() == ".webp" else "application/octet-stream"
+            print(f"[+] Loaded current checkout logo: {path} ({len(data)} bytes)")
+            return path.name, data, content_type
+
+    if not LOGO_URL:
+        raise FileNotFoundError(f"Logo not found: {LOGO_PATH}")
+
+    cache_key = RUN_ID or COMMIT_SHA or RUN_NUMBER
+    params = {"ci_run": cache_key} if cache_key else None
+    with requests.get(
+        LOGO_URL,
+        params=params,
+        headers={"Cache-Control": "no-cache"},
+        stream=True,
+        timeout=(15, 60),
+    ) as response:
+        response.raise_for_status()
+        content_type = response.headers.get("Content-Type", "image/webp").split(";", 1)[0]
+        if not content_type.startswith("image/"):
+            raise ValueError(f"Logo URL returned unexpected content type: {content_type}")
+
+        data = bytearray()
+        for chunk in response.iter_content(chunk_size=64 * 1024):
+            data.extend(chunk)
+            if len(data) > MAX_LOGO_BYTES:
+                raise ValueError(f"Logo exceeds {MAX_LOGO_BYTES} bytes: {LOGO_URL}")
+
+    logo = _validate_logo(bytes(data), LOGO_URL)
+    print(f"[+] Downloaded fresh logo: {LOGO_URL} ({len(logo)} bytes)")
+    return "og.webp", logo, content_type
+
+
 def send_files_via_bot_api():
     print("[+] Starting Telegram upload")
     check_environ()
@@ -175,60 +224,74 @@ def send_files_via_bot_api():
     files = find_apk_files()
 
     # Bot API URL
-    bot_url = f"https://api.telegram.org/bot{BOT_TOKEN}"
+    bot_url = f"{BOT_API_BASE_URL}/bot{BOT_TOKEN}"
 
     caption = get_caption()
     print("[+] Caption:", caption)
 
-    file_path = files[0]
-    print(f"[+] Uploading {file_path}...")
-
-    reply_to_id = None
     try:
+        photo_name, photo, photo_content_type = load_logo()
         photo_data = {
             'chat_id': CHAT_ID,
-            'photo': LOGO_URL,
             'caption': caption,
             'parse_mode': 'HTML',
         }
-        if MESSAGE_THREAD_ID:
-            photo_data['message_thread_id'] = MESSAGE_THREAD_ID
-        photo_resp = requests.post(f"{bot_url}/sendPhoto", data=photo_data, timeout=60)
-        print(f"[+] Photo+caption: {photo_resp.status_code}")
-        if photo_resp.status_code == 200:
-            reply_to_id = photo_resp.json().get("result", {}).get("message_id")
-        else:
-            print(f"[-] Photo send failed: {photo_resp.text}")
-    except Exception as e:
-        print(f"[-] Photo send failed: {e}")
 
-    with open(file_path, 'rb') as f:
-        data = {'chat_id': CHAT_ID}
-        if MESSAGE_THREAD_ID:
-            data['message_thread_id'] = MESSAGE_THREAD_ID
-        if reply_to_id:
-            data['reply_to_message_id'] = reply_to_id
-
-        files_data = {'document': f}
-
-        response = requests.post(
-            f"{bot_url}/sendDocument",
-            data=data,
-            files=files_data,
+        photo_resp = requests.post(
+            f"{bot_url}/sendPhoto",
+            data=photo_data,
+            files={'photo': (photo_name, photo, photo_content_type)},
             timeout=60,
         )
 
-    if response.status_code == 200:
-        print(f"[+] {file_path} uploaded successfully!")
-        return True
-    else:
-        print(f"[-] Failed to upload {file_path}: {response.text}")
-        return False
+        print(f"[+] Photo+caption: {photo_resp.status_code}")
+
+        if photo_resp.status_code != 200:
+            print(f"[-] Photo send failed: {photo_resp.text}")
+
+    except Exception as e:
+        print(f"[-] Photo send failed: {e}")
+
+
+    # Telegram renders a document media group as one album-style chat item.
+    all_uploaded = True
+    try:
+        media = []
+        upload_files = {}
+        with ExitStack() as stack:
+            for index, file_path in enumerate(files):
+                field_name = f"document{index}"
+                media.append({"type": "document", "media": f"attach://{field_name}"})
+                upload_files[field_name] = (
+                    os.path.basename(file_path),
+                    stack.enter_context(open(file_path, "rb")),
+                    "application/vnd.android.package-archive",
+                )
+                print(f"[+] Queued {file_path} for media group")
+
+            response = requests.post(
+                f"{bot_url}/sendMediaGroup",
+                data={"chat_id": CHAT_ID, "media": json.dumps(media)},
+                files=upload_files,
+                timeout=(30, 600),
+            )
+
+        if response.status_code == 200:
+            print(f"[+] Uploaded {len(files)} APKs in one media group")
+        else:
+            print(f"[-] Failed to upload APK media group: {response.text}")
+            all_uploaded = False
+    except Exception as e:
+        print(f"[-] Failed to upload APK media group: {e}")
+        all_uploaded = False
+
+    return all_uploaded
 
 
 if __name__ == "__main__":
     try:
-        send_files_via_bot_api()
+        if not send_files_via_bot_api():
+            raise SystemExit(1)
     except Exception as e:
         print(f"[-] Error: {e}")
-        exit(1)
+        raise SystemExit(1)
