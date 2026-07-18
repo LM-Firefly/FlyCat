@@ -1,0 +1,52 @@
+<Proxy Page>
+Proxy = {
+    Title = "Узлы"
+
+    Mode = {
+        Direct = "Напрямую"
+    }
+
+    Action = {
+        Panel = "Панель"
+        Test = "Тест"
+        Sort = "Сортировка"
+    }
+
+    Node = {
+        Timeout = "Таймаут"
+        Count = "Узлов: %d"
+    }
+
+
+    Empty = {
+        NoNodes = "Нет узлов"
+        Hint = "Загрузите профиль на странице «Профили»"
+    }
+
+    Testing = {
+        Group = "Тестирование группы узлов: %s"
+        All = "Тестирование всех групп узлов..."
+        RequestSent = "Запрос теста отправлен"
+        Failed = "Тест не удался: %s"
+        InProgress = "Тестирование узла"
+    }
+
+    Selection = {
+        Switched = "Переключено на: %s"
+        Failed = "Не удалось переключить"
+        Error = "Не удалось переключить: %s"
+    }
+
+    SortMode = {
+        Default = "По умолчанию"
+        ByName = "По имени"
+        ByLatency = "По задержке"
+    }
+
+    DisplayMode = {
+        SingleDetailed = "1 колонка, подробно"
+        SingleSimple = "1 колонка, кратко"
+        DoubleDetailed = "2 колонки, подробно"
+        DoubleSimple = "2 колонки, кратко"
+    }
+}

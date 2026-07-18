@@ -8,6 +8,7 @@ import (
 
 var uiSubtitlePattern *regexp2.Regexp
 
+// ApplySubtitlePattern compiles and stores a regex used to split proxy names into title and subtitle.
 func ApplySubtitlePattern(pattern string) {
 	if pattern == "" {
 		uiSubtitlePattern = nil
@@ -29,6 +30,7 @@ func ApplySubtitlePattern(pattern string) {
 	}
 }
 
+// SubtitlePattern returns the currently compiled subtitle regex, or nil if none is set.
 func SubtitlePattern() *regexp2.Regexp {
 	return uiSubtitlePattern
 }

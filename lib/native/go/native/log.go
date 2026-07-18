@@ -17,30 +17,6 @@ type message struct {
 	Time    int64  `json:"time"`
 }
 
-func init() {
-	go func() {
-		sub := log.Subscribe()
-		defer log.UnSubscribe(sub)
-
-		for msg := range sub {
-			cPayload := C.CString(msg.Payload)
-
-			switch msg.LogLevel {
-			case log.INFO:
-				C.log_info(cPayload)
-			case log.ERROR:
-				C.log_error(cPayload)
-			case log.WARNING:
-				C.log_warn(cPayload)
-			case log.DEBUG:
-				C.log_debug(cPayload)
-			case log.SILENT:
-				C.log_verbose(cPayload)
-			}
-		}
-	}()
-}
-
 //export subscribeLogcat
 func subscribeLogcat(remote unsafe.Pointer) {
 	go func(remote unsafe.Pointer) {

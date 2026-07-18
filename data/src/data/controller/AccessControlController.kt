@@ -20,32 +20,40 @@
 
 package com.github.yumelira.yumebox.data.controller
 
-import com.github.yumelira.yumebox.data.model.AccessControlMode
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.core.contract.AccessControlControllerContract
+import com.github.yumelira.yumebox.core.model.AccessControlMode
+import com.github.yumelira.yumebox.core.model.RunMode
+import com.github.yumelira.yumebox.core.util.PollingTimers
+import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AccessControlController(
     private val store: NetworkSettingsStore,
-    isRunning: () -> Boolean,
-    private val resolveActiveMode: () -> ProxyMode?,
-    private val restartProxy: suspend (ProxyMode) -> Unit,
-    private val beforeRestart: suspend (ProxyMode) -> Unit = {},
-) {
-    private val restarter =
-        DebouncedProxyRestarter(
-            timerName = "access_control_apply_packages",
-            debounceMillis = 350L,
-            isRunning = isRunning,
-        )
+    private val isRunning: () -> Boolean,
+    private val resolveActiveMode: () -> RunMode?,
+    private val commandExecutor: AccessControlCommandExecutor,
+) : AccessControlControllerContract, java.io.Closeable {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var applyJob: Job? = null
+    override fun close() { scope.cancel() }
 
-    fun setAccessControlMode(mode: AccessControlMode) {
+    override fun setAccessControlMode(mode: AccessControlMode) {
         if (store.accessControlMode.value == mode) return
         store.accessControlMode.set(mode)
         scheduleApply()
     }
 
-    fun applyPackages(packages: Set<String>) {
+    override fun applyPackages(packages: Set<String>) {
         if (store.accessControlPackages.value == packages) return
         store.accessControlPackages.set(packages)
         scheduleApply()
@@ -53,17 +61,32 @@ class AccessControlController(
 
     @Suppress("TooGenericExceptionCaught")
     private fun scheduleApply() {
-        restarter.schedule {
-            val targetMode = resolveActiveMode() ?: store.proxyMode.value
-            if (targetMode == ProxyMode.Http) return@schedule
-            if (store.accessControlMode.value == AccessControlMode.ALLOW_ALL) return@schedule
+        applyJob?.cancel()
+        applyJob = scope.launch {
+            PollingTimers.awaitTick(
+                PollingTimerSpecs.dynamic(
+                    name = "access_control_apply_packages",
+                    intervalMillis = 350L,
+                    initialDelayMillis = 350L,
+                )
+            )
+
+            if (!isRunning()) return@launch
+            val activeMode = resolveActiveMode()
+            val targetMode = activeMode ?: store.runMode.value
+            if (targetMode == RunMode.Tproxy) return@launch
 
             try {
-                beforeRestart(targetMode)
-                restartProxy(targetMode)
-            } catch (error: Exception) { // best-effort restart: any failure keeps the current session running
+                commandExecutor.restartProxy(targetMode)
+            } catch (error: Exception) {
                 if (error is CancellationException) throw error
             }
         }
+    }
+}
+
+class AccessControlCommandExecutor(private val restartProxy: suspend (RunMode) -> Unit, private val beforeRestart: suspend (RunMode) -> Unit = {}) {
+    suspend fun restartProxy(mode: RunMode) {
+        withContext(NonCancellable) { beforeRestart(mode); withContext(Dispatchers.IO) { restartProxy.invoke(mode) } }
     }
 }

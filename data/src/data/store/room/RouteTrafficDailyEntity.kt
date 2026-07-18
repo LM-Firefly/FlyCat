@@ -22,12 +22,10 @@ package com.github.yumelira.yumebox.data.store.room
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
-import androidx.room.Index
 
 @Entity(
     tableName = "route_traffic_daily",
     primaryKeys = ["date_millis", "app_key", "route_key"],
-    indices = [Index("date_millis", "app_key")],
 )
 data class RouteTrafficDailyEntity(
     @ColumnInfo(name = "date_millis") val dateMillis: Long,

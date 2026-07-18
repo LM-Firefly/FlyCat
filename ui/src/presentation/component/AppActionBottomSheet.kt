@@ -31,7 +31,7 @@ import com.github.yumelira.yumebox.presentation.icon.yume.Check
 import com.github.yumelira.yumebox.presentation.icon.yume.Close
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.FlyTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
@@ -83,7 +83,7 @@ fun AppBottomSheetIconAction(action: AppBottomSheetAction) {
 fun AppBottomSheetCloseAction(
     onClick: () -> Unit,
     enabled: Boolean = true,
-    contentDescription: String = MLang.Component.Button.Cancel,
+    contentDescription: String = FlyTxt.Component.Button.Cancel,
 ) {
     AppBottomSheetIconAction(
         action =
@@ -100,7 +100,7 @@ fun AppBottomSheetCloseAction(
 fun AppBottomSheetConfirmAction(
     onClick: () -> Unit,
     enabled: Boolean = true,
-    contentDescription: String = MLang.Component.Button.Confirm,
+    contentDescription: String = FlyTxt.Component.Button.Confirm,
 ) {
     AppBottomSheetIconAction(
         action =

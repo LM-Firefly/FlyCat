@@ -4,6 +4,7 @@ MetaFeature = {
 
     Section = {
         ConnectionAndTraffic = "Connections & Traffic"
+        BackupRestore = "Backup & Restore"
         Routing = "Routing"
     }
 
@@ -21,11 +22,35 @@ MetaFeature = {
         GroupTypeFallback = "Fallback"
         UrlTestRegionGroupTitle = "UrlTest Region Groups"
         FallbackRegionGroupTitle = "Fallback Region Groups"
+        SaveFailed = "Save failed"
+        EditButton = "Edit"
     }
 
     Download = {
         DialogTitle = "Update GeoX Online"
         DownloadComplete = "Download complete: %d/%d"
+    }
+
+    Backup = {
+        BackupTitle = "Back Up Data"
+        BackupSummary = "Export current user data to a zip file"
+        RestoreTitle = "Restore Data"
+        RestoreSummary = "Overwrite current user data from a zip file"
+        BackupDialogTitle = "Backing up"
+        BackupDialogMessage = "Packing current user data, please wait"
+        RestoreDialogTitle = "Restoring"
+        RestoreDialogMessage = "Unpacking and restoring current user data, please wait"
+        RestoreConfirmTitle = "Confirm Restore"
+        RestoreConfirmMessage = "Restoring will overwrite current user data. It is recommended to create a backup first. Please restart the app after restore."
+        BackupSuccess = "Backup complete"
+        RestoreSuccess = "Restore complete, please restart the app"
+        RestoreSuccessTitle = "Restore complete"
+        RestoreSuccessMessage = "%s\n\nRestart now to apply restored data?"
+        WebDavRestoreSuccess = "WebDAV restore complete: %s"
+        RestartNow = "Restart now"
+        RestartLaunchNotFound = "Restart failed: launcher entry not found"
+        BackupFailed = "Backup failed: %s"
+        RestoreFailed = "Restore failed: %s"
     }
 
     AgeKey = {
@@ -36,5 +61,39 @@ MetaFeature = {
         PublicKey = "Public Key"
         Generate = "Generate"
         DerivePublicKey = "Derive Public"
+    }
+
+    WebDav = {
+        ConfigTitle = "WebDAV Configuration"
+        ConfigSummary = "Set WebDAV address, subdirectory, account and password"
+        TestTitle = "WebDAV Connection Test"
+        TestSummary = "Verify WebDAV configuration availability"
+        TestLoadingTitle = "WebDAV Test"
+        TestLoadingMessage = "Connecting to WebDAV, please wait"
+        TestSuccess = "WebDAV is available"
+        TestFailed = "WebDAV test failed: %s"
+        ConfigRequired = "Please complete WebDAV configuration first"
+        BackupTitle = "WebDAV Cloud Backup"
+        BackupSummary = "Package current data and upload to WebDAV"
+        BackupLoadingTitle = "WebDAV Backup"
+        BackupLoadingMessage = "Creating backup and uploading, please wait"
+        BackupSuccess = "WebDAV backup complete: %s"
+        BackupFailed = "WebDAV backup failed: %s"
+        RestoreTitle = "WebDAV Cloud Restore (Latest)"
+        RestoreSummary = "Download and restore the latest backup from WebDAV"
+        RestoreConfirmTitle = "Confirm WebDAV Restore"
+        RestoreConfirmMessage = "This will overwrite current user data. It is recommended to create a local or cloud backup first."
+        RestoreLoadingTitle = "WebDAV Restore"
+        RestoreLoadingMessage = "Downloading and restoring the latest backup, please wait"
+        RestoreFailed = "WebDAV restore failed: %s"
+        ConfigUrlExample = "URL example: https://dav.jianguoyun.com/dav/"
+        ValidationUrlRequired = "Please enter WebDAV URL"
+        ValidationAccountRequired = "Please enter WebDAV account"
+        ValidationPasswordRequired = "Please enter WebDAV password"
+        ConfigSaved = "WebDAV configuration saved"
+        LabelUrl = "WebDAV URL"
+        LabelDir = "Subdirectory (optional)"
+        LabelAccount = "Account"
+        LabelPassword = "Password"
     }
 }

@@ -13,6 +13,7 @@ import (
 	"cfa/native/config"
 
 	"github.com/metacubex/mihomo/hub"
+	"gopkg.in/yaml.v3"
 )
 
 type ageKeyPair struct {
@@ -171,11 +172,11 @@ func inspectCompiledGroupsResult(configRawJSON C.c_string, profileDir C.c_string
 	if err != nil {
 		return marshalJSON(inspectResult{Success: false, Error: err.Error()})
 	}
-	payload, err := yamlString(groups)
+	payload, err := yaml.Marshal(groups)
 	if err != nil {
 		return marshalJSON(inspectResult{Success: false, Error: err.Error()})
 	}
-	return marshalJSON(inspectResult{Success: true, Payload: payload})
+	return marshalJSON(inspectResult{Success: true, Payload: string(payload)})
 }
 
 //export inspectCompiledTunRouteExcludeAddressResult
@@ -184,21 +185,40 @@ func inspectCompiledTunRouteExcludeAddressResult(configRawJSON C.c_string) *C.ch
 	if err != nil {
 		return marshalJSON(inspectResult{Success: false, Error: err.Error()})
 	}
-	payload, err := jsonString(addresses)
+	payload, err := json.Marshal(addresses)
 	if err != nil {
 		return marshalJSON(inspectResult{Success: false, Error: err.Error()})
 	}
-	return marshalJSON(inspectResult{Success: true, Payload: payload})
+	return marshalJSON(inspectResult{Success: true, Payload: string(payload)})
+}
+
+//export inspectCompiledGroupNames
+func inspectCompiledGroupNames(configRawJSON C.c_string, excludeNotSelectable C.int) *C.char {
+	names, err := config.QueryProxyGroupNamesFromCompiledRaw(
+		C.GoString(configRawJSON),
+		excludeNotSelectable != 0,
+	)
+	if err != nil {
+		return nil
+	}
+	payload, err := json.Marshal(names)
+	if err != nil {
+		return nil
+	}
+	return C.CString(string(payload))
 }
 
 //export setAgeSecretKey
 func setAgeSecretKey(key C.c_string) {
 	if key == nil {
+		config.SetAgeSecretKey("")
 		config.SetGlobalSecretKeys()
 		return
 	}
 
-	config.SetGlobalSecretKeys(C.GoString(key))
+	k := C.GoString(key)
+	config.SetAgeSecretKey(k)
+	config.SetGlobalSecretKeys(k)
 }
 
 //export genX25519KeyPair

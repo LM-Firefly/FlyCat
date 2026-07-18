@@ -1,0 +1,72 @@
+<Feature Page>
+Feature = {
+    Title = "功能管理"
+
+    ServiceStatus = {
+        Section = "服务状态"
+        Running = "服务运行中：%s"
+        NeedExtension = "需要安装扩展包"
+        NeedSubStore = "需要下载 Sub-Store 资源"
+        NotRunning = "服务未运行"
+        SwitchStartSubStore = "启动 Sub-Store 服务"
+        AllowLan = "允许局域网访问"
+        AllowLanSummary = "允许局域网设备访问 Sub-Store"
+        AutoCloseModeSummary = "自动关闭时间，长时间运行将消耗更多性能"
+        AutoCloseModeAlwaysOn = "常开"
+        AutoCloseMode5Min = "5 分钟"
+        AutoCloseMode10Min = "10 分钟"
+        AutoClosed = "Sub-Store 已自动关闭"
+        AutoCloseModeDisabled = "禁用"
+    }
+
+    Panel = {
+        Section = "面板选择"
+        SelectPanel = "选择面板"
+        Unknown = "未知面板"
+        CreateShortcut = "在桌面创建快捷方式"
+        CreateShortcutSummary = "将当前面板添加到桌面，使用网站图标，点击直接打开"
+        ShortcutTitle = "创建快捷方式"
+        ShortcutName = "名称"
+        ShortcutPickIcon = "选择图标"
+        ShortcutResetIcon = "恢复默认"
+    }
+
+    RemoteController = {
+        Section = "外部控制"
+        ModeTitle = "外部控制器模式"
+        ControlBackend = "控制后端"
+        AddBackend = "添加后端"
+        EditBackend = "编辑后端"
+        Name = "名称"
+        Host = "IP / Host"
+        Port = "端口"
+        Secret = "密钥（可留空）"
+        PortRangeError = "端口范围必须是 1-65535"
+        Delete = "删除"
+    }
+
+    SubStore = {
+        SectionHint = "Sub-Store 资源下载，需要同时安装扩展包和静态资源，首次安装扩展包之后，请退出应用再打开"
+        ExtensionInstalled = "扩展包已安装"
+        ExtensionInstall = "安装扩展包"
+        JavetAvailable = "Javet 库可用，点击刷新状态"
+        JavetPending = "扩展包已安装，Javet 库待提取，点击刷新状态"
+        DownloadHint = "点击前往下载扩展包"
+        DownloadResources = "下载资源"
+        DownloadResourcesSummary = "一次性下载前端和后端资源"
+        Not32Bit = "Sub-Store 不支持 32 位设备"
+        InstallExtension = "请先安装扩展包"
+        DownloadSubStoreFirst = "请先下载 Sub-Store 资源"
+        JavetNotReady = "Javet 库未就绪，请确保扩展包已正确安装"
+        FrontendDownloadSuccess = "Sub-Store 前端下载完成"
+        FrontendDownloadFailed = "Sub-Store 前端下载失败"
+        BackendDownloadSuccess = "Sub-Store 后端下载完成"
+        BackendDownloadFailed = "Sub-Store 后端下载失败"
+        DownloadError = "下载出错：%s"
+        Title = "Sub-Store"
+        PortOccupied = "端口 %s 或 %s 已被占用"
+        JavetLoadFailed = "Javet 原生库加载失败"
+        CaseEngineInitFailed = "CaseEngine 初始化失败"
+        FrontendExtractFailed = "Sub-Store 前端资源解压失败"
+    }
+}

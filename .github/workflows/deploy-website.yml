@@ -2,7 +2,7 @@ name: Deploy Website
 
 on:
   push:
-    branches: [Moe]
+    branches: [Moes]
     paths:
       - 'website/**'
       - '.github/workflows/deploy-website.yml'
@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
 
@@ -46,6 +46,17 @@ jobs:
           unzip -q website/export.zip -d _site
           rm -f _site/serve.js '_site/Start Docs.command' '_site/Start Docs.bat'
           touch _site/.nojekyll
+
+      - name: Fix asset paths for GitHub Pages subpath
+        run: |
+          find _site -name '*.html' -exec sed -i \
+            -e 's|href="/|href="/FlyCat/|g' \
+            -e 's|src="/|src="/FlyCat/|g' \
+            -e 's|action="/|action="/FlyCat/|g' \
+            {} +
+          find _site -name '*.css' -exec sed -i \
+            -e 's|url(/|url(/FlyCat/|g' \
+            {} +
 
       - uses: actions/configure-pages@v6
 

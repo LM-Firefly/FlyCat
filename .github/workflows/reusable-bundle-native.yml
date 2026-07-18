@@ -51,9 +51,10 @@ jobs:
         run: |
           set -eu
           for abi in arm64-v8a armeabi-v7a x86 x86_64; do
-            test -f "jniLibs/${abi}/libclash.so"
+            test -f "jniLibs/${abi}/libmihomo.so"
             test -f "jniLibs/${abi}/liboverride.so"
             test -f "jniLibs/${abi}/libbridge.so"
+            test -f "jniLibs/${abi}/libloader.so"
           done
           test -f "build/generated/assets/geo/geoip.metadb.xz"
           test -f "build/generated/assets/geo/geosite.dat.xz"

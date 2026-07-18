@@ -1,22 +1,22 @@
 <Profiles ViewModel>
 ProfilesVM = {
     Message = {
-        ProfileAdded = "配置已添加：%s"
-        AddFailed = "添加配置失败：%s"
-        ProfileDeleted = "配置已删除"
-        DeleteFailed = "删除配置失败：%s"
-        ProfileUpdated = "配置已更新：%s"
-        UpdateFailed = "更新配置失败：%s"
-        ToggleFailed = "切换状态失败：%s"
+        ProfileAdded = "設定檔已新增：%s"
+        AddFailed = "新增設定檔失敗：%s"
+        ProfileDeleted = "設定檔已刪除"
+        DeleteFailed = "刪除設定檔失敗：%s"
+        ProfileUpdated = "設定檔已更新：%s"
+        UpdateFailed = "更新設定檔失敗：%s"
+        ToggleFailed = "切換狀態失敗：%s"
     }
 
     Progress = {
-        Preparing = "准备下载..."
-        Verifying = "正在验证配置..."
-        ImportComplete = "导入完成"
+        Preparing = "準備下載..."
+        Verifying = "正在驗證設定檔..."
+        ImportComplete = "匯入完成"
     }
 
     Error = {
-        ProfileNotExist = "配置不存在"
+        ProfileNotExist = "設定檔不存在"
     }
 }

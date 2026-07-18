@@ -1,0 +1,57 @@
+<Network Settings Page>
+NetworkSettings = {
+    Title = "Сетевые настройки"
+
+    Section = {
+        RunMode = "Режим работы"
+        VpnOptions = "Параметры службы"
+        ProxyOptions = "Контроль доступа"
+    }
+
+    RunMode = {
+        RouteTrafficTitle = "Маршрутизировать системный трафик"
+        VpnMode = "Режим VPN"
+        TunMode = "ROOT TUN"
+        TproxyMode = "ROOT TProxy"
+    }
+
+    VpnOptions = {
+        BypassPrivateTitle = "Обходить частные сети"
+        DnsHijackTitle = "Перехват DNS"
+        AllowBypassTitle = "Разрешить обход приложениями"
+        EnableIpv6Title = "Включить IPv6"
+        SystemProxyTitle = "Встроенный системный прокси VPN"
+        DisableOverrideTitle = "Отключить все переопределения"
+    }
+
+    ProxyOptions = {
+        TunStackTitle = "Сетевой стек TUN"
+        AccessControlModeTitle = "Режим контроля доступа"
+        AllowAll = "Разрешить все"
+        AllowSelected = "Разрешить выбранные"
+        RejectSelected = "Запретить выбранные"
+        ManageAccessControlTitle = "Управление контролем доступа"
+    }
+
+    RootTun = {
+        IfNameTitle = "Имя интерфейса"
+        IfNameSummary = "Имя виртуального интерфейса, создаваемого RootTun"
+        MtuTitle = "MTU"
+        MtuSummary = "Максимальный размер пакета для RootTun"
+        AutoRouteTitle = "Автомаршрут"
+        StrictRouteTitle = "Строгий маршрут"
+        AutoRedirectTitle = "Автоперенаправление"
+        DnsModeTitle = "Режим DNS"
+        DnsModeRedirHost = "RedirHost"
+        DnsModeFakeIp = "FakeIP"
+        FakeIpRangeTitle = "Диапазон FakeIP IPv4"
+        FakeIpRangeSummary = "Действует только при режиме DNS FakeIP"
+        FakeIpRange6Title = "Диапазон FakeIP IPv6"
+        FakeIpRange6Summary = "Действует только при режиме DNS FakeIP"
+    }
+
+    Error = {
+        VpnDenied = "Разрешение VPN отклонено"
+        RootRequired = "Для RootTun у FlyCat должен быть рабочий root-доступ"
+    }
+}

@@ -11,7 +11,7 @@
 
     <external-path
             name="public_downloads"
-            path="Download/YumeBox"/>
+            path="Download/FlyCat"/>
 
     <files-path
             name="imported_files"

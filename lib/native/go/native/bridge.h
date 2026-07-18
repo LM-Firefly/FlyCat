@@ -11,7 +11,7 @@
 #include <malloc.h>
 #include <android/log.h>
 
-#define TAG "YumeBox"
+#define TAG "FlyCat"
 
 typedef const char *c_string;
 
@@ -28,6 +28,12 @@ extern void (*fetch_report_func)(void *fetch_callback, const char *status_json);
 extern void (*fetch_complete_func)(void *fetch_callback, const char *error);
 
 extern int (*logcat_received_func)(void *logcat_interface, const char *payload);
+
+extern int (*connection_close_received_func)(void *callback, const char *payload);
+
+extern int (*connection_join_received_func)(void *callback, const char *payload);
+
+extern int (*traffic_update_received_func)(void *callback, const char *payload);
 
 extern void (*release_object_func)(void *obj);
 
@@ -48,16 +54,12 @@ extern void fetch_report(void *fetch_callback, char *status_json);
 
 extern int logcat_received(void *logcat_interface, char *payload);
 
+extern int connection_close_received(void *callback, char *payload);
+
+extern int connection_join_received(void *callback, char *payload);
+
+extern int traffic_update_received(void *callback, char *payload);
+
 extern void release_object(void *obj);
 
 extern int open_content(char *url, char *error, int error_length);
-
-extern void log_info(char *msg);
-
-extern void log_error(char *msg);
-
-extern void log_warn(char *msg);
-
-extern void log_debug(char *msg);
-
-extern void log_verbose(char *msg);

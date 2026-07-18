@@ -21,7 +21,7 @@
 package com.github.yumelira.yumebox.presentation.component
 
 import androidx.compose.runtime.Composable
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.FlyTxt
 
 @Composable
 fun AppConfirmDialog(
@@ -30,8 +30,8 @@ fun AppConfirmDialog(
     message: String,
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
-    confirmText: String = MLang.Component.Button.Confirm,
-    cancelText: String = MLang.Component.Button.Cancel,
+    confirmText: String = FlyTxt.Component.Button.Confirm,
+    cancelText: String = FlyTxt.Component.Button.Cancel,
 ) {
     AppDialog(show = show, title = title, onDismissRequest = onDismissRequest) {
         AppConfirmDialogContent(

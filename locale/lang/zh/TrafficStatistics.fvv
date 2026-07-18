@@ -1,16 +1,16 @@
 <Traffic Statistics Page>
 TrafficStatistics = {
-    Title = "流量统计"
-    EntrySummary = "查看流量使用情况"
+    Title = "流量統計"
+    EntrySummary = "檢視流量使用情況"
 
     TimeRange = {
         Today = "今日"
-        Week = "本周"
+        Week = "近兩週"
     }
 
     Summary = {
         TodayTraffic = "今日流量"
-        WeekTraffic = "本周流量"
+        WeekTraffic = "近兩週流量"
     }
 
 
@@ -19,20 +19,34 @@ TrafficStatistics = {
         Other = "其他"
     }
 
+    Sort = {
+        ByName = "應用名稱"
+        ByUpload = "上行"
+        ByDownload = "下行"
+        ByTotal = "流量"
+    }
+
     Action = {
-        Clear = "清空统计"
-        ClearSuccess = "统计数据已清空"
+        Clear = "清空統計"
+        ClearSuccess = "統計資料已清空"
     }
 
     Section = {
         Traffic = "流量"
-        TopApps = "高流量应用"
-        EmptyApps = "暂无应用流量统计"
+        PerAppTraffic = "分應用流量"
+        EmptyApps = "暫無應用流量統計"
     }
 
     Metric = {
         Download = "下行"
         Upload = "上行"
+        Total = "流量"
         UsageLine = "下行 %s  上行 %s"
+    }
+
+    Buckets = {
+        UnknownAppName = "未知應用"
+        UnattributedTrafficName = "未歸屬流量"
+        UnattributedRouteName = "未歸屬線路"
     }
 }

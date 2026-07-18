@@ -22,12 +22,18 @@ plugins {
     id("com.android.library")
     kotlin("plugin.serialization")
     kotlin("plugin.compose")
-    id("org.jetbrains.compose")
 }
 
 android {
     namespace = "com.github.yumelira.yumebox.feature.meta"
-
+    sourceSets {
+        getByName("main") {
+            kotlin.directories.apply {
+                clear()
+                add("src")
+            }
+        }
+    }
     buildFeatures {
         compose = true
     }
@@ -38,9 +44,6 @@ dependencies {
     implementation(project(":platform"))
     implementation(project(":locale"))
     implementation(project(":ui"))
-    implementation(project(":data"))
-    implementation(project(":runtime:api"))
-    implementation(project(":runtime:client"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -49,6 +52,8 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.navigation3.runtime)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.koin.core)
     implementation(libs.koin.android)

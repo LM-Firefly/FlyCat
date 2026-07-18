@@ -3,16 +3,16 @@ NetworkSettings = {
     Title = "Network Settings"
 
     Section = {
-        VpnService = "Proxy Mode"
+        RunMode = "Run Mode"
         VpnOptions = "Service Options"
         ProxyOptions = "Access Control"
     }
 
-    VpnService = {
+    RunMode = {
         RouteTrafficTitle = "Route System Traffic"
         VpnMode = "VPN Mode"
-        RootTunMode = "Root TUN"
-        SystemProxy = "HTTP System Proxy"
+        TunMode = "ROOT TUN"
+        TproxyMode = "ROOT TProxy"
     }
 
     VpnOptions = {
@@ -21,6 +21,7 @@ NetworkSettings = {
         AllowBypassTitle = "Allow App Bypass"
         EnableIpv6Title = "Enable IPv6"
         SystemProxyTitle = "VPN Built-in System Proxy"
+        DisableOverrideTitle = "Disable All Overrides"
     }
 
     ProxyOptions = {
@@ -51,6 +52,6 @@ NetworkSettings = {
 
     Error = {
         VpnDenied = "VPN permission denied"
-        RootRequired = "RootTun requires YumeBox to have working root access"
+        RootRequired = "RootTun requires FlyCat to have working root access"
     }
 }

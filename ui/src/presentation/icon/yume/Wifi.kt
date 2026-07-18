@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,17 +34,17 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Wifi: ImageVector
     get() {
-        if (_Wifi != null) {
-            return _Wifi!!
+        if (wifiVector != null) {
+            return wifiVector!!
         }
-        _Wifi =
+        wifiVector =
             ImageVector.Builder(
-                    name = "Wifi",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "Wifi",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -106,7 +109,8 @@ val Yume.Wifi: ImageVector
                 }
                 .build()
 
-        return _Wifi!!
+        return wifiVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _Wifi: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var wifiVector: ImageVector? = null

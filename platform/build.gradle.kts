@@ -21,11 +21,18 @@
 plugins {
     id("com.android.library")
     kotlin("plugin.compose")
-    id("org.jetbrains.compose")
 }
 
 android {
-    namespace = "com.github.yumelira.yumebox.core.android"
+    namespace = "com.github.yumelira.yumebox.platform"
+    sourceSets {
+        getByName("main") {
+            kotlin.directories.apply {
+                clear()
+                add("src")
+            }
+        }
+    }
 
     buildFeatures {
         compose = true
@@ -41,4 +48,3 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.timber)
 }
-

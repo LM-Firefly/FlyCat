@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/dlclark/regexp2"
@@ -12,7 +13,24 @@ import (
 	C "github.com/metacubex/mihomo/constant"
 )
 
+// ExtractFixedFromAdapter extracts the "fixed" field from a proxy group adapter by marshaling it to JSON and parsing the result.
+// ExtractFixedFromAdapter returns the currently selected fixed proxy name from a group adapter.
+func ExtractFixedFromAdapter(adapter any) string {
+	if marshaler, ok := adapter.(json.Marshaler); ok {
+		if data, err := marshaler.MarshalJSON(); err == nil {
+			var mapData map[string]any
+			if err := json.Unmarshal(data, &mapData); err == nil {
+				if value, ok := mapData["fixed"].(string); ok {
+					return value
+				}
+			}
+		}
+	}
+	return ""
+}
+
 // Proxy 代理结构体（本地定义，避免依赖 tunnel 包）
+// Proxy represents a simplified proxy entry for preview display.
 type Proxy struct {
 	Name     string `json:"name"`
 	Title    string `json:"title"`
@@ -23,12 +41,14 @@ type Proxy struct {
 }
 
 // ProxyGroup 代理组结构体（本地定义，避免依赖 tunnel 包）
+// ProxyGroup represents a proxy group for preview display.
 type ProxyGroup struct {
 	Name    string   `json:"name"`
 	Type    string   `json:"type"`
 	Now     string   `json:"now"`
 	Icon    string   `json:"icon"`
 	Hidden  bool     `json:"hidden"`
+	Fixed   string   `json:"fixed"`
 	Proxies []*Proxy `json:"proxies"`
 }
 
@@ -60,10 +80,11 @@ func buildProxyGroupsFromParsed(
 
 		result = append(result, &ProxyGroup{
 			Name:    name,
-			Type:    normalizeProxyType(proxy.Type().String()),
+			Type:    NormalizeProxyType(proxy.Type().String()),
 			Now:     group.Now(),
 			Icon:    group.Icon(),
 			Hidden:  group.Hidden(),
+			Fixed:   ExtractFixedFromAdapter(proxy.Adapter()),
 			Proxies: convertPreviewProxies(group.Proxies(), pattern),
 		})
 	}
@@ -106,7 +127,7 @@ func buildPreviewProxy(
 		Name:     name,
 		Title:    strings.TrimSpace(title),
 		Subtitle: strings.TrimSpace(subtitle),
-		Type:     normalizeProxyType(proxy.Type().String()),
+		Type:     NormalizeProxyType(proxy.Type().String()),
 		Delay:    int(proxy.LastDelayForTestUrl(getPreviewTestURL(proxy))),
 		IsGroup:  isGroup,
 	}
@@ -121,13 +142,12 @@ func getPreviewTestURL(proxy C.Proxy) string {
 	return "https://www.gstatic.com/generate_204"
 }
 
-// normalizeProxyType passes the mihomo adapter type through verbatim. mihomo's
-// proxy.Type().String() is the source of truth, and the Kotlin side
-// (core/model/Proxy.kt) stores `type` as an opaque string — it never whitelists
-// protocols, only categorizing via GROUP_TYPES / MANUALLY_SELECTABLE. Mirroring that
-// here keeps the native preview future-proof: a newly added mihomo protocol shows its
-// real type instead of being collapsed to "Unknown". Only an empty type falls back.
-func normalizeProxyType(proxyType string) string {
+// NormalizeProxyType passes the mihomo adapter type through verbatim. mihomo's proxy.Type().String() is the source of truth, and the Kotlin side (core/model/Proxy.kt) stores `type` as an opaque string — it never whitelists protocols, only categorizing via GROUP_TYPES / MANUALLY_SELECTABLE.
+// Mirroring that here keeps the native preview future-proof: a newly added mihomo protocol shows its real type instead of being collapsed to "Unknown". Only an empty type falls back.
+// NormalizeProxyType normalizes a proxy type string.
+// Unlike a hardcoded whitelist, this passes through any non-empty type verbatim so that new mihomo proxy types are always preserved.
+// NormalizeProxyType maps raw proxy type strings to user-friendly display names.
+func NormalizeProxyType(proxyType string) string {
 	if trimmed := strings.TrimSpace(proxyType); trimmed != "" {
 		return trimmed
 	}

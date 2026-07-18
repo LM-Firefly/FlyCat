@@ -21,6 +21,12 @@ void (*fetch_complete_func)(void *fetch_callback, const char *error);
 
 int (*logcat_received_func)(void *logcat_interface, const char *payload);
 
+int (*connection_close_received_func)(void *callback, const char *payload);
+
+int (*connection_join_received_func)(void *callback, const char *payload);
+
+int (*traffic_update_received_func)(void *callback, const char *payload);
+
 int (*open_content_func)(const char *url, char *error, int error_length);
 
 void (*release_object_func)(void *obj);
@@ -84,6 +90,36 @@ int logcat_received(void *logcat_interface, char *payload) {
     return result;
 }
 
+int connection_close_received(void *callback, char *payload) {
+    TRACE_METHOD();
+
+    int result = connection_close_received_func(callback, payload);
+
+    free(payload);
+
+    return result;
+}
+
+int connection_join_received(void *callback, char *payload) {
+    TRACE_METHOD();
+
+    int result = connection_join_received_func(callback, payload);
+
+    free(payload);
+
+    return result;
+}
+
+int traffic_update_received(void *callback, char *payload) {
+    TRACE_METHOD();
+
+    int result = traffic_update_received_func(callback, payload);
+
+    free(payload);
+
+    return result;
+}
+
 int open_content(char *url, char *error, int error_length) {
     TRACE_METHOD();
 
@@ -98,34 +134,4 @@ void release_object(void *obj) {
     TRACE_METHOD();
 
     release_object_func(obj);
-}
-
-void log_info(char *msg) {
-    __android_log_write(ANDROID_LOG_INFO, TAG, msg);
-
-    free(msg);
-}
-
-void log_error(char *msg) {
-    __android_log_write(ANDROID_LOG_ERROR, TAG, msg);
-
-    free(msg);
-}
-
-void log_warn(char *msg) {
-    __android_log_write(ANDROID_LOG_WARN, TAG, msg);
-
-    free(msg);
-}
-
-void log_debug(char *msg) {
-    __android_log_write(ANDROID_LOG_DEBUG, TAG, msg);
-
-    free(msg);
-}
-
-void log_verbose(char *msg) {
-    __android_log_write(ANDROID_LOG_VERBOSE, TAG, msg);
-
-    free(msg);
 }

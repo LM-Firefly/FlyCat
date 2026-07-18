@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,17 +34,17 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Folders: ImageVector
     get() {
-        if (_Folders != null) {
-            return _Folders!!
+        if (foldersVector != null) {
+            return foldersVector!!
         }
-        _Folders =
+        foldersVector =
             ImageVector.Builder(
-                    name = "Folders",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "Folders",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -151,7 +154,8 @@ val Yume.Folders: ImageVector
                 }
                 .build()
 
-        return _Folders!!
+        return foldersVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _Folders: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var foldersVector: ImageVector? = null

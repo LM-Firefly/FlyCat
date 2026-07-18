@@ -27,14 +27,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.github.yumelira.yumebox.R
 import com.github.yumelira.yumebox.WebViewActivity
 import com.github.yumelira.yumebox.common.util.DashboardShortcutHelper
-import com.github.yumelira.yumebox.common.util.openUrl
+import com.github.yumelira.yumebox.feature.settings.presentation.screen.RemoteControllerSection
+import com.github.yumelira.yumebox.feature.substore.presentation.component.PanelShortcutDialog
+import com.github.yumelira.yumebox.feature.substore.presentation.screen.FeatureContent
+import com.github.yumelira.yumebox.platform.util.openUrl
 import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.screen.FeatureContent
-import com.github.yumelira.yumebox.screen.feature.PanelShortcutDialog
-import com.github.yumelira.yumebox.screen.feature.RemoteControllerSection
-import com.github.yumelira.yumebox.screen.settings.backup.BackupRestoreSection
 import kotlinx.coroutines.launch
 
 @Composable
@@ -46,6 +46,7 @@ fun FeatureScreen(navigator: Navigator) {
     var shortcutDialogVisible by remember { mutableStateOf(false) }
 
     FeatureContent(
+        onNavigateBack = { navigator.pop() },
         onOpenExternalUrl = { url -> openUrl(context, url) },
         onOpenInAppUrl = { url -> WebViewActivity.start(context, url) },
         onCreatePanelShortcut = { url, label ->
@@ -59,6 +60,7 @@ fun FeatureScreen(navigator: Navigator) {
                     show = shortcutDialogVisible,
                     url = url,
                     defaultLabel = label,
+                    defaultIconResId = R.mipmap.ic_launcher_foreground,
                     onDismiss = { shortcutDialogVisible = false },
                     onConfirm = { name, iconUri ->
                         scope.launch {
@@ -69,9 +71,6 @@ fun FeatureScreen(navigator: Navigator) {
                     onDismissFinished = { shortcutTarget = null },
                 )
             }
-        },
-        bottomSection = {
-            BackupRestoreSection()
         },
     )
 }

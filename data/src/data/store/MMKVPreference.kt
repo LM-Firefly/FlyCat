@@ -20,6 +20,7 @@
 
 package com.github.yumelira.yumebox.data.store
 
+import com.github.yumelira.yumebox.core.contract.Preference
 import com.github.yumelira.yumebox.core.util.enumByNameOrNull
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -390,27 +391,4 @@ abstract class MMKVPreference(
     }
 }
 
-data class Preference<T>(
-    val state: StateFlow<T>,
-    private val update: (T) -> Unit,
-    private val get: () -> T,
-    private val refreshState: () -> Unit = { update(get()) },
-) {
-    val value: T
-        get() = get()
-
-    fun set(value: T) = update(value)
-
-    fun refresh() = refreshState()
-
-    fun invalidate() = refresh()
-}
-
-fun Preference<Boolean>.toggle() = set(!value)
-
-fun <T> Preference<List<T>>.add(item: T) = set(value + item)
-
-fun <T> Preference<List<T>>.remove(predicate: (T) -> Boolean) = set(value.filterNot(predicate))
-
-fun <T> Preference<List<T>>.update(predicate: (T) -> Boolean, transform: (T) -> T) =
-    set(value.map { if (predicate(it)) transform(it) else it })
+typealias Preference<T> = com.github.yumelira.yumebox.core.contract.Preference<T>

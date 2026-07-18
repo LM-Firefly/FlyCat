@@ -27,20 +27,16 @@ plugins {
 
 android {
     namespace = "com.github.yumelira.yumebox.data"
-    testOptions {
-        unitTests.isIncludeAndroidResources = true
-    }
-
-    // `main` kotlin dir is rewritten to `src` in the root build.gradle.kts. Mirror that flat
-    // convention for unit tests (`test/`) so test sources do not leak into the `main` compile
-    // (which would fail with test-only deps missing from the main classpath).
     sourceSets {
-        getByName("test") {
+        getByName("main") {
             kotlin.directories.apply {
                 clear()
-                add("test")
+                add("src")
             }
         }
+    }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 }
 
@@ -51,14 +47,13 @@ room {
 dependencies {
     implementation(project(":core"))
     implementation(project(":locale"))
-    implementation(project(":runtime:api"))
 
     api(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.snake.yaml)
+    implementation(libs.snakeyaml.engine)
     implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.timber)
@@ -68,13 +63,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    val mmkv64 = libs.versions.mmkv64.get()
-    val mmkv32 = libs.versions.mmkv32.get()
-    val injectedAbi = findProperty("android.injected.build.abi") as? String
-    val mmkvVersion = if (injectedAbi in listOf("arm64-v8a", "x86_64")) mmkv64 else mmkv32
-    implementation("com.tencent:mmkv:$mmkvVersion")
+    implementation("com.tencent:mmkv:${rootProject.extra["mmkvVersion"]}")
 
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("androidx.test:core:1.6.1")
-    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation(libs.junit4)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.robolectric)
 }

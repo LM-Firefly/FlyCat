@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,17 +34,17 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Palette: ImageVector
     get() {
-        if (_Palette != null) {
-            return _Palette!!
+        if (paletteVector != null) {
+            return paletteVector!!
         }
-        _Palette =
+        paletteVector =
             ImageVector.Builder(
-                    name = "Palette",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "Palette",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -214,7 +217,8 @@ val Yume.Palette: ImageVector
                 }
                 .build()
 
-        return _Palette!!
+        return paletteVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _Palette: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var paletteVector: ImageVector? = null

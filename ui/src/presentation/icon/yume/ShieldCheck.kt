@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("DuplicatedCode", "UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,17 +34,17 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.ShieldCheck: ImageVector
     get() {
-        if (_IconName != null) {
-            return _IconName!!
+        if (shieldCheckVector != null) {
+            return shieldCheckVector!!
         }
-        _IconName =
+        shieldCheckVector =
             ImageVector.Builder(
-                    name = "IconName",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "IconName",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -106,7 +109,8 @@ val Yume.ShieldCheck: ImageVector
                 }
                 .build()
 
-        return _IconName!!
+        return shieldCheckVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _IconName: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var shieldCheckVector: ImageVector? = null

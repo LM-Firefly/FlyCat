@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tile_proxy_label">YumeBox</string>
+    <string name="tile_proxy_label">FlyCat</string>
+    <string name="files_provider_title">FlyCat</string>
+    <string name="files_provider_summary">Runtime and profiles</string>
+    <string name="files_provider_runtime">Runtime files (GeoX)</string>
+    <string name="files_provider_config_yaml">configuration.yaml</string>
+    <string name="files_provider_providers">Provider files</string>
 </resources>

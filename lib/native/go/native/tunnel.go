@@ -7,6 +7,7 @@ import (
 	"unsafe"
 
 	"cfa/native/app"
+	"cfa/native/config"
 	"cfa/native/tunnel"
 )
 
@@ -98,6 +99,33 @@ func healthCheckAll() {
 	tunnel.HealthCheckAll()
 }
 
+//export subscribeConnectionClose
+func subscribeConnectionClose(remote unsafe.Pointer) {
+	tunnel.SetConnectionLeaveListener(func(event *tunnel.ConnectionCloseEvent) {
+		if C.connection_close_received(remote, marshalJSON(event)) != 0 {
+			C.release_object(remote)
+		}
+	})
+}
+
+//export subscribeConnectionJoin
+func subscribeConnectionJoin(remote unsafe.Pointer) {
+	tunnel.SetConnectionJoinListener(func(event *tunnel.ConnectionCloseEvent) {
+		if C.connection_join_received(remote, marshalJSON(event)) != 0 {
+			C.release_object(remote)
+		}
+	})
+}
+
+//export subscribeTrafficUpdate
+func subscribeTrafficUpdate(remote unsafe.Pointer) {
+	tunnel.SetTrafficUpdateListener(func(event *tunnel.TrafficUpdateEvent) {
+		if C.traffic_update_received(remote, marshalJSON(event)) != 0 {
+			C.release_object(remote)
+		}
+	})
+}
+
 //export healthCheckProxy
 func healthCheckProxy(completable unsafe.Pointer, proxyName C.c_string) {
 	go func(name string) {
@@ -123,6 +151,16 @@ func patchSelector(selector, name C.c_string) C.int {
 	return 0
 }
 
+//export patchForceSelector
+func patchForceSelector(selector, name C.c_string) C.int {
+	s := C.GoString(selector)
+	n := C.GoString(name)
+	if tunnel.PatchForceSelector(s, n) {
+		return 1
+	}
+	return 0
+}
+
 //export queryProviders
 func queryProviders() *C.char {
 	return marshalJSON(tunnel.QueryProviders())
@@ -137,7 +175,19 @@ func updateProvider(completable unsafe.Pointer, pType C.c_string, name C.c_strin
 	}(C.GoString(pType), C.GoString(name))
 }
 
-//export suspend
-func suspend(suspended C.int) {
-	tunnel.Suspend(suspended != 0)
+//export patchTunnelMode
+func patchTunnelMode(mode C.c_string) C.int {
+	if tunnel.PatchTunnelMode(C.GoString(mode)) {
+		return 1
+	}
+	return 0
+}
+
+//export convertMrsToText
+func convertMrsToText(filePath C.c_string) *C.char {
+	text, err := config.ConvertMrsToText(C.GoString(filePath))
+	if err != nil {
+		return nil
+	}
+	return C.CString(text)
 }

@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,17 +34,17 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Cloud: ImageVector
     get() {
-        if (_Cloud != null) {
-            return _Cloud!!
+        if (cloudVector != null) {
+            return cloudVector!!
         }
-        _Cloud =
+        cloudVector =
             ImageVector.Builder(
-                    name = "Cloud",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "Cloud",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.White),
@@ -75,7 +78,8 @@ val Yume.Cloud: ImageVector
                 }
                 .build()
 
-        return _Cloud!!
+        return cloudVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _Cloud: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var cloudVector: ImageVector? = null

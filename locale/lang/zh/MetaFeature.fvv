@@ -3,38 +3,97 @@ MetaFeature = {
     Title = "Meta 功能"
 
     Section = {
-        ConnectionAndTraffic = "连接与流量统计"
-        Routing = "分流相关"
+        ConnectionAndTraffic = "連線與流量統計"
+        BackupRestore = "備份與還原"
+        Routing = "分流相關"
     }
 
     GeoX = {
         OnlineUpdateTitle = "更新 GeoX"
-        OnlineUpdateSummary = "下载数据库文件"
+        OnlineUpdateSummary = "下載資料庫檔案"
     }
 
     CustomRouting = {
-        Title = "自定义分流"
-        Summary = "独立的分流规则配置"
-        EditYaml = "编辑 YAML"
-        GroupTypeTitle = "策略组类型"
+        Title = "自訂分流"
+        Summary = "獨立的分流規則設定"
+        EditYaml = "編輯 YAML"
+        GroupTypeTitle = "策略組類型"
         GroupTypeUrlTest = "UrlTest"
         GroupTypeFallback = "Fallback"
-        UrlTestRegionGroupTitle = "UrlTest 地区组"
-        FallbackRegionGroupTitle = "Fallback 地区组"
+        UrlTestRegionGroupTitle = "UrlTest 地區組"
+        FallbackRegionGroupTitle = "Fallback 地區組"
+        SaveFailed = "儲存失敗"
+        EditButton = "編輯"
     }
 
     Download = {
         DialogTitle = "更新 GeoX"
-        DownloadComplete = "下载完成：%d/%d"
+        DownloadComplete = "下載完成：%d/%d"
+    }
+
+    Backup = {
+        BackupTitle = "備份資料"
+        BackupSummary = "匯出目前使用者資料到 zip 檔案"
+        RestoreTitle = "還原資料"
+        RestoreSummary = "從 zip 檔案覆蓋還原目前使用者資料"
+        BackupDialogTitle = "正在備份"
+        BackupDialogMessage = "正在打包目前使用者資料，請稍候"
+        RestoreDialogTitle = "正在還原"
+        RestoreDialogMessage = "正在解壓縮並還原目前使用者資料，請稍候"
+        RestoreConfirmTitle = "確認還原"
+        RestoreConfirmMessage = "還原會覆蓋目前使用者資料，建議先完成一次備份。還原完成後請重新啟動應用。"
+        BackupSuccess = "備份完成"
+        RestoreSuccess = "還原完成，請重新啟動應用"
+        RestoreSuccessTitle = "還原成功"
+        RestoreSuccessMessage = "%s\n\n是否立即重新啟動應用使資料生效？"
+        WebDavRestoreSuccess = "WebDAV 還原完成：%s"
+        RestartNow = "立即重新啟動"
+        RestartLaunchNotFound = "重新啟動失敗：未找到啟動入口"
+        BackupFailed = "備份失敗：%s"
+        RestoreFailed = "還原失敗：%s"
     }
 
     AgeKey = {
-        Section = "Age 密钥"
+        Section = "Age 金鑰"
         X25519Title = "X25519"
         HybridTitle = "mlkem768-x25519"
-        SecretKey = "私钥"
-        PublicKey = "公钥"
-        Generate = "生成"
-        DerivePublicKey = "推导公钥"
+        SecretKey = "私鑰"
+        PublicKey = "公鑰"
+        Generate = "產生"
+        DerivePublicKey = "推導公鑰"
+    }
+
+    WebDav = {
+        ConfigTitle = "WebDAV 設定"
+        ConfigSummary = "設定 WebDAV 位址、子目錄、帳號和密碼"
+        TestTitle = "WebDAV 連線測試"
+        TestSummary = "驗證 WebDAV 設定可用性"
+        TestLoadingTitle = "WebDAV 測試"
+        TestLoadingMessage = "正在連線 WebDAV，請稍候"
+        TestSuccess = "WebDAV 可用"
+        TestFailed = "WebDAV 測試失敗：%s"
+        ConfigRequired = "請先完成 WebDAV 設定"
+        BackupTitle = "WebDAV 雲端備份"
+        BackupSummary = "打包目前資料並上傳到 WebDAV"
+        BackupLoadingTitle = "WebDAV 備份"
+        BackupLoadingMessage = "正在建立備份並上傳，請稍候"
+        BackupSuccess = "WebDAV 備份完成：%s"
+        BackupFailed = "WebDAV 備份失敗：%s"
+        RestoreTitle = "WebDAV 雲端還原（最新）"
+        RestoreSummary = "下載並還原 WebDAV 上最新備份"
+        RestoreConfirmTitle = "確認從 WebDAV 還原"
+        RestoreConfirmMessage = "將覆蓋目前使用者資料，建議先做本機或雲端備份。"
+        RestoreLoadingTitle = "WebDAV 還原"
+        RestoreLoadingMessage = "正在下載並還原最新備份，請稍候"
+        RestoreFailed = "WebDAV 還原失敗：%s"
+        ConfigUrlExample = "URL 範例：https://dav.jianguoyun.com/dav/"
+        ValidationUrlRequired = "請填寫 WebDAV URL"
+        ValidationAccountRequired = "請填寫 WebDAV 帳號"
+        ValidationPasswordRequired = "請填寫 WebDAV 密碼"
+        ConfigSaved = "WebDAV 設定已儲存"
+        LabelUrl = "WebDAV URL"
+        LabelDir = "子目錄（選填）"
+        LabelAccount = "帳號"
+        LabelPassword = "密碼"
     }
 }

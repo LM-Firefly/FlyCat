@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.screen
+package com.github.yumelira.yumebox.feature.override.presentation.screen
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding

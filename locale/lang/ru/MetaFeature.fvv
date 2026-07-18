@@ -1,0 +1,99 @@
+<Meta Feature Page>
+MetaFeature = {
+    Title = "Функции Meta"
+
+    Section = {
+        ConnectionAndTraffic = "Соединения и трафик"
+        BackupRestore = "Резервное копирование"
+        Routing = "Маршрутизация"
+    }
+
+    GeoX = {
+        OnlineUpdateTitle = "Обновить GeoX"
+        OnlineUpdateSummary = "Скачать базу данных"
+    }
+
+    CustomRouting = {
+        Title = "Своя маршрутизация"
+        Summary = "Отдельная конфигурация правил маршрутизации"
+        EditYaml = "Редактировать YAML"
+        GroupTypeTitle = "Типы групп"
+        GroupTypeUrlTest = "UrlTest"
+        GroupTypeFallback = "Fallback"
+        UrlTestRegionGroupTitle = "Региональные группы UrlTest"
+        FallbackRegionGroupTitle = "Региональные группы Fallback"
+        SaveFailed = "Не удалось сохранить"
+        EditButton = "Изменить"
+    }
+
+    Download = {
+        DialogTitle = "Онлайн-обновление GeoX"
+        DownloadComplete = "Загрузка завершена: %d/%d"
+    }
+
+    Backup = {
+        BackupTitle = "Резервное копирование данных"
+        BackupSummary = "Экспорт текущих данных пользователя в zip-файл"
+        RestoreTitle = "Восстановить данные"
+        RestoreSummary = "Заменить текущие данные пользователя из zip-файла"
+        BackupDialogTitle = "Резервное копирование"
+        BackupDialogMessage = "Упаковка данных пользователя, подождите"
+        RestoreDialogTitle = "Восстановление"
+        RestoreDialogMessage = "Распаковка и восстановление данных пользователя, подождите"
+        RestoreConfirmTitle = "Подтвердить восстановление"
+        RestoreConfirmMessage = "Восстановление заменит текущие данные пользователя. Рекомендуется сначала создать резервную копию. После восстановления перезапустите приложение."
+        BackupSuccess = "Резервное копирование завершено"
+        RestoreSuccess = "Восстановление завершено, перезапустите приложение"
+        RestoreSuccessTitle = "Восстановление завершено"
+        RestoreSuccessMessage = "%s\n\nПерезапустить сейчас для применения восстановленных данных?"
+        WebDavRestoreSuccess = "Восстановление из WebDAV завершено: %s"
+        RestartNow = "Перезапустить сейчас"
+        RestartLaunchNotFound = "Перезапуск не удался: точка входа не найдена"
+        BackupFailed = "Резервное копирование не удалось: %s"
+        RestoreFailed = "Восстановление не удалось: %s"
+    }
+
+    AgeKey = {
+        Section = "Ключи Age"
+        X25519Title = "X25519"
+        HybridTitle = "mlkem768-x25519"
+        SecretKey = "Секретный ключ"
+        PublicKey = "Открытый ключ"
+        Generate = "Сгенерировать"
+        DerivePublicKey = "Вывести открытый ключ"
+    }
+
+    WebDav = {
+        ConfigTitle = "Конфигурация WebDAV"
+        ConfigSummary = "Укажите адрес WebDAV, подкаталог, учётную запись и пароль"
+        TestTitle = "Тест соединения WebDAV"
+        TestSummary = "Проверить доступность конфигурации WebDAV"
+        TestLoadingTitle = "Тест WebDAV"
+        TestLoadingMessage = "Подключение к WebDAV, подождите"
+        TestSuccess = "WebDAV доступен"
+        TestFailed = "Тест WebDAV не удался: %s"
+        ConfigRequired = "Сначала заполните конфигурацию WebDAV"
+        BackupTitle = "Облачное резервное копирование WebDAV"
+        BackupSummary = "Упаковать текущие данные и загрузить на WebDAV"
+        BackupLoadingTitle = "Резервное копирование WebDAV"
+        BackupLoadingMessage = "Создание резервной копии и загрузка, подождите"
+        BackupSuccess = "Резервное копирование WebDAV завершено: %s"
+        BackupFailed = "Резервное копирование WebDAV не удалось: %s"
+        RestoreTitle = "Облачное восстановление WebDAV (последнее)"
+        RestoreSummary = "Скачать и восстановить последнюю резервную копию с WebDAV"
+        RestoreConfirmTitle = "Подтвердить восстановление WebDAV"
+        RestoreConfirmMessage = "Это заменит текущие данные пользователя. Рекомендуется сначала создать локальную или облачную резервную копию."
+        RestoreLoadingTitle = "Восстановление WebDAV"
+        RestoreLoadingMessage = "Загрузка и восстановление последней резервной копии, подождите"
+        RestoreFailed = "Восстановление WebDAV не удалось: %s"
+        ConfigUrlExample = "Пример URL: https://dav.jianguoyun.com/dav/"
+        ValidationUrlRequired = "Введите URL WebDAV"
+        ValidationAccountRequired = "Введите учётную запись WebDAV"
+        ValidationPasswordRequired = "Введите пароль WebDAV"
+        ConfigSaved = "Конфигурация WebDAV сохранена"
+        LabelUrl = "URL WebDAV"
+        LabelDir = "Подкаталог (необязательно)"
+        LabelAccount = "Учётная запись"
+        LabelPassword = "Пароль"
+    }
+}

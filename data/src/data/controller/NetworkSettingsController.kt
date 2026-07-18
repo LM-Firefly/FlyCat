@@ -20,54 +20,61 @@
 
 package com.github.yumelira.yumebox.data.controller
 
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.core.contract.NetworkSettingsControllerContract
+import com.github.yumelira.yumebox.core.contract.Preference
+import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
-import com.github.yumelira.yumebox.data.store.Preference
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class NetworkSettingsController(
     private val store: NetworkSettingsStore,
-    isRunning: () -> Boolean,
-    private val restartProxy: suspend (ProxyMode) -> Unit,
-    private val beforeRestart: suspend (ProxyMode) -> Unit = {},
-) {
-    private val restarter =
-        DebouncedProxyRestarter(
-            timerName = "network_settings_restart_debounce",
-            debounceMillis = RESTART_DEBOUNCE_DELAY_MS,
-            isRunning = isRunning,
-        )
+    private val isRunning: () -> Boolean,
+    private val commandExecutor: NetworkSettingsCommandExecutor,
+) : NetworkSettingsControllerContract, java.io.Closeable {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var restartJob: Job? = null
+    override fun close() { scope.cancel() }
 
-    fun setProxyMode(mode: ProxyMode) {
-        store.proxyMode.set(mode)
+    override fun setRunMode(mode: RunMode) {
+        store.runMode.set(mode)
     }
 
-    fun <T> setAndRestartIfNeeded(preference: Preference<T>, value: T) {
+    override fun <T> setAndRestartIfNeeded(preference: Preference<T>, value: T) {
         if (preference.value == value) return
         preference.set(value)
         scheduleRestart()
     }
 
-    suspend fun startService(mode: ProxyMode): Result<Unit> = runCatching {
-        store.proxyMode.set(mode)
-        beforeRestart(mode)
-        withContext(Dispatchers.IO) { restartProxy(mode) }
+    override suspend fun startService(mode: RunMode): Result<Unit> = runCatching {
+        commandExecutor.startService(mode).getOrThrow()
     }
 
-    fun requestRestartIfRunning() {
+    override fun requestRestartIfRunning() {
         scheduleRestart()
     }
 
     private fun scheduleRestart() {
-        restarter.schedule {
-            val targetMode = store.proxyMode.value
-            beforeRestart(targetMode)
-            startService(targetMode)
+        restartJob?.cancel()
+        restartJob = scope.launch {
+            delay(RESTART_DEBOUNCE_DELAY_MS)
+            if (!isRunning()) return@launch
+            commandExecutor.restartConfiguredService()
         }
     }
 
     companion object {
         private const val RESTART_DEBOUNCE_DELAY_MS = 300L
     }
+}
+
+class NetworkSettingsCommandExecutor(private val store: NetworkSettingsStore, private val restartProxy: suspend (RunMode) -> Unit, private val beforeRestart: suspend (RunMode) -> Unit = {}) {
+    suspend fun startService(mode: RunMode): Result<Unit> = runCatching { store.runMode.set(mode); beforeRestart(mode); withContext(Dispatchers.IO) { restartProxy(mode) } }
+    suspend fun restartConfiguredService(): Result<Unit> { val targetMode = store.runMode.value; return startService(targetMode) }
 }

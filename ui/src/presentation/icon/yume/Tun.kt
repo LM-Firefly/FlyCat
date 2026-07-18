@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,17 +34,17 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Tun: ImageVector
     get() {
-        if (_MonitorCog != null) {
-            return _MonitorCog!!
+        if (tunVector != null) {
+            return tunVector!!
         }
-        _MonitorCog =
+        tunVector =
             ImageVector.Builder(
-                    name = "MonitorCog",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "MonitorCog",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -202,7 +205,8 @@ val Yume.Tun: ImageVector
                 }
                 .build()
 
-        return _MonitorCog!!
+        return tunVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _MonitorCog: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var tunVector: ImageVector? = null

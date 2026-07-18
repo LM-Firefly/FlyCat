@@ -11,7 +11,7 @@
 
 #include <dlfcn.h>
 #include <mutex>
-#include "libclash.h"
+#include "libmihomo.h"
 
 extern "C" {
 
@@ -40,14 +40,6 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeForceGc(JNIEnv *env, j
     TRACE_METHOD();
 
     forceGc();
-}
-
-JNIEXPORT void JNICALL
-Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSuspend(JNIEnv *env, jobject thiz,
-                                                             jboolean suspended) {
-    TRACE_METHOD();
-
-    suspend((int) suspended);
 }
 
 
@@ -197,6 +189,16 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeStopHttp(JNIEnv *env, 
     stopHttp();
 }
 
+JNIEXPORT jboolean JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativePatchTunnelMode(JNIEnv *env, jobject thiz,
+                                                                      jstring mode) {
+    TRACE_METHOD();
+
+    scoped_string _mode = get_string(mode);
+
+    return (jboolean) patchTunnelMode(_mode);
+}
+
 JNIEXPORT jstring JNICALL
 Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeQueryGroupNames(JNIEnv *env, jobject thiz,
                                                                       jboolean exclude_not_selectable) {
@@ -216,6 +218,22 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeQueryGroup(JNIEnv *env
     scoped_string _mode = get_string(mode);
 
     scoped_string response = queryGroup(_name, _mode);
+
+    if (response == NULL)
+        return NULL;
+
+    return new_string(response);
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeInspectCompiledGroupNames(JNIEnv *env, jobject thiz,
+                                                                                jstring yaml_text,
+                                                                                jboolean exclude_not_selectable) {
+    TRACE_METHOD();
+
+    scoped_string _yaml_text = get_string(yaml_text);
+
+    scoped_string response = inspectCompiledGroupNames(_yaml_text, (int) exclude_not_selectable);
 
     if (response == NULL)
         return NULL;
@@ -263,6 +281,18 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativePatchSelector(JNIEnv *
     scoped_string _name = get_string(name);
 
     return (jboolean) patchSelector(_selector, _name);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeForcePatchSelector(JNIEnv *env, jobject thiz,
+                                                                        jstring selector,
+                                                                        jstring name) {
+    TRACE_METHOD();
+
+    scoped_string _selector = get_string(selector);
+    scoped_string _name = get_string(name);
+
+    return (jboolean) patchForceSelector(_selector, _name);
 }
 
 JNIEXPORT void JNICALL
@@ -378,15 +408,6 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeUpdateProvider(JNIEnv 
     updateProvider(_completable, _type, _name);
 }
 
-JNIEXPORT jstring JNICALL
-Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeQueryConfiguration(JNIEnv *env, jobject thiz) {
-    TRACE_METHOD();
-
-    scoped_string response = queryConfiguration();
-
-    return new_string(response);
-}
-
 JNIEXPORT void JNICALL
 Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSubscribeLogcat(JNIEnv *env, jobject thiz,
                                                                      jobject callback) {
@@ -395,6 +416,36 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSubscribeLogcat(JNIEnv
     jobject _callback = new_global(callback);
 
     subscribeLogcat(_callback);
+}
+
+JNIEXPORT void JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSubscribeConnectionClose(JNIEnv *env, jobject thiz,
+                                                                               jobject callback) {
+    TRACE_METHOD();
+
+    jobject _callback = new_global(callback);
+
+    subscribeConnectionClose(_callback);
+}
+
+JNIEXPORT void JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSubscribeConnectionJoin(JNIEnv *env, jobject thiz,
+                                                                              jobject callback) {
+    TRACE_METHOD();
+
+    jobject _callback = new_global(callback);
+
+    subscribeConnectionJoin(_callback);
+}
+
+JNIEXPORT void JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSubscribeTrafficUpdate(JNIEnv *env, jobject thiz,
+                                                                              jobject callback) {
+    TRACE_METHOD();
+
+    jobject _callback = new_global(callback);
+
+    subscribeTrafficUpdate(_callback);
 }
 
 
@@ -432,6 +483,16 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSetCustomUserAgent(JNI
     scoped_string ua = get_string(user_agent);
 
     setCustomUserAgent(ua);
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeConvertMrsToText(JNIEnv *env, jobject thiz, jstring filePath) {
+    TRACE_METHOD();
+
+    scoped_string path = get_string(filePath);
+    scoped_string result = convertMrsToText(path);
+
+    return new_string(result);
 }
 
 

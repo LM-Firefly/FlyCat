@@ -31,7 +31,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,27 +39,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.github.yumelira.yumebox.common.util.AppLanguageManager
-import com.github.yumelira.yumebox.common.util.AutoStartDependencies
-import com.github.yumelira.yumebox.common.util.IntentController
-import com.github.yumelira.yumebox.common.util.ProxyAutoStartHelper
-import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
-import com.github.yumelira.yumebox.core.util.StartupTaskCoordinator
-import com.github.yumelira.yumebox.data.store.FeatureStore
-import com.github.yumelira.yumebox.di.APPLICATION_SCOPE_NAME
+import com.github.yumelira.yumebox.core.util.APPLICATION_SCOPE_NAME
+import com.github.yumelira.yumebox.core.util.PendingImportUrlHolder
+import com.github.yumelira.yumebox.feature.home.presentation.screen.moe.HomePreviewGuideDialog
+import com.github.yumelira.yumebox.feature.settings.presentation.viewmodel.AppSettingsViewModel
 import com.github.yumelira.yumebox.presentation.component.LocalTopBarHazeState
 import com.github.yumelira.yumebox.presentation.component.LocalTopBarHazeStyle
 import com.github.yumelira.yumebox.presentation.component.ToastDialogHost
 import com.github.yumelira.yumebox.presentation.navigation.AppNavContainer
 import com.github.yumelira.yumebox.presentation.theme.ProvideAndroidPlatformTheme
 import com.github.yumelira.yumebox.presentation.theme.YumeTheme
-import com.github.yumelira.yumebox.screen.moe.HomePreviewGuideDialog
-import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
+import com.github.yumelira.yumebox.runtime.client.common.util.IntentController
+import com.github.yumelira.yumebox.runtime.client.common.util.extractPendingImportUrl
 import com.tencent.mmkv.MMKV
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.HazeColorEffect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -78,11 +75,10 @@ class MainActivity : FragmentActivity() {
         private const val MIUI_GET_INSTALLED_APPS_PERMISSION =
             "com.android.permission.GET_INSTALLED_APPS"
         private const val EXTRA_EXIT_UI_WHEN_BACKGROUND = "exit_ui_when_background"
-        private val _pendingImportUrl = MutableStateFlow<String?>(null)
-        val pendingImportUrl: StateFlow<String?> = _pendingImportUrl.asStateFlow()
+        val pendingImportUrl: StateFlow<String?> = com.github.yumelira.yumebox.core.util.PendingImportUrlHolder.pendingImportUrl
 
         fun clearPendingImportUrl() {
-            _pendingImportUrl.value = null
+            com.github.yumelira.yumebox.core.util.PendingImportUrlHolder.clear()
         }
 
         private val _pendingDeepLink = MutableStateFlow<String?>(null)
@@ -93,9 +89,10 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    private val appSettingsStorage: com.github.yumelira.yumebox.data.store.AppSettingsStore by
+    private val appSettingsReader: com.github.yumelira.yumebox.core.contract.AppSettingsReader by
         inject()
-    private val featureStore: FeatureStore by inject()
+    private val appSettingsStore: com.github.yumelira.yumebox.data.store.AppSettingsStore by inject()
+    private val featureStoreReader: com.github.yumelira.yumebox.core.contract.FeatureStoreReader by inject()
     private val networkSettingsStorage:
         com.github.yumelira.yumebox.data.store.NetworkSettingsStore by
         inject()
@@ -119,62 +116,60 @@ class MainActivity : FragmentActivity() {
         }
 
         super.onCreate(savedInstanceState)
-        applyExcludeFromRecents(appSettingsStorage.excludeFromRecents.value)
+        applyExcludeFromRecents(appSettingsReader.excludeFromRecents.value)
+        intentController = IntentController(lifecycleScope, packageName)
+        if (intent?.action?.endsWith(".action.START_CLASH") == true ||
+            intent?.action?.endsWith(".action.STOP_CLASH") == true) {
+            // Use application scope so the coroutine survives finish()
+            IntentController(applicationScope, packageName).handleIntent(intent)
+            @Suppress("DEPRECATION") overridePendingTransition(0, 0)
+            finish()
+            return
+        }
 
-        intentController = IntentController(lifecycleScope)
         handleIntent(intent)
 
         requestStartupPermissions()
 
         val showHomeGuideInitially =
-            savedInstanceState == null && !appSettingsStorage.homePreviewGuideShown.value
+            savedInstanceState == null && !appSettingsStore.homePreviewGuideShown.value
         if (showHomeGuideInitially) {
-            appSettingsStorage.homePreviewGuideShown.set(true)
+            appSettingsStore.homePreviewGuideShown.set(true)
         }
 
         setContent {
             val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
-            val themeMode = appSettingsViewModel.themeMode.state.collectAsState().value
-            val themeSeedColorArgb =
-                appSettingsViewModel.themeSeedColorArgb.state.collectAsState().value
-            val invertOnPrimaryColors =
-                appSettingsViewModel.invertOnPrimaryColors.state.collectAsState().value
-            val excludeFromRecents =
-                appSettingsViewModel.excludeFromRecents.state.collectAsState().value
-            val topBarBlurEnabled =
-                appSettingsViewModel.topBarBlurEnabled.state.collectAsState().value
-            val pageScale = appSettingsViewModel.pageScale.state.collectAsState().value
-
-            LaunchedEffect(excludeFromRecents) {
-                this@MainActivity.applyExcludeFromRecents(excludeFromRecents)
+            val activitySettings by appSettingsViewModel.activitySettings.collectAsStateWithLifecycle()
+            LaunchedEffect(activitySettings.excludeFromRecents) {
+                this@MainActivity.applyExcludeFromRecents(activitySettings.excludeFromRecents)
             }
 
             ProvideAndroidPlatformTheme {
                 val systemDensity = LocalDensity.current
                 val scaledDensity =
-                    remember(systemDensity, pageScale) {
-                        Density(systemDensity.density * pageScale, systemDensity.fontScale)
+                    remember(systemDensity, activitySettings.pageScale) {
+                        Density(systemDensity.density * activitySettings.pageScale, systemDensity.fontScale)
                     }
                 CompositionLocalProvider(LocalDensity provides scaledDensity) {
                     YumeTheme(
-                        themeMode = themeMode,
-                        themeSeedColorArgb = themeSeedColorArgb,
-                        invertOnPrimaryColors = invertOnPrimaryColors,
+                        themeMode = activitySettings.themeMode,
+                        themeSeedColorArgb = activitySettings.themeSeedColorArgb,
+                        invertOnPrimaryColors = activitySettings.invertOnPrimaryColors,
                     ) {
                         val topBarHazeState = remember { HazeState() }
                         val topBarBackground = MiuixTheme.colorScheme.surface
                         val topBarHazeStyle =
                             remember(topBarBackground) {
-                                HazeStyle(
+                                HazeBlurStyle(
                                     backgroundColor = topBarBackground,
-                                    tint = HazeTint(topBarBackground.copy(0.8f)),
+                                    colorEffects = listOf(HazeColorEffect.tint(topBarBackground.copy(0.8f))),
                                 )
                             }
                         CompositionLocalProvider(
                             LocalTopBarHazeState provides
-                                if (topBarBlurEnabled) topBarHazeState else null,
+                                if (activitySettings.topBarBlurEnabled) topBarHazeState else null,
                             LocalTopBarHazeStyle provides
-                                if (topBarBlurEnabled) topBarHazeStyle else null,
+                                if (activitySettings.topBarBlurEnabled) topBarHazeStyle else null,
                         ) {
                             Surface(
                                 modifier = Modifier.fillMaxSize(),
@@ -195,31 +190,8 @@ class MainActivity : FragmentActivity() {
                 }
             }
         }
-
-        applicationScope.launch {
-            if (!AutoStartSessionGate.tryBeginAutoActions()) {
-                return@launch
-            }
-            var handled = false
-            try {
-                StartupTaskCoordinator.awaitWarmup()
-                with(
-                    AutoStartDependencies(
-                        featureStore = featureStore,
-                        proxyFacade = proxyFacade,
-                        profilesRepository = profilesRepository,
-                        appSettingsStorage = appSettingsStorage,
-                        networkSettingsStorage = networkSettingsStorage,
-                        serviceCache = serviceCache,
-                    )
-                ) {
-                    ProxyAutoStartHelper.checkAndAutoStart(this@MainActivity)
-                }
-                handled = true
-            } finally {
-                AutoStartSessionGate.finishAutoActions(markHandled = handled)
-            }
-        }
+        // Auto-start is handled exclusively by App.scheduleDeferredStartupTasks() to avoid duplicate invocations.
+        // The AutoStartSessionGate ensures only one call site succeeds, but removing the duplicate here eliminates the redundant warmup await and clarifies the single responsibility: App owns cold-start auto-start, MainActivity owns UI.
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -232,7 +204,7 @@ class MainActivity : FragmentActivity() {
         if (level < TRIM_MEMORY_UI_HIDDEN || isFinishing) {
             return
         }
-        if (!featureStore.exitUiWhenBackground.value) {
+        if (!featureStoreReader.exitUiWhenBackground.value) {
             return
         }
         if (proxyFacade.runtimeSnapshot.value.running) {
@@ -241,28 +213,27 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        val safeIntent = intent ?: return
-        if (safeIntent.getBooleanExtra(EXTRA_EXIT_UI_WHEN_BACKGROUND, false)) {
-            finishAndRemoveTask()
-            return
-        }
-        safeIntent.data?.let { handleDeepLinkUri(it) }
-
-        intentController.handleIntent(safeIntent)
-    }
-
-    private fun handleDeepLinkUri(uri: Uri) {
-        when (uri.scheme) {
-            "clash",
-            "clashmeta" -> {
-                if (uri.host != "install-config") return
-                val configUrl = uri.getQueryParameter("url")
-                if (!configUrl.isNullOrBlank()) {
-                    _pendingImportUrl.value = configUrl
+        intent?.let { safeIntent ->
+            if (safeIntent.getBooleanExtra(EXTRA_EXIT_UI_WHEN_BACKGROUND, false)) {
+                finishAndRemoveTask()
+                return
+            }
+            extractPendingImportUrl(safeIntent)?.let { com.github.yumelira.yumebox.core.util.PendingImportUrlHolder.set(it) }
+            safeIntent.data?.let { uri ->
+                val scheme = uri.scheme
+                if (scheme == "clash" || scheme == "clashmeta") {
+                    val host = uri.host
+                    if (host == "install-config") {
+                        val configUrl = uri.getQueryParameter("url")
+                        if (!configUrl.isNullOrBlank()) {
+                            com.github.yumelira.yumebox.core.util.PendingImportUrlHolder.set(configUrl)
+                        }
+                    }
+                } else if (scheme == "yumebox") {
+                    _pendingDeepLink.value = uri.toString()
                 }
             }
-
-            "yumebox" -> _pendingDeepLink.value = uri.toString()
+            intentController.handleIntent(safeIntent)
         }
     }
 
