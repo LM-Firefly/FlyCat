@@ -63,7 +63,7 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 link_directories("${GO_OUTPUT_BASE}")
 
 add_library(bridge SHARED main.cpp bridge_callbacks.cpp override_compile.cpp jni_helper.cpp bridge_helper.cpp jni_raii.cpp)
-target_link_libraries(bridge log clash)
+target_link_libraries(bridge log mihomo)
 if(YUMEBOX_LINKER_FLAG_LIST)
     target_link_options(bridge PRIVATE ${YUMEBOX_LINKER_FLAG_LIST})
 endif()

@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.feature.editor.theme
+package com.github.yumelira.yumebox.feature.editor.presentation.theme
 
 import androidx.compose.ui.graphics.toArgb
 import com.github.yumelira.yumebox.presentation.theme.AppColors

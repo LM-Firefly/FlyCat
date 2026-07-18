@@ -1,0 +1,124 @@
+diff --git a/config/config.go b/config/config.go
+index 8959dda9..3c587ab7 100644
+--- a/config/config.go
++++ b/config/config.go
+@@ -131,6 +131,8 @@ type IPTables struct {
+ 	InboundInterface string
+ 	Bypass           []string
+ 	DnsRedirect      bool
++	IncludeUID       []uint32
++	ExcludeUID       []uint32
+ }
+
+ // NTP config
+@@ -346,6 +348,8 @@ type RawIPTables struct {
+ 	InboundInterface string   `yaml:"inbound-interface" json:"inbound-interface"`
+ 	Bypass           []string `yaml:"bypass" json:"bypass"`
+ 	DnsRedirect      bool     `yaml:"dns-redirect" json:"dns-redirect"`
++	IncludeUID       []uint32 `yaml:"include-uid" json:"include-uid"`
++	ExcludeUID       []uint32 `yaml:"exclude-uid" json:"exclude-uid"`
+ }
+
+ type RawExperimental struct {
+@@ -839,6 +843,8 @@ func parseIPTables(cfg *RawConfig) (*IPTables, error) {
+ 		InboundInterface: cfg.IPTables.InboundInterface,
+ 		Bypass:           cfg.IPTables.Bypass,
+ 		DnsRedirect:      cfg.IPTables.DnsRedirect,
++		IncludeUID:       cfg.IPTables.IncludeUID,
++		ExcludeUID:       cfg.IPTables.ExcludeUID,
+ 	}, nil
+ }
+
+diff --git a/hub/executor/executor.go b/hub/executor/executor.go
+index d3b5eb81..43aae3dd 100644
+--- a/hub/executor/executor.go
++++ b/hub/executor/executor.go
+@@ -470,7 +470,8 @@ func updateIPTables(cfg *config.Config) {
+ 	tproxy.CleanupTProxyIPTables()
+
+ 	iptables := cfg.IPTables
+-	if runtime.GOOS != "linux" || !iptables.Enable {
++	// Android's GOOS is "android" not "linux", but has /system/bin/iptables under root — allow it too.
++	if (runtime.GOOS != "linux" && runtime.GOOS != "android") || !iptables.Enable {
+ 		return
+ 	}
+
+@@ -521,7 +522,7 @@ func updateIPTables(cfg *config.Config) {
+
+ 	dialer.DefaultRoutingMark.CompareAndSwap(0, 2158)
+
+-	err = tproxy.SetTProxyIPTables(inboundInterface, bypass, uint16(tProxyPort), DnsRedirect, dnsPort.Port())
++	err = tproxy.SetTProxyIPTables(inboundInterface, bypass, uint16(tProxyPort), DnsRedirect, dnsPort.Port(), iptables.IncludeUID, iptables.ExcludeUID)
+ 	if err != nil {
+ 		return
+ 	}
+diff --git a/listener/tproxy/tproxy_iptables.go b/listener/tproxy/tproxy_iptables.go
+index bc26b125..60343618 100644
+--- a/listener/tproxy/tproxy_iptables.go
++++ b/listener/tproxy/tproxy_iptables.go
+@@ -23,7 +23,7 @@ const (
+ 	PROXY_ROUTE_TABLE = "0x2d0"
+ )
+
+-func SetTProxyIPTables(ifname string, bypass []string, tport uint16, dnsredir bool, dport uint16) error {
++func SetTProxyIPTables(ifname string, bypass []string, tport uint16, dnsredir bool, dport uint16, includeUID []uint32, excludeUID []uint32) error {
+ 	if _, err := cmd.ExecCmd("iptables -V"); err != nil {
+ 		return fmt.Errorf("current operations system [%s] are not support iptables or command iptables does not exist", runtime.GOOS)
+ 	}
+@@ -93,15 +93,35 @@ func SetTProxyIPTables(ifname string, bypass []string, tport uint16, dnsredir bo
+ 	execCmd("iptables -t mangle -A mihomo_output -m addrtype --dst-type LOCAL -j RETURN")
+ 	execCmd("iptables -t mangle -A mihomo_output -m addrtype --dst-type BROADCAST -j RETURN")
+ 	addLocalnetworkToChain("mihomo_output", bypass)
+-	execCmd(fmt.Sprintf("iptables -t mangle -A mihomo_output -p tcp -j MARK --set-mark %s", PROXY_FWMARK))
+-	execCmd(fmt.Sprintf("iptables -t mangle -A mihomo_output -p udp -j MARK --set-mark %s", PROXY_FWMARK))
+-	execCmd(fmt.Sprintf("iptables -t mangle -I OUTPUT -o %s -j mihomo_output", interfaceName))
++	// Exclude the root core's own egress (uid 0) or it loops; cmfa's dialer ignores the routing-mark
++	// RETURN above, so match the uid explicitly.
++	execCmd("iptables -t mangle -A mihomo_output -m owner --uid-owner 0 -j RETURN")
++	for _, uid := range excludeUID {
++		execCmd(fmt.Sprintf("iptables -t mangle -A mihomo_output -m owner --uid-owner %d -j RETURN", uid))
++	}
++	if len(includeUID) > 0 {
++		// Whitelist: only the selected app uids are marked (proxied); everything else returns (direct).
++		for _, uid := range includeUID {
++			execCmd(fmt.Sprintf("iptables -t mangle -A mihomo_output -m owner --uid-owner %d -p tcp -j MARK --set-mark %s", uid, PROXY_FWMARK))
++			execCmd(fmt.Sprintf("iptables -t mangle -A mihomo_output -m owner --uid-owner %d -p udp -j MARK --set-mark %s", uid, PROXY_FWMARK))
++		}
++		execCmd("iptables -t mangle -A mihomo_output -j RETURN")
++	} else {
++		execCmd(fmt.Sprintf("iptables -t mangle -A mihomo_output -p tcp -j MARK --set-mark %s", PROXY_FWMARK))
++		execCmd(fmt.Sprintf("iptables -t mangle -A mihomo_output -p udp -j MARK --set-mark %s", PROXY_FWMARK))
++	}
++	// Hook ALL local output, not `-o interfaceName` (defaults to "lo"): Android apps egress via
++	// wlan0/rmnet, so `-o lo` never sees them. The chain RETURNs loopback/local/private/core-uid anyway.
++	execCmd("iptables -t mangle -I OUTPUT -j mihomo_output")
+
+ 	// set dns output
+ 	if DnsRedirect {
+ 		execCmd("iptables -t nat -N mihomo_dns_output")
+ 		execCmd("iptables -t nat -F mihomo_dns_output")
+ 		execCmd(fmt.Sprintf("iptables -t nat -A mihomo_dns_output -m mark --mark %#x -j RETURN", dialer.DefaultRoutingMark.Load()))
++		// Exclude the core's uid: its upstream DNS (uid 0) must not be REDIRECT'd back to its own DNS
++		// port or it loops (routing-mark RETURN above is a no-op on cmfa).
++		execCmd("iptables -t nat -A mihomo_dns_output -m owner --uid-owner 0 -j RETURN")
+ 		execCmd("iptables -t nat -A mihomo_dns_output -s 172.17.0.0/16 -j RETURN")
+ 		execCmd(fmt.Sprintf("iptables -t nat -A mihomo_dns_output -p udp -j REDIRECT --to-ports %d", dnsPort))
+ 		execCmd(fmt.Sprintf("iptables -t nat -A mihomo_dns_output -p tcp -j REDIRECT --to-ports %d", dnsPort))
+@@ -113,7 +133,7 @@ func SetTProxyIPTables(ifname string, bypass []string, tport uint16, dnsredir bo
+ }
+
+ func CleanupTProxyIPTables() {
+-	if runtime.GOOS != "linux" || interfaceName == "" || tProxyPort == 0 {
++	if (runtime.GOOS != "linux" && runtime.GOOS != "android") || interfaceName == "" || tProxyPort == 0 {
+ 		return
+ 	}
+
+@@ -150,7 +170,7 @@ func CleanupTProxyIPTables() {
+ 	}
+
+ 	// clean OUTPUT
+-	execCmd(fmt.Sprintf("iptables -t mangle -D OUTPUT -o %s -j mihomo_output", interfaceName))
++	execCmd("iptables -t mangle -D OUTPUT -j mihomo_output")
+ 	if DnsRedirect {
+ 		execCmd("iptables -t nat -D OUTPUT -p tcp --dport 53 -j mihomo_dns_output")
+ 		execCmd("iptables -t nat -D OUTPUT -p udp --dport 53 -j mihomo_dns_output")

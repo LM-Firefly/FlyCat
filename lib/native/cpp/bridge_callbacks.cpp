@@ -13,6 +13,9 @@ static jmethodID m_tun_interface_query_socket_owner;
 static jmethodID m_completable_complete;
 static jmethodID m_completable_complete_exceptionally;
 static jmethodID m_logcat_interface_received;
+static jmethodID m_connection_close_interface_received;
+static jmethodID m_connection_join_interface_received;
+static jmethodID m_traffic_update_interface_received;
 static jmethodID m_clash_exception;
 static jmethodID m_fetch_callback_report;
 static jmethodID m_fetch_callback_complete;
@@ -171,6 +174,72 @@ static int call_logcat_interface_received_impl(void *callback, const char *paylo
     return 0;
 }
 
+static int call_connection_close_interface_received_impl(void *callback, const char *payload) {
+    TRACE_METHOD();
+
+    ATTACH_JNI();
+
+    jstring payload_string = new_string(payload);
+    env->CallVoidMethod(
+            (jobject) callback,
+            (jmethodID) m_connection_close_interface_received,
+            payload_string);
+
+    if (payload_string != NULL) {
+        env->DeleteLocalRef(payload_string);
+    }
+
+    if (jni_catch_exception(env)) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static int call_connection_join_interface_received_impl(void *callback, const char *payload) {
+    TRACE_METHOD();
+
+    ATTACH_JNI();
+
+    jstring payload_string = new_string(payload);
+    env->CallVoidMethod(
+            (jobject) callback,
+            (jmethodID) m_connection_join_interface_received,
+            payload_string);
+
+    if (payload_string != NULL) {
+        env->DeleteLocalRef(payload_string);
+    }
+
+    if (jni_catch_exception(env)) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static int call_traffic_update_interface_received_impl(void *callback, const char *payload) {
+    TRACE_METHOD();
+
+    ATTACH_JNI();
+
+    jstring payload_string = new_string(payload);
+    env->CallVoidMethod(
+            (jobject) callback,
+            (jmethodID) m_traffic_update_interface_received,
+            payload_string);
+
+    if (payload_string != NULL) {
+        env->DeleteLocalRef(payload_string);
+    }
+
+    if (jni_catch_exception(env)) {
+        return 1;
+    }
+
+    return 0;
+}
+
 static void copy_error_message(char *error, int error_length, const char *message) {
     if (error == NULL || error_length <= 0) {
         return;
@@ -236,6 +305,9 @@ static void register_bridge_callbacks() {
     fetch_report_func = &call_fetch_callback_report_impl;
     fetch_complete_func = &call_fetch_callback_complete_impl;
     logcat_received_func = &call_logcat_interface_received_impl;
+    connection_close_received_func = &call_connection_close_interface_received_impl;
+    connection_join_received_func = &call_connection_join_interface_received_impl;
+    traffic_update_received_func = &call_traffic_update_interface_received_impl;
     open_content_func = &open_content_impl;
     release_object_func = &release_jni_object_impl;
 }
@@ -247,6 +319,9 @@ void init_bridge_callbacks(JNIEnv *env) {
     jclass c_completable = find_class("kotlinx/coroutines/CompletableDeferred");
     jclass c_fetch_callback = find_class("com/github/yumelira/yumebox/core/bridge/FetchCallback");
     jclass c_logcat_interface = find_class("com/github/yumelira/yumebox/core/bridge/LogcatInterface");
+    jclass c_connection_close_interface = find_class("com/github/yumelira/yumebox/core/bridge/ConnectionCloseInterface");
+    jclass c_connection_join_interface = find_class("com/github/yumelira/yumebox/core/bridge/ConnectionJoinInterface");
+    jclass c_traffic_update_interface = find_class("com/github/yumelira/yumebox/core/bridge/TrafficUpdateInterface");
     jclass _c_clash_exception = find_class("com/github/yumelira/yumebox/core/bridge/ClashException");
     jclass _c_content = find_class("com/github/yumelira/yumebox/core/bridge/Content");
     jclass c_throwable = find_class("java/lang/Throwable");
@@ -266,6 +341,12 @@ void init_bridge_callbacks(JNIEnv *env) {
                                                        "(Ljava/lang/Throwable;)Z");
     m_logcat_interface_received = find_method(c_logcat_interface, "received",
                                               "(Ljava/lang/String;)V");
+    m_connection_close_interface_received = find_method(c_connection_close_interface, "received",
+                                                        "(Ljava/lang/String;)V");
+    m_connection_join_interface_received = find_method(c_connection_join_interface, "received",
+                                                       "(Ljava/lang/String;)V");
+    m_traffic_update_interface_received = find_method(c_traffic_update_interface, "received",
+                                                       "(Ljava/lang/String;)V");
     m_clash_exception = find_method(_c_clash_exception, "<init>",
                                     "(Ljava/lang/String;)V");
     m_get_message = find_method(c_throwable, "getMessage",

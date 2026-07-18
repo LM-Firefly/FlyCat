@@ -9,6 +9,9 @@ on:
       module:
         required: true
         type: string
+      artifact_prefix:
+        required: true
+        type: string
       release_tag:
         required: true
         type: string
@@ -18,6 +21,19 @@ on:
       raw_apk_artifact_name:
         required: true
         type: string
+      with_extension:
+        required: false
+        type: boolean
+        default: false
+      checkout_ref:
+        required: false
+        type: string
+        default: ''
+      build_number:
+        description: "Deprecated compatibility input; versionCode is derived from git commit count in this workflow."
+        required: false
+        type: string
+        default: ""
       build_hash:
         description: "Commit sha of the build; first 8 chars go into versionName (<base>[.<branch>].<hash8>)."
         required: false
@@ -28,10 +44,6 @@ on:
         required: false
         type: string
         default: ""
-    outputs:
-      apk_name_tail:
-        description: "Tail used in Gradle's published APK file names; channel and PR builds use one Asia/Shanghai packaging date, stable builds use the clean version name."
-        value: ${{ jobs.build.outputs.apk_name_tail }}
 
 permissions:
   contents: read
@@ -39,28 +51,16 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    outputs:
-      apk_name_tail: ${{ steps.apk_name.outputs.tail }}
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      NDK_CACHE_ROOT: ${{ github.workspace }}/.ndk
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
           submodules: recursive
           fetch-depth: 0
-
-      # Build number N = commit count of the built commit's parent chain. Computed here
-      # instead of taken from the caller so ci-channel, pull-request and release all share
-      # one versionCode formula: epoch (project.version.code in gradle.properties) + N.
-      # Requires the fetch-depth:0 checkout above - a shallow clone would count 1.
-      # Monotonic vs the retired ci-channel run_number scheme (commit count >= pushes >=
-      # run_number) and immune to workflow-file renames. reusable-prepare-publish.yml
-      # recomputes the same N from the same github.sha.
-      - name: Compute build number
-        id: build_number
-        shell: bash
-        run: echo "value=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -69,19 +69,19 @@ jobs:
           java-version: "24"
 
       - name: Setup Kotlin
-        uses: fwilhe2/setup-kotlin@88d53291848568823e529973af5d0cdb8ddf8d87 # main
+        uses: fwilhe2/setup-kotlin@main
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        uses: android-actions/setup-android@v4
         with:
           packages: ""
 
       - name: Cache NDK
         id: cache-ndk
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.14904198
           key: ${{ runner.os }}-ndk-30.0.14904198-v2
@@ -107,9 +107,10 @@ jobs:
         run: |
           set -eu
           for abi in arm64-v8a armeabi-v7a x86 x86_64; do
-            test -f "jniLibs/${abi}/libclash.so"
+            test -f "jniLibs/${abi}/libmihomo.so"
             test -f "jniLibs/${abi}/liboverride.so"
             test -f "jniLibs/${abi}/libbridge.so"
+            test -f "jniLibs/${abi}/libloader.so"
           done
           test -f "build/generated/assets/geo/geoip.metadb.xz"
           test -f "build/generated/assets/geo/geosite.dat.xz"
@@ -125,80 +126,39 @@ jobs:
             echo "keystore.path=release.keystore" >> signing.properties
           fi
 
-      - name: Generate locale sources
-        shell: bash
-        run: |
-          set -eu
-          kotlin scripts/generate-locale.main.kts .
-          test -f "locale/build/generated/fytxt/kotlin/commonMain/kotlin/fytxt.kt"
-
-      - name: Compute APK output name
-        id: apk_name
+      - name: Build Release APKs
         shell: bash
         env:
-          BUILD_HASH: ${{ inputs.build_hash }}
-        run: |
-          set -eu
-          if [ -n "${BUILD_HASH}" ]; then
-            tail="$(TZ=Asia/Shanghai date +%y.%m.%d)"
-          else
-            tail="$(grep '^project.version.name=' gradle.properties | cut -d= -f2-)"
-          fi
-          case "${{ inputs.channel }}" in
-            smart|pr) channel_segment="${{ inputs.channel }}" ;;
-            pre|stable) channel_segment="" ;;
-            *) echo "Unsupported APK output channel: ${{ inputs.channel }}" >&2; exit 1 ;;
-          esac
-          echo "tail=${tail}" >> "$GITHUB_OUTPUT"
-          echo "channel_segment=${channel_segment}" >> "$GITHUB_OUTPUT"
-
-      - name: Build Release APKs (geo + nogeo)
-        shell: bash
-        env:
-          BUILD_NUMBER: ${{ steps.build_number.outputs.value }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
           BUILD_HASH: ${{ inputs.build_hash }}
           BUILD_BRANCH: ${{ inputs.build_branch }}
         run: |
           set -eu
           chmod +x gradlew
-          common_args=(
-            -Pupdate.channel="${{ inputs.channel }}"
-            -Pupdate.tag="${{ inputs.release_tag }}"
-            -Pupdate.metaAssetName="${{ inputs.meta_asset_name }}"
-            -Pbuild.number="${BUILD_NUMBER}"
-            -Pbuild.hash="${BUILD_HASH:0:8}"
-            -Pbuild.branch="${BUILD_BRANCH}"
-            -Pbuild.allAbis=true
-            -Papk.output.tail="${{ steps.apk_name.outputs.tail }}"
-            -Papk.output.channel="${{ steps.apk_name.outputs.channel_segment }}"
-          )
-          ./gradlew --no-daemon "${common_args[@]}" -Pgeo.bundle=true :${{ inputs.module }}:assembleRelease
-          # Stage the geo APKs before the second pass: the package task cleans stale files
-          # it owns, so the two variants cannot share the outputs directory.
-          mkdir -p apk-stage
-          cp ${{ inputs.module }}/build/outputs/apk/release/*.apk apk-stage/
-          # Second pass only re-merges assets and re-packages; compile and R8 stay
-          # up to date because geo.bundle feeds no compiler input (no BuildConfig field).
-          ./gradlew --no-daemon "${common_args[@]}" -Pgeo.bundle=false :${{ inputs.module }}:assembleRelease
-          cp ${{ inputs.module }}/build/outputs/apk/release/*.apk apk-stage/
-
-      - name: Verify staged APK matrix
-        shell: bash
-        run: |
-          set -eu
-          tail="${{ steps.apk_name.outputs.tail }}"
-          channel_segment="${{ steps.apk_name.outputs.channel_segment }}"
-          channel_suffix="${channel_segment:+-${channel_segment}}"
-          ls "apk-stage/YumeBox-external${channel_suffix}-${tail}.apk"
-          ls "apk-stage/YumeBox-external-universal${channel_suffix}-${tail}.apk"
-          ls "apk-stage/YumeBox-builtin${channel_suffix}-${tail}.apk"
-          ls "apk-stage/YumeBox-builtin-universal${channel_suffix}-${tail}.apk"
+          build_stamp="$(TZ=Asia/Shanghai date +%Y%m%d%H%M)"
+          commit_short="$(git rev-parse --short=6 HEAD)"
+          build_number="$(git rev-list --count HEAD)"
+          ui_build_id="${build_stamp}-${commit_short}"
+          EXTRA_ARGS=""
+          if [ "${{ inputs.with_extension }}" = "true" ]; then
+            EXTRA_ARGS="-PwithExtension=true"
+          fi
+          ./gradlew --no-daemon \
+            -Pupdate.channel="${{ inputs.channel }}" \
+            -Pupdate.tag="${{ inputs.release_tag }}" \
+            -Pupdate.metaAssetName="${{ inputs.meta_asset_name }}" \
+            -Pupdate.uiBuildId="${ui_build_id}" \
+            -Pbuild.number="${build_number}" \
+            -Pbuild.hash="${BUILD_HASH:0:8}" \
+            -Pbuild.branch="${BUILD_BRANCH}" \
+            $EXTRA_ARGS \
+            :${{ inputs.module }}:assembleRelease
 
       - name: Upload raw APK artifact
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.raw_apk_artifact_name }}
-          path: apk-stage/*.apk
+          path: ${{ inputs.module }}/build/outputs/apk/release/*.apk
           if-no-files-found: error
           # APKs are already zip-compressed; store them uncompressed in the artifact zip.
           compression-level: 0

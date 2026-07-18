@@ -21,7 +21,7 @@
 package com.github.yumelira.yumebox.presentation.component
 
 import androidx.compose.runtime.Composable
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.FlyTxt
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 
 @Composable
@@ -33,9 +33,9 @@ fun NullableBooleanSelector(
 ) {
     val items =
         listOf(
-            MLang.Component.Selector.NotModify,
-            MLang.Component.Selector.Enable,
-            MLang.Component.Selector.Disable,
+            FlyTxt.Component.Selector.NotModify,
+            FlyTxt.Component.Selector.Enable,
+            FlyTxt.Component.Selector.Disable,
         )
     val selectedIndex =
         when (value) {
@@ -107,10 +107,10 @@ fun ListMergeStrategySelector(
 ) {
     val items =
         listOf(
-            MLang.Component.Selector.NotModify,
-            MLang.Component.Selector.Replace,
-            MLang.Component.Selector.Prepend,
-            MLang.Component.Selector.Append,
+            FlyTxt.Component.Selector.NotModify,
+            FlyTxt.Component.Selector.Replace,
+            FlyTxt.Component.Selector.Prepend,
+            FlyTxt.Component.Selector.Append,
         )
     val values =
         listOf(
@@ -139,9 +139,9 @@ fun MapMergeStrategySelector(
 ) {
     val items =
         listOf(
-            MLang.Component.Selector.NotModify,
-            MLang.Component.Selector.Replace,
-            MLang.Component.Selector.Merge,
+            FlyTxt.Component.Selector.NotModify,
+            FlyTxt.Component.Selector.Replace,
+            FlyTxt.Component.Selector.Merge,
         )
     val values = listOf(MapMergeStrategy.None, MapMergeStrategy.Replace, MapMergeStrategy.Merge)
 

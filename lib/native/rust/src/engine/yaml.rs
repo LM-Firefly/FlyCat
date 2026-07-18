@@ -1,14 +1,50 @@
 use serde_json::Value as JsonValue;
 use serde_yaml::Value as YamlValue;
 
+/// Where a YAML → JSON conversion failed.
+#[derive(Debug)]
+pub enum YamlToJsonError {
+    Parse(serde_yaml::Error),
+    Merge(serde_yaml::Error),
+    Convert(serde_json::Error),
+}
+
+impl std::fmt::Display for YamlToJsonError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            YamlToJsonError::Parse(error) | YamlToJsonError::Merge(error) => error.fmt(formatter),
+            YamlToJsonError::Convert(error) => error.fmt(formatter),
+        }
+    }
+}
+
+/// Parses a YAML document into a JSON tree.
+///
+/// Fast path: deserialize straight into a `serde_json::Value`. The obvious implementation builds a `serde_yaml::Value` first and re-serializes it into JSON, which walks and reallocates the whole document a second time — for a subscription with thousands of proxies that is one of the most expensive steps of a compile.
+///
+/// Documents the JSON model cannot take directly (non-string mapping keys) and documents using merge keys (`<<`, which only `serde_yaml::Value::apply_merge` can expand) fall back to the original path, so behavior is unchanged.
+pub fn yaml_to_json(content: &str) -> Result<JsonValue, YamlToJsonError> {
+    let has_merge_keys = content.contains("<<:");
+    if !has_merge_keys && let Ok(value) = serde_yaml::from_str::<JsonValue>(content) {
+        return Ok(value);
+    }
+    yaml_to_json_via_yaml_value(content, has_merge_keys)
+}
+
+fn yaml_to_json_via_yaml_value(
+    content: &str,
+    has_merge_keys: bool,
+) -> Result<JsonValue, YamlToJsonError> {
+    let mut value: YamlValue = serde_yaml::from_str(content).map_err(YamlToJsonError::Parse)?;
+    if has_merge_keys {
+        value.apply_merge().map_err(YamlToJsonError::Merge)?;
+    }
+    serde_json::to_value(value).map_err(YamlToJsonError::Convert)
+}
+
 pub fn parse_yaml_override(content: &str) -> Result<JsonValue, String> {
     let processed_content = add_yaml_tags_to_proxies_short_id(content, false);
-    let mut value: YamlValue =
-        serde_yaml::from_str(&processed_content).map_err(|err| err.to_string())?;
-    // Expand YAML merge keys (`<<: *anchor`) before flattening to JSON; serde_yaml does not
-    // do this automatically and JSON has no merge-key concept to recover it later.
-    value.apply_merge().map_err(|err| err.to_string())?;
-    serde_json::to_value(value).map_err(|err| err.to_string())
+    yaml_to_json(&processed_content).map_err(|err| err.to_string())
 }
 
 pub fn parse_yaml_to_json_string(content: &str) -> Result<String, String> {

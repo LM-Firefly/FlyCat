@@ -12,11 +12,6 @@ on:
       artifact_prefix:
         required: true
         type: string
-      channel_segment:
-        description: "Optional channel tag placed before the date/version tail in publish file names (e.g. smart, pr); empty for the default pre channel and stable releases."
-        required: false
-        type: string
-        default: ""
       release_tag:
         required: true
         type: string
@@ -27,33 +22,27 @@ on:
         required: true
         type: string
       publish_artifact_name:
-        description: "When non-empty, also upload one aggregate artifact with all publish APKs (only the stable release pipeline consumes it via the publish-<channel>-* pattern)."
+        required: true
+        type: string
+      build_number:
+        description: "Deprecated; versionCode is now derived from the build timestamp (yyyyMMdd)."
         required: false
         type: string
         default: ""
-      publish_universal:
-        description: "Whether to publish universal APKs in addition to the arm64-v8a packages."
-        required: false
-        type: boolean
-        default: true
       build_hash:
         description: "Commit sha of the build; first 8 chars go into versionName (<base>[.<branch>].<hash8>)."
         required: false
         type: string
         default: ""
       build_branch:
-        description: "Branch name; normalized (lowercase, [^a-z0-9] runs -> '-') into the versionName branch segment."
+        description: "Branch name; normalized into the versionName branch segment."
         required: false
         type: string
         default: ""
-      apk_name_tail:
-        description: "APK name tail emitted by reusable-build-apk-only.yml."
-        required: true
+      checkout_ref:
+        required: false
         type: string
-    outputs:
-      default_apk_name:
-        description: "File name of the default publish APK (arm64-v8a, external geo) — reusable-notify-telegram.yml downloads its per-APK artifact by this exact name."
-        value: ${{ jobs.prepare.outputs.default_apk_name }}
+        default: ''
 
 permissions:
   contents: read
@@ -61,14 +50,13 @@ permissions:
 jobs:
   prepare:
     runs-on: ubuntu-latest
-    outputs:
-      default_apk_name: ${{ steps.stem.outputs.external_arm64 }}.apk
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
           submodules: recursive
           fetch-depth: 0
 
@@ -76,7 +64,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.raw_apk_artifact_name }}
-          path: raw-apk
+          path: ${{ inputs.module }}/build/outputs/apk/release
 
       - name: Read version info
         id: version
@@ -86,18 +74,11 @@ jobs:
           BUILD_BRANCH: ${{ inputs.build_branch }}
         run: |
           set -eu
-          # Must mirror the versioning logic in app/build.gradle.kts:
-          # versionCode = project.version.code (gradle.properties) + `git rev-list --count
-          # HEAD` (needs the fetch-depth:0 checkout above; same commit count as the one
-          # reusable-build-apk-only.yml baked into the APK, since both jobs of a run check
-          # out the same github.sha), versionName = <base>[.<branch>].<hash8>, branch
-          # normalized as lowercase, [^a-z0-9] runs -> '-', leading/trailing '-' trimmed.
           base_version_name="$(grep '^project.version.name=' gradle.properties | cut -d= -f2-)"
-          base_version_code="$(grep '^project.version.code=' gradle.properties | cut -d= -f2-)"
-          build_number="$(git rev-list --count HEAD)"
           branch_segment="$(printf '%s' "${BUILD_BRANCH}" \
             | tr '[:upper:]' '[:lower:]' \
             | sed -e 's/[^a-z0-9]/-/g' -e 's/--*/-/g' -e 's/^-//' -e 's/-$//')"
+
           if [ -n "${BUILD_HASH}" ]; then
             if [ -n "${branch_segment}" ]; then
               version_name="${base_version_name}.${branch_segment}.${BUILD_HASH:0:8}"
@@ -107,26 +88,10 @@ jobs:
           else
             version_name="${base_version_name}"
           fi
-          version_code=$((base_version_code + build_number))
+
+          version_code="$(TZ=Asia/Shanghai date +%Y%m%d)"
           echo "version_name=${version_name}" >> "$GITHUB_OUTPUT"
           echo "version_code=${version_code}" >> "$GITHUB_OUTPUT"
-
-      # Use the exact tail calculated before Gradle assembled the APKs. This avoids
-      # a date rollover between the build and publishing jobs.
-      - name: Compute publish file stems
-        id: stem
-        shell: bash
-        run: |
-          set -eu
-          tail="${{ inputs.apk_name_tail }}"
-          prefix="${{ inputs.artifact_prefix }}"
-          channel_segment="${{ inputs.channel_segment }}"
-          {
-            echo "external_arm64=$(bash scripts/ci-apk-stem.sh "${prefix}" external arm64-v8a "${channel_segment}" "${tail}")"
-            echo "external_universal=$(bash scripts/ci-apk-stem.sh "${prefix}" external universal "${channel_segment}" "${tail}")"
-            echo "builtin_arm64=$(bash scripts/ci-apk-stem.sh "${prefix}" builtin arm64-v8a "${channel_segment}" "${tail}")"
-            echo "builtin_universal=$(bash scripts/ci-apk-stem.sh "${prefix}" builtin universal "${channel_segment}" "${tail}")"
-          } >> "$GITHUB_OUTPUT"
 
       - name: Generate release notes
         shell: bash
@@ -157,36 +122,32 @@ jobs:
           mkdir -p publish
           version_name="${{ steps.version.outputs.version_name }}"
           version_code="${{ steps.version.outputs.version_code }}"
-          stem_external="${{ steps.stem.outputs.external_arm64 }}"
-          stem_external_universal="${{ steps.stem.outputs.external_universal }}"
-          stem_builtin="${{ steps.stem.outputs.builtin_arm64 }}"
-          stem_builtin_universal="${{ steps.stem.outputs.builtin_universal }}"
           release_url="https://github.com/${{ github.repository }}/releases/tag/${{ inputs.release_tag }}"
           publish_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-          names=(
-            "${stem_external}.apk"
-            "${stem_builtin}.apk"
-          )
-          if [ "${{ inputs.publish_universal }}" = "true" ]; then
-            names+=(
-              "${stem_external_universal}.apk"
-              "${stem_builtin_universal}.apk"
-            )
-          fi
-          for name in "${names[@]}"; do
-            test -f "raw-apk/${name}"
-            cp -f "raw-apk/${name}" "publish/${name}"
-          done
+          while IFS= read -r file; do
+            base="$(basename "$file")"
+            abi="universal"
+            case "$base" in
+              *arm64-v8a*) abi="arm64-v8a" ;;
+              *armeabi-v7a*) abi="armeabi-v7a" ;;
+              *x86_64*) abi="x86_64" ;;
+              *x86*) abi="x86" ;;
+              *) abi="universal" ;;
+            esac
 
-          actual="$(find publish -maxdepth 1 -type f -name '*.apk' | wc -l)"
-          expected=2
-          if [ "${{ inputs.publish_universal }}" = "true" ]; then
-            expected=4
-          fi
-          if [ "${actual}" -ne "${expected}" ]; then
-            echo "Expected ${expected} publish APKs, got ${actual}:" >&2
-            ls publish >&2
+            if [[ "$base" =~ -([0-9]{12}-[0-9a-fA-F]{5,8})\.apk$ ]]; then
+              build_id="${BASH_REMATCH[1]}"
+            else
+              echo "::error::Could not extract build_id from $base" >&2
+              exit 1
+            fi
+            new_name="${{ inputs.artifact_prefix }}-${abi}-${build_id}.apk"
+            cp -f "$file" "publish/${new_name}"
+          done < <(find "${{ inputs.module }}/build/outputs/apk/release" -maxdepth 1 -type f -name '*.apk' | sort)
+
+          if [ ! -d publish ] || [ -z "$(ls -A publish)" ]; then
+            echo "No APK generated" >&2
             exit 1
           fi
 
@@ -224,8 +185,15 @@ jobs:
           packages = []
           for apk in sorted(publish_dir.glob("*.apk")):
               name = apk.name
-              geo_bundled = name.startswith(f"{artifact_prefix}-builtin-")
-              abi = "universal" if "-universal-" in name else "arm64-v8a"
+              abi = "universal"
+              if "-arm64-v8a.apk" in name:
+                  abi = "arm64-v8a"
+              elif "-armeabi-v7a.apk" in name:
+                  abi = "armeabi-v7a"
+              elif "-x86_64.apk" in name:
+                  abi = "x86_64"
+              elif "-x86.apk" in name:
+                  abi = "x86"
 
               h = hashlib.sha256()
               with apk.open("rb") as f:
@@ -234,7 +202,6 @@ jobs:
 
               packages.append({
                   "abi": abi,
-                  "geoBundled": geo_bundled,
                   "fileName": name,
                   "downloadUrl": f"https://github.com/{repo}/releases/download/{release_tag}/{name}",
                   "size": apk.stat().st_size,
@@ -243,7 +210,7 @@ jobs:
               })
 
           meta = {
-              "schemaVersion": 2,
+              "schemaVersion": 1,
               "channel": channel,
               "module": module,
               "artifactPrefix": artifact_prefix,
@@ -266,52 +233,8 @@ jobs:
           PY
 
       - name: Upload publish artifact
-        if: inputs.publish_artifact_name != ''
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.publish_artifact_name }}
           path: publish/*.apk
           if-no-files-found: error
-          # APKs are already zip-compressed; keep the archive (downstream jobs
-          # download-artifact it) but store entries uncompressed.
-          compression-level: 0
-
-      # Per-APK artifacts: each published APK is uploaded separately with archive:false —
-      # the raw .apk is stored as-is (no zip wrapper, no recompression) and downloads
-      # directly as an installer. NOTE: with archive:false the artifact takes the FILE
-      # name and the `name:` input is ignored, so these artifacts appear exactly as the
-      # publish file names from "Prepare publish artifacts". reusable-notify-telegram.yml
-      # downloads the arm64-v8a external-geo one via this workflow's default_apk_name output.
-      - name: Upload arm64-v8a APK artifact (external geo)
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ steps.stem.outputs.external_arm64 }}
-          path: publish/${{ steps.stem.outputs.external_arm64 }}.apk
-          if-no-files-found: error
-          archive: false
-
-      - name: Upload arm64-v8a APK artifact (builtin geo)
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ steps.stem.outputs.builtin_arm64 }}
-          path: publish/${{ steps.stem.outputs.builtin_arm64 }}.apk
-          if-no-files-found: error
-          archive: false
-
-      - name: Upload universal APK artifact (external geo)
-        if: inputs.publish_universal
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ steps.stem.outputs.external_universal }}
-          path: publish/${{ steps.stem.outputs.external_universal }}.apk
-          if-no-files-found: error
-          archive: false
-
-      - name: Upload universal APK artifact (builtin geo)
-        if: inputs.publish_universal
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ steps.stem.outputs.builtin_universal }}
-          path: publish/${{ steps.stem.outputs.builtin_universal }}.apk
-          if-no-files-found: error
-          archive: false

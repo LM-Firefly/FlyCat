@@ -21,7 +21,6 @@
 plugins {
     id("com.android.library")
     kotlin("plugin.compose")
-    id("org.jetbrains.compose")
 }
 
 android {
@@ -56,9 +55,7 @@ dependencies {
     // Sora Editor
     implementation(platform(libs.editor.bom))
     implementation(libs.rosemoe.editor)
-    implementation(libs.rosemoe.editor.lsp)
     implementation(libs.rosemoe.language.textmate)
-    implementation(libs.rosemoe.language.treesitter)
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -67,10 +64,8 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.koin.core)
-    implementation(libs.koin.android)
-    implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.timber)
     implementation(libs.miuix.ui)

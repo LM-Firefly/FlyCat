@@ -12,7 +12,7 @@ use crate::compiler::{
 };
 use crate::engine;
 use crate::engine::yaml::add_yaml_tags_to_proxies_short_id;
-use crate::model::{CompileRequest, LoadedOverride, REQUEST_SCHEMA_VERSION};
+use crate::model::{CompileRequest, LoadedOverride, RunMode, REQUEST_SCHEMA_VERSION};
 use age::secrecy::ExposeSecret;
 
 fn test_request(profile_dir: &Path, profile_path: &Path) -> CompileRequest {
@@ -24,6 +24,8 @@ fn test_request(profile_dir: &Path, profile_path: &Path) -> CompileRequest {
         overrides: Vec::new(),
         output_path: String::new(),
         age_secret_key: None,
+        run_mode: RunMode::default(),
+        skip_runtime_patches: false,
     }
 }
 

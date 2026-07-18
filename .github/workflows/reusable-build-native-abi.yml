@@ -35,31 +35,26 @@ jobs:
           java-version: "24"
 
       - name: Setup Kotlin
-        uses: fwilhe2/setup-kotlin@88d53291848568823e529973af5d0cdb8ddf8d87 # main
+        uses: fwilhe2/setup-kotlin@main
 
       - name: Setup Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        uses: actions/setup-go@v7
         with:
           go-download-base-url: 'https://github.com/MetaCubeX/go/releases/download/build'
           go-version: '1.26'
-
-      - name: Apply Go patches
-        run: |
-          cd "$(go env GOROOT)"
-          for p in "$GITHUB_WORKSPACE"/.github/patch/*.patch; do patch --verbose -p 1 < "$p"; done
 
       - name: Setup Rust
         # nightly + rust-src: the rust build uses -Zbuild-std and
         # -Cpanic=immediate-abort to shrink liboverride.so (~18%), see
         # RustBuilder in scripts/native-build.main.kts.
-        uses: dtolnay/rust-toolchain@efcb852328a9f50117170cc43094fb6f09eaf1ae # nightly
+        uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: nightly
           targets: armv7-linux-androideabi,aarch64-linux-android,i686-linux-android,x86_64-linux-android
           components: rust-src
 
       - name: Cache Rust
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/
@@ -79,13 +74,13 @@ jobs:
           fi
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        uses: android-actions/setup-android@v4
         with:
           packages: ""
 
       - name: Cache NDK
         id: cache-ndk
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.14904198
           key: ${{ runner.os }}-ndk-30.0.14904198-v2
@@ -123,22 +118,24 @@ jobs:
           ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.14904198
-        run: kotlin scripts/native-build.main.kts --go --rust --cpp
+        run: kotlin scripts/native-build.main.kts --go --rust --cpp --loader
 
       - name: Verify native outputs
         shell: bash
         run: |
           set -eu
-          test -f "jniLibs/${{ inputs.abi }}/libclash.so"
+          test -f "jniLibs/${{ inputs.abi }}/libmihomo.so"
           test -f "jniLibs/${{ inputs.abi }}/liboverride.so"
           test -f "jniLibs/${{ inputs.abi }}/libbridge.so"
+          test -f "jniLibs/${{ inputs.abi }}/libloader.so"
 
       - name: Upload ABI artifact
         uses: actions/upload-artifact@v7
         with:
           name: native-${{ inputs.channel }}-${{ inputs.abi }}
           path: |
-            jniLibs/${{ inputs.abi }}/libclash.so
+            jniLibs/${{ inputs.abi }}/libmihomo.so
             jniLibs/${{ inputs.abi }}/liboverride.so
             jniLibs/${{ inputs.abi }}/libbridge.so
+            jniLibs/${{ inputs.abi }}/libloader.so
           if-no-files-found: error

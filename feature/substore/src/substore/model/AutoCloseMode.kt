@@ -18,19 +18,24 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore.model
+package com.github.yumelira.yumebox.feature.substore.model
 
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.FlyTxt
 
 enum class AutoCloseMode(val minutes: Int?) {
     ALWAYS_ON(null),
+    DISABLED(null),
     MINUTES_5(5),
     MINUTES_10(10);
 
     fun getDisplayName(): String =
         when (this) {
-            ALWAYS_ON -> MLang.Feature.ServiceStatus.AutoCloseModeAlwaysOn
-            MINUTES_5 -> MLang.Feature.ServiceStatus.AutoCloseMode5Min
-            MINUTES_10 -> MLang.Feature.ServiceStatus.AutoCloseMode10Min
+            ALWAYS_ON -> FlyTxt.Feature.ServiceStatus.AutoCloseModeAlwaysOn
+            DISABLED -> FlyTxt.Feature.ServiceStatus.AutoCloseModeDisabled
+            MINUTES_5 -> FlyTxt.Feature.ServiceStatus.AutoCloseMode5Min
+            MINUTES_10 -> FlyTxt.Feature.ServiceStatus.AutoCloseMode10Min
         }
+
+    val shouldStartTimer: Boolean
+        get() = minutes != null
 }

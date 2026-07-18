@@ -1,0 +1,13 @@
+<Editor Page>
+Editor = {
+    JsonDiagnostic = {
+        FormatError = "JSON 格式錯誤"
+        MustStartWithBraceOrBracket = "JSON 必須以 '{' 或 '[' 開頭"
+        SyntaxError = "JSON 語法錯誤"
+        UnterminatedStringOrObject = "未終止的字串或物件"
+        Unknown = "未知"
+        Expected = "期望 %s"
+        MissingValue = "缺少值"
+        DuplicateKey = "重複的鍵"
+    }
+}

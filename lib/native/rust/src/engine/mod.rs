@@ -18,16 +18,26 @@ pub fn apply_overrides(
     encrypted: bool,
 ) -> Result<ApplyOverridesResult, String> {
     let mut warnings = Vec::new();
+    // One JS realm per compile chain: helpers are installed once and profile objects are passed natively instead of JSON-string round trips on every script.
+    // The realm is only created if the chain actually contains a JS override.
+    let mut js_runtime: Option<js::JsRuntime> = None;
+
     for override_item in overrides {
         match override_item.ext.as_str() {
             "yaml" | "yml" => {
                 let patch = yaml::parse_yaml_override(&override_item.content).map_err(|error| {
                     format!("parse yaml override {}: {}", override_item.path, error)
                 })?;
-                apply_override_document(&mut root, &patch);
+                apply_override_document(&mut root, patch);
             }
             "js" => {
-                let outcome = js::apply_js_override(root, override_item, encrypted);
+                if js_runtime.is_none() {
+                    js_runtime = Some(js::JsRuntime::new(encrypted)?);
+                }
+                let runtime = js_runtime
+                    .as_mut()
+                    .expect("js runtime initialized for js override");
+                let outcome = runtime.apply(root, override_item)?;
                 root = outcome.root;
                 warnings.extend(outcome.warnings);
             }

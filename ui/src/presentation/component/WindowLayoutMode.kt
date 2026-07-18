@@ -1,0 +1,51 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ */
+
+@file:Suppress("UnusedSymbol")
+
+package com.github.yumelira.yumebox.presentation.component
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
+
+/**
+ * Window size class for adaptive layout.
+ *
+ * Product rule (main tabs):
+ * - [Compact]: phone single stack; secondary screens push on the root navigator.
+ * - [RailSingle]/[TwoPane]: tablet dual-pane shell (left main pager + right detail host).
+ */
+enum class WindowLayoutMode {
+    Compact,
+    RailSingle,
+    TwoPane;
+
+    /** Tablet dual-pane shell should be used (left pager + right detail). */
+    val usesSplitShell: Boolean
+        get() = this != Compact
+
+    val usesNavigationRail: Boolean
+        get() = usesSplitShell
+
+    val usesTwoPanes: Boolean
+        get() = this == TwoPane
+}
+
+@Composable
+fun rememberWindowLayoutMode(): WindowLayoutMode {
+    val widthDp = LocalConfiguration.current.screenWidthDp
+    return remember(widthDp) {
+        when {
+            widthDp >= 700 -> WindowLayoutMode.TwoPane
+            widthDp >= 600 -> WindowLayoutMode.RailSingle
+            else -> WindowLayoutMode.Compact
+        }
+    }
+}

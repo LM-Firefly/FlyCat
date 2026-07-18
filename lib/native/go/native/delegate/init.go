@@ -1,8 +1,10 @@
+// Package delegate initializes the mihomo core and registers native socket hooks.
 package delegate
 
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"syscall"
 
@@ -18,6 +20,7 @@ import (
 
 var errBlocked = errors.New("blocked")
 
+// Init initializes the mihomo core with the given home directory, version info, and Android SDK version.
 func Init(home, versionName, gitVersion string, platformVersion int) {
 	log.Infoln("Init core, home: %s, versionName: %s, gitVersion: %s, platformVersion: %d", home, versionName, gitVersion, platformVersion)
 	constant.SetHomeDir(home)
@@ -40,7 +43,7 @@ func Init(home, versionName, gitVersion string, platformVersion int) {
 		}
 
 		owner := app.QuerySocketOwner(metadata.RawSrcAddr, metadata.RawDstAddr)
-		if owner.UID >= 0 {
+		if owner.UID >= 0 && uint(owner.UID) <= math.MaxUint32 {
 			metadata.Uid = uint32(owner.UID)
 		}
 

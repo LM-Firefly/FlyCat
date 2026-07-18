@@ -29,7 +29,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.FlyTxt
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -43,8 +43,8 @@ fun AppFormDialog(
     summary: String? = null,
     error: String? = null,
     confirmEnabled: Boolean = true,
-    cancelText: String = MLang.Component.Button.Cancel,
-    confirmText: String = MLang.Component.Button.Confirm,
+    cancelText: String = FlyTxt.Component.Button.Cancel,
+    confirmText: String = FlyTxt.Component.Button.Confirm,
     scrollable: Boolean = true,
     onDismissFinished: (() -> Unit)? = null,
     content: @Composable () -> Unit,

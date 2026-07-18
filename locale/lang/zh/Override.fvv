@@ -1,63 +1,96 @@
 <Override Page>
 Override = {
-    Title = "覆写配置"
+    Title = "覆寫設定"
 
     Action = {
-        Create = "创建配置"
-        New = "新建配置"
-        NetworkImport = "链接导入"
+        Create = "建立設定"
+        New = "新增設定"
+        NetworkImport = "連結匯入"
+    }
+
+    BuiltIn = {
+        PreventDnsLeak = "防止 DNS 洩漏"
+        AddDirectRules = "新增直連規則"
+        PuddingDog = "布丁狗的訂閱轉換"
+        Acl4ssrOnlineFull = "ACL4SSR Online Full"
+        CopyName = "%s (副本)"
     }
 
     Empty = {
-        Title = "暂无覆写配置"
-        Hint = "点击下方按钮创建新配置，或导入配置文件"
+        Title = "暫無覆寫設定"
+        Hint = "點下方按鈕建立新設定，或匯入設定檔"
+        UserTitle = "暫無匯入覆寫"
+        UserHint = "可新增或匯入 YAML / JS 覆寫"
+    }
+
+    Section = {
+        BuiltIn = "內建覆寫"
+        User = "匯入覆寫"
     }
 
     Status = {
         InUse = "使用中"
         NotInUse = "未使用"
+        BuiltIn = "內建"
     }
 
     Card = {
-        Copy = "复制配置"
-        Export = "导出配置"
-        Edit = "编辑配置"
-        Delete = "删除配置"
-        EditButton = "编辑"
-        DeleteButton = "删除"
+        Copy = "複製設定"
+        Export = "匯出設定"
+        Edit = "編輯設定"
+        Delete = "刪除設定"
+        EditButton = "編輯"
+        DeleteButton = "刪除"
+        Apply = "套用設定"
+        ApplyButton = "套用"
+    }
+
+    ApplySheet = {
+        Title = "套用到訂閱"
+        Empty = "暫無訂閱"
+        Success = "已更新套用範圍"
+        Failed = "更新套用範圍失敗：%s"
+        Button = {
+            Cancel = "取消"
+            Confirm = "確定"
+        }
     }
 
     Import = {
-        ReadError = "无法读取导入文件"
-        Failed = "导入失败: %s"
-        FileError = "读取文件失败: %s"
-        NetworkError = "链接导入失败: %s"
-        InvalidUrl = "请输入 HTTP 或 HTTPS 链接"
-        HttpError = "HTTP 请求失败：%d"
-        UnsupportedType = "仅支持 YAML 或 JS"
-        EmptyJavaScript = "JS 文件为空"
+        ReadError = "無法讀取匯入檔案"
+        Failed = "匯入失敗: %s"
+        FileError = "讀取檔案失敗: %s"
+        NetworkError = "連結匯入失敗: %s"
+        InvalidUrl = "請輸入 HTTP 或 HTTPS 連結"
+        HttpError = "HTTP 請求失敗：%d"
+        UnsupportedType = "僅支援 YAML 或 JS"
+        EmptyJavaScript = "JS 檔案為空"
+    }
+
+    Error = {
+        SaveFailed = "儲存覆寫失敗"
     }
 
     Export = {
-        Failed = "导出失败：%s"
-        Success = "已导出配置：%s"
+        Failed = "匯出失敗：%s"
+        Success = "已匯出設定：%s"
     }
 
     Dialog = {
         Create = {
-            Title = "添加配置"
-            Name = "配置名称"
-            Url = "配置链接"
-            Type = "创建类型"
+            Title = "新增設定"
+            Name = "設定名稱"
+            Url = "設定連結"
+            Type = "建立類型"
         }
         Delete = {
-            Title = "删除配置"
-            InUseMessage = "配置 %s 正在被订阅使用，删除后将解除绑定关系。确定要删除吗？此操作不可恢复。"
-            Message = "确定要删除配置 %s 吗？此操作不可恢复。"
+            Title = "刪除設定"
+            InUseMessage = "設定 %s 正在被訂閱使用，刪除後將解除綁定關係。確定要刪除嗎？此操作無法復原。"
+            Message = "確定要刪除設定 %s 嗎？此操作無法復原。"
         }
         Button = {
             Cancel = "取消"
-            Delete = "删除"
+            Delete = "刪除"
         }
     }
 
@@ -67,20 +100,20 @@ Override = {
 
 
     Draft = {
-        BasicRouting = "基础分流"
-        ServiceRouting = "服务分流"
+        BasicRouting = "基礎分流"
+        ServiceRouting = "服務分流"
     }
 
 
 
     Save = {
-        ImportDefaultName = "导入的覆写配置"
+        ImportDefaultName = "匯入的覆寫設定"
     }
 
 
 
     Label = {
-        RulesReplace = "覆盖规则"
+        RulesReplace = "覆蓋規則"
     }
 
 }

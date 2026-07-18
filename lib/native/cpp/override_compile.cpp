@@ -7,7 +7,7 @@
 
 #include <dlfcn.h>
 #include <mutex>
-#include "libclash.h"
+#include "libmihomo.h"
 
 extern "C" {
 

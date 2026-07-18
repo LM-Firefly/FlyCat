@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,17 +34,17 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Check: ImageVector
     get() {
-        if (_Check != null) {
-            return _Check!!
+        if (checkVector != null) {
+            return checkVector!!
         }
-        _Check =
+        checkVector =
             ImageVector.Builder(
-                    name = "Check",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "Check",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -56,7 +59,8 @@ val Yume.Check: ImageVector
                 }
                 .build()
 
-        return _Check!!
+        return checkVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _Check: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var checkVector: ImageVector? = null

@@ -42,124 +42,178 @@ struct FetchResponsePayload {
     body: String,
 }
 
+/// Reused JS realm for one compile/override chain.
+///
+/// Creating a `boa_engine::Context` and evaluating the prelude dominates multi-JS chains.
+/// Keep one realm, pass profiles via `JsValue::from_json`, and call `main` without JSON string round-trips.
+pub struct JsRuntime {
+    context: Context,
+    encrypted: bool,
+}
+
+impl JsRuntime {
+    pub fn new(encrypted: bool) -> Result<Self, String> {
+        let mut context = Context::default();
+        register_native_helpers(&mut context)?;
+        set_global(
+            &mut context,
+            "__encrypted",
+            js_string_value(if encrypted { "true" } else { "false" }),
+        )?;
+        evaluate(&mut context, helper_script(), "override helper")?;
+        Ok(Self { context, encrypted })
+    }
+
+    pub fn apply(
+        &mut self,
+        root: JsonValue,
+        override_item: &LoadedOverride,
+    ) -> Result<JsOverrideOutcome, String> {
+        let log_path = override_log_path(&override_item.path);
+        let mut warnings = Vec::new();
+        if let Err(err) = reset_override_log(&log_path) {
+            let warning = if self.encrypted {
+                format!("initialize JS override log failed for encrypted profile: {err}")
+            } else {
+                format!(
+                    "initialize JS override log {} failed: {err}",
+                    log_path.to_string_lossy()
+                )
+            };
+            warnings.push(warning);
+        }
+        let _ = append_override_log(&log_path, "info", "开始执行脚本");
+
+        match self.try_apply(root, override_item, &log_path) {
+            Ok(next_root) => {
+                let _ = append_override_log(&log_path, "info", "脚本执行成功");
+                Ok(JsOverrideOutcome {
+                    root: next_root,
+                    warnings,
+                })
+            }
+            Err(err) => {
+                let failure_message = if self.encrypted {
+                    "脚本执行失败：(redacted, encrypted profile)".to_string()
+                } else {
+                    format!("脚本执行失败：{err}")
+                };
+                let _ = append_override_log(&log_path, "exception", &failure_message);
+                if self.encrypted {
+                    Err("JS override failed for encrypted profile".to_string())
+                } else {
+                    Err(format!("JS override {}: {err}", override_item.path))
+                }
+            }
+        }
+    }
+
+    fn try_apply(
+        &mut self,
+        root: JsonValue,
+        override_item: &LoadedOverride,
+        log_path: &Path,
+    ) -> Result<JsonValue, String> {
+        let profile = JsValue::from_json(&root, &mut self.context)
+            .map_err(|err| format!("convert profile to js value: {err}"))?;
+        // Profile was deep-copied into the JS heap; free the Rust tree before running user code.
+        drop(root);
+
+        set_global(&mut self.context, "__profile", profile)?;
+        set_global(
+            &mut self.context,
+            "__overridePath",
+            js_string_value(&override_item.path),
+        )?;
+        set_global(
+            &mut self.context,
+            "__overrideLogPath",
+            js_string_value(log_path.to_string_lossy().as_ref()),
+        )?;
+        // Clear any previous main so a script that forgets to define one cannot reuse the last.
+        set_global(&mut self.context, "main", JsValue::undefined())?;
+
+        let main_fn = evaluate(
+            &mut self.context,
+            &wrap_override_script(&override_item.content),
+            &override_item.path,
+        )?;
+        let main_callable = main_fn
+            .as_callable()
+            .ok_or_else(|| "JS override must define main(profile)".to_string())?;
+
+        let profile_arg = self
+            .context
+            .global_object()
+            .clone()
+            .get(js_string!("__profile"), &mut self.context)
+            .map_err(|err| format!("read __profile failed: {err}"))?;
+
+        let result = main_callable
+            .call(&JsValue::undefined(), &[profile_arg], &mut self.context)
+            .map_err(|err| format!("invoke main(profile) failed: {err}"))?;
+
+        let resolved = resolve_main_result(result, &mut self.context)?;
+        let result_json = resolved
+            .to_json(&mut self.context)
+            .map_err(|err| format!("convert JS override result to json: {err}"))?
+            .ok_or_else(|| "JS override result cannot be converted to json".to_string())?;
+        if !result_json.is_object() {
+            return Err("JS override result must be an object".to_string());
+        }
+
+        // Drop large temporary values from the shared realm before the next script.
+        let _ = set_global(&mut self.context, "main", JsValue::undefined());
+        let _ = set_global(&mut self.context, "__profile", JsValue::undefined());
+
+        Ok(result_json)
+    }
+}
+
+/// One-shot convenience wrapper used by tests and isolated callers.
 pub fn apply_js_override(
     root: JsonValue,
     override_item: &LoadedOverride,
     encrypted: bool,
 ) -> JsOverrideOutcome {
-    let log_path = override_log_path(&override_item.path);
-    let mut warnings = Vec::new();
-    if let Err(err) = reset_override_log(&log_path) {
-        let warning = if encrypted {
-            format!("initialize JS override log failed for encrypted profile: {err}")
-        } else {
-            format!(
-                "initialize JS override log {} failed: {err}",
-                log_path.to_string_lossy()
-            )
-        };
-        warnings.push(warning);
+    let mut runtime = match JsRuntime::new(encrypted) {
+        Ok(rt) => rt,
+        Err(err) => return JsOverrideOutcome {
+            root,
+            warnings: vec![format!("initialize JS runtime failed: {err}")],
+        },
+    };
+    match runtime.apply(root, override_item) {
+        Ok(outcome) => outcome,
+        Err(err) => JsOverrideOutcome {
+            root: JsonValue::Object(Default::default()),
+            warnings: vec![err],
+        },
     }
-    let _ = append_override_log(&log_path, "info", "开始执行脚本");
+}
 
-    let original_root = root.clone();
-    match try_apply_js_override(root, override_item, &log_path, encrypted) {
-        Ok(next_root) => {
-            let _ = append_override_log(&log_path, "info", "脚本执行成功");
-            JsOverrideOutcome {
-                root: next_root,
-                warnings,
-            }
-        }
-        Err(err) => {
-            let failure_message = if encrypted {
-                "脚本执行失败：(redacted, encrypted profile)".to_string()
-            } else {
-                format!("脚本执行失败：{err}")
-            };
-            let warning = if encrypted {
-                "skip JS override: redacted error for encrypted profile".to_string()
-            } else {
-                format!("skip JS override {}: {err}", override_item.path)
-            };
-            let _ = append_override_log(&log_path, "exception", &failure_message);
-            warnings.push(warning);
-            JsOverrideOutcome {
-                root: original_root,
-                warnings,
-            }
-        }
-    }
+fn set_global(context: &mut Context, key: &str, value: JsValue) -> Result<(), String> {
+    context
+        .global_object()
+        .clone()
+        .set(js_string!(key), value, true, context)
+        .map_err(|err| format!("set global {key} failed: {err}"))?;
+    Ok(())
+}
+
+/// Wraps the user script inside an IIFE so `function main` / `var` do not leak across reused realms, then returns the main function for a direct native call.
+fn wrap_override_script(content: &str) -> String {
+    let mut wrapped = String::with_capacity(content.len().saturating_add(160));
+    wrapped.push_str("(() => {\n");
+    wrapped.push_str(content);
+    wrapped.push_str(
+        "\n;if (typeof main !== \"function\") { throw new Error(\"JS override must define main(profile)\"); } return main;\n})()",
+    );
+    wrapped
 }
 
 fn js_string_value(value: &str) -> JsValue {
     JsValue::new(js_string!(value))
-}
-
-fn try_apply_js_override(
-    root: JsonValue,
-    override_item: &LoadedOverride,
-    log_path: &Path,
-    encrypted: bool,
-) -> Result<JsonValue, String> {
-    let profile_json =
-        serde_json::to_string(&root).map_err(|err| format!("encode profile payload: {err}"))?;
-    let mut context = Context::default();
-
-    register_native_helpers(&mut context)?;
-    context
-        .register_global_property(
-            js_string!("__profileJson"),
-            js_string_value(&profile_json),
-            Attribute::all(),
-        )
-        .map_err(|err| format!("register __profileJson failed: {err}"))?;
-    context
-        .register_global_property(
-            js_string!("__overridePath"),
-            js_string_value(&override_item.path),
-            Attribute::all(),
-        )
-        .map_err(|err| format!("register __overridePath failed: {err}"))?;
-    context
-        .register_global_property(
-            js_string!("__overrideLogPath"),
-            js_string_value(log_path.to_string_lossy().as_ref()),
-            Attribute::all(),
-        )
-        .map_err(|err| format!("register __overrideLogPath failed: {err}"))?;
-    context
-        .register_global_property(
-            js_string!("__encrypted"),
-            js_string_value(if encrypted { "true" } else { "false" }),
-            Attribute::all(),
-        )
-        .map_err(|err| format!("register __encrypted failed: {err}"))?;
-
-    evaluate(&mut context, helper_script(), "override helper")?;
-    evaluate(&mut context, &override_item.content, &override_item.path)?;
-    let result = evaluate(
-        &mut context,
-        r#"
-(() => {
-  if (typeof main !== "function") {
-    throw new Error("JS override must define main(profile)");
-  }
-  return main(JSON.parse(__profileJson));
-})()
-"#,
-        "invoke main(profile)",
-    )?;
-
-    let resolved = resolve_main_result(result, &mut context)?;
-    let result_json = resolved
-        .to_json(&mut context)
-        .map_err(|err| format!("convert JS override result to json: {err}"))?
-        .ok_or_else(|| "JS override result cannot be converted to json".to_string())?;
-    if !result_json.is_object() {
-        return Err("JS override result must be an object".to_string());
-    }
-    Ok(result_json)
 }
 
 fn register_native_helpers(context: &mut Context) -> Result<(), String> {

@@ -1,0 +1,57 @@
+<Network Settings Page>
+NetworkSettings = {
+    Title = "ネットワーク設定"
+
+    Section = {
+        RunMode = "実行モード"
+        VpnOptions = "サービス設定"
+        ProxyOptions = "アクセス制御"
+    }
+
+    RunMode = {
+        RouteTrafficTitle = "システムトラフィックをルーティング"
+        VpnMode = "VPN モード"
+        TunMode = "ROOT TUN"
+        TproxyMode = "ROOT TProxy"
+    }
+
+    VpnOptions = {
+        BypassPrivateTitle = "プライベートネットワークをバイパス"
+        DnsHijackTitle = "DNS ハイジャック"
+        AllowBypassTitle = "アプリのバイパスを許可"
+        EnableIpv6Title = "IPv6 を有効化"
+        SystemProxyTitle = "VPN 内蔵システムプロキシ"
+        DisableOverrideTitle = "すべての上書きを無効化"
+    }
+
+    ProxyOptions = {
+        TunStackTitle = "TUN スタック"
+        AccessControlModeTitle = "アクセス制御モード"
+        AllowAll = "すべて許可"
+        AllowSelected = "選択のみ許可"
+        RejectSelected = "選択を拒否"
+        ManageAccessControlTitle = "アクセス制御を管理"
+    }
+
+    RootTun = {
+        IfNameTitle = "インターフェース名"
+        IfNameSummary = "RootTun が作成する仮想インターフェース名"
+        MtuTitle = "MTU"
+        MtuSummary = "RootTun が使用する最大転送単位"
+        AutoRouteTitle = "自動ルート"
+        StrictRouteTitle = "厳密ルート"
+        AutoRedirectTitle = "自動リダイレクト"
+        DnsModeTitle = "DNS モード"
+        DnsModeRedirHost = "RedirHost"
+        DnsModeFakeIp = "FakeIP"
+        FakeIpRangeTitle = "FakeIP IPv4 範囲"
+        FakeIpRangeSummary = "DNS モードが FakeIP の場合のみ有効"
+        FakeIpRange6Title = "FakeIP IPv6 範囲"
+        FakeIpRange6Summary = "DNS モードが FakeIP の場合のみ有効"
+    }
+
+    Error = {
+        VpnDenied = "VPN 権限が拒否されました"
+        RootRequired = "RootTun には FlyCat の利用可能な Root 権限が必要です"
+    }
+}

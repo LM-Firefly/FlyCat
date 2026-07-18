@@ -18,15 +18,16 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore.util
+package com.github.yumelira.yumebox.feature.substore.util
 
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.zip.ZipInputStream
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
+import tf.gal.yumebox.locale.FlyTxt
 
 object ArchiveUtil {
     fun unzipZip(zipFile: File, destination: File): Boolean {
@@ -109,11 +110,11 @@ object ArchiveUtil {
     private fun prepareDestination(destination: File) {
         if (!destination.exists()) {
             if (!destination.mkdirs()) {
-                throw IllegalStateException("无法创建目录: ${destination.absolutePath}")
+                throw IllegalStateException(FlyTxt.Util.Error.CannotCreateDir.format(destination.absolutePath))
             }
         }
         if (!destination.isDirectory) {
-            throw IllegalStateException("目标不是目录: ${destination.absolutePath}")
+            throw IllegalStateException(FlyTxt.Util.Error.TargetNotDir.format(destination.absolutePath))
         }
     }
 
@@ -124,7 +125,7 @@ object ArchiveUtil {
 
         val relativePath = getRelativePath(canonicalDestination, canonicalTarget)
         if (relativePath == null || relativePath.startsWith("..")) {
-            throw SecurityException("检测到路径遍历: $entryName")
+            throw SecurityException(FlyTxt.Util.Error.PathTraversalDetected.format(entryName))
         }
         return targetFile
     }

@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathFillType.Companion.NonZero
@@ -33,17 +36,17 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Play: ImageVector
     get() {
-        if (_play != null) {
-            return _play!!
+        if (playVector != null) {
+            return playVector!!
         }
-        _play =
+        playVector =
             Builder(
-                    name = "Play",
-                    defaultWidth = 24.0.dp,
-                    defaultHeight = 24.0.dp,
-                    viewportWidth = 24.0f,
-                    viewportHeight = 24.0f,
-                )
+                name = "Play",
+                defaultWidth = 24.0.dp,
+                defaultHeight = 24.0.dp,
+                viewportWidth = 24.0f,
+                viewportHeight = 24.0f,
+            )
                 .apply {
                     path(
                         fill = SolidColor(Color(0x00000000)),
@@ -55,16 +58,16 @@ val Yume.Play: ImageVector
                         pathFillType = NonZero,
                     ) {
                         moveTo(5.0f, 5.0f)
-                        arcToRelative(2.0f, 2.0f, 0.0f, false, true, 3.008f, -1.728f)
+                        arcToRelative(2.0f, 2.0f, 0.0f, isMoreThanHalf = false, isPositiveArc = true, 3.008f, -1.728f)
                         lineToRelative(11.997f, 6.998f)
-                        arcToRelative(2.0f, 2.0f, 0.0f, false, true, 0.003f, 3.458f)
+                        arcToRelative(2.0f, 2.0f, 0.0f, isMoreThanHalf = false, isPositiveArc = true, 0.003f, 3.458f)
                         lineToRelative(-12.0f, 7.0f)
-                        arcTo(2.0f, 2.0f, 0.0f, false, true, 5.0f, 19.0f)
+                        arcTo(2.0f, 2.0f, 0.0f, isMoreThanHalf = false, isPositiveArc = true, 5.0f, 19.0f)
                         close()
                     }
                 }
                 .build()
-        return _play!!
+        return playVector!!
     }
 
-private var _play: ImageVector? = null
+private var playVector: ImageVector? = null

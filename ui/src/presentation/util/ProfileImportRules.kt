@@ -24,7 +24,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumelira.yumebox.core.model.Profile
 import java.io.File
 
 const val PROFILE_IMPORT_TYPE_URL = 0

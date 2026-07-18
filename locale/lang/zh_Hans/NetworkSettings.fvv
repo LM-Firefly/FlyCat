@@ -1,0 +1,57 @@
+<Network Settings Page>
+NetworkSettings = {
+    Title = "网络设置"
+
+    Section = {
+        RunMode = "运行模式"
+        VpnOptions = "服务配置"
+        ProxyOptions = "访问控制"
+    }
+
+    RunMode = {
+        RouteTrafficTitle = "路由系统流量"
+        VpnMode = "VPN 模式"
+        TunMode = "ROOT TUN"
+        TproxyMode = "ROOT TProxy"
+    }
+
+    VpnOptions = {
+        BypassPrivateTitle = "绕过私有网络"
+        DnsHijackTitle = "DNS 劫持"
+        AllowBypassTitle = "允许应用绕过"
+        EnableIpv6Title = "运行 IPv6"
+        SystemProxyTitle = "VPN 系统代理"
+        DisableOverrideTitle = "禁用所有覆写"
+    }
+
+    ProxyOptions = {
+        TunStackTitle = "TUN 协议栈"
+        AccessControlModeTitle = "访问控制模式"
+        AllowAll = "允许所有"
+        AllowSelected = "允许选择"
+        RejectSelected = "拒绝选择"
+        ManageAccessControlTitle = "管理访问控制列表"
+    }
+
+    RootTun = {
+        IfNameTitle = "接口名称"
+        IfNameSummary = "RootTun 创建的虚拟网卡名"
+        MtuTitle = "MTU"
+        MtuSummary = "RootTun 链路的最大传输单元"
+        AutoRouteTitle = "自动路由"
+        StrictRouteTitle = "严格路由"
+        AutoRedirectTitle = "自动重定向"
+        DnsModeTitle = "DNS 模式"
+        DnsModeRedirHost = "RedirHost"
+        DnsModeFakeIp = "FakeIP"
+        FakeIpRangeTitle = "FakeIP IPv4 地址段"
+        FakeIpRangeSummary = "仅在 FakeIP 模式下生效"
+        FakeIpRange6Title = "FakeIP IPv6 地址段"
+        FakeIpRange6Summary = "仅在 FakeIP 模式下生效"
+    }
+
+    Error = {
+        VpnDenied = "VPN 权限被拒绝"
+        RootRequired = "RootTun 需要 FlyCat 已获取可用的 Root 权限"
+    }
+}

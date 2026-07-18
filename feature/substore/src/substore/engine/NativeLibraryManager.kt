@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore.engine
+package com.github.yumelira.yumebox.feature.substore.engine
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -33,7 +33,7 @@ import java.util.zip.ZipFile
 object NativeLibraryManager {
     private const val LIBS_DIR_NAME = "libs"
     private var libsBaseDir: File? = null
-    private var context: Context? = null
+    private var appContext: Context? = null
     private var isInitialized = false
 
     enum class LibraryType {
@@ -55,16 +55,84 @@ object NativeLibraryManager {
     )
 
     private val managedLibraries = mutableMapOf<String, LibraryInfo>()
+    private val loadedJniLibraries = mutableSetOf<String>()
 
     fun initialize(context: Context) {
         if (isInitialized) return
 
-        this.context = context
-        libsBaseDir = File(context.filesDir, LIBS_DIR_NAME)
+        this.appContext = context.applicationContext
+        libsBaseDir = File(appContext!!.filesDir, LIBS_DIR_NAME)
+        val prefs = appContext!!.getSharedPreferences("native_lib_config", Context.MODE_PRIVATE)
+        try {
+            val packageInfo = appContext!!.packageManager.getPackageInfo(appContext!!.packageName, 0)
+            val lastUpdateTime = packageInfo.lastUpdateTime
+            val savedTime = prefs.getLong("last_update_time", 0)
+            if (lastUpdateTime != savedTime) {
+                Timber.i("App updated (time=$lastUpdateTime), clearing native libs cache")
+                libsBaseDir?.deleteRecursively()
+                prefs.edit()
+                    .putLong("last_update_time", lastUpdateTime)
+                    .putBoolean("libs_extracted", false)
+                    .apply()
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to check app update time")
+        }
         libsBaseDir?.mkdirs()
         registerDefaultLibraries()
         isInitialized = true
-        extractAllLibraries()
+        if (prefs.getBoolean("libs_extracted", false)) {
+            if (isExtensionSourceUpToDate(prefs)) {
+                Timber.d("Libraries already extracted, skipping")
+                return
+            }
+            Timber.i("Extension source changed, re-extracting libraries")
+            libsBaseDir?.deleteRecursively()
+            libsBaseDir?.mkdirs()
+        }
+        val results = extractAllLibraries()
+        if (results.isNotEmpty() && results.values.all { it }) {
+            val editor = prefs.edit().putBoolean("libs_extracted", true)
+            // Snapshot extension APK update times for future comparison
+            managedLibraries.values
+                .filter { it.source == LibrarySource.EXTENSION_APK && it.packageName != null }
+                .mapNotNull { it.packageName }
+                .distinct()
+                .forEach { pkgName ->
+                    runCatching {
+                        val extTime = appContext!!.packageManager.getPackageInfo(pkgName, 0).lastUpdateTime
+                        editor.putLong("ext_update_time_$pkgName", extTime)
+                    }
+                }
+            editor.apply()
+            Timber.d("All libraries extracted successfully, flag saved")
+        }
+    }
+
+    private fun isExtensionSourceUpToDate(prefs: android.content.SharedPreferences): Boolean {
+        val extensionPackages = managedLibraries.values
+            .filter { it.source == LibrarySource.EXTENSION_APK && it.packageName != null }
+            .mapNotNull { it.packageName }
+            .distinct()
+        if (extensionPackages.isEmpty()) return true
+        for (pkgName in extensionPackages) {
+            val savedExtTime = prefs.getLong("ext_update_time_$pkgName", 0)
+            val currentExtTime = try {
+                appContext!!.packageManager.getPackageInfo(pkgName, 0).lastUpdateTime
+            } catch (_: Exception) {
+                // Extension not installed — extraction source gone, re-extract would fail anyway.
+                // Clear the stale record so a future reinstall is detected as "new".
+                if (savedExtTime != 0L) {
+                    prefs.edit().remove("ext_update_time_$pkgName").apply()
+                }
+                continue
+            }
+            if (currentExtTime != savedExtTime) {
+                prefs.edit().putLong("ext_update_time_$pkgName", currentExtTime).apply()
+                return false
+            }
+        }
+        return true
     }
 
     @SuppressLint("StaticFieldLeak")
@@ -121,21 +189,62 @@ object NativeLibraryManager {
     @SuppressLint("SetWorldReadable")
     private fun extractFromMainApk(info: LibraryInfo, targetFile: File): Boolean {
         val apkPath =
-            context?.applicationInfo?.sourceDir
-                ?: throw IllegalStateException("Context not initialized")
+            appContext?.applicationInfo?.sourceDir
+                ?: throw RuntimeException("Context not initialized")
 
         ZipFile(apkPath).use { zip ->
-            val libEntry =
-                findMainApkLibEntry(zip, info.name)
-                    ?: throw IllegalStateException("Library not found in APK: ${info.name}")
-
-            zip.getInputStream(libEntry).use { input ->
-                FileOutputStream(targetFile).use { output -> input.copyTo(output) }
+            var libEntry = zip.getEntry("lib/${getSupportedAbi()}/${info.name}")
+            if (libEntry == null) {
+                val supportedAbis = Build.SUPPORTED_ABIS
+                for (tryAbi in supportedAbis) {
+                    libEntry = zip.getEntry("lib/$tryAbi/${info.name}")
+                    if (libEntry != null) break
+                }
+            }
+            if (libEntry == null) {
+                val allAbis = Build.SUPPORTED_ABIS.joinToString("|")
+                val abiGroup = "(${getSupportedAbi()}|$allAbis)"
+                val patternPlain = Regex("lib/$abiGroup/${info.name}\\.v\\.\\d+\\.\\d+\\.\\d+\\.so")
+                val patternXz = Regex("(lib|assets/loader/lib)/$abiGroup/${info.name}\\.v\\.\\d+\\.\\d+\\.\\d+\\.so\\.xz")
+                libEntry = zip.entries().asSequence().firstOrNull { e ->
+                    patternPlain.matches(e.name) || patternXz.matches(e.name)
+                }
+                if (libEntry != null) {
+                    Timber.d("Found library via regex match in Main APK: ${libEntry.name}")
+                    val actualFileName = libEntry.name.substringAfterLast("/")
+                    actualLibraryNames[info.name] = actualFileName
+                }
             }
 
-            targetFile.setReadable(true, false)
+            if (libEntry == null) {
+                throw RuntimeException("Library not found in APK: ${info.name}")
+            }
+            val actualFileName = libEntry.name.substringAfterLast("/")
+            val isXzCompressed = actualFileName.endsWith(".xz")
+            val decompressedName = if (isXzCompressed) actualFileName.removeSuffix(".xz") else actualFileName
+            val targetFileName = if (decompressedName.startsWith("libjavet-node-android")) {
+                "libjavet-node-android.so"
+            } else {
+                decompressedName
+            }
+            val actualTargetFile = File(targetFile.parentFile, targetFileName)
+            if (targetFileName != info.name) {
+                actualLibraryNames[info.name] = targetFileName
+            }
+
+            zip.getInputStream(libEntry).use { input ->
+                if (isXzCompressed) {
+                    org.tukaani.xz.XZInputStream(input).use { xzInput ->
+                        FileOutputStream(actualTargetFile).use { output -> xzInput.copyTo(output) }
+                    }
+                } else {
+                    FileOutputStream(actualTargetFile).use { output -> input.copyTo(output) }
+                }
+            }
+
+            actualTargetFile.setReadable(true, false)
             if (info.type == LibraryType.PROCESS_EXEC) {
-                targetFile.setExecutable(true, false)
+                actualTargetFile.setExecutable(true, false)
             }
 
             return true
@@ -158,48 +267,68 @@ object NativeLibraryManager {
 
         val extensionApk = getExtensionApk(info.packageName)
         if (extensionApk == null) {
-            Timber.w("Extension APK missing: ${info.packageName}")
-            return false
+            Timber.w("Extension APK missing: ${info.packageName}, trying Main APK for ${info.name}")
+            return extractFromMainApk(info, targetFile)
         }
 
         val abi = getSupportedAbi()
+        val allAbis = Build.SUPPORTED_ABIS.joinToString("|")
+        val abiGroup = "($abi|$allAbis)"
 
         ZipFile(extensionApk).use { zip ->
-            val pattern =
-                Regex(
-                    "lib/($abi|${Build.SUPPORTED_ABIS.joinToString("|")})/${info.name}\\.v\\.\\d+\\.\\d+\\.\\d+\\.so"
-                )
-            val entry =
-                zip.entries().asSequence().firstOrNull { error -> pattern.matches(error.name) }
+            // Search order: assets/loader/lib/{abi}/*.so.xz, lib/{abi}/*.so, lib/{abi}/*.so.xz
+            val patternXzAssets = Regex("assets/loader/lib/$abiGroup/${info.name}\\.v\\.\\d+\\.\\d+\\.\\d+\\.so\\.xz")
+            val patternPlain = Regex("lib/$abiGroup/${info.name}\\.v\\.\\d+\\.\\d+\\.\\d+\\.so")
+            val patternXzLib = Regex("lib/$abiGroup/${info.name}\\.v\\.\\d+\\.\\d+\\.\\d+\\.so\\.xz")
+            val entry = zip.entries().asSequence().firstOrNull { e -> patternXzAssets.matches(e.name) || patternPlain.matches(e.name) || patternXzLib.matches(e.name) }
 
             if (entry == null) {
-                Timber.w("Library not found in extension APK: ${info.name}")
+                val candidates = zip.entries().asSequence().map { it.name }
+                    .filter { it.contains(info.name) }
+                    .joinToString(", ")
+                Timber.w("Library ${info.name} not found in extension APK, candidates: $candidates")
                 return false
             }
 
             val actualFileName = entry.name.substringAfterLast("/")
-            val actualTargetFile = File(targetFile.parentFile, actualFileName)
-
-            actualLibraryNames[info.name] = actualFileName
+            val isXzCompressed = actualFileName.endsWith(".xz")
+            val decompressedName = if (isXzCompressed) actualFileName.removeSuffix(".xz") else actualFileName
+            val canonicalFileName = if (decompressedName.startsWith("libjavet-node-android")) {
+                "libjavet-node-android.so"
+            } else {
+                decompressedName
+            }
+            val actualTargetFile = File(targetFile.parentFile, canonicalFileName)
+            actualLibraryNames[info.name] = canonicalFileName
 
             zip.getInputStream(entry).use { input ->
-                FileOutputStream(actualTargetFile).use { output -> input.copyTo(output) }
+                if (isXzCompressed) {
+                    org.tukaani.xz.XZInputStream(input).use { xzInput ->
+                        FileOutputStream(actualTargetFile).use { output -> xzInput.copyTo(output) }
+                    }
+                } else {
+                    FileOutputStream(actualTargetFile).use { output -> input.copyTo(output) }
+                }
             }
 
             actualTargetFile.setReadable(true, false)
             if (info.type == LibraryType.PROCESS_EXEC) {
                 actualTargetFile.setExecutable(true, false)
             }
-
+            Timber.d("Successfully extracted ${entry.name} as $canonicalFileName to ${actualTargetFile.absolutePath}")
             return true
         }
+    }
+
+    fun getActualLibraryName(baseName: String): String? {
+        return actualLibraryNames[baseName]
     }
 
     private val actualLibraryNames = mutableMapOf<String, String>()
 
     private fun getExtensionApk(packageName: String): File? =
         runCatching {
-                val pm = context?.packageManager ?: return null
+                val pm = appContext?.packageManager ?: return null
                 val info = pm.getApplicationInfo(packageName, 0)
                 File(info.sourceDir)
             }
@@ -225,16 +354,19 @@ object NativeLibraryManager {
     }
 
     @SuppressLint("UnsafeDynamicallyLoadedCode")
+    @Synchronized
     fun loadJniLibrary(name: String): Boolean {
         val info = managedLibraries[name]
         if (info?.type != LibraryType.JNI_LOAD) {
             return false
         }
+        if (loadedJniLibraries.contains(name)) return true
 
         val path = getLibraryPath(name) ?: return false
 
         return runCatching {
                 System.load(path)
+                loadedJniLibraries.add(name)
                 true
             }
             .getOrElse { error ->

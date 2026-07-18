@@ -1,0 +1,38 @@
+<Log Page>
+Log = {
+    Title = "Журналы"
+
+    Action = {
+        StopRecording = "Остановить запись"
+        StartRecording = "Начать запись"
+        SaveRecentLogs = "Сохранить последние журналы"
+        ClearLogs = "Очистить журналы"
+        Pause = "Приостановить запись"
+        Save = "Сохранить"
+        Delete = "Удалить"
+    }
+
+    Empty = {
+        NoLogs = "Нет записей журнала"
+        StartRecordingHint = "Нажмите кнопку справа внизу, чтобы начать запись журналов"
+    }
+
+    Message = {
+        SaveFailed = "Не удалось сохранить файл: %s"
+        Saved = "Сохранено: %s"
+        RecentLogSaved = "Последние журналы сохранены"
+    }
+
+    Status = {
+        Recording = "Запись"
+    }
+
+    Detail = {
+        RealTimeLog = "Журнал в реальном времени"
+        Loading = "Загрузка..."
+        WaitingLog = "Ожидание журналов..."
+        LogEmpty = "Журнал пуст"
+        WillShowWhenGenerated = "Журналы появятся здесь по мере поступления"
+        NoLogContent = "Этот файл не содержит записей журнала"
+    }
+}

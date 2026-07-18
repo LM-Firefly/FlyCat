@@ -12,15 +12,18 @@ import (
 var markSocketImpl func(fd int)
 var querySocketOwnerImpl func(protocol int, source, target string) string
 
+// SocketOwner holds the UID and package name of the app that owns a socket.
 type SocketOwner struct {
 	UID     int
 	Package string
 }
 
+// MarkSocket applies platform-specific socket marks (e.g. VPN bypass) to the given fd.
 func MarkSocket(fd int) {
 	markSocketImpl(fd)
 }
 
+// QuerySocketOwner returns the UID and package name of the app that owns the source socket.
 func QuerySocketOwner(source, target net.Addr) SocketOwner {
 	var protocol int
 
@@ -41,6 +44,7 @@ func QuerySocketOwner(source, target net.Addr) SocketOwner {
 	return decodeSocketOwner(querySocketOwnerImpl(protocol, source.String(), target.String()))
 }
 
+// ApplyTunContext registers the platform-specific socket marker and owner query implementations.
 func ApplyTunContext(
 	markSocket func(fd int),
 	querySocketOwner func(int, string, string) string,
