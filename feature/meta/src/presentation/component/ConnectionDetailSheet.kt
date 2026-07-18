@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,10 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.feature.meta.presentation.component
+package com.github.lmfirefly.flycat.feature.meta.presentation.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -47,14 +48,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.common.util.formatBytes
-import com.github.yumelira.yumebox.core.model.ConnectionInfo
-import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import dev.oom_wg.purejoy.mlang.MLang
+import com.github.lmfirefly.flycat.core.model.ConnectionInfo
+import com.github.lmfirefly.flycat.core.util.ProxyChainResolver
+import com.github.lmfirefly.flycat.core.util.format.formatBytes
+import com.github.lmfirefly.flycat.feature.meta.presentation.viewmodel.ConnectionViewModel
+import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
+import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
@@ -94,6 +98,7 @@ fun ConnectionDetailSheet(
                         state = state,
                         upload = info.upload,
                         download = info.download,
+                        rule = info.rule,
                         chains = info.chains,
                     )
                 }
@@ -134,11 +139,21 @@ private fun ConnectionInfoSection(
     state: ConnectionDetailState,
     upload: Long,
     download: Long,
+    rule: String,
     chains: List<String>,
 ) {
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
     val appColors = AppTheme.colors
+    val viewModel = koinViewModel<ConnectionViewModel>()
+    val appName = remember(state.metadata, viewModel) {
+        viewModel.resolveIdentity(state.metadata).appName
+    }
+    val headerTitle = remember(appName) {
+        appName.takeIf {
+            it.isNotBlank() && it != ConnectionViewModel.UNKNOWN_APP_NAME
+        } ?: FlyTxt.Connection.Detail.Section.Info
+    }
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(spacing.space12),
@@ -153,50 +168,51 @@ private fun ConnectionInfoSection(
                 size = sizes.connectionLeadingIconSize,
                 bitmapSize = CONNECTION_LEADING_ICON_BITMAP_SIZE,
             )
-            SectionTitle(MLang.Connection.Detail.Section.Info)
+            SectionTitle(headerTitle)
         }
 
-        InfoRow(label = MLang.Connection.Detail.Label.Protocol, value = state.network.uppercase())
+        InfoRow(label = FlyTxt.Connection.Detail.Label.Protocol, value = state.network.uppercase())
         if (state.process.isNotEmpty()) {
-            InfoRow(label = MLang.Connection.Detail.Label.Process, value = state.process)
+            InfoRow(label = FlyTxt.Connection.Detail.Label.Process, value = state.process)
         }
-        InfoRow(label = MLang.Connection.Detail.Label.SourceAddress, value = state.sourceAddress)
+        InfoRow(label = FlyTxt.Connection.Detail.Label.SourceAddress, value = state.sourceAddress)
         if (state.destinationAddress.isNotEmpty()) {
             InfoRow(
-                label = MLang.Connection.Detail.Label.DestinationAddress,
+                label = FlyTxt.Connection.Detail.Label.DestinationAddress,
                 value = state.destinationAddress,
             )
         }
-        InfoRow(label = MLang.Connection.Detail.Label.Duration, value = state.duration)
+        InfoRow(label = FlyTxt.Connection.Detail.Label.Duration, value = state.duration)
 
         InfoRow(
-            label = MLang.Connection.Detail.Label.Upload,
+            label = FlyTxt.Connection.Detail.Label.Upload,
             value = formatBytes(upload),
             valueColor = appColors.protocol.tcp,
         )
         InfoRow(
-            label = MLang.Connection.Detail.Label.Download,
+            label = FlyTxt.Connection.Detail.Label.Download,
             value = formatBytes(download),
             valueColor = appColors.protocol.udp,
         )
 
-        if (chains.isNotEmpty()) {
+        if (rule.isNotEmpty() || chains.isNotEmpty()) {
             Spacer(modifier = Modifier.height(spacing.space4))
-            ProxyChainRow(chains = chains)
+            ProxyChainRow(rule = rule, chains = chains)
         }
     }
 }
 
 @Composable
-private fun ProxyChainRow(chains: List<String>) {
+private fun ProxyChainRow(rule: String, chains: List<String>) {
     val spacing = AppTheme.spacing
     val appColors = AppTheme.colors
+    val displayChains = ProxyChainResolver.buildRuleChain(rule = rule, chain = chains)
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(spacing.space2),
         verticalArrangement = Arrangement.spacedBy(spacing.space2),
     ) {
-        chains.forEachIndexed { index, chain ->
-            val isLast = index == chains.lastIndex
+        displayChains.forEachIndexed { index, chain ->
+            val isLast = index == displayChains.lastIndex
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -206,7 +222,7 @@ private fun ProxyChainRow(chains: List<String>) {
 
                 if (!isLast) {
                     Text(
-                        text = "→",
+                        text = "->",
                         style = MiuixTheme.textStyles.footnote1,
                         color = appColors.connection.chainArrow,
                         modifier = Modifier.padding(horizontal = spacing.space2),
@@ -228,9 +244,9 @@ private fun InterruptConnectionButton(isInterrupting: Boolean, onInterrupt: () -
         Text(
             text =
                 if (isInterrupting) {
-                    MLang.Connection.Detail.Action.Interrupting
+                    FlyTxt.Connection.Detail.Action.Interrupting
                 } else {
-                    MLang.Connection.Detail.Action.Interrupt
+                    FlyTxt.Connection.Detail.Action.Interrupt
                 },
             color = MiuixTheme.colorScheme.error,
         )
@@ -293,11 +309,11 @@ private fun RuleInfoSection(rule: String, rulePayload: String) {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(spacing.space12),
     ) {
-        SectionTitle(MLang.Connection.Detail.Section.Rule)
+        SectionTitle(FlyTxt.Connection.Detail.Section.Rule)
 
-        InfoRow(label = MLang.Connection.Detail.Label.Type, value = rule)
+        InfoRow(label = FlyTxt.Connection.Detail.Label.Type, value = rule)
         if (rulePayload.isNotEmpty()) {
-            InfoRow(label = MLang.Connection.Detail.Label.Content, value = rulePayload)
+            InfoRow(label = FlyTxt.Connection.Detail.Label.Content, value = rulePayload)
         }
     }
 }

@@ -46,19 +46,27 @@ jobs:
           name: native-${{ inputs.channel }}-x86_64
           path: jniLibs/x86_64
 
+      - name: Download core version stamp
+        uses: actions/download-artifact@v8
+        with:
+          name: native-${{ inputs.channel }}-core-stamp
+          path: build/generated
+
       - name: Verify bundled outputs
         shell: bash
         run: |
           set -eu
           for abi in arm64-v8a armeabi-v7a x86 x86_64; do
-            test -f "jniLibs/${abi}/libclash.so"
+            test -f "jniLibs/${abi}/libmihomo.so"
             test -f "jniLibs/${abi}/liboverride.so"
-            test -f "jniLibs/${abi}/libbridge.so"
+            test -f "jniLibs/${abi}/libloader.so"
+            test -f "jniLibs/${abi}/libebpfbridge.so"
           done
           test -f "build/generated/assets/geo/geoip.metadb.xz"
           test -f "build/generated/assets/geo/geosite.dat.xz"
           test -f "build/generated/assets/geo/ASN.mmdb.xz"
           test -f "build/generated/assets/geo/BundleMRS.7z"
+          test -f "build/generated/core-version.properties"
 
       - name: Upload native bundle artifact
         uses: actions/upload-artifact@v7
@@ -67,4 +75,5 @@ jobs:
           path: |
             jniLibs
             build/generated/assets/geo
+            build/generated/core-version.properties
           if-no-files-found: error

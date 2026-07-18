@@ -1,0 +1,425 @@
+---
+title: Changelog
+sidebarTitle: Changelog
+description: FlyCat release changes, download links, and historical release notes.
+rss: true
+icon: clock
+---
+
+<Card title="GitHub Releases" icon="download" horizontal href="https://github.com/LM-Firefly/FlyCat/releases" />
+
+<Update label="2026-7-27" tags={["Features", "Improvements", "Fixes"]} description="v0.6.0">
+  ## Changes
+
+  - **Reworked and aggressively minimized the application shell**, compressing application Dex and native payloads to significantly reduce APK size
+  - **Added a dedicated package module and custom APK packer** for payload compression, ABI packaging, integrity checks, dynamic loading, alignment, and signing
+  - **Completely rewrote Core API communication**, removing the old JNI business bridge and using the mihomo REST API for both local and remote controllers
+  - **Removed proxy-only mode and switched routing to VPN Service and Tun**
+  - Reworked runtime API, client, and service boundaries, moved the core out of process, and strengthened session, process, and state management
+  - Removed old Go/C bridges, JNI helpers, and obsolete native APIs while restructuring the Go entry point and Rust override compiler
+  - Added master/detail layouts for tablets and large screens, with adaptive proxy-node grids and a dedicated detail pane
+  - Added current-proxy location and improved list/grid scrolling and Proxy-page stability
+  - Added a connection-detail screen with new labels and navigation
+  - Added runtime-rule search, filtering, and temporary enable/disable actions
+  - Added hourly traffic statistics and improved persistence and display
+  - Added an Apply to Profiles interface for viewing and editing override bindings across subscriptions
+  - Custom-routing configurations can now skip default runtime patches to prevent automatic changes to advanced configurations
+  - Added external HTTP Provider prefetch into each profile directory
+  - Subscription downloads now decode headers, follow redirects, support a custom User-Agent, and display progress
+  - Added Traditional Chinese and Japanese translations and localized built-in configuration names
+  - Fixed missing translations in Home settings, editors, custom routing, remote controllers, and accessibility actions
+  - Added core diagnostics export and consolidated runtime, core, and config-test output into one timestamped `runtime.log`
+  - Logs are no longer truncated on every start, preserve complete cause chains, and are size-bounded
+  - Added mihomo branch hashes and core-version stamps to build information
+  - Kept the Proxy destination and current target visible during configuration reloads and remote-controller mode
+  - Improved profile-list sections, bottom actions, and built-in/imported profile presentation
+  - Open-source licenses now open project URLs directly without an intermediate sheet
+  - Moved heavy startup work off the main thread and improved auto-start, session tracking, and runtime restoration
+  - Improved local and Root lifecycle handling to prevent stale sessions, duplicate failure reporting, and consecutive-start races
+  - Added bounded, interruptible proxy-group startup verification with core liveness checks and log-tail diagnostics
+  - Reused JavaScript runtimes for override chains, skipped empty chains, and removed runtime reloads from the apply critical path
+  - Improved built-in override materialization, metadata repair, and configuration handling; DNS-leak prevention is now a YAML asset
+  - Improved system-bar and IME insets in the configuration editor
+  - Improved sidebars and dual-pane animations, corners, and blur rendering using Haze
+  - Fixed Provider-backed nodes appearing as Unknown, missing latency, and always timing out during individual tests
+  - Fixed the default DNS patch appending an unusable `system://` resolver to every query
+  - Fixed consecutive Root starts racing with old-daemon teardown and fixed replacement of mihomo's own socket path
+  - Fixed exited core children remaining as zombie processes
+  - Fixed interrupted socket-owner sends and connected Unix-socket handling
+  - Fixed controller secrets being exposed through process command lines
+  - Fixed the Quick Settings tile failing to stop the service, showing stale state, or failing to recover from errors
+  - Fixed headless auto-start failing to restore the runtime and stop paths leaving local state behind
+  - Hardened blank and malformed subscription imports and image size/type validation
+  - Fixed Sub-Store startup crashes caused by R8 removing required Javet classes
+  - Fixed stale proxy-sheet title actions after returning from the background
+  - Fixed the Home double-tap gesture so the sidebar can collapse again after being expanded
+  - Fixed Home and Proxy polling continuing after their ViewModels were cleared
+  - Added arm64-v8a and universal APKs in Geo and NoGeo variants with consistent artifact names
+  - Local builds now default to arm64-v8a, with switches for all ABIs and bundled Geo assets
+  - CI now builds Geo/NoGeo together and publishes universal artifacts with explicit variant names
+  - Packed APKs are realigned for 16 KiB pages, integrity-checked, and re-signed
+  - Migrated Android builds to AGP 9 and adopted commit-count-based version codes
+
+  **Full Changelog**: [https://github.com/LM-Firefly/FlyCat/compare/v0.5.3...v0.6.0](https://github.com/LM-Firefly/FlyCat/compare/v0.5.3...v0.6.0)
+
+  [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.6.0)
+</Update>
+
+<Update label="2026-7-7" tags={["Features", "Improvements", "Fixes"]} description="v0.5.3">
+  ## Changes
+
+  - Added application data export and backup restoration, with a new entry on the Settings page
+  - Added a remote mihomo controller with quick-dialog support
+  - Added a shortcut for the access-control panel under `Labs -> Panel` (requires the app permission to be enabled)
+  - Added support for importing override configurations from network URLs
+  - Updated intelligent regional-app detection on the access-control page
+  - Applied the `include/exclude-package` configuration to the VPN builder
+  - Added support for generating `Age` key pairs
+  - Reworked the first-run flow, added Home previews and skeleton animations, and removed obsolete pages
+  - Added a consistent default empty-state icon to the proxy, Provider, and override lists
+  - Improved automated builds so that they now inject a unique version number
+  - Improved direct access to the battery-optimization page and its status updates
+  - Improved card and button layout on the access-control page and refined its sorting logic
+  - Improved proxy bottom-sheet and editor animations; wallpaper preview is now triggered by long press
+  - Improved Settings summaries and switched YAML highlighting to a compact tmLanguage definition
+  - Redesigned the Moe Home startup control and the header card on the About page
+  - Improved a large amount of copy and styling and removed redundant descriptions
+  - Improved the use of several dialog components to make them more intuitive
+  - Improved navigation-bar borders across different themes
+  - **Completely fixed proxy selection persistence and synchronization**
+  - Fixed compiler support for expanding `<<` merge keys and fixed inherited fields missing from proxy groups and rule providers
+  - Fixed background coroutine scope and strictly limited the duration of the Starting state
+  - Fixed thread-safety issues when modifying `SessionRuntime` snapshots
+  - Fixed the preference cache not refreshing after restoring `raw` data
+  - Fixed broken `Age` decryption
+  - Fixed image resource references and links
+  - Fixed missing translations (#125)
+  - Fixed a missing transition for the search overlay
+  - Removed the network-panel shortcut from the Proxy page (moved to Labs)
+  - Removed navigation-bar style selection and standardized it on `island`
+  - Removed the test-all-proxies icon
+  - Removed screenshot-blocking biometric content
+  - Removed obsolete onboarding content
+
+  **Full Changelog**: [https://github.com/LM-Firefly/FlyCat/compare/v0.5.2...v0.5.3](https://github.com/LM-Firefly/FlyCat/compare/v0.5.2...v0.5.3)
+
+  [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.3)
+</Update>
+
+<Update label="2026-6-20" tags={["Features", "Improvements", "Fixes"]} description="v0.5.2">
+  ## Changes
+
+  - **The signing key has changed. You cannot install this release over the old version; uninstall the old version first**
+  - Reworked overrides
+  - Added JavaScript and YAML override support
+  - Added support for creating a Web panel shortcut on the Home screen
+  - Added Age support
+  - Fixed the desktop controller icon
+  - Fixed the Quick Settings tile icon
+  - Fixed subscription sorting
+  - Fixed proxy-group retrieval errors
+  - Fixed subscription update failures
+  - Fixed subscription import errors
+  - Fixed overrides not taking effect
+  - Fixed subscription corruption caused by overrides
+  - Fixed background caching
+  - Fixed persisted proxy selections becoming invalid
+  - Removed the obsolete override implementation
+  - Removed native signature verification
+
+  **Full Changelog**: [https://github.com/LM-Firefly/FlyCat/compare/v0.5.1...v0.5.2](https://github.com/LM-Firefly/FlyCat/compare/v0.5.1...v0.5.2)
+
+  [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.2)
+</Update>
+
+<Update label="2026-4-9" tags={["Features", "Improvements", "Fixes"]} description="v0.5.1">
+  ## Changes
+
+  - **Added support for FlyCat Lite**
+  - Removed the Sentry tracker
+  - Removed EMAS push updates
+  - Removed Liquid Glass
+  - Added experimental Home support with custom replaceable and crop-adjustable images
+  - Added a Meta feature entry for custom routing
+  - Added per-app traffic statistics; process lookup must be enabled
+  - Added navigation-bar styles
+  - Added language switching
+  - Added privacy settings
+  - Added background UI release
+  - Added startup haptic feedback
+  - Improved icon format support
+  - Improved the proxy startup process
+  - Improved navigation-bar animation feedback
+  - Improved notification content
+  - Improved quick notification dialogs to reduce stutter
+  - Improved card corner radius
+  - Improved proxy sorting animations
+  - Improved the app search bar in access control
+  - Improved traffic charts
+  - Improved global color extraction for dark themes
+  - Improved dialog component performance
+  - Improved configuration-card sorting
+  - Improved navigation responsiveness
+  - Improved scrolling-list padding
+  - Improved resources in the app directory
+  - Fixed incorrect links on the initialization page
+  - Fixed abnormal dialog height
+  - Fixed auto-start blocking and freezing
+  - Fixed haptic feedback in scrolling lists
+  - Fixed import-dialog blocking
+  - Fixed an incorrect core hash on the About page
+
+  ## Miscellaneous
+
+  - Removed the localization plugin; localization is now generated by the `generate-locale` Kotlin script
+  - Reworked workflows
+
+  **Full Changelog**: [https://github.com/LM-Firefly/FlyCat/compare/v0.5.0...v0.5.1](https://github.com/LM-Firefly/FlyCat/compare/v0.5.0...v0.5.1)
+
+  [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.1)
+</Update>
+
+<Update label="2026-3-29" tags={["Features", "Improvements", "Fixes"]} description="v0.5.0">
+  ## Changes
+
+  - **Introduced a new override system that supports switching among multiple configurations, applying and stacking visual-editing presets and routing templates, and quickly adding or editing routing rules**
+  - **Fully custom overrides use the suffix modifiers `start`, `end`, `merge`, and `force` for different operations.** See the [override documentation](/en/override/yaml)
+  - **Added Root Tun support, which requires Root permission but does not require a VPN**
+  - Improved the initialization and onboarding page
+  - Improved Toast dialogs
+  - Improved UI interaction details and general UI polish
+  - Introduced Liquid Glass (not recommended)
+  - Added support for editing subscription links
+  - Rewrote parts of the bridge
+  - Added the Connections page
+  - Added Rust-based override parsing to generate runtime configurations
+  - Added syntax checking and partial completion to the configuration editor
+  - Added single-proxy latency testing
+  - Added configuration previews
+  - Added proxy-test animations on the Proxy page
+  - Added support for more proxy tags
+  - Added animated proxy sorting on the Proxy page
+  - Added the link preview page
+  - Added GeoX file downloads
+  - Reworked the Logs page
+  - Fixed dialogs that could not close in some situations
+  - Fixed unexpected padding on the Proxy page
+  - Fixed an incorrect traffic mode in system routing
+  - Fixed the unavailable state on the Traffic statistics page
+  - Fixed icons on some devices
+  - Fixed configuration imports occasionally hanging
+  - Changed the default theme to dark green
+  - Replaced several icons for clearer visuals
+  - Improved theme color extraction in dark mode
+  - Improved proxy-group icon size
+  - Improved stuttering in some dialogs
+  - Improved card margins on several pages
+  - Improved the Top bar blur effect
+  - Improved page-navigation animations
+  - Improved Home swipe tracking
+  - Improved persisted proxy-selection behavior
+  - Improved Unknown proxies and unexpected padding on Home
+  - Improved navigation-bar hiding logic
+  - Removed routing setup from the Proxy-page dialog
+  - ~~Fixed the maintainer not writing changelogs~~ [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.0)
+</Update>
+
+<Update label="2026-2-27" tags={["Features", "Improvements", "Fixes"]} description="v0.4.0">
+  ## Changes
+
+  - Improved global color extraction
+  - Reworked several pages
+  - Improved feature details
+  - Significantly reduced package size
+
+  [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.4.0)
+</Update>
+
+<Update label="2026-2-22" tags={["Features", "Improvements", "Fixes"]} description="v0.3.10">
+  ## Changes
+
+  - Added cloud-release push updates
+  - Added manual update checks on the About page
+  - Added pull-to-test on the Proxy page
+  - Added automatic package-name selection in access control
+  - Added a navigation-bar blur effect
+  - Added an option to hide the background card
+  - Improved navigation-bar color extraction
+  - Improved the quote style on Home
+  - Improved global color extraction for use with custom theme colors
+  - Improved how the external panel opens
+  - Improved the external controller so no additional override is required
+  - Improved swipe-to-close behavior for dialogs
+  - Improved tested-proxy sorting
+  - Improved the Quick Settings tile toggle
+  - Improved dialog closing animations
+  - Fixed incorrect Toast text
+  - Removed full-screen proxy display support
+  - Experimented with more ACG content
+
+  [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.10)
+</Update>
+
+<Update label="2026-2-22" tags={["Improvements"]} description="v0.3.9">
+  ## Changes
+
+  - NULL
+
+  [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.9)
+</Update>
+
+<Update label="2026-2-19" tags={["Features", "Improvements", "Fixes"]} description="v0.3.9">
+  ## Changes
+
+  - Added custom theme color extraction
+  - Adjusted color extraction in dark mode
+  - Gulu gulu
+
+  [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.8)
+</Update>
+
+<Update label="2026-2-11" tags={["Features", "Improvements", "Fixes"]} description="v0.3.7">
+  ## Changes
+
+  - Fixed occasional startup blocking
+  - Fixed frozen runtime state
+  - Added a notification tap action to quickly open the proxy-selection dialog
+  - Added a new selection method on the Proxy page
+  - Added configurable proxy-dialog height
+  - Added a Top bar blur effect
+  - Improved proxy synchronization
+  - Improved restoration of the selected proxy
+  - Improved performance of several components
+  - Improved application stability
+  - Updated to follow the upstream core
+
+  [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.7)
+</Update>
+
+<Update label="2026-1-22" tags={["Features", "Improvements", "Fixes"]} description="v0.3.6">
+  ## Changes
+
+  - Improved component performance
+  - Improved application stability and fault tolerance
+  - Added the `APP` initialization and onboarding flow
+  - Extracted regional flags from proxy names and standardized them as circular flags
+  - Added click-to-test latency for proxy groups
+  - Added support for displaying custom proxy-group `icon` values
+  - Fixed localization errors
+  - Improved page-transition animations
+
+  [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.6)
+</Update>
+
+<Update label="2026-1-21" tags={["Features", "Improvements", "Fixes"]} description="v0.3.5">
+  ## Changes
+
+  - Improved component performance
+  - Improved application stability and fault tolerance
+  - Reworked selection and switching on the Proxy page
+  - Removed the proxy Tab design
+  - Improved the animation and interaction feedback of the proxy start button
+  - Other detail improvements and fixes
+  - Improved various other items
+
+  > Even if the cursed seeds left by the past torment us once again.
+
+  [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.5)
+</Update>
+
+<Update label="2026-1-2" tags={["Features", "Improvements", "Fixes"]} description="v0.3.4">
+  ## Changes
+
+  - Added opening external links from the Configuration page
+  - Added opening subscription providers inside the app for quick configuration import
+  - Added configuration sorting
+  - Added long-press drag sorting for configuration cards
+  - Improved export and sharing
+  - Added support for sharing either a configuration or a link
+  - Improved several icons
+  - Improved localization
+  - Updated to follow the upstream core build
+  - Various other changes
+
+  [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.4)
+</Update>
+
+<Update label="2025-12-25" tags={["Improvements"]} description="v0.3.3">
+  ## Changes
+
+  - Improved assorted content
+  - Various other changes [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.3)
+</Update>
+
+<Update label="2025-12-24" tags={["Features", "Improvements", "Fixes"]} description="v0.3.2">
+  ## Changes
+
+  - Improved startup-button interaction
+  - Improved error Toasts when importing configurations
+  - Improved color extraction for several buttons
+  - Improved link speed
+  - Improved window animations
+  - Improved navigation-bar hiding logic
+  - Added custom User-Agent support (default: `ClashMetaForAndroid`)
+  - ~~Fixed~~ a possible failure of automatic proxy groups that could not be reproduced reliably
+  - Regular mihomo core update
+  - Smart core build
+  - Various other changes [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.2)
+</Update>
+
+<Update label="2025-12-4" tags={["Features", "Fixes"]} description="v0.3.1">
+  ## Changes
+
+  - Added navigation-bar features
+  - Improved the continuous-integration workflow
+  - Added Intent handling and improved state persistence [Download](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.3.1)
+</Update>
+
+<Update label="2025-12-2" tags={["Important update", "Improvements"]} description="v0.3.0">
+  ## Changes
+
+  ### The package name has changed. This release will not retain existing data; uninstall the old version yourself
+
+  - Improved scrolling on the Proxy-list Tab page (#21)
+  - Improved proxy startup speed (#20, #16)
+  - Subscription names can now be fetched automatically during link import
+  - Fixed long-pressing the Quick Settings tile opening the app (#17)
+  - Added app-list access control with clipboard import/export (#22)
+  - Added Run and Manual upload actions to external resources
+  - Further reduced packaged resource size
+</Update>
+
+<Update label="2025-11-30" tags={["New features", "Improvements"]} description="v0.2.0">
+  ## Changes
+
+  - Added localization
+  - Added the "Follow one principle" option, which is automatically enabled and cannot be disabled when the language is Chinese
+  - Added the Traffic statistics page
+  - Added a one-tap update button
+  - Added one-tap subscription import through Scheme calls (#12)
+  - Added automatic subscription import from the clipboard (#12)
+  - Added subscription import by scanning a QR code (#14)
+  - Remote subscription names are no longer required (#12)
+  - Improved SubStore startup and automatic shutdown
+  - Fixed overly long links preventing subscription import (#13)
+  - Fixed global DIRECT mode when rules had not been added
+  - Fixed proxy selection in the Web panel not being remembered
+  - Fixed the notification service not updating configuration names after reload
+  - Moved the Web panel to the top-left corner of the Proxy page
+  - Added more detailed and varied sorting options to the Proxy page
+  - Improved color extraction on several pages
+  - Fixed spacing, layout, and button-position problems on several pages
+  - Other detail improvements and fixes
+</Update>
+
+<Update label="2025-11-27" tags={["Milestone", "Beta"]} description="v0.1.0">
+  ## First stable release
+
+  YumeBox 0.1.0 has been released!
+
+  ### System support
+
+  - Android 7.0 and later
+  - Supports armeabi-v7a, arm64-v8a, x86, and x86_64 architectures
+
+</Update>

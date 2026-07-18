@@ -18,12 +18,17 @@
 *.class
 
 # IDE - IntelliJ/Android Studio
-.idea/*
 !.idea/codeStyles/
 !.idea/copyright/
-*.iml
+.idea/*
 .navigation/
+.vs/
+.vscode/
+*.code-workspace
+*.iml
+CppProperties.json
 captures/
+scripts/__pycache__/
 
 # Native build
 .cxx/
@@ -34,11 +39,20 @@ cmake-build-*/
 *.a
 *.o
 *.obj
+/app/pkg/
+/core/pkg/
+/data/pkg/
+/feature/meta/pkg/
+/feature/override/pkg/
+/feature/profiles/pkg/
+/feature/settings/pkg/
+/lib/native/rust/pkg/
+/platform/pkg/
+/runtime/client/pkg/
+/runtime/service/pkg/
 
 # Signing & secrets
 *.jks
-*.keystore
-release.keystore
 signing.properties
 local.properties
 .env
@@ -57,34 +71,35 @@ Thumbs.db
 *.hprof
 
 # Project specific
+.agents
+.codex
+.cursor
+.mimocode
+.trellis
+/.android-user-home/
+/.claude
+/.codex/environments/environment.toml
+/.gradle-user-home/
+/.pensieve/
+/.qoder
+/AGENTS.md
+/app/build/
+/app/google-services.json
+/app/release/
 /app/src/androidMain/assets/
 /app/src/main/assets/
 /core/src/foss/golang/mihomo/
-/.claude
-/.qoder
-/app/release/
-/app/build/
 /rule.md
 /google-services.json
-/app/google-services.json
 /desktop.ini
 /app/src/main/assets/ASN.mmdb
-/.gradle-user-home/
-/.android-user-home/
-/AGENTS.md
 /scripts/rewrite-git-email.sh
-/.pensieve/
 /CLAUDE.md
 /docs/override-merge-plan/
 /docs/config/
 /docs/amper
 /lib/mihomo/mihomo/
-/.codex/environments/environment.toml
 /docs/code-review/
-.cursor
-.agents
-.codex
-.trellis
 # Python bytecode
 __pycache__/
 *.pyc

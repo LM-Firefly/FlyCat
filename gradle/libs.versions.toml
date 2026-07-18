@@ -1,38 +1,57 @@
 [versions]
 soraEditor = "0.24.6"
-composeBom = "2026.06.00"
+composeBom = "2026.06.01"
 desugarJdkLibs = "2.1.5"
 coroutines = "1.11.0"
 serializationJson = "1.11.0"
 annotationJvm = "1.10.0"
 coreKtx = "1.19.0"
+coreSplashscreen = "1.2.0"
 activityCompose = "1.13.0"
 lifecycle = "2.11.0"
 camera = "1.6.1"
 koin = "4.2.2"
 timber = "5.0.1"
-ktor = "3.5.0"
-miuix = "0.9.3"
-haze = "1.7.2"
-sketch4 = "4.4.0"
+ktor = "3.5.2"
+miuix = "0.9.4-rc01"
+haze = "2.0.0-alpha03"
+sketch4 = "4.6.0"
 mlkitBarcodeScanning = "17.3.0"
 reorderable = "3.1.0"
-aboutLibraries = "15.0.0"
+aboutLibraries = "15.0.4"
 commonsCompress = "1.28.0"
-javetNodeAndroid = "5.0.8"
+javetNodeAndroid = "5.0.10"
 mmkv64 = "2.4.0"
 mmkv32 = "1.3.14"
-navigationevent = "1.1.2"
-navigation3 = "1.1.3"
+decompose = "3.5.0"
 hiddenApiBypass = "6.1"
 biometric = "1.4.0-alpha07"
 xz = "1.12"
 shapes = "1.2.0"
 snakeYaml = "v1.18-android"
+snakeyamlEngine = "3.1"
+bcprov = "1.85"
 libsu = "6.0.0"
-animation = "1.11.3"
+composeDestinations = "2.3.0"
 room = "2.8.4"
+robolectric = "4.16.1"
+junit4 = "4.13.2"
+androidxTestCore = "1.7.0"
 smaliDexlib2 = "3.0.9"
+
+# Plugin & build-only versions
+androidGradlePlugin = "9.4.0-alpha06"
+kotlin = "2.4.10"
+jetbrainsCompose = "1.11.1"
+ksp = "2.3.11"
+spotless = "8.8.0"
+protobuf = "3.25.9"
+jdom2 = "2.0.6.1"
+jose4j = "0.9.6"
+jacksonCore = "2.22.0"
+commonsLang3 = "3.20.0"
+netty = "4.1.136.Final"
+httpcomponentsHttpClient = "4.5.14"
 
 [libraries]
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
@@ -45,12 +64,11 @@ androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling
 androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-annotation-jvm = { module = "androidx.annotation:annotation-jvm", version.ref = "annotationJvm" }
 androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
-androidx-navigationevent-compose = { module = "androidx.navigationevent:navigationevent-compose", version.ref = "navigationevent" }
-androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
-androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
-androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
+decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decompose" }
+decompose-extensions-compose = { module = "com.arkivanov.decompose:extensions-compose", version.ref = "decompose" }
 androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
@@ -73,7 +91,9 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serializationJson" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 xz = { module = "org.tukaani:xz", version.ref = "xz" }
-smali-dexlib2 = { module = "com.android.tools.smali:smali-dexlib2", version.ref = "smaliDexlib2" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkitBarcodeScanning" }
 sketch-compose = { module = "io.github.panpf.sketch4:sketch-compose", version.ref = "sketch4" }
 sketch-http = { module = "io.github.panpf.sketch4:sketch-http", version.ref = "sketch4" }
@@ -92,17 +112,33 @@ snake-yaml = { module = "com.github.bmoliveira:snake-yaml", version.ref = "snake
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 javet-node-android = { module = "com.caoccao.javet:javet-node-android", version.ref = "javetNodeAndroid" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 editor-bom = { module = "io.github.rosemoe:editor-bom", version.ref = "soraEditor" }
 rosemoe-editor = { module = "io.github.rosemoe:editor" }
-rosemoe-editor-lsp = { module = "io.github.rosemoe:editor-lsp" }
+snakeyaml-engine = { module = "org.snakeyaml:snakeyaml-engine", version.ref = "snakeyamlEngine" }
+bcprov-jdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bcprov" }
+haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
+junit4 = { module = "junit:junit", version.ref = "junit4" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
+mmkv = { module = "com.tencent:mmkv" }
 rosemoe-language-textmate = { module = "io.github.rosemoe:language-textmate" }
-rosemoe-language-treesitter = { module = "io.github.rosemoe:language-treesitter" }
+rosemoe-oniguruma = { module = "io.github.rosemoe:oniguruma-native" }
 libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu" }
 libsu-service = { module = "com.github.topjohnwu.libsu:service", version.ref = "libsu" }
-androidx-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
-androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
-androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
-androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+composedestinations-core = { module = "io.github.raamcosta.compose-destinations:core", version.ref = "composeDestinations" }
+composedestinations-ksp = { module = "io.github.raamcosta.compose-destinations:ksp", version.ref = "composeDestinations" }
+smali-dexlib2 = { module = "com.android.tools.smali:smali-dexlib2", version.ref = "smaliDexlib2" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
+android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+jetbrains-compose = { id = "org.jetbrains.compose", version.ref = "jetbrainsCompose" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+room = { id = "androidx.room", version.ref = "room" }
+aboutlibraries = { id = "com.mikepenz.aboutlibraries.plugin.android", version.ref = "aboutLibraries" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

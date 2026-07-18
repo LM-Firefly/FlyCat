@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,10 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.feature.editor.editor
+package com.github.lmfirefly.flycat.feature.editor.presentation.editor
 
 import android.util.TypedValue
 import androidx.compose.runtime.Composable
@@ -31,8 +32,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.github.yumelira.yumebox.feature.editor.language.TextMateInitializer
-import com.github.yumelira.yumebox.feature.editor.theme.EditorThemeManager
+import com.github.lmfirefly.flycat.feature.editor.presentation.language.TextMateInitializer
+import com.github.lmfirefly.flycat.feature.editor.presentation.theme.EditorThemeManager
 import io.github.rosemoe.sora.event.ContentChangeEvent
 import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.subscribeAlways

@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,14 +15,15 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.presentation.util
+package com.github.lmfirefly.flycat.presentation.util
 
-import com.github.yumelira.yumebox.common.util.ByteFormatter
-import com.github.yumelira.yumebox.runtime.api.Profile
-import dev.oom_wg.purejoy.mlang.MLang
+import com.github.lmfirefly.flycat.core.model.profile.Profile
+import com.github.lmfirefly.flycat.core.util.format.ByteFormatter
+import com.github.lmfirefly.flycat.locale.FlyTxt
 import java.io.File
 
 val Profile.enabled: Boolean
@@ -45,9 +46,9 @@ val Profile.lastUpdatedAt: Long?
 
 fun Profile.getDisplayProvider(): String =
     when (type) {
-        Profile.Type.Url -> provider ?: MLang.Component.ProfileCard.RemoteSubscription
-        Profile.Type.File -> MLang.Component.ProfileCard.LocalFile
-        Profile.Type.External -> MLang.Component.ProfileCard.LocalConfig
+        Profile.Type.Url -> provider ?: FlyTxt.Component.ProfileCard.RemoteSubscription
+        Profile.Type.File -> FlyTxt.Component.ProfileCard.LocalFile
+        Profile.Type.External -> FlyTxt.Component.ProfileCard.LocalConfig
     }
 
 fun Profile.getInfoText(): String =
@@ -58,7 +59,7 @@ fun Profile.getInfoText(): String =
                 if (totalBytesValue != null && totalBytesValue > 0) {
                     val usedPercent = usedBytes * 100 / totalBytesValue
                     append(
-                        MLang.Component.ProfileCard.Traffic.format(
+                        FlyTxt.Component.ProfileCard.Traffic.format(
                             ByteFormatter.format(usedBytes),
                             ByteFormatter.format(totalBytesValue),
                             usedPercent.toInt(),
@@ -66,12 +67,12 @@ fun Profile.getInfoText(): String =
                     )
                 } else if (usedBytes > 0) {
                     append(
-                        MLang.Component.ProfileCard.UsedTraffic.format(
+                        FlyTxt.Component.ProfileCard.UsedTraffic.format(
                             ByteFormatter.format(usedBytes)
                         )
                     )
                 } else {
-                    append(MLang.Component.ProfileCard.ClickToUpdate)
+                    append(FlyTxt.Component.ProfileCard.ClickToUpdate)
                 }
 
                 expireAt?.let { expireTime ->
@@ -86,15 +87,15 @@ fun Profile.getInfoText(): String =
 
                     if (daysLeft > 0) {
                         append(
-                            MLang.Component.ProfileCard.ExpireAt.format(
+                            FlyTxt.Component.ProfileCard.ExpireAt.format(
                                 expireDate,
                                 daysLeft.toInt(),
                             )
                         )
                     } else if (daysLeft == 0L) {
-                        append(MLang.Component.ProfileCard.ExpireToday)
+                        append(FlyTxt.Component.ProfileCard.ExpireToday)
                     } else {
-                        append(MLang.Component.ProfileCard.Expired.format(expireDate))
+                        append(FlyTxt.Component.ProfileCard.Expired.format(expireDate))
                     }
                 }
 
@@ -105,8 +106,8 @@ fun Profile.getInfoText(): String =
             }
         }
 
-        Profile.Type.File -> MLang.Component.ProfileCard.LocalConfig
-        Profile.Type.External -> MLang.Component.ProfileCard.LocalConfig
+        Profile.Type.File -> FlyTxt.Component.ProfileCard.LocalConfig
+        Profile.Type.External -> FlyTxt.Component.ProfileCard.LocalConfig
     }
 
 fun Profile.shouldShowUpdateButton(): Boolean = type == Profile.Type.Url
@@ -120,12 +121,12 @@ private fun getRelativeTimeString(timestamp: Long): String {
     val hours = diff / (1000 * 60 * 60)
 
     return when {
-        diff < 60 * 1000 -> MLang.Component.ProfileCard.JustNow
-        minutes < 60 -> MLang.Component.ProfileCard.MinutesAgo.format(minutes.toInt())
-        hours < 24 -> MLang.Component.ProfileCard.HoursAgo.format(hours.toInt())
+        diff < 60 * 1000 -> FlyTxt.Component.ProfileCard.JustNow
+        minutes < 60 -> FlyTxt.Component.ProfileCard.MinutesAgo.format(minutes.toInt())
+        hours < 24 -> FlyTxt.Component.ProfileCard.HoursAgo.format(hours.toInt())
         else -> {
             val days = diff / (1000 * 60 * 60 * 24)
-            MLang.Component.ProfileCard.DaysAgo.format(days.toInt())
+            FlyTxt.Component.ProfileCard.DaysAgo.format(days.toInt())
         }
     }
 }

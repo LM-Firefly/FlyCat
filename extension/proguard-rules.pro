@@ -1,5 +1,5 @@
 # ========================================
-# YumeBox Extension ProGuard Configuration
+# FlyCat Extension ProGuard Configuration
 # ========================================
 
 # This APK currently has android:hasCode="false" and only distributes native

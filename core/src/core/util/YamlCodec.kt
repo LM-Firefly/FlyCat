@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,10 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.core.util
+package com.github.lmfirefly.flycat.core.util
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
@@ -31,8 +32,12 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
-import org.yaml.snakeyaml.DumperOptions
-import org.yaml.snakeyaml.Yaml
+import org.snakeyaml.engine.v2.api.Dump
+import org.snakeyaml.engine.v2.api.DumpSettings
+import org.snakeyaml.engine.v2.api.Load
+import org.snakeyaml.engine.v2.api.LoadSettings
+import org.snakeyaml.engine.v2.common.FlowStyle
+import org.snakeyaml.engine.v2.common.ScalarStyle
 
 object YamlCodec {
     private val json = Json {
@@ -42,18 +47,8 @@ object YamlCodec {
         prettyPrint = true
     }
 
-    private val yaml =
-        Yaml(
-            DumperOptions().apply {
-                defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
-                defaultScalarStyle = DumperOptions.ScalarStyle.PLAIN
-                isPrettyFlow = true
-                indent = 2
-                indicatorIndent = 0
-                width = 160
-                splitLines = false
-            }
-        )
+    private val loader = Load(LoadSettings.builder().build())
+    private val dumper = Dump(DumpSettings.builder().setDefaultFlowStyle(FlowStyle.BLOCK).setDefaultScalarStyle(ScalarStyle.PLAIN).setIndent(2).setWidth(160).build())
 
     fun <T> encode(serializer: KSerializer<T>, value: T): String {
         val element = json.encodeToJsonElement(serializer, value)
@@ -75,13 +70,13 @@ object YamlCodec {
         return loaded as? Map<String, Any?> ?: emptyMap()
     }
 
-    fun dumpValue(value: Any?): String = yaml.dump(normalizeYamlValue(value))
+    fun dumpValue(value: Any?): String = dumper.dumpToString(normalizeYamlValue(value))
 
-    fun loadValue(content: String): Any? = normalizeYamlValue(yaml.load(content))
+    fun loadValue(content: String): Any? = normalizeYamlValue(loader.loadFromString(content))
 
     fun validate(content: String) {
         if (content.isBlank()) return
-        yaml.load(content)
+        loader.loadFromString(content)
     }
 
     private fun toYamlNode(element: JsonElement): Any? =

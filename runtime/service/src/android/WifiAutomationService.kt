@@ -1,0 +1,219 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+package com.github.lmfirefly.flycat.runtime.service.android
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.ServiceInfo
+import android.net.VpnService
+import android.os.Build
+import android.os.IBinder
+import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
+import com.github.lmfirefly.flycat.core.model.WifiAutomationAction
+import com.github.lmfirefly.flycat.core.model.WifiAutomationFallbackAction
+import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
+import com.github.lmfirefly.flycat.data.store.MMKVProvider
+import com.github.lmfirefly.flycat.data.store.NetworkSettingsStore
+import com.github.lmfirefly.flycat.data.store.RemoteControllerStore
+import com.github.lmfirefly.flycat.runtime.api.constants.Intents
+import com.github.lmfirefly.flycat.runtime.api.wifi.WifiSsidObservation
+import com.github.lmfirefly.flycat.runtime.service.R
+import com.github.lmfirefly.flycat.runtime.service.StatusProvider
+import com.github.lmfirefly.flycat.runtime.service.session.RuntimeServiceLauncher
+import com.github.lmfirefly.flycat.runtime.service.wifi.WifiSsidObserver
+import kotlinx.coroutines.*
+import timber.log.Timber
+
+/**
+ * User-started foreground service that keeps SSID monitoring alive when the VPN is stopped.
+ * It intentionally has no boot receiver: background-location permission is not part of v1.
+ */
+class WifiAutomationService : Service() {
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val settings by lazy {
+        NetworkSettingsStore(MMKVProvider().getMMKV(MMKVProvider.ID_NETWORK_SETTINGS))
+    }
+    private var observer: WifiSsidObserver? = null
+    private var applyJob: Job? = null
+    private val runtimeEventsReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == Intents.actionClashStarted(packageName)) observer?.refresh()
+            }
+        }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        startForegroundNotification()
+        ContextCompat.registerReceiver(
+            this,
+            runtimeEventsReceiver,
+            IntentFilter(Intents.actionClashStarted(packageName)),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (!settings.wifiAutomationEnabled.value || settings.runMode.value != RunMode.VpnService) {
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
+        if (observer == null) {
+            observer = WifiSsidObserver(this, ::onSsidObservation).also(WifiSsidObserver::start)
+        } else {
+            observer?.refresh()
+        }
+        return START_NOT_STICKY
+    }
+
+    override fun onDestroy() {
+        applyJob?.cancel()
+        observer?.stop()
+        observer = null
+        runCatching { unregisterReceiver(runtimeEventsReceiver) }
+        serviceScope.cancel()
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        super.onDestroy()
+    }
+
+    private fun onSsidObservation(observation: WifiSsidObservation) {
+        applyJob?.cancel()
+        applyJob =
+            serviceScope.launch {
+                delay(RULE_STABILIZATION_MILLIS)
+                applyRule(observation)
+            }
+    }
+
+    private fun applyRule(observation: WifiSsidObservation) {
+        if (!settings.wifiAutomationEnabled.value || settings.runMode.value != RunMode.VpnService) return
+        if (RemoteControllerStore.isActive()) return
+
+        when (observation) {
+            is WifiSsidObservation.Connected -> {
+                val action =
+                    settings.wifiAutomationRules.value.firstOrNull { it.ssid == observation.ssid }?.action
+                if (action == null) {
+                    applyFallbackAction(settings.wifiAutomationOtherWifiAction.value)
+                } else {
+                    applySsidAction(action)
+                }
+            }
+
+            WifiSsidObservation.NoWifi -> applyFallbackAction(settings.wifiAutomationNoWifiAction.value)
+            WifiSsidObservation.Unavailable -> Unit
+        }
+    }
+
+    private fun applySsidAction(action: WifiAutomationAction) {
+        when (action) {
+            WifiAutomationAction.Start -> startVpnIfPossible()
+            WifiAutomationAction.Stop -> stopVpn()
+        }
+    }
+
+    private fun applyFallbackAction(action: WifiAutomationFallbackAction) {
+        when (action) {
+            WifiAutomationFallbackAction.Keep -> Unit
+            WifiAutomationFallbackAction.Start -> startVpnIfPossible()
+            WifiAutomationFallbackAction.Stop -> stopVpn()
+        }
+    }
+
+    private fun startVpnIfPossible() {
+        if (StatusProvider.isRuntimeActive(RunMode.VpnService)) return
+        if (VpnService.prepare(this) != null) {
+            Timber.i("Wi-Fi automation skipped start: VPN permission missing")
+            return
+        }
+        runCatching {
+            RuntimeServiceLauncher.start(
+                this,
+                RunMode.VpnService,
+                RuntimeServiceLauncher.SOURCE_WIFI_AUTOMATION,
+            )
+        }
+            .onFailure { error -> Timber.w(error, "Wi-Fi automation start failed") }
+    }
+
+    private fun stopVpn() {
+        runCatching { RuntimeServiceLauncher.stop(this, RunMode.VpnService) }
+            .onFailure { error -> Timber.w(error, "Wi-Fi automation stop failed") }
+    }
+
+    private fun startForegroundNotification() {
+        val manager = getSystemService(NotificationManager::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    CHANNEL_ID,
+                    getString(R.string.wifi_automation_channel_name),
+                    NotificationManager.IMPORTANCE_LOW,
+                )
+            )
+        }
+        val notification =
+            NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_logo_service)
+                .setContentTitle(getString(R.string.wifi_automation_notification_title))
+                .setContentText(getString(R.string.wifi_automation_notification_text))
+                .setOngoing(true)
+                .build()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+    }
+
+    companion object {
+        private const val CHANNEL_ID = "wifi_automation"
+        private const val NOTIFICATION_ID = 1102
+        private const val RULE_STABILIZATION_MILLIS = 1_500L
+
+        fun start(context: Context) {
+            val appContext = context.applicationContext
+            runCatching {
+                appContext.startForegroundService(Intent(appContext, WifiAutomationService::class.java))
+            }
+                .onFailure { error -> Timber.w(error, "Start Wi-Fi automation service failed") }
+        }
+
+        fun stop(context: Context) {
+            val appContext = context.applicationContext
+            appContext.stopService(Intent(appContext, WifiAutomationService::class.java))
+        }
+    }
+}

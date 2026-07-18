@@ -1,184 +1,34 @@
 ---
-title: "YumeBox"
-sidebarTitle: "介绍"
-description: 基于 mihomo 内核的开源 Android 客户端
-icon: "house"
+title: FlyCat
+"og:title": FlyCat - An open-source Android client based on the mihomo kernel
+"twitter:title": FlyCat - An open-source Android client based on the mihomo kernel
+sidebarTitle: 介绍
+icon: house
 ---
 
-<Frame>
-  <img
-    src="/logo/Yume.webp"
-    noZoom={true}
-  />
-</Frame>
+<Frame><img src="/images/og.webp" alt="FlyCat 项目预览" noZoom={true} /></Frame>
 
-<Info>如果结局是分开，那相遇的意义是什么 --  **恋×シンアイ彼女**</Info>
+## 简介
+[FlyCat](https://github.com/LM-Firefly/FlyCat) 是一个基于 [YumeBox](https://github.com/YumeYucca/YumeBox) 的开源 Android 客户端，使用 [mihomo](https://github.com/MetaCubeX/mihomo) 作为内核，提供代理管理与配置覆写等功能。
 
-## 特别
+FlyCat 继承了 YumeBox 的核心理念：尽可能少地覆写原配置中的内容，非必要不进行覆写，拒绝将明确的配置[字段](https://wiki.metacubex.one/config/)抽象为模棱两可的功能开关。
 
-**~~作者对这个项目中的代码一无所知。代码处于可用或不可用状态，没有第三种情况。~~**
-
-**YumeBox 核心理念为尽可能少的覆写掉原配置中的内容，非必要不进行覆写，拒绝将明确的配置[字段](https://wiki.metacubex.one/config/)抽象为模棱两可、含糊其辞的功能开关**
 ## 发展
-
-YumeBox 迭代至今逐渐趋于稳定，未来将一直保持 **开源 & 免费**，承诺不会有任何收集隐私及上传或广告行为。
-
-### **2026 年6 月 1 日**
-
-***为保持项目良好的发展，目前已去除签名校验部分部分，此外添加了部分条款，仅作用于Fork发行版，请不要为此项目带来混淆歧义或多余负担***
-
-- YumeBox 应用图标及品牌标识的版权归项目所有者所有
-- Fork 发行版限制
-    - 发行版不得使用 YumeBox 项目名称
-    - 发行版不得沿用 YumeBox 原始图标
-    - 发行版不得包含 YumeBox Issue 反馈渠道
-
+FlyCat 基于 YumeBox 持续迭代，未来将一直保持 **开源 & 免费**，承诺不会有任何收集隐私、上传数据或广告行为。
 
 ## 下载
-如果需要历史版本，请查看 [更新日志](/update/history.mdx)
-<Card title="下载" icon="square-arrow-down" horizontal href="https://github.com/YumeYucca/YumeBox/releases">
+如果需要历史版本，请查看 [更新日志](/update/history)
+<Card title="下载" icon="square-arrow-down" horizontal href="https://github.com/LM-Firefly/FlyCat/releases">
    前往 Github Release 下载安装包
 </Card>
 
 ## 其他资料
-
 <CardGroup cols={2}>
-    <Card title="Telegram 群组" icon="message-circle" href="https://t.me/OOM_Group">
-        加入讨论，获取最新消息。
-    </Card>
+  <Card title="上游项目" icon="github" href="https://github.com/YumeYucca/YumeBox">
+    查看 YumeBox 上游仓库。
+  </Card>
 
-    <Card title="配置文档" icon="settings" href="https://wiki.metacubex.one/config/">
-        查看 mihomo 配置说明与最佳实践。
-    </Card>
+  <Card title="配置文档" icon="settings" href="https://wiki.metacubex.one/config/">
+    查看 mihomo 配置指南与最佳实践。
+  </Card>
 </CardGroup>
-
-## 模块依赖
-
-```mermaid
-%%{init: {"theme": "base", "flowchart": {"curve": "basis", "htmlLabels": true, "nodeSpacing": 32, "rankSpacing": 48}, "themeVariables": {"primaryColor": "#ecfdf5", "primaryBorderColor": "#16a34a", "primaryTextColor": "#052e16", "lineColor": "#94a3b8", "fontFamily": "Inter, ui-sans-serif, system-ui"}}}%%
-flowchart TB
-    app([":app"])
-
-    subgraph Feat["功能模块"]
-        direction LR
-        proxy([":feature:proxy"])
-        override([":feature:override"])
-        editor([":feature:editor"])
-        meta([":feature:meta"])
-        substore([":feature:substore"])
-    end
-
-    ui([":ui"])
-
-    subgraph Rt["运行时"]
-        direction LR
-        client([":runtime:client"])
-        service([":runtime:service"])
-        rapi([":runtime:api"])
-    end
-
-    data([":data"])
-
-    subgraph Base["基础设施"]
-        direction LR
-        core([":core"])
-        platform([":platform"])
-        locale([":locale"])
-    end
-
-    app --> Feat
-    app --> ui
-    app --> client
-    Feat --> ui
-    Feat --> data
-    proxy --> client
-    meta --> client
-    override --> editor
-    client --> service
-    client --> rapi
-    service --> data
-    ui --> data
-    data --> core
-    data --> rapi
-    rapi --> core
-
-    classDef app fill:#ecfdf5,stroke:#16a34a,color:#052e16
-    classDef mid fill:#eff6ff,stroke:#2563eb,color:#172554
-    classDef base fill:#f8fafc,stroke:#94a3b8,color:#0f172a
-
-    class app app
-    class proxy,override,editor,meta,substore,ui,client,service,rapi mid
-    class core,platform,locale,data base
-```
-
-## 启动流程
-
-```mermaid
-%%{init: {"theme": "base", "flowchart": {"curve": "basis", "htmlLabels": true, "nodeSpacing": 36, "rankSpacing": 50}, "themeVariables": {"primaryColor": "#ecfdf5", "primaryBorderColor": "#16a34a", "primaryTextColor": "#052e16", "lineColor": "#94a3b8", "fontFamily": "Inter, ui-sans-serif, system-ui"}}}%%
-flowchart TB
-    subgraph Boot["进程启动"]
-        direction LR
-        Init["应用初始化<br/>Global · MMKV · Koin"]
-        Load["内核装载<br/>override · bridge · clash"]
-        Init --> Load
-    end
-
-    subgraph Sources["订阅 · 可多个"]
-        direction LR
-        PA(["订阅 A"])
-        PB(["订阅 B · 活动"])
-        PC(["订阅 C"])
-    end
-
-    subgraph Override["覆写绑定"]
-        direction LR
-        OY["YAML 覆写"]
-        Chain["绑定链<br/>metadata.yaml"]
-        OJ["JS 覆写"]
-        Chain --> OY
-        Chain --> OJ
-    end
-
-    Compile["配置编译 · liboverride<br/>读取 · 解密 · 合并 · 锚点 · 脚本"]
-    Kernel["libclash 内核<br/>内存加载运行配置"]
-
-    subgraph Transport["流量接管 · 择一"]
-        direction LR
-        Http["HTTP 代理"]
-        Tun["VPN TUN"]
-        Root["Root TUN"]
-    end
-
-    Snap["运行快照<br/>状态轮询"]
-
-    Load --> Compile
-    PB ==>|活动订阅| Compile
-    PA -. 候选 .-> Compile
-    PC -. 候选 .-> Compile
-    OY --> Compile
-    OJ --> Compile
-    Compile --> Kernel
-    Kernel --> Http
-    Kernel --> Tun
-    Kernel --> Root
-    Http --> Snap
-    Tun --> Snap
-    Root --> Snap
-    Snap -. 恢复节点选择 .-> Kernel
-
-    classDef boot fill:#eff6ff,stroke:#2563eb,color:#172554
-    classDef profile fill:#f8fafc,stroke:#94a3b8,color:#0f172a
-    classDef active fill:#dcfce7,stroke:#16a34a,color:#052e16,font-weight:bold
-    classDef bind fill:#faf5ff,stroke:#a855f7,color:#3b0764
-    classDef compiler fill:#ecfdf5,stroke:#16a34a,color:#052e16
-    classDef core fill:#f0fdf4,stroke:#22c55e,color:#052e16
-    classDef transport fill:#fef2f2,stroke:#ef4444,color:#7f1d1d
-
-    class Init,Load boot
-    class PA,PC profile
-    class PB active
-    class Chain,OY,OJ bind
-    class Compile compiler
-    class Kernel,Snap core
-    class Http,Tun,Root transport
-```

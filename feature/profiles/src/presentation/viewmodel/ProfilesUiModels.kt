@@ -1,0 +1,70 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+package com.github.lmfirefly.flycat.feature.profiles.presentation.viewmodel
+
+import com.github.lmfirefly.flycat.core.model.FetchStatus
+import com.github.lmfirefly.flycat.presentation.viewmodel.LoadableState
+import com.github.lmfirefly.flycat.locale.FlyTxt
+
+sealed interface ProfilesUiEffect {
+    data class ShowMessage(val message: String) : ProfilesUiEffect
+
+    data class ShowError(val message: String) : ProfilesUiEffect
+}
+
+data class ProfilesUiState(
+    override val isLoading: Boolean = false,
+    override val error: String? = null,
+    override val message: String? = null,
+) : LoadableState<ProfilesUiState> {
+    override fun withLoading(loading: Boolean): ProfilesUiState = copy(isLoading = loading)
+
+    override fun withError(error: String?): ProfilesUiState = copy(error = error)
+
+    override fun withMessage(message: String?): ProfilesUiState = copy(message = message)
+}
+
+data class DownloadProgress(
+    val percent: Int?,
+    val message: String,
+    val isCompleted: Boolean = false,
+)
+
+internal fun FetchStatus.toDownloadProgress(): DownloadProgress {
+    val percent = if (max > 0) ((progress * 100) / max).coerceIn(0, 100) else null
+    val detail = args.firstOrNull().orEmpty().trim()
+    val message =
+        when (action) {
+            FetchStatus.Action.FetchConfiguration ->
+                if (percent == null || percent <= 5) {
+                    FlyTxt.ProfilesVM.Progress.Preparing
+                } else {
+                    detail.ifBlank { FlyTxt.ProfilesPage.Progress.Downloading }
+                }
+
+            FetchStatus.Action.FetchProviders -> detail
+            FetchStatus.Action.SubscriptionInfo -> ""
+            FetchStatus.Action.Verifying -> detail.ifBlank { FlyTxt.ProfilesVM.Progress.Verifying }
+        }
+
+    return DownloadProgress(percent = percent, message = message)
+}

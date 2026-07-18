@@ -1,0 +1,9 @@
+<Util>
+Util = {
+    Error = {
+        UnknownError = "未知错误"
+        CannotCreateDir = "无法创建目录：%s"
+        TargetNotDir = "目标不是目录：%s"
+        PathTraversalDetected = "检测到路径遍历：%s"
+    }
+}

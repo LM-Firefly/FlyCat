@@ -1,7 +1,9 @@
+// Package common provides shared path resolution utilities for the native bridge.
 package common
 
 import "strings"
 
+// ResolveAsRoot resolves a path relative to the application's root data directory.
 func ResolveAsRoot(path string) string {
 	directories := strings.Split(path, "/")
 	result := make([]string, 0, len(directories))
