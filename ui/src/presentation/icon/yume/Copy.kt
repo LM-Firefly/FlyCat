@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,17 +34,17 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Copy: ImageVector
     get() {
-        if (_Copy != null) {
-            return _Copy!!
+        if (copyVector != null) {
+            return copyVector!!
         }
-        _Copy =
+        copyVector =
             ImageVector.Builder(
-                    name = "Copy",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "Copy",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -76,7 +79,8 @@ val Yume.Copy: ImageVector
                 }
                 .build()
 
-        return _Copy!!
+        return copyVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _Copy: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var copyVector: ImageVector? = null

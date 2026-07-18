@@ -21,6 +21,8 @@
 package com.github.yumelira.yumebox.presentation.component
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,8 +41,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
+import com.github.yumelira.yumebox.core.model.Profile
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.`Circle-fading-arrow-up`
+import com.github.yumelira.yumebox.presentation.icon.yume.CircleFadingArrowUp
 import com.github.yumelira.yumebox.presentation.icon.yume.Delete
 import com.github.yumelira.yumebox.presentation.icon.yume.Edit
 import com.github.yumelira.yumebox.presentation.icon.yume.Share
@@ -50,15 +53,16 @@ import com.github.yumelira.yumebox.presentation.util.getDisplayProvider
 import com.github.yumelira.yumebox.presentation.util.getInfoText
 import com.github.yumelira.yumebox.presentation.util.isConfigSaved
 import com.github.yumelira.yumebox.presentation.util.shouldShowUpdateButton
-import com.github.yumelira.yumebox.runtime.api.Profile
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.FlyTxt
+import java.io.File
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.io.File
+import top.yukonga.miuix.kmp.utils.SinkFeedback
+import top.yukonga.miuix.kmp.utils.pressable
 
 @Composable
 fun ProfileCard(
@@ -93,9 +97,10 @@ fun ProfileCard(
     val updateBg =
         remember(colorScheme, opacity) { colorScheme.primary.copy(alpha = opacity.subtle) }
     val updateTint = remember(colorScheme) { colorScheme.primary }
+    val interactionSource = remember { MutableInteractionSource() }
 
     Card(
-        modifier = modifier.fillMaxWidth().padding(bottom = spacing.space12),
+        modifier = modifier.fillMaxWidth().padding(bottom = spacing.space12).pressable(interactionSource = interactionSource, indication = SinkFeedback()),
         insideMargin = PaddingValues(spacing.space16),
     ) {
         Row(
@@ -109,7 +114,7 @@ fun ProfileCard(
                     fontWeight = FontWeight(550),
                     color = colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.basicMarquee(),
                 )
 
                 Text(
@@ -205,15 +210,10 @@ fun ProfileCard(
                 onClick = { if (isConfigSaved && !isDownloading) onExport(profile) },
             ) {
                 Icon(
-                    modifier =
-                        Modifier.size(spacing.space20)
-                            .alpha(if (isConfigSaved) 1f else opacity.disabledSecondary),
+                    modifier = Modifier.size(spacing.space20).alpha(if (isConfigSaved) 1f else opacity.disabledSecondary),
                     imageVector = Yume.Share,
-                    tint =
-                        actionIconTint.copy(
-                            alpha = if (isConfigSaved) 1f else opacity.disabledSecondary
-                        ),
-                    contentDescription = "Export",
+                    tint = actionIconTint.copy(alpha = if (isConfigSaved) 1f else opacity.disabledSecondary),
+                    contentDescription = FlyTxt.Component.Action.Export,
                 )
             }
 
@@ -224,13 +224,13 @@ fun ProfileCard(
                 minHeight = componentSizes.compactActionButtonSize,
                 minWidth = componentSizes.compactActionButtonSize,
                 enabled = !isDownloading,
-                onClick = { if (!isDownloading) onEdit(profile) },
+                onClick = { if (!isDownloading) onDelete(profile) },
             ) {
                 Icon(
                     modifier = Modifier.size(spacing.space20),
-                    imageVector = Yume.Edit,
+                    imageVector = Yume.Delete,
                     tint = actionIconTint,
-                    contentDescription = "Edit",
+                    contentDescription = FlyTxt.Component.Action.Delete,
                 )
             }
 
@@ -252,14 +252,13 @@ fun ProfileCard(
                     ) {
                         Icon(
                             modifier = Modifier.size(spacing.space20),
-                            imageVector = Yume.`Circle-fading-arrow-up`,
+                            imageVector = Yume.CircleFadingArrowUp,
                             tint = updateTint,
-                            contentDescription = "Update",
+                            contentDescription = FlyTxt.Component.Action.Update,
                         )
                         Text(
-                            modifier =
-                                Modifier.padding(end = componentSizes.textLineCompactSpacing),
-                            text = MLang.Component.ProfileCard.Update,
+                            modifier = Modifier.padding(end = componentSizes.textLineCompactSpacing),
+                            text = FlyTxt.Component.ProfileCard.Update,
                             color = updateTint,
                             fontWeight = FontWeight.Medium,
                             fontSize = 15.sp,
@@ -272,7 +271,7 @@ fun ProfileCard(
                 minHeight = componentSizes.compactActionButtonSize,
                 minWidth = componentSizes.compactActionButtonSize,
                 enabled = !isDownloading,
-                onClick = { if (!isDownloading) onDelete(profile) },
+                onClick = { if (!isDownloading) onEdit(profile) },
                 backgroundColor = secondaryContainer,
             ) {
                 Row(
@@ -281,17 +280,13 @@ fun ProfileCard(
                 ) {
                     Icon(
                         modifier = Modifier.size(spacing.space20),
-                        imageVector = Yume.Delete,
+                        imageVector = Yume.Edit,
                         tint = actionIconTint,
-                        contentDescription = "Delete",
+                        contentDescription = FlyTxt.Component.Action.Edit,
                     )
                     Text(
-                        modifier =
-                            Modifier.padding(
-                                start = spacing.space4,
-                                end = componentSizes.textLineCompactSpacing,
-                            ),
-                        text = MLang.Component.ProfileCard.Delete,
+                        modifier = Modifier.padding(start = spacing.space4, end = componentSizes.textLineCompactSpacing),
+                        text = FlyTxt.Component.ProfileCard.Edit,
                         color = actionIconTint,
                         fontWeight = FontWeight.Medium,
                         fontSize = 15.sp,

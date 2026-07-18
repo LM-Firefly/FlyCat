@@ -21,33 +21,42 @@
 package com.github.yumelira.yumebox.screen.navigation
 
 import androidx.compose.runtime.Composable
-import com.github.yumelira.yumebox.data.model.OverrideContentType
-import com.github.yumelira.yumebox.feature.editor.language.LanguageScope
-import com.github.yumelira.yumebox.feature.editor.screen.ConfigPreviewScreen
+import androidx.compose.runtime.rememberCoroutineScope
+import com.github.yumelira.yumebox.core.model.OverrideConfig
+import com.github.yumelira.yumebox.core.model.OverrideContentType
+import com.github.yumelira.yumebox.feature.editor.presentation.screen.ConfigPreviewScreen
+import com.github.yumelira.yumebox.feature.override.presentation.screen.OverrideListScreen
+import com.github.yumelira.yumebox.feature.override.presentation.viewmodel.OverrideConfigViewModel
 import com.github.yumelira.yumebox.presentation.component.Navigator
+import com.github.yumelira.yumebox.presentation.language.LanguageScope
 import com.github.yumelira.yumebox.presentation.navigation.Route
-import com.github.yumelira.yumebox.presentation.screen.OverrideListScreen
 import com.github.yumelira.yumebox.presentation.util.OverrideEditorStore
-import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import tf.gal.yumebox.locale.FlyTxt
 
 @Composable
 fun OverrideScreen(navigator: Navigator) {
     val overrideConfigViewModel: OverrideConfigViewModel = koinInject()
+    val scope = rememberCoroutineScope()
 
     OverrideListScreen(
-        onOpenCodeEditor = { config ->
-            OverrideEditorStore.setupConfigPreview(
-                title = config.name,
-                content = overrideConfigViewModel.getConfigContent(config.id) ?: config.content,
-                language = config.contentType.toLanguageScope(),
-                callback = { content ->
-                    if (!overrideConfigViewModel.saveConfigContent(config.id, content)) {
-                        error("保存覆写失败")
-                    }
-                },
-            )
-            navigator.push(Route.OverrideConfigPreview)
+        onNavigateBack = { navigator.pop() },
+        onOpenCodeEditor = { config: OverrideConfig ->
+            scope.launch {
+                val content = overrideConfigViewModel.getConfigContent(config.id) ?: config.content
+                OverrideEditorStore.setupConfigPreview(
+                    title = config.name,
+                    content = content,
+                    language = config.contentType.toLanguageScope(),
+                    callback = { savedContent ->
+                        if (!overrideConfigViewModel.saveConfigContent(config.id, savedContent)) {
+                            error(FlyTxt.Override.Error.SaveFailed)
+                        }
+                    },
+                )
+                navigator.push(Route.OverrideConfigPreview)
+            }
         }
     )
 }

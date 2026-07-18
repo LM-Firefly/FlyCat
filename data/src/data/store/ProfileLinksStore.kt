@@ -20,21 +20,10 @@
 
 package com.github.yumelira.yumebox.data.store
 
+import com.github.yumelira.yumebox.core.model.LinkOpenMode
+import com.github.yumelira.yumebox.core.model.ProfileLink
 import com.tencent.mmkv.MMKV
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-
-@Serializable
-data class ProfileLink(
-    val id: String,
-    val name: String,
-    val url: String,
-)
-
-enum class LinkOpenMode {
-    IN_APP,
-    EXTERNAL_BROWSER,
-}
 
 class ProfileLinksStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
     private val json = Json { ignoreUnknownKeys = true }

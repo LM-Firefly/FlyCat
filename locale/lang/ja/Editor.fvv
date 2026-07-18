@@ -1,0 +1,13 @@
+<Editor Page>
+Editor = {
+    JsonDiagnostic = {
+        FormatError = "JSON 形式エラー"
+        MustStartWithBraceOrBracket = "JSON は '{' または '[' で始まる必要があります"
+        SyntaxError = "JSON 構文エラー"
+        UnterminatedStringOrObject = "未終了の文字列またはオブジェクト"
+        Unknown = "不明"
+        Expected = "期待: %s"
+        MissingValue = "値がありません"
+        DuplicateKey = "重複するキー"
+    }
+}

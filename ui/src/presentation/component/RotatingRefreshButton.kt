@@ -20,13 +20,13 @@
 
 package com.github.yumelira.yumebox.presentation.component
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import top.yukonga.miuix.kmp.basic.Icon
@@ -41,21 +41,23 @@ fun RotatingRefreshButton(
     modifier: Modifier = Modifier,
     contentDescription: String = "Refresh",
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "refresh_rotation")
-    val rotation by
-        infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec =
-                infiniteRepeatable(animation = tween(durationMillis = 1000, easing = LinearEasing)),
-            label = "rotation",
-        )
-
+    val rotation = remember { Animatable(0f) }
+    LaunchedEffect(isRotating) {
+        if (isRotating) {
+            rotation.animateTo(
+                targetValue = rotation.value + 360f,
+                animationSpec = infiniteRepeatable(animation = tween(durationMillis = 1000, easing = LinearEasing)),
+            )
+        } else {
+            rotation.stop()
+            rotation.snapTo(0f)
+        }
+    }
     IconButton(modifier = modifier, onClick = onClick, enabled = !isRotating) {
         Icon(
             imageVector = MiuixIcons.Refresh,
             contentDescription = contentDescription,
-            modifier = if (isRotating) Modifier.rotate(rotation) else Modifier,
+            modifier = if (isRotating) Modifier.rotate(rotation.value) else Modifier,
         )
     }
 }

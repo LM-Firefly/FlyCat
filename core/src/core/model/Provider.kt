@@ -22,8 +22,23 @@ package com.github.yumelira.yumebox.core.model
 
 import android.os.Parcel
 import android.os.Parcelable
-import com.github.yumelira.yumebox.core.util.Parcelizer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
+
+@Serializable
+data class SubscriptionInfo(
+    @SerialName("Upload") val upload: Long = 0,
+    @SerialName("Download") val download: Long = 0,
+    @SerialName("Total") val total: Long = 0,
+    @SerialName("Expire") val expire: Long = 0
+) : Parcelable {
+    override fun writeToParcel(parcel: Parcel, flags: Int) { Parcelizer.encodeToParcel(serializer(), parcel, this) }
+    override fun describeContents(): Int = 0
+    companion object CREATOR : Parcelable.Creator<SubscriptionInfo> {
+        override fun createFromParcel(parcel: Parcel): SubscriptionInfo = Parcelizer.decodeFromParcel(serializer(), parcel)
+        override fun newArray(size: Int): Array<SubscriptionInfo?> = arrayOfNulls(size)
+    }
+}
 
 @Serializable
 data class Provider(
@@ -32,7 +47,19 @@ data class Provider(
     val vehicleType: VehicleType,
     val updatedAt: Long,
     val path: String = "",
+    val subscriptionInfo: SubscriptionInfo? = null,
+    val count: Int = 0,
+    val format: Format = Format.Yaml,
+    @SerialName("age-secret-key")
+    val ageSecretKey: String = "",
 ) : Parcelable, Comparable<Provider> {
+    enum class Format {
+        @SerialName("YamlRule")
+        Yaml,
+        @SerialName("MrsRule")
+        Mrs,
+    }
+
     enum class Type {
         Proxy,
         Rule,
@@ -61,3 +88,5 @@ data class Provider(
         override fun newArray(size: Int): Array<Provider?> = arrayOfNulls(size)
     }
 }
+
+data class UpdateProvidersResult(val failedProviders: List<String>)

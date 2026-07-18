@@ -1,0 +1,86 @@
+<Home Page>
+Home = {
+    Title = "FlyCat"
+
+    Message = {
+        ConfigSwitched = "設定を切り替えました"
+        ConfigSwitchFailed = "設定の切り替えに失敗しました: %s"
+        Preparing = "準備中..."
+        StartFailed = "開始に失敗しました: %s"
+        StopFailed = "停止に失敗しました: %s"
+    }
+
+    Control = {
+        HintAddProfile = "先にプロファイルを追加してください"
+        HintEnableProfile = "先に「設定」ページでプロファイルを有効にしてください"
+    }
+
+    NodeInfo = {
+        Node = "ノード"
+        Delay = "遅延"
+        Unknown = "不明"
+        DelayValue = "%dms"
+    }
+
+    Traffic = {
+        UpShort = "UP"
+        DownShort = "DOWN"
+        DownloadLong = "ダウンロード"
+        UploadLong = "アップロード"
+        NoProfile = "プロファイルなし"
+    }
+
+    IpInfo = {
+        ExitIp = "出口 IP"
+    }
+
+    Status = {
+        Connecting = "接続中"
+        Disconnecting = "切断中"
+        Running = "実行中"
+        Lost = "通信不可"
+        TapToStart = "タップして開始"
+    }
+
+    Greeting = {
+        Morning = "おはようございます"
+        Afternoon = "こんにちは"
+        Evening = "こんばんは"
+        Night = "おやすみなさい"
+    }
+
+    Quote = {
+        AuthorPrefix = "—— %s"
+    }
+
+    Control = {
+        HintAddProfile = "先にプロファイルを追加してください"
+        HintEnableProfile = "先に「設定」ページでプロファイルを有効にしてください"
+        Start = "開始"
+        Stop = "停止"
+    }
+
+    RunMode = {
+        Vpn = "VPN"
+        Tun = "TUN"
+    }
+
+    TunnelMode = {
+        Rule = "ルール"
+        Global = "グローバル"
+        Direct = "ダイレクト"
+    }
+
+    PreviewGuide = {
+        Title = "FlyCat へようこそ"
+        Description = "下部の「開始」をタップして接続します"
+        Next = "次へ"
+        Start = "はじめる"
+        WallpaperTitle = "壁紙を変更"
+        WallpaperDescription = "壁紙を長押ししてアルバムから選びます"
+        SwipeTitle = "ページをスワイプ"
+        SwipeDescription = "ホームを横にスワイプしてプロキシ、プロファイル、設定を切り替え"
+        AddTitle = "サブスクリプションを追加"
+        AddDescription = "右上のアイコンをタップし、リンクを貼り付けて追加"
+    }
+}

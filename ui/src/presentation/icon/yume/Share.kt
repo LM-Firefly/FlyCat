@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,17 +34,17 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Share: ImageVector
     get() {
-        if (_Share != null) {
-            return _Share!!
+        if (shareVector != null) {
+            return shareVector!!
         }
-        _Share =
+        shareVector =
             ImageVector.Builder(
-                    name = "Share",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "Share",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -94,7 +97,8 @@ val Yume.Share: ImageVector
                 }
                 .build()
 
-        return _Share!!
+        return shareVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _Share: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var shareVector: ImageVector? = null

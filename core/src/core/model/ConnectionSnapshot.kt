@@ -33,6 +33,21 @@ data class ConnectionSnapshot(
 )
 
 @Serializable
+data class ConnectionOverviewSnapshot(
+    val downloadTotal: Long = 0L,
+    val uploadTotal: Long = 0L,
+    val connections: List<ConnectionOverviewInfo> = emptyList(),
+    val memory: Long = 0L,
+)
+
+@Serializable
+data class ConnectionOverviewInfo(
+    val id: String = "",
+    @SerialName("upload") val upload: Long = 0L,
+    @SerialName("download") val download: Long = 0L,
+)
+
+@Serializable
 data class ConnectionInfo(
     val id: String = "",
     val metadata: JsonObject = JsonObject(emptyMap()),

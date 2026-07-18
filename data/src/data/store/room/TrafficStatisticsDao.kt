@@ -24,8 +24,10 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
-import com.github.yumelira.yumebox.data.model.AppRouteTrafficUsage
-import com.github.yumelira.yumebox.data.model.AppTrafficUsage
+import com.github.yumelira.yumebox.core.model.AppRouteTrafficUsage
+import com.github.yumelira.yumebox.core.model.AppTrafficUsage
+import com.github.yumelira.yumebox.core.model.DailyTraffic
+import com.github.yumelira.yumebox.core.model.TimeSlotTraffic
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -195,6 +197,32 @@ abstract class TrafficStatisticsDao {
         """
     )
     abstract fun getAppUsagesFlow(cutoffMillis: Long): Flow<List<AppTrafficUsage>>
+
+    @Query(
+        """
+        SELECT CAST((CAST(strftime('%H', last_active_at / 1000, 'unixepoch', 'localtime') AS INTEGER) / 2) AS INTEGER) AS slotIndex,
+               SUM(total_upload) AS totalUpload,
+               SUM(total_download) AS totalDownload
+        FROM app_traffic_daily
+        WHERE date_millis >= :cutoffMillis
+        GROUP BY slotIndex
+        ORDER BY slotIndex ASC
+        """
+    )
+    abstract fun getTimeSlotTrafficFlow(cutoffMillis: Long): Flow<List<TimeSlotTraffic>>
+
+    @Query(
+        """
+        SELECT date_millis AS dateMillis,
+               SUM(total_upload) AS totalUpload,
+               SUM(total_download) AS totalDownload
+        FROM app_traffic_daily
+        WHERE date_millis >= :cutoffMillis
+        GROUP BY date_millis
+        ORDER BY date_millis ASC
+        """
+    )
+    abstract fun getDailyTrafficFlow(cutoffMillis: Long): Flow<List<DailyTraffic>>
 
     /** One-shot variant of [getAppUsagesFlow] for facade parity. */
     @Query(

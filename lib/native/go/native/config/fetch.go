@@ -23,6 +23,7 @@ import (
 	RB "github.com/metacubex/mihomo/rules/bundle"
 )
 
+// Status represents a progress or subscription update event reported during profile fetching.
 type Status struct {
 	Action            string   `json:"action"`
 	Args              []string `json:"args"`
@@ -48,17 +49,35 @@ type fetchHeader struct {
 var (
 	customUserAgent string
 	userAgentMutex  sync.RWMutex
+	ageSecretKey    string
+	ageKeyMutex     sync.RWMutex
 
 	filenameStarPattern = regexp.MustCompile(`(?i)filename\*=([^']*)'([^']*)'([^;]+)`)
 	filenamePattern     = regexp.MustCompile(`(?i)filename=([^;]+)`)
 )
 
+// SetCustomUserAgent overrides the User-Agent header used for profile downloads.
 func SetCustomUserAgent(ua string) {
 	userAgentMutex.Lock()
 	defer userAgentMutex.Unlock()
 	customUserAgent = ua
 }
 
+// SetAgeSecretKey stores the age secret key used for profile decryption.
+func SetAgeSecretKey(key string) {
+	ageKeyMutex.Lock()
+	defer ageKeyMutex.Unlock()
+	ageSecretKey = key
+}
+
+// GetAgeSecretKey returns the currently configured age secret key.
+func GetAgeSecretKey() string {
+	ageKeyMutex.RLock()
+	defer ageKeyMutex.RUnlock()
+	return ageSecretKey
+}
+
+// GetCustomUserAgent returns the currently configured User-Agent string.
 func GetCustomUserAgent() string {
 	userAgentMutex.RLock()
 	defer userAgentMutex.RUnlock()
@@ -297,6 +316,7 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
+// FetchAndValid downloads a profile from the given URL, validates it, and saves it to disk.
 func FetchAndValid(
 	path string,
 	url string,

@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.feature.editor.diagnostic
+package com.github.yumelira.yumebox.feature.editor.presentation.diagnostic
 
 import io.github.rosemoe.sora.lang.diagnostic.DiagnosticDetail
 import io.github.rosemoe.sora.lang.diagnostic.DiagnosticRegion
@@ -26,6 +26,7 @@ import io.github.rosemoe.sora.lang.diagnostic.DiagnosticsContainer
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import tf.gal.yumebox.locale.FlyTxt
 import timber.log.Timber
 
 object JsonDiagnosticsProvider {
@@ -51,8 +52,8 @@ object JsonDiagnosticsProvider {
                             DiagnosticRegion.SEVERITY_ERROR,
                             0,
                             DiagnosticDetail(
-                                briefMessage = "JSON 格式错误",
-                                detailedMessage = "JSON 必须以 '{' 或 '[' 开头",
+                                briefMessage = FlyTxt.Editor.JsonDiagnostic.FormatError,
+                                detailedMessage = FlyTxt.Editor.JsonDiagnostic.MustStartWithBraceOrBracket,
                             ),
                         )
                     )
@@ -87,7 +88,7 @@ object JsonDiagnosticsProvider {
             DiagnosticRegion.SEVERITY_ERROR,
             0,
             DiagnosticDetail(
-                briefMessage = "JSON 语法错误",
+                briefMessage = FlyTxt.Editor.JsonDiagnostic.SyntaxError,
                 detailedMessage = formatErrorMessage(message),
             ),
         )
@@ -95,14 +96,14 @@ object JsonDiagnosticsProvider {
 
     private fun formatErrorMessage(message: String): String =
         when {
-            message.contains("Unterminated") -> "未终止的字符串或对象"
+            message.contains("Unterminated") -> FlyTxt.Editor.JsonDiagnostic.UnterminatedStringOrObject
             message.contains("Expected") -> {
                 val expectedPattern = "Expected (\\S+)".toRegex()
-                val expected = expectedPattern.find(message)?.groupValues?.get(1) ?: "未知"
-                "期望 $expected"
+                val expected = expectedPattern.find(message)?.groupValues?.get(1) ?: FlyTxt.Editor.JsonDiagnostic.Unknown
+                FlyTxt.Editor.JsonDiagnostic.Expected.format(expected)
             }
-            message.contains("No value") -> "缺少值"
-            message.contains("Duplicate") -> "重复的键"
+            message.contains("No value") -> FlyTxt.Editor.JsonDiagnostic.MissingValue
+            message.contains("Duplicate") -> FlyTxt.Editor.JsonDiagnostic.DuplicateKey
             else -> message
         }
 }

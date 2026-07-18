@@ -21,27 +21,28 @@
 plugins {
     id("com.android.library")
     kotlin("plugin.compose")
-    id("org.jetbrains.compose")
 
+    id("ren.shiror.fyl.fytxt") version "2.+"
 }
 
+fytxt {
+    packageName = "tf.gal.yumebox.locale"
+    objectName = "FlyTxt"
+
+    langSrcs = mapOf("Locale" to layout.projectDirectory.dir("lang"))
+    langAliases = mapOf(
+        "ZH_HANS" to "^ZH_.*(HANS|CN|SG)",
+        "ZH" to "^ZH_(?!.*(HANS|CN|SG)).*"
+    )
+    defaultLang = "ZH_HANS"
+
+    composeGen = true
+    internalClass = false
+    exportDeps = true
+}
 
 android {
-    namespace = "com.github.yumelira.yumebox.core.locale"
-
-    sourceSets {
-        getByName("main") {
-            kotlin.directories.apply {
-                clear()
-                addAll(
-                    listOf(
-                        "src",
-                        "build/generated/fytxt/kotlin/commonMain/kotlin",
-                    )
-                )
-            }
-        }
-    }
+    namespace = "com.github.yumelira.yumebox.locale"
 
     buildFeatures {
         compose = true
@@ -49,7 +50,6 @@ android {
 }
 
 dependencies {
-    val composeBom = platform(libs.androidx.compose.bom)
-    implementation(composeBom)
+    implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.runtime)
 }

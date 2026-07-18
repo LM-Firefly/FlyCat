@@ -45,7 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.FlyTxt
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
@@ -72,7 +72,7 @@ fun PortInputContent(title: String, value: Int?, onValueChange: (Int?) -> Unit) 
 
     ArrowPreference(
         title = title,
-        summary = if (value != null) "$value" else MLang.Component.Selector.NotModify,
+        summary = if (value != null) "$value" else FlyTxt.Component.Selector.NotModify,
         onClick = {
             val currentText = value?.toString().orEmpty()
             textFieldValueState.value =
@@ -85,7 +85,7 @@ fun PortInputContent(title: String, value: Int?, onValueChange: (Int?) -> Unit) 
         show = showDialog,
         title = title,
         textFieldValue = textFieldValueState,
-        label = MLang.Component.ConfigInput.PortLabel,
+        label = FlyTxt.Component.ConfigInput.PortLabel,
         onClear = { onValueChange(null) },
         onConfirm = {
             val port = textFieldValueState.value.text.filter(Char::isDigit).toIntOrNull()
@@ -108,7 +108,7 @@ fun StringInputContent(
 
     ArrowPreference(
         title = title,
-        summary = value?.takeIf { it.isNotEmpty() } ?: MLang.Component.Selector.NotModify,
+        summary = value?.takeIf { it.isNotEmpty() } ?: FlyTxt.Component.Selector.NotModify,
         onClick = {
             val currentText = value.orEmpty()
             textFieldValueState.value =
@@ -132,9 +132,9 @@ fun StringListInputContent(title: String, value: List<String>?, onClick: () -> U
     val itemCount = value?.size ?: 0
     val displayValue =
         if (itemCount > 0) {
-            MLang.Component.ConfigInput.CountItems.format(itemCount)
+            FlyTxt.Component.ConfigInput.CountItems.format(itemCount)
         } else {
-            MLang.Component.Selector.NotModify
+            FlyTxt.Component.Selector.NotModify
         }
 
     ArrowPreference(title = title, summary = displayValue, onClick = onClick)
@@ -145,9 +145,9 @@ fun StringMapInputContent(title: String, value: Map<String, String>?, onClick: (
     val itemCount = value?.size ?: 0
     val displayValue =
         if (itemCount > 0) {
-            MLang.Component.ConfigInput.CountItems.format(itemCount)
+            FlyTxt.Component.ConfigInput.CountItems.format(itemCount)
         } else {
-            MLang.Component.Selector.NotModify
+            FlyTxt.Component.Selector.NotModify
         }
 
     ArrowPreference(title = title, summary = displayValue, onClick = onClick)
@@ -184,12 +184,12 @@ private fun ConfigTextInputDialog(
                 label = label,
                 modifier = Modifier.fillMaxWidth(),
             )
-            DialogFilledButtonRow(
-                onSecondary = {
+            DialogButtonRow(
+                onCancel = {
                     onClear()
                     show.value = false
                 },
-                onPrimary = {
+                onConfirm = {
                     onConfirm()
                     show.value = false
                 },
@@ -218,7 +218,7 @@ fun StringListWithModifiersInput(
                     endValue?.takeIf { it.isNotEmpty() }?.let { add("Append ${it.size}") }
                 }
                 .joinToString(" · ")
-                .ifEmpty { MLang.Component.Selector.NotModify }
+                .ifEmpty { FlyTxt.Component.Selector.NotModify }
         }
 
     ArrowPreference(
@@ -267,7 +267,7 @@ fun StringMapWithModifiersInput(
                     mergeValue?.takeIf { it.isNotEmpty() }?.let { add("Merge ${it.size}") }
                 }
                 .joinToString(" · ")
-                .ifEmpty { MLang.Component.Selector.NotModify }
+                .ifEmpty { FlyTxt.Component.Selector.NotModify }
         }
 
     Column {
@@ -301,9 +301,9 @@ fun StringMapWithModifiersInput(
                 ) {
                     ModifierModeCard(
                         modifier = Modifier.weight(1f),
-                        title = "Replace",
+                        title = FlyTxt.Component.ConfigInput.Replace,
                         summary = buildMapModeSummary(replaceValue),
-                        helperText = "Replace entire dictionary",
+                        helperText = FlyTxt.Component.ConfigInput.ReplaceSummary,
                         onEdit = {
                             onEditMap(
                                 MapMergeStrategy.Replace,
@@ -323,9 +323,9 @@ fun StringMapWithModifiersInput(
                     )
                     ModifierModeCard(
                         modifier = Modifier.weight(1f),
-                        title = "Merge",
+                        title = FlyTxt.Component.ConfigInput.Merge,
                         summary = buildMapModeSummary(mergeValue),
-                        helperText = "Overwrites values for matching keys",
+                        helperText = FlyTxt.Component.ConfigInput.MergeSummary,
                         onEdit = {
                             onEditMap(
                                 MapMergeStrategy.Merge,

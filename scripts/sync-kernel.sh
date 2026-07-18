@@ -126,8 +126,51 @@ run_tidy() {
   )
 }
 
+apply_patches() {
+  PATCH_FILES_DIR="$PROJECT_ROOT/.github/patches/mihomo"
+  if [ ! -d "$PATCH_FILES_DIR" ]; then
+    echo "No patches directory found at $PATCH_FILES_DIR, skipping"
+    return
+  fi
+
+  # Determine variant subdirectory for variant-specific patches
+  PATCH_VARIANT=""
+  case "$CHOICE" in
+    smart|Smart) PATCH_VARIANT="smart" ;;
+    meta|Meta)   PATCH_VARIANT="meta" ;;
+  esac
+
+  patch_count=0
+  for patchfile in "$PATCH_FILES_DIR"/[0-9]*-*.patch; do
+    [ -f "$patchfile" ] || continue
+    basename_patch="$(basename "$patchfile")"
+
+    # Use variant-specific patch if available
+    effective_patch="$patchfile"
+    if [ -n "$PATCH_VARIANT" ] && [ -f "$PATCH_FILES_DIR/$PATCH_VARIANT/$basename_patch" ]; then
+      effective_patch="$PATCH_FILES_DIR/$PATCH_VARIANT/$basename_patch"
+      echo "Applying variant ($PATCH_VARIANT) patch: $basename_patch"
+    else
+      echo "Applying patch: $basename_patch"
+    fi
+
+    if git -C "$MIHOMO_DIR" apply --check "$effective_patch" 2>/dev/null; then
+      git -C "$MIHOMO_DIR" apply "$effective_patch"
+    else
+      echo "ERROR: patch $basename_patch did not apply cleanly" >&2; exit 1
+    fi
+    patch_count=$((patch_count + 1))
+  done
+  if [ "$patch_count" -eq 0 ]; then
+    echo "No patches to apply"
+  else
+    echo "Applied $patch_count patch(es)"
+  fi
+}
+
 update_kernel_properties
 sync_repo
+apply_patches
 run_tidy "$GOLANG_ROOT"
 run_tidy "$GOLANG_MAIN"
 

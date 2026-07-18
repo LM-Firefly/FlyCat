@@ -18,25 +18,26 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.viewmodel
+package com.github.yumelira.yumebox.feature.proxy.presentation.viewmodel
 
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.yumelira.yumebox.core.contract.ConnectionRepository
+import com.github.yumelira.yumebox.core.contract.ProvidersRepository
 import com.github.yumelira.yumebox.core.model.Provider
-import com.github.yumelira.yumebox.data.controller.ProvidersController
-import com.github.yumelira.yumebox.runtime.client.ProxyFacade
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.FlyTxt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 class ProvidersViewModel(
-    private val proxyFacade: ProxyFacade,
-    private val providersRepository: ProvidersController,
+    private val connectionRepository: ConnectionRepository,
+    private val providersRepository: ProvidersRepository,
 ) : ViewModel() {
     private val _providers = MutableStateFlow<List<Provider>>(emptyList())
     val providers: StateFlow<List<Provider>> = _providers.asStateFlow()
@@ -44,11 +45,11 @@ class ProvidersViewModel(
     private val _uiState = MutableStateFlow(ProvidersUiState())
     val uiState: StateFlow<ProvidersUiState> = _uiState.asStateFlow()
 
-    val isRunning: StateFlow<Boolean> = proxyFacade.isRunning
+    val isRunning: StateFlow<Boolean> = connectionRepository.isRunning
 
     fun refreshProviders() {
         viewModelScope.launch {
-            if (!proxyFacade.isRunning.value) {
+            if (!connectionRepository.isRunning.value) {
                 _providers.value = emptyList()
                 return@launch
             }
@@ -58,10 +59,11 @@ class ProvidersViewModel(
             result
                 .onSuccess { providerList -> _providers.value = providerList.sorted() }
                 .onFailure { error ->
+                    Timber.e(error, "Failed to query providers")
                     _uiState.update {
                         it.copy(
                             error =
-                                MLang.Providers.Message.FetchFailed.format(
+                                FlyTxt.Providers.Message.FetchFailed.format(
                                     error.message ?: "Unknown error"
                                 )
                         )
@@ -81,15 +83,16 @@ class ProvidersViewModel(
                     refreshProviders()
                     _uiState.update {
                         it.copy(
-                            message = MLang.Providers.Message.UpdateSuccess.format(provider.name)
+                            message = FlyTxt.Providers.Message.UpdateSuccess.format(provider.name)
                         )
                     }
                 }
                 .onFailure { error ->
+                    Timber.e(error, "Failed to update provider: %s", provider.name)
                     _uiState.update {
                         it.copy(
                             error =
-                                MLang.Providers.Message.UpdateFailed.format(
+                                FlyTxt.Providers.Message.UpdateFailed.format(
                                     error.message ?: "Unknown error"
                                 )
                         )
@@ -114,23 +117,26 @@ class ProvidersViewModel(
                 .onSuccess { updateResult ->
                     refreshProviders()
                     if (updateResult.failedProviders.isEmpty()) {
-                        _uiState.update { it.copy(message = MLang.Providers.Message.AllUpdated) }
+                        _uiState.update { it.copy(message = FlyTxt.Providers.Message.AllUpdated) }
                     } else {
+                        val failedNames = updateResult.failedProviders.joinToString(", ")
+                        Timber.w("Failed to update providers: %s", failedNames)
                         _uiState.update {
                             it.copy(
                                 error =
-                                    MLang.Providers.Message.UpdateFailed.format(
-                                        "Failed providers: ${updateResult.failedProviders.joinToString(", ")}"
+                                    FlyTxt.Providers.Message.UpdateFailed.format(
+                                        "Failed providers: $failedNames"
                                     )
                             )
                         }
                     }
                 }
                 .onFailure { error ->
+                    Timber.e(error, "Failed to update all providers")
                     _uiState.update {
                         it.copy(
                             error =
-                                MLang.Providers.Message.UpdateFailed.format(
+                                FlyTxt.Providers.Message.UpdateFailed.format(
                                     error.message ?: "Unknown error"
                                 )
                         )
@@ -160,15 +166,16 @@ class ProvidersViewModel(
                     refreshProviders()
                     _uiState.update {
                         it.copy(
-                            message = MLang.Providers.Message.UploadSuccess.format(provider.name)
+                            message = FlyTxt.Providers.Message.UploadSuccess.format(provider.name)
                         )
                     }
                 }
                 .onFailure { error ->
+                    Timber.e(error, "Failed to upload provider file: %s", provider.name)
                     _uiState.update {
                         it.copy(
                             error =
-                                MLang.Providers.Message.UploadFailed.format(
+                                FlyTxt.Providers.Message.UploadFailed.format(
                                     error.message ?: "Unknown error"
                                 )
                         )

@@ -1,0 +1,8 @@
+package com.github.yumelira.yumebox.presentation.language
+
+enum class LanguageScope(val scopeName: String, val displayName: String) {
+    Yaml("source.yaml", "YAML"),
+    JavaScript("source.js", "JavaScript"),
+    Json("source.json", "JSON"),
+    Text("text.plain", "Plain Text");
+}

@@ -1,6 +1,10 @@
 package config
 
+import mlog "github.com/metacubex/mihomo/log"
+
 var (
+	defaultCoreLogLevel = mlog.WARNING
+
 	defaultNameServers = []string{
 		"223.5.5.5",
 		"119.29.29.29",

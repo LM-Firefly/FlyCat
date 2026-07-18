@@ -59,8 +59,17 @@ object DashboardShortcutHelper {
     private fun loadIconFromUri(context: Context, uri: Uri): IconCompat? {
         return runCatching {
                 context.contentResolver.openInputStream(uri)?.use { input ->
-                    val bmp = android.graphics.BitmapFactory.decodeStream(input) ?: return null
-                    IconCompat.createWithBitmap(bmp)
+                    val opts = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    android.graphics.BitmapFactory.decodeStream(input, null, opts)
+                    val maxDim = maxOf(opts.outWidth, opts.outHeight)
+                    if (maxDim > 0) {
+                        opts.inSampleSize = maxDim / 128
+                        opts.inJustDecodeBounds = false
+                    }
+                    context.contentResolver.openInputStream(uri)?.use { input2 ->
+                        val bmp = android.graphics.BitmapFactory.decodeStream(input2, null, opts) ?: return null
+                        IconCompat.createWithBitmap(bmp)
+                    }
                 }
             }
             .getOrNull()
@@ -78,8 +87,10 @@ object DashboardShortcutHelper {
                     }
                 conn.inputStream.use { input ->
                     val bytes = input.readBytes()
+                    if (bytes.size > 512 * 1024) return@runCatching null // 512KB max for favicon
+                    val opts = android.graphics.BitmapFactory.Options().apply { inSampleSize = 1 }
                     val bmp =
-                        android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
                             ?: return@runCatching null
                     IconCompat.createWithBitmap(bmp)
                 }

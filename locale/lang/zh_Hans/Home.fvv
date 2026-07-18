@@ -1,0 +1,86 @@
+<Home Page>
+Home = {
+    Title = "FlyCat"
+
+    Message = {
+        ConfigSwitched = "配置已切换"
+        ConfigSwitchFailed = "配置切换失败：%s"
+        Preparing = "正在准备..."
+        StartFailed = "启动失败：%s"
+        StopFailed = "停止失败：%s"
+    }
+
+    Control = {
+        HintAddProfile = "请先添加配置文件"
+        HintEnableProfile = "请先在「配置」页面启用一个配置"
+    }
+
+    NodeInfo = {
+        Node = "节点"
+        Delay = "延迟"
+        Unknown = "未知"
+        DelayValue = "%dms"
+    }
+
+    Traffic = {
+        UpShort = "UP"
+        DownShort = "DOWN"
+        DownloadLong = "下行"
+        UploadLong = "上行"
+        NoProfile = "无配置"
+    }
+
+    IpInfo = {
+        ExitIp = "出口 IP"
+    }
+
+    Status = {
+        Connecting = "连接中"
+        Disconnecting = "断开中"
+        Running = "运行中"
+        Lost = "失联"
+        TapToStart = "轻触启动"
+    }
+
+    Greeting = {
+        Morning = "早上好"
+        Afternoon = "下午好"
+        Evening = "晚上好"
+        Night = "晚安"
+    }
+
+    Quote = {
+        AuthorPrefix = "—— %s"
+    }
+
+    Control = {
+        HintAddProfile = "请先添加配置文件"
+        HintEnableProfile = "请先在「配置」页面启用一个配置"
+        Start = "启动"
+        Stop = "停止"
+    }
+
+    RunMode = {
+        Vpn = "VPN"
+        Tun = "TUN"
+    }
+
+    TunnelMode = {
+        Rule = "规则"
+        Global = "全局"
+        Direct = "直连"
+    }
+
+    PreviewGuide = {
+        Title = "欢迎使用 FlyCat"
+        Description = "点亮底部「启动」，一键连接"
+        Next = "下一个"
+        Start = "开始使用"
+        WallpaperTitle = "更换壁纸"
+        WallpaperDescription = "长按壁纸，从相册换图"
+        SwipeTitle = "左右滑动"
+        SwipeDescription = "横向滑动首页，切换代理、配置和设置页面"
+        AddTitle = "添加订阅"
+        AddDescription = "点右上角图标，粘贴链接即可添加"
+    }
+}

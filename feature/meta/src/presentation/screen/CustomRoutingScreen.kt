@@ -23,7 +23,6 @@ package com.github.yumelira.yumebox.feature.meta.presentation.screen
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -31,17 +30,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetItem
-import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetRegion
-import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetTemplateSelection
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.yumelira.yumebox.feature.meta.presentation.util.orderedBasePresetItems
 import com.github.yumelira.yumebox.feature.meta.presentation.util.orderedPresetRegions
 import com.github.yumelira.yumebox.feature.meta.presentation.util.orderedServicePresetItems
+import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetItem
+import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetRegion
+import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetTemplateSelection
 import com.github.yumelira.yumebox.feature.meta.presentation.util.presetGroupTypeIconUrl
 import com.github.yumelira.yumebox.feature.meta.presentation.util.sortPresetItems
 import com.github.yumelira.yumebox.feature.meta.presentation.util.sortPresetRegions
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.CustomRoutingViewModel
+import com.github.yumelira.yumebox.platform.util.toast
+import com.github.yumelira.yumebox.presentation.component.NavigationBackIcon
+import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.RoutingSwitchCard
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.TopBar
@@ -49,23 +52,20 @@ import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Edit
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.FlyTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 
 @Composable
-fun CustomRoutingScreen(
-    onNavigateBack: () -> Unit,
-    onOpenYamlEditor: (title: String, content: String, onSave: suspend (String) -> Unit) -> Unit,
-) {
+fun CustomRoutingScreen(navigator: Navigator, onOpenYamlEditor: (title: String, content: String, onSave: suspend (String) -> Unit) -> Unit) {
     val viewModel: CustomRoutingViewModel = koinViewModel()
-    val presetSelection by viewModel.presetSelection.collectAsState()
-    val customRoutingContent by viewModel.customRoutingContent.collectAsState()
-    val templateRoundTripSafe by viewModel.templateRoundTripSafe.collectAsState()
+    val presetSelection by viewModel.presetSelection.collectAsStateWithLifecycle()
+    val customRoutingContent by viewModel.customRoutingContent.collectAsStateWithLifecycle()
+    val templateRoundTripSafe by viewModel.templateRoundTripSafe.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val selectedUrlTestRegions = remember { mutableStateListOf<OverridePresetRegion>() }
@@ -92,7 +92,7 @@ fun CustomRoutingScreen(
     fun saveAndExit() {
         if (isSaving) return
         if (!isDirty) {
-            onNavigateBack()
+            navigator.navigateUp()
             return
         }
 
@@ -110,9 +110,9 @@ fun CustomRoutingScreen(
                 .savePresetSelection(updatedSelection)
                 .onSuccess {
                     isDirty = false
-                    onNavigateBack()
+                    navigator.navigateUp()
                 }
-                .onFailure { error -> context.toast(error.message ?: "保存失败") }
+                .onFailure { error -> context.toast(error.message ?: FlyTxt.MetaFeature.CustomRouting.SaveFailed) }
             isSaving = false
         }
     }
@@ -122,21 +122,23 @@ fun CustomRoutingScreen(
     Scaffold(
         topBar = {
             TopBar(
-                title = MLang.MetaFeature.CustomRouting.Title,
+                title = FlyTxt.MetaFeature.CustomRouting.Title,
                 scrollBehavior = scrollBehavior,
+                navigationIconPadding = 0.dp,
+                navigationIcon = { NavigationBackIcon(navigator = navigator) },
                 actions = {
                     IconButton(
                         enabled = !isSaving,
                         onClick = {
                             onOpenYamlEditor(
-                                MLang.MetaFeature.CustomRouting.EditYaml,
+                                FlyTxt.MetaFeature.CustomRouting.EditYaml,
                                 customRoutingContent,
                             ) { content ->
                                 viewModel.saveCustomRoutingYaml(content).getOrElse { throw it }
                             }
                         },
                     ) {
-                        Icon(imageVector = Yume.Edit, contentDescription = "Edit")
+                        Icon(imageVector = Yume.Edit, contentDescription = FlyTxt.MetaFeature.CustomRouting.EditButton)
                     }
                 },
             )
@@ -149,14 +151,14 @@ fun CustomRoutingScreen(
         ) {
             item(key = "group-type") {
                 RoutingSwitchCard(
-                    title = MLang.MetaFeature.CustomRouting.GroupTypeTitle,
+                    title = FlyTxt.MetaFeature.CustomRouting.GroupTypeTitle,
                     items = listOf("urltest", "fallback"),
                     iconUrl = ::presetGroupTypeIconUrl,
                     itemTitle = { type ->
                         if (type == "urltest") {
-                            MLang.MetaFeature.CustomRouting.GroupTypeUrlTest
+                            FlyTxt.MetaFeature.CustomRouting.GroupTypeUrlTest
                         } else {
-                            MLang.MetaFeature.CustomRouting.GroupTypeFallback
+                            FlyTxt.MetaFeature.CustomRouting.GroupTypeFallback
                         }
                     },
                     isChecked = { type ->
@@ -175,7 +177,7 @@ fun CustomRoutingScreen(
 
             item(key = "urltest-regions") {
                 RoutingSwitchCard(
-                    title = MLang.MetaFeature.CustomRouting.UrlTestRegionGroupTitle,
+                    title = FlyTxt.MetaFeature.CustomRouting.UrlTestRegionGroupTitle,
                     items = orderedPresetRegions(),
                     iconUrl = OverridePresetRegion::icon,
                     itemTitle = OverridePresetRegion::displayName,
@@ -189,7 +191,7 @@ fun CustomRoutingScreen(
 
             item(key = "fallback-regions") {
                 RoutingSwitchCard(
-                    title = MLang.MetaFeature.CustomRouting.FallbackRegionGroupTitle,
+                    title = FlyTxt.MetaFeature.CustomRouting.FallbackRegionGroupTitle,
                     items = orderedPresetRegions(),
                     iconUrl = OverridePresetRegion::icon,
                     itemTitle = OverridePresetRegion::displayName,
@@ -203,7 +205,7 @@ fun CustomRoutingScreen(
 
             item(key = "base-items") {
                 RoutingSwitchCard(
-                    title = MLang.Override.Draft.BasicRouting,
+                    title = FlyTxt.Override.Draft.BasicRouting,
                     items = orderedBasePresetItems(),
                     iconUrl = OverridePresetItem::icon,
                     itemTitle = OverridePresetItem::title,
@@ -217,7 +219,7 @@ fun CustomRoutingScreen(
 
             item(key = "service-items") {
                 RoutingSwitchCard(
-                    title = MLang.Override.Draft.ServiceRouting,
+                    title = FlyTxt.Override.Draft.ServiceRouting,
                     items = orderedServicePresetItems(),
                     iconUrl = OverridePresetItem::icon,
                     itemTitle = OverridePresetItem::title,

@@ -3,25 +3,43 @@ package tunnel
 import (
 	"sort"
 	"strings"
+	"sync/atomic"
 
 	"github.com/dlclark/regexp2"
+
+	"cfa/native/config"
 
 	"github.com/metacubex/mihomo/adapter/outboundgroup"
 	"github.com/metacubex/mihomo/component/profile/cachefile"
 	C "github.com/metacubex/mihomo/constant"
-	"github.com/metacubex/mihomo/constant/provider"
 	"github.com/metacubex/mihomo/log"
 	"github.com/metacubex/mihomo/tunnel"
 )
 
+// proxyGroupVersion is incremented when proxy group structure or selection changes.
+var proxyGroupVersion atomic.Uint64
+
+// ProxyGroupVersion returns the current proxy group version.
+func ProxyGroupVersion() uint64 {
+	return proxyGroupVersion.Load()
+}
+
+// IncrProxyGroupVersion increments the proxy group version counter.
+func IncrProxyGroupVersion() {
+	proxyGroupVersion.Add(1)
+}
+
+// SortMode defines the sorting order for proxy lists.
 type SortMode int
 
+// Sort mode constants for proxy list ordering.
 const (
 	Default SortMode = iota
 	Title
 	Delay
 )
 
+// Proxy represents a simplified proxy entry for UI display.
 type Proxy struct {
 	Name     string `json:"name"`
 	Title    string `json:"title"`
@@ -31,12 +49,14 @@ type Proxy struct {
 	IsGroup  bool   `json:"isGroup"`
 }
 
+// ProxyGroup represents a proxy group with its member proxies.
 type ProxyGroup struct {
 	Name    string   `json:"name,omitempty"`
 	Type    string   `json:"type"`
 	Now     string   `json:"now"`
 	Icon    string   `json:"icon,omitempty"`
 	Hidden  bool     `json:"hidden"`
+	Fixed   string   `json:"fixed"`
 	Proxies []*Proxy `json:"proxies"`
 }
 
@@ -57,6 +77,7 @@ func (s *sortableProxyList) Swap(i, j int) {
 	s.list[i], s.list[j] = s.list[j], s.list[i]
 }
 
+// QueryProxyGroupNames returns the names of all proxy groups.
 func QueryProxyGroupNames(excludeNotSelectable bool) []string {
 	mode := tunnel.Mode()
 
@@ -83,6 +104,7 @@ func QueryProxyGroupNames(excludeNotSelectable bool) []string {
 	return result
 }
 
+// QueryProxyGroup returns the details of a proxy group including its sorted member proxies.
 func QueryProxyGroup(name string, sortMode SortMode, uiSubtitlePattern *regexp2.Regexp) *ProxyGroup {
 	p := tunnel.Proxies()[name]
 
@@ -92,7 +114,8 @@ func QueryProxyGroup(name string, sortMode SortMode, uiSubtitlePattern *regexp2.
 		return nil
 	}
 
-	g, ok := p.Adapter().(outboundgroup.ProxyGroup)
+	adapter := p.Adapter()
+	g, ok := adapter.(outboundgroup.ProxyGroup)
 	if !ok {
 		log.Warnln("Query group `%s`: invalid type %s", name, p.Type().String())
 
@@ -100,7 +123,6 @@ func QueryProxyGroup(name string, sortMode SortMode, uiSubtitlePattern *regexp2.
 	}
 
 	proxies := convertProxies(g.Proxies(), uiSubtitlePattern)
-	// 	proxies := collectProviders(g.Providers(), uiSubtitlePattern)
 
 	switch sortMode {
 	case Title:
@@ -127,72 +149,32 @@ func QueryProxyGroup(name string, sortMode SortMode, uiSubtitlePattern *regexp2.
 
 	return &ProxyGroup{
 		Name:    name,
-		Type:    normalizeProxyType(g.Type().String()),
+		Type:    config.NormalizeProxyType(g.Type().String()),
 		Now:     g.Now(),
 		Icon:    proxyGroupIcon(g),
 		Hidden:  g.Hidden(),
+		Fixed:   config.ExtractFixedFromAdapter(adapter),
 		Proxies: proxies,
 	}
 }
 
 func proxyGroupIcon(group outboundgroup.ProxyGroup) string {
-	switch g := group.(type) {
-	case *outboundgroup.Selector:
-		return g.Icon()
-	case *outboundgroup.URLTest:
-		return g.Icon()
-	case *outboundgroup.LoadBalance:
-		return g.Icon()
-	case *outboundgroup.Fallback:
-		return g.Icon()
-	default:
-		return ""
-	}
+	return group.Icon()
 }
 
-func normalizeProxyType(proxyType string) string {
-	switch proxyType {
-	case "Direct",
-		"Reject",
-		"RejectDrop",
-		"Compatible",
-		"Pass",
-		"PassRule",
-		"Shadowsocks",
-		"ShadowsocksR",
-		"Snell",
-		"Socks5",
-		"Http",
-		"Vmess",
-		"Vless",
-		"Trojan",
-		"Hysteria",
-		"Hysteria2",
-		"Tuic",
-		"WireGuard",
-		"Dns",
-		"Ssh",
-		"Mieru",
-		"AnyTLS",
-		"Sudoku",
-		"Masque",
-		"TrustTunnel",
-		"OpenVPN",
-		"Tailscale",
-		"GostRelay",
-		"Relay",
-		"Selector",
-		"Fallback",
-		"URLTest",
-		"LoadBalance",
-		"Smart",
-		"Unknown":
-		return proxyType
-	default:
-		return "Unknown"
+// QueryProxyGroupsBatch resolves multiple proxy groups in a single call, avoiding N separate JSON serialization + CGO round-trips. Groups that cannot be resolved are silently skipped.
+func QueryProxyGroupsBatch(names []string, sortMode SortMode, uiSubtitlePattern *regexp2.Regexp) []*ProxyGroup {
+	result := make([]*ProxyGroup, 0, len(names))
+	for _, name := range names {
+		group := QueryProxyGroup(name, sortMode, uiSubtitlePattern)
+		if group != nil {
+			result = append(result, group)
+		}
 	}
+	return result
 }
 
+// PatchSelector sets the selected proxy in a selector group and persists the choice.
 func PatchSelector(selector, name string) bool {
 	p := tunnel.Proxies()[selector]
 
@@ -227,6 +209,30 @@ func PatchSelector(selector, name string) bool {
 
 	closeConnByGroup(selector)
 
+	return true
+}
+
+// PatchForceSelector forcefully sets the selected proxy, bypassing validation.
+func PatchForceSelector(selector, name string) bool {
+	p := tunnel.Proxies()[selector]
+	if p == nil {
+		log.Warnln("Force patch selector `%s`: not found", selector)
+		return false
+	}
+	adapter := p.Adapter()
+	if _, ok := adapter.(outboundgroup.ProxyGroup); !ok {
+		log.Warnln("Force patch selector `%s`: invalid type %s", selector, p.Type().String())
+		return false
+	}
+	s, ok := adapter.(interface{ ForceSet(string) })
+	if !ok {
+		log.Warnln("Force patch selector `%s`: not supported", selector)
+		return false
+	}
+	s.ForceSet(name)
+	cachefile.Cache().SetSelected(selector, name)
+	log.Infoln("Force patch selector %s -> %s", selector, name)
+	closeConnByGroup(selector)
 	return true
 }
 
@@ -266,41 +272,10 @@ func convertProxies(proxies []C.Proxy, uiSubtitlePattern *regexp2.Regexp) []*Pro
 			Name:     name,
 			Title:    strings.TrimSpace(title),
 			Subtitle: strings.TrimSpace(subtitle),
-			Type:     normalizeProxyType(p.Type().String()),
+			Type:     config.NormalizeProxyType(p.Type().String()),
 			Delay:    int(p.LastDelayForTestUrl(testURL)),
 			IsGroup:  isGroup,
 		})
 	}
-	return result
-}
-
-func collectProviders(providers []provider.ProxyProvider, uiSubtitlePattern *regexp2.Regexp) []*Proxy {
-	result := make([]*Proxy, 0, 128)
-
-	for _, p := range providers {
-		for _, px := range p.Proxies() {
-			name := px.Name()
-			_, isGroup := px.Adapter().(outboundgroup.ProxyGroup)
-			title, subtitle := splitTitleSubtitle(name, px.Type().String(), isGroup, uiSubtitlePattern)
-
-			testURL := "https://www.gstatic.com/generate_204"
-			for k := range px.ExtraDelayHistories() {
-				if len(k) > 0 {
-					testURL = k
-					break
-				}
-			}
-
-			result = append(result, &Proxy{
-				Name:     name,
-				Title:    strings.TrimSpace(title),
-				Subtitle: strings.TrimSpace(subtitle),
-				Type:     normalizeProxyType(px.Type().String()),
-				Delay:    int(px.LastDelayForTestUrl(testURL)),
-				IsGroup:  isGroup,
-			})
-		}
-	}
-
 	return result
 }

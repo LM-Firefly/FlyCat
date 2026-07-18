@@ -100,6 +100,9 @@ ProfilesPage = {
 
     SettingsDialog = {
         Title = "Subscription Settings"
+        SectionType = "Setting Type"
+        SectionSubscription = "Subscription Info"
+        SectionOverride = "Override Config"
         ChangeLink = "Change Subscription Link"
         CustomRouting = "Custom Routing"
         CustomRoutingSummary = "Standalone routing rules"
@@ -110,5 +113,22 @@ ProfilesPage = {
         SaveFailed = "Failed to save profile"
         ConfigMissing = "Config not found: %s"
         AgeSecretKey = "Age Secret Key"
+    }
+
+    AgeKey = {
+        PublicKey = "Age Public Key"
+        SecretKey = "Age Secret Key"
+        PublicKeyPlaceholder = "age1..."
+        DerivePublicKey = "Derive public key"
+        CopyPublicKey = "Copy public key"
+        GenerateSecretKey = "Generate secret key"
+        CopySecretKey = "Copy secret key"
+        HideKey = "Hide key"
+        ShowKey = "Show key"
+        GeneratedPublicKey = "Age public key generated: %s"
+        CopiedPublicKey = "Age public key copied: %s"
+        GeneratedSecretKey = "Age secret key generated: %s"
+        CopiedSecretKey = "Age secret key copied: %s"
+        GenerateFailed = "Generation failed"
     }
 }

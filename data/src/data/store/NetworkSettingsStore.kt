@@ -20,37 +20,44 @@
 
 package com.github.yumelira.yumebox.data.store
 
-import com.github.yumelira.yumebox.core.model.RootTunDnsMode
-import com.github.yumelira.yumebox.data.model.AccessControlMode
-import com.github.yumelira.yumebox.data.model.AccessControlSortMode
-import com.github.yumelira.yumebox.data.model.ProxyMode
-import com.github.yumelira.yumebox.data.model.TunStack
+import com.github.yumelira.yumebox.core.contract.NetworkSettingsReader
+import com.github.yumelira.yumebox.core.model.AccessControlMode
+import com.github.yumelira.yumebox.core.model.RunMode
+import com.github.yumelira.yumebox.core.model.TunDnsMode
+import com.github.yumelira.yumebox.core.model.TunStack
 import com.tencent.mmkv.MMKV
 
-class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
-    val proxyMode by enumFlow(ProxyMode.Tun)
-
-    val bypassPrivateNetwork by boolFlow(true)
-    val dnsHijack by boolFlow(true)
-    val allowBypass by boolFlow(true)
-    val enableIPv6 by boolFlow(false)
-    val systemProxy by boolFlow(true)
-
-    val tunStack by enumFlow(TunStack.System)
-    val tunRouteExcludeAddress by stringListFlow(emptyList())
-    val rootTunIfName by strFlow("Yume")
-    val rootTunMtu by intFlow(1500)
-    val rootTunAutoRoute by boolFlow(true)
-    val rootTunStrictRoute by boolFlow(true)
-    val rootTunAutoRedirect by boolFlow(true)
-    val rootTunIncludeAndroidUser by intListFlow(listOf(0, 10))
-    val rootTunRouteExcludeAddress by stringListFlow(emptyList())
-    val rootTunDnsMode by enumFlow(RootTunDnsMode.RedirHost)
-    val rootTunFakeIpRange by strFlow("198.18.0.1/16")
-    val rootTunFakeIpRange6 by strFlow("fc00::/18")
-    val accessControlMode by enumFlow(AccessControlMode.ALLOW_ALL)
-    val accessControlPackages by stringSetFlow(emptySet())
-    val accessControlSelectedFirst by boolFlow(true)
-    val accessControlShowSystemApps by boolFlow(false)
-    val accessControlSortMode by enumFlow(AccessControlSortMode.LABEL)
+class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv), NetworkSettingsReader {
+    override val runMode by enumFlow(RunMode.VpnService)
+    override val bypassPrivateNetwork by boolFlow(true)
+    override val dnsHijack by boolFlow(true)
+    override val allowBypass by boolFlow(true)
+    override val enableIPv6 by boolFlow(false)
+    override val systemProxy by boolFlow(true)
+    override val disableAllOverride by boolFlow(false)
+    override val tunStack by enumFlow(TunStack.GVisor)
+    override val tunRouteExcludeAddress by stringListFlow(emptyList())
+    override val tunIfName by strFlow("FlyCat")
+    override val tunMtu by intFlow(9000)
+    override val tunAutoRoute by boolFlow(true)
+    override val tunStrictRoute by boolFlow(false)
+    override val tunAutoRedirect by boolFlow(true)
+    override val tunIncludeAndroidUser by intListFlow(emptyList())
+    override val tunDnsMode by enumFlow(TunDnsMode.RedirHost)
+    override val tunFakeIpRange by strFlow("198.18.0.1/16")
+    override val tunFakeIpRange6 by strFlow("fc00::/18")
+    override val accessControlMode by enumFlow(AccessControlMode.ALLOW_ALL)
+    override val accessControlPackages by stringSetFlow(emptySet())
+    override val accessControlShowSystemApps by boolFlow(false)
+    override val accessControlSelectedFirst by boolFlow(true)
+    override val wifiAutomationEnabled by boolFlow(false)
+    override val wifiAutomationLocationRequested by boolFlow(false)
+    override val wifiAutomationRules: Preference<List<com.github.yumelira.yumebox.core.model.WifiAutomationRule>> by
+        jsonListFlow(
+            default = emptyList(),
+            decode = { source -> decodeFromString<List<com.github.yumelira.yumebox.core.model.WifiAutomationRule>>(source) },
+            encode = { rules -> encodeToString(rules) },
+        )
+    override val wifiAutomationOtherWifiAction by enumFlow(com.github.yumelira.yumebox.core.model.WifiAutomationFallbackAction.Keep)
+    override val wifiAutomationNoWifiAction by enumFlow(com.github.yumelira.yumebox.core.model.WifiAutomationFallbackAction.Keep)
 }

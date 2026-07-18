@@ -1,5 +1,6 @@
 // +build linux
 
+// Package platform provides platform-specific file descriptor and procfs utilities.
 package platform
 
 import "syscall"
@@ -26,6 +27,7 @@ func init() {
 	maxFdCount = maxFdCount / 4 * 3
 }
 
+// ShouldBlockConnection returns true when the process is near the file descriptor limit.
 func ShouldBlockConnection() bool {
 	fd, err := syscall.Dup(nullFd)
 	if err != nil {

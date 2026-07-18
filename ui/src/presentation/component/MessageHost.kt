@@ -33,7 +33,8 @@ import androidx.compose.ui.Modifier
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.FlyTxt
+import kotlinx.coroutines.flow.first
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 enum class MessageType {
@@ -73,19 +74,19 @@ fun MessageHost(message: Message?, onDismiss: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().padding(UiDp.dp16),
                 contentAlignment = Alignment.CenterEnd,
             ) {
-                ArrowPreference(title = MLang.Component.Message.Confirm, onClick = dismissDialog)
+                ArrowPreference(title = FlyTxt.Component.Message.Confirm, onClick = dismissDialog)
             }
         }
 
         if (message.autoClose) {
             LaunchedEffect(message.title, message.content, message.type, message.autoCloseDelay) {
-                PollingTimers.awaitTick(
+                PollingTimers.ticks(
                     PollingTimerSpecs.dynamic(
                         name = "message_host_autoclose_${message.autoCloseDelay}",
                         intervalMillis = message.autoCloseDelay,
                         initialDelayMillis = message.autoCloseDelay,
                     )
-                )
+                ).first()
                 dismissDialog()
             }
         }
@@ -106,7 +107,7 @@ private fun getTitle(type: MessageType, title: String): String {
 @Composable
 fun SimpleMessage(message: String?, onDismiss: () -> Unit) {
     if (message != null) {
-        MessageHost(message = Message(MLang.Component.Message.Hint, message), onDismiss = onDismiss)
+        MessageHost(message = Message(FlyTxt.Component.Message.Hint, message), onDismiss = onDismiss)
     }
 }
 
@@ -115,7 +116,7 @@ fun ErrorMessage(error: String?, onDismiss: () -> Unit) {
     if (error != null) {
         MessageHost(
             message =
-                Message(MLang.Component.Message.Error, error, MessageType.ERROR, autoClose = false),
+                Message(FlyTxt.Component.Message.Error, error, MessageType.ERROR, autoClose = false),
             onDismiss = onDismiss,
         )
     }
@@ -125,7 +126,7 @@ fun ErrorMessage(error: String?, onDismiss: () -> Unit) {
 fun SuccessMessage(message: String?, onDismiss: () -> Unit) {
     if (message != null) {
         MessageHost(
-            message = Message(MLang.Component.Message.Success, message, MessageType.SUCCESS),
+            message = Message(FlyTxt.Component.Message.Success, message, MessageType.SUCCESS),
             onDismiss = onDismiss,
         )
     }

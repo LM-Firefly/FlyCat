@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,17 +34,17 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.ListCollapse: ImageVector
     get() {
-        if (_ListCollapse != null) {
-            return _ListCollapse!!
+        if (listCollapseVector != null) {
+            return listCollapseVector!!
         }
-        _ListCollapse =
+        listCollapseVector =
             ImageVector.Builder(
-                    name = "ListCollapse",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "ListCollapse",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -93,7 +96,8 @@ val Yume.ListCollapse: ImageVector
                 }
                 .build()
 
-        return _ListCollapse!!
+        return listCollapseVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _ListCollapse: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var listCollapseVector: ImageVector? = null

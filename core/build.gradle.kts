@@ -25,19 +25,28 @@ plugins {
 
 
 android {
-    namespace = gropify.project.namespace.core
-
+    namespace = providers.gradleProperty("project.namespace.core").get()
+    sourceSets {
+        getByName("main") {
+            kotlin.directories.apply {
+                clear()
+                add("src")
+            }
+        }
+    }
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
     }
 }
 
 dependencies {
+    implementation(project(":locale"))
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.snake.yaml)
+    implementation(libs.snakeyaml.engine)
     implementation(libs.androidx.annotation.jvm)
     implementation(libs.timber)
+    implementation(libs.xz)
 }

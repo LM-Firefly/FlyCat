@@ -1,5 +1,6 @@
 // +build debug
 
+// Package main implements the native bridge for the FlyCat Android application.
 package main
 
 import (

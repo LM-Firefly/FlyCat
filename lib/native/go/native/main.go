@@ -15,6 +15,7 @@ import (
 	"cfa/native/delegate"
 	"cfa/native/tunnel"
 
+	"github.com/metacubex/mihomo/constant"
 	"github.com/metacubex/mihomo/log"
 )
 
@@ -59,4 +60,9 @@ func setCustomUserAgent(userAgent C.c_string) {
 	ua := C.GoString(userAgent)
 	config.SetCustomUserAgent(ua)
 	log.Infoln("[APP] custom User-Agent set:", ua)
+}
+
+//export queryCoreVersion
+func queryCoreVersion() *C.char {
+	return C.CString(constant.Version)
 }

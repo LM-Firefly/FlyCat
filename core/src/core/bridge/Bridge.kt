@@ -23,6 +23,7 @@ package com.github.yumelira.yumebox.core.bridge
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import androidx.annotation.Keep
+import com.github.yumelira.yumebox.core.BuildConfigHolder
 import com.github.yumelira.yumebox.core.Global
 import com.github.yumelira.yumebox.core.util.runtimeHomeDir
 import kotlinx.coroutines.CompletableDeferred
@@ -30,7 +31,13 @@ import java.io.File
 
 @Keep
 object Bridge {
-    external fun nativeCompilePreview(requestJson: String): String
+    /**
+     * Triggers native library loading and JNI initialization on the calling thread.
+     * Call this from a background thread during app startup so the main thread is never blocked by the synchronous [init] block.
+     */
+    fun preload() { /* accessing this object triggers init */ }
+
+    external fun nativeCompile(requestJson: String): String
 
     external fun nativeCompileAndLoadConfigSummary(
         completable: CompletableDeferred<Unit>,
@@ -49,8 +56,6 @@ object Bridge {
 
     external fun nativeForceGc()
 
-    external fun nativeSuspend(suspend: Boolean)
-
     external fun nativeQueryTunnelState(): String
 
     external fun nativeQueryTrafficNow(): Long
@@ -58,6 +63,16 @@ object Bridge {
     external fun nativeQueryTrafficTotal(): Long
 
     external fun nativeQueryConnections(): String
+
+    external fun nativeQueryConnectionsOverview(): String
+
+    external fun nativeQueryConnectionGeneration(): Long
+
+    external fun nativeQueryProxyGroupVersion(): Long
+
+    external fun nativeQueryRules(): String
+
+    external fun nativeSetRuleDisabled(index: Int, disabled: Boolean): Boolean
 
     external fun nativeCloseConnection(id: String): Boolean
 
@@ -88,7 +103,13 @@ object Bridge {
 
     external fun nativeQueryGroupNames(excludeNotSelectable: Boolean): String
 
+    external fun nativeInspectCompiledGroups(yamlText: String, profileDir: String, excludeNotSelectable: Boolean): String?
+
+    external fun nativeInspectCompiledGroupNames(yamlText: String, excludeNotSelectable: Boolean): String?
+
     external fun nativeQueryGroup(name: String, sort: String): String?
+
+    external fun nativeQueryGroupsBatch(namesJson: String, sort: String): String?
 
     external fun nativeHealthCheck(completable: CompletableDeferred<Unit>, name: String)
 
@@ -96,7 +117,11 @@ object Bridge {
 
     external fun nativeHealthCheckAll()
 
+    external fun nativePatchTunnelMode(mode: String): Boolean
+
     external fun nativePatchSelector(selector: String, name: String): Boolean
+
+    external fun nativeForcePatchSelector(selector: String, name: String): Boolean
 
     external fun nativeFetchAndValid(
         completable: FetchCallback,
@@ -113,15 +138,31 @@ object Bridge {
         name: String,
     )
 
-    external fun nativeQueryConfiguration(): String
-
     external fun nativeSubscribeLogcat(callback: LogcatInterface)
+
+    external fun nativeUnsubscribeLogcat()
+
+    external fun nativeSubscribeConnectionClose(callback: ConnectionCloseInterface)
+
+    external fun nativeUnsubscribeConnectionClose()
+
+    external fun nativeSubscribeConnectionJoin(callback: ConnectionJoinInterface)
+
+    external fun nativeUnsubscribeConnectionJoin()
+
+    external fun nativeSubscribeTrafficUpdatePacked(callback: TrafficUpdatePackedInterface)
+
+    external fun nativeUnsubscribeTrafficUpdate()
 
     external fun nativeCoreVersion(): String
 
     external fun nativeSetCustomUserAgent(userAgent: String)
 
-    external fun nativeSetAgeSecretKey(key: String?)
+    external fun nativeSetAgeSecretKey(key: String)
+
+    external fun nativeGenAgeKey(): String?
+
+    external fun nativeAgePublicKey(secretKey: String): String?
 
     external fun nativeGenX25519KeyPair(): String?
 
@@ -133,13 +174,14 @@ object Bridge {
 
     external fun nativeVerifyPublicKeys(publicKeys: String): Boolean
 
-    private external fun nativeInit(home: String, versionName: String, sdkVersion: Int)
+    external fun nativeConvertMrsToText(filePath: String): String?
+
+    private external fun nativeInit(home: String, versionName: String, sdkVersion: Int, kernelGitVersion: String)
 
     init {
-        System.loadLibrary("override")
-        System.loadLibrary("bridge")
-
         val ctx = Global.application
+
+        NativeLibraryLoader.loadCoreLibraries(ctx)
 
         ParcelFileDescriptor.open(File(ctx.packageCodePath), ParcelFileDescriptor.MODE_READ_ONLY)
             .detachFd()
@@ -149,6 +191,26 @@ object Bridge {
             ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "unknown"
         val sdkVersion = Build.VERSION.SDK_INT
 
-        nativeInit(home, versionName, sdkVersion)
+        nativeInit(home, versionName, sdkVersion, BuildConfigHolder.kernelGitVersion)
     }
+}
+
+@Keep
+interface ConnectionCloseInterface {
+    fun received(jsonPayload: String)
+}
+
+@Keep
+interface ConnectionJoinInterface {
+    fun received(jsonPayload: String)
+}
+
+@Keep
+interface TrafficUpdateInterface {
+    fun received(jsonPayload: String)
+}
+
+@Keep
+interface TrafficUpdatePackedInterface {
+    fun received(uploadTotal: Long, downloadTotal: Long, uploadSpeed: Long, downloadSpeed: Long)
 }

@@ -46,6 +46,7 @@ func (t *remoteTun) querySocketOwner(protocol int, source, target string) string
 		return "-1\t"
 	}
 
+	// Memory ownership: C.CString allocates memory that is freed inside bridge.c:query_socket_owner(). Do not free source/target here.
 	result := C.query_socket_owner(
 		t.callback,
 		C.int(protocol),

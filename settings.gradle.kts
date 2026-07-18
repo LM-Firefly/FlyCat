@@ -21,20 +21,22 @@
 @file:Suppress("UnstableApiUsage")
 
 
-rootProject.name = "YumeBox"
+rootProject.name = "FlyCat"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 enableFeaturePreview("STABLE_CONFIGURATION_CACHE")
 
 pluginManagement {
     repositories {
-        google()
+        mavenLocal()
         mavenCentral()
+        google()
+        gradlePluginPortal()
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap")
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
         maven("https://jitpack.io")
         maven("https://maven.aliyun.com/nexus/content/repositories/releases/")
-
+        maven("https://maven.oom-wg.dev")
         maven("https://oom-maven.sawahara.host") {
             content {
                 includeGroupAndSubgroups("ren.shiror")
@@ -42,7 +44,6 @@ pluginManagement {
                 includeGroupAndSubgroups("dev.oom-wg")
             }
         }
-        gradlePluginPortal()
     }
 }
 
@@ -50,8 +51,10 @@ pluginManagement {
 // project's buildscript block, so vulnerable-version floors are enforced here separately.
 buildscript {
     configurations["classpath"].resolutionStrategy.eachDependency {
-        if (requested.group.startsWith("tools.jackson")) {
-            useVersion("3.1.4")
+        when {
+            requested.group.startsWith("tools.jackson") -> useVersion("3.1.5")
+            requested.group == "io.netty" -> useVersion("4.1.136.Final")
+            requested.group == "com.google.guava" -> useVersion("32.0.0-android")
         }
     }
 }
@@ -60,12 +63,14 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
 
     repositories {
-        google()
+        mavenLocal()
         mavenCentral()
+        google()
+        gradlePluginPortal()
         maven("https://jitpack.io")
         maven("https://raw.githubusercontent.com/MetaCubeX/maven-backup/main/releases")
         maven ("https://maven.aliyun.com/nexus/content/repositories/releases/")
-
+        maven("https://maven.oom-wg.dev")
         maven("https://oom-maven.sawahara.host") {
             content {
                 includeGroupAndSubgroups("ren.shiror")
@@ -82,35 +87,6 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-gropify {
-    isEnabled = true
-    global {
-        common {
-            isEnabled = true
-            useTypeAutoConversion = true
-            useValueInterpolation = true
-            existsPropertyFiles("gradle.properties", addDefault = false)
-            excludeKeys(
-                "signing.store.password",
-                "signing.key.password",
-                "signing.store.path",
-                "signing.key.alias",
-            )
-        }
-        android {
-            generateDirPath = "build/generated/gropify"
-            sourceSetName = "main"
-            packageName = "com.github.yumelira.yumebox.yumebox.generated"
-            useKotlin = true
-            isRestrictedAccessEnabled = false
-            isIsolationEnabled = true
-        }
-    }
-    projects(":core", ":extension") {
-        android { isEnabled = false }
-    }
-}
-
 include(
     ":core",
     ":platform",
@@ -119,12 +95,19 @@ include(
     ":data",
     ":extension",
     ":app",
+    ":feature:home",
+    ":feature:log",
+    ":feature:profiles",
+    ":feature:settings",
+    ":feature:update",
     ":feature:substore",
     ":feature:proxy",
     ":feature:override",
+    ":feature:about",
     ":feature:editor",
     ":feature:meta",
     ":runtime:api",
     ":runtime:client",
     ":runtime:service",
+    ":pack",
 )

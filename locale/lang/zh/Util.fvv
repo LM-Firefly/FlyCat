@@ -1,6 +1,9 @@
 <Util>
 Util = {
     Error = {
-        UnknownError = "未知错误"
+        UnknownError = "未知錯誤"
+        CannotCreateDir = "無法建立目錄：%s"
+        TargetNotDir = "目標不是目錄：%s"
+        PathTraversalDetected = "偵測到路徑遍歷：%s"
     }
 }

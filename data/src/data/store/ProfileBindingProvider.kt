@@ -20,7 +20,7 @@
 
 package com.github.yumelira.yumebox.data.store
 
-import com.github.yumelira.yumebox.data.model.ProfileBinding
+import com.github.yumelira.yumebox.core.model.ProfileBinding
 import kotlinx.coroutines.flow.Flow
 
 interface ProfileBindingProvider {

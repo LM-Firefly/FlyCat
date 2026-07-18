@@ -74,6 +74,7 @@ data class LatencyColors(
     val fast: Color = Color(0xFF007906),
     val moderate: Color = Color(0xFFFFB300),
     val slow: Color = Color(0xFFE53935),
+    val terrible: Color = Color(0xFF961919),
     val timeout: Color = Color(0xFF9E9E9E),
 )
 

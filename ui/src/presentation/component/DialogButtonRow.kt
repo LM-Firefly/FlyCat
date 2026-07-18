@@ -27,7 +27,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.FlyTxt
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
@@ -38,8 +38,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun DialogButtonRow(
     onCancel: () -> Unit,
     onConfirm: () -> Unit,
-    cancelText: String = MLang.Component.Button.Cancel,
-    confirmText: String = MLang.Component.Button.Confirm,
+    cancelText: String = FlyTxt.Component.Button.Cancel,
+    confirmText: String = FlyTxt.Component.Button.Confirm,
     confirmEnabled: Boolean = true,
     @SuppressLint("ModifierParameter") modifier: Modifier = Modifier,
 ) {
@@ -62,8 +62,8 @@ fun DialogButtonRow(
 fun DialogFilledButtonRow(
     onSecondary: () -> Unit,
     onPrimary: () -> Unit,
-    secondaryText: String = MLang.Component.Button.Clear,
-    primaryText: String = MLang.Component.Button.Confirm,
+    secondaryText: String = FlyTxt.Component.Button.Clear,
+    primaryText: String = FlyTxt.Component.Button.Confirm,
     secondaryEnabled: Boolean = true,
     primaryEnabled: Boolean = true,
     @SuppressLint("ModifierParameter") modifier: Modifier = Modifier,

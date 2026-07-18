@@ -25,6 +25,14 @@ plugins {
 
 android {
     namespace = "com.github.yumelira.yumebox.runtime.service"
+    sourceSets {
+        getByName("main") {
+            kotlin.directories.apply {
+                clear()
+                add("src")
+            }
+        }
+    }
     buildFeatures {
         aidl = true
     }
@@ -32,22 +40,20 @@ android {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":platform"))
-    implementation(project(":locale"))
     implementation(project(":data"))
+    implementation(project(":locale"))
     implementation(project(":runtime:api"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
 
-    val mmkv64 = libs.versions.mmkv64.get()
-    val mmkv32 = libs.versions.mmkv32.get()
-    val injectedAbi = findProperty("android.injected.build.abi") as? String
-    val mmkvVersion = if (injectedAbi in listOf("arm64-v8a", "x86_64")) mmkv64 else mmkv32
-    implementation("com.tencent:mmkv:$mmkvVersion")
+    implementation("com.tencent:mmkv:${rootProject.extra["mmkvVersion"]}")
 
     implementation(libs.timber)
+    implementation(libs.koin.core)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
     implementation(libs.libsu.core)
     implementation(libs.libsu.service)
 }

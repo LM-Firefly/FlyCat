@@ -12,7 +12,8 @@ use crate::compiler::{
 };
 use crate::engine;
 use crate::engine::yaml::add_yaml_tags_to_proxies_short_id;
-use crate::model::{CompileRequest, LoadedOverride, REQUEST_SCHEMA_VERSION};
+use crate::jni::{down_scale_traffic, pack_traffic};
+use crate::model::{CompileRequest, LoadedOverride, RunMode, REQUEST_SCHEMA_VERSION};
 use age::secrecy::ExposeSecret;
 
 fn test_request(profile_dir: &Path, profile_path: &Path) -> CompileRequest {
@@ -24,6 +25,8 @@ fn test_request(profile_dir: &Path, profile_path: &Path) -> CompileRequest {
         overrides: Vec::new(),
         output_path: String::new(),
         age_secret_key: None,
+        run_mode: RunMode::default(),
+        skip_runtime_patches: false,
     }
 }
 
@@ -111,6 +114,8 @@ fn compile_root_with_geosite_matcher(
         overrides: Vec::new(),
         output_path: String::new(),
         age_secret_key: None,
+        run_mode: RunMode::default(),
+        skip_runtime_patches: false,
     };
 
     let result = compile_request(request, false);
@@ -497,6 +502,8 @@ fn compile_request_emits_warning_for_empty_override_file() {
         }],
         output_path: String::new(),
         age_secret_key: None,
+        run_mode: RunMode::default(),
+        skip_runtime_patches: false,
     };
 
     let result = compile_request(request, false).expect("compile request should succeed");
@@ -851,4 +858,40 @@ fn compile_request_rejects_yaml_output_for_encrypted_source() {
     assert!(!override_path.with_extension("log").exists());
 
     let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn down_scale_traffic_byte_range() {
+    assert_eq!(down_scale_traffic(0), 0);
+    assert_eq!(down_scale_traffic(512), 512);
+    assert_eq!(down_scale_traffic(1024), 1024);
+}
+
+#[test]
+fn down_scale_traffic_kb_range() {
+    let tag_kb = 1u64 << 30;
+    let val = down_scale_traffic(2048);
+    assert_eq!(val & 0xC000_0000, tag_kb);
+}
+
+#[test]
+fn down_scale_traffic_mb_range() {
+    let tag_mb = 2u64 << 30;
+    let val = down_scale_traffic(5 * 1024 * 1024);
+    assert_eq!(val & 0xC000_0000, tag_mb);
+}
+
+#[test]
+fn down_scale_traffic_gb_range() {
+    let tag_gb = 3u64 << 30;
+    let val = down_scale_traffic(2u64 * 1024 * 1024 * 1024);
+    assert_eq!(val & 0xC000_0000, tag_gb);
+}
+
+#[test]
+fn pack_traffic_encodes_both_directions() {
+    let packed = pack_traffic(2048, 4096);
+    let bits = packed as u64;
+    assert_eq!((bits >> 32) & 0xC000_0000, 1u64 << 30);
+    assert_eq!(bits & 0xC000_0000, 1u64 << 30);
 }

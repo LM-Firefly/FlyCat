@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.FlyTxt
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -170,7 +170,7 @@ fun StartupLoadingOverlay(isVisible: Boolean, loadingText: String?, modifier: Mo
             Spacer(modifier = Modifier.height(UiDp.dp32))
 
             AnimatedContent(
-                targetState = loadingText ?: MLang.Component.Loading.Starting,
+                targetState = loadingText ?: FlyTxt.Component.Loading.Starting,
                 transitionSpec = {
                     fadeIn(
                         animationSpec =

@@ -1,0 +1,97 @@
+<Network Settings Page>
+NetworkSettings = {
+    Title = "ネットワーク設定"
+
+    Section = {
+        RunMode = "実行モード"
+        VpnOptions = "サービス設定"
+        ProxyOptions = "アクセス制御"
+    }
+
+    RunMode = {
+        RouteTrafficTitle = "システムトラフィックをルーティング"
+        VpnMode = "VPN モード"
+        TunMode = "ROOT TUN"
+    }
+
+    VpnOptions = {
+        BypassPrivateTitle = "プライベートネットワークをバイパス"
+        DnsHijackTitle = "DNS ハイジャック"
+        AllowBypassTitle = "アプリのバイパスを許可"
+        EnableIpv6Title = "IPv6 を有効化"
+        SystemProxyTitle = "VPN 内蔵システムプロキシ"
+        DisableOverrideTitle = "すべての上書きを無効化"
+    }
+
+    ProxyOptions = {
+        TunStackTitle = "TUN スタック"
+        AccessControlModeTitle = "アクセス制御モード"
+        AllowAll = "すべて許可"
+        AllowSelected = "選択のみ許可"
+        RejectSelected = "選択を拒否"
+        ManageAccessControlTitle = "アクセス制御を管理"
+    }
+
+    RootTun = {
+        IfNameTitle = "インターフェース名"
+        IfNameSummary = "RootTun が作成する仮想インターフェース名"
+        MtuTitle = "MTU"
+        MtuSummary = "RootTun が使用する最大転送単位"
+        AutoRouteTitle = "自動ルート"
+        StrictRouteTitle = "厳密ルート"
+        AutoRedirectTitle = "自動リダイレクト"
+        DnsModeTitle = "DNS モード"
+        DnsModeRedirHost = "RedirHost"
+        DnsModeFakeIp = "FakeIP"
+        FakeIpRangeTitle = "FakeIP IPv4 範囲"
+        FakeIpRangeSummary = "DNS モードが FakeIP の場合のみ有効"
+        FakeIpRange6Title = "FakeIP IPv6 範囲"
+        FakeIpRange6Summary = "DNS モードが FakeIP の場合のみ有効"
+    }
+
+    Error = {
+        VpnDenied = "VPN 権限が拒否されました"
+        RootRequired = "RootTun には FlyCat の利用可能な Root 権限が必要です"
+    }
+
+    WifiAutomation = {
+        Title = "Wi-Fi 自動化"
+        EnabledTitle = "Wi-Fi 自動化"
+        WifiNameHeading = "Wi-Fi 名"
+        NetworkChangeSection = "ネットワークの切替"
+        OtherWifiTitle = "他の Wi-Fi に接続したとき"
+        NoWifiTitle = "Wi-Fi 未接続時（モバイル通信 / Ethernet / オフライン）"
+        AddCurrent = "現在の Wi-Fi を追加"
+        AddManual = "Wi-Fi を手動追加"
+        Scan = "Wi-Fi をスキャン"
+        Scanning = "Wi-Fi をスキャンしています…"
+        ScanEmpty = "追加できる Wi-Fi が見つかりません"
+        ScanUnavailable = "Wi-Fi をスキャンできません。Wi-Fi、位置情報の許可、システムの位置情報を確認してください。"
+        ManualDialogTitle = "Wi-Fi を追加"
+        EditDialogTitle = "Wi-Fi を編集"
+        ManualDialogLabel = "Wi-Fi 名"
+        StartAction = "VPN を開始"
+        StopAction = "VPN を停止"
+        KeepAction = "何もしない"
+        ActionTitle = "接続時"
+        EmptyRules = "Wi-Fi ルールはありません"
+        VpnOnly = "Wi-Fi 自動化は VPN モードでのみ利用できます"
+        PermissionTitle = "Wi-Fi 名の読み取りを許可"
+        PermissionMessage = "Android では Wi-Fi 名は位置情報に関連する情報です。FlyCat は自動化を有効にするか Wi-Fi スキャンをタップしたときだけ、端末上でのルール照合または結果表示のために正確な位置情報を使用します。GPS の読み取りや Wi-Fi 名の送信は行いません。"
+        ApproximateTitle = "正確な位置情報が必要です"
+        ApproximateMessage = "おおよその位置情報では Wi-Fi 名が非表示のままです。正確な位置情報を許可してください。"
+        DeniedTitle = "位置情報の許可が必要です"
+        DeniedMessage = "許可されるまで Wi-Fi 自動化はオフのままです。"
+        SettingsTitle = "設定で位置情報を許可"
+        SettingsMessage = "Android はこの許可を再表示しません。アプリ情報の位置情報で「アプリの使用中のみ許可」と正確な位置情報を有効にしてください。"
+        LocationTitle = "システムの位置情報をオンにする"
+        LocationMessage = "システムの位置情報がオフの場合、Android は Wi-Fi 名を隠します。FlyCat は GPS を読み取りません。"
+        Grant = "許可する"
+        OpenSettings = "設定を開く"
+        TurnOnLocation = "位置情報をオンにする"
+        Added = "Wi-Fi ルールを追加しました"
+        Duplicate = "この Wi-Fi はすでにルールにあります"
+        NoWifi = "Wi-Fi 接続が見つかりません"
+        Unavailable = "Wi-Fi 名を取得できません。位置情報の許可とシステム位置情報を確認してください。"
+    }
+}

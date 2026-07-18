@@ -1,0 +1,86 @@
+<Home Page>
+Home = {
+    Title = "FlyCat"
+
+    Message = {
+        ConfigSwitched = "Профиль переключён"
+        ConfigSwitchFailed = "Не удалось переключить профиль: %s"
+        Preparing = "Подготовка..."
+        StartFailed = "Не удалось запустить: %s"
+        StopFailed = "Не удалось остановить: %s"
+    }
+
+    Control = {
+        HintAddProfile = "Сначала добавьте профиль"
+        HintEnableProfile = "Сначала включите профиль на странице «Профили»"
+    }
+
+    NodeInfo = {
+        Node = "Узел"
+        Delay = "Задержка"
+        Unknown = "Неизвестно"
+        DelayValue = "%dms"
+    }
+
+    Traffic = {
+        UpShort = "UP"
+        DownShort = "DOWN"
+        DownloadLong = "ЗАГРУЗКА"
+        UploadLong = "ОТПРАВКА"
+        NoProfile = "Нет профиля"
+    }
+
+    IpInfo = {
+        ExitIp = "Выходной IP"
+    }
+
+    Status = {
+        Connecting = "Подключение"
+        Disconnecting = "Отключение"
+        Running = "Работает"
+        Lost = "Потеряно"
+        TapToStart = "Нажмите, чтобы запустить"
+    }
+
+    Greeting = {
+        Morning = "Доброе утро"
+        Afternoon = "Добрый день"
+        Evening = "Добрый вечер"
+        Night = "Спокойной ночи"
+    }
+
+    Quote = {
+        AuthorPrefix = "—— %s"
+    }
+
+    Control = {
+        HintAddProfile = "Сначала добавьте профиль"
+        HintEnableProfile = "Сначала включите профиль на странице «Профили»"
+        Start = "Старт"
+        Stop = "Стоп"
+    }
+
+    RunMode = {
+        Vpn = "VPN"
+        Tun = "TUN"
+    }
+
+    TunnelMode = {
+        Rule = "По правилам"
+        Global = "Глобальный"
+        Direct = "Напрямую"
+    }
+
+    PreviewGuide = {
+        Title = "Добро пожаловать в FlyCat"
+        Description = "Нажмите «Старт» внизу, чтобы подключиться"
+        Next = "Далее"
+        Start = "Начать"
+        WallpaperTitle = "Сменить обои"
+        WallpaperDescription = "Удерживайте обои, чтобы выбрать изображение из альбома"
+        SwipeTitle = "Листайте страницы"
+        SwipeDescription = "Смахивайте по главному экрану, чтобы перейти к прокси, профилям и настройкам"
+        AddTitle = "Добавить подписку"
+        AddDescription = "Нажмите значок справа сверху и вставьте ссылку"
+    }
+}

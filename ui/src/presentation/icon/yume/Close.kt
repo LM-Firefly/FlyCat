@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,17 +34,17 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Close: ImageVector
     get() {
-        if (_X != null) {
-            return _X!!
+        if (closeVector != null) {
+            return closeVector!!
         }
-        _X =
+        closeVector =
             ImageVector.Builder(
-                    name = "X",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "X",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -64,7 +67,8 @@ val Yume.Close: ImageVector
                 }
                 .build()
 
-        return _X!!
+        return closeVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _X: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var closeVector: ImageVector? = null

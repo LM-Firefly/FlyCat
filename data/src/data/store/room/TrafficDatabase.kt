@@ -22,13 +22,15 @@ package com.github.yumelira.yumebox.data.store.room
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [
         AppTrafficDailyEntity::class,
         RouteTrafficDailyEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class TrafficDatabase : RoomDatabase() {
@@ -36,5 +38,12 @@ abstract class TrafficDatabase : RoomDatabase() {
 
     companion object {
         const val DATABASE_NAME = "traffic_statistics.db"
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Remove redundant indices — primary keys already cover these columns.
+                db.execSQL("DROP INDEX IF EXISTS `index_app_traffic_daily_date_millis`")
+                db.execSQL("DROP INDEX IF EXISTS `index_route_traffic_daily_date_millis_app_key`")
+            }
+        }
     }
 }
