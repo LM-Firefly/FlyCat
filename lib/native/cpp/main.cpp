@@ -265,6 +265,18 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativePatchSelector(JNIEnv *
     return (jboolean) patchSelector(_selector, _name);
 }
 
+JNIEXPORT jboolean JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeForcePatchSelector(JNIEnv *env, jobject thiz,
+                                                                        jstring selector,
+                                                                        jstring name) {
+    TRACE_METHOD();
+
+    scoped_string _selector = get_string(selector);
+    scoped_string _name = get_string(name);
+
+    return (jboolean) patchForceSelector(_selector, _name);
+}
+
 JNIEXPORT void JNICALL
 Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeFetchAndValid(JNIEnv *env, jobject thiz,
                                                                    jobject callback,
@@ -432,6 +444,16 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSetCustomUserAgent(JNI
     scoped_string ua = get_string(user_agent);
 
     setCustomUserAgent(ua);
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeConvertMrsToText(JNIEnv *env, jobject thiz, jstring filePath) {
+    TRACE_METHOD();
+
+    scoped_string path = get_string(filePath);
+    scoped_string result = convertMrsToText(path);
+
+    return new_string(result);
 }
 
 

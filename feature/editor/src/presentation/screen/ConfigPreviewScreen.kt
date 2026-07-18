@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.feature.editor.screen
+package com.github.yumelira.yumebox.feature.editor.presentation.screen
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,11 +33,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.feature.editor.editor.CodeEditor
-import com.github.yumelira.yumebox.feature.editor.editor.rememberConfiguredCodeEditorState
-import com.github.yumelira.yumebox.feature.editor.format.CodeFormatter
-import com.github.yumelira.yumebox.feature.editor.language.LanguageScope
+import com.github.yumelira.yumebox.feature.editor.presentation.editor.CodeEditor
+import com.github.yumelira.yumebox.feature.editor.presentation.editor.rememberConfiguredCodeEditorState
+import com.github.yumelira.yumebox.feature.editor.presentation.format.CodeFormatter
+import com.github.yumelira.yumebox.platform.util.toast
 import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.SmallTopBar
 import com.github.yumelira.yumebox.presentation.icon.Yume
@@ -45,7 +44,9 @@ import com.github.yumelira.yumebox.presentation.icon.yume.ArrowLeft
 import com.github.yumelira.yumebox.presentation.icon.yume.ArrowRight
 import com.github.yumelira.yumebox.presentation.icon.yume.ListCollapse
 import com.github.yumelira.yumebox.presentation.icon.yume.Save
+import com.github.yumelira.yumebox.presentation.language.LanguageScope
 import com.github.yumelira.yumebox.presentation.theme.UiDp
+import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -55,9 +56,10 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 @Composable
 fun ConfigPreviewScreen(
     navigator: Navigator,
-    title: String = "配置预览",
+    title: String = MLang.Component.Editor.ConfigPreview.Title,
     initialContent: String = "",
     language: LanguageScope = LanguageScope.Yaml,
+    readOnly: Boolean = false,
     onSave: (suspend (String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
@@ -77,7 +79,7 @@ fun ConfigPreviewScreen(
         rememberConfiguredCodeEditorState(
             initialContent = formattedContent,
             language = language,
-            readOnly = false,
+            readOnly = readOnly,
         )
     val scrollBehavior = MiuixScrollBehavior()
 
@@ -86,7 +88,7 @@ fun ConfigPreviewScreen(
             SmallTopBar(
                 title = title,
                 scrollBehavior = scrollBehavior,
-                navigationIcon = {
+                navigationIcon = if (!readOnly) {{
                     Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
                         IconButton(
                             onClick = { editorState.undo() },
@@ -101,13 +103,13 @@ fun ConfigPreviewScreen(
                             Icon(Yume.ArrowRight, null)
                         }
                     }
-                },
-                actions = {
+                }} else {{}},
+                actions = if (!readOnly) {{
                     IconButton(
                         modifier = Modifier.padding(end = UiDp.dp12),
                         onClick = { editorState.format() },
                     ) {
-                        Icon(Yume.ListCollapse, contentDescription = "Format")
+                        Icon(Yume.ListCollapse, contentDescription = MLang.Component.Editor.ConfigPreview.Format)
                     }
                     IconButton(
                         onClick = {
@@ -119,15 +121,15 @@ fun ConfigPreviewScreen(
                                         editorState.resetModified()
                                         navigator.navigateUp()
                                     }
-                                    .onFailure { context.toast(it.message ?: "保存失败") }
+                                    .onFailure { context.toast(it.message ?: MLang.Component.Editor.ConfigPreview.SaveFailed) }
                                 isSaving = false
                             }
                         },
                         enabled = onSave != null && editorState.isModified && !isSaving,
                     ) {
-                        Icon(Yume.Save, contentDescription = "Save")
+                        Icon(Yume.Save, contentDescription = MLang.Component.Editor.ConfigPreview.Save)
                     }
-                },
+                }} else {{}},
             )
         }
     ) { paddingValues ->

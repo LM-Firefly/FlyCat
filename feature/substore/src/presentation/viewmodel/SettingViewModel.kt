@@ -18,18 +18,28 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.viewmodel
+package com.github.yumelira.yumebox.feature.substore.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.data.store.FeatureStore
-import com.github.yumelira.yumebox.substore.SubStoreServiceController
+import com.github.yumelira.yumebox.core.contract.SubStoreNavigationHandler
+import com.github.yumelira.yumebox.core.contract.SubStoreSettings
+import com.github.yumelira.yumebox.feature.substore.SubStoreServiceController
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
-class SettingViewModel(private val store: FeatureStore) : ViewModel() {
+class SubStoreNavigationHandlerImpl : SubStoreNavigationHandler {
+    private val _openUrlEvents = MutableSharedFlow<String>()
+    override val openUrlEvents: SharedFlow<String> = _openUrlEvents.asSharedFlow()
+
+    suspend fun emitOpenUrl(url: String) {
+        _openUrlEvents.emit(url)
+    }
+}
+
+class SettingViewModel(private val store: SubStoreSettings, private val navigationHandler: SubStoreNavigationHandlerImpl) : ViewModel() {
     val backendPort = store.backendPort
     val frontendPort = store.frontendPort
 
@@ -37,14 +47,16 @@ class SettingViewModel(private val store: FeatureStore) : ViewModel() {
     val events: SharedFlow<SettingEvent> = _events.asSharedFlow()
 
     val isSubStoreRunning: Boolean
-        get() = SubStoreServiceController.snapshot.value.isActive
+        get() = SubStoreServiceController.snapshot.value.isRunning
 
     fun onSubStoreCardClicked() {
         if (!isSubStoreRunning) return
         val host = currentHost()
         val frontendUrl = buildUrl(host, frontendPort.value)
         val backendUrl = buildUrl(host, backendPort.value)
-        emitEvent(SettingEvent.OpenWebView("$frontendUrl/subs?api=$backendUrl"))
+        val url = "$frontendUrl/subs?api=$backendUrl"
+        emitEvent(SettingEvent.OpenWebView(url))
+        viewModelScope.launch { navigationHandler.emitOpenUrl(url) }
     }
 
     // `0.0.0.0` is a bind address, not a browser target.

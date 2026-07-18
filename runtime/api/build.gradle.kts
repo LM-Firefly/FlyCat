@@ -25,11 +25,22 @@ plugins {
 
 android {
     namespace = "com.github.yumelira.yumebox.runtime.api"
+    sourceSets {
+        getByName("main") {
+            kotlin.directories.apply {
+                clear()
+                add("src")
+            }
+        }
+    }
+    buildFeatures {
+        aidl = true
+    }
 }
 
 dependencies {
     implementation(project(":core"))
-    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
+    implementation("com.tencent:mmkv:${rootProject.extra["mmkvVersion"]}")
 }
-

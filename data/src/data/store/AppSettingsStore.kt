@@ -20,42 +20,50 @@
 
 package com.github.yumelira.yumebox.data.store
 
-import com.github.yumelira.yumebox.data.model.AppColorTheme
-import com.github.yumelira.yumebox.data.model.AppLanguage
-import com.github.yumelira.yumebox.data.model.ThemeMode
+import android.util.Log
+import com.github.yumelira.yumebox.core.contract.AppSettingsReader
+import com.github.yumelira.yumebox.core.contract.UpdateSettings
+import com.github.yumelira.yumebox.core.contract.WebDavSettingsReader
+import com.github.yumelira.yumebox.core.model.AppColorTheme
+import com.github.yumelira.yumebox.core.model.AppLanguage
+import com.github.yumelira.yumebox.core.model.ThemeMode
 import com.tencent.mmkv.MMKV
 
-class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
-    val themeMode by enumFlow(ThemeMode.Auto)
-    val appLanguage by enumFlow(AppLanguage.System)
-    val colorTheme by enumFlow(AppColorTheme.ClassicMonochrome)
-    val themeAccentColorArgb by longFlow(0xFF138A74L)
-    val invertOnPrimaryColors by boolFlow(false)
-    val homePreviewGuideShown by boolFlow(false)
-    val automaticRestart by boolFlow(false)
-    val autoUpdateCurrentProfileOnStart by boolFlow(true)
-    val hideAppIcon by boolFlow(false)
-    val excludeFromRecents by boolFlow(false)
-    val showTrafficNotification by boolFlow(true)
-    val bottomBarAutoHide by boolFlow(true)
-    val topBarBlurEnabled by boolFlow(false)
-    val classicHomeEnabled by boolFlow(false)
-    val moeWallpaperUri by strFlow("")
-    val moeWallpaperSourceUri by strFlow("")
-    val moeWallpaperZoom by floatFlow(1.0f)
-    val moeWallpaperBiasX by floatFlow(0.0f)
-    val moeWallpaperBiasY by floatFlow(0.0f)
-    val moeHomeQuote by strFlow("悪いことしたの？いけなかったの？")
-    val moeHomeQuoteAuthor by strFlow("恋文")
-    val moeSidebarExpanded by boolFlow(true)
-    val pageScale by floatFlow(1.0f)
-    val singleNodeTest by boolFlow(true)
+class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv), AppSettingsReader, UpdateSettings {
+    override val initialSetupCompleted by boolFlow(false)
+    override val privacyPolicyAccepted by boolFlow(false)
+    override val themeMode by enumFlow(ThemeMode.Auto)
+    override val appLanguage by enumFlow(AppLanguage.System)
+    override val colorTheme by enumFlow(AppColorTheme.ClassicMonochrome)
+    override val themeAccentColorArgb by longFlow(0xFF138A74L)
+    override val invertOnPrimaryColors by boolFlow(false)
+    override val homePreviewGuideShown by boolFlow(false)
+    override val automaticRestart by boolFlow(false)
+    override val autoUpdateCurrentProfileOnStart by boolFlow(true)
+    override val hideAppIcon by boolFlow(false)
+    override val excludeFromRecents by boolFlow(false)
+    override val showTrafficNotification by boolFlow(true)
+    override val bottomBarAutoHide by boolFlow(true)
+    override val topBarBlurEnabled by boolFlow(false)
+    override val classicHomeEnabled by boolFlow(false)
+    override val homeHitokotoEnabled by boolFlow(false)
+    override val moeWallpaperUri by strFlow("")
+    override val moeWallpaperSourceUri by strFlow("")
+    override val moeWallpaperZoom by floatFlow(1.0f)
+    override val moeWallpaperBiasX by floatFlow(0.0f)
+    override val moeWallpaperBiasY by floatFlow(0.0f)
+    override val moeHomeQuote by strFlow("一个人走 默守一隅清欢")
+    override val moeHomeQuoteAuthor by strFlow("Firefly")
+    override val moeSidebarExpanded by boolFlow(true)
+    override val pageScale by floatFlow(1.0f)
+    override val singleNodeTest by boolFlow(true)
+    override val logLevel by intFlow(Log.INFO)
+    override val autoCheckAppUpdate by boolFlow(false)
+    override val updateSourceKey by strFlow("Stable")
+    override val customUserAgent by strFlow("")
+    override val webDav: WebDavSettingsReader = WebDavSettings(externalMmkv)
 
-    val customUserAgent by strFlow("")
-
-    init {
-        migrateLegacyHomeKeys()
-    }
+    init { migrateLegacyHomeKeys() }
 
     /**
      * One-time rename migration: pre-rename builds persisted the home/wallpaper preferences under
@@ -63,21 +71,10 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
      * upgrading users keep their saved quote, author, wallpaper and crop framing.
      */
     private fun migrateLegacyHomeKeys() {
-        fun moveString(old: String, new: String) {
-            if (mmkv.containsKey(old) && !mmkv.containsKey(new)) {
-                mmkv.decodeString(old)?.let { mmkv.encode(new, it) }
-            }
-        }
-        fun moveFloat(old: String, new: String) {
-            if (mmkv.containsKey(old) && !mmkv.containsKey(new)) {
-                mmkv.encode(new, mmkv.decodeFloat(old, 0f))
-            }
-        }
-        fun moveBool(old: String, new: String) {
-            if (mmkv.containsKey(old) && !mmkv.containsKey(new)) {
-                mmkv.encode(new, mmkv.decodeBool(old, false))
-            }
-        }
+        if (mmkv.decodeBool("_legacyHomeKeysMigrated", false)) return
+        fun moveString(old: String, new: String) { if (mmkv.containsKey(old) && !mmkv.containsKey(new)) { mmkv.decodeString(old)?.let { mmkv.encode(new, it) } } }
+        fun moveFloat(old: String, new: String) { if (mmkv.containsKey(old) && !mmkv.containsKey(new)) { mmkv.encode(new, mmkv.decodeFloat(old, 0f)) } }
+        fun moveBool(old: String, new: String) { if (mmkv.containsKey(old) && !mmkv.containsKey(new)) { mmkv.encode(new, mmkv.decodeBool(old, false)) } }
         moveString("acgWallpaperUri", "moeWallpaperUri")
         moveString("acgWallpaperSourceUri", "moeWallpaperSourceUri")
         moveString("acgHomeQuote", "moeHomeQuote")
@@ -86,5 +83,24 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
         moveFloat("acgWallpaperBiasX", "moeWallpaperBiasX")
         moveFloat("acgWallpaperBiasY", "moeWallpaperBiasY")
         moveBool("acgSidebarExpanded", "moeSidebarExpanded")
+        mmkv.encode("_legacyHomeKeysMigrated", true)
     }
 }
+
+/**
+ * WebDAV backup settings, isolated to feature/meta consumers.
+ */
+class WebDavSettings(mmkv: MMKV) : MMKVPreference(externalMmkv = mmkv), WebDavSettingsReader {
+    override val webDavUrl by strFlow("")
+    override val webDavAccount by strFlow("")
+    override val webDavPassword by strFlow("")
+    override val webDavDir by strFlow("FlyCat")
+}
+
+class AppStateManager(
+    val appSettingsStore: AppSettingsStore,
+    val networkSettingsStore: NetworkSettingsStore,
+    val featureStore: FeatureStore,
+    val proxyDisplaySettingsStore: ProxyDisplaySettingsStore,
+    val trafficStatisticsStore: TrafficStatisticsStore,
+)

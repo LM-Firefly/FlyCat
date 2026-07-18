@@ -52,7 +52,9 @@ class WebViewActivity : ComponentActivity() {
             context: Context,
             initialUrl: String = "file://${context.filesDir}/frontend/index.html",
         ) {
-            context.startActivity(intent(context, initialUrl))
+            val intent = Intent(context, WebViewActivity::class.java).apply { putExtra(EXTRA_INITIAL_URL, initialUrl) }
+            if (context !is Activity) { intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+            context.startActivity(intent)
         }
     }
 
@@ -112,5 +114,10 @@ class WebViewActivity : ComponentActivity() {
             intent.getStringExtra(EXTRA_INITIAL_URL) ?: "file://$filesDir/frontend/index.html"
 
         setContent { WebViewScreen(initialUrl = initialUrl) }
+    }
+    override fun onDestroy() {
+        filePathCallback?.onReceiveValue(null)
+        filePathCallback = null
+        super.onDestroy()
     }
 }

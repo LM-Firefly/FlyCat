@@ -9,16 +9,12 @@ About = {
 
     Section = {
         ProjectLinks = "项目链接"
-        More = "更多"
         License = "许可证"
     }
 
-    Link = {
-        TelegramGroup = "Telegram 群组"
-        TelegramChannel = "Telegram 频道"
-    }
-
     License = {
+        CheckUpdate = "检查更新"
+        CheckUpdateSummary = "手动检查 GitHub Release 更新"
         Libraries = "引用库"
         LibrariesSummary = "View all third-party libraries used in this app"
         AgplName = "GNU Affero General Public License v3.0"

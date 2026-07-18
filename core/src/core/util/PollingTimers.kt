@@ -27,13 +27,28 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.isActive
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+
+object AppForegroundState {
+    private val resumedCount = AtomicInteger(0)
+    private val _foreground = MutableStateFlow(false)
+    val foreground: StateFlow<Boolean> = _foreground.asStateFlow()
+    fun onActivityResumed() { if (resumedCount.incrementAndGet() == 1) _foreground.value = true }
+    fun onActivityPaused() { if (resumedCount.decrementAndGet() == 0) _foreground.value = false }
+}
 
 data class PollingTimerSpec(
     val name: String,
@@ -50,22 +65,52 @@ data class PollingTimerSpec(
 object PollingTimerSpecs {
     val MoeElapsedClock = PollingTimerSpec("acg_elapsed_clock", 1_000L, 0L)
     val HomeSpeedSampling = PollingTimerSpec("home_speed_sampling", 1_000L, 0L)
-    val LogScreenRefresh = PollingTimerSpec("log_screen_refresh", 500L, 0L)
-    val ConnectionsPolling = PollingTimerSpec("connections_polling", 1_000L, 0L)
+    val LogScreenRefresh = PollingTimerSpec("log_screen_refresh", 1_000L, 0L)
     val RuntimeTrafficPolling = PollingTimerSpec("runtime_traffic_polling", 1_000L, 0L)
     val RuntimeProxyGroupSyncFast = PollingTimerSpec("runtime_proxy_group_sync_fast", 1_000L, 0L)
-    val RuntimeProxyGroupSyncSlow = PollingTimerSpec("runtime_proxy_group_sync_slow", 3_000L, 0L)
-    val RuntimeRootLogPolling = PollingTimerSpec("runtime_root_log_polling", 300L, 0L)
-    val ServiceTrafficNotification = PollingTimerSpec("service_traffic_notification", 1_000L, 0L)
-    val RootTunStatusNotification = PollingTimerSpec("root_tun_status_notification", 1_000L, 0L)
-    val ProxyTileRefresh = PollingTimerSpec("proxy_tile_refresh", 1_000L, 0L)
-    val SessionConnectionTracking = PollingTimerSpec("session_connection_tracking", 2_000L, 0L)
+    val RuntimeProxyGroupSyncSlow = PollingTimerSpec("runtime_proxy_group_sync_slow", 4_000L, 0L)
+    val RuntimeRootLogPolling = PollingTimerSpec("runtime_root_log_polling", 2_000L, 0L)
+    val RootTunStatusNotification = PollingTimerSpec("root_tun_status_notification", 2_000L, 0L)
+    val ProxyTileRefresh = PollingTimerSpec("proxy_tile_refresh", 3_000L, 0L)
+    val SessionConnectionTracking = PollingTimerSpec("session_connection_tracking", 1_000L, 0L)
     val HomeIpRefresh = PollingTimerSpec("home_ip_refresh", 15_000L, 0L)
-    val TrafficStatsCollection = PollingTimerSpec("traffic_stats_collection", 5_000L, 0L)
-    val ProxyHealthcheckRefresh = PollingTimerSpec("proxy_healthcheck_refresh", 1_500L, 1_500L)
+    val ProxyHealthcheckRefresh = PollingTimerSpec("proxy_healthcheck_refresh", 2_500L, 2_500L)
     val ProxyTestingSortHold = PollingTimerSpec("proxy_testing_sort_hold", 2_200L, 2_200L)
     val ProxySwitchFeedback = PollingTimerSpec("proxy_switch_feedback", 500L, 500L)
     val RootTunReloadDebounce = PollingTimerSpec("root_tun_reload_debounce", 100L, 100L)
+
+    object TrafficPoller {
+        /** Interval between connection-snapshot + traffic-total queries (foreground ms). */
+        const val CONNECTION_REFRESH_INTERVAL_MS = 15_000L
+        /** Interval between payload-refresh checks (foreground ms). */
+        const val PAYLOAD_REFRESH_INTERVAL_MS = 20_000L
+        const val FAILURE_BACKOFF_STEP_MS = 1_000L
+        const val FAILURE_BACKOFF_MAX_MS = 15_000L
+        const val BACKGROUND_INTERVAL_MS = 5_000L
+        const val SCREEN_OFF_INTERVAL_MS = 120_000L
+    }
+
+    object Telemetry {
+        const val BACKGROUND_INTERVAL_MS = 5_000L
+        const val SCREEN_OFF_INTERVAL_MS = 120_000L
+    }
+
+    object ProxyGroupSync {
+        const val FAST_BACKGROUND_MS = 5_000L
+        const val FAST_SCREEN_OFF_MS = 60_000L
+        const val SLOW_BACKGROUND_MS = 30_000L
+        const val SLOW_SCREEN_OFF_MS = 120_000L
+    }
+
+    object RootLogPolling {
+        const val BACKGROUND_INTERVAL_MS = 10_000L
+        const val SCREEN_OFF_INTERVAL_MS = 60_000L
+    }
+
+    object LogFlush {
+        const val FOREGROUND_INTERVAL_MS = 350L
+        const val SCREEN_OFF_INTERVAL_MS = 60_000L
+    }
 
     fun dynamic(
         name: String,
@@ -85,10 +130,12 @@ object PollingTimers {
     // One lightweight scheduler lane for all periodic tick emission in this process.
     private val schedulerScope =
         CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
-    private val tickerCache = ConcurrentHashMap<PollingTimerSpec, SharedFlow<Long>>()
+    private data class TimerKey(val intervalMillis: Long, val initialDelayMillis: Long)
+    private val tickerCache = ConcurrentHashMap<TimerKey, SharedFlow<Long>>()
 
-    fun ticks(spec: PollingTimerSpec): Flow<Long> =
-        tickerCache.getOrPut(spec) {
+    fun ticks(spec: PollingTimerSpec): Flow<Long> {
+        val key = TimerKey(spec.intervalMillis, spec.initialDelayMillis)
+        return tickerCache.computeIfAbsent(key) {
             flow {
                     if (spec.initialDelayMillis > 0L) {
                         delay(spec.initialDelayMillis)
@@ -98,6 +145,7 @@ object PollingTimers {
                         delay(spec.intervalMillis)
                     }
                 }
+                .onCompletion { tickerCache.remove(key) }
                 .shareIn(
                     scope = schedulerScope,
                     started =
@@ -105,8 +153,58 @@ object PollingTimers {
                     replay = 0,
                 )
         }
+    }
 
     suspend fun awaitTick(spec: PollingTimerSpec) {
         ticks(spec).first()
+    }
+}
+
+/**
+ * Shared cache for traffic speed ([trafficNow]) and cumulative traffic ([trafficTotal]).
+ *
+ * The cache is **write-through**: callers push values via [updateNow] / [updateTotal] after
+ * each query (typically from [com.github.yumelira.yumebox.core.Clash.queryTrafficNow] or
+ * a remote controller). Consumers — such as the foreground notification — subscribe to the
+ * [StateFlow]s and react to changes without issuing their own native calls.
+ */
+object TrafficSampleCache {
+    private val _trafficNow = MutableStateFlow(0L)
+    val trafficNow: StateFlow<Long> = _trafficNow.asStateFlow()
+    private val _trafficTotal = MutableStateFlow(0L)
+    val trafficTotal: StateFlow<Long> = _trafficTotal.asStateFlow()
+    fun updateNow(value: Long) { _trafficNow.value = value }
+    fun updateTotal(value: Long) { _trafficTotal.value = value }
+    fun reset() { _trafficNow.value = 0L; _trafficTotal.value = 0L }
+}
+
+@kotlinx.coroutines.ExperimentalCoroutinesApi
+fun Flow<Long>.throttleWhenScreenOff(screenOn: StateFlow<Boolean>, slowIntervalMs: Long = 5_000L): Flow<Long> = screenOn.transformLatest { isScreenOn ->
+    if (isScreenOn) { this@throttleWhenScreenOff.collect { emit(it) } } else {
+        flow {
+            while (currentCoroutineContext().isActive) {
+                emit(SystemClock.elapsedRealtime())
+                delay(slowIntervalMs)
+            }
+        }.collect { emit(it) }
+    }
+}
+
+@kotlinx.coroutines.ExperimentalCoroutinesApi
+fun Flow<Long>.throttleByScene(screenOn: StateFlow<Boolean>, appForeground: StateFlow<Boolean>, backgroundIntervalMs: Long, screenOffIntervalMs: Long): Flow<Long> = combine(screenOn, appForeground) { isOn, isFg -> isOn to isFg }.transformLatest { (isScreenOn, isForeground) ->
+    when {
+        !isScreenOn -> flow {
+            while (currentCoroutineContext().isActive) {
+                emit(SystemClock.elapsedRealtime())
+                delay(screenOffIntervalMs)
+            }
+        }.collect { emit(it) }
+        !isForeground -> flow {
+            while (currentCoroutineContext().isActive) {
+                emit(SystemClock.elapsedRealtime())
+                delay(backgroundIntervalMs)
+            }
+        }.collect { emit(it) }
+        else -> this@throttleByScene.collect { emit(it) }
     }
 }

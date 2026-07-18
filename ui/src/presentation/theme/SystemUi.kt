@@ -21,29 +21,26 @@
 package com.github.yumelira.yumebox.presentation.theme
 
 import android.app.Activity
-import android.content.res.Configuration
 import android.os.Build
 import android.view.WindowInsetsController
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val AndroidSystemUiEffect: @Composable () -> Unit = {
     val view = LocalView.current
     if (!view.isInEditMode) {
-        SideEffect {
+        val isDarkMode = isSystemInDarkTheme()
+        LaunchedEffect(isDarkMode) {
             val window = (view.context as Activity).window
             WindowCompat.setDecorFitsSystemWindows(window, false)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 window.isNavigationBarContrastEnforced = false
             }
-
-            val isDarkMode =
-                (view.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                    Configuration.UI_MODE_NIGHT_YES
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 val appearance =

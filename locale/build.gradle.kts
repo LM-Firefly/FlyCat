@@ -27,7 +27,7 @@ plugins {
 
 
 android {
-    namespace = "com.github.yumelira.yumebox.core.locale"
+    namespace = "com.github.yumelira.yumebox.locale"
 
     sourceSets {
         getByName("main") {

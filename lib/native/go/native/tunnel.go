@@ -7,6 +7,7 @@ import (
 	"unsafe"
 
 	"cfa/native/app"
+	"cfa/native/config"
 	"cfa/native/tunnel"
 )
 
@@ -123,6 +124,16 @@ func patchSelector(selector, name C.c_string) C.int {
 	return 0
 }
 
+//export patchForceSelector
+func patchForceSelector(selector, name C.c_string) C.int {
+	s := C.GoString(selector)
+	n := C.GoString(name)
+	if tunnel.PatchForceSelector(s, n) {
+		return 1
+	}
+	return 0
+}
+
 //export queryProviders
 func queryProviders() *C.char {
 	return marshalJSON(tunnel.QueryProviders())
@@ -140,4 +151,13 @@ func updateProvider(completable unsafe.Pointer, pType C.c_string, name C.c_strin
 //export suspend
 func suspend(suspended C.int) {
 	tunnel.Suspend(suspended != 0)
+}
+
+//export convertMrsToText
+func convertMrsToText(filePath C.c_string) *C.char {
+	text, err := config.ConvertMrsToText(C.GoString(filePath))
+	if err != nil {
+		return nil
+	}
+	return C.CString(text)
 }

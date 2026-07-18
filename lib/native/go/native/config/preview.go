@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/dlclark/regexp2"
@@ -11,6 +12,22 @@ import (
 	mihomoConfig "github.com/metacubex/mihomo/config"
 	C "github.com/metacubex/mihomo/constant"
 )
+
+// ExtractFixedFromAdapter extracts the "fixed" field from a proxy group adapter
+// by marshaling it to JSON and parsing the result.
+func ExtractFixedFromAdapter(adapter any) string {
+	if marshaler, ok := adapter.(json.Marshaler); ok {
+		if data, err := marshaler.MarshalJSON(); err == nil {
+			var mapData map[string]any
+			if err := json.Unmarshal(data, &mapData); err == nil {
+				if value, ok := mapData["fixed"].(string); ok {
+					return value
+				}
+			}
+		}
+	}
+	return ""
+}
 
 // Proxy 代理结构体（本地定义，避免依赖 tunnel 包）
 type Proxy struct {
@@ -29,6 +46,7 @@ type ProxyGroup struct {
 	Now     string   `json:"now"`
 	Icon    string   `json:"icon"`
 	Hidden  bool     `json:"hidden"`
+	Fixed   string   `json:"fixed"`
 	Proxies []*Proxy `json:"proxies"`
 }
 
@@ -64,6 +82,7 @@ func buildProxyGroupsFromParsed(
 			Now:     group.Now(),
 			Icon:    group.Icon(),
 			Hidden:  group.Hidden(),
+			Fixed:   ExtractFixedFromAdapter(proxy.Adapter()),
 			Proxies: convertPreviewProxies(group.Proxies(), pattern),
 		})
 	}
