@@ -1,6 +1,6 @@
 <About Page>
 About = {
-    Title = "关于"
+    Title = "關於"
 
     App = {
         VersionLoading = "Loading..."
@@ -8,18 +8,14 @@ About = {
     }
 
     Section = {
-        ProjectLinks = "项目链接"
-        More = "更多"
-        License = "许可证"
-    }
-
-    Link = {
-        TelegramGroup = "Telegram 群组"
-        TelegramChannel = "Telegram 频道"
+        ProjectLinks = "專案連結"
+        License = "授權"
     }
 
     License = {
-        Libraries = "引用库"
+        CheckUpdate = "檢查更新"
+        CheckUpdateSummary = "手動檢查 GitHub Release 更新"
+        Libraries = "引用函式庫"
         LibrariesSummary = "View all third-party libraries used in this app"
         AgplName = "GNU Affero General Public License v3.0"
         AgplDescription = "This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License."

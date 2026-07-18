@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,14 +15,15 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.feature.meta.presentation.component
+package com.github.lmfirefly.flycat.feature.meta.presentation.component
 
 import android.content.Context
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,12 +41,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.takeOrElse
 import androidx.core.graphics.drawable.toBitmap
-import com.github.yumelira.yumebox.data.controller.AppIdentityResolver
-import com.github.yumelira.yumebox.presentation.theme.AppColors
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.feature.meta.presentation.viewmodel.ConnectionViewModel
+import com.github.lmfirefly.flycat.presentation.theme.AppColors
+import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
+import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -61,8 +63,8 @@ internal fun ConnectionLeadingIcon(
 ) {
     val sizes = AppTheme.sizes
     val context = LocalContext.current
-    val appIdentityResolver = remember(context) { AppIdentityResolver(context) }
-    val identity = remember(metadata, appIdentityResolver) { appIdentityResolver.resolve(metadata) }
+    val viewModel = koinViewModel<ConnectionViewModel>()
+    val identity = remember(metadata, viewModel) { viewModel.resolveIdentity(metadata) }
     val resolvedSize = size.takeOrElse { sizes.connectionLeadingIconSize }
     val iconKey =
         remember(identity, bitmapSize) {
@@ -87,8 +89,7 @@ internal fun ConnectionLeadingIcon(
             contentDescription = identity.appName.ifEmpty { network },
             modifier =
                 modifier
-                    .size(resolvedSize)
-                    .clip(RoundedCornerShape(sizes.connectionLeadingIconCornerRadius)),
+                    .size(resolvedSize),
         )
         return
     }

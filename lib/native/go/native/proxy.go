@@ -1,3 +1,4 @@
+// Package main provides the native bridge entry point for the Android application.
 package main
 
 //#include "bridge.h"

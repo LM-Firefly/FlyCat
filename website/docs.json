@@ -1,184 +1,405 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "An open-source Android client based on the mihomo kernel",
+  "theme": "almond",
+  "name": "FlyCat",
   "colors": {
-    "primary": "#16A34A",
+    "primary": "#cfcfff",
     "light": "#07C983",
-    "dark": "#15803D"
+    "dark": "#b3b7fa"
   },
   "icons": {
     "library": "lucide"
   },
-  "favicon": "/logo/logo.webp",
-  "banner": {
-    "content": "0.5.3 版本现已上线！查看[更新日志](/update/history)了解详情",
-    "dismissible": true
-  },
+  "favicon": "/images/favicon.",
   "navigation": {
     "languages": [
       {
-        "language": "cn",
-        "groups": [
+        "language": "zh-Hans",
+        "default": true,
+        "tabs": [
           {
-            "group": "开始",
-            "pages": [
-              "/index",
-              "/update/history"
+            "tab": "文档",
+            "icon": "book-open",
+            "groups": [
+              {
+                "group": "开始",
+                "pages": [
+                  "/index",
+                  "/update/history"
+                ]
+              },
+              {
+                "group": "覆写",
+                "icon": "file-code",
+                "pages": [
+                  "/override/yaml",
+                  "/override/js-override"
+                ]
+              },
+              {
+                "group": "构建",
+                "pages": [
+                  "/guide/build",
+                  "/guide/faq"
+                ]
+              }
             ]
           },
           {
-            "group": "指南",
-            "pages": [
-              "/guide/app"
+            "tab": "API 参考",
+            "icon": "square-terminal",
+            "groups": [
+              {
+                "group": "日志",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /logs"
+                ]
+              },
+              {
+                "group": "流量信息",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /traffic"
+                ]
+              },
+              {
+                "group": "内存信息",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /memory"
+                ]
+              },
+              {
+                "group": "版本信息",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /version"
+                ]
+              },
+              {
+                "group": "缓存",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "POST /cache/fakeip/flush",
+                  "POST /cache/dns/flush"
+                ]
+              },
+              {
+                "group": "运行配置",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /configs",
+                  "PUT /configs",
+                  "PATCH /configs",
+                  "POST /configs/geo",
+                  "POST /restart"
+                ]
+              },
+              {
+                "group": "更新",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "POST /upgrade",
+                  "POST /upgrade/ui",
+                  "POST /upgrade/geo"
+                ]
+              },
+              {
+                "group": "策略组",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /group",
+                  "GET /group/{name}",
+                  "GET /group/{name}/delay"
+                ]
+              },
+              {
+                "group": "代理",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /proxies",
+                  "GET /proxies/{name}",
+                  "PUT /proxies/{name}",
+                  "DELETE /proxies/{name}",
+                  "GET /proxies/{name}/delay"
+                ]
+              },
+              {
+                "group": "代理集合",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /providers/proxies",
+                  "GET /providers/proxies/{name}",
+                  "PUT /providers/proxies/{name}",
+                  "GET /providers/proxies/{name}/healthcheck",
+                  "GET /providers/proxies/{providerName}/{name}",
+                  "GET /providers/proxies/{providerName}/{name}/healthcheck"
+                ]
+              },
+              {
+                "group": "规则",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /rules",
+                  "PATCH /rules/disable"
+                ]
+              },
+              {
+                "group": "规则集合",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /providers/rules",
+                  "PUT /providers/rules/{name}"
+                ]
+              },
+              {
+                "group": "连接",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /connections",
+                  "DELETE /connections",
+                  "DELETE /connections/{id}"
+                ]
+              },
+              {
+                "group": "域名查询",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /dns/query"
+                ]
+              },
+              {
+                "group": "存储",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /storage/{key}",
+                  "PUT /storage/{key}",
+                  "DELETE /storage/{key}"
+                ]
+              },
+              {
+                "group": "DEBUG",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "PUT /debug/gc",
+                  "GET /debug/pprof"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "language": "en",
+        "tabs": [
+          {
+            "tab": "Documentation",
+            "icon": "book-open",
+            "groups": [
+              {
+                "group": "Start here",
+                "pages": [
+                  "/en/index",
+                  "/en/update/history"
+                ]
+              },
+              {
+                "group": "Overrides",
+                "icon": "file-code",
+                "pages": [
+                  "/en/override/yaml",
+                  "/en/override/js-override"
+                ]
+              },
+              {
+                "group": "Build",
+                "pages": [
+                  "/en/guide/build",
+                  "/en/guide/faq"
+                ]
+              }
             ]
           },
           {
-            "group": "覆写",
-            "pages": [
-              "/override/override",
-              "/override/fields"
+            "tab": "API reference",
+            "icon": "square-terminal",
+            "groups": [
+              {
+                "group": "Logs",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /logs"
+                ]
+              },
+              {
+                "group": "Traffic",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /traffic"
+                ]
+              },
+              {
+                "group": "Memory",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /memory"
+                ]
+              },
+              {
+                "group": "Version",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /version"
+                ]
+              },
+              {
+                "group": "Cache",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "POST /cache/fakeip/flush",
+                  "POST /cache/dns/flush"
+                ]
+              },
+              {
+                "group": "Runtime config",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /configs",
+                  "PUT /configs",
+                  "PATCH /configs",
+                  "POST /configs/geo",
+                  "POST /restart"
+                ]
+              },
+              {
+                "group": "Upgrade",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "POST /upgrade",
+                  "POST /upgrade/ui",
+                  "POST /upgrade/geo"
+                ]
+              },
+              {
+                "group": "Proxy groups",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /group",
+                  "GET /group/{name}",
+                  "GET /group/{name}/delay"
+                ]
+              },
+              {
+                "group": "Proxies",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /proxies",
+                  "GET /proxies/{name}",
+                  "PUT /proxies/{name}",
+                  "DELETE /proxies/{name}",
+                  "GET /proxies/{name}/delay"
+                ]
+              },
+              {
+                "group": "Proxy providers",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /providers/proxies",
+                  "GET /providers/proxies/{name}",
+                  "PUT /providers/proxies/{name}",
+                  "GET /providers/proxies/{name}/healthcheck",
+                  "GET /providers/proxies/{providerName}/{name}",
+                  "GET /providers/proxies/{providerName}/{name}/healthcheck"
+                ]
+              },
+              {
+                "group": "Rules",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /rules",
+                  "PATCH /rules/disable"
+                ]
+              },
+              {
+                "group": "Rule providers",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /providers/rules",
+                  "PUT /providers/rules/{name}"
+                ]
+              },
+              {
+                "group": "Connections",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /connections",
+                  "DELETE /connections",
+                  "DELETE /connections/{id}"
+                ]
+              },
+              {
+                "group": "DNS",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /dns/query"
+                ]
+              },
+              {
+                "group": "Storage",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /storage/{key}",
+                  "PUT /storage/{key}",
+                  "DELETE /storage/{key}"
+                ]
+              },
+              {
+                "group": "Debug",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "PUT /debug/gc",
+                  "GET /debug/pprof"
+                ]
+              }
             ]
-          },
-          {
-            "group": "日志",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /logs"]
-          },
-          {
-            "group": "流量信息",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /traffic"]
-          },
-          {
-            "group": "内存信息",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /memory"]
-          },
-          {
-            "group": "版本信息",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /version"]
-          },
-          {
-            "group": "缓存",
-            "openapi": "api/openapi.json",
-            "pages": ["POST /cache/fakeip/flush", "POST /cache/dns/flush"]
-          },
-          {
-            "group": "运行配置",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /configs", "PUT /configs", "PATCH /configs", "POST /configs/geo", "POST /restart"]
-          },
-          {
-            "group": "更新",
-            "openapi": "api/openapi.json",
-            "pages": ["POST /upgrade", "POST /upgrade/ui", "POST /upgrade/geo"]
-          },
-          {
-            "group": "策略组",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /group", "GET /group/{name}", "GET /group/{name}/delay"]
-          },
-          {
-            "group": "代理",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /proxies", "GET /proxies/{name}", "PUT /proxies/{name}", "DELETE /proxies/{name}", "GET /proxies/{name}/delay"]
-          },
-          {
-            "group": "代理集合",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /providers/proxies", "GET /providers/proxies/{name}", "PUT /providers/proxies/{name}", "GET /providers/proxies/{name}/healthcheck"]
-          },
-          {
-            "group": "规则",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /rules", "PATCH /rules/disable"]
-          },
-          {
-            "group": "规则集合",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /providers/rules", "PUT /providers/rules/{name}"]
-          },
-          {
-            "group": "连接",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /connections", "DELETE /connections", "DELETE /connections/{id}"]
-          },
-          {
-            "group": "域名查询",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /dns/query"]
-          },
-          {
-            "group": "存储",
-            "openapi": "api/openapi.json",
-            "pages": ["GET /storage/{key}", "PUT /storage/{key}", "DELETE /storage/{key}"]
-          },
-          {
-            "group": "DEBUG",
-            "openapi": "api/openapi.json",
-            "pages": ["PUT /debug/gc"]
           }
         ]
       }
     ]
   },
   "logo": {
-    "light": "/logo/logo.webp",
-    "dark": "/logo/logo.webp"
+    "light": "/images/logo.webp",
+    "dark": "/images/logo.webp"
   },
   "navbar": {
     "links": [
       {
         "label": "Support",
-        "href": "https://github.com/YumeYucca/YumeBox/issues"
+        "href": "https://github.com/LM-Firefly/FlyCat/issues"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Github",
-      "href": "https://github.com/YumeYucca/YumeBox"
+      "href": "https://github.com/LM-Firefly/FlyCat"
     }
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "grok",
+      "aistudio"
+    ]
   },
   "seo": {
-    "metatags": {
-      "robots": "index, follow",
-      "charset": "UTF-8",
-      "viewport": "width=device-width, initial-scale=1.0",
-      "googlebot": "index, follow",
-      "generator": "YumeBox",
-      "theme-color": "#f56c6c",
-      "format-detection": "telephone=no",
-      "referrer": "origin",
-      "rating": "general",
-      "revisit-after": "7 days",
-      "language": "en-US",
-      "copyright": "YumeYucca",
-      "distribution": "global",
-      "HandheldFriendly": "True",
-      "MobileOptimized": "320",
-      "apple-mobile-web-app-capable": "yes",
-      "apple-mobile-web-app-status-bar-style": "black",
-      "apple-mobile-web-app-title": "YumeBox",
-      "application-name": "YumeBox",
-      "msapplication-TileColor": "#f56c6c",
-      "og:type": "website",
-      "og:image": "https://yumebox.gal.tf/logo/Yume.webp",
-      "og:site_name": "YumeBox",
-      "og:locale": "en_US"
+    "organization": {
+      "id": "https://github.com/LM-Firefly",
+      "url": "https://github.com/LM-Firefly",
+      "name": "LM-Firefly"
     },
     "indexing": "all"
   },
@@ -193,20 +414,70 @@
   },
   "footer": {
     "socials": {
-      "telegram": "https://t.me/OOM_Group",
-      "github": "https://github.com/YumeYuka"
-    }
-  },
-  "errors": {
-    "404": {
-      "redirect": true,
-      "title": "Page not found",
-      "description": "The page you requested does not exist."
+      "github": "https://github.com/LM-Firefly"
     }
   },
   "fonts": {
     "heading": {
-      "family": "Inter"
+      "family": "Ubuntu Sans"
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/guide/app",
+      "destination": "/guide/faq"
+    },
+    {
+      "source": "/guide/quickstart",
+      "destination": "/guide/faq"
+    },
+    {
+      "source": "/override/fields",
+      "destination": "/override/yaml"
+    },
+    {
+      "source": "/en/guide/app",
+      "destination": "/en/guide/faq"
+    },
+    {
+      "source": "/en/guide/quickstart",
+      "destination": "/en/guide/faq"
+    },
+    {
+      "source": "/en/override/fields",
+      "destination": "/en/override/yaml"
+    },
+    {
+      "source": "/override/override",
+      "destination": "/override/yaml"
+    },
+    {
+      "source": "/en/override/override",
+      "destination": "/en/override/yaml"
+    },
+    {
+      "source": "/override/js",
+      "destination": "/override/js-override"
+    },
+    {
+      "source": "/en/override/js",
+      "destination": "/en/override/js-override"
+    },
+    {
+      "source": "/override/javascript",
+      "destination": "/override/js-override"
+    },
+    {
+      "source": "/en/override/javascript",
+      "destination": "/en/override/js-override"
+    },
+    {
+      "source": "/override/intro",
+      "destination": "/override/yaml"
+    },
+    {
+      "source": "/en/override/intro",
+      "destination": "/en/override/yaml"
+    }
+  ]
 }

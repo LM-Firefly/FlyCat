@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,16 +15,18 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.feature.meta.presentation.util
+package com.github.lmfirefly.flycat.feature.meta.presentation.util
 
-import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
-import com.github.yumelira.yumebox.data.store.OverrideConfigStore
+import com.github.lmfirefly.flycat.core.contract.CustomRoutingInitializer
+import com.github.lmfirefly.flycat.core.contract.OverrideConfigRepository
+import com.github.lmfirefly.flycat.core.model.override.OverrideInternalConstants
 
-class CustomRoutingBootstrapper(private val overrideConfigRepository: OverrideConfigStore) {
-    suspend fun ensureDefaultContent(): String {
+class CustomRoutingBootstrapper(private val overrideConfigRepository: OverrideConfigRepository) : CustomRoutingInitializer {
+    override suspend fun ensureDefaultContent(): String {
         val existingContent = overrideConfigRepository.loadCustomRoutingContent()
         if (!existingContent.isNullOrBlank()) {
             // Content file exists, but its metadata entry may be missing (e.g. content was

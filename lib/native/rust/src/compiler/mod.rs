@@ -1,9 +1,9 @@
 pub mod normalize;
 pub mod patch;
+pub mod result;
 pub mod schema;
 
 use serde_json::{Map as JsonMap, Value as JsonValue};
-use serde_yaml::Value as YamlValue;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::Path;
@@ -32,12 +32,7 @@ pub fn compile_request(
 
     let final_yaml = serde_yaml::to_string(&normalize::normalize_root(&compiled.root))
         .map_err(|err| format!("encode final yaml: {err}"))?;
-    let fingerprint = {
-        let mut hasher = Sha256::new();
-        hasher.update(request.profile_uuid.as_bytes());
-        hasher.update(final_yaml.as_bytes());
-        format!("{:x}", hasher.finalize())
-    };
+    let fingerprint = fingerprint_for(request.profile_uuid.as_bytes(), final_yaml.as_bytes());
 
     if write_output {
         let output_path = request.output_path.trim();
@@ -80,17 +75,8 @@ fn compile_root(request: &CompileRequest) -> Result<CompiledRoot, String> {
     }
 
     let (source_yaml, encrypted) = load_source_yaml(request)?;
-    let mut source_value: YamlValue =
-        serde_yaml::from_str(&source_yaml).map_err(|err| format!("parse source yaml: {err}"))?;
-    // serde_yaml resolves `&`/`*` anchor aliases but does NOT expand the YAML merge key
-    // (`<<`). Without this, every `<<: *anchor` becomes a literal `"<<"` key and the
-    // inherited fields (`type`, `behavior`, …) never reach mihomo. apply_merge walks the
-    // whole tree and uses explicit-key-wins semantics.
-    source_value
-        .apply_merge()
-        .map_err(|err| format!("apply yaml merge keys: {err}"))?;
-    let mut root: JsonValue = serde_json::to_value(source_value)
-        .map_err(|err| format!("convert source yaml to json: {err}"))?;
+    let mut root: JsonValue = engine::yaml::yaml_to_json(&source_yaml)
+        .map_err(|err| format!("parse source yaml: {err}"))?;
 
     let loaded_overrides = load_overrides(&request.overrides, encrypted)?;
     let mut warnings = loaded_overrides.warnings;
@@ -102,13 +88,17 @@ fn compile_root(request: &CompileRequest) -> Result<CompiledRoot, String> {
     if !root.is_object() {
         return Err("compiled root config must be an object".to_string());
     }
-    patch::patch_static_runtime(&mut root, profile_dir);
+    if !request.skip_runtime_patches {
+        patch::patch_static_runtime(&mut root, profile_dir, request.run_mode);
+    }
 
     let object = root
         .as_object_mut()
         .ok_or_else(|| "compiled root config must be an object".to_string())?;
     validate_root_config(object)?;
-    patch::validate_provider_paths(object, profile_dir)?;
+    if !request.skip_runtime_patches {
+        patch::validate_provider_paths(object, profile_dir)?;
+    }
 
     Ok(CompiledRoot { root, warnings })
 }
@@ -185,7 +175,19 @@ fn fingerprint_for(profile_uuid: &[u8], payload: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(profile_uuid);
     hasher.update(payload);
-    format!("{:x}", hasher.finalize())
+    hex_lower(&hasher.finalize())
+}
+
+const HEX_DIGITS: &[u8; 16] = b"0123456789abcdef";
+
+/// Lowercase hex, without the per-byte `format!` allocation.
+pub(crate) fn hex_lower(bytes: &[u8]) -> String {
+    let mut encoded = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        encoded.push(HEX_DIGITS[usize::from(byte >> 4)] as char);
+        encoded.push(HEX_DIGITS[usize::from(byte & 0x0f)] as char);
+    }
+    encoded
 }
 
 fn validate_root_config(object: &JsonMap<String, JsonValue>) -> Result<(), String> {
@@ -212,60 +214,705 @@ fn validate_geosite_matcher(object: &JsonMap<String, JsonValue>) -> Result<(), S
 
 // C ABI exports for cross-library calls from C++ bridge
 use std::ffi::{c_char, CStr, CString};
+use std::mem;
+use std::os::raw::{c_int, c_void};
+use std::sync::OnceLock;
+
+use crate::compiler::result::{compile_raw_error_json};
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CompileRawSummary {
+    success: bool,
+    fingerprint: String,
+    warnings: Vec<String>,
+    error: Option<String>,
+    tun_include_package: Vec<String>,
+    tun_exclude_package: Vec<String>,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct NativeInspectResult {
+    success: bool,
+    payload: String,
+    error: Option<String>,
+}
+
+type InspectCompiledGroupsResultFn = unsafe extern "C" fn(*const c_char, *const c_char, c_int) -> *mut c_char;
+type InspectCompiledGroupNamesFn = unsafe extern "C" fn(*const c_char, c_int) -> *mut c_char;
+
+struct MihomoInspectSymbols {
+    inspect_compiled_groups_result: InspectCompiledGroupsResultFn,
+    inspect_compiled_group_names: InspectCompiledGroupNamesFn,
+}
+
+const RTLD_NOW: c_int = 0x00002;
+const RTLD_NOLOAD: c_int = 0x00004;
+
+#[cfg(any(target_os = "linux", target_os = "android"))]
+#[link(name = "dl")]
+unsafe extern "C" {
+    fn dlopen(filename: *const c_char, flags: c_int) -> *mut c_void;
+    fn dlsym(handle: *mut c_void, symbol: *const c_char) -> *mut c_void;
+    fn free(ptr: *mut c_void);
+}
+
+fn resolve_mihomo_inspect_symbols() -> Result<&'static MihomoInspectSymbols, String> {
+    static SYMBOLS: OnceLock<Result<MihomoInspectSymbols, String>> = OnceLock::new();
+    SYMBOLS
+        .get_or_init(|| {
+            let lib_name = CString::new("libmihomo.so").map_err(|_| "invalid lib name".to_string())?;
+            let symbol_name = CString::new("inspectCompiledGroupsResult")
+                .map_err(|_| "invalid symbol name".to_string())?;
+            let symbol_group_names = CString::new("inspectCompiledGroupNames")
+                .map_err(|_| "invalid symbol name".to_string())?;
+
+            // Try NOLOAD first (already loaded by runtime), then fallback to normal open.
+            let mut handle = unsafe { dlopen(lib_name.as_ptr(), RTLD_NOW | RTLD_NOLOAD) };
+            if handle.is_null() {
+                handle = unsafe { dlopen(lib_name.as_ptr(), RTLD_NOW) };
+            }
+            if handle.is_null() {
+                return Err("open libmihomo.so failed".to_string());
+            }
+
+            let fn_ptr = unsafe { dlsym(handle, symbol_name.as_ptr()) };
+            if fn_ptr.is_null() {
+                return Err("resolve inspectCompiledGroupsResult failed".to_string());
+            }
+            let fn_names_ptr = unsafe { dlsym(handle, symbol_group_names.as_ptr()) };
+            if fn_names_ptr.is_null() {
+                return Err("resolve inspectCompiledGroupNames failed".to_string());
+            }
+
+            let inspect_compiled_groups_result: InspectCompiledGroupsResultFn = unsafe { mem::transmute(fn_ptr) };
+            let inspect_compiled_group_names: InspectCompiledGroupNamesFn = unsafe { mem::transmute(fn_names_ptr) };
+
+            Ok(MihomoInspectSymbols {
+                inspect_compiled_groups_result,
+                inspect_compiled_group_names,
+            })
+        })
+        .as_ref()
+        .map_err(Clone::clone)
+}
+
+pub(crate) fn inspect_compiled_group_names_from_raw(
+    config_raw_json: &str,
+    exclude_not_selectable: bool,
+) -> Option<String> {
+    let symbols = resolve_mihomo_inspect_symbols().ok()?;
+    let config_raw = CString::new(config_raw_json).ok()?;
+    let raw_ptr = unsafe {
+        (symbols.inspect_compiled_group_names)(
+            config_raw.as_ptr(),
+            if exclude_not_selectable { 1 } else { 0 },
+        )
+    };
+    if raw_ptr.is_null() {
+        return None;
+    }
+    let response = unsafe { CStr::from_ptr(raw_ptr) }
+        .to_string_lossy()
+        .into_owned();
+    unsafe { free(raw_ptr.cast()) };
+    Some(response)
+}
+
+pub(crate) fn inspect_compiled_groups_from_raw(
+    config_raw_json: &str,
+    profile_dir: &str,
+    exclude_not_selectable: bool,
+) -> Option<String> {
+    let symbols = resolve_mihomo_inspect_symbols().ok()?;
+    let config_raw = CString::new(config_raw_json).ok()?;
+    let profile_dir_c = CString::new(profile_dir).ok()?;
+    let raw_ptr = unsafe {
+        (symbols.inspect_compiled_groups_result)(
+            config_raw.as_ptr(),
+            profile_dir_c.as_ptr(),
+            if exclude_not_selectable { 1 } else { 0 },
+        )
+    };
+    if raw_ptr.is_null() {
+        return None;
+    }
+    let response = unsafe { CStr::from_ptr(raw_ptr) }
+        .to_string_lossy()
+        .into_owned();
+    unsafe { free(raw_ptr.cast()) };
+    Some(response)
+}
 
 /// # Safety
 /// Caller must pass a valid null-terminated UTF-8 JSON string.
 /// Returns a CompileRawResult JSON string as a Rust-allocated CString that must
 /// be freed with override_free_string.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn override_compile_raw(request_json: *const c_char) -> *mut c_char {
     if request_json.is_null() {
-        return compile_raw_error_result("read raw compile request: null pointer").into_raw();
+        return error_cstring("read raw compile request: null pointer").into_raw();
     }
-    let json_str = match CStr::from_ptr(request_json).to_str() {
+    let json_str = match unsafe { CStr::from_ptr(request_json) }.to_str() {
         Ok(s) => s,
         Err(err) => {
-            return compile_raw_error_result(format!("read raw compile request: {err}")).into_raw()
+            return error_cstring(format!("read raw compile request: {err}")).into_raw()
         }
     };
     let request: CompileRequest = match serde_json::from_str(json_str) {
         Ok(r) => r,
         Err(err) => {
-            return compile_raw_error_result(format!("decode raw compile request: {err}"))
+            return error_cstring(format!("decode raw compile request: {err}"))
                 .into_raw()
         }
     };
     let response = match compile_raw_request(request) {
         Ok(result) => serde_json::to_string(&result)
-            .unwrap_or_else(|_| raw_error_json("raw compile result encode failed".to_string())),
-        Err(err) => raw_error_json(err),
+            .unwrap_or_else(|_| compile_raw_error_json("raw compile result encode failed")),
+        Err(err) => compile_raw_error_json(err),
     };
     CString::new(response).unwrap_or_default().into_raw()
 }
 
-fn compile_raw_error_result(message: impl Into<String>) -> CString {
-    CString::new(raw_error_json(message.into())).unwrap_or_default()
+/// # Safety
+/// Caller must pass a valid null-terminated UTF-8 JSON string.
+/// `error_out` may be null. When non-null and an error occurs, this function stores
+/// a Rust-allocated C string in `*error_out` that must be released by
+/// `override_free_string`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn override_compile_config_raw(
+    request_json: *const c_char,
+    error_out: *mut *mut c_char,
+) -> *mut c_char {
+    if !error_out.is_null() {
+        unsafe { *error_out = std::ptr::null_mut() };
+    }
+
+    if request_json.is_null() {
+        set_error_out(error_out, "read raw compile request: null pointer");
+        return std::ptr::null_mut();
+    }
+
+    let json_str = match unsafe { CStr::from_ptr(request_json) }.to_str() {
+        Ok(s) => s,
+        Err(err) => {
+            set_error_out(error_out, format!("read raw compile request: {err}"));
+            return std::ptr::null_mut();
+        }
+    };
+
+    let request: CompileRequest = match serde_json::from_str(json_str) {
+        Ok(r) => r,
+        Err(err) => {
+            set_error_out(error_out, format!("decode raw compile request: {err}"));
+            return std::ptr::null_mut();
+        }
+    };
+
+    match compile_raw_request(request) {
+        Ok(result) => CString::new(result.config_raw).unwrap_or_default().into_raw(),
+        Err(err) => {
+            set_error_out(error_out, err);
+            std::ptr::null_mut()
+        }
+    }
 }
 
-fn raw_error_json(message: String) -> String {
-    serde_json::to_string(&CompileRawResult {
+/// # Safety
+/// Caller must pass a valid null-terminated UTF-8 JSON string.
+/// `config_raw_out` / `error_out` may be null; when non-null this function writes
+/// Rust-allocated strings that must be released with `override_free_string`.
+///
+/// Returns a Rust-allocated summary JSON string (never null on normal code paths).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn override_compile_summary_and_config(
+    request_json: *const c_char,
+    config_raw_out: *mut *mut c_char,
+    error_out: *mut *mut c_char,
+) -> *mut c_char {
+    if !config_raw_out.is_null() {
+        unsafe { *config_raw_out = std::ptr::null_mut() };
+    }
+    if !error_out.is_null() {
+        unsafe { *error_out = std::ptr::null_mut() };
+    }
+
+    if request_json.is_null() {
+        let message = "read raw compile request: null pointer".to_string();
+        set_error_out(error_out, &message);
+        return summary_error_json(message).into_raw();
+    }
+
+    let json_str = match unsafe { CStr::from_ptr(request_json) }.to_str() {
+        Ok(s) => s,
+        Err(err) => {
+            let message = format!("read raw compile request: {err}");
+            set_error_out(error_out, &message);
+            return summary_error_json(message).into_raw();
+        }
+    };
+
+    let request: CompileRequest = match serde_json::from_str(json_str) {
+        Ok(r) => r,
+        Err(err) => {
+            let message = format!("decode raw compile request: {err}");
+            set_error_out(error_out, &message);
+            return summary_error_json(message).into_raw();
+        }
+    };
+
+    match compile_raw_summary_and_config(request) {
+        Ok((summary_json, config_raw, warnings)) => {
+            if !config_raw_out.is_null() {
+                unsafe {
+                    *config_raw_out = CString::new(config_raw).unwrap_or_default().into_raw();
+                }
+            }
+            let mut summary = summary_json;
+            if !warnings.is_empty() {
+                // Append best-effort warnings without changing success semantics.
+                if let Ok(mut value) = serde_json::from_str::<JsonValue>(&summary) {
+                    if let Some(obj) = value.as_object_mut()
+                        && let Some(existing) = obj.get_mut("warnings").and_then(|v| v.as_array_mut()) {
+                            for warning in warnings {
+                                existing.push(JsonValue::String(warning));
+                            }
+                        }
+                    if let Ok(encoded) = serde_json::to_string(&value) {
+                        summary = encoded;
+                    }
+                }
+            }
+            CString::new(summary).unwrap_or_default().into_raw()
+        }
+        Err(message) => {
+            set_error_out(error_out, &message);
+            summary_error_json(message).into_raw()
+        }
+    }
+}
+
+/// # Safety
+/// Caller must pass a valid null-terminated UTF-8 JSON string.
+/// Returns a Rust-allocated `NativeInspectResult` JSON string that must be
+/// released with `override_free_string`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn override_compile_inspect_tun_route_exclude_address(
+    request_json: *const c_char,
+) -> *mut c_char {
+    if request_json.is_null() {
+        return CString::new(encode_inspect_error(
+            "read raw compile request: null pointer",
+        ))
+        .unwrap_or_default()
+        .into_raw();
+    }
+
+    let json_str = match unsafe { CStr::from_ptr(request_json) }.to_str() {
+        Ok(s) => s,
+        Err(err) => {
+            return CString::new(encode_inspect_error(format!(
+                "read raw compile request: {err}"
+            )))
+            .unwrap_or_default()
+            .into_raw();
+        }
+    };
+
+    let request: CompileRequest = match serde_json::from_str(json_str) {
+        Ok(r) => r,
+        Err(err) => {
+            return CString::new(encode_inspect_error(format!(
+                "decode raw compile request: {err}"
+            )))
+            .unwrap_or_default()
+            .into_raw();
+        }
+    };
+
+    let result_json = match compile_inspect_tun_route_exclude_address_json(request) {
+        Ok(payload) => payload,
+        Err(err) => encode_inspect_error(err),
+    };
+
+    CString::new(result_json).unwrap_or_default().into_raw()
+}
+
+/// # Safety
+/// Caller must pass valid UTF-8 C strings for request/profile_dir and release the returned
+/// string with `override_free_string`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn override_compile_and_inspect_groups(
+    request_json: *const c_char,
+    profile_dir: *const c_char,
+    exclude_not_selectable: c_int,
+) -> *mut c_char {
+    if request_json.is_null() {
+        return CString::new(encode_inspect_error(
+            "read raw compile request: null pointer",
+        ))
+        .unwrap_or_default()
+        .into_raw();
+    }
+
+    let json_str = match unsafe { CStr::from_ptr(request_json) }.to_str() {
+        Ok(s) => s,
+        Err(err) => {
+            return CString::new(encode_inspect_error(format!(
+                "read raw compile request: {err}"
+            )))
+            .unwrap_or_default()
+            .into_raw();
+        }
+    };
+
+    let request: CompileRequest = match serde_json::from_str(json_str) {
+        Ok(r) => r,
+        Err(err) => {
+            return CString::new(encode_inspect_error(format!(
+                "decode raw compile request: {err}"
+            )))
+            .unwrap_or_default()
+            .into_raw();
+        }
+    };
+
+    let compile = match compile_raw_request(request) {
+        Ok(result) => result,
+        Err(err) => {
+            return CString::new(encode_inspect_error(err))
+                .unwrap_or_default()
+                .into_raw();
+        }
+    };
+
+    let symbols = match resolve_mihomo_inspect_symbols() {
+        Ok(s) => s,
+        Err(err) => {
+            return CString::new(encode_inspect_error(err))
+                .unwrap_or_default()
+                .into_raw();
+        }
+    };
+
+    let config_raw = CString::new(compile.config_raw)
+        .unwrap_or_else(|_| CString::new("{}").unwrap_or_default());
+    let profile_dir_c = if profile_dir.is_null() {
+        CString::new("").unwrap_or_default()
+    } else {
+        match unsafe { CStr::from_ptr(profile_dir) }.to_str() {
+            Ok(s) => CString::new(s).unwrap_or_default(),
+            Err(_) => CString::new("").unwrap_or_default(),
+        }
+    };
+
+    let raw_ptr = unsafe {
+        (symbols.inspect_compiled_groups_result)(
+            config_raw.as_ptr(),
+            profile_dir_c.as_ptr(),
+            exclude_not_selectable,
+        )
+    };
+
+    if raw_ptr.is_null() {
+        return CString::new(encode_inspect_error("inspect compiled groups failed"))
+            .unwrap_or_default()
+            .into_raw();
+    }
+
+    let response = unsafe { CStr::from_ptr(raw_ptr) }
+        .to_string_lossy()
+        .into_owned();
+    unsafe { free(raw_ptr.cast()) };
+
+    CString::new(response).unwrap_or_default().into_raw()
+}
+
+/// # Safety
+/// Caller must pass valid UTF-8 request string and release returned string with
+/// `override_free_string`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn override_compile_and_inspect_group_names(
+    request_json: *const c_char,
+    exclude_not_selectable: c_int,
+) -> *mut c_char {
+    if request_json.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let json_str = match unsafe { CStr::from_ptr(request_json) }.to_str() {
+        Ok(s) => s,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    let request: CompileRequest = match serde_json::from_str(json_str) {
+        Ok(r) => r,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    let compile = match compile_raw_request(request) {
+        Ok(result) => result,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    let symbols = match resolve_mihomo_inspect_symbols() {
+        Ok(s) => s,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    let config_raw = CString::new(compile.config_raw)
+        .unwrap_or_else(|_| CString::new("{}").unwrap_or_default());
+
+    let raw_ptr = unsafe {
+        (symbols.inspect_compiled_group_names)(
+            config_raw.as_ptr(),
+            exclude_not_selectable,
+        )
+    };
+    if raw_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let response = unsafe { CStr::from_ptr(raw_ptr) }
+        .to_string_lossy()
+        .into_owned();
+    unsafe { free(raw_ptr.cast()) };
+    CString::new(response).unwrap_or_default().into_raw()
+}
+
+/// # Safety
+/// Caller must pass valid UTF-8 compiled configRaw JSON and release returned string
+/// with `override_free_string`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn override_inspect_compiled_group_names(
+    config_raw_json: *const c_char,
+    exclude_not_selectable: c_int,
+) -> *mut c_char {
+    if config_raw_json.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let config_raw = match unsafe { CStr::from_ptr(config_raw_json) }.to_str() {
+        Ok(s) => s,
+        Err(_) => return std::ptr::null_mut(),
+    };
+    inspect_compiled_group_names_from_raw(config_raw, exclude_not_selectable != 0)
+        .and_then(|s| CString::new(s).ok().map(CString::into_raw))
+        .unwrap_or(std::ptr::null_mut())
+}
+
+/// # Safety
+/// Caller must pass valid UTF-8 compiled configRaw JSON and release returned string
+/// with `override_free_string`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn override_inspect_compiled_groups(
+    config_raw_json: *const c_char,
+    profile_dir: *const c_char,
+    exclude_not_selectable: c_int,
+) -> *mut c_char {
+    if config_raw_json.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let config_raw = match unsafe { CStr::from_ptr(config_raw_json) }.to_str() {
+        Ok(s) => s,
+        Err(_) => return std::ptr::null_mut(),
+    };
+    let profile_dir_str = if profile_dir.is_null() {
+        ""
+    } else {
+        unsafe { CStr::from_ptr(profile_dir) }.to_str().unwrap_or_default()
+    };
+    inspect_compiled_groups_from_raw(config_raw, profile_dir_str, exclude_not_selectable != 0)
+        .and_then(|s| CString::new(s).ok().map(CString::into_raw))
+        .unwrap_or(std::ptr::null_mut())
+}
+
+fn error_cstring(message: impl Into<String>) -> CString {
+    CString::new(compile_raw_error_json(message)).unwrap_or_default()
+}
+
+fn compile_raw_summary_and_config(
+    request: CompileRequest,
+) -> Result<(String, String, Vec<String>), String> {
+    let compiled = compile_root(&request)?;
+    let mut warnings = compiled.warnings;
+    let config_raw = serde_json::to_string(&compiled.root)
+        .map_err(|err| format!("encode raw config json: {err}"))?;
+    let fingerprint = fingerprint_for(request.profile_uuid.as_bytes(), config_raw.as_bytes());
+    let (tun_include_package, tun_exclude_package, extract_warnings) =
+        extract_tun_packages(&compiled.root);
+    warnings.extend(extract_warnings);
+
+    let summary = CompileRawSummary {
+        success: true,
+        fingerprint,
+        warnings,
+        error: None,
+        tun_include_package,
+        tun_exclude_package,
+    };
+
+    let summary_json = serde_json::to_string(&summary)
+        .unwrap_or_else(|_| summary_error_json_string("compile raw summary encode failed"));
+    Ok((summary_json, config_raw, Vec::new()))
+}
+
+pub(crate) fn compile_summary_and_config_json(
+    request: CompileRequest,
+) -> Result<(String, String), String> {
+    let (summary, config_raw, _warnings) = compile_raw_summary_and_config(request)?;
+    Ok((summary, config_raw))
+}
+
+pub(crate) fn compile_inspect_tun_route_exclude_address_json(
+    request: CompileRequest,
+) -> Result<String, String> {
+    let compiled = compile_root(&request)?;
+    let addresses = extract_tun_route_exclude_address(&compiled.root)?;
+    let payload = serde_json::to_string(&addresses)
+        .map_err(|err| format!("encode tun route-exclude-address payload: {err}"))?;
+    let result = NativeInspectResult {
+        success: true,
+        payload,
+        error: None,
+    };
+    serde_json::to_string(&result).map_err(|err| format!("encode inspect result: {err}"))
+}
+
+fn extract_tun_packages(root: &JsonValue) -> (Vec<String>, Vec<String>, Vec<String>) {
+    let mut warnings = Vec::new();
+    let mut include = Vec::new();
+    let mut exclude = Vec::new();
+
+    let Some(tun) = root.get("tun") else {
+        return (include, exclude, warnings);
+    };
+    let Some(tun_obj) = tun.as_object() else {
+        warnings.push("inspect tun packages failed: tun is not an object".to_string());
+        return (include, exclude, warnings);
+    };
+
+    collect_package_list(tun_obj, "include-package", &mut include, &mut warnings);
+    collect_package_list(tun_obj, "exclude-package", &mut exclude, &mut warnings);
+
+    (include, exclude, warnings)
+}
+
+fn collect_package_list(
+    tun_obj: &JsonMap<String, JsonValue>,
+    key: &str,
+    out: &mut Vec<String>,
+    warnings: &mut Vec<String>,
+) {
+    let Some(value) = tun_obj.get(key) else {
+        return;
+    };
+    match value {
+        JsonValue::Array(items) => {
+            for item in items {
+                if let Some(s) = item.as_str() {
+                    if !s.trim().is_empty() {
+                        out.push(s.to_string());
+                    }
+                } else {
+                    warnings.push(format!(
+                        "inspect tun packages failed: {key} contains non-string value"
+                    ));
+                }
+            }
+        }
+        JsonValue::String(s) => {
+            if !s.trim().is_empty() {
+                out.push(s.to_string());
+            }
+        }
+        _ => warnings.push(format!(
+            "inspect tun packages failed: {key} is not a list or string"
+        )),
+    }
+}
+
+fn extract_tun_route_exclude_address(root: &JsonValue) -> Result<Vec<String>, String> {
+    let Some(tun) = root.get("tun") else {
+        return Ok(Vec::new());
+    };
+    let tun_obj = tun
+        .as_object()
+        .ok_or_else(|| "tun is not an object".to_string())?;
+    let Some(value) = tun_obj.get("route-exclude-address") else {
+        return Ok(Vec::new());
+    };
+
+    let mut result = Vec::new();
+    match value {
+        JsonValue::Array(items) => {
+            for item in items {
+                let s = item
+                    .as_str()
+                    .ok_or_else(|| "route-exclude-address contains non-string value".to_string())?;
+                if !s.trim().is_empty() {
+                    result.push(s.to_string());
+                }
+            }
+        }
+        JsonValue::String(s) => {
+            if !s.trim().is_empty() {
+                result.push(s.to_string());
+            }
+        }
+        _ => {
+            return Err("route-exclude-address is not a list or string".to_string());
+        }
+    }
+    Ok(result)
+}
+
+pub(crate) fn encode_inspect_error(message: impl Into<String>) -> String {
+    let result = NativeInspectResult {
+        success: false,
+        payload: String::new(),
+        error: Some(message.into()),
+    };
+    serde_json::to_string(&result)
+        .unwrap_or_else(|_| "{\"success\":false,\"payload\":\"\",\"error\":\"native inspect failed\"}".to_string())
+}
+
+fn summary_error_json(message: impl Into<String>) -> CString {
+    CString::new(summary_error_json_string(message)).unwrap_or_default()
+}
+
+pub(crate) fn summary_error_json_string(message: impl Into<String>) -> String {
+    let summary = CompileRawSummary {
         success: false,
         fingerprint: String::new(),
-        config_raw: String::new(),
         warnings: Vec::new(),
-        error: Some(message),
+        error: Some(message.into()),
+        tun_include_package: Vec::new(),
+        tun_exclude_package: Vec::new(),
+    };
+    serde_json::to_string(&summary).unwrap_or_else(|_| {
+        "{\"success\":false,\"fingerprint\":\"\",\"warnings\":[],\"error\":\"compile raw config failed\",\"tunIncludePackage\":[],\"tunExcludePackage\":[]}".to_string()
     })
-    .unwrap_or_else(|_| {
-        "{\"success\":false,\"fingerprint\":\"\",\"configRaw\":\"\",\"warnings\":[],\"error\":\"raw compile failed\"}".to_string()
-    })
+}
+
+fn set_error_out(error_out: *mut *mut c_char, message: impl Into<String>) {
+    if error_out.is_null() {
+        return;
+    }
+    let msg = CString::new(message.into()).unwrap_or_default().into_raw();
+    unsafe {
+        *error_out = msg;
+    }
 }
 
 /// # Safety
 /// Caller must pass a pointer previously returned by override_compile_raw.
 /// Passing any other pointer or a null pointer is undefined behavior.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn override_free_string(s: *mut c_char) {
     if !s.is_null() {
-        drop(CString::from_raw(s));
+        drop(unsafe { CString::from_raw(s) });
     }
 }

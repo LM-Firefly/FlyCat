@@ -1,3 +1,4 @@
+// Package config handles profile loading, decryption, and configuration processing.
 package config
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/metacubex/mihomo/component/age"
 )
 
+// SetGlobalSecretKeys sets the global age decryption secret keys, trimming whitespace and skipping empty entries.
 func SetGlobalSecretKeys(secretKeys ...string) {
 	trimmed := make([]string, 0, len(secretKeys))
 	for _, secretKey := range secretKeys {
@@ -18,6 +20,7 @@ func SetGlobalSecretKeys(secretKeys ...string) {
 	age.SetGlobalSecretKeys(trimmed...)
 }
 
+// GenX25519KeyPair generates a new x25519 age keypair.
 func GenX25519KeyPair() (secretKey string, publicKey string, err error) {
 	return age.GenX25519KeyPair()
 }
@@ -29,6 +32,7 @@ func GenHybridKeyPair() (secretKey string, publicKey string, err error) {
 	return age.GenHybridKeyPair()
 }
 
+// ToPublicKeys derives the public keys from the given secret keys.
 func ToPublicKeys(secretKeys ...string) (publicKeys []string, err error) {
 	trimmed := make([]string, 0, len(secretKeys))
 	for _, secretKey := range secretKeys {
@@ -37,6 +41,7 @@ func ToPublicKeys(secretKeys ...string) (publicKeys []string, err error) {
 	return age.ToPublicKeys(trimmed...)
 }
 
+// VerifySecretKeys validates that each secret key is well-formed.
 func VerifySecretKeys(secretKeys ...string) error {
 	trimmed := make([]string, 0, len(secretKeys))
 	for _, secretKey := range secretKeys {
@@ -45,6 +50,7 @@ func VerifySecretKeys(secretKeys ...string) error {
 	return age.VeritySecretKeys(trimmed...)
 }
 
+// VerifyPublicKeys validates that each public key is well-formed.
 func VerifyPublicKeys(publicKeys ...string) error {
 	trimmed := make([]string, 0, len(publicKeys))
 	for _, publicKey := range publicKeys {

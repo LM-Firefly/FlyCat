@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,35 +15,33 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.presentation.theme
+package com.github.lmfirefly.flycat.presentation.theme
 
 import android.app.Activity
-import android.content.res.Configuration
 import android.os.Build
 import android.view.WindowInsetsController
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val AndroidSystemUiEffect: @Composable () -> Unit = {
     val view = LocalView.current
     if (!view.isInEditMode) {
-        SideEffect {
+        val isDarkMode = isSystemInDarkTheme()
+        LaunchedEffect(isDarkMode) {
             val window = (view.context as Activity).window
             WindowCompat.setDecorFitsSystemWindows(window, false)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 window.isNavigationBarContrastEnforced = false
             }
-
-            val isDarkMode =
-                (view.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                    Configuration.UI_MODE_NIGHT_YES
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 val appearance =

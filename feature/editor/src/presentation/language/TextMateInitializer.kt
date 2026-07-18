@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,12 +15,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.feature.editor.language
+package com.github.lmfirefly.flycat.feature.editor.presentation.language
 
 import android.content.Context
+import com.github.lmfirefly.flycat.presentation.editor.LanguageScope
 import io.github.rosemoe.sora.langs.textmate.TextMateLanguage
 import io.github.rosemoe.sora.langs.textmate.registry.FileProviderRegistry
 import io.github.rosemoe.sora.langs.textmate.registry.GrammarRegistry

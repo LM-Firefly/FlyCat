@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,20 +15,18 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.presentation.screen.node
+package com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node
 
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -37,11 +35,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,41 +50,54 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.core.model.Proxy
-import com.github.yumelira.yumebox.presentation.component.CountryFlagCircle
-import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.BadgeDollarSign
-import com.github.yumelira.yumebox.presentation.icon.yume.CircleGauge
-import com.github.yumelira.yumebox.presentation.icon.yume.Cloud
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.util.extractNodeTags
-import dev.oom_wg.purejoy.mlang.MLang
+import com.github.lmfirefly.flycat.core.model.proxy.Proxy
+import com.github.lmfirefly.flycat.feature.proxy.presentation.util.extractNodeTags
+import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlagCircle
+import com.github.lmfirefly.flycat.presentation.component.state.LoadingDotsWave
+import com.github.lmfirefly.flycat.presentation.icon.FlyCat
+import com.github.lmfirefly.flycat.presentation.icon.flycat.BadgeDollarSign
+import com.github.lmfirefly.flycat.presentation.icon.flycat.Cloud
+import com.github.lmfirefly.flycat.presentation.icon.flycat.Tags
+import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
 
+internal object NodeCardDefaults {
+    val CornerRadius = 12.dp
+    val GroupCornerRadius = 12.dp
+    val PaddingHorizontal = 12.dp
+    val PaddingVertical = 16.dp
+}
+
 @Composable
-internal fun nodeLatencyLabel(delay: Int?): Pair<String, Color>? =
-    when {
-        delay == null -> null
-        delay < 0 -> MLang.Proxy.Node.Timeout to AppTheme.colors.latency.timeout
-        delay == 0 -> null
-        delay in 1..300 ->
-            MLang.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.fast
-        delay in 301..1000 ->
-            MLang.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.moderate
-        delay in 1001..3000 ->
-            MLang.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.slow
-        else -> null
+internal fun nodeLatencyLabel(delay: Int?, withUnit: Boolean = false): Pair<String, Color>? {
+    if (delay == null || delay == 0) return null
+    val text = if (delay < 0) {
+        FlyTxt.Proxy.Node.Timeout
+    } else if (withUnit) {
+        FlyTxt.Home.NodeInfo.DelayValue.format(delay)
+    } else {
+        delay.toString()
     }
+    val color = when {
+        delay < 0 -> Color(0xFF9E9E9E)
+        delay in 1..500 -> AppTheme.colors.latency.fast
+        delay in 501..1000 -> AppTheme.colors.latency.moderate
+        delay in 1001..3000 -> AppTheme.colors.latency.slow
+        delay in 3001..5000 -> AppTheme.colors.latency.terrible
+        else -> return null
+    }
+    return text to color
+}
 
 internal fun displayName(type: String): String =
     when (type) {
@@ -140,31 +154,6 @@ internal fun iconLabel(type: String): String =
     }
 
 @Composable
-internal fun RotatingCircleGauge(
-    isRotating: Boolean,
-    modifier: Modifier = Modifier,
-    tint: Color = MiuixTheme.colorScheme.primary,
-    contentDescription: String? = MLang.Proxy.Action.Test,
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "circle_gauge_rotation")
-    val rotation by
-        infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec =
-                infiniteRepeatable(animation = tween(durationMillis = 1000, easing = LinearEasing)),
-            label = "circle_gauge_rotation_value",
-        )
-
-    Icon(
-        imageVector = Yume.CircleGauge,
-        contentDescription = contentDescription,
-        tint = tint,
-        modifier = if (isRotating) modifier.rotate(rotation) else modifier,
-    )
-}
-
-@Composable
 internal fun NodeSelectableCard(
     isSelected: Boolean,
     onClick: (() -> Unit)?,
@@ -176,9 +165,13 @@ internal fun NodeSelectableCard(
     val sizes = AppTheme.sizes
     val opacity = AppTheme.opacity
     val interactionSource = remember { MutableInteractionSource() }
-    val shape = RoundedCornerShape(radii.radius18)
+    val shape = RoundedCornerShape(radii.radius12)
     val primary = MiuixTheme.colorScheme.primary
-    val backgroundColor = MiuixTheme.colorScheme.background
+    val backgroundColor = if (isSelected) {
+        MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+    } else {
+        MiuixTheme.colorScheme.background
+    }
     val transition = updateTransition(targetState = isSelected, label = "node_card_selection")
     val borderColor by
         transition.animateColor(
@@ -226,15 +219,17 @@ internal fun NodeSelectableCard(
 internal fun NodeCard(
     proxy: Proxy,
     isSelected: Boolean,
+    isPinned: Boolean = false,
     onClick: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
     isDelayTesting: Boolean = false,
     isThisProxyTesting: Boolean = false,
     onSingleNodeTestClick: ((String) -> Unit)? = null,
+    isSingleColumn: Boolean = true,
+    showDetail: Boolean = true,
     showCountryFlag: Boolean = true,
-    singleNodeTestEnabled: Boolean = true,
+    resolvedChildNodeName: String? = null,
 ) {
-    val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
     val onCardClick =
         remember(proxy.name, onClick) { onClick?.let { click -> { click(proxy.name) } } }
@@ -242,8 +237,6 @@ internal fun NodeCard(
         remember(proxy.name, onSingleNodeTestClick) {
             onSingleNodeTestClick?.let { click -> { click(proxy.name) } }
         }
-    val delayInteractionSource = remember { MutableInteractionSource() }
-    val iconInteractionSource = remember { MutableInteractionSource() }
 
     NodeSelectableCard(
         isSelected = isSelected,
@@ -251,107 +244,146 @@ internal fun NodeCard(
         modifier = modifier,
         paddingVertical = sizes.nodeCardPaddingVertical,
     ) {
-        val presentation =
-            remember(proxy.name, proxy.title) {
-                resolveProxyDisplayPresentation(name = proxy.name, title = proxy.title)
-            }
         val tags = remember(proxy.name) { extractNodeTags(proxy.name) }
-        val delayLabel = nodeLatencyLabel(proxy.delay)
-        val typeLabel = remember(proxy.type) { displayName(proxy.type) }
-        val iconLabel = remember(proxy.type) { iconLabel(proxy.type) }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(sizes.nodeCardContentGap),
-        ) {
-            NodeLargeIcon(
-                modifier = Modifier.padding(top = spacing.space2),
-                countryCode = presentation.countryCode.takeIf { showCountryFlag },
-                typeName = iconLabel,
-            )
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(sizes.nodeCardTitleGap),
-            ) {
-                Text(
-                    text = presentation.displayName,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
+        val delayLabel = nodeLatencyLabel(proxy.delay, withUnit = isSingleColumn)
+        val childNodeName = remember(resolvedChildNodeName, proxy.name) {
+            val raw = resolvedChildNodeName?.trim().orEmpty()
+            raw.takeIf { it.isNotEmpty() && it != proxy.name.trim() }
+        }
+        val textColor = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
+        if (showDetail) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    FlowRow(
+                    Text(
+                        text = proxy.name,
+                        style = MiuixTheme.textStyles.body2,
+                        color = textColor,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = if (isSingleColumn) {
+                            Modifier.basicMarquee()
+                        } else {
+                            Modifier.weight(1f).basicMarquee()
+                        },
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
                         modifier = Modifier.weight(1f),
-                        horizontalArrangement =
-                            Arrangement.spacedBy(AppTheme.sizes.listItemVerticalMinimal),
-                        verticalArrangement = Arrangement.spacedBy(spacing.space4),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        NodeTagChip(label = typeLabel)
+                        NodeTagChip(label = displayName(proxy.type))
                         tags.keywords.forEach { keyword -> NodeTagChip(label = keyword) }
                         tags.multiplier?.let { multiplier ->
                             if (multiplier > 0f) NodeMultiplierChip(multiplier = multiplier)
                         }
-                    }
-                    when {
-                        delayLabel != null -> {
-                            val (delayText, delayColor) = delayLabel
+                        if (childNodeName != null) {
                             Text(
-                                text = delayText,
+                                text = childNodeName,
                                 style = MiuixTheme.textStyles.footnote1,
-                                color = delayColor,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 maxLines = 1,
-                                textAlign = TextAlign.End,
-                                modifier =
-                                    Modifier.padding(start = sizes.nodeCardTrailingGap).let {
-                                        modifier ->
-                                        if (onNodeTestClick != null && singleNodeTestEnabled) {
-                                            modifier.clickable(
-                                                interactionSource = delayInteractionSource,
-                                                indication = null,
-                                                onClick = onNodeTestClick,
-                                            )
-                                        } else {
-                                            modifier
-                                        }
-                                    },
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f).basicMarquee(),
                             )
                         }
-
-                        onNodeTestClick != null && singleNodeTestEnabled -> {
-                            if (isThisProxyTesting) {
-                                RotatingCircleGauge(
-                                    isRotating = true,
-                                    modifier =
-                                        Modifier.padding(start = sizes.nodeCardTrailingGap)
-                                            .size(sizes.nodeCardTrailingGap * 2),
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Yume.Cloud,
-                                    contentDescription = MLang.Proxy.Action.Test,
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    modifier =
-                                        Modifier.padding(start = sizes.nodeCardTrailingGap)
-                                            .size(sizes.nodeCardTrailingGap * 2)
-                                            .clickable(
-                                                interactionSource = iconInteractionSource,
-                                                indication = null,
-                                                onClick = onNodeTestClick,
-                                            ),
-                                )
-                            }
-                        }
                     }
+                    ProxyDelayIndicator(
+                        delayLabel = delayLabel,
+                        isDelayTesting = isDelayTesting || isThisProxyTesting,
+                        onDelayTestClick = onNodeTestClick,
+                    )
                 }
             }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = proxy.name,
+                    style = MiuixTheme.textStyles.body2,
+                    color = textColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).basicMarquee(),
+                )
+            }
+        }
+        if (isPinned) {
+            Icon(
+                imageVector = FlyCat.Tags,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.primary,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 12.dp, y = (-8).dp)
+                    .size(18.dp),
+            )
+        }
+    }
+}
+
+@Composable
+internal fun ProxyDelayIndicator(
+    delayLabel: Pair<String, Color>?,
+    isDelayTesting: Boolean,
+    onDelayTestClick: (() -> Unit)?,
+) {
+    val slotModifier = Modifier.widthIn(min = 20.dp)
+    when {
+        isDelayTesting -> {
+            Box(modifier = slotModifier, contentAlignment = Alignment.CenterEnd) {
+                LoadingDotsWave(
+                    color = MiuixTheme.colorScheme.primary,
+                    modifier = Modifier.size(13.dp),
+                )
+            }
+        }
+        delayLabel != null -> {
+            val (delayText, delayColor) = delayLabel
+            Text(
+                text = delayText,
+                style = MiuixTheme.textStyles.footnote1,
+                color = delayColor,
+                maxLines = 1,
+                modifier = Modifier
+                    .padding(start = 6.dp)
+                    .let { m ->
+                        if (onDelayTestClick != null) m.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onDelayTestClick,
+                        ) else m
+                    },
+            )
+        }
+        else -> {
+            Icon(
+                imageVector = FlyCat.Cloud,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(16.dp)
+                    .let { m ->
+                        if (onDelayTestClick != null) m.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onDelayTestClick,
+                        ) else m
+                    },
+                tint = Color(0xFFC7C7CC),
+            )
         }
     }
 }
@@ -426,7 +458,7 @@ private fun NodeMultiplierChip(multiplier: Float) {
         horizontalArrangement = Arrangement.spacedBy(spacing.space2),
     ) {
         Icon(
-            imageVector = Yume.BadgeDollarSign,
+            imageVector = FlyCat.BadgeDollarSign,
             contentDescription = null,
             tint = chipColor,
             modifier = Modifier.size(sizes.nodeTagIconSize),

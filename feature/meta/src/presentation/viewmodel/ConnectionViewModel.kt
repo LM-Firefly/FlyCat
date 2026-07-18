@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,30 +15,37 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.feature.meta.presentation.viewmodel
+package com.github.lmfirefly.flycat.feature.meta.presentation.viewmodel
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.core.domain.ConnectionHistoryManager
-import com.github.yumelira.yumebox.core.model.ConnectionInfo
-import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
-import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
+import com.github.lmfirefly.flycat.core.bridge.Bridge
+import com.github.lmfirefly.flycat.core.contract.AppIdentityReader
+import com.github.lmfirefly.flycat.core.contract.ConnectionRepository
+import com.github.lmfirefly.flycat.core.model.AppIdentity
+import com.github.lmfirefly.flycat.core.model.ConnectionInfo
+import com.github.lmfirefly.flycat.core.model.ConnectionOverviewSnapshot
+import com.github.lmfirefly.flycat.core.model.ConnectionSnapshot
+import com.github.lmfirefly.flycat.core.util.ConnectionHistoryManager
+import com.github.lmfirefly.flycat.core.util.ProxyChainResolver
+import com.github.lmfirefly.flycat.core.util.format.formatBytes
+import com.github.lmfirefly.flycat.core.util.format.formatSpeed
+import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.viewmodel.BaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
 
@@ -56,6 +63,7 @@ enum class ConnectionTab {
 
 data class ConnectionState(
     val snapshot: ConnectionSnapshot? = null,
+    val connectionSpeeds: Map<String, ConnectionSpeed> = emptyMap(),
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val searchQuery: String = "",
@@ -67,100 +75,159 @@ data class ConnectionState(
         get() = snapshot?.connections?.size ?: 0
 }
 
-class ConnectionViewModel : ViewModel() {
-    private val _state = MutableStateFlow(ConnectionState())
-    val state: StateFlow<ConnectionState> = _state.asStateFlow()
+data class ConnectionSpeed(
+    val uploadPerSecond: Long = 0L,
+    val downloadPerSecond: Long = 0L,
+)
 
-    val filteredConnections: StateFlow<List<ConnectionInfo>> =
-        state
-            .map(::buildFilteredConnections)
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = emptyList(),
-            )
+data class ConnectionCardItem(
+    val connectionInfo: ConnectionInfo,
+    val displayHost: String,
+    val relativeTime: String,
+    val network: String,
+    val protocolAndNetwork: String,
+    val processName: String,
+    val ruleChain: String,
+    val downloadSpeedText: String,
+    val downloadText: String,
+    val uploadSpeedText: String,
+    val uploadText: String,
+)
 
+class ConnectionViewModel(
+    private val connectionRepository: ConnectionRepository,
+    private val appIdentityResolver: AppIdentityReader,
+) : BaseViewModel<ConnectionState>(ConnectionState()) {
+
+    private var lastConnectionGeneration = 0L
+    private val connectionDetailsById = LinkedHashMap<String, ConnectionInfo>()
+    private var needsFullSnapshot = true
     private var pollingJob: Job? = null
-    private var _isPolling = false
+
+    val state: StateFlow<ConnectionState> get() = uiState
+
+    fun resolveIdentity(metadata: JsonObject): AppIdentity = appIdentityResolver.resolve(metadata)
+
+    companion object {
+        const val UNKNOWN_APP_NAME: String = AppIdentityReader.UNKNOWN_APP_NAME
+        private const val POLL_INTERVAL_FAST_MS = 1_000L
+        private const val POLL_INTERVAL_MEDIUM_MS = 2_000L
+        private const val POLL_INTERVAL_SLOW_MS = 5_000L
+        private const val POLL_MEDIUM_THRESHOLD = 40
+        private const val POLL_SLOW_THRESHOLD = 200
+    }
+
+    val filteredConnections: StateFlow<List<ConnectionCardItem>> = state
+        .map(::buildFilteredConnections)
+        .flowOn(Dispatchers.Default)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList(),
+        )
+
+    fun resetHistory() {
+        ConnectionHistoryManager.clear()
+        connectionDetailsById.clear()
+        needsFullSnapshot = true
+    }
 
     @Suppress("TooGenericExceptionCaught")
     fun startPolling() {
-        if (_isPolling) return
-        _isPolling = true
+        if (pollingJob?.isActive == true) return
 
-        pollingJob = viewModelScope.launch {
-            refreshConnections(showRefreshing = false)
-            PollingTimers.ticks(PollingTimerSpecs.ConnectionsPolling).collect {
-                try {
-                    refreshConnections(showRefreshing = true)
-                } catch (error: Exception) { // fault barrier: keep the polling loop alive on any failure
+        pollingJob = viewModelScope.launch(Dispatchers.IO) {
+            while (true) {
+                var nextDelayMs = POLL_INTERVAL_FAST_MS
+                runCatching {
+                    val snapshot = queryPollingSnapshot()
+                    nextDelayMs = computePollIntervalMs(snapshot.connections.size)
+                    val previousConnections = currentState.snapshot?.connections.orEmpty().associateBy { it.id }
+                    val connectionSpeeds = snapshot.connections.associate { connection ->
+                        val previous = previousConnections[connection.id]
+                        connection.id to ConnectionSpeed(
+                            uploadPerSecond = (connection.upload - (previous?.upload ?: connection.upload)).coerceAtLeast(0L),
+                            downloadPerSecond = (connection.download - (previous?.download ?: connection.download)).coerceAtLeast(0L),
+                        )
+                    }
+                    ConnectionHistoryManager.updateConnections(snapshot.connections)
+                    updateState {
+                        it.copy(
+                            snapshot = snapshot,
+                            connectionSpeeds = connectionSpeeds,
+                            error = null,
+                            isLoading = false,
+                            isRefreshing = false,
+                        )
+                    }
+                }.onFailure { error ->
+                    if (error is kotlinx.coroutines.CancellationException) throw error
                     Timber.w(error, "Failed to poll connections")
-                    _state.update { it.copy(error = error.message, isRefreshing = false) }
+                    nextDelayMs = POLL_INTERVAL_SLOW_MS
+                    updateState { it.copy(error = error.message, isRefreshing = false) }
                 }
+                delay(nextDelayMs)
             }
         }
     }
 
-    fun stopPolling() {
-        _isPolling = false
+    fun pausePolling() {
         pollingJob?.cancel()
         pollingJob = null
     }
 
+    fun resumePolling() {
+        if (pollingJob?.isActive == true) return
+        startPolling()
+    }
+
+    fun stopPolling() {
+        pollingJob?.cancel()
+        pollingJob = null
+        connectionDetailsById.clear()
+        needsFullSnapshot = true
+    }
+
     fun setSearchQuery(query: String) {
-        _state.update { it.copy(searchQuery = query) }
+        updateState { it.copy(searchQuery = query) }
     }
 
     fun setSortBy(sort: ConnectionSort) {
-        _state.update { it.copy(sortBy = sort) }
+        updateState { it.copy(sortBy = sort) }
     }
 
     fun setTab(tab: ConnectionTab) {
-        _state.update { it.copy(selectedTab = tab) }
+        updateState { it.copy(selectedTab = tab) }
     }
 
     fun clearError() {
-        _state.update { it.copy(error = null) }
+        updateState { it.copy(error = null) }
     }
 
-    suspend fun closeConnection(id: String): Boolean =
-        withContext(Dispatchers.IO) {
-                runCatching { ServiceClient.clash().closeConnection(id) }
-                    .onFailure { error ->
-                        Timber.w(error, "Failed to close connection: %s", id)
-                        _state.update { it.copy(error = error.message) }
-                    }
-                    .getOrDefault(false)
-            }
-            .also { refreshConnections(showRefreshing = true) }
-
-    @Suppress("TooGenericExceptionCaught")
-    private suspend fun refreshConnections(showRefreshing: Boolean) {
-        if (showRefreshing) {
-            _state.update { current -> current.copy(isRefreshing = true) }
-        }
-        withContext(Dispatchers.IO) {
-            try {
-                val snapshot = ServiceClient.clash().queryConnections()
-                ConnectionHistoryManager.updateConnections(snapshot.connections)
-                _state.update {
-                    it.copy(
-                        snapshot = snapshot,
-                        error = null,
-                        isLoading = false,
-                        isRefreshing = false,
-                    )
+    suspend fun closeConnection(id: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            runCatching { connectionRepository.closeConnection(id) }
+                .onFailure { error ->
+                    Timber.w(error, "Failed to close connection: %s", id)
+                    updateState { it.copy(error = error.message) }
                 }
-            } catch (error: Exception) { // fault barrier: service IPC failure becomes UI error state
-                Timber.w(error, "Failed to query connections")
-                _state.update {
-                    it.copy(error = error.message, isLoading = false, isRefreshing = false)
-                }
-            }
+                .getOrDefault(false)
         }
     }
 
-    private fun buildFilteredConnections(currentState: ConnectionState): List<ConnectionInfo> {
+    suspend fun closeAllConnections(): Boolean {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                connectionRepository.closeAllConnections()
+                true
+            }.onFailure { error ->
+                Timber.w(error, "Failed to close all connections")
+                updateState { it.copy(error = error.message) }
+            }.getOrDefault(false)
+        }
+    }
+
+    private fun buildFilteredConnections(currentState: ConnectionState): List<ConnectionCardItem> {
         val connections =
             when (currentState.selectedTab) {
                 ConnectionTab.ACTIVE -> currentState.snapshot?.connections ?: emptyList()
@@ -197,12 +264,131 @@ class ConnectionViewModel : ViewModel() {
             } else {
                 filtered
             }
-        return sorted
+        return sorted.map { connection ->
+            val metadata = connection.metadata
+            val type = metadata["type"]?.jsonPrimitive?.content.orEmpty()
+            val network = metadata["network"]?.jsonPrimitive?.content.orEmpty().ifEmpty { "TCP" }
+            val processName = metadata["process"]?.jsonPrimitive?.content.orEmpty()
+            val speeds = if (currentState.selectedTab == ConnectionTab.ACTIVE) {
+                currentState.connectionSpeeds[connection.id] ?: ConnectionSpeed()
+            } else {
+                ConnectionSpeed()
+            }
+            val chainParts = ProxyChainResolver.buildRuleChain(
+                rule = connection.rule,
+                chain = connection.chains,
+            )
+            ConnectionCardItem(
+                connectionInfo = connection,
+                displayHost = connectionDisplayTarget(connection),
+                relativeTime = formatRelativeTime(connection.start),
+                network = network,
+                protocolAndNetwork = buildProtocolAndNetwork(type, network),
+                processName = processName,
+                ruleChain = ProxyChainResolver.formatProxyChain(chainParts),
+                downloadSpeedText = formatSpeed(speeds.downloadPerSecond),
+                downloadText = formatBytes(connection.download),
+                uploadSpeedText = formatSpeed(speeds.uploadPerSecond),
+                uploadText = formatBytes(connection.upload),
+            )
+        }
     }
+
+    private suspend fun queryPollingSnapshot(): ConnectionSnapshot {
+        if (needsFullSnapshot) {
+            return queryAndCacheFullSnapshot()
+        }
+
+        // Version gate: skip the expensive overview query if no connections joined or left.
+        val generation = runCatching { Bridge.nativeQueryConnectionGeneration() }.getOrDefault(0L)
+        if (generation == lastConnectionGeneration) {
+            // No structural change — return current cached snapshot (speeds/totals still update via push).
+            return currentState.snapshot ?: return queryAndCacheFullSnapshot()
+        }
+        lastConnectionGeneration = generation
+
+        val overview = connectionRepository.queryConnectionsOverview()
+        return mergeOverviewSnapshot(overview) ?: queryAndCacheFullSnapshot()
+    }
+
+    private suspend fun queryAndCacheFullSnapshot(): ConnectionSnapshot {
+        val snapshot = connectionRepository.queryConnections()
+        cacheConnectionDetails(snapshot.connections)
+        needsFullSnapshot = false
+        return snapshot
+    }
+
+    private fun mergeOverviewSnapshot(overview: ConnectionOverviewSnapshot): ConnectionSnapshot? {
+        val activeIds = overview.connections.mapTo(linkedSetOf()) { it.id }
+        val mergedConnections = ArrayList<ConnectionInfo>(overview.connections.size)
+        for (connection in overview.connections) {
+            val detail = connectionDetailsById[connection.id] ?: return null
+            mergedConnections += detail.copy(
+                upload = connection.upload,
+                download = connection.download,
+            )
+        }
+        connectionDetailsById.keys.retainAll(activeIds)
+        return ConnectionSnapshot(
+            downloadTotal = overview.downloadTotal,
+            uploadTotal = overview.uploadTotal,
+            connections = mergedConnections,
+            memory = overview.memory,
+        )
+    }
+
+    private fun cacheConnectionDetails(connections: List<ConnectionInfo>) {
+        val activeIds = connections.mapTo(linkedSetOf()) { it.id }
+        connections.forEach { connection -> connectionDetailsById[connection.id] = connection }
+        connectionDetailsById.keys.retainAll(activeIds)
+    }
+
+    private fun computePollIntervalMs(activeConnectionCount: Int): Long =
+        when {
+            activeConnectionCount <= 0 -> POLL_INTERVAL_SLOW_MS
+            activeConnectionCount <= POLL_MEDIUM_THRESHOLD -> POLL_INTERVAL_FAST_MS
+            activeConnectionCount <= POLL_SLOW_THRESHOLD -> POLL_INTERVAL_MEDIUM_MS
+            else -> POLL_INTERVAL_SLOW_MS
+        }
 
     override fun onCleared() {
         super.onCleared()
         stopPolling()
+    }
+}
+
+private fun buildProtocolAndNetwork(type: String, network: String): String {
+    val displayType = type.trim().uppercase()
+    val displayNetwork = network.trim().uppercase()
+    return when {
+        displayType.isNotEmpty() && displayNetwork.isNotEmpty() -> "$displayType | $displayNetwork"
+        displayType.isNotEmpty() -> displayType
+        else -> displayNetwork
+    }
+}
+
+private fun formatRelativeTime(start: String): String {
+    if (start.isEmpty()) return ""
+    return try {
+        val startTime = java.time.OffsetDateTime.parse(start).toInstant()
+        val now = java.time.Instant.now()
+        val duration = java.time.Duration.between(startTime, now)
+        val seconds = duration.seconds
+        val minutes = seconds / 60
+        val hours = minutes / 60
+        val days = hours / 24
+        when {
+            seconds < 60 -> FlyTxt.Connection.RelativeTime.JustNow
+            minutes < 60 -> FlyTxt.Connection.RelativeTime.MinutesAgo.format(minutes)
+            hours < 24 -> FlyTxt.Connection.RelativeTime.HoursAgo.format(hours)
+            days < 7 -> FlyTxt.Connection.RelativeTime.DaysAgo.format(days)
+            else -> {
+                val date = java.time.LocalDateTime.ofInstant(startTime, java.time.ZoneId.systemDefault())
+                FlyTxt.Connection.RelativeTime.Date.format(date.monthValue, date.dayOfMonth)
+            }
+        }
+    } catch (_: Exception) {
+        ""
     }
 }
 

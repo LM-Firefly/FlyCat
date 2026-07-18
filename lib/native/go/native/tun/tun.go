@@ -1,3 +1,4 @@
+// Package tun manages TUN device creation and configuration for the VPN tunnel.
 package tun
 
 import (
@@ -48,6 +49,7 @@ func splitDNSHijack(dns string) []string {
 	return dnsHijack
 }
 
+// Start creates and starts a TUN device using an existing file descriptor.
 func Start(fd int, stack, gateway, portal, dns string) (io.Closer, error) {
 	log.Debugln("TUN: fd = %d, stack = %s, gateway = %s, portal = %s, dns = %s", fd, stack, gateway, portal, dns)
 

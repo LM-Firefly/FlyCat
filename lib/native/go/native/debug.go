@@ -1,5 +1,7 @@
+//go:build debug
 // +build debug
 
+// Package main implements the native bridge for the FlyCat Android application.
 package main
 
 import (
@@ -13,6 +15,8 @@ func init() {
 	go func() {
 		log.Debugln("pprof service listen at: 127.0.0.1:8888")
 
+		// nosemgrep: go.lang.security.audit.net.use-tls.use-tls
+		// localhost-only debug pprof endpoint; TLS not applicable for loopback.
 		_ = http.ListenAndServe("127.0.0.1:8888", nil)
 	}()
 }

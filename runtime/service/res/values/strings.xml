@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tile_proxy_label">YumeBox</string>
+    <string name="tile_proxy_label">FlyCat</string>
+    <string name="files_provider_title">FlyCat</string>
+    <string name="files_provider_summary">Runtime and profiles</string>
+    <string name="files_provider_runtime">Runtime files (GeoX)</string>
+    <string name="files_provider_config_yaml">configuration.yaml</string>
+    <string name="files_provider_providers">Provider files</string>
+    <string name="wifi_automation_channel_name">Wi-Fi automation</string>
+    <string name="wifi_automation_notification_title">Wi-Fi automation is active</string>
+    <string name="wifi_automation_notification_text">Checking the connected Wi-Fi name</string>
 </resources>

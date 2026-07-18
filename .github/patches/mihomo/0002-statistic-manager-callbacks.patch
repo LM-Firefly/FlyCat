@@ -1,0 +1,111 @@
+From: FlyCat local customization
+Subject: [PATCH] tunnel/statistic: add event-driven traffic push & idle-aware ticker
+
+Add trafficDirty flag, OnJoin/OnLeave/OnTrafficUpdate callbacks, and
+idle-adaptive ticker to Manager for real-time traffic statistics push
+to the Android layer, with power-aware fallback to 5s polling when idle.
+diff --git a/tunnel/statistic/manager.go b/tunnel/statistic/manager.go
+index c69746d..320a5fa 100755
+--- a/tunnel/statistic/manager.go
++++ b/tunnel/statistic/manager.go
+@@ -26,23 +26,35 @@ func init() {
+ }
+ 
+ type Manager struct {
+-	connections   xsync.Map[string, Tracker]
+-	uploadTemp    atomic.Int64
+-	downloadTemp  atomic.Int64
+-	uploadBlip    atomic.Int64
+-	downloadBlip  atomic.Int64
+-	uploadTotal   atomic.Int64
+-	downloadTotal atomic.Int64
+-	pid           int32
+-	memory        uint64
++	connections         xsync.Map[string, Tracker]
++	uploadTemp          atomic.Int64
++	downloadTemp        atomic.Int64
++	uploadBlip          atomic.Int64
++	downloadBlip        atomic.Int64
++	uploadTotal         atomic.Int64
++	downloadTotal       atomic.Int64
++	pid                 int32
++	memory              uint64
++	trafficDirty        atomic.Bool
++	lastPushedUpSpeed   int64
++	lastPushedDownSpeed int64
++	OnJoin              func(*TrackerInfo)
++	OnLeave             func(*TrackerInfo)
++	OnTrafficUpdate     func(uploadTotal, downloadTotal, uploadSpeed, downloadSpeed int64)
+ }
+ 
+ func (m *Manager) Join(c Tracker) {
+ 	m.connections.Store(c.ID(), c)
++	if m.OnJoin != nil {
++		m.OnJoin(c.Info())
++	}
+ }
+ 
+ func (m *Manager) Leave(c Tracker) {
+ 	m.connections.Delete(c.ID())
++	if m.OnLeave != nil {
++		m.OnLeave(c.Info())
++	}
+ }
+ 
+ func (m *Manager) Get(id string) (c Tracker) {
+@@ -61,11 +73,13 @@ func (m *Manager) Range(f func(c Tracker) bool) {
+ func (m *Manager) PushUploaded(size int64) {
+ 	m.uploadTemp.Add(size)
+ 	m.uploadTotal.Add(size)
++	m.trafficDirty.Store(true)
+ }
+ 
+ func (m *Manager) PushDownloaded(size int64) {
+ 	m.downloadTemp.Add(size)
+ 	m.downloadTotal.Add(size)
++	m.trafficDirty.Store(true)
+ }
+ 
+ func (m *Manager) Now() (up int64, down int64) {
+@@ -110,14 +124,41 @@ func (m *Manager) ResetStatistic() {
+ 	m.downloadTemp.Store(0)
+ 	m.downloadBlip.Store(0)
+ 	m.downloadTotal.Store(0)
++	m.trafficDirty.Store(false)
++	m.lastPushedUpSpeed = 0
++	m.lastPushedDownSpeed = 0
+ }
+ 
+ func (m *Manager) handle() {
+ 	ticker := time.NewTicker(time.Second)
++	idleCount := 0
+ 
+ 	for range ticker.C {
+ 		m.uploadBlip.Store(m.uploadTemp.Swap(0))
+ 		m.downloadBlip.Store(m.downloadTemp.Swap(0))
++		if m.OnTrafficUpdate != nil {
++			upSpeed := m.uploadBlip.Load()
++			downSpeed := m.downloadBlip.Load()
++
++			if m.trafficDirty.CompareAndSwap(true, false) ||
++				upSpeed != m.lastPushedUpSpeed ||
++				downSpeed != m.lastPushedDownSpeed {
++				m.OnTrafficUpdate(m.uploadTotal.Load(), m.downloadTotal.Load(), upSpeed, downSpeed)
++				m.lastPushedUpSpeed = upSpeed
++				m.lastPushedDownSpeed = downSpeed
++				idleCount = 0
++			} else {
++				idleCount++
++				if idleCount == 10 {
++					ticker.Reset(5 * time.Second)
++				}
++			}
++
++			if m.trafficDirty.Load() && idleCount > 0 {
++				ticker.Reset(time.Second)
++				idleCount = 0
++			}
++		}
+ 	}
+ }
+ 

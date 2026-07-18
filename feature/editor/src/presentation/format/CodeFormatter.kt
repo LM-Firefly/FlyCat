@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,17 +15,19 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.feature.editor.format
+package com.github.lmfirefly.flycat.feature.editor.presentation.format
 
-import com.github.yumelira.yumebox.feature.editor.language.LanguageScope
+import com.github.lmfirefly.flycat.presentation.editor.LanguageScope
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
 object CodeFormatter {
+    private val REGEX_MULTIPLE_NEWLINES = Regex("\n{3,}")
     fun format(content: String, language: LanguageScope): String? =
         when (language) {
             LanguageScope.Json -> formatJson(content)
@@ -71,7 +73,7 @@ object CodeFormatter {
     @Suppress("TooGenericExceptionCaught")
     private fun formatYaml(content: String): String? =
         try {
-            content.lines().map { it.trimEnd() }.joinToString("\n").replace(Regex("\n{3,}"), "\n\n")
+            content.lines().map { it.trimEnd() }.joinToString("\n").replace(REGEX_MULTIPLE_NEWLINES, "\n\n")
         } catch (_: Exception) { // fault barrier: formatter must return null instead of crashing the editor
             null
         }

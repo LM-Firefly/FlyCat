@@ -1,15 +1,38 @@
 <Log Page>
 Log = {
-    Title = "日志"
+    Title = "日誌"
 
+    Action = {
+        StopRecording = "停止記錄"
+        StartRecording = "開始記錄"
+        SaveRecentLogs = "儲存近期日誌"
+        ClearLogs = "清空日誌"
+        Pause = "暫停記錄"
+        Save = "儲存"
+        Delete = "刪除"
+    }
 
     Empty = {
-        NoLogs = "暂无日志记录"
-        StartRecordingHint = "点击右下角按钮开始记录日志"
+        NoLogs = "暫無日誌記錄"
+        StartRecordingHint = "點右下角按鈕開始記錄日誌"
+    }
+
+    Message = {
+        SaveFailed = "儲存檔案失敗: %s"
+        Saved = "已儲存: %s"
+        RecentLogSaved = "近期日誌已儲存"
+    }
+
+    Status = {
+        Recording = "記錄中"
     }
 
     Detail = {
-        WaitingLog = "等待日志..."
-        WillShowWhenGenerated = "日志将在产生时显示"
+        RealTimeLog = "即時日誌"
+        Loading = "載入中..."
+        WaitingLog = "等待日誌..."
+        LogEmpty = "日誌為空"
+        WillShowWhenGenerated = "日誌將在產生時顯示"
+        NoLogContent = "該檔案沒有日誌內容"
     }
 }

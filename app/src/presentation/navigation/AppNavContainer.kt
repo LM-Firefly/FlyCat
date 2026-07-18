@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,161 +15,214 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.presentation.navigation
+package com.github.lmfirefly.flycat.presentation.navigation
 
-import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.LinearEasing
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.NavEntryDecorator
-import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberDecoratedNavEntries
-import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.scene.SceneInfo
-import androidx.navigation3.scene.SinglePaneSceneStrategy
-import androidx.navigation3.scene.rememberSceneState
-import androidx.navigation3.ui.NavDisplay
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
-import com.github.yumelira.yumebox.MainScreen
-import com.github.yumelira.yumebox.presentation.component.LocalNavigator
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.screen.about.AboutScreen
-import com.github.yumelira.yumebox.screen.about.OpenSourceLicensesScreen
-import com.github.yumelira.yumebox.screen.connection.ConnectionScreen
-import com.github.yumelira.yumebox.screen.log.LogScreen
-import com.github.yumelira.yumebox.screen.navigation.CustomRoutingRoute
-import com.github.yumelira.yumebox.screen.navigation.FeatureScreen
-import com.github.yumelira.yumebox.screen.navigation.KeyValueEditorScreen
-import com.github.yumelira.yumebox.screen.navigation.OverrideConfigPreviewRoute
-import com.github.yumelira.yumebox.screen.navigation.OverrideScreen
-import com.github.yumelira.yumebox.screen.navigation.ProvidersScreen
-import com.github.yumelira.yumebox.screen.navigation.StringListEditorScreen
-import com.github.yumelira.yumebox.screen.settings.AccessControlScreen
-import com.github.yumelira.yumebox.screen.settings.AppSettingsScreen
-import com.github.yumelira.yumebox.screen.settings.MetaFeatureScreen
-import com.github.yumelira.yumebox.screen.settings.MoeWallpaperCropScreen
-import com.github.yumelira.yumebox.screen.settings.NetworkSettingsScreen
-import com.github.yumelira.yumebox.screen.traffic.TrafficStatisticsScreen
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Modifier
+import com.arkivanov.decompose.ComponentContext
+import com.arkivanov.decompose.ExperimentalDecomposeApi
+import com.arkivanov.decompose.extensions.compose.stack.Children
+import com.arkivanov.decompose.extensions.compose.stack.animation.StackAnimation
+import com.arkivanov.decompose.extensions.compose.stack.animation.fade
+import com.arkivanov.decompose.extensions.compose.stack.animation.plus
+import com.arkivanov.decompose.extensions.compose.stack.animation.predictiveback.androidPredictiveBackAnimatableV1
+import com.arkivanov.decompose.extensions.compose.stack.animation.predictiveback.predictiveBackAnimation
+import com.arkivanov.decompose.extensions.compose.stack.animation.scale
+import com.arkivanov.decompose.extensions.compose.stack.animation.slide
+import com.arkivanov.decompose.extensions.compose.stack.animation.stackAnimation
+import com.arkivanov.decompose.extensions.compose.subscribeAsState
+import com.arkivanov.decompose.router.stack.childStack
+import com.arkivanov.essenty.backhandler.BackHandler
+import com.github.lmfirefly.flycat.R
+import com.github.lmfirefly.flycat.core.contract.AppSettingsReader
+import com.github.lmfirefly.flycat.feature.about.presentation.screen.AboutScreen
+import com.github.lmfirefly.flycat.feature.about.presentation.screen.OpenSourceLicensesScreen
+import com.github.lmfirefly.flycat.feature.log.presentation.screen.LogDetailScreen
+import com.github.lmfirefly.flycat.feature.log.presentation.screen.LogScreen
+import com.github.lmfirefly.flycat.feature.meta.presentation.screen.ConnectionScreen
+import com.github.lmfirefly.flycat.feature.meta.presentation.screen.CustomRoutingRoute
+import com.github.lmfirefly.flycat.feature.meta.presentation.screen.RulesScreen
+import com.github.lmfirefly.flycat.feature.meta.presentation.screen.TrafficStatisticsContent
+import com.github.lmfirefly.flycat.feature.settings.presentation.screen.AccessControlScreen
+import com.github.lmfirefly.flycat.feature.settings.presentation.screen.AppSettingsScreen
+import com.github.lmfirefly.flycat.feature.settings.presentation.screen.EbpfServiceOptionsScreen
+import com.github.lmfirefly.flycat.feature.settings.presentation.screen.MetaFeatureScreen
+import com.github.lmfirefly.flycat.feature.settings.presentation.screen.MoeWallpaperCropScreen
+import com.github.lmfirefly.flycat.feature.settings.presentation.screen.NetworkSettingsScreen
+import com.github.lmfirefly.flycat.feature.settings.presentation.screen.TunServiceOptionsScreen
+import com.github.lmfirefly.flycat.feature.settings.presentation.screen.VpnServiceOptionsScreen
+import com.github.lmfirefly.flycat.presentation.component.layout.KeyValueEditorScreen
+import com.github.lmfirefly.flycat.presentation.component.layout.StringListEditorScreen
+import com.github.lmfirefly.flycat.presentation.component.navigation.LocalNavigator
+import com.github.lmfirefly.flycat.presentation.screen.MainScreen
+import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
+import kotlinx.coroutines.launch
+import org.koin.java.KoinJavaComponent.getKoin
 
-private const val DURATION = 340
-private const val FADE_DURATION = 140
-private val slideEasing = CubicBezierEasing(0.25f, 0.10f, 0.25f, 1.0f)
-
-private fun slideEnter(offset: (Int) -> Int): EnterTransition =
-    slideInHorizontally(animationSpec = tween(DURATION, easing = slideEasing), initialOffsetX = offset) +
-        fadeIn(animationSpec = tween(FADE_DURATION, easing = LinearEasing))
-
-private fun slideExit(offset: (Int) -> Int): ExitTransition =
-    slideOutHorizontally(animationSpec = tween(DURATION, easing = slideEasing), targetOffsetX = offset) +
-        fadeOut(animationSpec = tween(FADE_DURATION, easing = LinearEasing))
-
-/**
- * The app's navigation3 host. Renders the back stack through [NavDisplay] using YumeBox's original
- * horizontal slide + fade transitions (the AOSP predictive-back animation was dropped). The system
- * predictive-back gesture scrubs [NavDisplay]'s pop transition, i.e. the default slide.
- */
 @Composable
-fun AppNavContainer() {
-    val backStack = rememberNavBackStack(Route.AppStart)
-    val navigator = remember(backStack) { Navigator(backStack) }
-
-    val entries =
-        rememberDecoratedNavEntries(
-            backStack = backStack,
-            entryDecorators =
-                listOf(
-                    rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator(),
-                    NavEntryDecorator { content ->
-                        CompositionLocalProvider(LocalNavigator provides navigator) {
-                            content.Content()
-                        }
-                    },
-                ),
-            entryProvider =
-                entryProvider {
-                    entry<Route.AppStart> { AppStartScreen(navigator) }
-                    entry<Route.Main> { route -> MainScreen(navigator, initialPage = route.initialPage) }
-                    entry<Route.MoeWallpaperCrop> { route ->
-                        MoeWallpaperCropScreen(
-                            navigator = navigator,
-                            wallpaperUri = route.wallpaperUri,
-                            initialZoom = route.initialZoom,
-                            initialBiasX = route.initialBiasX,
-                            initialBiasY = route.initialBiasY,
-                        )
-                    }
-                    entry<Route.AppSettings> { AppSettingsScreen() }
-                    entry<Route.NetworkSettings> { NetworkSettingsScreen(navigator) }
-                    entry<Route.AccessControl> { AccessControlScreen(navigator) }
-                    entry<Route.MetaFeature> { MetaFeatureScreen(navigator) }
-                    entry<Route.Connection> { ConnectionScreen(navigator) }
-                    entry<Route.TrafficStatistics> { TrafficStatisticsScreen() }
-                    entry<Route.Log> { LogScreen(navigator) }
-                    entry<Route.About> { AboutScreen(navigator) }
-                    entry<Route.OpenSourceLicenses> { OpenSourceLicensesScreen(navigator) }
-                    entry<Route.Override> { OverrideScreen(navigator) }
-                    entry<Route.OverrideConfigPreview> { OverrideConfigPreviewRoute(navigator) }
-                    entry<Route.Providers> { ProvidersScreen(navigator) }
-                    entry<Route.Feature> { FeatureScreen(navigator) }
-                    entry<Route.CustomRouting> { CustomRoutingRoute(navigator) }
-                    entry<Route.StringListEditor> { StringListEditorScreen(navigator) }
-                    entry<Route.KeyValueEditor> { KeyValueEditorScreen(navigator) }
-                },
+fun RouteContent(route: Route, navigator: Navigator, mainPage: Int = 0) {
+    when (route) {
+        is Route.AppStart -> MainScreen(navigator, initialPage = 0)
+        is Route.Main -> MainScreen(navigator, initialPage = mainPage)
+        is Route.MoeWallpaperCrop -> MoeWallpaperCropScreen(
+            navigator = navigator,
+            wallpaperUri = route.wallpaperUri,
+            initialZoom = route.initialZoom,
+            initialBiasX = route.initialBiasX,
+            initialBiasY = route.initialBiasY,
         )
+        Route.AppSettings -> AppSettingsScreen(navigator)
+        Route.NetworkSettings -> NetworkSettingsScreen(navigator)
+        Route.VpnServiceOptions -> VpnServiceOptionsScreen(navigator)
+        Route.TunServiceOptions -> TunServiceOptionsScreen(navigator)
+        Route.EbpfServiceOptions -> EbpfServiceOptionsScreen(navigator)
+        Route.AccessControl -> AccessControlScreen(navigator)
+        Route.MetaFeature -> MetaFeatureScreen(navigator)
+        Route.Connection -> ConnectionScreen(navigator)
+        Route.TrafficStatistics -> TrafficStatisticsContent(onBack = { navigator.pop() })
+        Route.Log -> LogScreen(navigator)
+        Route.Rules -> RulesScreen(navigator)
+        Route.About -> AboutScreen(navigator, appIconResId = R.drawable.flycat)
+        Route.OpenSourceLicenses -> OpenSourceLicensesScreen(navigator, librariesResId = R.raw.aboutlibraries)
+        Route.Override -> OverrideScreen(navigator)
+        Route.OverrideConfigPreview -> OverrideConfigPreviewRoute(navigator)
+        Route.Providers -> ProvidersScreen(navigator)
+        Route.ProviderFilePreview -> ProviderFilePreviewRoute(navigator)
+        Route.Feature -> FeatureScreen(navigator)
+        Route.CustomRouting -> CustomRoutingRoute(navigator)
+        Route.StringListEditor -> StringListEditorScreen(navigator)
+        Route.KeyValueEditor -> KeyValueEditorScreen(navigator)
+        is Route.LogDetail -> LogDetailScreen(navigator, fileName = route.fileName)
+    }
+}
 
-    val sceneState =
-        rememberSceneState(
-            entries = entries,
-            sceneStrategies = listOf(SinglePaneSceneStrategy()),
-            sceneDecoratorStrategies = emptyList(),
-            sharedTransitionScope = null,
-            onBack = { navigator.pop() },
-        )
-    val scene = sceneState.currentScene
+// ── Decompose animation (matches FlyCat: fade 300 + slide 400 + scale 500) ──
 
-    val gestureState =
-        rememberNavigationEventState(
-            currentInfo = SceneInfo(scene),
-            backInfo = sceneState.previousScenes.map { SceneInfo(it) },
-        )
-
-    NavigationBackHandler(
-        state = gestureState,
-        isBackEnabled = scene.previousEntries.isNotEmpty(),
-        onBackCancelled = {},
-        onBackCompleted = { navigator.pop() },
+@OptIn(ExperimentalDecomposeApi::class)
+private fun <T : Any> yumeAnimation(
+    backHandler: BackHandler,
+    onBack: () -> Unit,
+): StackAnimation<Any, T> =
+    predictiveBackAnimation(
+        backHandler = backHandler,
+        onBack = onBack,
+        fallbackAnimation = stackAnimation(fade(tween(AnimationSpecs.DURATION_NAV_FADE)) + slide(tween(AnimationSpecs.DURATION_NAV_SLIDE)) + scale(tween(AnimationSpecs.DURATION_NAV_SCALE))),
+        selector = { event, _, _ -> androidPredictiveBackAnimatableV1(event) },
     )
 
-    NavDisplay(
-        sceneState = sceneState,
-        navigationEventState = gestureState,
-        contentAlignment = Alignment.TopStart,
-        sizeTransform = null,
-        transitionSpec = {
-            ContentTransform(slideEnter { it }, slideExit { -it }, sizeTransform = null)
-        },
-        popTransitionSpec = {
-            ContentTransform(slideEnter { -it }, slideExit { it }, sizeTransform = null)
-        },
-        predictivePopTransitionSpec = { _ ->
-            ContentTransform(slideEnter { -it }, slideExit { it }, sizeTransform = null)
-        },
-    )
+// ── AppNavigationComponent ──
+
+class AppNavigationComponent(
+    val componentContext: ComponentContext,
+    val predictiveBackEnabledAtLaunch: Boolean,
+) {
+    private val mainPageState = mutableIntStateOf(0)
+    private var boundMainRoute: Route.Main? = null
+    val navigator = Navigator(mutableStateListOf<Any>(Route.AppStart))
+    internal val childStack =
+        componentContext.childStack(
+            source = navigator.navigation,
+            initialConfiguration = Route.AppStart,
+            serializer = null,
+            handleBackButton = false,
+        ) { rawRoute, _ ->
+            RouteChild(rawRoute as Route, navigator, this)
+        }
+    internal fun bindMainRoute(route: Route.Main) {
+        if (boundMainRoute != route) {
+            mainPageState.intValue = route.initialPage
+            boundMainRoute = route
+        }
+    }
+    internal fun updateMainPage(page: Int) {
+        mainPageState.intValue = page
+    }
+    internal val mainPage: Int get() = mainPageState.intValue
+}
+
+// ── RouteChild ──
+
+internal class RouteChild(
+    private val route: Route,
+    private val navigator: Navigator,
+    private val navigationComponent: AppNavigationComponent,
+) {
+    init {
+        if (route is Route.Main) navigationComponent.bindMainRoute(route)
+    }
+    @Composable
+    fun Content() {
+        CompositionLocalProvider(LocalNavigator provides navigator) {
+            when (route) {
+                is Route.Main -> MainScreen(
+                    navigator = navigator,
+                    initialPage = navigationComponent.mainPage,
+                )
+                is Route.MoeWallpaperCrop -> MoeWallpaperCropScreen(
+                    navigator = navigator,
+                    wallpaperUri = route.wallpaperUri,
+                    initialZoom = route.initialZoom,
+                    initialBiasX = route.initialBiasX,
+                    initialBiasY = route.initialBiasY,
+                )
+                else -> RouteContent(route, navigator, navigationComponent.mainPage)
+            }
+        }
+    }
+}
+
+// ── AppNavContainer (main navigation host) ──
+
+@Composable
+fun AppNavContainer(component: AppNavigationComponent) {
+    val navigator = component.navigator
+    val predictiveBackEnabled = component.predictiveBackEnabledAtLaunch
+    val scope = rememberCoroutineScope()
+    @Suppress("UNUSED_EXPRESSION")
+    val commitBack: () -> Unit = remember(navigator, scope) {
+        {
+            scope.launch {
+                withFrameNanos { }
+                navigator.pop()
+            }
+            Unit
+        }
+    }
+    val stack by component.childStack.subscribeAsState()
+    SideEffect {
+        navigator.syncBackStack(stack.items.map { it.configuration })
+    }
+    if (!predictiveBackEnabled) {
+        BackHandler(enabled = stack.backStack.isNotEmpty(), onBack = commitBack)
+    }
+    val animation: StackAnimation<Any, RouteChild> = remember(component) {
+        if (predictiveBackEnabled) {
+            yumeAnimation(component.componentContext.backHandler, commitBack)
+        } else {
+            stackAnimation(fade(tween(AnimationSpecs.DURATION_NAV_FADE)) + slide(tween(AnimationSpecs.DURATION_NAV_SLIDE)) + scale(tween(AnimationSpecs.DURATION_NAV_SCALE)))
+        }
+    }
+    Children(
+        stack = stack,
+        modifier = Modifier.fillMaxSize(),
+        animation = animation,
+    ) { child ->
+        child.instance.Content()
+    }
 }

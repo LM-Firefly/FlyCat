@@ -1,0 +1,124 @@
+<App Settings Page>
+AppSettings = {
+    Title = "アプリ設定"
+
+    Section = {
+        Behavior = "動作"
+        Interface = "インターフェース"
+        Navigation = "ナビゲーション"
+        Privacy = "プライバシー"
+        Service = "サービス"
+        Network = "ネットワーク"
+        Home = "ホーム"
+    }
+
+    Behavior = {
+        AutoStartTitle = "自動開始"
+        AutoStartSummary = "アプリ起動時および端末起動時にプロキシサービスを自動開始"
+        AutoUpdateOnStartTitle = "開始時に更新"
+        AutoUpdateOnStartSummary = "アプリ起動時に現在のプロファイルを自動更新"
+        OneChinaTitle = "一つの中国の原則を堅持"
+        OneChinaSummary = "アプリ内で一つの中国の原則を適用"
+    }
+
+    Interface = {
+        ThemeModeTitle = "テーマモード"
+        ThemeModeSummary = "アプリのテーマスタイルを選択"
+        ThemeModeSystem = "システムに合わせる"
+        ThemeModeLight = "ライト"
+        ThemeModeDark = "ダーク"
+        LanguageTitle = "アプリの言語"
+        LanguageSummary = "アプリの言語を選択"
+        LanguageSystem = "システムに合わせる"
+        LanguageChinese = "简体中文"
+        LanguageChineseTraditional = "繁體中文"
+        LanguageEnglish = "English"
+        LanguageJapanese = "日本語"
+        LanguageRussian = "Русский"
+
+        ColorThemeTitle = "テーマ配色"
+        ColorThemePickerTitle = "テーマカラーを選択"
+        ColorThemeCodeLabel = "テーマカラーコード (#AARRGGBB)"
+        ColorThemeCustomSummary = "現在のテーマカラー: %s"
+        ThemeColorPolarityInvertTitle = "テーマ前景色を反転"
+        ThemeColorPolarityInvertSummary = "テーマの色がおかしい場合は、この設定を有効にしてみてください"
+        TopBarBlurTitle = "ぼかし"
+        TopBarBlurSummary = "ぼかし背景を適用"
+        AutoHideNavbarTitle = "ナビバーを自動非表示"
+        AutoHideNavbarSummary = "スクロールダウン時にナビバーを非表示、スクロールアップ時に表示"
+
+        PageScaleTitle = "ページ倍率"
+        PageScaleDialogSummary = "80% - 120%"
+
+        ClassicHomeTitle = "クラシックホーム"
+        HitokotoTitle = "一言"
+        HitokotoSummary = "クラシックホームのトップバーに一言を表示"
+        SidebarExpandedTitle = "サイドバーを展開"
+        HomeQuoteTitle = "ホームの一言"
+        HomeQuoteDefault = "素晴らしいことが起きると信じて"
+        HomeQuoteAuthorTitle = "一言の作者"
+        HomeQuoteAuthorDefault = "Firefly"
+        EditHomeQuoteTitle = "一言を編集"
+        EditHomeQuoteAuthorTitle = "一言の作者を編集"
+        HomeWallpaperImportFailed = "壁紙をローカルへコピーできなかったため、元のソースを使用します"
+        HomeWallpaperSourceTitle = "壁紙のソース"
+        HomeWallpaperSourceSummary = "ギャラリーから選択するか URL を入力"
+        HomeWallpaperSourceGallery = "ギャラリーから選択"
+        HomeWallpaperSourceUrl = "URL を入力"
+        HomeWallpaperUrlDialogTitle = "リモート壁紙を設定"
+    }
+
+    Privacy = {
+
+        HideIconTitle = "アプリアイコンを隠す"
+        HideIconSummary = "隠した後は、ダイヤラー *#*#0721#*#* で開けます"
+        HideFromRecentsTitle = "履歴カードを隠す"
+        HideFromRecentsSummary = "最近のタスクリスト（履歴カード）にこのアプリを表示しない"
+    }
+
+    ServiceSection = {
+        TrafficNotificationTitle = "通信量通知を表示"
+        TrafficNotificationSummary = "通知バーに通信量を表示"
+        LogLevelTitle = "ログレベル"
+        LogLevelSummary = "アプリの実行時ログの最小レベルを設定"
+        SingleNodeTestTitle = "単一ノードテスト"
+        SingleNodeTestSummary = "ノードカードのアイコンをタップして個別のノード遅延をテスト"
+        ExitUiWhenBackgroundTitle = "バックグラウンドで UI を解放"
+        ExitUiWhenBackgroundSummary = "アプリが完全にバックグラウンドに隠れた際にアクティビティ UI を解放し、プロキシサービスは維持"
+        BatteryOptimizationTitle = "バッテリー制限なし"
+        BatteryOptimizationSummaryEnabled = "バックグラウンドの制限なし実行が許可されています"
+        BatteryOptimizationSummaryDisabled = "バッテリー最適化で制限されています。タップして修正"
+    }
+
+    Network = {
+        UpdateChannelTitle = "更新チャンネル"
+        UpdateChannelSummary = "更新チェックに使用する GitHub Release チャンネルを選択"
+        UpdateChannelStable = "安定版"
+        UpdateChannelPre = "プレリリース"
+        UpdateChannelSmart = "スマート"
+        AutoCheckAppUpdateTitle = "アプリ更新を自動チェック"
+        AutoCheckAppUpdateSummary = "バックグラウンドで 1 時間ごとに GitHub Release の更新を自動チェック"
+        CustomUserAgentTitle = "カスタム User-Agent"
+        CustomUserAgentSummaryDefault = "未設定、既定値を使用"
+    }
+
+    PredictiveBack = {
+        Title = "予測バックジェスチャー"
+        RestartSummary = "次回アプリ起動時に有効になります"
+        ProgressTitle = "予測バックの振幅"
+    }
+
+    WarningDialog = {
+        Title = "警告"
+        HideIconMsg1 = "隠す前に、このアプリの設定画面へアクセスできることを確認してください！"
+        HideIconMsg2 = "HyperOS では、ダイヤルコードを受け取るために自動開始とバックグラウンドポップアップの権限を有効にしてください！"
+    }
+
+    EditDialog = {
+        UserAgentTitle = "User-Agent を編集"
+    }
+
+    Button = {
+        Apply = "適用"
+    }
+}

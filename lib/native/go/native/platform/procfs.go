@@ -1,6 +1,7 @@
 //go:build linux
 // +build linux
 
+// Package platform provides Android platform-specific utilities.
 package platform
 
 import (
@@ -20,6 +21,7 @@ var netIndexOfUID = -1
 
 var nativeEndian binary.ByteOrder
 
+// QuerySocketUIDFromProcFs reads /proc/net/tcp|udp to find the UID of the socket matching the source address.
 func QuerySocketUIDFromProcFs(source, _ net.Addr) int {
 	if netIndexOfLocal < 0 || netIndexOfUID < 0 {
 		return -1

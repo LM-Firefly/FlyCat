@@ -1,0 +1,52 @@
+<Traffic Statistics Page>
+TrafficStatistics = {
+    Title = "通信量統計"
+    EntrySummary = "通信量の利用状況を表示"
+
+    TimeRange = {
+        Today = "今日"
+        Week = "過去2週間"
+    }
+
+    Summary = {
+        TodayTraffic = "今日の通信量"
+        WeekTraffic = "過去2週間の通信量"
+    }
+
+
+
+    Donut = {
+        Other = "その他"
+    }
+
+    Sort = {
+        ByName = "アプリ名"
+        ByUpload = "上り"
+        ByDownload = "下り"
+        ByTotal = "通信量"
+    }
+
+    Action = {
+        Clear = "統計を消去"
+        ClearSuccess = "統計を消去しました"
+    }
+
+    Section = {
+        Traffic = "通信量"
+        PerAppTraffic = "アプリ別通信量"
+        EmptyApps = "アプリの通信量統計はありません"
+    }
+
+    Metric = {
+        Download = "下り"
+        Upload = "上り"
+        Total = "合計"
+        UsageLine = "下り %s  上り %s"
+    }
+
+    Buckets = {
+        UnknownAppName = "不明なアプリ"
+        UnattributedTrafficName = "未分類トラフィック"
+        UnattributedRouteName = "未分類ルート"
+    }
+}

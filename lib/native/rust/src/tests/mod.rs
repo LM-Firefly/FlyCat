@@ -12,7 +12,8 @@ use crate::compiler::{
 };
 use crate::engine;
 use crate::engine::yaml::add_yaml_tags_to_proxies_short_id;
-use crate::model::{CompileRequest, LoadedOverride, REQUEST_SCHEMA_VERSION};
+use crate::jni::{down_scale_traffic, pack_traffic};
+use crate::model::{CompileRequest, LoadedOverride, RunMode, REQUEST_SCHEMA_VERSION};
 use age::secrecy::ExposeSecret;
 
 fn test_request(profile_dir: &Path, profile_path: &Path) -> CompileRequest {
@@ -24,6 +25,8 @@ fn test_request(profile_dir: &Path, profile_path: &Path) -> CompileRequest {
         overrides: Vec::new(),
         output_path: String::new(),
         age_secret_key: None,
+        run_mode: RunMode::default(),
+        skip_runtime_patches: false,
     }
 }
 
@@ -84,7 +87,7 @@ fn compile_root_with_geosite_matcher(
     value: Option<JsonValue>,
 ) -> Result<crate::model::CompileResult, String> {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-compiler-test-{}",
+        "flycat-compiler-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -111,6 +114,8 @@ fn compile_root_with_geosite_matcher(
         overrides: Vec::new(),
         output_path: String::new(),
         age_secret_key: None,
+        run_mode: RunMode::default(),
+        skip_runtime_patches: false,
     };
 
     let result = compile_request(request, false);
@@ -154,7 +159,7 @@ fn compile_request_rejects_invalid_geosite_matcher() {
 
 fn compile_raw_from_yaml(source_yaml: &str) -> Result<JsonValue, String> {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-merge-key-test-{}",
+        "flycat-merge-key-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -294,7 +299,7 @@ function main(profile) {
 #[test]
 fn js_override_supports_async_main_and_writes_log_file() {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-js-async-test-{}",
+        "flycat-js-async-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -357,7 +362,7 @@ fn js_override_fetch_helper_reads_http_payload() {
     });
 
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-js-fetch-test-{}",
+        "flycat-js-fetch-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -401,7 +406,7 @@ async function main(profile) {{
 #[test]
 fn js_override_failure_is_reported_as_warning_and_keeps_original_profile() {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-js-failure-test-{}",
+        "flycat-js-failure-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -434,7 +439,7 @@ fn js_override_failure_is_reported_as_warning_and_keeps_original_profile() {
 #[test]
 fn js_override_logs_are_redacted_for_encrypted_profiles() {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-js-encrypted-log-test-{}",
+        "flycat-js-encrypted-log-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -473,7 +478,7 @@ function main(profile) {
 #[test]
 fn compile_request_emits_warning_for_empty_override_file() {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-empty-override-test-{}",
+        "flycat-empty-override-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -497,6 +502,8 @@ fn compile_request_emits_warning_for_empty_override_file() {
         }],
         output_path: String::new(),
         age_secret_key: None,
+        run_mode: RunMode::default(),
+        skip_runtime_patches: false,
     };
 
     let result = compile_request(request, false).expect("compile request should succeed");
@@ -509,7 +516,7 @@ fn compile_request_emits_warning_for_empty_override_file() {
 #[test]
 fn compile_request_preserves_existing_provider_path() {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-provider-path-test-{}",
+        "flycat-provider-path-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -552,7 +559,7 @@ rule-providers:
 #[test]
 fn compile_request_preserves_existing_dot_provider_path() {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-provider-relative-test-{}",
+        "flycat-provider-relative-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -595,7 +602,7 @@ rule-providers:
 #[test]
 fn compile_request_rewrites_legacy_ruleset_provider_path() {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-provider-legacy-path-test-{}",
+        "flycat-provider-legacy-path-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -638,7 +645,7 @@ rule-providers:
 #[test]
 fn compile_request_normalizes_absolute_provider_path_to_profile_scope() {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-provider-absolute-path-test-{}",
+        "flycat-provider-absolute-path-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -692,7 +699,7 @@ rule-providers:
 #[test]
 fn compile_raw_request_decrypts_age_source_to_config_raw_json() {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-age-raw-test-{}",
+        "flycat-age-raw-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -729,7 +736,7 @@ fn compile_raw_request_decrypts_age_source_to_config_raw_json() {
 #[test]
 fn encrypted_empty_override_warning_redacts_override_path() {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-age-empty-override-test-{}",
+        "flycat-age-empty-override-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -762,7 +769,7 @@ fn encrypted_empty_override_warning_redacts_override_path() {
 #[test]
 fn override_compile_raw_returns_structured_error_result() {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-age-raw-abi-error-test-{}",
+        "flycat-age-raw-abi-error-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -798,7 +805,7 @@ fn override_compile_raw_returns_structured_error_result() {
 #[test]
 fn compile_raw_request_requires_age_secret_key_for_encrypted_source() {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-age-missing-key-test-{}",
+        "flycat-age-missing-key-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -821,7 +828,7 @@ fn compile_raw_request_requires_age_secret_key_for_encrypted_source() {
 #[test]
 fn compile_request_rejects_yaml_output_for_encrypted_source() {
     let temp_dir = std::env::temp_dir().join(format!(
-        "yumebox-age-yaml-output-test-{}",
+        "flycat-age-yaml-output-test-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time before unix epoch")
@@ -851,4 +858,40 @@ fn compile_request_rejects_yaml_output_for_encrypted_source() {
     assert!(!override_path.with_extension("log").exists());
 
     let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn down_scale_traffic_byte_range() {
+    assert_eq!(down_scale_traffic(0), 0);
+    assert_eq!(down_scale_traffic(512), 512);
+    assert_eq!(down_scale_traffic(1024), 1024);
+}
+
+#[test]
+fn down_scale_traffic_kb_range() {
+    let tag_kb = 1u64 << 30;
+    let val = down_scale_traffic(2048);
+    assert_eq!(val & 0xC000_0000, tag_kb);
+}
+
+#[test]
+fn down_scale_traffic_mb_range() {
+    let tag_mb = 2u64 << 30;
+    let val = down_scale_traffic(5 * 1024 * 1024);
+    assert_eq!(val & 0xC000_0000, tag_mb);
+}
+
+#[test]
+fn down_scale_traffic_gb_range() {
+    let tag_gb = 3u64 << 30;
+    let val = down_scale_traffic(2u64 * 1024 * 1024 * 1024);
+    assert_eq!(val & 0xC000_0000, tag_gb);
+}
+
+#[test]
+fn pack_traffic_encodes_both_directions() {
+    let packed = pack_traffic(2048, 4096);
+    let bits = packed as u64;
+    assert_eq!((bits >> 32) & 0xC000_0000, 1u64 << 30);
+    assert_eq!(bits & 0xC000_0000, 1u64 << 30);
 }
