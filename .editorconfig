@@ -1,0 +1,6 @@
+# Patch files require trailing whitespace for diff context lines
+[*.patch]
+trim_trailing_whitespace = false
+
+[*.diff]
+trim_trailing_whitespace = false

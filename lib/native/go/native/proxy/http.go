@@ -1,3 +1,4 @@
+// Package proxy manages the local HTTP proxy listener.
 package proxy
 
 import (
@@ -10,6 +11,7 @@ import (
 var listener *http.Listener
 var lock sync.Mutex
 
+// Start starts a local HTTP proxy listener on the given address.
 func Start(listen string) (listenAt string, err error) {
 	lock.Lock()
 	defer lock.Unlock()
@@ -24,6 +26,7 @@ func Start(listen string) (listenAt string, err error) {
 	return
 }
 
+// Stop stops the running HTTP proxy listener.
 func Stop() {
 	lock.Lock()
 	defer lock.Unlock()

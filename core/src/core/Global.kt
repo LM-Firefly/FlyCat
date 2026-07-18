@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,23 +15,37 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.core
+package com.github.lmfirefly.flycat.core
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import java.io.File
 
-object Global : CoroutineScope by CoroutineScope(Dispatchers.IO) {
+/**
+ * Global application-level [CoroutineScope].
+ *
+ * Uses [Dispatchers.Main.immediate] so that coroutines launched here execute on the main thread without an extra dispatch when already on the main thread. This is intentional for UI-related initialization work (e.g. applying user settings, starting update checks).
+ *
+ * **Do not** launch long-running or blocking I/O operations on this scope — use [Dispatchers.IO] or [Dispatchers.Default] explicitly for those workloads.
+ */
+object Global : CoroutineScope {
+    override val coroutineContext = Dispatchers.Main.immediate + SupervisorJob()
+
     val application: Context
-        get() = _application
+        get() = _application ?: throw IllegalStateException("Global.init() must be called before accessing application context")
 
-    private lateinit var _application: Context
+    @Volatile
+    private var _application: Context? = null
 
     fun init(application: Context) {
+        if (_application != null) return
         _application = application.applicationContext ?: application
     }
 
@@ -39,3 +53,11 @@ object Global : CoroutineScope by CoroutineScope(Dispatchers.IO) {
         cancel()
     }
 }
+
+interface FirstRunInitializer { fun initialize() }
+
+val Context.appContextOrSelf: Context
+    get() = applicationContext ?: this
+
+val Context.importedDir: File
+    get() = filesDir.resolve("imported")

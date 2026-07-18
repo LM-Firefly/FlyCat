@@ -1,48 +1,48 @@
 <Access Control Page>
 AccessControl = {
-    Title = "访问控制"
+    Title = "存取控制"
 
     Search = {
-        Placeholder = "搜索应用..."
-        Empty = "没有匹配的应用"
+        Placeholder = "搜尋應用..."
+        Empty = "沒有符合的應用"
     }
 
     AppList = {
-        Title = "应用列表 (%d 已选择)"
-        Loading = "加载中..."
+        Title = "應用列表 (%d 已選取)"
+        Loading = "載入中..."
     }
 
     Settings = {
-        Title = "访问控制设置"
-        ShowSystemApps = "显示系统应用"
-        SelectedFirst = "已选应用优先"
+        Title = "存取控制設定"
+        ShowSystemApps = "顯示系統應用"
+        SelectedFirst = "已選應用優先"
         SortMode = "排序方式"
-        SortModeCurrent = "当前：%s"
-        BatchOperation = "批量操作"
-        SelectAll = "全选"
-        DeselectAll = "全不选"
-        Invert = "反选"
-        ImportExport = "导入/导出"
-        Import = "从剪贴板导入"
-        Export = "导出到剪贴板"
-        ImportSuccess = "导入成功：%d 个包名"
-        ExportSuccess = "已复制 %d 个包名到剪贴板"
-        ImportFailed = "导入失败"
-        RegionQuickSelect = "地区快捷选择"
-        ChinaApps = "中国应用"
-        OverseasApps = "非中国应用"
-        RegionSelectResult = "已按「%s」快捷选择，共 %d 个"
+        SortModeCurrent = "目前：%s"
+        BatchOperation = "批次操作"
+        SelectAll = "全選"
+        DeselectAll = "全不選"
+        Invert = "反選"
+        ImportExport = "匯入/匯出"
+        Import = "從剪貼簿匯入"
+        Export = "匯出到剪貼簿"
+        ImportSuccess = "匯入成功：%d 個套件名稱"
+        ExportSuccess = "已複製 %d 個套件名稱到剪貼簿"
+        ImportFailed = "匯入失敗"
+        RegionQuickSelect = "地區快速選取"
+        ChinaApps = "中國應用"
+        OverseasApps = "非中國應用"
+        RegionSelectResult = "已依「%s」快速選取，共 %d 個"
     }
 
     SortMode = {
-        PackageName = "包名"
-        Label = "应用名称"
-        InstallTime = "安装时间"
-        UpdateTime = "更新时间"
+        PackageName = "套件名稱"
+        Label = "應用名稱"
+        InstallTime = "安裝時間"
+        UpdateTime = "更新時間"
     }
 
     Button = {
         Cancel = "取消"
-        Confirm = "确定"
+        Confirm = "確定"
     }
 }

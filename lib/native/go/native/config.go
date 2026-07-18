@@ -1,3 +1,4 @@
+// Package main implements the native bridge for the FlyCat Android application.
 package main
 
 //#include "bridge.h"
@@ -5,42 +6,31 @@ import "C"
 
 import (
 	"encoding/json"
-	"runtime"
-	"strings"
+	"fmt"
+	"sync"
+	"time"
 	"unsafe"
 
 	"cfa/native/app"
 	"cfa/native/config"
+	"cfa/native/tunnel"
 
 	"github.com/metacubex/mihomo/hub"
+	mlog "github.com/metacubex/mihomo/log"
+	"gopkg.in/yaml.v3"
 )
+
+const loadCompiledRawTimeout = 30 * time.Second
 
 type ageKeyPair struct {
 	SecretKey string `json:"secretKey"`
 	PublicKey string `json:"publicKey"`
 }
 
-type compileRawResult struct {
-	Success     bool     `json:"success"`
-	Fingerprint string   `json:"fingerprint"`
-	ConfigRaw   string   `json:"configRaw"`
-	Warnings    []string `json:"warnings"`
-	Error       string   `json:"error"`
-}
-
 type inspectResult struct {
 	Success bool   `json:"success"`
 	Payload string `json:"payload"`
 	Error   string `json:"error"`
-}
-
-type compileRawSummary struct {
-	Success           bool     `json:"success"`
-	Fingerprint       string   `json:"fingerprint"`
-	Warnings          []string `json:"warnings"`
-	Error             string   `json:"error"`
-	TunIncludePackage []string `json:"tunIncludePackage,omitempty"`
-	TunExcludePackage []string `json:"tunExcludePackage,omitempty"`
 }
 
 type remoteValidCallback struct {
@@ -61,8 +51,6 @@ func fetchAndValid(callback unsafe.Pointer, path, url C.c_string, force C.int) {
 		C.fetch_complete(callback, marshalString(err))
 
 		C.release_object(callback)
-
-		runtime.GC()
 	}(C.GoString(path), C.GoString(url), callback)
 }
 
@@ -71,94 +59,66 @@ func loadCompiledRaw(completable unsafe.Pointer, configRawJSON *C.char) {
 	rawCopy := C.GoString(configRawJSON)
 	C.free(unsafe.Pointer(configRawJSON))
 	go func(raw string) {
-		defer C.release_object(completable)
-		defer runtime.GC()
+		var done sync.Once
+		finish := func(errMsg *string) {
+			done.Do(func() {
+				if errMsg == nil {
+					C.complete(completable, nil)
+				} else {
+					C.complete(completable, marshalString(*errMsg))
+				}
+				C.release_object(completable)
+			})
+		}
+
+		watchdog := time.AfterFunc(loadCompiledRawTimeout, func() {
+			err := "loadCompiledRaw timeout (>30s)"
+			mlog.Errorln("[BRIDGE]", err)
+			finish(&err)
+		})
+		defer watchdog.Stop()
+
+		defer func() {
+			if r := recover(); r != nil {
+				err := fmt.Sprintf("loadCompiledRaw panic: %v", r)
+				mlog.Errorln("[BRIDGE]", err)
+				finish(&err)
+			}
+		}()
+
+		mlog.Infoln("[BRIDGE] loadCompiledRaw begin")
 
 		rawCfg, cfg, err := config.ParseCompiledRaw(raw)
 		if err != nil {
-			C.complete(completable, marshalString(err.Error()))
+			errMsg := err.Error()
+			mlog.Errorln("[BRIDGE] loadCompiledRaw parse failed:", errMsg)
+			finish(&errMsg)
 			return
 		}
+		mlog.Infoln("[BRIDGE] loadCompiledRaw parsed, applying config")
 		hub.ApplyConfig(cfg)
+		tunnel.IncrProxyGroupVersion()
+		mlog.Infoln("[BRIDGE] loadCompiledRaw apply done, complete")
 		app.ApplySubtitlePattern(rawCfg.ClashForAndroid.UiSubtitlePattern)
-		C.complete(completable, nil)
+		finish(nil)
+		mlog.Infoln("[BRIDGE] loadCompiledRaw complete sent")
 	}(rawCopy)
 }
 
-//export compiledRawResultError
-func compiledRawResultError(resultJSON C.c_string) *C.char {
-	result, err := decodeCompileRawResult(C.GoString(resultJSON))
+//export loadCompiledRawSync
+func loadCompiledRawSync(configRawJSON *C.char) *C.char {
+	rawCopy := C.GoString(configRawJSON)
+	C.free(unsafe.Pointer(configRawJSON))
+
+	rawCfg, cfg, err := config.ParseCompiledRaw(rawCopy)
 	if err != nil {
-		return marshalString(err)
+		return marshalString(err.Error())
 	}
-	if result.Success {
-		return nil
-	}
-	message := strings.TrimSpace(result.Error)
-	if message == "" {
-		message = "compile raw config failed"
-	}
-	return marshalString(message)
-}
 
-//export compiledRawResultConfigRaw
-func compiledRawResultConfigRaw(resultJSON C.c_string) *C.char {
-	result, err := decodeCompileRawResult(C.GoString(resultJSON))
-	if err != nil || !result.Success || strings.TrimSpace(result.ConfigRaw) == "" {
-		return nil
-	}
-	return marshalString(result.ConfigRaw)
-}
-
-//export compiledRawResultSummary
-func compiledRawResultSummary(resultJSON C.c_string) *C.char {
-	result, err := decodeCompileRawResult(C.GoString(resultJSON))
-	if err != nil {
-		return marshalJSON(compileRawSummary{Success: false, Error: err.Error()})
-	}
-	summary := compileRawSummary{
-		Success:     result.Success,
-		Fingerprint: result.Fingerprint,
-		Warnings:    result.Warnings,
-		Error:       result.Error,
-	}
-	if result.Success && strings.TrimSpace(result.ConfigRaw) != "" {
-		includePackage, excludePackage, err := config.QueryTunPackagesFromCompiledRaw(result.ConfigRaw)
-		if err != nil {
-			// Extraction failure must not fail the summary; surface it as a warning only.
-			summary.Warnings = append(summary.Warnings, "inspect tun packages failed: "+err.Error())
-		} else {
-			summary.TunIncludePackage = includePackage
-			summary.TunExcludePackage = excludePackage
-		}
-	}
-	return marshalJSON(summary)
-}
-
-//export compiledRawFallbackSummary
-func compiledRawFallbackSummary(errorMessage C.c_string) *C.char {
-	message := strings.TrimSpace(C.GoString(errorMessage))
-	if message == "" {
-		message = "compile raw config failed"
-	}
-	return marshalJSON(compileRawSummary{Success: false, Error: message})
-}
-
-//export inspectErrorResult
-func inspectErrorResult(errorMessage C.c_string) *C.char {
-	message := strings.TrimSpace(C.GoString(errorMessage))
-	if message == "" {
-		message = "native inspect failed"
-	}
-	return marshalJSON(inspectResult{Success: false, Error: message})
-}
-
-func decodeCompileRawResult(resultJSON string) (*compileRawResult, error) {
-	var result compileRawResult
-	if err := json.Unmarshal([]byte(resultJSON), &result); err != nil {
-		return nil, err
-	}
-	return &result, nil
+	hub.ApplyConfig(cfg)
+	tunnel.IncrProxyGroupVersion()
+	app.ApplySubtitlePattern(rawCfg.ClashForAndroid.UiSubtitlePattern)
+	return nil
 }
 
 //export inspectCompiledGroupsResult
@@ -171,34 +131,40 @@ func inspectCompiledGroupsResult(configRawJSON C.c_string, profileDir C.c_string
 	if err != nil {
 		return marshalJSON(inspectResult{Success: false, Error: err.Error()})
 	}
-	payload, err := yamlString(groups)
+	payload, err := yaml.Marshal(groups)
 	if err != nil {
 		return marshalJSON(inspectResult{Success: false, Error: err.Error()})
 	}
-	return marshalJSON(inspectResult{Success: true, Payload: payload})
+	return marshalJSON(inspectResult{Success: true, Payload: string(payload)})
 }
 
-//export inspectCompiledTunRouteExcludeAddressResult
-func inspectCompiledTunRouteExcludeAddressResult(configRawJSON C.c_string) *C.char {
-	addresses, err := config.QueryTunRouteExcludeAddressFromCompiledRaw(C.GoString(configRawJSON))
+//export inspectCompiledGroupNames
+func inspectCompiledGroupNames(configRawJSON C.c_string, excludeNotSelectable C.int) *C.char {
+	names, err := config.QueryProxyGroupNamesFromCompiledRaw(
+		C.GoString(configRawJSON),
+		excludeNotSelectable != 0,
+	)
 	if err != nil {
-		return marshalJSON(inspectResult{Success: false, Error: err.Error()})
+		return nil
 	}
-	payload, err := jsonString(addresses)
+	payload, err := json.Marshal(names)
 	if err != nil {
-		return marshalJSON(inspectResult{Success: false, Error: err.Error()})
+		return nil
 	}
-	return marshalJSON(inspectResult{Success: true, Payload: payload})
+	return C.CString(string(payload))
 }
 
 //export setAgeSecretKey
 func setAgeSecretKey(key C.c_string) {
 	if key == nil {
+		config.SetAgeSecretKey("")
 		config.SetGlobalSecretKeys()
 		return
 	}
 
-	config.SetGlobalSecretKeys(C.GoString(key))
+	k := C.GoString(key)
+	config.SetAgeSecretKey(k)
+	config.SetGlobalSecretKeys(k)
 }
 
 //export genX25519KeyPair

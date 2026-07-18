@@ -1,3 +1,5 @@
+// Package all aggregates every native bridge package so building this single
+// package compiles the whole native bridge surface.
 package all
 
 import (

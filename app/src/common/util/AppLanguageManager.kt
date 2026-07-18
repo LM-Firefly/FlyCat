@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,10 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.common.util
+package com.github.lmfirefly.flycat.common.util
 
 import android.content.Context
 import android.content.res.Configuration
@@ -26,9 +27,10 @@ import android.content.res.Resources
 import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
-import com.github.yumelira.yumebox.data.model.AppLanguage
-import dev.oom_wg.purejoy.mlang.MLang
+import com.github.lmfirefly.flycat.core.model.AppLanguage
+import com.github.lmfirefly.flycat.core.util.LocaleUtils
 import java.util.Locale
+import tf.gal.shirosu.fyl.fytxt.FYTxtConfig
 
 object AppLanguageManager {
     @Volatile private var activeLanguage: AppLanguage = AppLanguage.System
@@ -44,13 +46,23 @@ object AppLanguageManager {
             when (language) {
                 AppLanguage.System -> LocaleListCompat.getEmptyLocaleList()
                 AppLanguage.Zh -> LocaleListCompat.forLanguageTags("zh-Hans")
+                AppLanguage.ZhHant -> LocaleListCompat.forLanguageTags("zh-Hant")
                 AppLanguage.En -> LocaleListCompat.forLanguageTags("en")
+                AppLanguage.Ja -> LocaleListCompat.forLanguageTags("ja")
+                AppLanguage.Ru -> LocaleListCompat.forLanguageTags("ru")
             }
         )
 
         Locale.setDefault(locale)
-        LocaleUtil.setCurrentLocale(locale)
-        MLang.updateLocale(locale)
+        LocaleUtils.setCurrentLocale(locale)
+        when (language) {
+            AppLanguage.System -> FYTxtConfig.updateTags(lock = false)
+            AppLanguage.Zh -> FYTxtConfig.updateTags(listOf("ZH_HANS"), lock = true)
+            AppLanguage.ZhHant -> FYTxtConfig.updateTags(listOf("ZH_HANT"), lock = true)
+            AppLanguage.En -> FYTxtConfig.updateTags(listOf("EN"), lock = true)
+            AppLanguage.Ja -> FYTxtConfig.updateTags(listOf("JA"), lock = true)
+            AppLanguage.Ru -> FYTxtConfig.updateTags(listOf("RU"), lock = true)
+        }
     }
 
     fun wrap(base: Context): Context {
@@ -69,7 +81,10 @@ object AppLanguageManager {
         when (language) {
             AppLanguage.System -> systemLocale()
             AppLanguage.Zh -> Locale.SIMPLIFIED_CHINESE
+            AppLanguage.ZhHant -> Locale.TRADITIONAL_CHINESE
             AppLanguage.En -> Locale.ENGLISH
+            AppLanguage.Ja -> Locale.JAPANESE
+            AppLanguage.Ru -> Locale.forLanguageTag("ru")
         }
 
     private fun systemLocale(): Locale {

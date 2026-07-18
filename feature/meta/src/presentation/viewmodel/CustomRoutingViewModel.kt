@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,22 +15,22 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.feature.meta.presentation.viewmodel
+package com.github.lmfirefly.flycat.feature.meta.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
-import com.github.yumelira.yumebox.core.util.YamlCodec
-import com.github.yumelira.yumebox.data.controller.ActiveProfileOverrideReloader
-import com.github.yumelira.yumebox.data.store.OverrideConfigStore
-import com.github.yumelira.yumebox.feature.meta.presentation.util.CustomRoutingBootstrapper
-import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetTemplateSelection
-import com.github.yumelira.yumebox.feature.meta.presentation.util.analyzePresetTemplateContent
-import com.github.yumelira.yumebox.feature.meta.presentation.util.buildPresetTemplateYaml
-import com.github.yumelira.yumebox.feature.meta.presentation.util.defaultOverridePresetTemplateSelection
+import com.github.lmfirefly.flycat.core.contract.OverrideApplier
+import com.github.lmfirefly.flycat.core.contract.OverrideConfigRepository
+import com.github.lmfirefly.flycat.core.model.override.OverrideInternalConstants
+import com.github.lmfirefly.flycat.core.util.YamlCodec
+import com.github.lmfirefly.flycat.feature.meta.presentation.util.OverridePresetTemplateSelection
+import com.github.lmfirefly.flycat.feature.meta.presentation.util.analyzePresetTemplateContent
+import com.github.lmfirefly.flycat.feature.meta.presentation.util.buildPresetTemplateYaml
+import com.github.lmfirefly.flycat.feature.meta.presentation.util.defaultOverridePresetTemplateSelection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,9 +39,8 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class CustomRoutingViewModel(
-    private val overrideConfigRepository: OverrideConfigStore,
-    private val activeProfileOverrideReloader: ActiveProfileOverrideReloader,
-    private val customRoutingBootstrapper: CustomRoutingBootstrapper,
+    private val overrideConfigRepository: OverrideConfigRepository,
+    private val activeProfileOverrideApplier: OverrideApplier,
 ) : ViewModel() {
     private val presetSelectionState = MutableStateFlow(defaultOverridePresetTemplateSelection())
     val presetSelection: StateFlow<OverridePresetTemplateSelection> =
@@ -68,7 +67,7 @@ class CustomRoutingViewModel(
         val generatedYaml = buildPresetTemplateYaml(updatedPresetSelection)
         overrideConfigRepository.saveCustomRoutingContent(generatedYaml)
         applyContentState(generatedYaml)
-        activeProfileOverrideReloader.reapplyActiveProfileIfUsingOverride(
+        activeProfileOverrideApplier.reapplyActiveProfileIfUsingOverride(
             OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID
         )
     }
@@ -83,13 +82,13 @@ class CustomRoutingViewModel(
             }
         overrideConfigRepository.saveCustomRoutingContent(contentToSave)
         applyContentState(contentToSave)
-        activeProfileOverrideReloader.reapplyActiveProfileIfUsingOverride(
+        activeProfileOverrideApplier.reapplyActiveProfileIfUsingOverride(
             OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID
         )
     }
 
     private suspend fun reloadStateFromStoredContent() {
-        applyContentState(customRoutingBootstrapper.ensureDefaultContent())
+        applyContentState(overrideConfigRepository.loadCustomRoutingContent())
     }
 
     private fun applyContentState(content: String?) {

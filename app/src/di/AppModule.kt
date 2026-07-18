@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,58 +15,48 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.di
+package com.github.lmfirefly.flycat.di
 
-import com.github.yumelira.yumebox.data.gateway.LogRecordGateway
-import com.github.yumelira.yumebox.runtime.service.LogRecordServiceGateway
-import com.github.yumelira.yumebox.screen.home.HomeViewModel
-import com.github.yumelira.yumebox.screen.log.LogViewModel
-import com.github.yumelira.yumebox.screen.profiles.ProfilesViewModel
-import com.github.yumelira.yumebox.screen.settings.AccessControlViewModel
-import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
-import com.github.yumelira.yumebox.screen.settings.NetworkSettingsViewModel
-import com.github.yumelira.yumebox.screen.settings.RemoteControllerViewModel
-import com.github.yumelira.yumebox.screen.settings.backup.BackupRepository
-import com.github.yumelira.yumebox.screen.settings.backup.BackupRestoreViewModel
-import org.koin.android.ext.koin.androidApplication
+import com.github.lmfirefly.flycat.BuildConfig
+import com.github.lmfirefly.flycat.data.di.dataStoreModule
+import com.github.lmfirefly.flycat.feature.about.UpdateBuildConfig
+import com.github.lmfirefly.flycat.feature.about.di.featureUpdateModules
+import com.github.lmfirefly.flycat.feature.home.di.featureHomeModules
+import com.github.lmfirefly.flycat.feature.log.di.featureLogModules
+import com.github.lmfirefly.flycat.feature.meta.di.featureMetaModules
+import com.github.lmfirefly.flycat.feature.override.di.featureOverrideModules
+import com.github.lmfirefly.flycat.feature.profiles.di.featureProfilesModules
+import com.github.lmfirefly.flycat.feature.proxy.di.featureProxyModules
+import com.github.lmfirefly.flycat.feature.settings.di.featureSettingsModules
+import com.github.lmfirefly.flycat.feature.substore.di.featureSubStoreModules
+import com.github.lmfirefly.flycat.runtime.service.di.runtimeServiceModule
 import org.koin.core.module.Module
-import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val appIntegrationModule = module {
-    single<LogRecordGateway> { LogRecordServiceGateway() }
+val appUpdateModule = module {
     single {
-        BackupRepository(
-            application = androidApplication(),
-            appSettings = get(),
-            networkSettings = get(),
-            featureSettings = get(),
-            proxyDisplaySettings = get(),
-            profileLinks = get(),
-            remoteController = get(),
-            proxyFacade = get(),
-            mmkvProvider = get(),
+        UpdateBuildConfig(
+            versionName = BuildConfig.VERSION_NAME,
+            updateSource = BuildConfig.UPDATE_SOURCE,
+            uiBuildId = BuildConfig.UI_BUILD_ID,
+            updateRepository = BuildConfig.UPDATE_REPOSITORY,
+            updateMirrorTemplates = BuildConfig.UPDATE_MIRROR_TEMPLATES,
         )
     }
 }
 
-val appViewModelModule = module {
-    viewModel { AppSettingsViewModel(androidApplication(), get(), get(), get()) }
-    viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get(), get()) }
-    viewModel { ProfilesViewModel(androidApplication(), get(), get()) }
-    viewModel { NetworkSettingsViewModel(androidApplication(), get(), get(), get()) }
-    viewModel { RemoteControllerViewModel(androidApplication(), get(), get()) }
-    viewModel { AccessControlViewModel(androidApplication(), get(), get()) }
-    viewModel { LogViewModel(get()) }
-    viewModel { BackupRestoreViewModel(androidApplication(), get()) }
-}
-
 val appModule: List<Module> =
     coreDiModules +
-        listOf(appIntegrationModule, appViewModelModule) +
+        listOf(dataStoreModule, runtimeServiceModule, appUpdateModule) +
+        featureUpdateModules +
+        featureHomeModules +
+        featureLogModules +
+        featureProfilesModules +
+        featureSettingsModules +
         featureSubStoreModules +
         featureProxyModules +
         featureOverrideModules +

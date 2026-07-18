@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,47 +15,109 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.feature.meta.presentation.viewmodel
+package com.github.lmfirefly.flycat.feature.meta.presentation.viewmodel
 
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.data.controller.AppIdentityResolver
-import com.github.yumelira.yumebox.data.model.AppTrafficUsage
-import com.github.yumelira.yumebox.data.model.DailyTrafficSummary
-import com.github.yumelira.yumebox.data.model.StatisticsTimeRange
-import com.github.yumelira.yumebox.data.model.TrafficStatisticsBuckets
-import com.github.yumelira.yumebox.data.store.TrafficStatisticsStore
-import com.github.yumelira.yumebox.presentation.component.TrafficDonutSlice
-import com.github.yumelira.yumebox.presentation.theme.AppColors
-import dev.oom_wg.purejoy.mlang.MLang
+import com.github.lmfirefly.flycat.core.contract.TrafficStatisticsRepository
+import com.github.lmfirefly.flycat.core.model.traffic.AppTrafficUsage
+import com.github.lmfirefly.flycat.core.model.traffic.DailyTraffic
+import com.github.lmfirefly.flycat.core.model.traffic.DailyTrafficSummary
+import com.github.lmfirefly.flycat.core.model.traffic.StatisticsTimeRange
+import com.github.lmfirefly.flycat.core.model.traffic.TimeSlotTraffic
+import com.github.lmfirefly.flycat.presentation.component.chart.TimeSlotTrafficItem
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
-class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStatisticsStore) :
+enum class AppSortMode { NAME, UPLOAD, DOWNLOAD, TOTAL }
+
+class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStatisticsRepository) :
     ViewModel() {
     private val selectedTimeRange = MutableStateFlow(StatisticsTimeRange.TODAY)
-    private val appColors = AppColors()
+    private val appSortMode = MutableStateFlow(AppSortMode.NAME)
+    private val appSortAscending = MutableStateFlow(true)
+
+    fun setAppSortMode(mode: AppSortMode) {
+        if (appSortMode.value == mode) {
+            appSortAscending.value = !appSortAscending.value
+        } else {
+            appSortMode.value = mode
+            appSortAscending.value = true
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val sortedAppsFlow = selectedTimeRange.flatMapLatest { range ->
+        combine(
+            trafficStatisticsStore.getAppUsagesFlow(range),
+            appSortMode,
+            appSortAscending,
+        ) { apps, mode, ascending ->
+            sortApps(apps, mode, ascending)
+        }
+    }.distinctUntilChanged()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val barChartFlow = selectedTimeRange.flatMapLatest { range ->
+        when (range) {
+            StatisticsTimeRange.TODAY -> {
+                trafficStatisticsStore.getTimeSlotTrafficFlow(range).map { slots ->
+                    val allSlots = (0..11).map { s ->
+                        slots.firstOrNull { it.slotIndex == s }
+                            ?: com.github.lmfirefly.flycat.core.model.traffic.TimeSlotTraffic(s, 0L, 0L)
+                    }
+                    val items = allSlots.map {
+                        TimeSlotTrafficItem(slotIndex = it.slotIndex, upload = it.totalUpload, download = it.totalDownload)
+                    }
+                    val labels = (0..11).map { "%d-%d".format(it * 2, it * 2 + 2) }
+                    items to labels
+                }
+            }
+            StatisticsTimeRange.WEEK -> {
+                trafficStatisticsStore.getDailyTrafficFlow(range).map { days ->
+                    val dayMap = days.associateBy { it.dateMillis }
+                    val calendar = checkNotNull(dayStartCalendar.get())
+                    val todayMillis = calendar.timeInMillis
+                    val allDays = (13 downTo 0).map { offset ->
+                        val millis = todayMillis - offset * DAY_MS
+                        dayMap[millis] ?: DailyTraffic(millis, 0L, 0L)
+                    }
+                    val items = allDays.map { d ->
+                        TimeSlotTrafficItem(slotIndex = 0, upload = d.totalUpload, download = d.totalDownload)
+                    }
+                    val labels = allDays.map { d ->
+                        checkNotNull(dateFormat.get()).format(java.time.Instant.ofEpochMilli(d.dateMillis).atZone(java.time.ZoneId.systemDefault()).toLocalDate())
+                    }
+                    items to labels
+                }
+            }
+        }
+    }.distinctUntilChanged()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<TrafficStatisticsUiState> =
-        selectedTimeRange
-            .flatMapLatest { range ->
-                trafficStatisticsStore.getAppUsagesFlow(range).map { topApps ->
-                    buildUiState(range, topApps)
-                }
-            }
-            .distinctUntilChanged()
+        combine(
+            selectedTimeRange,
+            sortedAppsFlow,
+            barChartFlow,
+        ) { range, sortedApps, (barItems, barLabels) ->
+            buildUiState(range, sortedApps, barItems, barLabels)
+        }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
@@ -70,12 +132,28 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
         viewModelScope.launch { trafficStatisticsStore.clearAll() }
     }
 
+    private fun sortApps(
+        apps: List<AppTrafficUsage>,
+        mode: AppSortMode,
+        ascending: Boolean,
+    ): List<AppTrafficUsage> {
+        val sorted = when (mode) {
+            AppSortMode.NAME -> apps.sortedBy { it.appName.lowercase() }
+            AppSortMode.UPLOAD -> apps.sortedByDescending { it.totalUpload }
+            AppSortMode.DOWNLOAD -> apps.sortedByDescending { it.totalDownload }
+            AppSortMode.TOTAL -> apps.sortedByDescending { it.totalBytes }
+        }
+        return if (ascending) sorted else sorted.reversed()
+    }
+
     private fun buildUiState(
         range: StatisticsTimeRange,
-        topApps: List<AppTrafficUsage>,
+        sortedApps: List<AppTrafficUsage>,
+        barItems: List<TimeSlotTrafficItem>,
+        barLabels: List<String>,
     ): TrafficStatisticsUiState {
-        val totalUpload = topApps.sumOf(AppTrafficUsage::totalUpload)
-        val totalDownload = topApps.sumOf(AppTrafficUsage::totalDownload)
+        val totalUpload = sortedApps.sumOf(AppTrafficUsage::totalUpload)
+        val totalDownload = sortedApps.sumOf(AppTrafficUsage::totalDownload)
 
         return TrafficStatisticsUiState(
             selectedTimeRange = range,
@@ -85,85 +163,27 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
                     totalUpload = totalUpload,
                     totalDownload = totalDownload,
                 ),
-            topApps = topApps,
-            donutSlices = buildDonutSlices(topApps),
+            topApps = sortedApps,
+            barChartItems = barItems,
+            barChartLabels = barLabels,
+            appSortMode = appSortMode.value,
+            appSortAscending = appSortAscending.value,
         )
     }
 
-    private fun buildDonutSlices(apps: List<AppTrafficUsage>): List<TrafficDonutSlice> {
-        if (apps.isEmpty()) return emptyList()
-
-        val unknown = apps.firstOrNull { it.appKey == AppIdentityResolver.UNKNOWN_APP_KEY }
-        val unattributed = apps.firstOrNull {
-            it.appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY
-        }
-        val regularApps = apps.filterNot {
-            it.appKey == AppIdentityResolver.UNKNOWN_APP_KEY ||
-                it.appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY
-        }
-        val primaryApps = regularApps.take(MAX_DONUT_PRIMARY_APPS)
-        val overflowBytes =
-            regularApps.drop(MAX_DONUT_PRIMARY_APPS).sumOf(AppTrafficUsage::totalBytes)
-
-        return buildList {
-            primaryApps.forEach { usage ->
-                add(
-                    TrafficDonutSlice(
-                        key = usage.appKey,
-                        label = usage.appName,
-                        value = usage.totalBytes,
-                        color = colorForAppKey(usage.appKey),
-                    )
-                )
-            }
-
-            if (overflowBytes > 0L) {
-                add(
-                    TrafficDonutSlice(
-                        key = OTHER_SLICE_KEY,
-                        label = MLang.TrafficStatistics.Donut.Other,
-                        value = overflowBytes,
-                        color = appColors.traffic.other,
-                    )
-                )
-            }
-
-            unattributed
-                ?.takeIf { it.totalBytes > 0L }
-                ?.let { usage ->
-                    add(
-                        TrafficDonutSlice(
-                            key = usage.appKey,
-                            label = usage.appName,
-                            value = usage.totalBytes,
-                            color = appColors.traffic.unattributed,
-                        )
-                    )
-                }
-
-            unknown
-                ?.takeIf { it.totalBytes > 0L }
-                ?.let { usage ->
-                    add(
-                        TrafficDonutSlice(
-                            key = usage.appKey,
-                            label = usage.appName,
-                            value = usage.totalBytes,
-                            color = appColors.traffic.unknown,
-                        )
-                    )
-                }
-        }
-    }
-
-    private fun colorForAppKey(appKey: String): Color {
-        val hue = ((appKey.hashCode().toLong() and 0xFFFFFFFFL) % 360L).toFloat()
-        return Color.hsv(hue = hue, saturation = 0.62f, value = 0.88f)
-    }
-
     companion object {
-        const val OTHER_SLICE_KEY = "other"
-        private const val MAX_DONUT_PRIMARY_APPS = 5
+        private const val DAY_MS = 24 * 60 * 60 * 1000L
+        private val dateFormat = ThreadLocal.withInitial {
+            java.time.format.DateTimeFormatter.ofPattern("M/d")
+        }
+        private val dayStartCalendar = ThreadLocal.withInitial {
+            Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+        }
     }
 }
 
@@ -171,5 +191,8 @@ data class TrafficStatisticsUiState(
     val selectedTimeRange: StatisticsTimeRange = StatisticsTimeRange.TODAY,
     val summary: DailyTrafficSummary = DailyTrafficSummary.empty,
     val topApps: List<AppTrafficUsage> = emptyList(),
-    val donutSlices: List<TrafficDonutSlice> = emptyList(),
+    val barChartItems: List<TimeSlotTrafficItem> = emptyList(),
+    val barChartLabels: List<String> = emptyList(),
+    val appSortMode: AppSortMode = AppSortMode.NAME,
+    val appSortAscending: Boolean = true,
 )

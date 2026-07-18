@@ -17,43 +17,31 @@
 #
 # Copyright (c)  YumeYucca 2025 - Present
 #
-# Prints the publish APK file stem used by reusable-prepare-publish.yml. Segments,
-# in order: <prefix>-<geo>[-universal][-<channel_segment>]-<tail>. GEO is the geo
-# database variant: "builtin" (bundled in assets) or "external" (core downloads at
-# runtime). ABI arm64-v8a is the unmarked default; universal carries a -universal
-# segment. CHANNEL_SEGMENT tags non-default channels (smart, pr); empty for the pre
-# channel and stable releases. TAIL is the packaging date (yy.MM.dd, Asia/Shanghai)
-# for channel/PR builds or the clean version name for official releases — the
-# caller decides which.
+# Prints the publish APK file stem shared by reusable-prepare-publish.yml and
+# reusable-notify-telegram.yml. Channel/PR builds (hash present) drop the version
+# from the file name: <prefix>-<branch_segment>-<hash8>. Official releases (no
+# hash) keep the clean version: <prefix>-<version_name>. The branch segment
+# normalization must mirror app/build.gradle.kts (lowercase, [^a-z0-9] runs -> '-',
+# leading/trailing '-' trimmed).
 #
-# Usage: ci-apk-stem.sh PREFIX GEO ABI CHANNEL_SEGMENT TAIL
+# Usage: ci-apk-stem.sh PREFIX BRANCH HASH VERSION_NAME
 set -eu
 
 prefix="$1"
-geo="$2"
-abi="$3"
-channel_segment="$4"
-tail="$5"
+branch="$2"
+hash="$3"
+version_name="$4"
 
-if [ -z "${tail}" ]; then
-  echo "TAIL must not be empty" >&2
-  exit 1
+branch_segment="$(printf '%s' "${branch}" \
+  | tr '[:upper:]' '[:lower:]' \
+  | sed -e 's/[^a-z0-9]/-/g' -e 's/--*/-/g' -e 's/^-//' -e 's/-$//')"
+
+if [ -n "${hash}" ]; then
+  if [ -n "${branch_segment}" ]; then
+    printf '%s-%s-%s\n' "${prefix}" "${branch_segment}" "${hash:0:8}"
+  else
+    printf '%s-%s\n' "${prefix}" "${hash:0:8}"
+  fi
+else
+  printf '%s-%s\n' "${prefix}" "${version_name}"
 fi
-
-case "${geo}" in
-  builtin|external) ;;
-  *) echo "GEO must be builtin or external, got: ${geo}" >&2; exit 1 ;;
-esac
-
-stem="${prefix}-${geo}"
-case "${abi}" in
-  arm64-v8a) ;;
-  universal) stem="${stem}-universal" ;;
-  *) echo "ABI must be arm64-v8a or universal, got: ${abi}" >&2; exit 1 ;;
-esac
-
-if [ -n "${channel_segment}" ]; then
-  stem="${stem}-${channel_segment}"
-fi
-
-printf '%s-%s\n' "${stem}" "${tail}"

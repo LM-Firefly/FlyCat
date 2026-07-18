@@ -10,6 +10,7 @@ Connection = {
 
     Search = "Search"
     SearchHint = "Search host, process..."
+    CloseAll = "Close all connections"
 
     SortBy = "Sort by:"
     Sort = {
@@ -56,4 +57,9 @@ Connection = {
     Loading = "Loading..."
     Empty = "No active connections"
     NoResults = "No matching connections"
+
+    Topology = {
+        EmptyMessage = "No active connections. Tap to open connection details."
+        OpenPage = "Open connection page"
+    }
 }

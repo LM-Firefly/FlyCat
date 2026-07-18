@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,24 +15,29 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.di
+package com.github.lmfirefly.flycat.feature.meta.di
 
-import com.github.yumelira.yumebox.data.store.TrafficStatisticsStore
-import com.github.yumelira.yumebox.feature.meta.presentation.util.CustomRoutingBootstrapper
-import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.ConnectionViewModel
-import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.CustomRoutingViewModel
-import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.TrafficStatisticsViewModel
+import com.github.lmfirefly.flycat.core.contract.ConnectionRepository
+import com.github.lmfirefly.flycat.core.contract.CustomRoutingInitializer
+import com.github.lmfirefly.flycat.core.contract.OverrideConfigRepository
+import com.github.lmfirefly.flycat.feature.meta.presentation.util.CustomRoutingBootstrapper
+import com.github.lmfirefly.flycat.feature.meta.presentation.viewmodel.ConnectionViewModel
+import com.github.lmfirefly.flycat.feature.meta.presentation.viewmodel.CustomRoutingViewModel
+import com.github.lmfirefly.flycat.feature.meta.presentation.viewmodel.RulesViewModel
+import com.github.lmfirefly.flycat.feature.meta.presentation.viewmodel.TrafficStatisticsViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val featureMetaViewModelModule = module {
-    single { CustomRoutingBootstrapper(get()) }
-    viewModel { ConnectionViewModel() }
-    viewModel { TrafficStatisticsViewModel(get<TrafficStatisticsStore>()) }
-    viewModel { CustomRoutingViewModel(get(), get(), get()) }
+    viewModel { ConnectionViewModel(get<ConnectionRepository>(), get()) }
+    viewModel { TrafficStatisticsViewModel(get()) }
+    viewModel { CustomRoutingViewModel(get(), get()) }
+    viewModel { RulesViewModel(get()) }
+    single<CustomRoutingInitializer> { CustomRoutingBootstrapper(get<OverrideConfigRepository>()) }
 }
 
 val featureMetaModules = listOf(featureMetaViewModelModule)
