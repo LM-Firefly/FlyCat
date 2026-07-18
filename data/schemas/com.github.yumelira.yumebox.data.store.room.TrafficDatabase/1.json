@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "457dc11d649e2d41f1f2802edeb28ecf",
+    "identityHash": "9de35f3c0037f6e8a73a23f415dfa117",
     "entities": [
       {
         "tableName": "app_traffic_daily",
@@ -56,18 +56,7 @@
             "date_millis",
             "app_key"
           ]
-        },
-        "indices": [
-          {
-            "name": "index_app_traffic_daily_date_millis",
-            "unique": false,
-            "columnNames": [
-              "date_millis"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_app_traffic_daily_date_millis` ON `${TABLE_NAME}` (`date_millis`)"
-          }
-        ]
+        }
       },
       {
         "tableName": "route_traffic_daily",
@@ -123,24 +112,12 @@
             "app_key",
             "route_key"
           ]
-        },
-        "indices": [
-          {
-            "name": "index_route_traffic_daily_date_millis_app_key",
-            "unique": false,
-            "columnNames": [
-              "date_millis",
-              "app_key"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_route_traffic_daily_date_millis_app_key` ON `${TABLE_NAME}` (`date_millis`, `app_key`)"
-          }
-        ]
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '457dc11d649e2d41f1f2802edeb28ecf')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9de35f3c0037f6e8a73a23f415dfa117')"
     ]
   }
 }

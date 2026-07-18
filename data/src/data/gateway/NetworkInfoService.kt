@@ -20,6 +20,9 @@
 
 package com.github.yumelira.yumebox.data.gateway
 
+import com.github.yumelira.yumebox.core.contract.NetworkInfoReader
+import com.github.yumelira.yumebox.core.model.IpInfo
+import com.github.yumelira.yumebox.core.model.IpMonitoringState
 import com.github.yumelira.yumebox.core.util.NetworkInterfaces
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
@@ -27,44 +30,23 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.serialization.kotlinx.json.json
+import java.io.Closeable
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.io.Closeable
 
-@Serializable
-data class IpInfo(
-    val ip: String,
-    @SerialName("country_code") val countryCode: String? = null,
-)
-
-sealed class IpMonitoringState {
-    data class Success(
-        val localIp: String?,
-        val externalIp: IpInfo?,
-        val isProxyActive: Boolean = false,
-    ) : IpMonitoringState()
-
-    data class Error(val message: String) : IpMonitoringState()
-
-    object Loading : IpMonitoringState()
-}
-
-class NetworkInfoService : Closeable {
+class NetworkInfoService : Closeable, NetworkInfoReader {
     private val json = Json { ignoreUnknownKeys = true }
-
+    /** Minimum interval between external IP HTTP requests to avoid redundant fetches. */
+    private val minRefreshIntervalMs = 30_000L
+    private var lastExternalIpFetchTime = 0L
     private val httpClient = HttpClient {
         install(HttpTimeout) {
             requestTimeoutMillis = 5000
@@ -85,7 +67,7 @@ class NetworkInfoService : Closeable {
         httpClient.close()
     }
 
-    fun triggerRefresh() {
+    override fun triggerRefresh() {
         _refreshTrigger.tryEmit(Unit)
     }
 
@@ -104,16 +86,17 @@ class NetworkInfoService : Closeable {
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
-    fun startIpMonitoring(
+    @OptIn(FlowPreview::class)
+    override fun startIpMonitoring(
         isProxyActiveFlow: Flow<Boolean>,
-        externalRefreshFlow: Flow<Unit> = emptyFlow(),
+        externalRefreshFlow: Flow<Unit>,
     ): Flow<IpMonitoringState> = flow {
         var lastSuccessfulState: IpMonitoringState.Success? = null
 
         try {
             val localIp = getLocalIp()
             val externalIp = getExternalIp()
+            lastExternalIpFetchTime = System.currentTimeMillis()
             val newState = IpMonitoringState.Success(localIp, externalIp)
             lastSuccessfulState = newState
             emit(newState)
@@ -124,18 +107,20 @@ class NetworkInfoService : Closeable {
             }
         }
 
+        // Debounce refresh triggers to coalesce rapid-fire emissions (e.g. network switch).
         val refreshFlow =
             merge(
-                flowOf(Unit),
                 _refreshTrigger,
                 externalRefreshFlow,
-                isProxyActiveFlow.distinctUntilChanged().drop(1).map {},
-            )
+            ).debounce(2_000L)
 
         combine(refreshFlow, isProxyActiveFlow) { _, isProxyActive ->
+                val now = System.currentTimeMillis()
+                val shouldFetchExternal = (now - lastExternalIpFetchTime) >= minRefreshIntervalMs
                 try {
                     val localIp = getLocalIp()
-                    val externalIp = getExternalIp()
+                    val externalIp = if (shouldFetchExternal) getExternalIp() else lastSuccessfulState?.externalIp
+                    if (shouldFetchExternal) lastExternalIpFetchTime = now
                     val newState = IpMonitoringState.Success(localIp, externalIp, isProxyActive)
                     lastSuccessfulState = newState
                     newState

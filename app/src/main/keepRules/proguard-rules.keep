@@ -9,6 +9,28 @@
 # ========================================
 # JNI keep rules are exported by :core, which owns the bridge contract.
 
+# Reflection bridge: LogRecordGateway.writeRuntimeLog calls this via reflection
+-keep class com.github.yumelira.yumebox.runtime.service.LogRecordService {
+    public static void writeLog(java.lang.String);
+}
+
+# Reflection bridge: createLogRecordGateway() instantiates this implementation by class name
+-keep class com.github.yumelira.yumebox.runtime.service.LogRecordServiceGateway {
+    public <init>();
+    *;
+}
+
+# Reflection bridge: ServiceClient.connect() instantiates these by class name via Class.forName()
+-keep class com.github.yumelira.yumebox.runtime.service.ClashManager {
+    public <init>(android.content.Context);
+    *;
+}
+
+-keep class com.github.yumelira.yumebox.runtime.service.ProfileManager {
+    public <init>(android.content.Context);
+    *;
+}
+
 # ========================================
 # Kotlin / Serialization (targeted)
 # ========================================
@@ -27,6 +49,12 @@
     public static void checkParameterIsNotNull(...);
     public static void checkNotNullParameter(...);
 }
+
+# Keep Timber log calls so they are visible in logcat for release builds
+-keep class timber.log.Timber { *; }
+-keep class timber.log.Timber$Tree { *; }
+-keep class timber.log.Timber$DebugTree { *; }
+-keep class * extends timber.log.Timber$Tree { *; }
 
 # ========================================
 # Javet / Native JS
@@ -54,6 +82,13 @@
 -dontwarn java.lang.invoke.MethodHandleProxies
 -dontwarn java.lang.reflect.AnnotatedType
 -dontwarn javax.lang.model.element.Modifier
+
+# SnakeYAML on Android may reference JavaBeans introspection classes which are absent on Android.
+-dontwarn java.beans.BeanInfo
+-dontwarn java.beans.FeatureDescriptor
+-dontwarn java.beans.IntrospectionException
+-dontwarn java.beans.Introspector
+-dontwarn java.beans.PropertyDescriptor
 
 -keepclassmembernames class **.R$* { *; }
 -keepclassmembernames class **.R { *; }

@@ -21,6 +21,8 @@
 package com.github.yumelira.yumebox.presentation.component
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,6 +41,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
+import com.github.yumelira.yumebox.core.model.Profile
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.`Circle-fading-arrow-up`
 import com.github.yumelira.yumebox.presentation.icon.yume.Delete
@@ -50,15 +53,16 @@ import com.github.yumelira.yumebox.presentation.util.getDisplayProvider
 import com.github.yumelira.yumebox.presentation.util.getInfoText
 import com.github.yumelira.yumebox.presentation.util.isConfigSaved
 import com.github.yumelira.yumebox.presentation.util.shouldShowUpdateButton
-import com.github.yumelira.yumebox.runtime.api.Profile
 import dev.oom_wg.purejoy.mlang.MLang
+import java.io.File
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.io.File
+import top.yukonga.miuix.kmp.utils.SinkFeedback
+import top.yukonga.miuix.kmp.utils.pressable
 
 @Composable
 fun ProfileCard(
@@ -93,9 +97,10 @@ fun ProfileCard(
     val updateBg =
         remember(colorScheme, opacity) { colorScheme.primary.copy(alpha = opacity.subtle) }
     val updateTint = remember(colorScheme) { colorScheme.primary }
+    val interactionSource = remember { MutableInteractionSource() }
 
     Card(
-        modifier = modifier.fillMaxWidth().padding(bottom = spacing.space12),
+        modifier = modifier.fillMaxWidth().padding(bottom = spacing.space12).pressable(interactionSource = interactionSource, indication = SinkFeedback()),
         insideMargin = PaddingValues(spacing.space16),
     ) {
         Row(
@@ -109,7 +114,7 @@ fun ProfileCard(
                     fontWeight = FontWeight(550),
                     color = colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.basicMarquee(),
                 )
 
                 Text(

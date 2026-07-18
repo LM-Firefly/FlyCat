@@ -48,6 +48,8 @@ type fetchHeader struct {
 var (
 	customUserAgent string
 	userAgentMutex  sync.RWMutex
+	ageSecretKey    string
+	ageKeyMutex     sync.RWMutex
 
 	filenameStarPattern = regexp.MustCompile(`(?i)filename\*=([^']*)'([^']*)'([^;]+)`)
 	filenamePattern     = regexp.MustCompile(`(?i)filename=([^;]+)`)
@@ -57,6 +59,18 @@ func SetCustomUserAgent(ua string) {
 	userAgentMutex.Lock()
 	defer userAgentMutex.Unlock()
 	customUserAgent = ua
+}
+
+func SetAgeSecretKey(key string) {
+	ageKeyMutex.Lock()
+	defer ageKeyMutex.Unlock()
+	ageSecretKey = key
+}
+
+func GetAgeSecretKey() string {
+	ageKeyMutex.RLock()
+	defer ageKeyMutex.RUnlock()
+	return ageSecretKey
 }
 
 func GetCustomUserAgent() string {

@@ -18,13 +18,17 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore
+package com.github.yumelira.yumebox.feature.substore
 
 import android.content.Context
 import android.content.Intent
+import com.github.yumelira.yumebox.core.contract.SubStoreBackupSupport
+import com.github.yumelira.yumebox.core.util.SubStorePaths
+import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import timber.log.Timber
 
 data class SubStoreServiceRequest(
     val frontendPort: Int = 8080,
@@ -59,7 +63,13 @@ object SubStoreServiceController {
                 putExtra(EXTRA_BACKEND_PORT, request.backendPort)
                 putExtra(EXTRA_ALLOW_LAN, request.allowLan)
             }
-        runCatching { context.startService(intent) }
+        runCatching {
+                val component = context.startService(intent)
+                if (component == null) {
+                    throw IllegalStateException("Sub-Store startService returned null component")
+                }
+                Timber.w("Sub-Store service component started: $component")
+            }
             .onFailure {
                 _snapshot.value = SubStoreServiceSnapshot()
                 throw it
@@ -88,5 +98,14 @@ object SubStoreServiceController {
 
     internal fun markStopped() {
         _snapshot.value = SubStoreServiceSnapshot()
+    }
+}
+
+class SubStoreBackupSupportImpl : SubStoreBackupSupport {
+    override val dataDir: File
+        get() = SubStorePaths.dataDir
+
+    override fun stopService(context: Context) {
+        SubStoreServiceController.stopService(context)
     }
 }

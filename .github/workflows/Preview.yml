@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -44,7 +44,7 @@ jobs:
           sudo apt-get install -y fonts-noto-cjk fonts-wqy-zenhei fonts-wqy-microhei
           fc-cache -fv
 
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v9
         env:
           ISSUE_NUMBER: ${{ github.event.inputs.issue_number || github.event.issue.number || github.event.pull_request.number || 1 }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -258,11 +258,11 @@ jobs:
           if-no-files-found: error
           archive: false
 
-      - name: Send preview to Telegram
-        continue-on-error: true
-        env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-          MESSAGE_THREAD_ID: ${{ secrets.MESSAGE_THREAD_ID }}
-        run: |
-          python scripts/preview-bot.py
+#      - name: Send preview to Telegram
+#        continue-on-error: true
+#        env:
+#          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+#          CHAT_ID: ${{ secrets.CHAT_ID }}
+#          MESSAGE_THREAD_ID: ${{ secrets.MESSAGE_THREAD_ID }}
+#        run: |
+#          python scripts/preview-bot.py

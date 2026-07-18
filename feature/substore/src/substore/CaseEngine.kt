@@ -18,13 +18,14 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore
+package com.github.yumelira.yumebox.feature.substore
 
 import com.caoccao.javet.enums.V8AwaitMode
 import com.caoccao.javet.interception.logging.JavetStandardConsoleInterceptor
 import com.caoccao.javet.interop.NodeRuntime
 import com.caoccao.javet.interop.V8Host
 import com.caoccao.javet.interop.options.NodeRuntimeOptions
+import com.github.yumelira.yumebox.core.util.SubStorePaths
 import timber.log.Timber
 import java.io.Closeable
 import java.io.File
@@ -158,5 +159,6 @@ class CaseEngine(
                 nodeRuntime = null
             }
             .onFailure { error -> Timber.e(error, "CaseEngine cleanup failed") }
+            SubStoreServiceController.markStopped()
     }
 }

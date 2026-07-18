@@ -6,6 +6,8 @@ import (
 
 	"github.com/dlclark/regexp2"
 
+	"cfa/native/config"
+
 	"github.com/metacubex/mihomo/adapter/outboundgroup"
 	"github.com/metacubex/mihomo/component/profile/cachefile"
 	C "github.com/metacubex/mihomo/constant"
@@ -37,6 +39,7 @@ type ProxyGroup struct {
 	Now     string   `json:"now"`
 	Icon    string   `json:"icon,omitempty"`
 	Hidden  bool     `json:"hidden"`
+	Fixed   string   `json:"fixed"`
 	Proxies []*Proxy `json:"proxies"`
 }
 
@@ -92,7 +95,8 @@ func QueryProxyGroup(name string, sortMode SortMode, uiSubtitlePattern *regexp2.
 		return nil
 	}
 
-	g, ok := p.Adapter().(outboundgroup.ProxyGroup)
+	adapter := p.Adapter()
+	g, ok := adapter.(outboundgroup.ProxyGroup)
 	if !ok {
 		log.Warnln("Query group `%s`: invalid type %s", name, p.Type().String())
 
@@ -131,23 +135,13 @@ func QueryProxyGroup(name string, sortMode SortMode, uiSubtitlePattern *regexp2.
 		Now:     g.Now(),
 		Icon:    proxyGroupIcon(g),
 		Hidden:  g.Hidden(),
+		Fixed:   config.ExtractFixedFromAdapter(adapter),
 		Proxies: proxies,
 	}
 }
 
 func proxyGroupIcon(group outboundgroup.ProxyGroup) string {
-	switch g := group.(type) {
-	case *outboundgroup.Selector:
-		return g.Icon()
-	case *outboundgroup.URLTest:
-		return g.Icon()
-	case *outboundgroup.LoadBalance:
-		return g.Icon()
-	case *outboundgroup.Fallback:
-		return g.Icon()
-	default:
-		return ""
-	}
+	return group.Icon()
 }
 
 func normalizeProxyType(proxyType string) string {
@@ -227,6 +221,29 @@ func PatchSelector(selector, name string) bool {
 
 	closeConnByGroup(selector)
 
+	return true
+}
+
+func PatchForceSelector(selector, name string) bool {
+	p := tunnel.Proxies()[selector]
+	if p == nil {
+		log.Warnln("Force patch selector `%s`: not found", selector)
+		return false
+	}
+	adapter := p.Adapter()
+	if _, ok := adapter.(outboundgroup.ProxyGroup); !ok {
+		log.Warnln("Force patch selector `%s`: invalid type %s", selector, p.Type().String())
+		return false
+	}
+	s, ok := adapter.(interface{ ForceSet(string) })
+	if !ok {
+		log.Warnln("Force patch selector `%s`: not supported", selector)
+		return false
+	}
+	s.ForceSet(name)
+	cachefile.Cache().SetSelected(selector, name)
+	log.Infoln("Force patch selector %s -> %s", selector, name)
+	closeConnByGroup(selector)
 	return true
 }
 

@@ -132,13 +132,13 @@
     "links": [
       {
         "label": "Support",
-        "href": "https://github.com/YumeYucca/YumeBox/issues"
+        "href": "https://github.com/LM-Firefly/FlyCat/issues"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Github",
-      "href": "https://github.com/YumeYucca/YumeBox"
+      "href": "https://github.com/LM-Firefly/FlyCat"
     }
   },
   "contextual": {
@@ -159,24 +159,24 @@
       "charset": "UTF-8",
       "viewport": "width=device-width, initial-scale=1.0",
       "googlebot": "index, follow",
-      "generator": "YumeBox",
+      "generator": "FlyCat",
       "theme-color": "#f56c6c",
       "format-detection": "telephone=no",
       "referrer": "origin",
       "rating": "general",
       "revisit-after": "7 days",
       "language": "en-US",
-      "copyright": "YumeYucca",
+      "copyright": "LM-Firefly",
       "distribution": "global",
       "HandheldFriendly": "True",
       "MobileOptimized": "320",
       "apple-mobile-web-app-capable": "yes",
       "apple-mobile-web-app-status-bar-style": "black",
-      "apple-mobile-web-app-title": "YumeBox",
-      "application-name": "YumeBox",
+      "apple-mobile-web-app-title": "FlyCat",
+      "application-name": "FlyCat",
       "msapplication-TileColor": "#f56c6c",
       "og:type": "website",
-      "og:image": "https://yumebox.gal.tf/logo/Yume.webp",
+      "og:image": "https://raw.githubusercontent.com/LM-Firefly/FlyCat/refs/heads/Moes/docs/logo.webp",
       "og:site_name": "YumeBox",
       "og:locale": "en_US"
     },

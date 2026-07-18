@@ -20,11 +20,12 @@
 
 package com.github.yumelira.yumebox.feature.meta.presentation.util
 
+import com.github.yumelira.yumebox.core.contract.OverrideConfigRepository
+import com.github.yumelira.yumebox.core.domain.CustomRoutingInitializer
 import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
-import com.github.yumelira.yumebox.data.store.OverrideConfigStore
 
-class CustomRoutingBootstrapper(private val overrideConfigRepository: OverrideConfigStore) {
-    suspend fun ensureDefaultContent(): String {
+class CustomRoutingBootstrapper(private val overrideConfigRepository: OverrideConfigRepository) : CustomRoutingInitializer {
+    override suspend fun ensureDefaultContent(): String {
         val existingContent = overrideConfigRepository.loadCustomRoutingContent()
         if (!existingContent.isNullOrBlank()) {
             // Content file exists, but its metadata entry may be missing (e.g. content was

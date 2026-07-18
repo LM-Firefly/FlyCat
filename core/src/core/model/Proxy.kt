@@ -22,7 +22,6 @@ package com.github.yumelira.yumebox.core.model
 
 import android.os.Parcel
 import android.os.Parcelable
-import com.github.yumelira.yumebox.core.util.Parcelizer
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -77,14 +76,25 @@ data class Proxy(
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
-        Parcelizer.encodeToParcel(serializer(), parcel, this)
+        parcel.writeString(name)
+        parcel.writeString(title)
+        parcel.writeString(subtitle)
+        parcel.writeString(type)
+        parcel.writeInt(delay)
+        parcel.writeByte(if (isGroup) 1.toByte() else 0.toByte())
     }
 
     override fun describeContents(): Int = 0
 
     companion object CREATOR : Parcelable.Creator<Proxy> {
-        override fun createFromParcel(parcel: Parcel): Proxy =
-            Parcelizer.decodeFromParcel(serializer(), parcel)
+        override fun createFromParcel(parcel: Parcel): Proxy = Proxy(
+            name = parcel.readString().orEmpty(),
+            title = parcel.readString().orEmpty(),
+            subtitle = parcel.readString().orEmpty(),
+            type = parcel.readString().orEmpty(),
+            delay = parcel.readInt(),
+            isGroup = parcel.readByte().toInt() != 0,
+        )
 
         override fun newArray(size: Int): Array<Proxy?> = arrayOfNulls(size)
     }

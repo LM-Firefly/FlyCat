@@ -26,7 +26,7 @@ import android.content.ContextWrapper
 import android.os.Build
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalView
 
 @Composable
@@ -37,7 +37,7 @@ fun WindowBlurEffect(useBlur: Boolean, blurRadius: Int = 30) {
     val activity = view.context.findActivity() ?: return
     val window = activity.window
 
-    SideEffect {
+    LaunchedEffect(useBlur, blurRadius) {
         if (useBlur) {
             window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
             window.attributes.blurBehindRadius = blurRadius

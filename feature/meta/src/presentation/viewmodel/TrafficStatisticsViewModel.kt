@@ -23,12 +23,11 @@ package com.github.yumelira.yumebox.feature.meta.presentation.viewmodel
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.data.controller.AppIdentityResolver
-import com.github.yumelira.yumebox.data.model.AppTrafficUsage
-import com.github.yumelira.yumebox.data.model.DailyTrafficSummary
-import com.github.yumelira.yumebox.data.model.StatisticsTimeRange
-import com.github.yumelira.yumebox.data.model.TrafficStatisticsBuckets
-import com.github.yumelira.yumebox.data.store.TrafficStatisticsStore
+import com.github.yumelira.yumebox.core.contract.TrafficStatisticsRepository
+import com.github.yumelira.yumebox.core.model.AppTrafficUsage
+import com.github.yumelira.yumebox.core.model.DailyTrafficSummary
+import com.github.yumelira.yumebox.core.model.StatisticsTimeRange
+import com.github.yumelira.yumebox.core.model.TrafficStatisticsBuckets
 import com.github.yumelira.yumebox.presentation.component.TrafficDonutSlice
 import com.github.yumelira.yumebox.presentation.theme.AppColors
 import dev.oom_wg.purejoy.mlang.MLang
@@ -42,7 +41,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStatisticsStore) :
+class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStatisticsRepository) :
     ViewModel() {
     private val selectedTimeRange = MutableStateFlow(StatisticsTimeRange.TODAY)
     private val appColors = AppColors()
@@ -93,12 +92,12 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
     private fun buildDonutSlices(apps: List<AppTrafficUsage>): List<TrafficDonutSlice> {
         if (apps.isEmpty()) return emptyList()
 
-        val unknown = apps.firstOrNull { it.appKey == AppIdentityResolver.UNKNOWN_APP_KEY }
+        val unknown = apps.firstOrNull { it.appKey == TrafficStatisticsBuckets.UNKNOWN_APP_KEY }
         val unattributed = apps.firstOrNull {
             it.appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY
         }
         val regularApps = apps.filterNot {
-            it.appKey == AppIdentityResolver.UNKNOWN_APP_KEY ||
+            it.appKey == TrafficStatisticsBuckets.UNKNOWN_APP_KEY ||
                 it.appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY
         }
         val primaryApps = regularApps.take(MAX_DONUT_PRIMARY_APPS)

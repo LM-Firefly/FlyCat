@@ -9,16 +9,12 @@ About = {
 
     Section = {
         ProjectLinks = "Project Links"
-        More = "More"
         License = "License"
     }
 
-    Link = {
-        TelegramGroup = "Telegram Group"
-        TelegramChannel = "Telegram Channel"
-    }
-
     License = {
+        CheckUpdate = "Check for Updates"
+        CheckUpdateSummary = "Check the latest GitHub release manually"
         Libraries = "Libraries"
         LibrariesSummary = "View all third-party libraries used in this app"
         AgplName = "GNU Affero General Public License v3.0"

@@ -37,10 +37,11 @@
             android:name="com.github.yumelira.yumebox.runtime.service.TunService"
             android:exported="false"
             android:foregroundServiceType="specialUse"
-            android:permission="android.permission.BIND_VPN_SERVICE">
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:stopWithTask="false">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="yumebox_vpn" />
+                android:value="flycat_vpn" />
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
@@ -49,10 +50,11 @@
         <service
             android:name="com.github.yumelira.yumebox.runtime.service.ClashService"
             android:exported="false"
-            android:foregroundServiceType="specialUse">
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="yumebox_proxy" />
+                android:value="flycat_proxy" />
         </service>
 
         <service
@@ -67,7 +69,8 @@
         <service
             android:name="com.github.yumelira.yumebox.runtime.service.AutoRestartService"
             android:exported="false"
-            android:foregroundServiceType="specialUse">
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="auto_restart_service" />
@@ -76,11 +79,16 @@
         <service
             android:name="com.github.yumelira.yumebox.runtime.service.RootTunService"
             android:exported="false"
-            android:foregroundServiceType="specialUse">
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="yumebox_root_tun" />
+                android:value="flycat_root_tun" />
         </service>
+
+        <service
+            android:name="com.github.yumelira.yumebox.runtime.service.root.RootTunRootService"
+            android:exported="false" />
 
         <service
             android:name="com.github.yumelira.yumebox.runtime.service.ProxyTileService"
@@ -100,6 +108,9 @@
                 <action android:name="android.provider.Telephony.SECRET_CODE" />
                 <data android:host="0721" android:scheme="android_secret_code" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
+            </intent-filter>
         </receiver>
 
         <receiver
@@ -110,5 +121,17 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <provider
+            android:name="com.github.yumelira.yumebox.runtime.service.FilesProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+
     </application>
 </manifest>

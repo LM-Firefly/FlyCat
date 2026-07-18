@@ -18,17 +18,16 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.viewmodel
+package com.github.yumelira.yumebox.feature.override.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.data.controller.ActiveProfileOverrideReloader
-import com.github.yumelira.yumebox.data.controller.OverrideResolver
-import com.github.yumelira.yumebox.data.model.OverrideConfig
-import com.github.yumelira.yumebox.data.model.OverrideContentType
-import com.github.yumelira.yumebox.data.model.OverrideMetadata
-import com.github.yumelira.yumebox.data.store.OverrideConfigStore
-import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
+import com.github.yumelira.yumebox.core.contract.OverrideApplier
+import com.github.yumelira.yumebox.core.contract.OverrideConfigRepository
+import com.github.yumelira.yumebox.core.contract.ProfileBindingReader
+import com.github.yumelira.yumebox.core.model.OverrideConfig
+import com.github.yumelira.yumebox.core.model.OverrideContentType
+import com.github.yumelira.yumebox.core.model.OverrideMetadata
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,10 +43,9 @@ import java.net.URLDecoder
 import java.util.Locale
 
 class OverrideConfigViewModel(
-    private val configRepo: OverrideConfigStore,
-    private val resolver: OverrideResolver,
-    private val bindingProvider: ProfileBindingProvider,
-    private val activeProfileOverrideReloader: ActiveProfileOverrideReloader,
+    private val configRepo: OverrideConfigRepository,
+    private val bindingReader: ProfileBindingReader,
+    private val activeProfileOverrideApplier: OverrideApplier,
 ) : ViewModel() {
     companion object {
         private const val TAG = "OverrideConfigViewModel"
@@ -55,11 +53,11 @@ class OverrideConfigViewModel(
         private const val NETWORK_IMPORT_READ_TIMEOUT_MS = 30_000
     }
 
-    private val _configs = MutableStateFlow<List<OverrideConfig>>(emptyList())
-    val configs: StateFlow<List<OverrideConfig>> = _configs.asStateFlow()
-
     private val _userConfigs = MutableStateFlow<List<OverrideConfig>>(emptyList())
     val userConfigs: StateFlow<List<OverrideConfig>> = _userConfigs.asStateFlow()
+
+    /** Backed by [_userConfigs]; exposed for internal lookups (e.g. [getConfigById]). */
+    private val configs: List<OverrideConfig> get() = _userConfigs.value
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -73,7 +71,7 @@ class OverrideConfigViewModel(
     init {
         refresh()
         viewModelScope.launch {
-            bindingProvider.getAllBindingsFlow().collectLatest { loadUsageCounts() }
+            bindingReader.getAllBindingsFlow().collectLatest { loadUsageCounts() }
         }
     }
 
@@ -84,7 +82,6 @@ class OverrideConfigViewModel(
             try {
                 val users = configRepo.getUserConfigs()
                 _userConfigs.value = users
-                _configs.value = users
                 loadUsageCounts()
             } catch (error: Exception) { // fault barrier: top-level ViewModel load handler, log and reset loading
                 Timber.tag(TAG).e(error, "Failed to load overrides")
@@ -94,19 +91,16 @@ class OverrideConfigViewModel(
         }
     }
 
-    fun getConfigById(id: String): OverrideConfig? = _configs.value.find { it.id == id }
+    fun getConfigById(id: String): OverrideConfig? = configs.find { it.id == id }
 
-    fun getConfigContent(configId: String): String? = configRepo.getConfigContent(configId)
+    suspend fun getConfigContent(configId: String): String? = withContext(Dispatchers.IO) { configRepo.getConfigContent(configId) }
 
-    fun saveConfigContent(configId: String, content: String): Boolean {
+    suspend fun saveConfigContent(configId: String, content: String): Boolean = withContext(Dispatchers.IO) {
         val saved = configRepo.saveConfigContent(configId, content)
-        if (!saved) return false
-
-        viewModelScope.launch {
-            activeProfileOverrideReloader.reapplyActiveProfileIfUsingOverride(configId)
-            refresh()
-        }
-        return true
+        if (!saved) return@withContext false
+        activeProfileOverrideApplier.reapplyActiveProfileIfUsingOverride(configId)
+        refresh()
+        true
     }
 
     fun createConfig(name: String, description: String? = null, contentType: OverrideContentType) {
@@ -135,10 +129,10 @@ class OverrideConfigViewModel(
         viewModelScope.launch {
             runCatching {
                     val shouldResyncRuntime =
-                        activeProfileOverrideReloader.isActiveProfileUsingOverride(id)
+                        activeProfileOverrideApplier.isActiveProfileUsingOverride(id)
                     val deleted = configRepo.delete(id)
                     if (deleted && shouldResyncRuntime) {
-                        activeProfileOverrideReloader.reapplyActiveProfileOverride()
+                        activeProfileOverrideApplier.reapplyActiveProfileOverride()
                     }
                     refresh()
                 }
@@ -163,14 +157,12 @@ class OverrideConfigViewModel(
         viewModelScope.launch {
             val currentConfigs = _userConfigs.value
             if (fromIndex !in currentConfigs.indices || fromIndex == toIndex) return@launch
-
             val reorderedConfigs =
                 currentConfigs.toMutableList().also { configs ->
                     val moving = configs.removeAt(fromIndex)
                     configs.add(toIndex.coerceIn(0, configs.size), moving)
                 }
             _userConfigs.value = reorderedConfigs
-            _configs.value = reorderedConfigs
 
             runCatching { configRepo.reorderUserConfigs(reorderedConfigs.map(OverrideConfig::id)) }
                 .onFailure { error -> Timber.tag(TAG).e(error, "Failed to reorder overrides") }
@@ -205,7 +197,6 @@ class OverrideConfigViewModel(
                 )
             )
         }
-
         val config =
             OverrideConfig(
                 id = OverrideMetadata.generateId(),
@@ -218,7 +209,6 @@ class OverrideConfigViewModel(
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
             )
-
         viewModelScope.launch {
             runCatching {
                     configRepo.save(config)
@@ -238,20 +228,17 @@ class OverrideConfigViewModel(
                         url.protocol.equals("https", ignoreCase = true)) {
                         MLang.Override.Import.InvalidUrl
                     }
-
                     val connection = (url.openConnection() as HttpURLConnection).apply {
                         connectTimeout = NETWORK_IMPORT_CONNECT_TIMEOUT_MS
                         readTimeout = NETWORK_IMPORT_READ_TIMEOUT_MS
                         instanceFollowRedirects = true
                         requestMethod = "GET"
                     }
-
                     try {
                         val responseCode = connection.responseCode
                         require(responseCode in 200..299) {
                             MLang.Override.Import.HttpError.format(responseCode)
                         }
-
                         val contentTypeHeader = connection.contentType.orEmpty()
                         val sourceName =
                             resolveNetworkImportSourceName(
@@ -281,7 +268,7 @@ class OverrideConfigViewModel(
                 )
         }
 
-    suspend fun isConfigInUse(id: String): Boolean = resolver.isOverrideInUse(id)
+    suspend fun isConfigInUse(id: String): Boolean = bindingReader.isOverrideInUse(id)
 
     fun consumePendingRevealConfig(configId: String) {
         if (_pendingRevealConfigId.value == configId) {
@@ -291,8 +278,8 @@ class OverrideConfigViewModel(
 
     private suspend fun loadUsageCounts() {
         val countMap = mutableMapOf<String, Int>()
-        _configs.value.forEach { config ->
-            countMap[config.id] = resolver.getOverrideUsageCount(config.id)
+        configs.forEach { config ->
+            countMap[config.id] = bindingReader.getOverrideUsageCount(config.id)
         }
         _usageCountMap.value = countMap
     }
@@ -304,7 +291,6 @@ private fun resolveNetworkImportSourceName(
     contentType: String,
 ): String {
     parseFilenameFromContentDisposition(contentDisposition)?.let { return it }
-
     val pathName =
         url.path
             .substringAfterLast('/')
@@ -312,18 +298,14 @@ private fun resolveNetworkImportSourceName(
             ?.let { URLDecoder.decode(it, Charsets.UTF_8.name()) }
             ?.trim()
             .orEmpty()
-
     if (pathName.isNotBlank()) return pathName
-
-    val extension =
-        inferContentTypeFromHeader(contentType)?.extension ?: OverrideContentType.Yaml.extension
+    val extension = inferContentTypeFromHeader(contentType)?.extension ?: OverrideContentType.Yaml.extension
     return "${url.host.ifBlank { MLang.Override.Save.ImportDefaultName }}.$extension"
 }
 
 private fun parseFilenameFromContentDisposition(contentDisposition: String?): String? {
     val value = contentDisposition?.takeIf(String::isNotBlank) ?: return null
-    val encodedMatch =
-        Regex("""filename\*=([^']*)'[^']*'([^;]+)""", RegexOption.IGNORE_CASE).find(value)
+    val encodedMatch = Regex("""filename\*=([^']*)'[^']*'([^;]+)""", RegexOption.IGNORE_CASE).find(value)
     if (encodedMatch != null) {
         val charset = encodedMatch.groupValues[1].ifBlank { Charsets.UTF_8.name() }
         val encodedName = encodedMatch.groupValues[2].trim().trim('"', '\'')
@@ -331,7 +313,6 @@ private fun parseFilenameFromContentDisposition(contentDisposition: String?): St
             .getOrNull()
             ?.takeIf(String::isNotBlank)
     }
-
     return Regex("""filename=([^;]+)""", RegexOption.IGNORE_CASE)
         .find(value)
         ?.groupValues
@@ -374,7 +355,6 @@ internal fun normalizeImportedConfigSourceName(sourceName: String?): String? {
             ?.substringAfterLast('\\')
             ?.trim()
             ?.takeIf(String::isNotBlank) ?: return null
-
     val removableSuffixes = listOf(".yaml", ".yml", ".js")
     while (true) {
         val matchedSuffix =
@@ -384,6 +364,5 @@ internal fun normalizeImportedConfigSourceName(sourceName: String?): String? {
             } ?: break
         normalizedName = normalizedName.dropLast(matchedSuffix.length).trimEnd()
     }
-
     return normalizedName.takeIf(String::isNotBlank)
 }

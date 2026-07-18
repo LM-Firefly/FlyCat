@@ -37,5 +37,6 @@ fun createTrafficStatisticsDao(context: Context): TrafficStatisticsDao =
             TrafficDatabase::class.java,
             TrafficDatabase.DATABASE_NAME,
         )
+        .addMigrations(TrafficDatabase.MIGRATION_1_2)
         .build()
         .trafficStatisticsDao()

@@ -1,0 +1,99 @@
+/*
+ * This file is part of YumeBox.
+ *
+ * YumeBox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ *
+ */
+
+package com.github.yumelira.yumebox.presentation.navigation
+
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
+
+/**
+ * Navigation keys for the whole app, replacing compose-destinations' generated `*Destination`
+ * objects. Flat graph; the start route is [AppStart]. The arg-carrying screens are data classes,
+ * the rest are objects.
+ */
+sealed interface Route : NavKey {
+    @Serializable
+    data object AppStart : Route
+
+    @Serializable
+    data class Main(val initialPage: Int = 0) : Route
+
+    @Serializable
+    data class MoeWallpaperCrop(
+        val wallpaperUri: String,
+        val initialZoom: Float = 1f,
+        val initialBiasX: Float = 0f,
+        val initialBiasY: Float = 0f,
+    ) : Route
+
+    @Serializable
+    data object AppSettings : Route
+
+    @Serializable
+    data object NetworkSettings : Route
+
+    @Serializable
+    data object AccessControl : Route
+
+    @Serializable
+    data object MetaFeature : Route
+
+    @Serializable
+    data object Connection : Route
+
+    @Serializable
+    data object TrafficStatistics : Route
+
+    @Serializable
+    data object Log : Route
+
+    @Serializable
+    data object About : Route
+
+    @Serializable
+    data object OpenSourceLicenses : Route
+
+    @Serializable
+    data object Override : Route
+
+    @Serializable
+    data object OverrideConfigPreview : Route
+
+    @Serializable
+    data object Providers : Route
+
+    @Serializable
+    data object ProviderFilePreview : Route
+
+    @Serializable
+    data object Feature : Route
+
+    @Serializable
+    data object CustomRouting : Route
+
+    @Serializable
+    data object StringListEditor : Route
+
+    @Serializable
+    data object KeyValueEditor : Route
+
+    @Serializable
+    data class LogDetail(val fileName: String) : Route
+}
