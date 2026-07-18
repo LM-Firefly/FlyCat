@@ -38,7 +38,7 @@ jobs:
         uses: fwilhe2/setup-kotlin@main
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-download-base-url: 'https://github.com/MetaCubeX/go/releases/download/build'
           go-version: '1.26'
