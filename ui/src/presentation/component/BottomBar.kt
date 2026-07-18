@@ -52,6 +52,7 @@ import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,6 +70,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
@@ -93,7 +96,8 @@ import com.kyant.shapes.Capsule
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.blurEffect
 import dev.chrisbanes.haze.hazeEffect
 import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.CoroutineScope
@@ -169,9 +173,21 @@ val LocalHandlePageChange =
 val LocalNavigator =
     compositionLocalOf<Navigator> { error("LocalNavigator is not provided") }
 val LocalBottomBarHazeState = compositionLocalOf<HazeState?> { null }
-val LocalBottomBarHazeStyle = compositionLocalOf<HazeStyle?> { null }
+val LocalBottomBarHazeStyle = compositionLocalOf<HazeBlurStyle?> { null }
 
 object MainBottomBarDefaults {
+    val CornerRadius = UiDp.dp28
+    val Shape: androidx.compose.ui.graphics.Shape
+        @Composable get() = RoundedCornerShape(
+            topStart = CornerRadius,
+            topEnd = CornerRadius,
+        )
+    val BorderWidth = UiDp.dp0_26
+    val OutlineHorizontalInset = UiDp.dp0
+    val ItemHeight = UiDp.dp60
+    val IconSize = UiDp.dp26
+    val LabelFontSize = 11.5.sp
+    val IconLabelSpacing = UiDp.dp3
     val HorizontalPadding = UiDp.dp48
     val TopPadding = UiDp.dp6
     val FloatingBottomPadding = UiDp.dp12
@@ -208,14 +224,16 @@ fun rememberBottomBarReservedHeight(): Dp {
 }
 
 @OptIn(ExperimentalHazeApi::class)
-private fun Modifier.bottomBarHazeEffect(state: HazeState?, style: HazeStyle?): Modifier {
+private fun Modifier.bottomBarHazeEffect(state: HazeState?, style: HazeBlurStyle?): Modifier {
     if (state == null || style == null) return this
 
     return hazeEffect(state) {
-        this.style = style
-        blurRadius = UiDp.dp26
+        blurEffect {
+            this.style = style
+            blurRadius = UiDp.dp26
+            noiseFactor = 0f
+        }
         inputScale = HazeInputScale.Fixed(0.24f)
-        noiseFactor = 0f
         forceInvalidateOnPreDraw = false
     }
 }
@@ -229,6 +247,9 @@ fun BottomBarContent(isVisible: Boolean = true) {
 private fun FloatingBottomBarContent(isVisible: Boolean = true) {
     val bottomBarScrollBehavior = LocalBottomBarScrollBehavior.current
     val mainPagerState = LocalMainPagerState.current
+    val hazeState = LocalBottomBarHazeState.current
+    val hazeStyle = LocalBottomBarHazeStyle.current
+    val hazeEnabled = hazeState != null && hazeStyle != null
     val pagerState = mainPagerState.pagerState
     val page by remember(mainPagerState) { derivedStateOf { mainPagerState.selectedPage } }
     val indicatorProgress by
@@ -260,6 +281,21 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
                         },
                 ),
             label = "legacy_bottom_bar_alpha",
+        )
+    val animatedScale by
+        animateFloatAsState(
+            targetValue = if (bottomBarVisible) 1f else 0.9f,
+            animationSpec =
+                tween(
+                    durationMillis = 180,
+                    easing =
+                        if (bottomBarVisible) {
+                            AnimationSpecs.EmphasizedDecelerate
+                        } else {
+                            AnimationSpecs.EmphasizedAccelerate
+                        },
+                ),
+            label = "legacy_bottom_bar_scale",
         )
 
     LaunchedEffect(bottomBarVisible, exitOffsetPx) {
@@ -293,7 +329,11 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
         }
     val selectedColor = MiuixTheme.colorScheme.primary
     val unselectedColor = MiuixTheme.colorScheme.onSurface.copy(alpha = opacity.secondaryText)
-    val containerColor = MiuixTheme.colorScheme.background
+    val containerColor = if (hazeEnabled) {
+        MiuixTheme.colorScheme.background.copy(alpha = opacity.elevatedSurface)
+    } else {
+        MiuixTheme.colorScheme.background
+    }
     val indicatorContainerColor = selectedColor.copy(alpha = opacity.subtle)
 
     LegacyBottomNavigationBar(
@@ -301,6 +341,9 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
         tabsCount = BottomBarDestination.entries.size,
         containerColor = containerColor,
         indicatorContainerColor = indicatorContainerColor,
+        hazeEnabled = hazeEnabled,
+        hazeState = hazeState,
+        hazeStyle = hazeStyle,
         modifier =
             Modifier.fillMaxWidth()
                 .padding(
@@ -309,9 +352,12 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
                     top = MainBottomBarDefaults.TopPadding,
                     bottom = bottomSafeInset + MainBottomBarDefaults.FloatingBottomPadding,
                 )
+                .offset { IntOffset(0, animatedTranslationY.value.toInt()) }
                 .graphicsLayer {
                     alpha = animatedAlpha
-                    translationY = animatedTranslationY.value
+                    scaleX = animatedScale
+                    scaleY = animatedScale
+                    transformOrigin = TransformOrigin(0.5f, 1f)
                 },
     ) {
         BottomBarDestination.entries.forEachIndexed { index, destination ->
@@ -348,6 +394,9 @@ private fun LegacyBottomNavigationBar(
     tabsCount: Int,
     containerColor: Color,
     indicatorContainerColor: Color,
+    hazeEnabled: Boolean = false,
+    hazeState: HazeState? = null,
+    hazeStyle: HazeBlurStyle? = null,
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit,
 ) {
@@ -402,6 +451,13 @@ private fun LegacyBottomNavigationBar(
                 }
                 .height(UiDp.dp56)
                 .clip(Capsule())
+                .then(
+                    if (hazeEnabled) {
+                        Modifier.bottomBarHazeEffect(hazeState, hazeStyle)
+                    } else {
+                        Modifier
+                    },
+                )
                 .background(containerColor, Capsule()),
         contentAlignment = Alignment.CenterStart,
     ) {

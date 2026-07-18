@@ -20,37 +20,37 @@
 
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
+import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JavaToolchainService
 
 buildscript {
     configurations.classpath {
         resolutionStrategy.eachDependency {
             when {
-                requested.group == "com.google.protobuf" -> useVersion("3.25.9")
-                requested.group == "org.bouncycastle" -> useVersion("1.84")
-                requested.group == "org.jdom" && requested.name == "jdom2" -> useVersion("2.0.6.1")
-                requested.group == "org.bitbucket.b_c" && requested.name == "jose4j" ->
-                    useVersion("0.9.6")
-                requested.group == "com.fasterxml.jackson.core" &&
-                    requested.name == "jackson-core" -> useVersion("2.22.0")
-                requested.group == "org.apache.commons" && requested.name == "commons-lang3" ->
-                    useVersion("3.20.0")
-                requested.group == "io.netty" -> useVersion("4.1.135.Final")
+                requested.group == "com.google.protobuf" -> useVersion(libs.versions.protobuf.get())
+                requested.group == "org.bouncycastle" -> useVersion(libs.versions.bcprov.get())
+                requested.group == "org.jdom" && requested.name == "jdom2" -> useVersion(libs.versions.jdom2.get())
+                requested.group == "org.bitbucket.b_c" && requested.name == "jose4j" -> useVersion(libs.versions.jose4j.get())
+                requested.group == "com.fasterxml.jackson.core" && requested.name == "jackson-core" -> useVersion(libs.versions.jacksonCore.get())
+                requested.group == "org.apache.commons" && requested.name == "commons-lang3" -> useVersion(libs.versions.commonsLang3.get())
+                requested.group == "io.netty" -> useVersion(libs.versions.netty.get())
             }
         }
     }
 }
 
 plugins {
-    `jvm-toolchains`
-    id("com.android.application") version "9.1.0" apply false
-    id("com.android.library") version "9.1.0" apply false
-    kotlin("plugin.serialization") version "2.2.10" apply false
-    kotlin("plugin.compose") version "2.3.10" apply false
-    id("org.jetbrains.compose") version "1.11.1" apply false
-    id("com.google.devtools.ksp") version "2.3.2" apply false
-    id("androidx.room") version "2.8.4" apply false
-    id("com.mikepenz.aboutlibraries.plugin.android") version "15.0.3" apply false
-    id("com.diffplug.spotless") version "8.7.0" apply false
+  `jvm-toolchains`
+  alias(libs.plugins.android.application) apply false
+  alias(libs.plugins.android.library) apply false
+  alias(libs.plugins.kotlin.serialization) apply false
+  alias(libs.plugins.kotlin.compose) apply false
+  alias(libs.plugins.jetbrains.compose) apply false
+  alias(libs.plugins.ksp) apply false
+  alias(libs.plugins.room) apply false
+  alias(libs.plugins.aboutlibraries) apply false
+  alias(libs.plugins.spotless) apply false
 }
 
 // AGP-created tool configurations (unified-test-platform-*, androidLintTool) and test
@@ -79,10 +79,17 @@ val androidJvm =
     providers
         .gradleProperty("android.jvm")
         .orElse(providers.gradleProperty("project.jvm"))
-        .orElse("17")
+        .orElse("21")
         .get()
 val androidJvmVersion = androidJvm.toInt()
 val androidNdkVersion = providers.gradleProperty("android.ndkVersion").orNull.orEmpty()
+
+// MMKV version selection: 64-bit for arm64/x86_64, 32-bit otherwise.
+val mmkv64Version = libs.versions.mmkv64.get()
+val mmkv32Version = libs.versions.mmkv32.get()
+val injectedAbi = findProperty("android.injected.build.abi") as? String
+val resolvedMmkvVersion = if (injectedAbi in listOf("arm64-v8a", "x86_64")) mmkv64Version else mmkv32Version
+extra["mmkvVersion"] = resolvedMmkvVersion
 
 subprojects {
     apply(plugin = "jvm-toolchains")
@@ -192,4 +199,10 @@ subprojects {
             }
         }
     }
+}
+
+tasks.register("assembleReleaseWithExtension") {
+    group = "build"
+    description = "Assemble release APK with extension merged (arm64-v8a and x86_64, including javet libs)."
+    dependsOn(":app:assembleRelease", ":extension:assembleRelease")
 }

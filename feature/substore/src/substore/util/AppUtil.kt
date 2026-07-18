@@ -18,14 +18,17 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore.util
+package com.github.yumelira.yumebox.feature.substore.util
 
-import com.github.yumelira.yumebox.core.Global
-import com.github.yumelira.yumebox.substore.SubStorePaths
+import android.app.Application
+import com.github.yumelira.yumebox.core.FirstRunInitializer
+import com.github.yumelira.yumebox.core.util.SubStorePaths
 import java.io.File
 
-object AppUtil {
-    fun initFirstOpen() {
+object AppUtil : FirstRunInitializer {
+    lateinit var application: Application
+
+    override fun initialize() {
         SubStorePaths.ensureStructure()
         createRootJson()
         extractBackendFile()
@@ -43,7 +46,7 @@ object AppUtil {
 
     private fun extractBackendFile() {
         runCatching {
-                val assetManager = Global.application.assets
+                val assetManager = application.assets
                 SubStorePaths.backendDir.mkdirs()
                 assetManager.open("backend/sub-store.bundle.js").use { inputStream ->
                     SubStorePaths.backendBundle.outputStream().use { outputStream ->
@@ -56,8 +59,8 @@ object AppUtil {
 
     private fun extractFrontendDist() {
         runCatching {
-                val assetManager = Global.application.assets
-                val cacheDir = Global.application.cacheDir
+                val assetManager = application.assets
+                val cacheDir = application.cacheDir
 
                 val zipPath = File(cacheDir, "substore_frontend.zip")
                 assetManager.open("frontend/dist.zip").use { inputStream ->

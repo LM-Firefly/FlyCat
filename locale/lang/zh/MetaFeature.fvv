@@ -4,6 +4,7 @@ MetaFeature = {
 
     Section = {
         ConnectionAndTraffic = "连接与流量统计"
+        BackupRestore = "备份与恢复"
         Routing = "分流相关"
     }
 
@@ -26,6 +27,28 @@ MetaFeature = {
     Download = {
         DialogTitle = "更新 GeoX"
         DownloadComplete = "下载完成：%d/%d"
+    }
+
+    Backup = {
+        BackupTitle = "备份数据"
+        BackupSummary = "导出当前用户数据到 zip 文件"
+        RestoreTitle = "恢复数据"
+        RestoreSummary = "从 zip 文件覆盖恢复当前用户数据"
+        BackupDialogTitle = "正在备份"
+        BackupDialogMessage = "正在打包当前用户数据，请稍候"
+        RestoreDialogTitle = "正在恢复"
+        RestoreDialogMessage = "正在解压并恢复当前用户数据，请稍候"
+        RestoreConfirmTitle = "确认恢复"
+        RestoreConfirmMessage = "恢复会覆盖当前用户数据，建议先完成一次备份。恢复完成后请重启应用。"
+        BackupSuccess = "备份完成"
+        RestoreSuccess = "恢复完成，请重启应用"
+        RestoreSuccessTitle = "恢复成功"
+        RestoreSuccessMessage = "%s\n\n是否立即重启应用使数据生效？"
+        WebDavRestoreSuccess = "WebDAV 恢复完成：%s"
+        RestartNow = "立即重启"
+        RestartLaunchNotFound = "重启失败：未找到启动入口"
+        BackupFailed = "备份失败：%s"
+        RestoreFailed = "恢复失败：%s"
     }
 
     AgeKey = {

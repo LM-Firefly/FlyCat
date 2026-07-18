@@ -18,20 +18,38 @@
  *
  */
 
-package com.github.yumelira.yumebox.di
+package com.github.yumelira.yumebox.feature.substore.di
 
-import com.github.yumelira.yumebox.presentation.viewmodel.FeatureViewModel
-import com.github.yumelira.yumebox.presentation.viewmodel.SettingViewModel
-import com.github.yumelira.yumebox.substore.util.SubStoreDownloadClient
+import com.github.yumelira.yumebox.core.FirstRunInitializer
+import com.github.yumelira.yumebox.core.contract.SubStoreBackupSupport
+import com.github.yumelira.yumebox.core.contract.SubStoreNavigationHandler
+import com.github.yumelira.yumebox.core.util.APPLICATION_SCOPE_NAME
+import com.github.yumelira.yumebox.core.util.AssetDownloader
+import com.github.yumelira.yumebox.feature.substore.SubStoreBackupSupportImpl
+import com.github.yumelira.yumebox.feature.substore.presentation.viewmodel.FeatureViewModel
+import com.github.yumelira.yumebox.feature.substore.presentation.viewmodel.SettingViewModel
+import com.github.yumelira.yumebox.feature.substore.presentation.viewmodel.SubStoreNavigationHandlerImpl
+import com.github.yumelira.yumebox.feature.substore.service.ExtensionStatusService
+import com.github.yumelira.yumebox.feature.substore.util.AppUtil
+import com.github.yumelira.yumebox.feature.substore.util.SubStoreDownloadClient
 import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val featureSubStoreViewModelModule = module {
     single { SubStoreDownloadClient(androidApplication(), get()) }
-    viewModel { SettingViewModel(get()) }
-    viewModel { FeatureViewModel(get(), androidApplication(), get()) }
+    single<AssetDownloader> { get<SubStoreDownloadClient>() }
+    single { ExtensionStatusService(androidApplication()) }
+    single<FirstRunInitializer> { AppUtil.apply { application = androidApplication() } }
+    single<SubStoreBackupSupport> { SubStoreBackupSupportImpl() }
+    single { SubStoreNavigationHandlerImpl() }
+    single<SubStoreNavigationHandler> { get<SubStoreNavigationHandlerImpl>() }
+    viewModel { SettingViewModel(get(), get()) }
+    viewModel { FeatureViewModel(get(), androidApplication(), get(), get(), get(named(APPLICATION_SCOPE_NAME))) }
 }
 
-val featureSubStoreModules: List<Module> = listOf(featureSubStoreViewModelModule)
+val featureSubStoreModules: List<Module> = listOf(
+    featureSubStoreViewModelModule,
+)

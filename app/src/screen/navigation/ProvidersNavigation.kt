@@ -21,10 +21,24 @@
 package com.github.yumelira.yumebox.screen.navigation
 
 import androidx.compose.runtime.Composable
+import com.github.yumelira.yumebox.feature.editor.presentation.screen.ConfigPreviewScreen
+import com.github.yumelira.yumebox.feature.proxy.presentation.screen.ProvidersContent
 import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.screen.ProvidersContent
+import com.github.yumelira.yumebox.presentation.util.ProviderFilePreviewStore
 
 @Composable
 fun ProvidersScreen(navigator: Navigator) {
     ProvidersContent(navigator = navigator)
+}
+
+@Composable
+fun ProviderFilePreviewRoute(navigator: Navigator) {
+    ConfigPreviewScreen(
+        navigator = navigator,
+        title = ProviderFilePreviewStore.title,
+        initialContent = ProviderFilePreviewStore.content,
+        language = ProviderFilePreviewStore.language,
+        readOnly = true,
+        onSave = null,
+    )
 }

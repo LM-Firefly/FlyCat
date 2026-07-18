@@ -6,8 +6,13 @@ on:
       channel:
         required: true
         type: string
-      apk_artifact_name:
-        description: "Exact per-APK artifact/file name to download and push — pass reusable-prepare-publish.yml's default_apk_name output (the arm64-v8a external-geo APK)."
+      release_tag:
+        required: true
+        type: string
+      publish_artifact_name:
+        required: true
+        type: string
+      meta_asset_name:
         required: true
         type: string
       telegram_title:
@@ -28,15 +33,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Telegram gets exactly one file: the arm64-v8a external-geo APK. The artifact
-      # name equals the publish file name (archive:false uploads in
-      # reusable-prepare-publish.yml) and is passed in from that workflow's
-      # default_apk_name output — never recompute it here (the date segment is
-      # stamped once in prepare-publish).
-      - name: Download arm64-v8a (external geo) APK artifact
+      - name: Download publish artifact
         uses: actions/download-artifact@v8
         with:
-          name: ${{ inputs.apk_artifact_name }}
+          name: ${{ inputs.publish_artifact_name }}
           path: publish
 
       - name: Check upload availability
@@ -51,7 +51,7 @@ jobs:
 
       - name: Bot session cache
         if: steps.check_upload.outputs.UPLOAD == 'true'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: scripts/yumebot.session
           key: ${{ runner.os }}-bot-session-${{ github.ref_name }}-${{ inputs.channel }}

@@ -51,6 +51,6 @@ NetworkSettings = {
 
     Error = {
         VpnDenied = "VPN permission denied"
-        RootRequired = "RootTun requires YumeBox to have working root access"
+        RootRequired = "RootTun requires FlyCat to have working root access"
     }
 }

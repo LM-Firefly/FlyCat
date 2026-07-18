@@ -1,6 +1,6 @@
 <Home Page>
 Home = {
-    Title = "YumeBox"
+    Title = "FlyCat"
 
     Message = {
         ConfigSwitched = "配置已切换"
@@ -52,8 +52,14 @@ Home = {
         Http = "HTTP"
     }
 
+    TunnelMode = {
+        Rule = "规则"
+        Global = "全局"
+        Direct = "直连"
+    }
+
     PreviewGuide = {
-        Title = "欢迎使用 YumeBox"
+        Title = "欢迎使用 FlyCat"
         Description = "点亮底部「启动」，一键连接"
         Next = "下一个"
         Start = "开始使用"
