@@ -1,6 +1,6 @@
 [versions]
 soraEditor = "0.24.6"
-composeBom = "2026.06.00"
+composeBom = "2026.06.01"
 desugarJdkLibs = "2.1.5"
 coroutines = "1.11.0"
 serializationJson = "1.11.0"
