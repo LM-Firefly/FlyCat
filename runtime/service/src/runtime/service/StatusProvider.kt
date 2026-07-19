@@ -20,8 +20,6 @@
 
 package com.github.yumelira.yumebox.runtime.service
 
-import android.annotation.SuppressLint
-import android.app.ActivityManager
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
@@ -35,7 +33,6 @@ import com.github.yumelira.yumebox.runtime.api.initializeServiceGlobal
 import com.tencent.mmkv.MMKV
 import java.util.UUID
 
-@Suppress("DEPRECATION")
 class StatusProvider : ContentProvider() {
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? =
         when (method) {
@@ -283,23 +280,27 @@ class StatusProvider : ContentProvider() {
             currentProfile = null
         }
 
-        fun isLocalRuntimeServiceAlive(mode: ProxyMode): Boolean {
-            val application = runCatching { Global.application }.getOrNull() ?: return false
-            val activityManager =
-                application.getSystemService(ActivityManager::class.java) ?: return false
-            val targetClassName =
-                when (mode) {
-                    ProxyMode.Tun -> TunService::class.java.name
-                    ProxyMode.Http -> ClashService::class.java.name
-                }
+        // Both foreground runtime services (TunService/ClashService) run in this same app process,
+        // so a plain in-process flag driven from their lifecycle is an accurate, O(1) liveness
+        // signal. It replaces an ActivityManager.getRunningServices(Int.MAX_VALUE) binder scan that
+        // ran on the caller's thread — including the main thread during reconcile / QS tile refresh
+        // — and stalled the UI for tens of milliseconds on every navigation.
+        @Volatile private var tunServiceAlive = false
+        @Volatile private var httpServiceAlive = false
 
-            return runCatching {
-                    queryRunningServiceClassNames(activityManager).any { className ->
-                        className == targetClassName
-                    }
-                }
-                .getOrDefault(false)
+        /** Set from [RuntimeForegroundController.onCreate]/onDestroy as each runtime service lives. */
+        fun setServiceAlive(mode: ProxyMode, alive: Boolean) {
+            when (mode) {
+                ProxyMode.Tun -> tunServiceAlive = alive
+                ProxyMode.Http -> httpServiceAlive = alive
+            }
         }
+
+        fun isLocalRuntimeServiceAlive(mode: ProxyMode): Boolean =
+            when (mode) {
+                ProxyMode.Tun -> tunServiceAlive
+                ProxyMode.Http -> httpServiceAlive
+            }
 
         fun clearLegacyStateFiles() {
             val filesDir = Global.application.filesDir
@@ -446,13 +447,5 @@ class StatusProvider : ContentProvider() {
             val (mode, phase) = readPersistedRuntimeState()
             updateInMemoryRuntimeState(mode, phase)
         }
-
-        @SuppressLint("Deprecated")
-        private fun queryRunningServiceClassNames(activityManager: ActivityManager): List<String> =
-            activityManager.getRunningServices(Int.MAX_VALUE).mapNotNull { service ->
-                service.service
-                    ?.takeIf { it.packageName == Global.application.packageName }
-                    ?.className
-            }
     }
 }

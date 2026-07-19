@@ -330,7 +330,9 @@ class HomeViewModel(
 
     fun reconcileRuntimeState() {
         if (reconcileJob?.isActive == true) return
-        reconcileJob = viewModelScope.launch {
+        // Off-main: reconcile touches the persisted runtime state (MMKV) and the active-profile
+        // query; keeping it off the main thread avoids hitching navigation.
+        reconcileJob = viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                     proxyFacade.reconcileRuntimeState()
                     refreshProfiles()

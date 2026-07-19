@@ -20,38 +20,16 @@
 
 package com.github.yumelira.yumebox.screen.settings
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.TextFieldValue
-import com.github.yumelira.yumebox.common.util.VpnUtils
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.core.model.RootTunDnsMode
+import androidx.compose.ui.unit.dp
 import com.github.yumelira.yumebox.data.model.AccessControlMode
 import com.github.yumelira.yumebox.data.model.ProxyMode
-import com.github.yumelira.yumebox.data.model.TunStack
-import com.github.yumelira.yumebox.presentation.component.AppTextFieldDialog
+import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.PreferenceArrowItem
@@ -63,35 +41,32 @@ import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.navigation.Route
-import com.github.yumelira.yumebox.runtime.service.root.RootAccessSupport
 import dev.oom_wg.purejoy.mlang.MLang
-import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 
+/**
+ * Network settings entry point. Top: a "run mode" radio picker — one card per mode. Only
+ * [ProxyMode.Tun] (VpnService) is functional today; the root-only Tun / TPROXY modes are shown but
+ * disabled until the libsu path lands. Below: advanced options (service config + disable-overrides)
+ * and access control. The former parallel HTTP "system proxy" run mode is gone.
+ */
 @Composable
 fun NetworkSettingsScreen(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
     val viewModel = koinViewModel<NetworkSettingsViewModel>()
     val uiState by viewModel.uiState.collectAsState()
-    val tunServiceOptionsUiState by viewModel.tunServiceOptionsUiState.collectAsState()
-    val rootTunServiceOptionsUiState by viewModel.rootTunServiceOptionsUiState.collectAsState()
+    val disableAllOverride by viewModel.disableAllOverride.state.collectAsState()
     val accessControlMode by viewModel.accessControlMode.state.collectAsState()
-    val context = LocalContext.current
+    val runMode by viewModel.runMode.state.collectAsState()
 
-    LaunchedEffect(Unit) { viewModel.errors.collect { message -> context.toast(message) } }
-
-    val vpnPermissionLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.StartActivityForResult()
-        ) { result ->
-            if (result.resultCode == android.app.Activity.RESULT_OK) {
-                viewModel.onProxyModeChange(ProxyMode.Tun)
-            } else {
-                context.toast(MLang.NetworkSettings.Error.VpnDenied)
-            }
-        }
+    // Anyone still persisted on the removed HTTP mode is migrated to the VpnService (TUN) mode.
+    LaunchedEffect(uiState.configuredMode) {
+        if (uiState.configuredMode == ProxyMode.Http) viewModel.onProxyModeChange(ProxyMode.Tun)
+    }
 
     Scaffold(
         topBar = { TopBar(title = MLang.NetworkSettings.Title, scrollBehavior = scrollBehavior) }
@@ -102,449 +77,98 @@ fun NetworkSettingsScreen(navigator: Navigator) {
             innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
         ) {
             item {
-                NetworkVpnServiceSection(
-                    viewModel = viewModel,
-                    configuredMode = uiState.configuredMode,
-                    vpnPermissionLauncher = vpnPermissionLauncher,
-                )
+                Title(MLang.NetworkSettings.RunMode.SectionTitle)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ModeCard(
+                        title = MLang.NetworkSettings.RunMode.VpnServiceTitle,
+                        summary = MLang.NetworkSettings.RunMode.VpnServiceSummary,
+                        selected = runMode == RunMode.VpnService,
+                        enabled = true,
+                        onSelect = { viewModel.onRunModeChange(RunMode.VpnService) },
+                    )
+                    ModeCard(
+                        title = MLang.NetworkSettings.RunMode.TunTitle,
+                        summary = MLang.NetworkSettings.RunMode.TunSummary,
+                        selected = runMode == RunMode.RootTun,
+                        enabled = false,
+                        onSelect = {},
+                    )
+                    ModeCard(
+                        title = MLang.NetworkSettings.RunMode.TproxyTitle,
+                        summary = MLang.NetworkSettings.RunMode.TproxySummary,
+                        selected = runMode == RunMode.Tproxy,
+                        enabled = false,
+                        onSelect = {},
+                    )
+                }
             }
             item {
-                NetworkServiceOptionsSection(
-                    viewModel = viewModel,
-                    uiState = uiState,
-                    tunServiceOptionsUiState = tunServiceOptionsUiState,
-                    rootTunServiceOptionsUiState = rootTunServiceOptionsUiState,
-                )
+                Title(MLang.NetworkSettings.Section.Advanced)
+                Card {
+                    PreferenceArrowItem(
+                        title = MLang.NetworkSettings.Section.VpnOptions,
+                        onClick = { navigator.push(Route.VpnServiceOptions) },
+                    )
+                    PreferenceSwitchItem(
+                        title = MLang.NetworkSettings.Advanced.DisableOverrideTitle,
+                        checked = disableAllOverride,
+                        // Only the root Tun / TPROXY modes do their own routing where skipping the
+                        // override chain makes sense; it stays disabled under VPN 服务.
+                        enabled = runMode == RunMode.RootTun || runMode == RunMode.Tproxy,
+                        onCheckedChange = viewModel::onDisableAllOverrideChange,
+                    )
+                }
             }
             item {
-                NetworkProxyOptionsSection(
-                    navigator = navigator,
-                    accessControlMode = accessControlMode,
-                    showAccessControlMode = uiState.showAccessControlMode,
-                    onAccessControlModeChange = viewModel::onAccessControlModeChange,
-                )
+                Title(MLang.NetworkSettings.Section.ProxyOptions)
+                Card {
+                    PreferenceEnumItem(
+                        title = MLang.NetworkSettings.ProxyOptions.AccessControlModeTitle,
+                        currentValue = accessControlMode,
+                        items =
+                            listOf(
+                                MLang.NetworkSettings.ProxyOptions.AllowAll,
+                                MLang.NetworkSettings.ProxyOptions.AllowSelected,
+                                MLang.NetworkSettings.ProxyOptions.RejectSelected,
+                            ),
+                        values = AccessControlMode.entries,
+                        onValueChange = viewModel::onAccessControlModeChange,
+                    )
+                    PreferenceArrowItem(
+                        title = MLang.NetworkSettings.ProxyOptions.ManageAccessControlTitle,
+                        onClick = { navigator.push(Route.AccessControl) },
+                    )
+                }
             }
         }
     }
 }
 
+/**
+ * A run-mode option: its own card with a leading radio and a title/summary. A disabled mode greys its
+ * text and radio and can't be selected (it's a root-only mode that isn't available yet).
+ */
 @Composable
-private fun NetworkVpnServiceSection(
-    viewModel: NetworkSettingsViewModel,
-    configuredMode: ProxyMode,
-    vpnPermissionLauncher: androidx.activity.result.ActivityResultLauncher<android.content.Intent>,
+private fun ModeCard(
+    title: String,
+    summary: String,
+    selected: Boolean,
+    enabled: Boolean,
+    onSelect: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-
-    // Only VpnService (TUN) mode remains — the parallel HTTP "system proxy" mode was removed. Anyone
-    // still persisted on it is migrated to TUN so they aren't stranded in a mode that no longer exists.
-    LaunchedEffect(configuredMode) {
-        if (configuredMode == ProxyMode.Http) viewModel.onProxyModeChange(ProxyMode.Tun)
-    }
-
-    Title(MLang.NetworkSettings.Section.VpnService)
     Card {
-        PreferenceEnumItem(
-            title = MLang.NetworkSettings.VpnService.RouteTrafficTitle,
-            currentValue = ProxyMode.Tun,
-            items = listOf(MLang.NetworkSettings.VpnService.VpnMode),
-            values = listOf(ProxyMode.Tun),
-            onValueChange = { mode ->
-                if (!VpnUtils.checkVpnPermission(context)) {
-                    VpnUtils.getVpnPermissionIntent(context)
-                        ?.let(vpnPermissionLauncher::launch)
-                        ?: viewModel.onProxyModeChange(mode)
-                } else {
-                    viewModel.onProxyModeChange(mode)
-                }
+        BasicComponent(
+            title = title,
+            summary = summary,
+            enabled = enabled,
+            onClick = if (enabled) onSelect else null,
+            startAction = {
+                RadioButton(
+                    selected = selected,
+                    onClick = if (enabled) onSelect else null,
+                    enabled = enabled,
+                )
             },
         )
     }
-}
-
-@Composable
-private fun NetworkServiceOptionsSection(
-    viewModel: NetworkSettingsViewModel,
-    uiState: NetworkSettingsUiState,
-    tunServiceOptionsUiState: TunServiceOptionsUiState,
-    rootTunServiceOptionsUiState: RootTunServiceOptionsUiState,
-) {
-    if (!uiState.showServiceOptions) return
-
-    val commonActions =
-        remember(viewModel) {
-            CommonTunOptionActions(
-                onBypassPrivateNetworkChange = viewModel::onBypassPrivateNetworkChange,
-                onDnsHijackChange = viewModel::onDnsHijackChange,
-                onEnableIPv6Change = viewModel::onEnableIPv6Change,
-                onTunStackChange = viewModel::onTunStackChange,
-            )
-        }
-
-    Title(MLang.NetworkSettings.Section.VpnOptions)
-    Card {
-        when (uiState.configuredMode) {
-            ProxyMode.Tun -> {
-                TunServiceOptions(
-                    state = tunServiceOptionsUiState,
-                    actions =
-                        TunServiceOptionActions(
-                            common = commonActions,
-                            onAllowBypassChange = viewModel::onAllowBypassChange,
-                            onSystemProxyChange = viewModel::onSystemProxyChange,
-                        ),
-                )
-            }
-
-            ProxyMode.Http -> Unit
-        }
-    }
-}
-
-@Composable
-private fun NetworkProxyOptionsSection(
-    navigator: Navigator,
-    accessControlMode: AccessControlMode,
-    showAccessControlMode: Boolean,
-    onAccessControlModeChange: (AccessControlMode) -> Unit,
-) {
-    Title(MLang.NetworkSettings.Section.ProxyOptions)
-    Card {
-        if (showAccessControlMode) {
-            PreferenceEnumItem(
-                title = MLang.NetworkSettings.ProxyOptions.AccessControlModeTitle,
-                currentValue = accessControlMode,
-                items =
-                    listOf(
-                        MLang.NetworkSettings.ProxyOptions.AllowAll,
-                        MLang.NetworkSettings.ProxyOptions.AllowSelected,
-                        MLang.NetworkSettings.ProxyOptions.RejectSelected,
-                    ),
-                values = AccessControlMode.entries,
-                onValueChange = onAccessControlModeChange,
-            )
-        }
-        PreferenceArrowItem(
-            title = MLang.NetworkSettings.ProxyOptions.ManageAccessControlTitle,            onClick = { navigator.push(Route.AccessControl) },
-        )
-    }
-}
-
-@Composable
-private fun TunServiceOptions(state: TunServiceOptionsUiState, actions: TunServiceOptionActions) {
-    CommonTunServiceOptions(
-        state = state.common,
-        actions = actions.common,
-        extraOptions = {
-            PreferenceSwitchItem(
-                title = MLang.NetworkSettings.VpnOptions.AllowBypassTitle,                checked = state.allowBypass,
-                onCheckedChange = actions.onAllowBypassChange,
-            )
-            PreferenceSwitchItem(
-                title = MLang.NetworkSettings.VpnOptions.SystemProxyTitle,                checked = state.systemProxy,
-                onCheckedChange = actions.onSystemProxyChange,
-            )
-        },
-    )
-}
-
-@Composable
-private fun RootTunServiceOptions(
-    state: RootTunServiceOptionsUiState,
-    showFakeIpRange: Boolean,
-    actions: RootTunServiceOptionActions,
-) {
-    CommonTunServiceOptions(
-        state = state.common,
-        actions = actions.common,
-        extraOptions = {
-            RootTunAdvancedOptions(
-                state = state,
-                showFakeIpRange = showFakeIpRange,
-                actions = actions,
-            )
-        },
-    )
-}
-
-@Composable
-private fun RootTunAdvancedOptions(
-    state: RootTunServiceOptionsUiState,
-    showFakeIpRange: Boolean,
-    actions: RootTunServiceOptionActions,
-) {
-    var editDialog by remember { mutableStateOf<RootTunEditDialogState?>(null) }
-
-    RootTunIdentityOptions(
-        rootTunIfNameDraft = state.rootTunIfNameDraft,
-        rootTunMtuDraft = state.rootTunMtuDraft,
-        onEditIfName = { editDialog = RootTunEditDialogState.IfName },
-        onEditMtu = { editDialog = RootTunEditDialogState.Mtu },
-    )
-    RootTunRoutingOptions(
-        rootTunAutoRoute = state.rootTunAutoRoute,
-        rootTunStrictRoute = state.rootTunStrictRoute,
-        rootTunAutoRedirect = state.rootTunAutoRedirect,
-        rootTunDnsMode = state.rootTunDnsMode,
-        onRootTunAutoRouteChange = actions.onRootTunAutoRouteChange,
-        onRootTunStrictRouteChange = actions.onRootTunStrictRouteChange,
-        onRootTunAutoRedirectChange = actions.onRootTunAutoRedirectChange,
-        onRootTunDnsModeChange = actions.onRootTunDnsModeChange,
-    )
-    RootTunFakeIpOptions(
-        showFakeIpRange = showFakeIpRange,
-        rootTunFakeIpRangeDraft = state.rootTunFakeIpRangeDraft,
-        rootTunFakeIpRange6Draft = state.rootTunFakeIpRange6Draft,
-        onEditFakeIpRange = { editDialog = RootTunEditDialogState.FakeIpRange },
-        onEditFakeIpRange6 = { editDialog = RootTunEditDialogState.FakeIpRange6 },
-    )
-
-    RootTunEditDialogs(
-        editDialog = editDialog,
-        state = state,
-        actions = actions,
-        onDismiss = { editDialog = null },
-    )
-}
-
-@Composable
-private fun RootTunIdentityOptions(
-    rootTunIfNameDraft: String,
-    rootTunMtuDraft: String,
-    onEditIfName: () -> Unit,
-    onEditMtu: () -> Unit,
-) {
-    PreferenceArrowItem(
-        title = MLang.NetworkSettings.RootTun.IfNameTitle,
-        summary = rootTunIfNameDraft.ifBlank { MLang.NetworkSettings.RootTun.IfNameSummary },
-        onClick = onEditIfName,
-    )
-    PreferenceArrowItem(
-        title = MLang.NetworkSettings.RootTun.MtuTitle,
-        summary = rootTunMtuDraft.ifBlank { MLang.NetworkSettings.RootTun.MtuSummary },
-        onClick = onEditMtu,
-    )
-}
-
-@Composable
-private fun RootTunRoutingOptions(
-    rootTunAutoRoute: Boolean,
-    rootTunStrictRoute: Boolean,
-    rootTunAutoRedirect: Boolean,
-    rootTunDnsMode: RootTunDnsMode,
-    onRootTunAutoRouteChange: (Boolean) -> Unit,
-    onRootTunStrictRouteChange: (Boolean) -> Unit,
-    onRootTunAutoRedirectChange: (Boolean) -> Unit,
-    onRootTunDnsModeChange: (RootTunDnsMode) -> Unit,
-) {
-    PreferenceSwitchItem(
-        title = MLang.NetworkSettings.RootTun.AutoRouteTitle,        checked = rootTunAutoRoute,
-        onCheckedChange = onRootTunAutoRouteChange,
-    )
-    PreferenceSwitchItem(
-        title = MLang.NetworkSettings.RootTun.StrictRouteTitle,        checked = rootTunStrictRoute,
-        onCheckedChange = onRootTunStrictRouteChange,
-    )
-    PreferenceSwitchItem(
-        title = MLang.NetworkSettings.RootTun.AutoRedirectTitle,        checked = rootTunAutoRedirect,
-        onCheckedChange = onRootTunAutoRedirectChange,
-    )
-    PreferenceEnumItem(
-        title = MLang.NetworkSettings.RootTun.DnsModeTitle,        currentValue = rootTunDnsMode,
-        items =
-            listOf(
-                MLang.NetworkSettings.RootTun.DnsModeRedirHost,
-                MLang.NetworkSettings.RootTun.DnsModeFakeIp,
-            ),
-        values = RootTunDnsMode.entries,
-        onValueChange = onRootTunDnsModeChange,
-    )
-}
-
-@Composable
-private fun RootTunFakeIpOptions(
-    showFakeIpRange: Boolean,
-    rootTunFakeIpRangeDraft: String,
-    rootTunFakeIpRange6Draft: String,
-    onEditFakeIpRange: () -> Unit,
-    onEditFakeIpRange6: () -> Unit,
-) {
-    AnimatedVisibility(
-        visible = showFakeIpRange,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically(),
-    ) {
-        Column {
-            PreferenceArrowItem(
-                title = MLang.NetworkSettings.RootTun.FakeIpRangeTitle,
-                summary =
-                    rootTunFakeIpRangeDraft.ifBlank {
-                        MLang.NetworkSettings.RootTun.FakeIpRangeSummary
-                    },
-                onClick = onEditFakeIpRange,
-            )
-            PreferenceArrowItem(
-                title = MLang.NetworkSettings.RootTun.FakeIpRange6Title,
-                summary =
-                    rootTunFakeIpRange6Draft.ifBlank {
-                        MLang.NetworkSettings.RootTun.FakeIpRange6Summary
-                    },
-                onClick = onEditFakeIpRange6,
-            )
-        }
-    }
-}
-
-@Composable
-private fun RootTunEditDialogs(
-    editDialog: RootTunEditDialogState?,
-    state: RootTunServiceOptionsUiState,
-    actions: RootTunServiceOptionActions,
-    onDismiss: () -> Unit,
-) {
-    when (editDialog) {
-        RootTunEditDialogState.IfName ->
-            RootTunTextEditDialog(
-                title = MLang.NetworkSettings.RootTun.IfNameTitle,
-                value = state.rootTunIfNameDraft,
-                onValueChange = actions.onRootTunIfNameDraftChange,
-                onDismiss = onDismiss,
-                onCommit = actions.commitRootTunIfName,
-            )
-
-        RootTunEditDialogState.Mtu ->
-            RootTunTextEditDialog(
-                title = MLang.NetworkSettings.RootTun.MtuTitle,
-                value = state.rootTunMtuDraft,
-                onValueChange = actions.onRootTunMtuDraftChange,
-                onDismiss = onDismiss,
-                onCommit = actions.commitRootTunMtu,
-                keyboardOptions =
-                    KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-            )
-
-        RootTunEditDialogState.FakeIpRange ->
-            RootTunTextEditDialog(
-                title = MLang.NetworkSettings.RootTun.FakeIpRangeTitle,
-                value = state.rootTunFakeIpRangeDraft,
-                onValueChange = actions.onRootTunFakeIpRangeDraftChange,
-                onDismiss = onDismiss,
-                onCommit = actions.commitRootTunFakeIpRange,
-            )
-
-        RootTunEditDialogState.FakeIpRange6 ->
-            RootTunTextEditDialog(
-                title = MLang.NetworkSettings.RootTun.FakeIpRange6Title,
-                value = state.rootTunFakeIpRange6Draft,
-                onValueChange = actions.onRootTunFakeIpRange6DraftChange,
-                onDismiss = onDismiss,
-                onCommit = actions.commitRootTunFakeIpRange6,
-            )
-
-        null -> Unit
-    }
-}
-
-@Composable
-private fun CommonTunServiceOptions(
-    state: CommonTunOptionsUiState,
-    actions: CommonTunOptionActions,
-    extraOptions: @Composable ColumnScope.() -> Unit = {},
-) {
-    Column {
-        PreferenceSwitchItem(
-            title = MLang.NetworkSettings.VpnOptions.BypassPrivateTitle,            checked = state.bypassPrivateNetwork,
-            onCheckedChange = actions.onBypassPrivateNetworkChange,
-        )
-        PreferenceSwitchItem(
-            title = MLang.NetworkSettings.VpnOptions.DnsHijackTitle,            checked = state.dnsHijack,
-            onCheckedChange = actions.onDnsHijackChange,
-        )
-        PreferenceSwitchItem(
-            title = MLang.NetworkSettings.VpnOptions.EnableIpv6Title,            checked = state.enableIPv6,
-            onCheckedChange = actions.onEnableIPv6Change,
-        )
-        // The TCP/IP stack is fixed to userspace gVisor (matches CFA) — the system/mixed stacks drop
-        // some apps (e.g. Telegram) via their NAT table, so there is no stack picker anymore.
-        extraOptions()
-    }
-}
-
-@Composable
-private fun RootTunTextEditDialog(
-    title: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    onDismiss: () -> Unit,
-    onCommit: () -> Unit,
-    keyboardOptions: KeyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-) {
-    val focusManager = LocalFocusManager.current
-    var localTextFieldValue by
-        remember(title) {
-            mutableStateOf(TextFieldValue(text = value, selection = TextRange(value.length)))
-        }
-
-    AppTextFieldDialog(
-        show = true,
-        title = title,
-        textFieldValue = localTextFieldValue,
-        onTextFieldValueChange = { updatedTextFieldValue ->
-            localTextFieldValue = updatedTextFieldValue
-            onValueChange(updatedTextFieldValue.text)
-        },
-        onDismissRequest = onDismiss,
-        onConfirm = {
-            onCommit()
-            focusManager.clearFocus()
-            onDismiss()
-        },
-        singleLine = true,
-        keyboardOptions = keyboardOptions,
-        keyboardActions =
-            KeyboardActions(
-                onDone = {
-                    onCommit()
-                    onDismiss()
-                    focusManager.clearFocus()
-                }
-            ),
-    )
-}
-
-private data class CommonTunOptionActions(
-    val onBypassPrivateNetworkChange: (Boolean) -> Unit,
-    val onDnsHijackChange: (Boolean) -> Unit,
-    val onEnableIPv6Change: (Boolean) -> Unit,
-    val onTunStackChange: (TunStack) -> Unit,
-)
-
-private data class TunServiceOptionActions(
-    val common: CommonTunOptionActions,
-    val onAllowBypassChange: (Boolean) -> Unit,
-    val onSystemProxyChange: (Boolean) -> Unit,
-)
-
-private data class RootTunServiceOptionActions(
-    val common: CommonTunOptionActions,
-    val onRootTunAutoRouteChange: (Boolean) -> Unit,
-    val onRootTunStrictRouteChange: (Boolean) -> Unit,
-    val onRootTunAutoRedirectChange: (Boolean) -> Unit,
-    val onRootTunDnsModeChange: (RootTunDnsMode) -> Unit,
-    val onRootTunIfNameDraftChange: (String) -> Unit,
-    val onRootTunMtuDraftChange: (String) -> Unit,
-    val onRootTunFakeIpRangeDraftChange: (String) -> Unit,
-    val onRootTunFakeIpRange6DraftChange: (String) -> Unit,
-    val commitRootTunIfName: () -> Unit,
-    val commitRootTunMtu: () -> Unit,
-    val commitRootTunFakeIpRange: () -> Unit,
-    val commitRootTunFakeIpRange6: () -> Unit,
-)
-
-private enum class RootTunEditDialogState {
-    IfName,
-    Mtu,
-    FakeIpRange,
-    FakeIpRange6,
 }

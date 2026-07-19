@@ -117,6 +117,9 @@ class RuntimeForegroundController(
         }
 
     fun onCreate() {
+        // Mark this runtime service alive for StatusProvider's in-process liveness check (both
+        // services share this process). Set first so it holds even if the start below fails.
+        StatusProvider.setServiceAlive(mode, true)
         runCatching {
                 startupLogStore.append("$tag service: onCreate begin")
 
@@ -243,6 +246,7 @@ class RuntimeForegroundController(
 
     fun onDestroy() {
         destroyed = true
+        StatusProvider.setServiceAlive(mode, false)
         runCatching { service.unregisterReceiver(runtimeEventsReceiver) }
         reloadJob?.cancel()
         reloadJob = null

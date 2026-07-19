@@ -24,17 +24,25 @@ import com.github.yumelira.yumebox.core.model.RootTunDnsMode
 import com.github.yumelira.yumebox.data.model.AccessControlMode
 import com.github.yumelira.yumebox.data.model.AccessControlSortMode
 import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.data.model.TunStack
 import com.tencent.mmkv.MMKV
 
 class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
     val proxyMode by enumFlow(ProxyMode.Tun)
 
+    // The run mode selected in the UI. Only VpnService is available today; the root modes gate a few
+    // options (e.g. disable-all-overrides) that only apply to them.
+    val runMode by enumFlow(RunMode.VpnService)
+
     val bypassPrivateNetwork by boolFlow(true)
     val dnsHijack by boolFlow(true)
     val allowBypass by boolFlow(true)
     val enableIPv6 by boolFlow(false)
     val systemProxy by boolFlow(true)
+
+    // When on, the override chain is skipped entirely and the raw subscription config is used as-is.
+    val disableAllOverride by boolFlow(false)
 
     // gVisor is the reliable VpnService default (userspace, no per-socket protect needed). system/mixed
     // work too but route egress through cross-process protect; users can opt into them in settings.

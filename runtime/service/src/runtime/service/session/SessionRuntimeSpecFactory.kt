@@ -22,6 +22,8 @@ package com.github.yumelira.yumebox.runtime.service.session
 
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.OverrideSpec
+import com.github.yumelira.yumebox.data.store.MMKVProvider
+import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
@@ -37,6 +39,9 @@ class SessionRuntimeSpecFactory(
 ) {
     private val context: Context = context.appContextOrSelf
     private val compiledConfigPipeline = CompiledConfigPipeline(this.context)
+    private val networkSettings by lazy {
+        NetworkSettingsStore(MMKVProvider().getMMKV("network_settings"))
+    }
 
     fun createTunSpec(): RuntimeSpec = createLocalSpec(RuntimeOwner.LocalTun)
 
@@ -45,7 +50,13 @@ class SessionRuntimeSpecFactory(
     private fun createLocalSpec(owner: RuntimeOwner): RuntimeSpec {
         val profile = requireActiveProfile()
         val profileDir = context.importedDir.resolve(profile.uuid.toString())
-        val overrideSpecs = compiledConfigPipeline.resolveOverrideSpecs(profile.uuid.toString())
+        // "Disable all overrides" skips the whole override chain and hands the core the raw config.
+        val overrideSpecs =
+            if (networkSettings.disableAllOverride.value) {
+                emptyList()
+            } else {
+                compiledConfigPipeline.resolveOverrideSpecs(profile.uuid.toString())
+            }
         val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
         return RuntimeSpec(
             owner = owner,

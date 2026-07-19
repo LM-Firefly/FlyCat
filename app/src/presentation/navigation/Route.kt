@@ -46,6 +46,9 @@ sealed interface Route : NavKey {
     data object NetworkSettings : Route
 
     @Serializable
+    data object VpnServiceOptions : Route
+
+    @Serializable
     data object AccessControl : Route
 
     @Serializable

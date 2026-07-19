@@ -65,6 +65,7 @@ import com.github.yumelira.yumebox.screen.settings.AppSettingsScreen
 import com.github.yumelira.yumebox.screen.settings.MetaFeatureScreen
 import com.github.yumelira.yumebox.screen.settings.MoeWallpaperCropScreen
 import com.github.yumelira.yumebox.screen.settings.NetworkSettingsScreen
+import com.github.yumelira.yumebox.screen.settings.VpnServiceOptionsScreen
 import com.github.yumelira.yumebox.screen.traffic.TrafficStatisticsScreen
 
 private const val DURATION = 340
@@ -116,6 +117,7 @@ fun AppNavContainer() {
                     }
                     entry<Route.AppSettings> { AppSettingsScreen() }
                     entry<Route.NetworkSettings> { NetworkSettingsScreen(navigator) }
+                    entry<Route.VpnServiceOptions> { VpnServiceOptionsScreen() }
                     entry<Route.AccessControl> { AccessControlScreen(navigator) }
                     entry<Route.MetaFeature> { MetaFeatureScreen(navigator) }
                     entry<Route.Connection> { ConnectionScreen(navigator) }

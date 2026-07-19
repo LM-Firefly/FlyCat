@@ -5,7 +5,12 @@ NetworkSettings = {
     Section = {
         VpnService = "代理模式"
         VpnOptions = "服务配置"
+        Advanced = "高级选项"
         ProxyOptions = "访问控制"
+    }
+
+    Advanced = {
+        DisableOverrideTitle = "禁用所有覆写"
     }
 
     VpnService = {
@@ -13,6 +18,16 @@ NetworkSettings = {
         VpnMode = "VPN 模式"
         RootTunMode = "Root TUN"
         SystemProxy = "HTTP 系统代理"
+    }
+
+    RunMode = {
+        SectionTitle = "运行模式"
+        VpnServiceTitle = "Vpn Service"
+        VpnServiceSummary = "系统 VPN 全局代理"
+        TunTitle = "Tun"
+        TunSummary = "虚拟网卡直连 · 即将支持"
+        TproxyTitle = "TPROXY"
+        TproxySummary = "内核透明代理 · 即将支持"
     }
 
     VpnOptions = {

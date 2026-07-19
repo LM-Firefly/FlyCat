@@ -5,7 +5,12 @@ NetworkSettings = {
     Section = {
         VpnService = "Proxy Mode"
         VpnOptions = "Service Options"
+        Advanced = "Advanced"
         ProxyOptions = "Access Control"
+    }
+
+    Advanced = {
+        DisableOverrideTitle = "Disable All Overrides"
     }
 
     VpnService = {
@@ -13,6 +18,16 @@ NetworkSettings = {
         VpnMode = "VPN Mode"
         RootTunMode = "Root TUN"
         SystemProxy = "HTTP System Proxy"
+    }
+
+    RunMode = {
+        SectionTitle = "Run Mode"
+        VpnServiceTitle = "Vpn Service"
+        VpnServiceSummary = "System VPN, global proxy"
+        TunTitle = "Tun"
+        TunSummary = "Virtual NIC tunnel · coming soon"
+        TproxyTitle = "TPROXY"
+        TproxySummary = "Kernel transparent proxy · coming soon"
     }
 
     VpnOptions = {
