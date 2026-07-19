@@ -49,6 +49,12 @@ sealed interface Route : NavKey {
     data object VpnServiceOptions : Route
 
     @Serializable
+    data object TunServiceOptions : Route
+
+    @Serializable
+    data object TproxyServiceOptions : Route
+
+    @Serializable
     data object AccessControl : Route
 
     @Serializable

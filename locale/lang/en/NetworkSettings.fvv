@@ -17,9 +17,9 @@ NetworkSettings = {
         VpnServiceTitle = "Vpn Service"
         VpnServiceSummary = "System VPN, global proxy"
         TunTitle = "Tun"
-        TunSummary = "Virtual NIC tunnel · coming soon"
+        TunSummary = "Root · kernel TUN tunnel"
         TproxyTitle = "TPROXY"
-        TproxySummary = "Kernel transparent proxy · coming soon"
+        TproxySummary = "Root · kernel transparent proxy"
     }
 
     VpnOptions = {
@@ -28,6 +28,28 @@ NetworkSettings = {
         AllowBypassTitle = "Allow App Bypass"
         EnableIpv6Title = "Enable IPv6"
         SystemProxyTitle = "VPN Built-in System Proxy"
+    }
+
+    TunOptions = {
+        Title = "Tun Options"
+        IfNameTitle = "Virtual NIC"
+        MtuTitle = "MTU"
+        StackTitle = "Network Stack"
+        StackSystem = "System"
+        StackGVisor = "gVisor"
+        StackMixed = "Mixed"
+        AutoRouteTitle = "Auto Route"
+        StrictRouteTitle = "Strict Route"
+        AutoRedirectTitle = "Auto Redirect"
+        DnsModeTitle = "DNS Mode"
+        DnsRedirHost = "RedirHost"
+        DnsFakeIp = "FakeIP"
+        Ipv6Title = "Enable IPv6"
+    }
+
+    TproxyOptions = {
+        Title = "TPROXY Options"
+        PortTitle = "TPROXY Port"
     }
 
     ProxyOptions = {

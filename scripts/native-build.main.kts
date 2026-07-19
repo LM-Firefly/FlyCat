@@ -268,6 +268,13 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
     private val outputDir = File("build/native/go-exe")
     private val appJniRoot = File("jniLibs")
 
+    // The mihomo source at lib/mihomo/mihomo is kept PRISTINE. The Android-root kernel changes
+    // (tproxy iptables working under GOOS=android, tun uid rules, per-app owner rules) live as git
+    // patches under .github/patches/mihomo and are applied here right before the Go build — so an
+    // upstream mihomo sync never has to be hand-merged.
+    private val mihomoDir = File("lib/mihomo/mihomo")
+    private val kernelPatchDir = File(".github/patches/mihomo")
+
     private val abiToGoArch = mapOf(
         "arm64-v8a" to "arm64",
         "armeabi-v7a" to "arm",
@@ -285,9 +292,43 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
             println("[CoreExe] Source directory not found: ${sourceDir.absolutePath}")
             return
         }
+        applyKernelPatches()
         val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
         println("[CoreExe] Building PIE core executable ($outputLibraryName) for ABIs: ${abis.joinToString()}")
         abis.forEach(::buildForAbi)
+    }
+
+    // Apply every .github/patches/mihomo/*.patch to the mihomo tree before building. Idempotent: a
+    // patch that is already applied (reverse-check succeeds) is skipped, so re-runs are safe.
+    private fun applyKernelPatches() {
+        if (!kernelPatchDir.isDirectory || !File(mihomoDir, ".git").exists()) return
+        val patches = kernelPatchDir.listFiles { file -> file.extension == "patch" }
+            ?.sortedBy { it.name }
+            .orEmpty()
+        if (patches.isEmpty()) return
+        println("[CoreExe] Applying ${patches.size} mihomo kernel patch(es)")
+        patches.forEach { patch ->
+            val alreadyApplied = executeCommand(
+                command = listOf("git", "apply", "--reverse", "--check", patch.absolutePath),
+                workingDir = mihomoDir,
+                printStdout = false,
+                printStderr = false,
+                stderrIsError = false,
+            ).success
+            if (alreadyApplied) {
+                println("[CoreExe]   already applied: ${patch.name}")
+                return@forEach
+            }
+            val result = executeCommand(
+                command = listOf("git", "apply", patch.absolutePath),
+                workingDir = mihomoDir,
+                stdoutPrefix = "[patch]",
+                stderrPrefix = "[patch]",
+                stderrIsError = false,
+            )
+            check(result.success) { "Failed to apply kernel patch ${patch.name}: ${result.error}" }
+            println("[CoreExe]   applied: ${patch.name}")
+        }
     }
 
     private fun buildForAbi(abi: String) {

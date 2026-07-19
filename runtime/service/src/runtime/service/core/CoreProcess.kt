@@ -116,7 +116,7 @@ class CoreProcess(private val context: Context) {
         // rooted device root can already read process memory, so this is no additional exposure.
         val configFile = File(home, ROOT_CONFIG).apply { writeText(config) }
         val lib = File(context.applicationInfo.nativeLibraryDir, LIB).absolutePath
-        val logFile = File(home, "core.log").absolutePath
+        val logFile = File(home, ROOT_LOG).absolutePath
         val command =
             "exec ${quote(lib)} --mode $mode --home ${quote(home.absolutePath)} " +
                 "--controller ${quote(sock)} --secret ${quote(secret)} " +
@@ -222,6 +222,15 @@ class CoreProcess(private val context: Context) {
         fun rootDaemonMode(): RunMode? = RunMode.fromCoreArg(RootDaemonState.load()?.mode)
 
         /**
+         * Last non-blank line of the root core's log — the dead-on-arrival diagnostic (a rejected
+         * config makes the core print one fatal line and exit). Root-created but world-readable.
+         */
+        fun rootCoreLogTail(context: Context): String? = runCatching {
+            context.runtimeHomeDir.resolve(ROOT_LOG).takeIf { it.exists() }
+                ?.readLines()?.lastOrNull { it.isNotBlank() }?.trim()?.take(300)
+        }.getOrNull()
+
+        /**
          * Reattach to a still-running root daemon after an app restart: probe liveness and, if alive,
          * republish [current] from the persisted secret WITHOUT relaunching. Returns the running mode
          * ("tun"/"tproxy"), or null when no live daemon exists (stale state is cleared).
@@ -249,6 +258,7 @@ class CoreProcess(private val context: Context) {
         }
 
         private const val ROOT_CONFIG = "run.yaml"
+        private const val ROOT_LOG = "core.log"
 
         private fun quote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 

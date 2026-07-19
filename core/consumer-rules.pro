@@ -15,7 +15,7 @@
 # JNI bridge callbacks use FindClass/GetMethodID with these exact names.
 -keep class com.github.yumelira.yumebox.core.bridge.** { *; }
 
-# JNI in lib/native/cpp/bridge_callbacks.cpp resolves these exact symbols.
+# JNI in lib/native/compat/libcompat.c resolves these exact symbols.
 -keep class kotlin.Unit {
     public static final kotlin.Unit INSTANCE;
 }

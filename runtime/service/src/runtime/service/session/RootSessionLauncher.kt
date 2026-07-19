@@ -23,6 +23,8 @@ package com.github.yumelira.yumebox.runtime.service.session
 import android.content.Context
 import android.content.Intent
 import com.github.yumelira.yumebox.core.model.RunMode
+import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
+import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
@@ -56,6 +58,25 @@ object RootSessionLauncher {
                 throw error
             }
 
+        // The launch only proves the fork: a config the core rejects kills it moments later and the
+        // only trace is core.log. Re-probe after a short grace so a dead-on-arrival daemon surfaces
+        // as a Failed phase with the fatal log line instead of silently flipping back to idle.
+        PollingTimers.awaitTick(
+            PollingTimerSpecs.dynamic(
+                name = "root_core_startup_probe",
+                intervalMillis = STARTUP_PROBE_DELAY_MS,
+                initialDelayMillis = STARTUP_PROBE_DELAY_MS,
+            )
+        )
+        if (!CoreProcess.isRootDaemonAlive()) {
+            val reason =
+                CoreProcess.rootCoreLogTail(appContext) ?: "root core exited during startup"
+            CoreProcess.stopRoot()
+            StatusProvider.markRuntimeFailed(mode, reason)
+            log.append("${logScope.tag} root launcher: dead on arrival: $reason")
+            error(reason)
+        }
+
         StatusProvider.markRuntimeRunning(mode)
         broadcast(appContext, Intents.actionClashStarted(appContext.packageName))
         log.append("${logScope.tag} root launcher: done")
@@ -75,4 +96,6 @@ object RootSessionLauncher {
             context.sendBroadcast(Intent(action).setPackage(context.packageName))
         }
     }
+
+    private const val STARTUP_PROBE_DELAY_MS = 800L
 }

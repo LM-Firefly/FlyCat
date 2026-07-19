@@ -790,6 +790,10 @@ class ProxyFacade(
         }
         val configuredMode = networkSettingsStorage.runMode.value
         clearLegacyRuntimeCaches()
+        // A root daemon can survive app death; re-attach to it (restores CoreProcess.current so the
+        // REST client can reach it again) before probing ownership. Cheap no-op — and no `su` call —
+        // when no daemon was ever launched (no persisted RootDaemonState).
+        runCatching { CoreProcess.reconnectRoot(appContext) }
         StatusProvider.reconcilePersistedRuntimeState()
         val owner = detectOwner()
 

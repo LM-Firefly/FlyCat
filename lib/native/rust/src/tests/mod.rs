@@ -855,3 +855,110 @@ fn compile_request_rejects_yaml_output_for_encrypted_source() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn tun_override_on_profile_without_dns_backfills_nameserver() {
+    let temp_dir = std::env::temp_dir().join(format!(
+        "yumebox-compiler-test-tun-dns-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time before unix epoch")
+            .as_nanos()
+    ));
+    fs::create_dir_all(&temp_dir).expect("create temp profile dir");
+
+    // Subscription-style profile with NO dns block.
+    let profile_path = temp_dir.join("config.yaml");
+    fs::write(&profile_path, "mode: rule\nproxies: []\n").expect("write profile yaml");
+
+    // The built-in Tun override: enables dns (mode choice) and the tun block.
+    let override_path = temp_dir.join("__tun_override__.yaml");
+    fs::write(
+        &override_path,
+        "tun:\n  enable: true\n  device: Yume\n  auto-route: true\ndns:\n  enable: true\n  enhanced-mode: redir-host\n",
+    )
+    .expect("write tun override");
+
+    let mut request = test_request(&temp_dir, &profile_path);
+    request.run_mode = RunMode::Tun;
+    request.overrides = vec![crate::model::OverrideSpec {
+        path: override_path.to_string_lossy().into_owned(),
+        ext: "yaml".to_string(),
+    }];
+
+    let result = compile_request(request, false).expect("compile should succeed");
+    assert!(result.success, "compile failed: {:?}", result.error);
+    let root: JsonValue = serde_yaml::from_str(&result.final_yaml).expect("parse final yaml");
+
+    // The tun block must survive in Tun run mode (no force-off).
+    let tun = root.get("tun").and_then(JsonValue::as_object).expect("tun block");
+    assert_eq!(tun.get("enable"), Some(&JsonValue::Bool(true)));
+
+    // dns.enable=true with an empty nameserver would make mihomo refuse the whole config
+    // ("NameServer cannot be empty"); the patch must backfill the defaults.
+    let dns = root.get("dns").and_then(JsonValue::as_object).expect("dns block");
+    assert_eq!(dns.get("enable"), Some(&JsonValue::Bool(true)));
+    let nameserver = dns
+        .get("nameserver")
+        .and_then(JsonValue::as_array)
+        .expect("nameserver array");
+    assert!(!nameserver.is_empty(), "nameserver must be backfilled");
+    let default_nameserver = dns
+        .get("default-nameserver")
+        .and_then(JsonValue::as_array)
+        .expect("default-nameserver array");
+    assert!(!default_nameserver.is_empty());
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn tun_override_keeps_profile_nameservers_intact() {
+    let temp_dir = std::env::temp_dir().join(format!(
+        "yumebox-compiler-test-tun-dns-keep-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time before unix epoch")
+            .as_nanos()
+    ));
+    fs::create_dir_all(&temp_dir).expect("create temp profile dir");
+
+    let profile_path = temp_dir.join("config.yaml");
+    fs::write(
+        &profile_path,
+        "mode: rule\ndns:\n  enable: false\n  nameserver:\n    - 1.1.1.1\n",
+    )
+    .expect("write profile yaml");
+
+    let override_path = temp_dir.join("__tun_override__.yaml");
+    fs::write(
+        &override_path,
+        "dns:\n  enable: true\n  enhanced-mode: redir-host\n",
+    )
+    .expect("write tun override");
+
+    let mut request = test_request(&temp_dir, &profile_path);
+    request.run_mode = RunMode::Tun;
+    request.overrides = vec![crate::model::OverrideSpec {
+        path: override_path.to_string_lossy().into_owned(),
+        ext: "yaml".to_string(),
+    }];
+
+    let result = compile_request(request, false).expect("compile should succeed");
+    assert!(result.success, "compile failed: {:?}", result.error);
+    let root: JsonValue = serde_yaml::from_str(&result.final_yaml).expect("parse final yaml");
+
+    // The profile's own nameservers must win over the backfill defaults.
+    let dns = root.get("dns").and_then(JsonValue::as_object).expect("dns block");
+    let nameserver = dns
+        .get("nameserver")
+        .and_then(JsonValue::as_array)
+        .expect("nameserver array");
+    assert_eq!(
+        nameserver,
+        &vec![JsonValue::String("1.1.1.1".to_string())],
+        "profile nameservers must be kept, not replaced"
+    );
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}

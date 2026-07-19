@@ -26,7 +26,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.data.model.AccessControlMode
 import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.presentation.component.Card
@@ -61,6 +63,12 @@ fun NetworkSettingsScreen(navigator: Navigator) {
     val disableAllOverride by viewModel.disableAllOverride.state.collectAsState()
     val accessControlMode by viewModel.accessControlMode.state.collectAsState()
     val runMode by viewModel.runMode.state.collectAsState()
+    val context = LocalContext.current
+
+    // A root mode tapped without root access surfaces the block reason as a toast.
+    LaunchedEffect(Unit) {
+        viewModel.rootBlocked.collect { message -> context.toast(message) }
+    }
 
     Scaffold(
         topBar = { TopBar(title = MLang.NetworkSettings.Title, scrollBehavior = scrollBehavior) }
@@ -84,15 +92,15 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                         title = MLang.NetworkSettings.RunMode.TunTitle,
                         summary = MLang.NetworkSettings.RunMode.TunSummary,
                         selected = runMode == RunMode.Tun,
-                        enabled = false,
-                        onSelect = {},
+                        enabled = true,
+                        onSelect = { viewModel.onRunModeChange(RunMode.Tun) },
                     )
                     ModeCard(
                         title = MLang.NetworkSettings.RunMode.TproxyTitle,
                         summary = MLang.NetworkSettings.RunMode.TproxySummary,
                         selected = runMode == RunMode.Tproxy,
-                        enabled = false,
-                        onSelect = {},
+                        enabled = true,
+                        onSelect = { viewModel.onRunModeChange(RunMode.Tproxy) },
                     )
                 }
             }
@@ -101,7 +109,15 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                 Card {
                     PreferenceArrowItem(
                         title = MLang.NetworkSettings.Section.VpnOptions,
-                        onClick = { navigator.push(Route.VpnServiceOptions) },
+                        // Each mode's service config lives behind its own page; open the one that
+                        // matches the selected run mode (Tproxy reuses the Tun geometry page for now).
+                        onClick = {
+                            when (runMode) {
+                                RunMode.VpnService -> navigator.push(Route.VpnServiceOptions)
+                                RunMode.Tun -> navigator.push(Route.TunServiceOptions)
+                                RunMode.Tproxy -> navigator.push(Route.TproxyServiceOptions)
+                            }
+                        },
                     )
                     PreferenceSwitchItem(
                         title = MLang.NetworkSettings.Advanced.DisableOverrideTitle,
@@ -140,7 +156,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
 
 /**
  * A run-mode option: its own card with a leading radio and a title/summary. A disabled mode greys its
- * text and radio and can't be selected (it's a root-only mode that isn't available yet).
+ * text and radio and can't be selected. Root modes (Tun/TPROXY) stay enabled and probe root on tap.
  */
 @Composable
 private fun ModeCard(

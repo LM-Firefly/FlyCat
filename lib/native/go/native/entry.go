@@ -22,6 +22,7 @@ import (
 
 	"github.com/metacubex/mihomo/config"
 	"github.com/metacubex/mihomo/hub"
+	"github.com/metacubex/mihomo/listener/tproxy"
 	"github.com/metacubex/mihomo/log"
 )
 
@@ -54,15 +55,10 @@ func main() {
 		fatal("missing required --home")
 	}
 
-	// The core is silent after fork (stdout/stderr are its only channel out, redirected by the
-	// launcher to <home>/core.log). Forward the mihomo log bus there so TUN/DNS bring-up is
-	// diagnosable.
-	go func() {
-		for event := range log.Subscribe() {
-			fmt.Fprintf(os.Stderr, "[%s] %s\n", event.Type(), event.Payload)
-		}
-	}()
-	log.SetLevel(log.DEBUG)
+	// Logging: mihomo's own logrus already prints to stdout (redirected by the launcher to
+	// <home>/core.log) with level filtering, and ApplyConfig applies the config's `log-level` —
+	// no extra subscriber, no forced level, or the log both duplicates every line and ignores
+	// the configured level.
 
 	delegate.Init(*home, *versionName, *gitVersion, *sdkVersion)
 	// Egress never loops back through the tunnel (VPN excludes the app's own uid; tun uses
@@ -130,13 +126,19 @@ func main() {
 	}
 
 	hub.ApplyConfig(cfg)
-	log.SetLevel(log.DEBUG) // ApplyConfig may lower the level from the config; keep DEBUG for TUN diagnostics
 	log.Infoln("[core] config applied; mode=%s controller=%q tun.enable=%v", *mode, *controller, cfg.General.Tun.Enable)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-signals
 	log.Infoln("[core] received %v, shutting down", sig)
+
+	// TPROXY programs host iptables/route rules that outlive the process; tear them down on exit so a
+	// stopped daemon never leaves the device's networking hijacked. (ApplyConfig also cleans up first,
+	// but an explicit stop must not depend on a future start to undo the rules.)
+	if *mode == "tproxy" {
+		tproxy.CleanupTProxyIPTables()
+	}
 }
 
 // channelFromEnv reads the inherited socketpair fd from CHANNEL (set by libcompat.nativeStart).

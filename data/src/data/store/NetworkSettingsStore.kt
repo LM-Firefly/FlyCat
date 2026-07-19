@@ -48,12 +48,18 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     val tunIfName by strFlow("Yume")
     val tunMtu by intFlow(1500)
     val tunAutoRoute by boolFlow(true)
-    val tunStrictRoute by boolFlow(true)
+    // strict-route off (can black-hole traffic); auto-redirect on — it carries the app TCP egress.
+    val tunStrictRoute by boolFlow(false)
     val tunAutoRedirect by boolFlow(true)
     val tunIncludeAndroidUser by intListFlow(listOf(0, 10))
+    // redir-host is the reliable default (returns real IPs, no fake-ip pool/filter to get wrong);
+    // fake-ip stays selectable in the Tun options page for setups that want it.
     val tunDnsMode by enumFlow(TunDnsMode.RedirHost)
     val tunFakeIpRange by strFlow("198.18.0.1/16")
     val tunFakeIpRange6 by strFlow("fc00::/18")
+
+    // TPROXY: the transparent-proxy port mihomo opens and points its iptables mangle rules at.
+    val tproxyPort by intFlow(7893)
     val accessControlMode by enumFlow(AccessControlMode.ALLOW_ALL)
     val accessControlPackages by stringSetFlow(emptySet())
     val accessControlSelectedFirst by boolFlow(true)

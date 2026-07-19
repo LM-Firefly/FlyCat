@@ -23,11 +23,14 @@ package com.github.yumelira.yumebox.runtime.service.session
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.OverrideSpec
 import com.github.yumelira.yumebox.core.model.RunMode
+import com.github.yumelira.yumebox.core.model.TproxyConfig
 import com.github.yumelira.yumebox.core.model.TunConfig
+import com.github.yumelira.yumebox.data.model.TunStack
 import com.github.yumelira.yumebox.data.store.MMKVProvider
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
+import com.github.yumelira.yumebox.runtime.service.config.AccessControlMode
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.profile.ImportedDao
 import com.github.yumelira.yumebox.runtime.service.util.directoryLastModified
@@ -60,14 +63,18 @@ class SessionRuntimeSpecFactory(
             } else {
                 compiledConfigPipeline.resolveOverrideSpecs(profile.uuid.toString())
             }
-        // Root modes inject the Tun geometry as a built-in override — but subject to the same
-        // disable-all-overrides switch (user's choice), so append it only when overrides are on.
-        val tunConfig = if (runMode != RunMode.VpnService) buildTunConfig() else null
+        // Each root mode injects its own built-in override, subject to the same disable-all-overrides
+        // switch: Tun injects the tun geometry, Tproxy injects tproxy-port + iptables. VpnService gets
+        // its fd path and needs neither.
+        val tunConfig = if (runMode == RunMode.Tun) buildTunConfig() else null
+        val tproxyConfig = if (runMode == RunMode.Tproxy) buildTproxyConfig() else null
         val overrideSpecs =
-            if (tunConfig != null && !disableOverrides) {
-                userOverrides + TunOverride.materialize(tunConfig, profileDir)
-            } else {
-                userOverrides
+            when {
+                disableOverrides -> userOverrides
+                tunConfig != null -> userOverrides + TunOverride.materialize(tunConfig, profileDir)
+                tproxyConfig != null ->
+                    userOverrides + TproxyOverride.materialize(tproxyConfig, profileDir)
+                else -> userOverrides
             }
         val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
         return RuntimeSpec(
@@ -80,26 +87,85 @@ class SessionRuntimeSpecFactory(
             overrideSpecs = overrideSpecs,
             runMode = runMode,
             tunConfig = tunConfig,
+            tproxyConfig = tproxyConfig,
             effectiveFingerprint =
                 buildEffectiveFingerprint(profile.uuid.toString(), overrideSpecs, ageSecretKey),
             profileFingerprint = buildProfileFingerprint(profile.uuid.toString()),
         )
     }
 
-    private fun buildTunConfig(): TunConfig =
-        TunConfig(
+    private fun buildTunConfig(): TunConfig {
+        val access = resolveTunAccessControl()
+        return TunConfig(
             ifName = networkSettings.tunIfName.value,
             mtu = networkSettings.tunMtu.value,
+            stack =
+                when (networkSettings.tunStack.value) {
+                    TunStack.System -> "system"
+                    TunStack.GVisor -> "gvisor"
+                    TunStack.Mixed -> "mixed"
+                },
             autoRoute = networkSettings.tunAutoRoute.value,
             strictRoute = networkSettings.tunStrictRoute.value,
             autoRedirect = networkSettings.tunAutoRedirect.value,
-            includeAndroidUser = networkSettings.tunIncludeAndroidUser.value,
+            includeUid = access.includeUid,
+            excludeUid = access.excludeUid,
+            includeAndroidUser = access.includeAndroidUser,
             routeExcludeAddress = networkSettings.tunRouteExcludeAddress.value,
             dnsMode = networkSettings.tunDnsMode.value,
             fakeIpRange = networkSettings.tunFakeIpRange.value,
             fakeIpRange6 = networkSettings.tunFakeIpRange6.value,
             allowIpv6 = networkSettings.enableIPv6.value,
         )
+    }
+
+    private fun buildTproxyConfig(): TproxyConfig {
+        val access = resolveTunAccessControl()
+        return TproxyConfig(
+            port = networkSettings.tproxyPort.value,
+            dnsMode = networkSettings.tunDnsMode.value,
+            includeUid = access.includeUid,
+            excludeUid = access.excludeUid,
+            fakeIpRange = networkSettings.tunFakeIpRange.value,
+            fakeIpRange6 = networkSettings.tunFakeIpRange6.value,
+            allowIpv6 = networkSettings.enableIPv6.value,
+        )
+    }
+
+    /**
+     * Maps the shared access-control setting (the home-page package manager) onto the Tun uid rules.
+     * The cmfa build stubs out mihomo's include/exclude-package, so a selected PACKAGE must be
+     * resolved to a UID here and emitted as include-uid / exclude-uid. Selected-package modes use the
+     * uid whitelist/blacklist; the all-apps modes fall back to include-android-user (+ the built-in
+     * system-uid exclusion in [TunConfig]).
+     */
+    private fun resolveTunAccessControl(): TunAccessControl {
+        val self = context.applicationInfo.uid
+        val selectedUid =
+            store.accessControlPackages
+                .mapNotNull(::resolvePackageUid)
+                .filter { it != self }
+                .distinct()
+                .sorted()
+        val allUsers = networkSettings.tunIncludeAndroidUser.value
+        return when (store.accessControlMode) {
+            AccessControlMode.AcceptAll -> TunAccessControl(includeAndroidUser = allUsers)
+            AccessControlMode.AcceptSelected -> TunAccessControl(includeUid = selectedUid)
+            AccessControlMode.RejectSelected ->
+                TunAccessControl(excludeUid = selectedUid, includeAndroidUser = allUsers)
+            // Whitelist only ourselves ⇒ no other app is ever routed into the tun.
+            AccessControlMode.RejectAll -> TunAccessControl(includeUid = listOf(self))
+        }
+    }
+
+    private fun resolvePackageUid(pkg: String): Int? =
+        runCatching { context.packageManager.getPackageInfo(pkg, 0).applicationInfo?.uid }.getOrNull()
+
+    private data class TunAccessControl(
+        val includeUid: List<Int> = emptyList(),
+        val excludeUid: List<Int> = emptyList(),
+        val includeAndroidUser: List<Int> = emptyList(),
+    )
 
     private fun requireActiveProfile():
         com.github.yumelira.yumebox.runtime.service.profile.Imported {

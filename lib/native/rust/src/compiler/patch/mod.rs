@@ -107,6 +107,45 @@ pub fn patch_static_runtime(root: &mut JsonValue, profile_dir: &Path, run_mode: 
         }
     }
 
+    // An override may force `dns.enable: true` onto a profile that carries no nameservers (the
+    // built-in Tun override does exactly this when the subscription has no `dns:` block). mihomo
+    // hard-fails on "DNS enabled but NameServer empty", killing the core at parse time — backfill
+    // the defaults so an enabled-but-empty DNS block always resolves.
+    let dns_enabled_without_nameserver = object
+        .get("dns")
+        .and_then(JsonValue::as_object)
+        .map(|dns| {
+            dns.get("enable")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(false)
+                && dns
+                    .get("nameserver")
+                    .and_then(JsonValue::as_array)
+                    .map(Vec::is_empty)
+                    .unwrap_or(true)
+        })
+        .unwrap_or(false);
+    if dns_enabled_without_nameserver {
+        let dns = ensure_object_field(object, "dns");
+        let defaults = || {
+            JsonValue::Array(
+                DEFAULT_NAME_SERVERS
+                    .iter()
+                    .map(|value| JsonValue::String((*value).to_string()))
+                    .collect(),
+            )
+        };
+        dns.insert("nameserver".to_string(), defaults());
+        let default_nameserver_missing = dns
+            .get("default-nameserver")
+            .and_then(JsonValue::as_array)
+            .map(Vec::is_empty)
+            .unwrap_or(true);
+        if default_nameserver_missing {
+            dns.insert("default-nameserver".to_string(), defaults());
+        }
+    }
+
     // In the VpnService path the TUN is attached at runtime via a file descriptor; a config-provided
     // tun block must never open its own /dev/net/tun (it would fail on non-root and fight the
     // fd-based listener). TPROXY also needs TUN off (mihomo refuses to program iptables while a tun is

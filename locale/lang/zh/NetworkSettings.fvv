@@ -17,9 +17,9 @@ NetworkSettings = {
         VpnServiceTitle = "Vpn Service"
         VpnServiceSummary = "系统 VPN 全局代理"
         TunTitle = "Tun"
-        TunSummary = "虚拟网卡直连 · 即将支持"
+        TunSummary = "Root · 内核虚拟网卡直连"
         TproxyTitle = "TPROXY"
-        TproxySummary = "内核透明代理 · 即将支持"
+        TproxySummary = "Root · 内核透明代理"
     }
 
     VpnOptions = {
@@ -28,6 +28,28 @@ NetworkSettings = {
         AllowBypassTitle = "允许应用绕过"
         EnableIpv6Title = "运行 IPv6"
         SystemProxyTitle = "VPN 系统代理"
+    }
+
+    TunOptions = {
+        Title = "Tun 配置"
+        IfNameTitle = "虚拟网卡"
+        MtuTitle = "MTU"
+        StackTitle = "协议栈"
+        StackSystem = "System"
+        StackGVisor = "gVisor"
+        StackMixed = "Mixed"
+        AutoRouteTitle = "自动路由"
+        StrictRouteTitle = "严格路由"
+        AutoRedirectTitle = "自动重定向"
+        DnsModeTitle = "DNS 模式"
+        DnsRedirHost = "RedirHost"
+        DnsFakeIp = "FakeIP"
+        Ipv6Title = "启用 IPv6"
+    }
+
+    TproxyOptions = {
+        Title = "TPROXY 配置"
+        PortTitle = "TPROXY 端口"
     }
 
     ProxyOptions = {
