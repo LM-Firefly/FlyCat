@@ -33,7 +33,10 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import com.tencent.mmkv.MMKV
 import java.io.File
+import java.net.URLDecoder
+import java.util.Base64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
@@ -72,44 +75,133 @@ object ProfileProcessor {
         onStatus: (FetchStatus) -> Unit,
     ) {
         onStatus(FetchStatus(FetchStatus.Action.FetchConfiguration, listOf(url), 0, 1))
-        val client = HttpClient(OkHttp) { install(HttpTimeout) { requestTimeoutMillis = 60_000 } }
+        val client =
+            HttpClient(OkHttp) {
+                install(HttpTimeout) { requestTimeoutMillis = 60_000 }
+                followRedirects = true
+            }
         try {
-            val response = client.get(url) { header(HttpHeaders.UserAgent, "YumeBox") }
+            // Airports gate the real config (proxies + subscription-userinfo/profile-title headers)
+            // on a recognized Clash-client User-Agent; "YumeBox" gets a crippled response, so send the
+            // user's custom UA or the same default the Sub-Store client uses.
+            val response =
+                client.get(url) { header(HttpHeaders.UserAgent, resolveSubscriptionUserAgent()) }
             val body = response.bodyAsText()
             stagingDir.mkdirs()
             File(stagingDir, "config.yaml").writeText(body)
             onStatus(FetchStatus(FetchStatus.Action.Verifying, emptyList(), 1, 1))
 
-            response.headers["subscription-userinfo"]?.let { raw ->
-                val fields =
-                    raw.split(';')
-                        .mapNotNull { part ->
-                            val kv = part.split('=', limit = 2)
-                            if (kv.size == 2) kv[0].trim() to kv[1].trim() else null
-                        }
-                        .toMap()
-                val filename =
-                    response.headers["content-disposition"]
-                        ?.substringAfter("filename=", "")
-                        ?.trim('"', ' ')
-                        ?.takeIf { it.isNotBlank() }
-                onStatus(
-                    FetchStatus(
-                        action = FetchStatus.Action.SubscriptionInfo,
-                        args = emptyList(),
-                        progress = 1,
-                        max = 1,
-                        subUpload = fields["upload"]?.toLongOrNull(),
-                        subDownload = fields["download"]?.toLongOrNull(),
-                        subTotal = fields["total"]?.toLongOrNull(),
-                        subExpire = fields["expire"]?.toLongOrNull(),
-                        subFilename = filename,
-                    )
+            val headers = response.headers
+            val fields =
+                headers["subscription-userinfo"]
+                    ?.split(';')
+                    ?.mapNotNull { part ->
+                        val kv = part.split('=', limit = 2)
+                        if (kv.size == 2) kv[0].trim().lowercase() to kv[1].trim() else null
+                    }
+                    ?.toMap()
+                    .orEmpty()
+            val title =
+                decodeSubscriptionTitle(headers["profile-title"] ?: headers["subscription-title"])
+            val filename = parseContentDispositionFilename(headers["content-disposition"])
+            val interval =
+                (headers["profile-update-interval"] ?: headers["subscription-update-interval"])
+                    ?.trim()
+                    ?.toLongOrNull()
+
+            // Emit the subscription-info status unconditionally: a server may send profile-title
+            // (airport name) without subscription-userinfo, and vice versa.
+            onStatus(
+                FetchStatus(
+                    action = FetchStatus.Action.SubscriptionInfo,
+                    args = emptyList(),
+                    progress = 1,
+                    max = 1,
+                    subUpload = fields["upload"]?.toLongOrNull(),
+                    subDownload = fields["download"]?.toLongOrNull(),
+                    subTotal = fields["total"]?.toLongOrNull(),
+                    subExpire = fields["expire"]?.toLongOrNull(),
+                    subUpdateInterval = interval,
+                    subTitle = title,
+                    subFilename = filename,
                 )
-            }
+            )
         } finally {
             client.close()
         }
+    }
+
+    private const val DEFAULT_SUBSCRIPTION_UA = "ClashMetaForAndroid"
+
+    /** The user's configured User-Agent (settings store), or the airport-recognized default. */
+    private fun resolveSubscriptionUserAgent(): String {
+        val custom =
+            runCatching {
+                    MMKV.mmkvWithID("settings", MMKV.MULTI_PROCESS_MODE)
+                        .decodeString("customUserAgent")
+                }
+                .getOrNull()
+                ?.trim()
+        return custom?.takeIf { it.isNotEmpty() } ?: DEFAULT_SUBSCRIPTION_UA
+    }
+
+    /** Decodes a `profile-title` header: plain, `base64:…`, RFC 5987 (`UTF-8''…`), or url-encoded. */
+    private fun decodeSubscriptionTitle(raw: String?): String? {
+        val value = raw?.trim()?.trim('"', '\'')?.takeIf { it.isNotBlank() } ?: return null
+        if (value.startsWith("base64:", ignoreCase = true)) {
+            return decodeBase64OrNull(value.substringAfter(':')) ?: value
+        }
+        Regex("""^([^']*)'[^']*'(.*)$""").find(value)?.let { match ->
+            val charset = match.groupValues[1].ifBlank { "UTF-8" }
+            runCatching { URLDecoder.decode(match.groupValues[2], charset).trim() }
+                .getOrNull()
+                ?.takeIf { it.isNotBlank() }
+                ?.let { return it }
+        }
+        runCatching { URLDecoder.decode(value, "UTF-8").trim() }
+            .getOrNull()
+            ?.takeIf { it.isNotBlank() && it != value }
+            ?.let { return it }
+        return decodeBase64OrNull(value) ?: value
+    }
+
+    private fun decodeBase64OrNull(encoded: String): String? {
+        val candidate = encoded.trim().trim('"', '\'')
+        if (candidate.isBlank() || !candidate.matches(Regex("^[A-Za-z0-9+/=]+$"))) return null
+        return runCatching { String(Base64.getDecoder().decode(candidate), Charsets.UTF_8).trim() }
+            .getOrNull()
+            ?.takeIf { it.isNotBlank() }
+    }
+
+    /**
+     * Extracts the filename from a Content-Disposition header. Handles RFC 5987 `filename*=charset''…`
+     * (url-decoded with the given charset) and plain `filename=…`, taking only the value up to the next
+     * `;` — a naive `substringAfter("filename=")` would swallow trailing params and yield a garbled name.
+     */
+    private fun parseContentDispositionFilename(contentDisposition: String?): String? {
+        val cd = contentDisposition?.takeIf { it.isNotBlank() } ?: return null
+        return runCatching {
+                if (cd.contains("filename*=", ignoreCase = true)) {
+                    Regex("""filename\*=([^']*)'([^']*)'([^;]+)""", RegexOption.IGNORE_CASE)
+                        .find(cd)
+                        ?.let { match ->
+                            val charset = match.groupValues[1].ifBlank { "UTF-8" }
+                            val encoded = match.groupValues[3].trim().trim('"', '\'')
+                            val safeCharset =
+                                runCatching { java.nio.charset.Charset.forName(charset).name() }
+                                    .getOrDefault("UTF-8")
+                            URLDecoder.decode(encoded, safeCharset).trim()
+                        }
+                } else {
+                    Regex("""filename=([^;]+)""", RegexOption.IGNORE_CASE)
+                        .find(cd)
+                        ?.groupValues
+                        ?.getOrNull(1)
+                        ?.trim()
+                        ?.trim('"', '\'')
+                }?.takeIf { it.isNotBlank() }
+            }
+            .getOrNull()
     }
 
     private fun FetchStatus.toSubscriptionInfo(): SubscriptionInfo? {
@@ -178,19 +270,24 @@ object ProfileProcessor {
                 try {
                     // The age secret key is applied per-profile inside the compiler (via the compile
                     // request), not as global core state, so nothing to set here.
-                    fetchSubscription(stagingDir, snapshot.imported.source) { status ->
-                        val fetchedSubInfo = status.toSubscriptionInfo()
-                        if (fetchedSubInfo != null) {
-                            subInfo = fetchedSubInfo
-                            return@fetchSubscription
-                        }
-                        try {
-                            cb?.updateStatus(status)
-                        } catch (error: Exception) {
-                            // fault barrier: the observer may live across a binder; reporting
-                            // failures must not abort the profile fetch itself.
-                            cb = null
-                            Timber.w(error, "Report fetch status: %s", error.message)
+                    // Only Url profiles are fetched over HTTP. A File profile's config.yaml was already
+                    // written into its dir at import time (copyProfileImport) and copied into staging
+                    // above; HTTP-getting its empty/local source would just clobber it.
+                    if (snapshot.imported.type == Profile.Type.Url) {
+                        fetchSubscription(stagingDir, snapshot.imported.source) { status ->
+                            val fetchedSubInfo = status.toSubscriptionInfo()
+                            if (fetchedSubInfo != null) {
+                                subInfo = fetchedSubInfo
+                                return@fetchSubscription
+                            }
+                            try {
+                                cb?.updateStatus(status)
+                            } catch (error: Exception) {
+                                // fault barrier: the observer may live across a binder; reporting
+                                // failures must not abort the profile fetch itself.
+                                cb = null
+                                Timber.w(error, "Report fetch status: %s", error.message)
+                            }
                         }
                     }
 
