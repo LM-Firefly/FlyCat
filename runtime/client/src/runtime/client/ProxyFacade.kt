@@ -184,9 +184,12 @@ class ProxyFacade(
                         }
                     }
 
-                    actionProfileLoaded,
                     actionProfileChanged,
-                    actionOverrideChanged,
+                    actionOverrideChanged -> {
+                        scope.launch { onConfigChanged() }
+                    }
+
+                    actionProfileLoaded,
                     actionServiceRecreated -> {
                         scope.launch { reconcileAndRefreshRuntimeState() }
                     }
@@ -390,6 +393,21 @@ class ProxyFacade(
             refreshAllSafely()
         } else {
             refreshPreviewStateSafely()
+        }
+    }
+
+    /**
+     * A profile/override change landed. The VpnService reloads itself (RuntimeForegroundController
+     * listens for the same broadcast), but the decoupled root daemon has NO foreground service, so
+     * nothing else would pick up the new config — recompile and relaunch it here. Other owners just
+     * refresh their UI state.
+     */
+    private suspend fun onConfigChanged() {
+        if (!isRemoteControllerActive() && detectActiveOwner() == RuntimeOwner.RootDaemon) {
+            runCatching { startProxy(networkSettingsStorage.runMode.value) }
+                .onFailure { error -> Timber.w(error, "Root daemon config reload failed") }
+        } else {
+            reconcileAndRefreshRuntimeState()
         }
     }
 

@@ -120,7 +120,10 @@ object ProfileProcessor {
                     subUpload = fields["upload"]?.toLongOrNull(),
                     subDownload = fields["download"]?.toLongOrNull(),
                     subTotal = fields["total"]?.toLongOrNull(),
-                    subExpire = fields["expire"]?.toLongOrNull(),
+                    // `expire` in subscription-userinfo is a Unix timestamp in SECONDS, but the UI
+                    // (ProfileUiExtensions) renders Profile.expire as epoch MILLIS — convert, or a
+                    // real future date reads as 1970 and every profile shows "expired".
+                    subExpire = fields["expire"]?.toLongOrNull()?.takeIf { it > 0 }?.let { it * 1000L },
                     subUpdateInterval = interval,
                     subTitle = title,
                     subFilename = filename,
