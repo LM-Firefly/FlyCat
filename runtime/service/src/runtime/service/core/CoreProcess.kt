@@ -31,24 +31,23 @@ import com.github.yumelira.yumebox.runtime.service.manager.HttpClashManager
 import com.topjohnwu.superuser.Shell
 import java.io.File
 import java.security.SecureRandom
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /** The running core's UNIX REST controller: socket path + bearer secret. */
 data class CoreEndpoint(val sock: String, val secret: String)
 
 /**
- * Launches and owns the out-of-process mihomo core (the `native` package built as a PIE, packaged as
- * `libclash.so`). Minimal by design:
+ * Launches and owns the out-of-process mihomo core (the `native` PIE, packaged as `libclash.so`):
+ * fork+exec it from nativeLibraryDir (the non-root exec path; falls back to an extracted, chmod'd copy
+ * if refused), stream the compiled config over the socketpair (in memory, never on disk) plus the
+ * VpnService TUN fd via SCM_RIGHTS, and publish the controller endpoint via [current].
  *
- *  1. fork+exec the PIE with [runtimeHomeDir] as its working directory. It ships in nativeLibraryDir
- *     (executable there, which is the non-root exec path); if that exec is refused we fall back to a
- *     copy extracted into app storage and marked executable (the path a root launch uses);
- *  2. stream the compiled config to it over the socketpair (in memory — never written to disk in
- *     plaintext), then hand over the VpnService TUN fd via SCM_RIGHTS;
- *  3. expose the controller endpoint via [current] for the client's REST manager.
- *
- * Egress: the tun always uses the userspace gVisor stack, so the VpnService excluding the app's own
- * uid from the tunnel keeps the core's egress off it — no per-socket protect needed.
+ * Egress: the tun uses the userspace gVisor stack, so excluding the app's own uid from the VpnService
+ * tunnel keeps the core's egress off it — no per-socket protect needed.
  */
 class CoreProcess(private val context: Context) {
 
@@ -101,19 +100,17 @@ class CoreProcess(private val context: Context) {
     }
 
     /**
-     * Launch the core as a detached ROOT daemon (tun / tproxy) via `su`, so it runs in the root
-     * SELinux domain — free to open a kernel TUN, program routes, and set up iptables. Unlike the
-     * VPN/HTTP child cores this is NOT a tracked child: it outlives the app process and is reattached
-     * over the REST socket (see [reconnectRoot]). [mode] is "tun" or "tproxy".
+     * Launch the core as a detached ROOT daemon (tun / tproxy) via `su`: it runs in the root SELinux
+     * domain (free to open a kernel TUN, program routes, iptables) and, unlike the VPN child core,
+     * outlives the app process — reattached over the REST socket ([reconnectRoot]). [mode] = "tun"/"tproxy".
      */
     fun startRoot(mode: String, config: String): CoreEndpoint {
         val home = context.runtimeHomeDir.apply { mkdirs() }
         val sock = File(home, SOCK).absolutePath
         val secret = secretFromConfig(config) ?: randomSecret()
 
-        // A detached `su` process can't inherit the app's socketpair, so hand the compiled config to
-        // the daemon via a file it reads with --config. It stays in the app-private home dir; on a
-        // rooted device root can already read process memory, so this is no additional exposure.
+        // A detached `su` process can't inherit the socketpair, so hand it the config via a --config
+        // file in the app-private home dir (root can already read process memory — no extra exposure).
         val configFile = File(home, ROOT_CONFIG).apply { writeText(config) }
         val lib = File(context.applicationInfo.nativeLibraryDir, LIB).absolutePath
         val logFile = File(home, ROOT_LOG).absolutePath
@@ -153,16 +150,13 @@ class CoreProcess(private val context: Context) {
     }
 
     /**
-     * Fork the core with [home] as its working directory. Tries the copy in nativeLibraryDir first
-     * (executable there for a non-root app); if the kernel refuses that exec, retries from a copy
-     * extracted into app storage and marked executable. Exec failures now propagate (the child
-     * reports them back), so the fallback triggers on a real failure rather than silently.
+     * Fork the core in [home]: the nativeLibraryDir copy first (non-root exec path), then an
+     * extracted, chmod'd copy if the kernel refuses that exec (real exec failures now propagate).
      */
     private fun spawn(home: File, args: Array<String>): NativeProcess {
         val wd = home.absolutePath
-        // libclash.so must stay raw in nativeLibraryDir (executable there for a non-root app); that is
-        // the exec path. If the kernel refuses it, retry from an extracted, chmod'd copy (the path a
-        // root launch uses).
+        // libclash.so stays raw in nativeLibraryDir (the non-root exec path); fall back to an
+        // extracted, chmod'd copy if that exec is refused.
         val bundled = File(context.applicationInfo.nativeLibraryDir, LIB).absolutePath
         return try {
             NativeProcess.start(bundled, args, workdir = wd)
@@ -202,9 +196,8 @@ class CoreProcess(private val context: Context) {
         private var running: NativeProcess? = null
 
         /**
-         * Lock-free SIGKILL of the running core child. Killing it closes the tun fd it holds, which
-         * brings the VpnService interface down — so `TunService.onDestroy` calls this to guarantee
-         * teardown even if the session-scoped stop is blocked (e.g. on the runtime lock).
+         * Lock-free SIGKILL of the running core child; closing the tun fd it holds drops the VpnService
+         * interface. Called from `TunService.onDestroy` so teardown happens even if the scoped stop blocks.
          */
         fun killRunning() {
             running?.let { runCatching { it.kill() } }
@@ -231,9 +224,8 @@ class CoreProcess(private val context: Context) {
         }.getOrNull()
 
         /**
-         * Reattach to a still-running root daemon after an app restart: probe liveness and, if alive,
-         * republish [current] from the persisted secret WITHOUT relaunching. Returns the running mode
-         * ("tun"/"tproxy"), or null when no live daemon exists (stale state is cleared).
+         * Reattach to a live root daemon after an app restart: probe liveness and republish [current]
+         * from the persisted secret without relaunching. Returns the mode, or null (clearing stale state).
          */
         fun reconnectRoot(context: Context): String? {
             val record = RootDaemonState.load() ?: return null
@@ -248,13 +240,19 @@ class CoreProcess(private val context: Context) {
             return record.mode
         }
 
+        // The su kill returns fast, but libsu's shell round-trip + mihomo's SIGTERM teardown (tproxy's
+        // dozens of iptables execs, tun route/rule cleanup) add latency the stop path must not block on.
+        private val stopScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
         /** Explicitly stop the root daemon (`su kill`, SIGTERM so mihomo tears down tun/iptables). */
         fun stopRoot() {
-            RootDaemonState.load()?.let { record ->
-                runCatching { Shell.cmd("kill ${record.pid}").exec() }
-            }
+            val record = RootDaemonState.load()
+            // Clear state FIRST so isRootDaemonAlive() reports "stopped" immediately; the UI must never
+            // wait on the kill. mihomo tears its iptables/tun down on the SIGTERM sent off-thread below.
             RootDaemonState.clear()
             current = null
+            record ?: return
+            stopScope.launch { runCatching { Shell.cmd("kill ${record.pid}").exec() } }
         }
 
         private const val ROOT_CONFIG = "run.yaml"
@@ -269,9 +267,8 @@ class CoreProcess(private val context: Context) {
         private var rest: IClashManager? = null
 
         /**
-         * Shared [IClashManager] over the running local core (mihomo REST-over-unix). The socket path
-         * is fixed per install; the secret is read fresh from [current] per request, so one instance
-         * serves every session. Used by both the service (telemetry) and the client's gateway.
+         * Shared [IClashManager] over the local core (REST-over-unix). Socket path is fixed per install,
+         * secret read fresh from [current] per request, so one instance serves every session.
          */
         fun rest(context: Context): IClashManager = rest ?: HttpClashManager(
             local = HttpClashManager.Local(

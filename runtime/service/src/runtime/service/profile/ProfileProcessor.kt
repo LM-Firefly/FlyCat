@@ -65,9 +65,8 @@ object ProfileProcessor {
     )
 
     /**
-     * Downloads a subscription URL to `stagingDir/config.yaml` and reports progress, replacing the
-     * old native fetchAndValid. Parses the `subscription-userinfo` header into a SubscriptionInfo
-     * status; deep config validation happens later at compile time.
+     * Downloads a subscription URL to `stagingDir/config.yaml` with progress, parsing the
+     * `subscription-userinfo` header into a SubscriptionInfo (deep config validation happens at compile time).
      */
     private suspend fun fetchSubscription(
         stagingDir: File,
@@ -81,9 +80,8 @@ object ProfileProcessor {
                 followRedirects = true
             }
         try {
-            // Airports gate the real config (proxies + subscription-userinfo/profile-title headers)
-            // on a recognized Clash-client User-Agent; "YumeBox" gets a crippled response, so send the
-            // user's custom UA or the same default the Sub-Store client uses.
+            // Airports gate the real config on a recognized Clash-client User-Agent; "YumeBox" gets a
+            // crippled response, so send the user's custom UA or the Sub-Store client's default.
             val response =
                 client.get(url) { header(HttpHeaders.UserAgent, resolveSubscriptionUserAgent()) }
             val body = response.bodyAsText()
@@ -120,9 +118,8 @@ object ProfileProcessor {
                     subUpload = fields["upload"]?.toLongOrNull(),
                     subDownload = fields["download"]?.toLongOrNull(),
                     subTotal = fields["total"]?.toLongOrNull(),
-                    // `expire` in subscription-userinfo is a Unix timestamp in SECONDS, but the UI
-                    // (ProfileUiExtensions) renders Profile.expire as epoch MILLIS — convert, or a
-                    // real future date reads as 1970 and every profile shows "expired".
+                    // `expire` here is a Unix timestamp in SECONDS, but the UI renders Profile.expire
+                    // as epoch MILLIS — convert, or a real future date reads as 1970 ("expired").
                     subExpire = fields["expire"]?.toLongOrNull()?.takeIf { it > 0 }?.let { it * 1000L },
                     subUpdateInterval = interval,
                     subTitle = title,
@@ -177,9 +174,8 @@ object ProfileProcessor {
     }
 
     /**
-     * Extracts the filename from a Content-Disposition header. Handles RFC 5987 `filename*=charset''…`
-     * (url-decoded with the given charset) and plain `filename=…`, taking only the value up to the next
-     * `;` — a naive `substringAfter("filename=")` would swallow trailing params and yield a garbled name.
+     * Extracts the filename from a Content-Disposition header — RFC 5987 `filename*=charset''…`
+     * (url-decoded) and plain `filename=…`, stopping at the next `;` so trailing params aren't swallowed.
      */
     private fun parseContentDispositionFilename(contentDisposition: String?): String? {
         val cd = contentDisposition?.takeIf { it.isNotBlank() } ?: return null
@@ -258,11 +254,9 @@ object ProfileProcessor {
 
                     UpdateSnapshot(
                         imported = imported,
-                        // Sentinel for "this profile has already committed a config", used below to
-                        // decide whether a failed update may roll back (delete) the profile. The
-                        // source profile file is config.yaml (written by fetchAndValid on a
-                        // successful fetch); runtime.yaml is no longer produced by any path, so it
-                        // can never serve as this sentinel.
+                        // Sentinel "this profile already committed a config", used below to decide
+                        // whether a failed update may roll back (delete) it. The source file is
+                        // config.yaml (runtime.yaml is no longer produced by any path).
                         hasCommittedConfig = targetDir.resolve("config.yaml").isFile,
                     )
                 }
@@ -271,11 +265,10 @@ object ProfileProcessor {
                 var subInfo: SubscriptionInfo? = null
 
                 try {
-                    // The age secret key is applied per-profile inside the compiler (via the compile
-                    // request), not as global core state, so nothing to set here.
-                    // Only Url profiles are fetched over HTTP. A File profile's config.yaml was already
-                    // written into its dir at import time (copyProfileImport) and copied into staging
-                    // above; HTTP-getting its empty/local source would just clobber it.
+                    // Age secret key is applied per-profile inside the compiler (compile request), not
+                    // as global core state — nothing to set here.
+                    // Only Url profiles are fetched: a File profile's config.yaml was already written at
+                    // import time, so HTTP-getting its local source would just clobber it.
                     if (snapshot.imported.type == Profile.Type.Url) {
                         fetchSubscription(stagingDir, snapshot.imported.source) { status ->
                             val fetchedSubInfo = status.toSubscriptionInfo()

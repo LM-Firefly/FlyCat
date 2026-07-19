@@ -10,7 +10,7 @@ index e393d4ca..dd3778ad 100644
 +
  	tun "github.com/metacubex/sing-tun"
  )
-
+ 
 +// On Android, build the uid-range routing rules (CFA no-ops this — its Java VpnService does per-app
 +// routing — but root Tun opens its own auto-route device and needs them, else every uid incl. the
 +// core's own is pulled into the tun and loops). android-user expansion needs no PackageManager.

@@ -70,9 +70,8 @@ object RuntimeServiceLauncher {
             return
         }
 
-        // A Starting phase past the grace window with a live-but-stuck instance would swallow
-        // a new command (onCreate never re-runs on an existing instance). Ask it to recreate
-        // itself after releasing its old session instead of sending a new token to that instance.
+        // A Starting phase past the grace window with a live-but-stuck instance would swallow a new command
+        // (onCreate never re-runs). Ask it to recreate itself after releasing its old session, don't re-token.
         if (
             StatusProvider.queryRuntimePhase(mode) == RuntimePhase.Starting &&
                 StatusProvider.isLocalRuntimeServiceAlive(mode)

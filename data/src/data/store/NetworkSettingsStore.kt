@@ -28,8 +28,7 @@ import com.github.yumelira.yumebox.data.model.TunStack
 import com.tencent.mmkv.MMKV
 
 class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
-    // The run mode selected in the UI. Only VpnService is available today; the root modes gate a few
-    // options (e.g. disable-all-overrides) that only apply to them.
+    // Run mode selected in the UI. Only VpnService ships today; the root modes gate options like disable-all-overrides.
     val runMode by enumFlow(RunMode.VpnService)
 
     val bypassPrivateNetwork by boolFlow(true)
@@ -41,8 +40,8 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     // When on, the override chain is skipped entirely and the raw subscription config is used as-is.
     val disableAllOverride by boolFlow(false)
 
-    // gVisor is the reliable VpnService default (userspace, no per-socket protect needed). system/mixed
-    // work too but route egress through cross-process protect; users can opt into them in settings.
+    // gVisor is the reliable VpnService default (userspace, no per-socket protect); system/mixed work too
+    // but route egress through cross-process protect.
     val tunStack by enumFlow(TunStack.GVisor)
     val tunRouteExcludeAddress by stringListFlow(emptyList())
     val tunIfName by strFlow("Yume")
@@ -52,8 +51,7 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     val tunStrictRoute by boolFlow(false)
     val tunAutoRedirect by boolFlow(true)
     val tunIncludeAndroidUser by intListFlow(listOf(0, 10))
-    // redir-host is the reliable default (returns real IPs, no fake-ip pool/filter to get wrong);
-    // fake-ip stays selectable in the Tun options page for setups that want it.
+    // redir-host is the reliable default (real IPs, no fake-ip pool/filter to get wrong); fake-ip stays selectable.
     val tunDnsMode by enumFlow(TunDnsMode.RedirHost)
     val tunFakeIpRange by strFlow("198.18.0.1/16")
     val tunFakeIpRange6 by strFlow("fc00::/18")

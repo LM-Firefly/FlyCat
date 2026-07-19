@@ -71,18 +71,14 @@ internal class ProxyRuntimeControl(
 
     private suspend fun stopVpnRuntime() {
         withContext(Dispatchers.IO) {
-            // Trigger the in-service graceful teardown: its handler synchronously kills the core child
-            // (which closes the tun fd and brings the VPN down) BEFORE stopForeground/stopSelf. The
-            // REST requestStop() is a no-op for the local core we own, so broadcasting only in its
-            // onFailure never fired — broadcast unconditionally, the same way the QS tile does.
+            // Broadcast the graceful-teardown request unconditionally (like the QS tile): the handler
+            // kills the core child before stopSelf. REST requestStop() is a no-op for the core we own.
             appContext.sendBroadcast(
                 Intent(clashRequestStopAction()).setPackage(appContext.packageName)
             )
             appContext.stopService(Intent(appContext, TunService::class.java))
-            // stopService is async. A start issued while the old instance is still dying gets
-            // its command delivered to that instance (onCreate never re-runs) and is swallowed,
-            // and the dying instance's late stopSelf can put the replacement down; serialize
-            // the handover by waiting until the service is really gone.
+            // stopService is async: a start issued while the old instance is still dying is swallowed
+            // (and its late stopSelf can kill the replacement). Serialize by waiting until it's gone.
             awaitVpnServiceStopped()
         }
     }

@@ -114,11 +114,9 @@ class StatusProvider : ContentProvider() {
         @Volatile var currentProfile: String? = null
 
         // ---- session-token lifecycle (VpnService runtime) ----
-        // The phase store holds a single mode slot shared by every writer (launcher, the
-        // VpnService, the root daemon launcher). A late write from an outgoing service instance
-        // must not stomp the state of its replacement, so VpnService writers carry a token:
-        // writes with a stale token are dropped. The root daemon uses the token-less force
-        // writes below — its phase has its own single-writer discipline.
+        // The phase store has a single mode slot shared by every writer. VpnService writers carry a
+        // token so a late write from an outgoing instance can't stomp its replacement (stale-token
+        // writes are dropped); the root daemon uses the token-less force writes below (own single writer).
 
         /** Claims the phase slot for a new local session and returns its write token. */
         @Synchronized
@@ -248,9 +246,8 @@ class StatusProvider : ContentProvider() {
                 return
             }
 
-            // Failed is a terminal record: the service is expected to be dead, so it must not
-            // be liveness-reset (that erased every failure before anyone could read it). It
-            // decays after a retention window or when the next session claims the slot.
+            // Failed is a terminal record (service expected dead), so it must not be liveness-reset —
+            // that erased failures before they were read. It decays after retention or on the next session.
             if (persistedPhase == RuntimePhase.Failed) {
                 val failedAt = readPersistedRuntimeStartedAt()
                 if (
@@ -281,11 +278,9 @@ class StatusProvider : ContentProvider() {
             currentProfile = null
         }
 
-        // Only VpnService is an in-process foreground service, so a plain flag driven from its
-        // lifecycle is an accurate, O(1) liveness signal (it replaced an
-        // ActivityManager.getRunningServices binder scan that stalled the UI). The root Tun/Tproxy
-        // daemon is out-of-process and survives app death, so its liveness comes from a pid probe
-        // (CoreProcess.isRootDaemonAlive), not a flag.
+        // VpnService is in-process, so a flag driven from its lifecycle is an O(1) liveness signal
+        // (it replaced an ActivityManager.getRunningServices binder scan that stalled the UI). The root
+        // daemon is out-of-process and survives app death, so its liveness is a pid probe, not a flag.
         @Volatile private var vpnServiceAlive = false
 
         /** Set from [RuntimeForegroundController.onCreate]/onDestroy for the VpnService. */

@@ -23,12 +23,9 @@ package com.github.yumelira.yumebox.screen.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.data.model.AccessControlMode
 import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.presentation.component.Card
@@ -50,10 +47,10 @@ import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 
 /**
- * Network settings entry point. Top: a "run mode" radio picker — one card per mode. Only
- * [RunMode.VpnService] is functional today; the root-only Tun / TPROXY modes are shown but disabled
- * until the libsu path lands. Below: advanced options (service config + disable-overrides) and
- * access control. The former parallel HTTP "system proxy" run mode is gone.
+ * Network settings entry point. Top: a "run mode" radio picker — one card per mode. [RunMode.VpnService]
+ * is always available; the root-only Tun / TPROXY cards are greyed out unless root is granted. Below:
+ * advanced options (service config + disable-overrides) and access control. The former parallel HTTP
+ * "system proxy" run mode is gone.
  */
 @Composable
 fun NetworkSettingsScreen(navigator: Navigator) {
@@ -63,12 +60,8 @@ fun NetworkSettingsScreen(navigator: Navigator) {
     val disableAllOverride by viewModel.disableAllOverride.state.collectAsState()
     val accessControlMode by viewModel.accessControlMode.state.collectAsState()
     val runMode by viewModel.runMode.state.collectAsState()
-    val context = LocalContext.current
-
-    // A root mode tapped without root access surfaces the block reason as a toast.
-    LaunchedEffect(Unit) {
-        viewModel.rootBlocked.collect { message -> context.toast(message) }
-    }
+    // Root Tun / TPROXY are only selectable when root is granted; otherwise their cards are greyed out.
+    val rootAvailable by viewModel.rootAvailable.collectAsState()
 
     Scaffold(
         topBar = { TopBar(title = MLang.NetworkSettings.Title, scrollBehavior = scrollBehavior) }
@@ -92,14 +85,14 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                         title = MLang.NetworkSettings.RunMode.TunTitle,
                         summary = MLang.NetworkSettings.RunMode.TunSummary,
                         selected = runMode == RunMode.Tun,
-                        enabled = true,
+                        enabled = rootAvailable,
                         onSelect = { viewModel.onRunModeChange(RunMode.Tun) },
                     )
                     ModeCard(
                         title = MLang.NetworkSettings.RunMode.TproxyTitle,
                         summary = MLang.NetworkSettings.RunMode.TproxySummary,
                         selected = runMode == RunMode.Tproxy,
-                        enabled = true,
+                        enabled = rootAvailable,
                         onSelect = { viewModel.onRunModeChange(RunMode.Tproxy) },
                     )
                 }
@@ -156,7 +149,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
 
 /**
  * A run-mode option: its own card with a leading radio and a title/summary. A disabled mode greys its
- * text and radio and can't be selected. Root modes (Tun/TPROXY) stay enabled and probe root on tap.
+ * text and radio and can't be selected (the root Tun/TPROXY cards when root isn't granted).
  */
 @Composable
 private fun ModeCard(

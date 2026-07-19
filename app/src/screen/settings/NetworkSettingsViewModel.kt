@@ -32,10 +32,9 @@ import com.github.yumelira.yumebox.data.model.TunStack
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.Preference
 import com.github.yumelira.yumebox.runtime.service.root.RootAccessSupport
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -70,9 +69,17 @@ class NetworkSettingsViewModel(
     val tunMtu: Preference<Int> = settings.tunMtu
     val tproxyPort: Preference<Int> = settings.tproxyPort
 
-    // Emitted when a root mode is selected without root access; the screen shows it as a toast.
-    private val _rootBlocked = MutableSharedFlow<String>(extraBufferCapacity = 1)
-    val rootBlocked: SharedFlow<String> = _rootBlocked.asSharedFlow()
+    // Root availability, probed once on open — gates the Tun / TPROXY cards (greyed when false, no toast).
+    // Probing constructs the libsu shell, so a rooted device may surface its su prompt here; that grant
+    // flow is intended. A non-rooted device fast-fails to false and the root cards stay disabled.
+    private val _rootAvailable = MutableStateFlow(false)
+    val rootAvailable: StateFlow<Boolean> = _rootAvailable.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            _rootAvailable.value = RootAccessSupport.evaluateAsync(getApplication()).canStartRoot
+        }
+    }
 
     val uiState: StateFlow<NetworkSettingsUiState> =
         runMode.state
@@ -114,23 +121,12 @@ class NetworkSettingsViewModel(
             )
 
     /**
-     * Selects the run mode (VpnService / Tun / Tproxy) — the single mode key across the runtime. The
-     * root modes are gated: root is probed on tap (no prompt on screen open), and the switch is
-     * applied only when granted, otherwise a block message is surfaced.
+     * Selects the run mode — the single mode key across the runtime. The root Tun / TPROXY cards are
+     * disabled in the UI when [rootAvailable] is false, so reaching here for a root mode already implies
+     * root was granted.
      */
     fun onRunModeChange(mode: RunMode) {
-        if (mode == RunMode.VpnService) {
-            controller.setRunMode(mode)
-            return
-        }
-        viewModelScope.launch {
-            val status = RootAccessSupport.evaluateAsync(getApplication())
-            if (status.canStartRoot) {
-                controller.setRunMode(mode)
-            } else {
-                _rootBlocked.tryEmit(status.rootBlockedMessage())
-            }
-        }
+        controller.setRunMode(mode)
     }
 
     fun onBypassPrivateNetworkChange(enabled: Boolean) {

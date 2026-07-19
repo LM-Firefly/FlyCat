@@ -27,11 +27,10 @@ import com.github.yumelira.yumebox.core.util.YamlCodec
 import java.io.File
 
 /**
- * Builds the built-in `tproxy-port` + `iptables` config fragment for the TPROXY run mode. mihomo opens
- * the tproxy listener and programs the host iptables mangle rules itself (`iptables.enable: true`), and
- * tears them down on exit — no Kotlin-side iptables. The uid whitelist/blacklist (from access control)
- * flows through `iptables.include-uid` / `exclude-uid`; the core's own uid is excluded by mihomo so its
- * egress never loops. DNS is left to the compiler's full injection, same as the Tun path.
+ * Builds the built-in `tproxy-port` + `iptables` fragment for TPROXY mode. mihomo opens the tproxy
+ * listener, programs and tears down the host iptables mangle rules itself (`iptables.enable: true`) — no
+ * Kotlin-side iptables. Access-control uids flow through `iptables.include-uid`/`exclude-uid` (mihomo
+ * excludes the core's own uid so its egress never loops). DNS is left to the compiler, as in Tun.
  */
 object TproxyOverride {
     const val FILE_NAME = "__tproxy_override__.yaml"
@@ -50,9 +49,8 @@ object TproxyOverride {
         val dns =
             linkedMapOf<String, Any?>(
                 "enable" to true,
-                // iptables dns-redirect needs a concrete DNS listen address (mihomo ParseAddrPort's
-                // it and fails the whole iptables setup if empty), and the REDIRECT rule points :53
-                // traffic at this port.
+                // dns-redirect needs a concrete listen address (mihomo ParseAddrPort's it and fails the
+                // whole iptables setup if empty); the REDIRECT rule points :53 traffic at this port.
                 "listen" to "0.0.0.0:1053",
                 "enhanced-mode" to if (fakeIp) "fake-ip" else "redir-host",
             )

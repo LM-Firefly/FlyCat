@@ -50,10 +50,8 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 
 /**
- * The root Tun "service config" sub-page (reached from the network-settings Advanced section when the
- * Tun run mode is selected). Holds the kernel-TUN geometry the core opens for itself — separate from
- * the VpnService page so each mode's options live behind its own entry. Shares
- * [NetworkSettingsViewModel] with the picker screen.
+ * Root Tun "service config" sub-page (network-settings Advanced, Tun mode): the kernel-TUN geometry the
+ * core opens for itself. Shares [NetworkSettingsViewModel] with the picker screen.
  */
 @Composable
 fun TunServiceOptionsScreen() {
@@ -142,10 +140,7 @@ fun TunServiceOptionsScreen() {
     }
 }
 
-/**
- * A tappable row that opens an [AppTextFieldDialog] to edit a single text/number value — same shape as
- * the app-settings "custom user agent" editor, packaged so the row and its dialog live together.
- */
+/** Tappable row that opens an [AppTextFieldDialog] to edit a single text/number value (row + dialog packaged together). */
 @Composable
 internal fun TextInputArrowItem(
     title: String,

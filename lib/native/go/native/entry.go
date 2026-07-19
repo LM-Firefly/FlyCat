@@ -26,15 +26,9 @@ import (
 	"github.com/metacubex/mihomo/log"
 )
 
-// main is the standalone core executable used by the out-of-process architecture. The SAME package
-// is also built as the legacy c-shared library (where main is never called), so nothing here may be
-// required by the c-shared path.
-//
-// Config delivery is IN-MEMORY, never on disk: the compiled config (liboverride output — already the
-// COMPLETE final mihomo config, since the Go process() chain is validation-only) is streamed from the
-// parent over the CHANNEL socketpair, along with the TUN fd. Nothing writes the plaintext config to
-// the filesystem. The tun always uses the userspace gVisor stack, whose egress bypasses the tunnel via
-// the app's uid exclusion, so app.MarkSocket stays a no-op (no per-socket protect needed).
+// main is the standalone core executable (out-of-process architecture). VPN streams the compiled
+// config + TUN fd in-memory over the CHANNEL socketpair (never on disk); root modes read --config.
+// The same package also builds as the legacy c-shared lib, where main is never called.
 func main() {
 	var (
 		home        = flag.String("home", "", "core home directory")
@@ -55,21 +49,16 @@ func main() {
 		fatal("missing required --home")
 	}
 
-	// Logging: mihomo's own logrus already prints to stdout (redirected by the launcher to
-	// <home>/core.log) with level filtering, and ApplyConfig applies the config's `log-level` —
-	// no extra subscriber, no forced level, or the log both duplicates every line and ignores
-	// the configured level.
+	// mihomo's logrus already prints to stdout (launcher redirects to <home>/core.log) and ApplyConfig
+	// applies the config's log-level; no extra subscriber/forced level, else every line duplicates.
 
 	delegate.Init(*home, *versionName, *gitVersion, *sdkVersion)
-	// Egress never loops back through the tunnel (VPN excludes the app's own uid; tun uses
-	// auto-detect-interface; tproxy uses an iptables bypass), so the core needs no per-socket protect;
-	// owner lookups fall back to procfs.
+	// Egress never loops back (VPN uid-exclude / tun auto-detect-interface / tproxy iptables bypass),
+	// so no per-socket protect; owner lookups fall back to procfs.
 	app.ApplyTunContext(nil, nil)
 
-	// Acquire the compiled config and, for the VpnService path, the TUN fd. The VPN path streams both
-	// over the inherited socketpair (never touching disk). The root paths are launched detached via
-	// `su` and cannot inherit the channel, so they read the config from --config (a plain file or a
-	// fifo) and open their own device — no fd is passed.
+	// Acquire config (+ TUN fd for VPN). VPN streams both over the inherited socketpair; detached-su
+	// root modes can't inherit it, so they read --config and open their own device (no fd).
 	var (
 		rawConfig []byte
 		tunFd     = -1
@@ -105,20 +94,15 @@ func main() {
 		fatal("parse compiled config: %v", err)
 	}
 	if *controller != "" {
-		// Add the unix socket the app talks to and the bearer secret, but KEEP any user-configured
-		// external-controller (TCP) so a web dashboard (metacubexd/yacd) can connect too. The app
-		// derives the secret from the config, so the dashboard and the app share one bearer token.
+		// Add the app's unix socket + secret but KEEP any user external-controller (TCP) so a web
+		// dashboard can connect; the app derives the same secret from the config.
 		cfg.Controller.ExternalControllerUnix = *controller
 		cfg.Controller.Secret = *secret
 	}
 
-	// TUN setup is mode-specific:
-	//  - vpn: inject the VpnService fd into the config BEFORE ApplyConfig so mihomo's own updateTun
-	//    wraps it with the userspace gVisor stack (egress bypasses the tunnel via the app's uid
-	//    exclusion; app.MarkSocket stays the no-op set above).
-	//  - tun: the compiled `tun:` block is authoritative — the core opens its OWN kernel device
-	//    (auto-route / auto-detect-interface) in the root domain; do NOT overwrite it.
-	//  - tproxy: no TUN; the compiled config carries tproxy-port + iptables, applied by ApplyConfig.
+	// TUN setup is mode-specific: vpn injects the VpnService fd before ApplyConfig (gVisor stack);
+	// tun keeps the compiled `tun:` block authoritative (core opens its own kernel device); tproxy has
+	// no TUN (tproxy-port + iptables in the config).
 	if *mode == "vpn" && tunFd >= 0 {
 		if err := tun.Configure(cfg, tunFd, *gateway, *portal, *dns); err != nil {
 			fatal("configure tun: %v", err)
@@ -133,9 +117,8 @@ func main() {
 	sig := <-signals
 	log.Infoln("[core] received %v, shutting down", sig)
 
-	// TPROXY programs host iptables/route rules that outlive the process; tear them down on exit so a
-	// stopped daemon never leaves the device's networking hijacked. (ApplyConfig also cleans up first,
-	// but an explicit stop must not depend on a future start to undo the rules.)
+	// TPROXY's iptables/route rules outlive the process; tear them down on exit so a stopped daemon
+	// doesn't leave the device's networking hijacked.
 	if *mode == "tproxy" {
 		tproxy.CleanupTProxyIPTables()
 	}
@@ -155,11 +138,9 @@ func channelFromEnv() int {
 	return fd
 }
 
-// readSetup streams the compiled config from the parent over the SEQPACKET channel and returns it
-// together with the TUN fd. Config bytes arrive as ordinary data messages; the message that carries
-// a descriptor (SCM_RIGHTS) is the terminator and its own data is ignored. A plain EOF terminates a
-// no-fd (controller-only) launch. Nothing touches the filesystem — the plaintext config never lands
-// on disk.
+// readSetup streams the compiled config from the parent over the SEQPACKET channel with the TUN fd.
+// Config arrives as data messages; the SCM_RIGHTS message terminates config (its data ignored), or a
+// plain EOF terminates a no-fd launch. Nothing touches the filesystem.
 func readSetup(channelFd int) ([]byte, int, error) {
 	config := make([]byte, 0, 64*1024)
 	buf := make([]byte, 64*1024)

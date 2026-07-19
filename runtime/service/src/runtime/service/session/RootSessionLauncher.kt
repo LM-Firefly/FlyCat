@@ -31,10 +31,9 @@ import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 
 /**
- * Launches the root [RunMode.Tun] / [RunMode.Tproxy] daemon. Unlike [RuntimeServiceLauncher] there is
- * no foreground service: the core runs as a decoupled `su` daemon (survives app death) and the client
- * drives it over the REST socket, reattaching via [CoreProcess.reconnectRoot]. Only an explicit stop
- * kills it ([CoreProcess.stopRoot]); a service teardown never does.
+ * Launches the root [RunMode.Tun] / [RunMode.Tproxy] daemon. Unlike [RuntimeServiceLauncher] there is no
+ * foreground service: the core runs as a decoupled `su` daemon that survives app death, driven over the
+ * REST socket ([CoreProcess.reconnectRoot]). Only an explicit [CoreProcess.stopRoot] kills it.
  */
 object RootSessionLauncher {
     /** Compile the active profile for [mode] and launch the detached root daemon. */
@@ -58,9 +57,8 @@ object RootSessionLauncher {
                 throw error
             }
 
-        // The launch only proves the fork: a config the core rejects kills it moments later and the
-        // only trace is core.log. Re-probe after a short grace so a dead-on-arrival daemon surfaces
-        // as a Failed phase with the fatal log line instead of silently flipping back to idle.
+        // The fork succeeding proves nothing: a rejected config kills the core moments later (only trace
+        // is core.log). Re-probe after a grace so a dead-on-arrival daemon surfaces as Failed, not idle.
         PollingTimers.awaitTick(
             PollingTimerSpecs.dynamic(
                 name = "root_core_startup_probe",

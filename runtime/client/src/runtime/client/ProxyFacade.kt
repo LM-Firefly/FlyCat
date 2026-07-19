@@ -397,10 +397,8 @@ class ProxyFacade(
     }
 
     /**
-     * A profile/override change landed. The VpnService reloads itself (RuntimeForegroundController
-     * listens for the same broadcast), but the decoupled root daemon has NO foreground service, so
-     * nothing else would pick up the new config — recompile and relaunch it here. Other owners just
-     * refresh their UI state.
+     * Config changed: the VpnService reloads itself via broadcast, but the decoupled root daemon has
+     * no foreground service to react, so recompile and relaunch it here. Other owners just refresh.
      */
     private suspend fun onConfigChanged() {
         if (!isRemoteControllerActive() && detectActiveOwner() == RuntimeOwner.RootDaemon) {
@@ -487,12 +485,8 @@ class ProxyFacade(
         Timber.d("Select proxy: group=$group proxy=$proxyName")
         val ok = resolveClashManager().patchSelector(group, proxyName)
         if (ok) {
-            // Optimistically reflect the user's pick immediately. For a Selector group the user's
-            // choice IS authoritative, so set the group's `now` right away instead of waiting for
-            // the core to commit it (a slow URLTest can delay `now` past the refresh window, which
-            // would otherwise keep the highlight stale until the next periodic sync). The changed
-            // `now` makes the summary differ so publishProxyGroups actually republishes. Only do
-            // this when the group is already cached; otherwise rely on the refresh below.
+            // Optimistically set the group's `now` to the user's pick — a slow URLTest can delay the
+            // core committing it, leaving the highlight stale. Cached groups only; else the refresh below.
             val cachedGroup = groupStore.groups.value.find { it.name == group }
             if (cachedGroup != null && cachedGroup.now != proxyName) {
                 val optimisticGroups = groupStore.upsert(cachedGroup.copy(now = proxyName))
@@ -669,9 +663,8 @@ class ProxyFacade(
         when {
             else -> {
                 runCatching {
-                        // Ensure the local gateway is connected first (controller mode never
-                        // initializes it), otherwise queryActive() throws "ServiceClient not
-                        // connected" right after leaving controller mode.
+                        // Controller mode never inits the local gateway; connect first or queryActive()
+                        // throws "ServiceClient not connected" right after leaving controller mode.
                         connectCurrentBackend()
                         val profile = ServiceClient.profile().queryActive()
                         _currentProfile.value = profile
@@ -808,9 +801,8 @@ class ProxyFacade(
         }
         val configuredMode = networkSettingsStorage.runMode.value
         clearLegacyRuntimeCaches()
-        // A root daemon can survive app death; re-attach to it (restores CoreProcess.current so the
-        // REST client can reach it again) before probing ownership. Cheap no-op — and no `su` call —
-        // when no daemon was ever launched (no persisted RootDaemonState).
+        // The root daemon survives app death; re-attach before probing ownership so the REST client can
+        // reach it again. No-op (no `su`) when no daemon was ever launched.
         runCatching { CoreProcess.reconnectRoot(appContext) }
         StatusProvider.reconcilePersistedRuntimeState()
         val owner = detectOwner()
@@ -852,9 +844,8 @@ class ProxyFacade(
         return detectOwner()
     }
 
-    // VpnService liveness is the in-process phase store; the root daemon is out-of-process and
-    // survives app death, so its liveness is a pid probe (guarded by persisted state — no `su` call
-    // when no daemon was ever launched).
+    // VpnService liveness comes from the in-process phase store; the root daemon survives app death, so
+    // its liveness is a pid probe (guarded by persisted state — no `su` when no daemon was launched).
     private fun isVpnSessionActive(): Boolean = StatusProvider.isRuntimeActive(RunMode.VpnService)
 
     private fun isRootDaemonActive(): Boolean = CoreProcess.isRootDaemonAlive()
@@ -1119,10 +1110,8 @@ class ProxyFacade(
                 .queryAllProxyGroups(excludeNotSelectable = false)
                 .map(groupStore::toInfo)
         }
-        // The local gateway is connected lazily; in controller mode it is never initialized, so a
-        // preview query taken right after leaving controller mode would otherwise throw
-        // "ServiceClient not connected" on the line below and the groups would stay empty. Connect
-        // first so the local preview path is self-sufficient regardless of prior controller state.
+        // Controller mode never inits the lazily-connected local gateway; connect first or a preview
+        // query right after leaving controller mode throws "ServiceClient not connected".
         connectCurrentBackend()
         val activeProfile =
             ServiceClient.profile().queryActive().also {

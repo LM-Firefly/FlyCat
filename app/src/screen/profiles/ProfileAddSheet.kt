@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.github.yumelira.yumebox.common.util.showToastDialog
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_FILE
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
@@ -171,7 +172,8 @@ internal fun AddProfileSheet(
     LaunchedEffect(uiState.error) {
         val errorMessage = uiState.error
         if (errorMessage != null) {
-            context.toast(errorMessage, Toast.LENGTH_LONG)
+            // Import errors are long (YAML/download failures) and worth copying — keep the copyable dialog.
+            showToastDialog(errorMessage)
             if (isDownloading) {
                 isDownloading = false
                 error = errorMessage

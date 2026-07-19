@@ -63,9 +63,8 @@ class SessionRuntimeSpecFactory(
             } else {
                 compiledConfigPipeline.resolveOverrideSpecs(profile.uuid.toString())
             }
-        // Each root mode injects its own built-in override, subject to the same disable-all-overrides
-        // switch: Tun injects the tun geometry, Tproxy injects tproxy-port + iptables. VpnService gets
-        // its fd path and needs neither.
+        // Each mode injects its own built-in override (subject to disable-all-overrides): Tun the tun
+        // geometry, Tproxy tproxy-port + iptables; VpnService gets its fd path and needs neither.
         val tunConfig = if (runMode == RunMode.Tun) buildTunConfig() else null
         val tproxyConfig = if (runMode == RunMode.Tproxy) buildTproxyConfig() else null
         val overrideSpecs =
@@ -133,11 +132,10 @@ class SessionRuntimeSpecFactory(
     }
 
     /**
-     * Maps the shared access-control setting (the home-page package manager) onto the Tun uid rules.
-     * The cmfa build stubs out mihomo's include/exclude-package, so a selected PACKAGE must be
-     * resolved to a UID here and emitted as include-uid / exclude-uid. Selected-package modes use the
-     * uid whitelist/blacklist; the all-apps modes fall back to include-android-user (+ the built-in
-     * system-uid exclusion in [TunConfig]).
+     * Maps the shared access-control setting onto Tun uid rules. The cmfa build stubs out mihomo's
+     * include/exclude-package, so a selected PACKAGE must be resolved to a UID here (include-uid /
+     * exclude-uid). All-apps modes fall back to include-android-user (+ the built-in system-uid
+     * exclusion in [TunConfig]).
      */
     private fun resolveTunAccessControl(): TunAccessControl {
         val self = context.applicationInfo.uid

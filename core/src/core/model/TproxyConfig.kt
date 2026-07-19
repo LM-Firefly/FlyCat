@@ -23,10 +23,8 @@ package com.github.yumelira.yumebox.core.model
 import kotlinx.serialization.Serializable
 
 /**
- * Config for the root TPROXY run mode: the core opens a `tproxy-port` and mihomo programs the host
- * iptables mangle rules (TPROXY target) itself. [includeUid]/[excludeUid] come from the access-control
- * setting and become `-m owner --uid-owner` rules on the OUTPUT chain; the core's own uid is excluded
- * by mihomo so its egress is never redirected back into itself.
+ * Root TPROXY run mode: the core opens `tproxy-port` and programs the host iptables mangle rules itself.
+ * mihomo excludes the core's own uid from those rules so its egress is never redirected back into itself.
  */
 @Serializable
 data class TproxyConfig(

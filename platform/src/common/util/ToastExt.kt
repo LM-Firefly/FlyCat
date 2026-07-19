@@ -21,6 +21,8 @@
 package com.github.yumelira.yumebox.common.util
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -75,9 +77,14 @@ fun showToastDialog(message: String, title: String = "提示") {
     ToastDialogBridge.show(message = message, title = title)
 }
 
-@Suppress("UNUSED_PARAMETER")
+private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
+
+/** The system toast — the app-wide default. The copyable dialog toast is reserved for import errors. */
 fun Context.toast(message: String, duration: Int = Toast.LENGTH_SHORT) {
-    showToastDialog(message)
+    if (message.isBlank()) return
+    val ctx = applicationContext
+    val show = { Toast.makeText(ctx, message, duration).show() }
+    if (Looper.myLooper() == Looper.getMainLooper()) show() else mainHandler.post(show)
 }
 
 @Composable

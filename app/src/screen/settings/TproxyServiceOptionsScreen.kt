@@ -39,9 +39,8 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 
 /**
- * The root TPROXY "service config" sub-page. TPROXY shares the DNS mode / IPv6 knobs with the Tun path
- * (both are root modes) and adds its own transparent-proxy port. Per-app scoping comes from the shared
- * access-control setting, so there is no separate list here. Shares [NetworkSettingsViewModel].
+ * Root TPROXY "service config" sub-page: shares the DNS mode / IPv6 knobs with the Tun path and adds its
+ * own transparent-proxy port. Per-app scoping is the shared access-control setting. Shares [NetworkSettingsViewModel].
  */
 @Composable
 fun TproxyServiceOptionsScreen() {

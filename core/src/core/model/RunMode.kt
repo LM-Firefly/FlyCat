@@ -24,11 +24,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * The proxy run mode — the single mode key across UI, runtime, launcher, owner, and the compiler
- * (it replaced the old `ProxyMode { Tun, Http }`). [VpnService] is the non-root Android VpnService
- * path (a service-hosted child core); [Tun]/[Tproxy] are the root libsu-daemon paths (decoupled from
- * the app lifecycle). The serialized names `vpn`/`tun`/`tproxy` are the contract with the native
- * core's `--mode` and the Rust override compiler's `run_mode`.
+ * The single proxy run-mode key shared across UI, runtime, launcher, owner, and compiler. [VpnService]
+ * is the non-root Android VpnService path; [Tun]/[Tproxy] are the root libsu-daemon paths. The serialized
+ * `vpn`/`tun`/`tproxy` names are the contract with the core's `--mode` and the compiler's `run_mode`.
  */
 @Serializable
 enum class RunMode {

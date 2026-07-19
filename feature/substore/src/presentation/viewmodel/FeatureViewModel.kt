@@ -24,7 +24,7 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.yumelira.yumebox.common.util.DeviceUtil
-import com.github.yumelira.yumebox.common.util.showToastDialog
+import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.data.store.FeatureStore
@@ -254,7 +254,7 @@ class FeatureViewModel(
         }
     }
 
-    private fun showToast(msg: String) = showToastDialog(msg)
+    private fun showToast(msg: String) = application.toast(msg)
 
     private fun launchResourceDownload(
         loadingState: MutableStateFlow<Boolean>,
