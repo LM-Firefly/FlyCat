@@ -10,4 +10,4 @@
 - [Gropify](https://github.com/HighCapable/Gropify)
 - [Lucide](https://github.com/lucide-icons/lucide)
 - [Circle Flags](https://github.com/HatScripts/circle-flags)
-- [PureJoy-FYL](https://github.com/OOM-WG/PureJoy-FYL)
+- [ShiroSU FYL](https://github.com/OOM-WG/ShiroSU-FYL)
