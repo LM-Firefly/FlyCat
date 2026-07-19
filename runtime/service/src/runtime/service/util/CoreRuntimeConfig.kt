@@ -21,7 +21,6 @@
 package com.github.yumelira.yumebox.runtime.service.util
 
 import android.content.Context
-import com.github.yumelira.yumebox.core.Clash
 import com.tencent.mmkv.MMKV
 
 object CoreRuntimeConfig {
@@ -29,10 +28,7 @@ object CoreRuntimeConfig {
     private const val CUSTOM_USER_AGENT_KEY = "customUserAgent"
 
     fun applyCustomUserAgentIfPresent(context: Context) {
-        val settings = MMKV.mmkvWithID(SETTINGS_STORE_ID, MMKV.MULTI_PROCESS_MODE)
-        val userAgent = settings.decodeString(CUSTOM_USER_AGENT_KEY, "").orEmpty()
-        if (userAgent.isNotBlank()) {
-            Clash.setCustomUserAgent(userAgent)
-        }
+        // The custom User-Agent is now injected into the compiled config (global-ua) rather than
+        // pushed to an in-process core.
     }
 }

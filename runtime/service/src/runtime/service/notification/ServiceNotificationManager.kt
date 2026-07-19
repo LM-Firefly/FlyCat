@@ -27,7 +27,6 @@ import android.content.Intent
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.runtime.api.Components
@@ -55,6 +54,12 @@ class ServiceNotificationManager(
     private val settingsStore by lazy { MMKV.mmkvWithID("settings", MMKV.MULTI_PROCESS_MODE) }
     private val notificationManager by lazy { NotificationManagerCompat.from(service) }
     private var lastNotificationFingerprint: String? = null
+
+    // Once released, the traffic updater must never notify() again — otherwise a tick that was mid
+    // queryTrafficNow() (IPC to the core) when the service stopped can re-post the ongoing
+    // notification AFTER stopForeground(REMOVE), leaving it stuck on screen.
+    @Volatile
+    private var released = false
 
     fun createChannel() {
         legacyChannelIds.forEach(notificationManager::deleteNotificationChannel)
@@ -85,17 +90,25 @@ class ServiceNotificationManager(
             PollingTimers.ticks(PollingTimerSpecs.ServiceTrafficNotification).collect {
                 // Without POST_NOTIFICATIONS the notify() below is silently dropped anyway;
                 // skip the per-tick core queries and notification builds.
-                if (!notificationManager.areNotificationsEnabled()) return@collect
+                if (released || !notificationManager.areNotificationsEnabled()) return@collect
                 val notification = buildRunningNotification()
                 val fingerprint =
                     "${notification.extras.getCharSequence(Notification.EXTRA_TITLE)}|" +
                         "${notification.extras.getCharSequence(Notification.EXTRA_TEXT)}"
-                if (fingerprint != lastNotificationFingerprint) {
+                // Re-check after the (possibly slow) core query: the service may have stopped while we
+                // were building the notification, and a notify() now would resurrect it.
+                if (!released && fingerprint != lastNotificationFingerprint) {
                     lastNotificationFingerprint = fingerprint
                     notificationManager.notify(config.notificationId, notification)
                 }
             }
         }
+
+    /** Stop updating and clear the notification. After this the traffic updater never notifies again. */
+    fun release() {
+        released = true
+        runCatching { notificationManager.cancel(config.notificationId) }
+    }
 
     private fun buildRunningNotification(): Notification {
         val profileName = resolveProfileName()
@@ -108,8 +121,9 @@ class ServiceNotificationManager(
             )
         }
 
-        val now = runCatching { Clash.queryTrafficNow() }.getOrDefault(0L)
-        val total = runCatching { Clash.queryTrafficTotal() }.getOrDefault(0L)
+        val core = com.github.yumelira.yumebox.runtime.service.core.CoreProcess.rest(service)
+        val now = runCatching { core.queryTrafficNow() }.getOrDefault(0L)
+        val total = runCatching { core.queryTrafficTotal() }.getOrDefault(0L)
         return buildNotification(
             NotificationPresentationFactory.createRunning(
                 profileName = profileName,

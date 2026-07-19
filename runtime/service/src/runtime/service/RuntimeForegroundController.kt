@@ -279,11 +279,14 @@ class RuntimeForegroundController(
     }
 
     private fun stopForegroundService() {
+        // Silence the traffic updater first so a late notify() can't re-post the ongoing notification
+        // after we remove it, then drop the foreground notification.
+        notificationManager.release()
         ServiceCompat.stopForeground(service, ServiceCompat.STOP_FOREGROUND_REMOVE)
     }
 
     fun onTrimMemory() {
-        com.github.yumelira.yumebox.core.Clash.forceGc()
+        // The core owns its heap in its own process now; nothing to GC in-process.
     }
 
     private fun requestStop(stopReason: String?, restart: Boolean = false) {

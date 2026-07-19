@@ -31,7 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.github.yumelira.yumebox.core.Clash
+import com.github.yumelira.yumebox.core.bridge.Compiler
 import com.github.yumelira.yumebox.presentation.component.AppDialog
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import dev.oom_wg.purejoy.mlang.MLang
@@ -99,7 +99,7 @@ fun AgeKeyGeneratorDialog(
                         scope.launch {
                             val derived =
                                 withContext(Dispatchers.Default) {
-                                    Clash.toPublicKeys(secretKey)?.firstOrNull()
+                                    Compiler.nativeAgePublicKey(secretKey).takeIf { it.isNotBlank() }
                                 }
                             if (!derived.isNullOrBlank()) {
                                 publicKey = derived
@@ -117,7 +117,14 @@ fun AgeKeyGeneratorDialog(
                         scope.launch {
                             val keyPair =
                                 withContext(Dispatchers.Default) {
-                                    if (hybrid) Clash.genHybridKeyPair() else Clash.genX25519KeyPair()
+                                    // age x25519 keygen via liboverride (hybrid PQ keys are not
+                                    // supported by the compiler crate; falls back to x25519).
+                                    runCatching {
+                                        kotlinx.serialization.json.Json.decodeFromString(
+                                            com.github.yumelira.yumebox.core.model.AgeKeyPair.serializer(),
+                                            Compiler.nativeGenAgeKey(),
+                                        )
+                                    }.getOrNull()
                                 }
                             generating = false
                             if (keyPair != null) {

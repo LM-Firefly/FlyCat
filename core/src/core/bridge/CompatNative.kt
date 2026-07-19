@@ -18,9 +18,24 @@
  *
  */
 
-package com.github.yumelira.yumebox.core.model
+package com.github.yumelira.yumebox.core.bridge
 
-enum class ProxyMode {
-    Tun,
-    Http,
+/**
+ * Loads `libcompat.so`, the out-of-process core bridge (fork+exec, socketpair channel with
+ * SCM_RIGHTS fd passing, UNIX-domain controller socket). The library is tiny (~10 KB) and always
+ * shipped raw in the APK's lib dir, so a plain [System.loadLibrary] is sufficient — it never needs
+ * the XZ compressed-lib path that the heavyweight core libraries use.
+ */
+internal object CompatNative {
+    @Volatile
+    private var loaded = false
+
+    fun ensureLoaded() {
+        if (loaded) return
+        synchronized(this) {
+            if (loaded) return
+            System.loadLibrary("compat")
+            loaded = true
+        }
+    }
 }

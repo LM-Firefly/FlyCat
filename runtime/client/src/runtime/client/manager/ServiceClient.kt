@@ -27,6 +27,7 @@ import com.github.yumelira.yumebox.runtime.api.IClashManager
 import com.github.yumelira.yumebox.runtime.api.IProfileManager
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.api.initializeServiceGlobal
+import com.github.yumelira.yumebox.runtime.service.manager.HttpClashManager
 import com.github.yumelira.yumebox.runtime.service.profile.ProfileManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers

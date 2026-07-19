@@ -20,7 +20,6 @@
 
 package com.github.yumelira.yumebox.runtime.service.session
 
-import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.core.model.Proxy
 import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.model.ProxySort
@@ -39,7 +38,12 @@ import java.security.MessageDigest
  * [canonicalGroups] (compiled rawConfig, `proxy-groups:` declaration order) is kept only as the
  * preview source and as the fallback for the transient window before the core has loaded.
  */
-class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConfigPipeline) {
+class RuntimeProxyGroupResolver(
+    private val compiledConfigPipeline: CompiledConfigPipeline,
+    private val context: android.content.Context,
+) {
+    private val rest
+        get() = com.github.yumelira.yumebox.runtime.service.core.CoreProcess.rest(context)
     private val expectedNameCacheLock = Any()
     private var expectedNameCache: ExpectedGroupCache? = null
 
@@ -119,7 +123,7 @@ class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConf
     }
 
     fun runtimeGroupNames(excludeNotSelectable: Boolean): List<String> =
-        Clash.queryGroupNames(excludeNotSelectable)
+        rest.queryProxyGroupNames(excludeNotSelectable)
 
     suspend fun resolvedGroupNames(
         spec: RuntimeSpec?,
@@ -181,7 +185,7 @@ class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConf
         name: String,
         coreNamesByTrimmed: Map<String, String>,
     ): ProxyGroup? {
-        Clash.queryGroup(name, ProxySort.Default).takeIf(::isUsable)?.let {
+        rest.queryProxyGroup(name, ProxySort.Default).takeIf(::isUsable)?.let {
             return it
         }
 
@@ -189,7 +193,7 @@ class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConf
         // Retry against the core's actual (untrimmed) key for this trimmed name.
         val actualKey = coreNamesByTrimmed[name.trim()]
         if (actualKey != null && actualKey != name) {
-            Clash.queryGroup(actualKey, ProxySort.Default).takeIf(::isUsable)?.let {
+            rest.queryProxyGroup(actualKey, ProxySort.Default).takeIf(::isUsable)?.let {
                 return it
             }
         }

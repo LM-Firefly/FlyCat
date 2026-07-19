@@ -32,6 +32,8 @@ import com.github.yumelira.yumebox.runtime.api.Components
 import com.github.yumelira.yumebox.runtime.service.R
 import com.github.yumelira.yumebox.runtime.service.config.AccessControlMode
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
+import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
+import kotlinx.coroutines.runBlocking
 import com.github.yumelira.yumebox.runtime.service.util.SocketOwnerResolver
 import com.github.yumelira.yumebox.runtime.service.util.buildIncludedRoutesFromExcludedCidrs
 import com.github.yumelira.yumebox.runtime.service.util.parseCIDR
@@ -45,10 +47,13 @@ class VpnTunTransport(
     private val random = SecureRandom()
     private val startupLogStore =
         RuntimeStartupLogStore(vpnService, RuntimeStartupLogStore.Scope.LOCAL_TUN)
-    private val ownerResolver = SocketOwnerResolver(vpnService)
+    private val pipeline = CompiledConfigPipeline(vpnService)
+    private val core = CoreProcess(vpnService)
 
     override fun start(spec: RuntimeSpec) {
         startupLogStore.append("LOCAL_TUN transport start: begin")
+        // Compile the config (in memory) before establishing the TUN; it is streamed to the core.
+        val config = runBlocking { pipeline.compile(spec) }
         val device =
             with(vpnService.Builder()) {
                 val explicitRouteExcludes =
@@ -89,15 +94,20 @@ class VpnTunTransport(
                     setMetered(false)
                 }
 
-                configureHttpProxy(hasExplicitRouteExcludes)
-
                 if (store.allowBypass) {
                     allowBypass()
                 }
 
+                // VPN system HTTP proxy: point apps at the core's mixed/http port so apps that honour
+                // the system proxy (rather than only the TUN) still route through the core. API 29+.
+                if (Build.VERSION.SDK_INT >= 29 && store.systemProxy) {
+                    httpProxyPort(config)?.let { port ->
+                        setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", port, httpProxyLocalList))
+                    }
+                }
+
                 TunDevice(
                     fd = establish()?.detachFd() ?: error("Establish VPN rejected by system"),
-                    stack = store.tunStackMode,
                     gateway =
                         "$TUN_GATEWAY/$TUN_SUBNET_PREFIX" +
                             if (store.allowIpv6) ",$TUN_GATEWAY6/$TUN_SUBNET_PREFIX6" else "",
@@ -111,14 +121,12 @@ class VpnTunTransport(
                 )
             }
 
-        com.github.yumelira.yumebox.core.Clash.startTun(
-            fd = device.fd,
-            stack = device.stack,
+        core.startVpn(
+            tunFd = device.fd,
             gateway = device.gateway,
             portal = device.portal,
             dns = device.dns,
-            markSocket = vpnService::protect,
-            querySocketOwner = ownerResolver::queryOwner,
+            config = config,
         )
         startupLogStore.append("LOCAL_TUN transport start: done")
     }
@@ -187,72 +195,46 @@ class VpnTunTransport(
     }
 
     /**
-     * Per-app routing (spec: runtime/core-bridge). Decision order: config `include-package` wins,
-     * else config `exclude-package`, else UI access control. Exactly one polarity of
-     * addAllowedApplication/addDisallowedApplication ever runs on this Builder, and the app's own
-     * package always stays routed.
+     * Per-app routing. The out-of-process core runs under the app's own uid, so the app's package is
+     * always EXCLUDED from the tunnel — that keeps the core's egress off the TUN (no loop) and
+     * replaces the old per-socket VpnService.protect entirely. Only UI access control drives the rest
+     * (compiled tun.include/exclude-package parsing is a later refinement).
      */
     private fun VpnService.Builder.configurePerAppRouting() {
-        val configInclude = CompiledTunPackages.includePackages
-        val configExclude = CompiledTunPackages.excludePackages
-        if (configInclude.isNotEmpty() || configExclude.isNotEmpty()) {
-            // Compiled config declares tun.include-package/exclude-package: the config
-            // fully takes over per-app routing and the UI access control is ignored.
-            startupLogStore.append(
-                "LOCAL_TUN per-app routing: config include=${configInclude.size}" +
-                    " exclude=${configExclude.size}"
-            )
-            if (configInclude.isNotEmpty()) {
-                (configInclude.toSet() - configExclude.toSet() + vpnService.packageName)
-                    .forEach { runCatching { addAllowedApplication(it) } }
-            } else {
-                (configExclude.toSet() - vpnService.packageName).forEach {
+        val self = vpnService.packageName
+        startupLogStore.append("LOCAL_TUN per-app routing: ui mode=${store.accessControlMode} (self excluded)")
+        when (store.accessControlMode) {
+            // Route everything except ourselves.
+            AccessControlMode.AcceptAll -> runCatching { addDisallowedApplication(self) }
+            // Allow only the selected apps; self is naturally excluded by not being in the list.
+            AccessControlMode.AcceptSelected ->
+                (store.accessControlPackages - self).forEach {
+                    runCatching { addAllowedApplication(it) }
+                }
+            // Route nothing but ourselves is already excluded; disallow self keeps intent explicit.
+            AccessControlMode.RejectAll -> runCatching { addDisallowedApplication(self) }
+            // Disallow the selected apps plus ourselves.
+            AccessControlMode.RejectSelected ->
+                (store.accessControlPackages + self).forEach {
                     runCatching { addDisallowedApplication(it) }
                 }
-            }
-        } else {
-            startupLogStore.append(
-                "LOCAL_TUN per-app routing: ui mode=${store.accessControlMode}"
-            )
-            when (store.accessControlMode) {
-                AccessControlMode.AcceptAll -> Unit
-                AccessControlMode.AcceptSelected -> {
-                    (store.accessControlPackages + vpnService.packageName).forEach {
-                        runCatching { addAllowedApplication(it) }
-                    }
-                }
-                AccessControlMode.RejectAll -> Unit
-                AccessControlMode.RejectSelected -> {
-                    (store.accessControlPackages - vpnService.packageName).forEach {
-                        runCatching { addDisallowedApplication(it) }
-                    }
-                }
-            }
         }
     }
 
-    private fun VpnService.Builder.configureHttpProxy(hasExplicitRouteExcludes: Boolean) {
-        if (Build.VERSION.SDK_INT >= 29 && store.systemProxy) {
-            listenHttp()?.let {
-                setHttpProxy(
-                    ProxyInfo.buildDirectProxy(
-                        it.address.hostAddress,
-                        it.port,
-                        httpProxyBlackList +
-                            if (store.bypassPrivateNetwork || hasExplicitRouteExcludes) {
-                                httpProxyLocalList
-                            } else {
-                                emptyList()
-                            },
-                    )
-                )
-            }
-        }
-    }
+    /** The core's HTTP proxy port from the compiled config (mixed-port preferred, else http port). */
+    private fun httpProxyPort(config: String): Int? =
+        portFromConfig(config, "mixed-port") ?: portFromConfig(config, "port")
+
+    private fun portFromConfig(config: String, key: String): Int? =
+        config.lineSequence()
+            .firstOrNull { it.startsWith("$key:") }
+            ?.substringAfter("$key:")
+            ?.trim()
+            ?.toIntOrNull()
+            ?.takeIf { it in 1..65535 }
 
     override fun stop() {
-        com.github.yumelira.yumebox.core.Clash.stopHttp()
-        com.github.yumelira.yumebox.core.Clash.stopTun()
+        core.stop()
     }
 
     override fun onNetworkChanged() {
@@ -261,23 +243,17 @@ class VpnTunTransport(
         }
     }
 
-    private fun listenHttp(): java.net.InetSocketAddress? {
-        val r = { 1 + random.nextInt(199) }
-        val listenAt = "127.${r()}.${r()}.${r()}:0"
-        val address = com.github.yumelira.yumebox.core.Clash.startHttp(listenAt)
-        return address?.let(::parseInetSocketAddress)
-    }
-
     private data class TunDevice(
         val fd: Int,
-        val stack: String,
         val gateway: String,
         val portal: String,
         val dns: String,
     )
 
     private companion object {
-        private const val TUN_MTU = 9000
+        // Keep in lockstep with the core's tun MTU (native/tun/tun.go). 1500 is the standard value;
+        // a jumbo 9000 MTU broke path-MTU on some paths, so both sides pin 1500.
+        private const val TUN_MTU = 1500
         private const val TUN_SUBNET_PREFIX = 30
         private const val TUN_GATEWAY = "172.19.0.1"
         private const val TUN_SUBNET_PREFIX6 = 126

@@ -26,7 +26,6 @@ import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.profile.ImportedDao
-import com.github.yumelira.yumebox.runtime.service.root.RootTunConfigFactory
 import com.github.yumelira.yumebox.runtime.service.util.directoryLastModified
 import com.github.yumelira.yumebox.runtime.service.util.importedDir
 import java.io.File
@@ -59,35 +58,6 @@ class SessionRuntimeSpecFactory(
             effectiveFingerprint =
                 buildEffectiveFingerprint(profile.uuid.toString(), overrideSpecs, ageSecretKey),
             profileFingerprint = buildProfileFingerprint(profile.uuid.toString()),
-        )
-    }
-
-    fun createRootTunSpec(log: (String) -> Unit = {}): RuntimeSpec {
-        val rootResult = RootTunConfigFactory(context).create(log)
-        val profile =
-            ImportedDao.queryByUUID(rootResult.profileUuid)
-                ?: error("Root tun profile metadata not found: ${rootResult.profileUuid}")
-        val overrideSpecs =
-            compiledConfigPipeline.resolveOverrideSpecs(rootResult.profileUuid.toString())
-        val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
-        return RuntimeSpec(
-            owner = RuntimeOwner.RootTun,
-            profileUuid = rootResult.profileUuid.toString(),
-            profileName = rootResult.profileName,
-            profileDir = rootResult.profileDir.absolutePath,
-            runtimeConfigPath = rootResult.profileDir.resolve("runtime.yaml").absolutePath,
-            ageSecretKey = ageSecretKey,
-            overrideSpecs = overrideSpecs,
-            rootTunConfig = rootResult.config,
-            staticPlanFingerprint = rootResult.staticPlan.fingerprint,
-            transportFingerprint = rootResult.dynamicOverrides.transportFingerprint,
-            effectiveFingerprint =
-                buildEffectiveFingerprint(
-                    rootResult.profileUuid.toString(),
-                    overrideSpecs,
-                    ageSecretKey,
-                ),
-            profileFingerprint = rootResult.dynamicOverrides.profileFingerprint,
         )
     }
 

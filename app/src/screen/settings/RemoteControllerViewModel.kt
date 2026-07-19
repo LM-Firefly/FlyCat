@@ -30,7 +30,7 @@ import com.github.yumelira.yumebox.data.store.add
 import com.github.yumelira.yumebox.data.store.remove
 import com.github.yumelira.yumebox.data.store.update
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
-import com.github.yumelira.yumebox.runtime.client.manager.HttpClashManager
+import com.github.yumelira.yumebox.runtime.service.manager.HttpClashManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow

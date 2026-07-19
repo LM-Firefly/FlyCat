@@ -118,6 +118,7 @@ jobs:
         run: |
           test -f lib/native/rust/Cargo.toml
           test -f pack/native/CMakeLists.txt
+          test -f lib/native/compat/CMakeLists.txt
 
       - name: Build native libraries for ABI
         env:
@@ -125,7 +126,7 @@ jobs:
           ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.14904198
-        run: kotlin scripts/native-build.main.kts --go --rust --cpp --loader
+        run: kotlin scripts/native-build.main.kts --go --rust --compat --loader
 
       - name: Verify native outputs
         shell: bash
@@ -133,7 +134,7 @@ jobs:
           set -eu
           test -f "jniLibs/${{ inputs.abi }}/libclash.so"
           test -f "jniLibs/${{ inputs.abi }}/liboverride.so"
-          test -f "jniLibs/${{ inputs.abi }}/libbridge.so"
+          test -f "jniLibs/${{ inputs.abi }}/libcompat.so"
           test -f "jniLibs/${{ inputs.abi }}/libloader.so"
 
       - name: Upload ABI artifact
@@ -143,6 +144,6 @@ jobs:
           path: |
             jniLibs/${{ inputs.abi }}/libclash.so
             jniLibs/${{ inputs.abi }}/liboverride.so
-            jniLibs/${{ inputs.abi }}/libbridge.so
+            jniLibs/${{ inputs.abi }}/libcompat.so
             jniLibs/${{ inputs.abi }}/libloader.so
           if-no-files-found: error

@@ -27,7 +27,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
-import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.runtime.service.util.asSocketAddressText
 import java.net.InetAddress
 import java.util.concurrent.ConcurrentHashMap
@@ -103,7 +102,7 @@ class ServiceNetworkObserver(
         val dnsList = selectDns().map { it.asSocketAddressText(53) }
         if (dnsList == lastDnsList) return
         lastDnsList = dnsList
-        Clash.notifyDnsChanged(dnsList)
+        // The out-of-process core resolves DNS from its own config; no in-process push.
     }
 
     private fun selectDns(): List<InetAddress> {

@@ -28,8 +28,6 @@ import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
-import com.github.yumelira.yumebox.runtime.client.root.RootTunReloadScheduler
-import com.github.yumelira.yumebox.runtime.service.root.RootTunStatusFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -116,13 +114,6 @@ class ProfilesRepository(private val context: Context) {
 
                     notifyRuntimeOverrideChanged()
 
-                    if (isRootTunActive()) {
-                        RootTunReloadScheduler.schedule(
-                            appContext,
-                            RootTunReloadScheduler.Reason.PROFILE_CHANGED,
-                        )
-                    }
-
                     Timber.d(
                         "Active profile applied: uuid=$uuid cost=${System.currentTimeMillis() - startedAt}ms"
                     )
@@ -176,7 +167,6 @@ class ProfilesRepository(private val context: Context) {
             .getOrThrow()
     }
 
-    private fun isRootTunActive(): Boolean = RootTunStatusFlow.current(appContext).isSessionActive
 
     private fun notifyRuntimeOverrideChanged() {
         appContext.sendBroadcast(

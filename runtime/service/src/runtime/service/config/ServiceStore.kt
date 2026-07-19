@@ -194,7 +194,7 @@ class ServiceStore {
                     else -> "system"
                 }
             }
-            return store.provider.getString("tun_stack_mode", "system")
+            return store.provider.getString("tun_stack_mode", "gvisor")
         }
         set(value) {
             val normalized = value.lowercase()

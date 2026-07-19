@@ -77,7 +77,6 @@ class RuntimeStartupLogStore(
             when (mode) {
                 ProxyMode.Tun -> Scope.LOCAL_TUN
                 ProxyMode.Http -> Scope.LOCAL_HTTP
-                ProxyMode.RootTun -> Scope.ROOT_TUN
             }
     }
 }

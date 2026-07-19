@@ -41,8 +41,6 @@ import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.service.profile.ProfileManager
-import com.github.yumelira.yumebox.runtime.service.root.RootTunServiceBridge
-import com.github.yumelira.yumebox.runtime.service.root.RootTunStatusFlow
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeStartupLogStore
 import com.github.yumelira.yumebox.runtime.service.util.AutoStartExecutionGate
@@ -167,7 +165,7 @@ class AutoRestartService : Service() {
         val proxyMode = networkSettingsStorage.proxyMode.value
         // Mirrors ProxyAutoStartHelper: a restart against an already-active runtime would
         // re-mark Starting and tear down the live core underneath the existing service.
-        if (proxyMode != ProxyMode.RootTun && StatusProvider.isRuntimeActive(proxyMode)) {
+        if (StatusProvider.isRuntimeActive(proxyMode)) {
             Timber.tag(TAG).i("Skip auto start: ${proxyMode.name} runtime already active")
             return
         }
@@ -185,12 +183,6 @@ class AutoRestartService : Service() {
                     return
                 }
                 RuntimeServiceLauncher.start(this, ProxyMode.Tun, startupSource)
-            }
-            ProxyMode.RootTun -> {
-                val result = RootTunServiceBridge.start(this)
-                if (!result.success) {
-                    error(result.error ?: "RootTun auto start failed")
-                }
             }
             ProxyMode.Http -> {
                 RuntimeServiceLauncher.start(this, ProxyMode.Http, startupSource)
@@ -240,15 +232,6 @@ class AutoRestartService : Service() {
     private suspend fun awaitRuntimeActivation(mode: ProxyMode): RuntimeActivationResult =
         activationAwaiter.await(mode) {
             when (mode) {
-                ProxyMode.RootTun ->
-                    RootTunServiceBridge.queryStatus(this)
-                        .also(RootTunStatusFlow::update)
-                        .let { status ->
-                            RuntimeActivationState(
-                                phase = status.state,
-                                error = status.lastError,
-                            )
-                        }
                 ProxyMode.Tun,
                 ProxyMode.Http ->
                     RuntimeActivationState(
@@ -260,11 +243,6 @@ class AutoRestartService : Service() {
 
     private suspend fun cleanupIncompleteRuntime(mode: ProxyMode) {
         when (mode) {
-            ProxyMode.RootTun -> {
-                runCatching { RootTunServiceBridge.stop(this) }
-                RootTunService.stop(this)
-                StatusProvider.markRuntimeIdle(ProxyMode.RootTun)
-            }
             ProxyMode.Tun,
             ProxyMode.Http -> RuntimeServiceLauncher.stop(this, mode)
         }

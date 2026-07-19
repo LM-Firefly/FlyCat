@@ -28,7 +28,6 @@ import android.net.VpnService
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
-import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
@@ -42,8 +41,6 @@ import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 import com.github.yumelira.yumebox.runtime.service.profile.ProfileManager
-import com.github.yumelira.yumebox.runtime.service.root.RootTunServiceBridge
-import com.github.yumelira.yumebox.runtime.service.root.RootTunStatusFlow
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
 import com.github.yumelira.yumebox.runtime.service.util.sendBroadcastSelf
 import dev.oom_wg.purejoy.mlang.MLang
@@ -78,6 +75,9 @@ class ProxyTileService : TileService() {
         super.onStartListening()
         updateJob?.cancel()
         updateJob = scope.launch {
+            // Refresh once up front: requestListeningState() (fired on every start/stop) only opens a
+            // brief listening window, so we must update immediately rather than wait for the first tick.
+            updateTileState(currentSnapshot().phase.isActiveOrStopping)
             PollingTimers.ticks(PollingTimerSpecs.ProxyTileRefresh).collect {
                 updateTileState(currentSnapshot().phase.isActiveOrStopping)
             }
@@ -117,19 +117,7 @@ class ProxyTileService : TileService() {
                 if (isActive) {
                     AutoStartSessionGate.markManualPaused()
                     updateTilePendingState(isStarting = false)
-                    withContext(Dispatchers.IO) {
-                        if (
-                            snapshot.owner == RuntimeOwner.RootTun ||
-                                currentMode == ProxyMode.RootTun
-                        ) {
-                            val result = RootTunServiceBridge.stop(applicationContext)
-                            if (!result.success) {
-                                error(result.error ?: "RootTun stop failed")
-                            }
-                        } else {
-                            stopLocalRuntime()
-                        }
-                    }
+                    withContext(Dispatchers.IO) { stopLocalRuntime() }
                 } else {
                     val activeProfile = withContext(Dispatchers.IO) { profileManager.queryActive() }
                     if (activeProfile == null) {
@@ -161,15 +149,6 @@ class ProxyTileService : TileService() {
                                 RuntimeServiceLauncher.SOURCE_TILE,
                             )
                         }
-                        ProxyMode.RootTun -> {
-                            val result =
-                                withContext(Dispatchers.IO) {
-                                    RootTunServiceBridge.start(applicationContext)
-                                }
-                            if (!result.success) {
-                                error(result.error ?: "RootTun start failed")
-                            }
-                        }
                         ProxyMode.Http -> {
                             RuntimeServiceLauncher.start(
                                 this@ProxyTileService,
@@ -198,12 +177,10 @@ class ProxyTileService : TileService() {
 
     private fun currentSnapshot(): RuntimeSnapshot {
         val configuredMode = networkSettingsStorage.proxyMode.value
-        val rootStatus = RootTunStatusFlow.current(applicationContext)
         val tunPhase = StatusProvider.queryRuntimePhase(ProxyMode.Tun)
         val httpPhase = StatusProvider.queryRuntimePhase(ProxyMode.Http)
         val owner =
             when {
-                rootStatus.isSessionActive -> RuntimeOwner.RootTun
                 tunPhase != RuntimePhase.Idle -> RuntimeOwner.LocalTun
                 httpPhase != RuntimePhase.Idle -> RuntimeOwner.LocalHttp
                 else -> RuntimeOwner.None
@@ -220,7 +197,6 @@ class ProxyTileService : TileService() {
                 owner = owner,
                 phase =
                     when (owner) {
-                        RuntimeOwner.RootTun -> rootStatus.state
                         RuntimeOwner.LocalTun -> tunPhase
                         RuntimeOwner.LocalHttp -> httpPhase
                         RuntimeOwner.RemoteController -> RuntimePhase.Running
@@ -235,13 +211,12 @@ class ProxyTileService : TileService() {
         when (owner) {
             RuntimeOwner.LocalTun -> ProxyMode.Tun
             RuntimeOwner.LocalHttp -> ProxyMode.Http
-            RuntimeOwner.RootTun -> ProxyMode.RootTun
             RuntimeOwner.RemoteController -> null
             RuntimeOwner.None -> null
         }
 
     // Mirrors the home-screen stop path: ask the runtime service to stop, then apply the same
-    // local core/service fallback used by LocalClashManager/ProxyRuntimeControl.
+    // local core/service fallback used by ProxyRuntimeControl.
     private fun stopLocalRuntime() {
         runCatching { sendBroadcastSelf(Intent(Intents.ACTION_CLASH_REQUEST_STOP)) }
         runCatching {
@@ -253,11 +228,7 @@ class ProxyTileService : TileService() {
             !StatusProvider.isLocalRuntimeServiceAlive(ProxyMode.Tun) &&
                 !StatusProvider.isLocalRuntimeServiceAlive(ProxyMode.Http)
         ) {
-            runCatching {
-                Clash.stopHttp()
-                Clash.stopTun()
-                Clash.reset()
-            }
+            // Services already dead; the core process was torn down with them. Nothing to reset.
         }
     }
 

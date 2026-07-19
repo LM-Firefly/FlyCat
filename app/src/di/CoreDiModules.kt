@@ -52,7 +52,6 @@ import com.github.yumelira.yumebox.domain.model.TrafficData
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
 import com.github.yumelira.yumebox.runtime.client.RuntimeStateMapper
-import com.github.yumelira.yumebox.runtime.client.root.RootTunReloadScheduler
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -126,10 +125,18 @@ val appDataRuntimeModule = module {
     }
     single {
         val appContext = androidContext()
-        ProvidersController(appContext) {
-            com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.connect(appContext)
-            com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.clash().queryProviders()
-        }
+        ProvidersController(
+            context = appContext,
+            queryProvidersAction = {
+                com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.connect(appContext)
+                com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.clash().queryProviders()
+            },
+            updateProviderAction = { type, name ->
+                com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.connect(appContext)
+                com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.clash()
+                    .updateProvider(type, name)
+            },
+        )
     }
 
     single { ProfileBindingStore(androidContext()) }
@@ -142,10 +149,7 @@ val appDataRuntimeModule = module {
     single {
         val appContext = androidContext()
         OverrideService(appContext, get()) {
-            RootTunReloadScheduler.schedule(
-                appContext,
-                RootTunReloadScheduler.Reason.PROFILE_OVERRIDE_CHANGED,
-            )
+            // Override-change reload hook (RootTun removed; VPN reloads via the normal path).
         }
     }
     single {

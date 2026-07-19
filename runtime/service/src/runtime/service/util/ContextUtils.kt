@@ -61,10 +61,29 @@ fun Context.sendServiceRecreated() {
 
 fun Context.sendClashStarted() {
     sendBroadcastSelf(Intent(Intents.ACTION_CLASH_STARTED))
+    requestTileRefresh()
 }
 
 fun Context.sendClashStopped(reason: String?) {
     sendBroadcastSelf(
         Intent(Intents.ACTION_CLASH_STOPPED).putExtra(Intents.EXTRA_STOP_REASON, reason)
     )
+    requestTileRefresh()
+}
+
+/**
+ * Nudge the QS tile to re-read the runtime state. The tile only self-refreshes while its panel is
+ * open (onStartListening); without this, starting/stopping from the app UI leaves it stale. This asks
+ * the system to call onStartListening even when the panel is closed.
+ */
+private fun Context.requestTileRefresh() {
+    runCatching {
+        android.service.quicksettings.TileService.requestListeningState(
+            this,
+            android.content.ComponentName(
+                this,
+                com.github.yumelira.yumebox.runtime.service.ProxyTileService::class.java,
+            ),
+        )
+    }
 }

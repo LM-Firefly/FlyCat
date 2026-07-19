@@ -322,7 +322,6 @@ private fun ProxyTypeCapsule(proxyMode: ProxyMode) {
                 imageVector =
                     when (proxyMode) {
                         ProxyMode.Tun -> Yume.PlaneTakeoff
-                        ProxyMode.RootTun -> Yume.Tun
                         ProxyMode.Http -> Yume.Wifi
                     },
                 contentDescription = null,
@@ -333,7 +332,6 @@ private fun ProxyTypeCapsule(proxyMode: ProxyMode) {
                 text =
                     when (proxyMode) {
                         ProxyMode.Tun -> MLang.Home.ProxyMode.Vpn
-                        ProxyMode.RootTun -> MLang.Home.ProxyMode.Tun
                         ProxyMode.Http -> MLang.Home.ProxyMode.Http
                     },
                 style =

@@ -210,7 +210,7 @@ fn validate_geosite_matcher(object: &JsonMap<String, JsonValue>) -> Result<(), S
     ))
 }
 
-// C ABI exports for cross-library calls from C++ bridge
+// C ABI exports for the CLI/tests; the app calls liboverride through its own JNI (see src/jni)
 use std::ffi::{c_char, CStr, CString};
 
 /// # Safety

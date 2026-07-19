@@ -250,11 +250,6 @@ class StatusProvider : ContentProvider() {
                 return
             }
 
-            if (persistedMode == ProxyMode.RootTun) {
-                updateInMemoryRuntimeState(persistedMode, persistedPhase)
-                return
-            }
-
             // Failed is a terminal record: the service is expected to be dead, so it must not
             // be liveness-reset (that erased every failure before anyone could read it). It
             // decays after a retention window or when the next session claims the slot.
@@ -289,7 +284,6 @@ class StatusProvider : ContentProvider() {
         }
 
         fun isLocalRuntimeServiceAlive(mode: ProxyMode): Boolean {
-            if (mode == ProxyMode.RootTun) return false
             val application = runCatching { Global.application }.getOrNull() ?: return false
             val activityManager =
                 application.getSystemService(ActivityManager::class.java) ?: return false
@@ -297,7 +291,6 @@ class StatusProvider : ContentProvider() {
                 when (mode) {
                     ProxyMode.Tun -> TunService::class.java.name
                     ProxyMode.Http -> ClashService::class.java.name
-                    ProxyMode.RootTun -> return false
                 }
 
             return runCatching {

@@ -38,6 +38,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.android)
+    // OkHttp engine: needed for the local core's REST controller over a UNIX-domain socket
+    // (a custom SocketFactory), which the HttpURLConnection-based android engine cannot do.
+    implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 

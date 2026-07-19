@@ -476,16 +476,6 @@ class HomeViewModel(
             _proxyMode.value = request.mode
             Timber.d("Home startProxy kickoff: mode=${request.mode} profileId=${request.profileId}")
 
-            if (request.mode == ProxyMode.RootTun) {
-                val rootStatus = RootAccessSupport.evaluateAsync(getApplication())
-                if (!rootStatus.canStartRootTun) {
-                    clearPendingStart()
-                    _pendingTransition.value = PendingTransition.None
-                    showError(rootStatus.rootTunBlockedMessage())
-                    return
-                }
-            }
-
             withContext(Dispatchers.IO) {
                 if (request.profileId.isNotBlank()) {
                     profilesRepository.setActiveProfile(

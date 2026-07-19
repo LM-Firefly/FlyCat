@@ -74,15 +74,6 @@
         </service>
 
         <service
-            android:name="com.github.yumelira.yumebox.runtime.service.RootTunService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="yumebox_root_tun" />
-        </service>
-
-        <service
             android:name="com.github.yumelira.yumebox.runtime.service.ProxyTileService"
             android:exported="true"
             android:icon="@drawable/ic_logo_service"

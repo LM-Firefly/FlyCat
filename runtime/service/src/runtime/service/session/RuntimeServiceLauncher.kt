@@ -43,8 +43,6 @@ object RuntimeServiceLauncher {
 
     @Synchronized
     fun start(context: Context, mode: ProxyMode, source: String = SOURCE_UNKNOWN) {
-        require(mode != ProxyMode.RootTun) { "RuntimeServiceLauncher does not start RootTun" }
-
         val appContext = context.appContextOrSelf
         val logScope = RuntimeStartupLogStore.scopeForMode(mode)
         val startupLogStore = RuntimeStartupLogStore(appContext, logScope)
@@ -114,8 +112,6 @@ object RuntimeServiceLauncher {
 
     @Synchronized
     fun stop(context: Context, mode: ProxyMode) {
-        require(mode != ProxyMode.RootTun) { "RuntimeServiceLauncher does not stop RootTun" }
-
         val appContext = context.appContextOrSelf
         runCatching { appContext.stopService(Intent(appContext, serviceClassFor(mode))) }
         StatusProvider.markRuntimeIdle(mode)
@@ -125,6 +121,5 @@ object RuntimeServiceLauncher {
         when (mode) {
             ProxyMode.Tun -> TunService::class.java
             ProxyMode.Http -> ClashService::class.java
-            ProxyMode.RootTun -> error("unsupported mode")
         }
 }

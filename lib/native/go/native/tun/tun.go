@@ -1,17 +1,15 @@
 package tun
 
 import (
-	"encoding/json"
-	"io"
 	"net"
 	"net/netip"
 	"strings"
 
+	"github.com/metacubex/mihomo/config"
 	C "github.com/metacubex/mihomo/constant"
 	LC "github.com/metacubex/mihomo/listener/config"
 	"github.com/metacubex/mihomo/listener/sing_tun"
 	"github.com/metacubex/mihomo/log"
-	"github.com/metacubex/mihomo/tunnel"
 )
 
 func splitGatewayPrefixes(gateway string) ([]netip.Prefix, []netip.Prefix, error) {
@@ -48,43 +46,37 @@ func splitDNSHijack(dns string) []string {
 	return dnsHijack
 }
 
-func Start(fd int, stack, gateway, portal, dns string) (io.Closer, error) {
-	log.Debugln("TUN: fd = %d, stack = %s, gateway = %s, portal = %s, dns = %s", fd, stack, gateway, portal, dns)
+// Configure injects the VpnService TUN fd and Android options into the parsed config's tun section,
+// so hub.ApplyConfig starts the TUN through mihomo's own updateTun -> ReCreateTun path. That path
+// registers the global tun listener the dialer's interface finder and DNS/fake-ip integration depend
+// on, sorts the config, and runs as part of config application (before the blocking provider load).
+// A separate post-ApplyConfig sing_tun.New would skip that registration (traffic never really routes)
+// and only run after every provider finished initializing. This mirrors CFA / mihomo-android.
+func Configure(cfg *config.Config, fd int, gateway, portal, dns string) error {
+	_ = portal // reserved; the portal address is carried by the VpnService side, not the core tun
 
-	tunStack, ok := C.StackTypeMapping[strings.ToLower(stack)]
-	if !ok {
-		tunStack = C.TunSystem
-	}
-
+	// Always the userspace gVisor stack: its egress bypasses the tunnel via the app's uid exclusion so
+	// it needs no per-socket protect, and it has no destination-NAT table (unlike the system/mixed
+	// stacks, which drop some apps — e.g. Telegram's many direct-IP connections — once that table
+	// wraps). This matches CFA, which exposes no stack choice and is always userspace.
 	prefix4, prefix6, err := splitGatewayPrefixes(gateway)
 	if err != nil {
-		log.Errorln("TUN: %v", err)
-		return nil, err
+		return err
 	}
 
-	dnsHijack := splitDNSHijack(dns)
-
-	options := LC.Tun{
+	cfg.General.Tun = LC.Tun{
 		Enable:              true,
 		Device:              sing_tun.InterfaceName,
-		Stack:               tunStack,
-		DNSHijack:           dnsHijack,
-		AutoRoute:           false, // had set route in TunService.kt
-		AutoDetectInterface: false, // implements by VpnService::protect
+		Stack:               C.TunGvisor,
+		DNSHijack:           splitDNSHijack(dns),
+		AutoRoute:           false, // routes are set by the VpnService.Builder
+		AutoDetectInterface: false, // the core's own uid is excluded from the tunnel, so no protect
 		Inet4Address:        prefix4,
 		Inet6Address:        prefix6,
-		MTU:                 9000, // private const val TUN_MTU = 9000 in TunService.kt
+		MTU:                 1500,
 		FileDescriptor:      fd,
 	}
 
-	tunOptions, _ := json.Marshal(options)
-	log.Debugln("%s", string(tunOptions))
-
-	listener, err := sing_tun.New(options, tunnel.Tunnel)
-	if err != nil {
-		log.Errorln("TUN: %v", err)
-		return nil, err
-	}
-
-	return listener, nil
+	log.Infoln("[core] tun configured: fd=%d stack=gvisor inet4=%v dnsHijack=%v", fd, prefix4, cfg.General.Tun.DNSHijack)
+	return nil
 }

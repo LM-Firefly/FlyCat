@@ -137,43 +137,26 @@ private fun NetworkVpnServiceSection(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
+    // Only VpnService (TUN) mode remains — the parallel HTTP "system proxy" mode was removed. Anyone
+    // still persisted on it is migrated to TUN so they aren't stranded in a mode that no longer exists.
+    LaunchedEffect(configuredMode) {
+        if (configuredMode == ProxyMode.Http) viewModel.onProxyModeChange(ProxyMode.Tun)
+    }
+
     Title(MLang.NetworkSettings.Section.VpnService)
     Card {
         PreferenceEnumItem(
-            title = MLang.NetworkSettings.VpnService.RouteTrafficTitle,            currentValue = configuredMode,
-            items =
-                listOf(
-                    MLang.NetworkSettings.VpnService.SystemProxy,
-                    MLang.NetworkSettings.VpnService.VpnMode,
-                    MLang.NetworkSettings.VpnService.RootTunMode,
-                ),
-            values = listOf(ProxyMode.Http, ProxyMode.Tun, ProxyMode.RootTun),
+            title = MLang.NetworkSettings.VpnService.RouteTrafficTitle,
+            currentValue = ProxyMode.Tun,
+            items = listOf(MLang.NetworkSettings.VpnService.VpnMode),
+            values = listOf(ProxyMode.Tun),
             onValueChange = { mode ->
-                when (mode) {
-                    ProxyMode.Tun -> {
-                        if (!VpnUtils.checkVpnPermission(context)) {
-                            VpnUtils.getVpnPermissionIntent(context)
-                                ?.let(vpnPermissionLauncher::launch)
-                                ?: viewModel.onProxyModeChange(mode)
-                        } else {
-                            viewModel.onProxyModeChange(mode)
-                        }
-                    }
-
-                    ProxyMode.RootTun -> {
-                        coroutineScope.launch {
-                            val rootStatus = RootAccessSupport.evaluateAsync(context)
-                            if (!rootStatus.canStartRootTun) {
-                                context.toast(rootStatus.rootTunBlockedMessage())
-                                return@launch
-                            }
-                            viewModel.onProxyModeChange(mode)
-                        }
-                    }
-
-                    ProxyMode.Http -> {
-                        viewModel.onProxyModeChange(mode)
-                    }
+                if (!VpnUtils.checkVpnPermission(context)) {
+                    VpnUtils.getVpnPermissionIntent(context)
+                        ?.let(vpnPermissionLauncher::launch)
+                        ?: viewModel.onProxyModeChange(mode)
+                } else {
+                    viewModel.onProxyModeChange(mode)
                 }
             },
         )
@@ -211,34 +194,6 @@ private fun NetworkServiceOptionsSection(
                             onAllowBypassChange = viewModel::onAllowBypassChange,
                             onSystemProxyChange = viewModel::onSystemProxyChange,
                         ),
-                )
-            }
-
-            ProxyMode.RootTun -> {
-                RootTunServiceOptions(
-                    state = rootTunServiceOptionsUiState,
-                    showFakeIpRange = uiState.showFakeIpRange,
-                    actions =
-                        remember(viewModel, commonActions) {
-                            RootTunServiceOptionActions(
-                                common = commonActions,
-                                onRootTunAutoRouteChange = viewModel::onRootTunAutoRouteChange,
-                                onRootTunStrictRouteChange = viewModel::onRootTunStrictRouteChange,
-                                onRootTunAutoRedirectChange =
-                                    viewModel::onRootTunAutoRedirectChange,
-                                onRootTunDnsModeChange = viewModel::onRootTunDnsModeChange,
-                                onRootTunIfNameDraftChange = viewModel::onRootTunIfNameDraftChange,
-                                onRootTunMtuDraftChange = viewModel::onRootTunMtuDraftChange,
-                                onRootTunFakeIpRangeDraftChange =
-                                    viewModel::onRootTunFakeIpRangeDraftChange,
-                                onRootTunFakeIpRange6DraftChange =
-                                    viewModel::onRootTunFakeIpRange6DraftChange,
-                                commitRootTunIfName = viewModel::commitRootTunIfName,
-                                commitRootTunMtu = viewModel::commitRootTunMtu,
-                                commitRootTunFakeIpRange = viewModel::commitRootTunFakeIpRange,
-                                commitRootTunFakeIpRange6 = viewModel::commitRootTunFakeIpRange6,
-                            )
-                        },
                 )
             }
 
@@ -510,13 +465,8 @@ private fun CommonTunServiceOptions(
             title = MLang.NetworkSettings.VpnOptions.EnableIpv6Title,            checked = state.enableIPv6,
             onCheckedChange = actions.onEnableIPv6Change,
         )
-        PreferenceEnumItem(
-            title = MLang.NetworkSettings.ProxyOptions.TunStackTitle,
-            currentValue = state.tunStack,
-            items = listOf("System", "GVisor", "Mixed"),
-            values = TunStack.entries,
-            onValueChange = actions.onTunStackChange,
-        )
+        // The TCP/IP stack is fixed to userspace gVisor (matches CFA) — the system/mixed stacks drop
+        // some apps (e.g. Telegram) via their NAT table, so there is no stack picker anymore.
         extraOptions()
     }
 }

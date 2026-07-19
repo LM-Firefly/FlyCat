@@ -25,7 +25,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
-import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
 import com.github.yumelira.yumebox.core.model.LogMessage
 import com.github.yumelira.yumebox.core.model.Provider
@@ -39,7 +38,6 @@ import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import com.github.yumelira.yumebox.runtime.service.root.rootTunEncode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -59,7 +57,13 @@ class SessionRuntime(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) {
     private val compiledConfigPipeline = CompiledConfigPipeline(host.context.appContextOrSelf)
-    private val proxyGroupResolver = RuntimeProxyGroupResolver(compiledConfigPipeline)
+
+    /** Drives the running local core over REST-over-unix (traffic/groups/connections/…). */
+    private val rest
+        get() =
+            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.rest(host.context.appContextOrSelf)
+    private val proxyGroupResolver =
+        RuntimeProxyGroupResolver(compiledConfigPipeline, host.context.appContextOrSelf)
     private val lock = Any()
     private val snapshotLock = Any()
 
@@ -151,12 +155,12 @@ class SessionRuntime(
     fun snapshot(): RuntimeSnapshot = currentSnapshot
 
     fun queryTunnelState(): TunnelState =
-        ifRunning(TunnelState(TunnelState.Mode.Rule)) { Clash.queryTunnelState() }
+        ifRunning(TunnelState(TunnelState.Mode.Rule)) { rest.queryTunnelState() }
 
-    fun queryTrafficNow(): Long = queryTraffic(Clash::queryTrafficNow, queryCache::updateTrafficNow)
+    fun queryTrafficNow(): Long = queryTraffic(rest::queryTrafficNow, queryCache::updateTrafficNow)
 
     fun queryTrafficTotal(): Long =
-        queryTraffic(Clash::queryTrafficTotal, queryCache::updateTrafficTotal)
+        queryTraffic(rest::queryTrafficTotal, queryCache::updateTrafficTotal)
 
     private fun queryTraffic(fetch: () -> Long, cache: (Long) -> Unit): Long {
         if (currentSnapshot.phase != RuntimePhase.Running) return 0L
@@ -169,7 +173,7 @@ class SessionRuntime(
     private inline fun <T> ifRunning(fallback: T, block: () -> T): T =
         if (currentSnapshot.phase == RuntimePhase.Running) block() else fallback
 
-    fun queryConnections(): ConnectionSnapshot = ifRunning(ConnectionSnapshot()) { Clash.queryConnections() }
+    fun queryConnections(): ConnectionSnapshot = ifRunning(ConnectionSnapshot()) { rest.queryConnections() }
 
     fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> {
         if (currentSnapshot.phase != RuntimePhase.Running) return emptyList()
@@ -177,7 +181,7 @@ class SessionRuntime(
             runCatching { resolveRuntimeProxyGroups(excludeNotSelectable) }
                 .getOrElse {
                     if (excludeNotSelectable) {
-                        val selectable = Clash.queryGroupNames(true).toSet()
+                        val selectable = rest.queryProxyGroupNames(true).toSet()
                         ensureRuntimeSnapshot().proxyGroups.filter { selectable.contains(it.name) }
                     } else {
                         ensureRuntimeSnapshot().proxyGroups
@@ -198,7 +202,7 @@ class SessionRuntime(
         if (currentSnapshot.phase != RuntimePhase.Running) {
             error("runtime not running")
         }
-        val group = Clash.queryGroup(name, proxySort)
+        val group = rest.queryProxyGroup(name, proxySort)
         if (proxySort == ProxySort.Default && group.name.isNotBlank()) {
             queryCache.upsertProxyGroup(name, group)
         }
@@ -210,11 +214,11 @@ class SessionRuntime(
 
     fun queryProviders(): List<Provider> = ifRunning(emptyList()) { ensureRuntimeSnapshot().providers }
 
-    fun patchSelector(group: String, name: String): Boolean = Clash.patchSelector(group, name)
+    fun patchSelector(group: String, name: String): Boolean = rest.patchSelector(group, name)
 
-    fun closeConnection(id: String): Boolean = ifRunning(false) { Clash.closeConnection(id) }
+    fun closeConnection(id: String): Boolean = ifRunning(false) { rest.closeConnection(id) }
 
-    fun closeAllConnections() = ifRunning(Unit) { Clash.closeAllConnections() }
+    fun closeAllConnections() = ifRunning(Unit) { rest.closeAllConnections() }
 
     suspend fun healthCheck(group: String): String? {
         Timber.d(
@@ -224,7 +228,7 @@ class SessionRuntime(
             currentSnapshot.owner,
         )
         return runCatching {
-                Clash.healthCheck(group).await()
+                rest.healthCheck(group)
                 refreshRuntimeProxyGroup(group)
                 null
             }
@@ -240,10 +244,12 @@ class SessionRuntime(
             currentSnapshot.owner,
         )
         return runCatching {
-                Clash.healthCheckProxy(proxyName).await().also { refreshRuntimeProxyGroup(group) }
+                val delay = rest.healthCheckProxy(group, proxyName).also { refreshRuntimeProxyGroup(group) }
+                """{"delay":$delay}"""
             }
             .getOrElse {
-                """{"delay":-1,"error":${rootTunEncode(it.message ?: "health check proxy failed")}}"""
+                val msg = kotlinx.serialization.json.JsonPrimitive(it.message ?: "health check proxy failed")
+                """{"delay":-1,"error":$msg}"""
             }
     }
 
@@ -254,7 +260,7 @@ class SessionRuntime(
                     return "invalid provider type: $type"
                 }
         return runCatching {
-                Clash.updateProvider(providerType, name).await()
+                rest.updateProvider(providerType, name)
                 refreshRuntimeSnapshot()
                 null
             }
@@ -287,7 +293,6 @@ class SessionRuntime(
         ensureNotInterrupted(spec)
 
         claimCoreAndTeardownPrevious()
-        compileAndLoad(spec)
         ensureNotInterrupted(spec)
         startObservers()
         notifyCurrentTimeZone()
@@ -334,7 +339,10 @@ class SessionRuntime(
             )
         }
 
-        compileAndLoad(spec)
+        // Config reload for the out-of-process core is applied by restarting the transport (the core
+        // reads its config at launch); re-verify groups afterwards.
+        runCatching { transport.stop() }
+        transport.start(spec)
         awaitProxyGroupsReady(spec)
         ensureNotInterrupted(spec)
         currentSpec = spec
@@ -424,17 +432,6 @@ class SessionRuntime(
         host.reportFailure(reason)
     }
 
-    private fun compileAndLoad(spec: RuntimeSpec) {
-        ensureNotInterrupted(spec)
-        runBlocking {
-            compiledConfigPipeline.compileAndLoad(spec) { message ->
-                startupLog(spec, message)
-                ensureNotInterrupted(spec)
-            }
-        }
-        ensureNotInterrupted(spec)
-    }
-
     private fun awaitProxyGroupsReady(spec: RuntimeSpec) {
         ensureNotInterrupted(spec)
         val expectedGroups = readExpectedGroupNames(spec)
@@ -452,7 +449,7 @@ class SessionRuntime(
 
         repeat(PROXY_GROUP_READY_RETRY_COUNT) { attempt ->
             ensureNotInterrupted(spec)
-            val names = runCatching { Clash.queryGroupNames(false) }.getOrDefault(emptyList())
+            val names = runCatching { rest.queryProxyGroupNames(false) }.getOrDefault(emptyList())
             if (names.isNotEmpty()) {
                 startupLog(
                     spec,
@@ -528,8 +525,7 @@ class SessionRuntime(
     }
 
     private fun notifyCurrentTimeZone() {
-        val timeZone = TimeZone.getDefault()
-        Clash.notifyTimeZoneChanged(timeZone.id, timeZone.rawOffset / 1000)
+        // The out-of-process core reads the device time zone itself; no push needed.
     }
 
     private fun claimCoreAndTeardownPrevious() {
@@ -552,10 +548,8 @@ class SessionRuntime(
         // The compiled tun package lists mirror the loaded config; drop them with the core so a
         // stale profile's lists never drive per-app routing in the next session.
         CompiledTunPackages.clear()
-        runCatching { Clash.stopRootTun() }
-        runCatching { Clash.stopTun() }
-        runCatching { Clash.stopHttp() }
-        runCatching { Clash.reset() }
+        // The core process is torn down by the transport (CoreProcess.stop kills it); nothing to do
+        // in-process here now that there is no embedded core.
     }
 
     private fun refreshRuntimeSnapshot() {
@@ -568,13 +562,13 @@ class SessionRuntime(
         }
 
         val configuration =
-            runCatching { Clash.queryConfiguration() }.getOrDefault(UiConfiguration())
-        val providers = runCatching { Clash.queryProviders() }.getOrDefault(emptyList())
+            runCatching { rest.queryConfiguration() }.getOrDefault(UiConfiguration())
+        val providers = runCatching { rest.queryProviders() }.getOrDefault(emptyList())
         val proxyGroups =
             runCatching { resolveRuntimeProxyGroups(excludeNotSelectable = false) }
                 .getOrDefault(emptyList())
-        val trafficNow = runCatching { Clash.queryTrafficNow() }.getOrDefault(0L)
-        val trafficTotal = runCatching { Clash.queryTrafficTotal() }.getOrDefault(0L)
+        val trafficNow = runCatching { rest.queryTrafficNow() }.getOrDefault(0L)
+        val trafficTotal = runCatching { rest.queryTrafficTotal() }.getOrDefault(0L)
         queryCache.replace(
             configuration = configuration,
             providers = providers,
@@ -595,7 +589,7 @@ class SessionRuntime(
             return null
         }
 
-        val group = runCatching { Clash.queryGroup(name, proxySort) }.getOrNull() ?: return null
+        val group = runCatching { rest.queryProxyGroup(name, proxySort) }.getOrNull() ?: return null
         queryCache.upsertProxyGroup(name, group)
         return group
     }
@@ -620,7 +614,10 @@ class SessionRuntime(
     }
 
     private fun startLogStream() {
-        telemetry.startLogStream(Clash::subscribeLogcat)
+        // TODO: stream the core's REST /logs (websocket). Until then the log source is empty.
+        telemetry.startLogStream {
+            kotlinx.coroutines.channels.Channel<LogMessage>().apply { close() }
+        }
     }
 
     private fun stopLogStream() {
@@ -655,7 +652,6 @@ class SessionRuntime(
             when (spec.owner) {
                 RuntimeOwner.LocalTun -> RuntimeStartupLogStore.Scope.LOCAL_TUN
                 RuntimeOwner.LocalHttp -> RuntimeStartupLogStore.Scope.LOCAL_HTTP
-                RuntimeOwner.RootTun -> RuntimeStartupLogStore.Scope.ROOT_TUN
                 RuntimeOwner.RemoteController,
                 RuntimeOwner.None -> return
             }

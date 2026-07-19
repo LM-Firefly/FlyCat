@@ -36,7 +36,9 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     val enableIPv6 by boolFlow(false)
     val systemProxy by boolFlow(true)
 
-    val tunStack by enumFlow(TunStack.System)
+    // gVisor is the reliable VpnService default (userspace, no per-socket protect needed). system/mixed
+    // work too but route egress through cross-process protect; users can opt into them in settings.
+    val tunStack by enumFlow(TunStack.GVisor)
     val tunRouteExcludeAddress by stringListFlow(emptyList())
     val rootTunIfName by strFlow("Yume")
     val rootTunMtu by intFlow(1500)

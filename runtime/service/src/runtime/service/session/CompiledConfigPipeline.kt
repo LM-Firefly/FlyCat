@@ -22,7 +22,7 @@ package com.github.yumelira.yumebox.runtime.service.session
 
 import android.content.Context
 import android.util.Log
-import com.github.yumelira.yumebox.core.Clash
+import com.github.yumelira.yumebox.core.bridge.Compiler
 import com.github.yumelira.yumebox.core.model.CompileRawSummary
 import com.github.yumelira.yumebox.core.model.CompileRequest
 import com.github.yumelira.yumebox.core.model.CompileResult
@@ -98,33 +98,24 @@ class CompiledConfigPipeline(private val context: Context) {
         )
     }
 
-    suspend fun compileAndLoadNative(spec: RuntimeSpec, logger: ((String) -> Unit)?): Unit =
+    /**
+     * Compiles the profile + override chain to the final mihomo config (liboverride) and returns it.
+     * Used by the out-of-process path: the caller streams this to the core over the socketpair, so it
+     * is never written to disk. The core reads and applies it itself.
+     */
+    suspend fun compile(spec: RuntimeSpec): String =
         withContext(Dispatchers.Default) {
             val request = buildRequest(spec)
-            removeStaleRuntimeYaml(spec, logger)
-            logger?.invoke(
-                "runtime native: mode=compile-and-load ageKey=${spec.ageSecretKey != null}" +
-                    " overrides=${spec.overrideSpecs.size}"
-            )
-            val load = CompletableDeferred<Unit>()
-            val summary = Clash.compileAndLoadConfigSummary(request, load)
-            logRawCompileWarnings(summary, logger)
-            load.await()
-            publishCompiledTunPackages(summary, logger)
+            val result =
+                compilerJson.decodeFromString(
+                    CompileResult.serializer(),
+                    Compiler.nativeCompile(
+                        compilerJson.encodeToString(CompileRequest.serializer(), request)
+                    ),
+                )
+            check(result.success) { result.error ?: "override compile failed" }
+            result.finalYaml
         }
-
-    /**
-     * Loads the active profile into the live core. Every profile — encrypted and non-encrypted
-     * alike — goes through the native in-memory compile-and-load path, so no plaintext runtime.yaml
-     * is ever written to disk.
-     */
-    suspend fun compileAndLoad(spec: RuntimeSpec, logger: ((String) -> Unit)?) {
-        logger?.invoke(
-            "runtime native: compile-and-load begin (ageKey=${spec.ageSecretKey != null})"
-        )
-        compileAndLoadNative(spec, logger)
-        logger?.invoke("runtime native: compile-and-load done")
-    }
 
     /**
      * Deletes any leftover runtime.yaml before loading a profile. runtime.yaml is no longer
@@ -151,13 +142,9 @@ class CompiledConfigPipeline(private val context: Context) {
      * alike — so no plaintext finalYaml is ever returned to Kotlin and no runtime.yaml is written.
      */
     suspend fun previewGroups(spec: RuntimeSpec, excludeNotSelectable: Boolean): List<ProxyGroup> =
-        withContext(Dispatchers.Default) {
-            Clash.compileAndInspectGroups(
-                buildRequest(spec),
-                File(spec.profileDir),
-                excludeNotSelectable,
-            )
-        }
+        // TODO: parse proxy-groups out of the compiled finalYaml for pre-start preview. Until then
+        // the group list is populated from the running core over REST once it is up.
+        emptyList()
 
     /**
      * Returns the compiled YAML for non-encrypted profiles (the user-initiated "view compiled
@@ -185,7 +172,13 @@ class CompiledConfigPipeline(private val context: Context) {
                     overrides = overrideSpecs,
                     outputPath = profileDir.resolve("runtime.yaml").absolutePath,
                 )
-            val result = Clash.compilePreview(request)
+            val result =
+                compilerJson.decodeFromString(
+                    CompileResult.serializer(),
+                    Compiler.nativeCompile(
+                        compilerJson.encodeToString(CompileRequest.serializer(), request)
+                    ),
+                )
             check(result.success) { result.error ?: "override preview failed" }
             validateCompiledProviderPaths(result.finalYaml, profileDir)
             result
@@ -437,6 +430,11 @@ class CompiledConfigPipeline(private val context: Context) {
 
     private companion object {
         private const val TAG = "CompiledConfigPipeline"
+        private val compilerJson = kotlinx.serialization.json.Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+            coerceInputValues = true
+        }
         private val pathPattern = Regex("""(?m)path:\s*["']?([^"'\n]+)["']?""")
         private val userOverrideExtensions = listOf("yaml", "yml", "js")
         const val INTERNAL_RUNTIME_PREFIX = "__runtime__"

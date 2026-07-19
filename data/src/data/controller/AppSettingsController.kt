@@ -20,14 +20,13 @@
 
 package com.github.yumelira.yumebox.data.controller
 
-import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.data.model.AppLanguage
 import com.github.yumelira.yumebox.data.store.AppSettingsStore
 
 class AppSettingsController(
     private val store: AppSettingsStore,
     private val applyLanguage: (AppLanguage) -> Unit = {},
-    private val applyUserAgent: (String) -> Unit = Clash::setCustomUserAgent,
+    private val applyUserAgent: (String) -> Unit = {},
 ) {
     fun applyAppLanguage(language: AppLanguage) {
         store.appLanguage.set(language)

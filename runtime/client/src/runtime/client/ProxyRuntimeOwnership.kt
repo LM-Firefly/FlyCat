@@ -22,18 +22,13 @@ package com.github.yumelira.yumebox.runtime.client
 
 import com.github.yumelira.yumebox.data.model.ProxyMode
 import com.github.yumelira.yumebox.runtime.api.Profile
-import com.github.yumelira.yumebox.runtime.api.RootTunStatus
 import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 
 internal object ProxyRuntimeOwnership {
-    fun detectOwner(
-        rootStatus: RootTunStatus,
-        isLocalSessionActive: (ProxyMode) -> Boolean,
-    ): RuntimeOwner =
+    fun detectOwner(isLocalSessionActive: (ProxyMode) -> Boolean): RuntimeOwner =
         when {
-            rootStatus.isSessionActive -> RuntimeOwner.RootTun
             isLocalSessionActive(ProxyMode.Tun) -> RuntimeOwner.LocalTun
             isLocalSessionActive(ProxyMode.Http) -> RuntimeOwner.LocalHttp
             else -> RuntimeOwner.None
@@ -59,7 +54,6 @@ internal object ProxyRuntimeOwnership {
     fun activeSnapshot(
         owner: RuntimeOwner,
         configuredMode: ProxyMode,
-        rootStatus: RootTunStatus,
         localPhase: RuntimePhase = RuntimePhase.Idle,
         localStartedAt: Long? = null,
     ): RuntimeSnapshot =
@@ -67,20 +61,14 @@ internal object ProxyRuntimeOwnership {
             owner = owner,
             phase =
                 when (owner) {
-                    RuntimeOwner.RootTun -> rootStatus.state
                     RuntimeOwner.LocalTun,
                     RuntimeOwner.LocalHttp -> localPhase
                     RuntimeOwner.RemoteController -> RuntimePhase.Running
                     RuntimeOwner.None -> RuntimePhase.Idle
                 },
             targetMode = modeForOwner(owner, configuredMode),
-            profileReady = owner == RuntimeOwner.RootTun && !rootStatus.profileUuid.isNullOrBlank(),
-            profileUuid = rootStatus.profileUuid.takeIf { owner == RuntimeOwner.RootTun },
-            profileName = rootStatus.profileName.takeIf { owner == RuntimeOwner.RootTun },
-            lastError = if (owner == RuntimeOwner.RootTun) rootStatus.lastError else null,
             startedAt =
                 when (owner) {
-                    RuntimeOwner.RootTun -> rootStatus.startedAt
                     RuntimeOwner.LocalTun,
                     RuntimeOwner.LocalHttp -> localStartedAt
                     RuntimeOwner.RemoteController -> null
@@ -104,7 +92,6 @@ internal object ProxyRuntimeOwnership {
         when (mode) {
             ProxyMode.Tun -> RuntimeOwner.LocalTun
             ProxyMode.Http -> RuntimeOwner.LocalHttp
-            ProxyMode.RootTun -> RuntimeOwner.RootTun
         }
 
     fun modeForOwner(owner: RuntimeOwner, configuredMode: ProxyMode): ProxyMode =

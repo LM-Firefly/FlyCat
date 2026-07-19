@@ -105,6 +105,15 @@ pub fn patch_static_runtime(root: &mut JsonValue, profile_dir: &Path) {
         }
     }
 
+    // The VpnService TUN is attached at runtime via a file descriptor (tun.Start(fd)); never let a
+    // config-provided tun block open its own /dev/net/tun — it would fail on non-root and fight the
+    // fd-based listener. Force any such block off (absent means mihomo defaults to disabled already).
+    if let Some(tun) = object.get_mut("tun").and_then(JsonValue::as_object_mut) {
+        tun.insert("enable".to_string(), JsonValue::Bool(false));
+        tun.insert("auto-route".to_string(), JsonValue::Bool(false));
+        tun.insert("auto-detect-interface".to_string(), JsonValue::Bool(false));
+    }
+
     patch_listeners(object);
     patch_providers(object, profile_dir);
 }

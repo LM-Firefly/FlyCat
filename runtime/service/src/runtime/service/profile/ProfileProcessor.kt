@@ -21,12 +21,19 @@
 package com.github.yumelira.yumebox.runtime.service.profile
 
 import android.content.Context
-import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.core.model.FetchStatus
 import com.github.yumelira.yumebox.runtime.api.IFetchObserver
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.service.util.importedDir
 import com.github.yumelira.yumebox.runtime.service.util.sendProfileChanged
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpHeaders
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
@@ -53,6 +60,57 @@ object ProfileProcessor {
         val imported: Imported,
         val hasCommittedConfig: Boolean,
     )
+
+    /**
+     * Downloads a subscription URL to `stagingDir/config.yaml` and reports progress, replacing the
+     * old native fetchAndValid. Parses the `subscription-userinfo` header into a SubscriptionInfo
+     * status; deep config validation happens later at compile time.
+     */
+    private suspend fun fetchSubscription(
+        stagingDir: File,
+        url: String,
+        onStatus: (FetchStatus) -> Unit,
+    ) {
+        onStatus(FetchStatus(FetchStatus.Action.FetchConfiguration, listOf(url), 0, 1))
+        val client = HttpClient(OkHttp) { install(HttpTimeout) { requestTimeoutMillis = 60_000 } }
+        try {
+            val response = client.get(url) { header(HttpHeaders.UserAgent, "YumeBox") }
+            val body = response.bodyAsText()
+            stagingDir.mkdirs()
+            File(stagingDir, "config.yaml").writeText(body)
+            onStatus(FetchStatus(FetchStatus.Action.Verifying, emptyList(), 1, 1))
+
+            response.headers["subscription-userinfo"]?.let { raw ->
+                val fields =
+                    raw.split(';')
+                        .mapNotNull { part ->
+                            val kv = part.split('=', limit = 2)
+                            if (kv.size == 2) kv[0].trim() to kv[1].trim() else null
+                        }
+                        .toMap()
+                val filename =
+                    response.headers["content-disposition"]
+                        ?.substringAfter("filename=", "")
+                        ?.trim('"', ' ')
+                        ?.takeIf { it.isNotBlank() }
+                onStatus(
+                    FetchStatus(
+                        action = FetchStatus.Action.SubscriptionInfo,
+                        args = emptyList(),
+                        progress = 1,
+                        max = 1,
+                        subUpload = fields["upload"]?.toLongOrNull(),
+                        subDownload = fields["download"]?.toLongOrNull(),
+                        subTotal = fields["total"]?.toLongOrNull(),
+                        subExpire = fields["expire"]?.toLongOrNull(),
+                        subFilename = filename,
+                    )
+                )
+            }
+        } finally {
+            client.close()
+        }
+    }
 
     private fun FetchStatus.toSubscriptionInfo(): SubscriptionInfo? {
         if (action != FetchStatus.Action.SubscriptionInfo) return null
@@ -118,25 +176,23 @@ object ProfileProcessor {
                 var subInfo: SubscriptionInfo? = null
 
                 try {
-                    Clash.setAgeSecretKey(snapshot.imported.ageSecretKey)
-
-                    Clash.fetchAndValid(stagingDir, snapshot.imported.source, true) {
-                            val fetchedSubInfo = it.toSubscriptionInfo()
-                            if (fetchedSubInfo != null) {
-                                subInfo = fetchedSubInfo
-                                return@fetchAndValid
-                            }
-
-                            try {
-                                cb?.updateStatus(it)
-                            } catch (error: Exception) {
-                                // fault barrier: the observer may live across a binder; reporting
-                                // failures must not abort the profile fetch itself.
-                                cb = null
-                                Timber.w(error, "Report fetch status: %s", error.message)
-                            }
+                    // The age secret key is applied per-profile inside the compiler (via the compile
+                    // request), not as global core state, so nothing to set here.
+                    fetchSubscription(stagingDir, snapshot.imported.source) { status ->
+                        val fetchedSubInfo = status.toSubscriptionInfo()
+                        if (fetchedSubInfo != null) {
+                            subInfo = fetchedSubInfo
+                            return@fetchSubscription
                         }
-                        .await()
+                        try {
+                            cb?.updateStatus(status)
+                        } catch (error: Exception) {
+                            // fault barrier: the observer may live across a binder; reporting
+                            // failures must not abort the profile fetch itself.
+                            cb = null
+                            Timber.w(error, "Report fetch status: %s", error.message)
+                        }
+                    }
 
                     profileLock.withLock {
                         if (ImportedDao.exists(snapshot.imported.uuid)) {

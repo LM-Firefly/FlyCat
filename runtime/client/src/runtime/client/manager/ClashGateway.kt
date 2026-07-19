@@ -28,18 +28,17 @@ import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.model.ProxySort
 import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.model.UiConfiguration
+import com.github.yumelira.yumebox.core.util.runtimeHomeDir
 import com.github.yumelira.yumebox.runtime.api.IClashManager
 import com.github.yumelira.yumebox.runtime.api.ILogObserver
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import com.github.yumelira.yumebox.runtime.service.root.RootTunRuntimeRecovery
-import com.github.yumelira.yumebox.runtime.service.root.RootTunStatusFlow
-import timber.log.Timber
+import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
+import com.github.yumelira.yumebox.runtime.service.manager.HttpClashManager
 
 /**
- * Routing [IClashManager]: the remote External Controller wins when active, then the root
- * runtime while a root session is live, otherwise the in-process local core. All backend
- * behavior lives in [HttpClashManager] / [RootTunClashManager] / [LocalClashManager]; this
- * class only routes and handles root binder death.
+ * Routing [IClashManager]: the remote External Controller wins when active, otherwise the local
+ * out-of-process core over its `external-controller-unix` socket. Both are [HttpClashManager] — the
+ * run mode only affects how the core was launched, not how it is queried.
  */
 class ClashGateway(
     context: Context,
@@ -47,95 +46,32 @@ class ClashGateway(
     private val isRemoteControllerActive: () -> Boolean,
 ) : IClashManager {
     private val appContext = context.appContextOrSelf
-    private val local = LocalClashManager(appContext)
-    private val root = RootTunClashManager(appContext)
+    private val local: IClashManager = CoreProcess.rest(appContext)
 
-    private fun useRemote(): Boolean = isRemoteControllerActive()
+    private fun pick(): IClashManager = if (isRemoteControllerActive()) remote else local
 
-    private fun useRootRuntime(): Boolean = RootTunStatusFlow.current(appContext).isSessionActive
-
-    @Suppress("TooGenericExceptionCaught")
-    private inline fun <T> route(call: (IClashManager) -> T): T {
-        if (useRemote()) return call(remote)
-        if (!useRootRuntime()) return call(local)
-        return try {
-            call(root)
-        } catch (error: Throwable) { // fault barrier: root binder may die for any reason; recover then rethrow
-            handleRootRuntimeFailure(error)
-            throw error
-        }
-    }
-
-    override fun queryTunnelState(): TunnelState = route { it.queryTunnelState() }
-
-    override fun queryTrafficNow(): Long = route { it.queryTrafficNow() }
-
-    override fun queryTrafficTotal(): Long = route { it.queryTrafficTotal() }
-
-    override fun queryConnections(): ConnectionSnapshot = route { it.queryConnections() }
-
-    /** Profile preview always resolves from the locally compiled config, even in root mode. */
+    override fun queryTunnelState(): TunnelState = pick().queryTunnelState()
+    override fun queryTrafficNow(): Long = pick().queryTrafficNow()
+    override fun queryTrafficTotal(): Long = pick().queryTrafficTotal()
+    override fun queryConnections(): ConnectionSnapshot = pick().queryConnections()
     override fun queryProfileProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
-        if (useRemote()) {
-            remote.queryProfileProxyGroups(excludeNotSelectable)
-        } else {
-            local.queryProfileProxyGroups(excludeNotSelectable)
-        }
-
+        pick().queryProfileProxyGroups(excludeNotSelectable)
     override fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
-        route { it.queryAllProxyGroups(excludeNotSelectable) }
-
+        pick().queryAllProxyGroups(excludeNotSelectable)
     override fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> =
-        route { it.queryProxyGroupNames(excludeNotSelectable) }
-
+        pick().queryProxyGroupNames(excludeNotSelectable)
     override fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup =
-        route { it.queryProxyGroup(name, proxySort) }
-
-    override fun queryConfiguration(): UiConfiguration = route { it.queryConfiguration() }
-
-    override fun queryProviders(): ProviderList = route { it.queryProviders() }
-
-    override fun patchSelector(group: String, name: String): Boolean =
-        route { it.patchSelector(group, name) }
-
-    override fun closeConnection(id: String): Boolean = route { it.closeConnection(id) }
-
-    override fun closeAllConnections() = route { it.closeAllConnections() }
-
-    override suspend fun healthCheck(group: String) = route { it.healthCheck(group) }
-
+        pick().queryProxyGroup(name, proxySort)
+    override fun queryConfiguration(): UiConfiguration = pick().queryConfiguration()
+    override fun queryProviders(): ProviderList = pick().queryProviders()
+    override fun patchSelector(group: String, name: String): Boolean = pick().patchSelector(group, name)
+    override fun closeConnection(id: String): Boolean = pick().closeConnection(id)
+    override fun closeAllConnections() = pick().closeAllConnections()
+    override suspend fun healthCheck(group: String) = pick().healthCheck(group)
     override suspend fun healthCheckProxy(group: String, proxyName: String): Int =
-        route { it.healthCheckProxy(group, proxyName) }
-
+        pick().healthCheckProxy(group, proxyName)
     override suspend fun updateProvider(type: Provider.Type, name: String) =
-        route { it.updateProvider(type, name) }
-
-    override fun requestStop() = route { it.requestStop() }
-
-    override fun setLogObserver(observer: ILogObserver?) {
-        if (useRemote()) {
-            remote.setLogObserver(observer)
-            return
-        }
-        if (useRootRuntime()) {
-            local.setLogObserver(null)
-            root.setLogObserver(observer)
-        } else {
-            root.setLogObserver(null)
-            local.setLogObserver(observer)
-        }
-    }
-
-    private fun handleRootRuntimeFailure(error: Throwable) {
-        if (RootTunRuntimeRecovery.isBinderConnectionFailure(error)) {
-            root.resetLogStream()
-            RootTunRuntimeRecovery.handleBinderGone(
-                appContext,
-                RootTunRuntimeRecovery.binderFailureReason(error),
-            )
-            Timber.w(error, "Root runtime binder died")
-            return
-        }
-        Timber.w(error, "Root runtime query failed")
-    }
+        pick().updateProvider(type, name)
+    override fun requestStop() = pick().requestStop()
+    override fun setLogObserver(observer: ILogObserver?) = pick().setLogObserver(observer)
 }

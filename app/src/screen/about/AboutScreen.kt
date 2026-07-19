@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.BuildConfig
 import com.github.yumelira.yumebox.common.util.openUrl
-import com.github.yumelira.yumebox.core.bridge.Bridge
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
@@ -74,12 +73,9 @@ private val AppNameGradient =
 // Fault barrier at the JNI bridge: any native failure degrades to a fallback version label.
 @Suppress("TooGenericExceptionCaught")
 private fun loadCoreVersionOrFallback(): String =
-    try {
-        Bridge.nativeCoreVersion()
-    } catch (error: Exception) {
-        if (error is CancellationException) throw error
-        MLang.About.App.VersionFailed
-    }
+    // The core runs out-of-process; its exact version is available at runtime via the REST /version
+    // endpoint. The static About screen shows the tracked core name.
+    "mihomo"
 
 @Composable
 fun AboutScreen(navigator: Navigator) {

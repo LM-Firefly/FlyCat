@@ -22,7 +22,6 @@ package com.github.yumelira.yumebox.data.controller
 
 import android.content.Context
 import android.net.Uri
-import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.core.model.Provider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -31,6 +30,7 @@ import java.io.File
 class ProvidersController(
     private val context: Context,
     private val queryProvidersAction: suspend () -> List<Provider>,
+    private val updateProviderAction: suspend (Provider.Type, String) -> Unit,
 ) {
     @Suppress("TooGenericExceptionCaught")
     suspend fun queryProviders(): Result<List<Provider>> =
@@ -91,9 +91,9 @@ class ProvidersController(
     @Suppress("TooGenericExceptionCaught")
     private suspend fun updateProviderInternal(type: Provider.Type, name: String): Result<Unit> =
         try {
-            Clash.updateProvider(type, name).await()
+            updateProviderAction(type, name)
             Result.success(Unit)
-        } catch (error: Exception) { // fault barrier: JNI bridge call may fail arbitrarily
+        } catch (error: Exception) { // fault barrier: injected update action may fail arbitrarily
             Result.failure(error)
         }
 

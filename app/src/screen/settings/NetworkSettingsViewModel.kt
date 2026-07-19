@@ -110,9 +110,8 @@ class NetworkSettingsViewModel(
                     showServiceOptions = configuredMode != ProxyMode.Http,
                     showTunOnlyOptions = configuredMode == ProxyMode.Tun,
                     showAccessControlMode = configuredMode != ProxyMode.Http,
-                    showRootTunAdvanced = configuredMode == ProxyMode.RootTun,
-                    showFakeIpRange =
-                        configuredMode == ProxyMode.RootTun && dnsMode == RootTunDnsMode.FakeIp,
+                    showRootTunAdvanced = false,
+                    showFakeIpRange = false,
                 )
             }
             .distinctUntilChanged()

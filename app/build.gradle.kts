@@ -73,19 +73,12 @@ val appAbiList =
 //    (CI). Default (local dev) builds only arm64-v8a and skips the universal APK.
 //  - geo.bundle=false   -> keep the XZ geo databases and BundleMRS.7z out of assets (the local
 //    default); App.extractGeoFiles skips them and mihomo falls back to remote provider data.
-//  - nativelibs.compress=true -> ship the three core libs (libclash/liboverride/libbridge) only
-//    as XZ-compressed `<base>.xz.so` blobs (from `native-build --compress`) instead of raw libs;
-//    smaller download (LZMA2 beats the APK's DEFLATE), extracted + loaded at runtime by
-//    NativeLibraryLoader. The blobs stay under lib/<abi>/ (a generated jniLibs dir) so AGP's ABI
-//    splits filter them per arch — shipping them in assets/ leaks every ABI into every split APK.
+// Release-only native-lib XZ compression is handled by the dev.yume.packer APK transform (which
+// keeps libclash/libloader raw in nativeLibraryDir and packs the rest into assets/loader/), not here.
 val buildAllAbis = providers.gradleProperty("build.allAbis").orNull?.toBoolean() ?: false
 val geoBundle = providers.gradleProperty("geo.bundle").orNull?.toBoolean() ?: false
-val nativeLibsCompress = providers.gradleProperty("nativelibs.compress").orNull?.toBoolean() ?: false
 val splitAbiList = if (buildAllAbis) appAbiList else listOf("arm64-v8a")
 val geoFilesAssetsDir = rootProject.layout.buildDirectory.dir("generated/assets/geo")
-val nativeLibsJniDir = rootProject.layout.buildDirectory.dir("generated/nativelibs-jni")
-// Kept in sync with NativeLibCompressor.coreLibs and NativeLibraryLoader.CORE_LIBS.
-val compressedCoreLibs = listOf("liboverride.so", "libclash.so", "libbridge.so")
 val signingPropertiesFile = rootProject.file("signing.properties")
 val releaseSigningProperties = signingPropertiesFile.takeIf(File::isFile)?.let { file ->
     Properties().apply { file.inputStream().use(::load) }
@@ -182,10 +175,6 @@ android {
             jniLibs.directories.apply {
                 clear()
                 add("../jniLibs")
-                // Compressed <base>.xz.so blobs live here; ABI splits filter them via lib/<abi>/.
-                if (nativeLibsCompress) {
-                    add(nativeLibsJniDir.get().asFile.invariantSeparatorsPath)
-                }
             }
             if (project.file("AndroidManifest.xml").isFile) {
                 manifest.srcFile("AndroidManifest.xml")
@@ -248,19 +237,6 @@ android {
     packaging {
         jniLibs {
             excludes += listOf("lib/**/libjavet*.so")
-            // Ship the core libs only as compressed blobs; keeping the raw libs in jniLibs too
-            // would double their download cost and defeat the compression.
-            if (nativeLibsCompress) {
-                //noinspection WrongGradleMethod
-                excludes += compressedCoreLibs.map { "lib/**/$it" }
-                // The `.xz.so` blobs are XZ payloads, not ELF. AGP's native-lib strip step runs
-                // llvm-strip on every lib/**/*.so, errors on these ("not recognized as a valid
-                // object file") and DROPS them from packaging — so the blob never reaches the APK
-                // and the runtime probe silently falls back to the (excluded) raw lib. keepDebugSymbols
-                // tells AGP to skip stripping them, letting them pass through intact.
-                //noinspection WrongGradleMethod
-                keepDebugSymbols += compressedCoreLibs.map { "**/" + it.removeSuffix(".so") + ".xz.so" }
-            }
             useLegacyPackaging = true
         }
         resources {

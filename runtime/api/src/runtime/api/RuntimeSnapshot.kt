@@ -28,7 +28,6 @@ enum class RuntimeOwner {
     None,
     LocalTun,
     LocalHttp,
-    RootTun,
     RemoteController,
 }
 

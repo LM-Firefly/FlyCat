@@ -21,30 +21,27 @@
 package com.github.yumelira.yumebox.runtime.service.session
 
 import android.content.Context
-import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import java.security.SecureRandom
+import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
+import kotlinx.coroutines.runBlocking
 
+/** HTTP-proxy mode: launch the out-of-process core with the compiled config (listeners declared in
+ *  it), no TUN fd. */
 class LocalHttpTransport(context: Context) : RuntimeTransport {
     private val appContext = context.appContextOrSelf
-    private val random = SecureRandom()
     private val startupLogStore =
         RuntimeStartupLogStore(appContext, RuntimeStartupLogStore.Scope.LOCAL_HTTP)
+    private val pipeline = CompiledConfigPipeline(appContext)
+    private val core = CoreProcess(appContext)
 
     override fun start(spec: RuntimeSpec) {
         startupLogStore.append("LOCAL_HTTP transport start: begin")
-        val address =
-            Clash.startHttp(randomLoopbackListenAddress())
-                ?: error("startHttp returned null listen address")
-        startupLogStore.append("LOCAL_HTTP transport start: done listen=$address")
+        val config = runBlocking { pipeline.compile(spec) }
+        core.startHttp(config)
+        startupLogStore.append("LOCAL_HTTP transport start: done")
     }
 
     override fun stop() {
-        Clash.stopHttp()
-    }
-
-    private fun randomLoopbackListenAddress(): String {
-        val part = { 1 + random.nextInt(199) }
-        return "127.${part()}.${part()}.${part()}:0"
+        core.stop()
     }
 }
