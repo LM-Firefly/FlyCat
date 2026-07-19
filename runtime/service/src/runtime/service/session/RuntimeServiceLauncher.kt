@@ -22,12 +22,11 @@ package com.github.yumelira.yumebox.runtime.service.session
 
 import android.content.Context
 import android.content.Intent
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
 import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import com.github.yumelira.yumebox.runtime.service.ClashService
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.TunService
 
@@ -41,8 +40,10 @@ object RuntimeServiceLauncher {
     const val SOURCE_AUTO_RESTART_REPLACED = "auto_restart_replaced"
     const val SOURCE_UNKNOWN = "unknown"
 
+    // Only [RunMode.VpnService] is service-hosted; the root Tun/Tproxy daemons launch via
+    // CoreProcess.startRoot (through ProxyRuntimeControl), not this launcher.
     @Synchronized
-    fun start(context: Context, mode: ProxyMode, source: String = SOURCE_UNKNOWN) {
+    fun start(context: Context, mode: RunMode = RunMode.VpnService, source: String = SOURCE_UNKNOWN) {
         val appContext = context.appContextOrSelf
         val logScope = RuntimeStartupLogStore.scopeForMode(mode)
         val startupLogStore = RuntimeStartupLogStore(appContext, logScope)
@@ -86,21 +87,10 @@ object RuntimeServiceLauncher {
             return
         }
 
-        // Only one local runtime may own the process-wide core; stop a lingering service of
-        // the other mode here so every caller (UI, tile, auto restart) gets the exclusion,
-        // otherwise the new session tears the core down underneath the old foreground service.
-        val otherMode = if (mode == ProxyMode.Tun) ProxyMode.Http else ProxyMode.Tun
-        if (StatusProvider.queryRuntimePhase(otherMode).isNotIdle) {
-            startupLogStore.append(
-                "${logScope.tag} launcher: stopping previous ${otherMode.name} runtime"
-            )
-            runCatching { appContext.stopService(Intent(appContext, serviceClassFor(otherMode))) }
-        }
-
         val sessionToken = StatusProvider.beginRuntimeSession(mode)
 
         val intent =
-            Intent(appContext, serviceClassFor(mode)).putExtra(EXTRA_REQUEST_SOURCE, source)
+            Intent(appContext, TunService::class.java).putExtra(EXTRA_REQUEST_SOURCE, source)
 
         runCatching { appContext.startForegroundService(intent) }
             .onFailure { error ->
@@ -111,15 +101,9 @@ object RuntimeServiceLauncher {
     }
 
     @Synchronized
-    fun stop(context: Context, mode: ProxyMode) {
+    fun stop(context: Context, mode: RunMode = RunMode.VpnService) {
         val appContext = context.appContextOrSelf
-        runCatching { appContext.stopService(Intent(appContext, serviceClassFor(mode))) }
+        runCatching { appContext.stopService(Intent(appContext, TunService::class.java)) }
         StatusProvider.markRuntimeIdle(mode)
     }
-
-    private fun serviceClassFor(mode: ProxyMode): Class<*> =
-        when (mode) {
-            ProxyMode.Tun -> TunService::class.java
-            ProxyMode.Http -> ClashService::class.java
-        }
 }

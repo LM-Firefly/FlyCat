@@ -37,6 +37,9 @@ data class CompileRequest(
     val overrides: List<OverrideSpec> = emptyList(),
     val outputPath: String,
     val ageSecretKey: String? = null,
+    // Forwarded to liboverride: in Tun mode it keeps the compiled `tun:` block authoritative (the
+    // core opens its own kernel device) instead of force-disabling it as for VpnService / TPROXY.
+    val runMode: RunMode = RunMode.VpnService,
 )
 
 @Serializable

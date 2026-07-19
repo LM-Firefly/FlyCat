@@ -20,7 +20,7 @@
 
 package com.github.yumelira.yumebox.data.controller
 
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.Preference
 import kotlinx.coroutines.Dispatchers
@@ -29,8 +29,8 @@ import kotlinx.coroutines.withContext
 class NetworkSettingsController(
     private val store: NetworkSettingsStore,
     isRunning: () -> Boolean,
-    private val restartProxy: suspend (ProxyMode) -> Unit,
-    private val beforeRestart: suspend (ProxyMode) -> Unit = {},
+    private val restartProxy: suspend (RunMode) -> Unit,
+    private val beforeRestart: suspend (RunMode) -> Unit = {},
 ) {
     private val restarter =
         DebouncedProxyRestarter(
@@ -39,8 +39,8 @@ class NetworkSettingsController(
             isRunning = isRunning,
         )
 
-    fun setProxyMode(mode: ProxyMode) {
-        store.proxyMode.set(mode)
+    fun setRunMode(mode: RunMode) {
+        store.runMode.set(mode)
     }
 
     fun <T> setAndRestartIfNeeded(preference: Preference<T>, value: T) {
@@ -49,8 +49,8 @@ class NetworkSettingsController(
         scheduleRestart()
     }
 
-    suspend fun startService(mode: ProxyMode): Result<Unit> = runCatching {
-        store.proxyMode.set(mode)
+    suspend fun startService(mode: RunMode): Result<Unit> = runCatching {
+        store.runMode.set(mode)
         beforeRestart(mode)
         withContext(Dispatchers.IO) { restartProxy(mode) }
     }
@@ -61,7 +61,7 @@ class NetworkSettingsController(
 
     private fun scheduleRestart() {
         restarter.schedule {
-            val targetMode = store.proxyMode.value
+            val targetMode = store.runMode.value
             beforeRestart(targetMode)
             startService(targetMode)
         }

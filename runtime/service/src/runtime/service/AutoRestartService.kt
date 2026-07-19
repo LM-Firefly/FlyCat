@@ -33,7 +33,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
 import com.github.yumelira.yumebox.core.util.StartupTaskCoordinator
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.data.store.AppSettingsStore
 import com.github.yumelira.yumebox.data.store.FeatureStore
 import com.github.yumelira.yumebox.data.store.MMKVProvider
@@ -162,11 +162,11 @@ class AutoRestartService : Service() {
             skipForPostUpdateColdStart = skipUpdateOnPostUpdateColdStart,
         )
 
-        val proxyMode = networkSettingsStorage.proxyMode.value
+        val runMode = networkSettingsStorage.runMode.value
         // Mirrors ProxyAutoStartHelper: a restart against an already-active runtime would
         // re-mark Starting and tear down the live core underneath the existing service.
-        if (StatusProvider.isRuntimeActive(proxyMode)) {
-            Timber.tag(TAG).i("Skip auto start: ${proxyMode.name} runtime already active")
+        if (StatusProvider.isRuntimeActive(runMode)) {
+            Timber.tag(TAG).i("Skip auto start: ${runMode.name} runtime already active")
             return
         }
 
@@ -176,26 +176,26 @@ class AutoRestartService : Service() {
                 REASON_PACKAGE_REPLACED -> RuntimeServiceLauncher.SOURCE_AUTO_RESTART_REPLACED
                 else -> RuntimeServiceLauncher.SOURCE_AUTO_RESTART
             }
-        when (proxyMode) {
-            ProxyMode.Tun -> {
-                if (VpnService.prepare(this) != null) {
-                    Timber.tag(TAG).i("Skip auto start: VPN permission is missing for Tun mode")
-                    return
-                }
-                RuntimeServiceLauncher.start(this, ProxyMode.Tun, startupSource)
+        if (runMode == RunMode.VpnService) {
+            if (VpnService.prepare(this) != null) {
+                Timber.tag(TAG).i("Skip auto start: VPN permission is missing")
+                return
             }
-            ProxyMode.Http -> {
-                RuntimeServiceLauncher.start(this, ProxyMode.Http, startupSource)
-            }
+            RuntimeServiceLauncher.start(this, RunMode.VpnService, startupSource)
+        } else {
+            // The root Tun/Tproxy daemon survives app death and is reattached on demand — it is not
+            // auto-restarted here.
+            Timber.tag(TAG).i("Skip auto start: root mode $runMode is not auto-restarted")
+            return
         }
 
         val activationResult =
-            runCatching { awaitRuntimeActivation(proxyMode) }
+            runCatching { awaitRuntimeActivation(runMode) }
                 .getOrElse { error ->
-                    cleanupIncompleteRuntime(proxyMode)
+                    cleanupIncompleteRuntime(runMode)
                     throw error
                 }
-        val logScope = RuntimeStartupLogStore.scopeForMode(proxyMode)
+        val logScope = RuntimeStartupLogStore.scopeForMode(runMode)
         val startupLogStore = RuntimeStartupLogStore(this, logScope)
         when (activationResult) {
             is RuntimeActivationResult.Running -> {
@@ -203,11 +203,11 @@ class AutoRestartService : Service() {
                 Timber.tag(TAG)
                     .i(
                         "Auto start active: reason=$reason profile=${activeProfile.name}, " +
-                            "mode=$proxyMode"
+                            "mode=$runMode"
                     )
             }
             is RuntimeActivationResult.Failed -> {
-                cleanupIncompleteRuntime(proxyMode)
+                cleanupIncompleteRuntime(runMode)
                 val message = activationResult.error ?: "runtime entered Failed"
                 startupLogStore.append(
                     "${logScope.tag} auto-start: failed reason=$reason error=$message"
@@ -215,7 +215,7 @@ class AutoRestartService : Service() {
                 error(message)
             }
             is RuntimeActivationResult.TimedOut -> {
-                cleanupIncompleteRuntime(proxyMode)
+                cleanupIncompleteRuntime(runMode)
                 val message =
                     "runtime activation timed out in ${activationResult.lastState.phase}" +
                         activationResult.lastState.error?.let { ": $it" }.orEmpty()
@@ -229,23 +229,16 @@ class AutoRestartService : Service() {
         }
     }
 
-    private suspend fun awaitRuntimeActivation(mode: ProxyMode): RuntimeActivationResult =
+    private suspend fun awaitRuntimeActivation(mode: RunMode): RuntimeActivationResult =
         activationAwaiter.await(mode) {
-            when (mode) {
-                ProxyMode.Tun,
-                ProxyMode.Http ->
-                    RuntimeActivationState(
-                        phase = StatusProvider.queryRuntimePhase(mode),
-                        error = StatusProvider.queryRuntimeLastError(mode),
-                    )
-            }
+            RuntimeActivationState(
+                phase = StatusProvider.queryRuntimePhase(mode),
+                error = StatusProvider.queryRuntimeLastError(mode),
+            )
         }
 
-    private suspend fun cleanupIncompleteRuntime(mode: ProxyMode) {
-        when (mode) {
-            ProxyMode.Tun,
-            ProxyMode.Http -> RuntimeServiceLauncher.stop(this, mode)
-        }
+    private suspend fun cleanupIncompleteRuntime(mode: RunMode) {
+        RuntimeServiceLauncher.stop(this, mode)
     }
 
     @Suppress("TooGenericExceptionCaught")

@@ -28,7 +28,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import com.github.yumelira.yumebox.data.model.AccessControlMode
-import com.github.yumelira.yumebox.data.model.ProxyMode
 import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.component.Navigator
@@ -50,9 +49,9 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 
 /**
  * Network settings entry point. Top: a "run mode" radio picker — one card per mode. Only
- * [ProxyMode.Tun] (VpnService) is functional today; the root-only Tun / TPROXY modes are shown but
- * disabled until the libsu path lands. Below: advanced options (service config + disable-overrides)
- * and access control. The former parallel HTTP "system proxy" run mode is gone.
+ * [RunMode.VpnService] is functional today; the root-only Tun / TPROXY modes are shown but disabled
+ * until the libsu path lands. Below: advanced options (service config + disable-overrides) and
+ * access control. The former parallel HTTP "system proxy" run mode is gone.
  */
 @Composable
 fun NetworkSettingsScreen(navigator: Navigator) {
@@ -62,11 +61,6 @@ fun NetworkSettingsScreen(navigator: Navigator) {
     val disableAllOverride by viewModel.disableAllOverride.state.collectAsState()
     val accessControlMode by viewModel.accessControlMode.state.collectAsState()
     val runMode by viewModel.runMode.state.collectAsState()
-
-    // Anyone still persisted on the removed HTTP mode is migrated to the VpnService (TUN) mode.
-    LaunchedEffect(uiState.configuredMode) {
-        if (uiState.configuredMode == ProxyMode.Http) viewModel.onProxyModeChange(ProxyMode.Tun)
-    }
 
     Scaffold(
         topBar = { TopBar(title = MLang.NetworkSettings.Title, scrollBehavior = scrollBehavior) }
@@ -89,7 +83,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                     ModeCard(
                         title = MLang.NetworkSettings.RunMode.TunTitle,
                         summary = MLang.NetworkSettings.RunMode.TunSummary,
-                        selected = runMode == RunMode.RootTun,
+                        selected = runMode == RunMode.Tun,
                         enabled = false,
                         onSelect = {},
                     )
@@ -114,7 +108,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                         checked = disableAllOverride,
                         // Only the root Tun / TPROXY modes do their own routing where skipping the
                         // override chain makes sense; it stays disabled under VPN 服务.
-                        enabled = runMode == RunMode.RootTun || runMode == RunMode.Tproxy,
+                        enabled = runMode == RunMode.Tun || runMode == RunMode.Tproxy,
                         onCheckedChange = viewModel::onDisableAllOverrideChange,
                     )
                 }

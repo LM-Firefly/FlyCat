@@ -20,7 +20,7 @@
 
 package com.github.yumelira.yumebox.runtime.client
 
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
@@ -32,30 +32,31 @@ object RuntimeStateMapper {
     fun isActuallyRunning(snapshot: RuntimeSnapshot): Boolean =
         snapshot.phase == RuntimePhase.Running
 
-    fun modeForOwner(owner: RuntimeOwner): ProxyMode? =
+    /**
+     * The VpnService owner maps 1:1 to [RunMode.VpnService]. The root daemon serves both Tun and
+     * Tproxy, so the specific mode isn't derivable from the owner alone — it's carried in
+     * [RuntimeSnapshot.runMode]; callers that need it read the snapshot directly.
+     */
+    fun modeForOwner(owner: RuntimeOwner): RunMode? =
         when (owner) {
-            RuntimeOwner.LocalTun -> ProxyMode.Tun
-            RuntimeOwner.LocalHttp -> ProxyMode.Http
-            RuntimeOwner.RemoteController -> null
+            RuntimeOwner.VpnService -> RunMode.VpnService
+            RuntimeOwner.RootDaemon,
+            RuntimeOwner.RemoteController,
             RuntimeOwner.None -> null
         }
 
-    fun resolveDisplayMode(snapshot: RuntimeSnapshot, configuredMode: ProxyMode): ProxyMode =
-        if (isRunningOrStarting(snapshot)) {
-            modeForOwner(snapshot.owner) ?: configuredMode
-        } else {
-            configuredMode
-        }
+    fun resolveDisplayMode(snapshot: RuntimeSnapshot, configuredMode: RunMode): RunMode =
+        if (isRunningOrStarting(snapshot)) snapshot.runMode else configuredMode
 
     fun idleSnapshot(
-        configuredMode: ProxyMode,
+        configuredMode: RunMode,
         generation: Long = 0L,
         lastError: String? = null,
     ): RuntimeSnapshot =
         RuntimeSnapshot(
             owner = RuntimeOwner.None,
             phase = if (lastError.isNullOrBlank()) RuntimePhase.Idle else RuntimePhase.Failed,
-            targetMode = configuredMode,
+            runMode = configuredMode,
             lastError = lastError,
             generation = generation,
         )

@@ -49,7 +49,7 @@ Home = {
     ProxyMode = {
         Vpn = "VPN"
         Tun = "TUN"
-        Http = "HTTP"
+        Tproxy = "TPROXY"
     }
 
     PreviewGuide = {

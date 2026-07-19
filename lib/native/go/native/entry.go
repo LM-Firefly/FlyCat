@@ -45,15 +45,13 @@ func main() {
 		gateway     = flag.String("gateway", "", "tun gateway CIDR(s)")
 		portal      = flag.String("portal", "", "tun portal address(es)")
 		dns         = flag.String("dns", "", "tun DNS hijack address(es)")
+		mode        = flag.String("mode", "vpn", "run mode: vpn | tun | tproxy")
+		configPath  = flag.String("config", "", "compiled config path; root modes read the config here instead of the channel")
 	)
 	flag.Parse()
 
 	if *home == "" {
 		fatal("missing required --home")
-	}
-	channelFd := channelFromEnv()
-	if channelFd < 0 {
-		fatal("missing CHANNEL: config is delivered over the socketpair, not a file")
 	}
 
 	// The core is silent after fork (stdout/stderr are its only channel out, redirected by the
@@ -67,20 +65,44 @@ func main() {
 	log.SetLevel(log.DEBUG)
 
 	delegate.Init(*home, *versionName, *gitVersion, *sdkVersion)
-	// VPN excludes the app's own uid from the tunnel, so the core's egress never loops and needs no
-	// per-socket protect; owner lookups fall back to procfs.
+	// Egress never loops back through the tunnel (VPN excludes the app's own uid; tun uses
+	// auto-detect-interface; tproxy uses an iptables bypass), so the core needs no per-socket protect;
+	// owner lookups fall back to procfs.
 	app.ApplyTunContext(nil, nil)
 
-	// Stream the compiled config and the TUN fd from the app over the socketpair. The config arrives
-	// as one or more data messages; the message carrying the fd terminates it.
-	rawConfig, tunFd, err := readSetup(channelFd)
-	if err != nil {
-		fatal("read setup from channel: %v", err)
+	// Acquire the compiled config and, for the VpnService path, the TUN fd. The VPN path streams both
+	// over the inherited socketpair (never touching disk). The root paths are launched detached via
+	// `su` and cannot inherit the channel, so they read the config from --config (a plain file or a
+	// fifo) and open their own device — no fd is passed.
+	var (
+		rawConfig []byte
+		tunFd     = -1
+	)
+	switch *mode {
+	case "tun", "tproxy":
+		if *configPath == "" {
+			fatal("mode %q requires --config", *mode)
+		}
+		data, err := os.ReadFile(*configPath)
+		if err != nil {
+			fatal("read config %q: %v", *configPath, err)
+		}
+		rawConfig = data
+	default: // vpn
+		channelFd := channelFromEnv()
+		if channelFd < 0 {
+			fatal("missing CHANNEL: vpn mode delivers config over the socketpair, not a file")
+		}
+		data, fd, err := readSetup(channelFd)
+		if err != nil {
+			fatal("read setup from channel: %v", err)
+		}
+		rawConfig, tunFd = data, fd
 	}
-	log.Infoln("[core] setup received: config=%d bytes, tunFd=%d", len(rawConfig), tunFd)
+	log.Infoln("[core] setup received: mode=%s config=%d bytes tunFd=%d", *mode, len(rawConfig), tunFd)
 
 	// The config is already the COMPLETE final mihomo config — the Rust patch/override layer is the
-	// single source of config truth (fake-ip DNS, store-selected, interface-clear, tun-disable, …).
+	// single source of config truth (fake-ip DNS, store-selected, interface-clear, tun block, …).
 	// The core only parses and applies it; there is no Go-side config processing.
 	cfg, err := config.Parse(rawConfig)
 	if err != nil {
@@ -94,12 +116,14 @@ func main() {
 		cfg.Controller.Secret = *secret
 	}
 
-	// Inject the VpnService TUN fd into the config BEFORE applying it, so mihomo starts the TUN as
-	// part of ApplyConfig's own updateTun step (fully integrated, before the blocking provider load)
-	// instead of a separate call that runs only after every provider has initialized. The stack is
-	// always userspace gVisor (see tun.Configure), whose egress bypasses the tunnel via the app's uid
-	// exclusion — so no per-socket protect is needed and app.MarkSocket stays the no-op set above.
-	if tunFd >= 0 {
+	// TUN setup is mode-specific:
+	//  - vpn: inject the VpnService fd into the config BEFORE ApplyConfig so mihomo's own updateTun
+	//    wraps it with the userspace gVisor stack (egress bypasses the tunnel via the app's uid
+	//    exclusion; app.MarkSocket stays the no-op set above).
+	//  - tun: the compiled `tun:` block is authoritative — the core opens its OWN kernel device
+	//    (auto-route / auto-detect-interface) in the root domain; do NOT overwrite it.
+	//  - tproxy: no TUN; the compiled config carries tproxy-port + iptables, applied by ApplyConfig.
+	if *mode == "vpn" && tunFd >= 0 {
 		if err := tun.Configure(cfg, tunFd, *gateway, *portal, *dns); err != nil {
 			fatal("configure tun: %v", err)
 		}
@@ -107,7 +131,7 @@ func main() {
 
 	hub.ApplyConfig(cfg)
 	log.SetLevel(log.DEBUG) // ApplyConfig may lower the level from the config; keep DEBUG for TUN diagnostics
-	log.Infoln("[core] config applied; controller=%q tun.enable=%v", *controller, cfg.General.Tun.Enable)
+	log.Infoln("[core] config applied; mode=%s controller=%q tun.enable=%v", *mode, *controller, cfg.General.Tun.Enable)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)

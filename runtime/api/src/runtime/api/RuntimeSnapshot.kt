@@ -20,14 +20,18 @@
 
 package com.github.yumelira.yumebox.runtime.api
 
-import com.github.yumelira.yumebox.core.model.ProxyMode
+import com.github.yumelira.yumebox.core.model.RunMode
 import kotlinx.serialization.Serializable
 
 @Serializable
 enum class RuntimeOwner {
     None,
-    LocalTun,
-    LocalHttp,
+
+    /** The non-root Android VpnService path (a service-hosted fork+exec child core). */
+    VpnService,
+
+    /** The root libsu daemon (both Tun and Tproxy modes; disambiguated by [RuntimeSnapshot.runMode]). */
+    RootDaemon,
     RemoteController,
 }
 
@@ -56,7 +60,7 @@ enum class RuntimePhase {
 data class RuntimeSnapshot(
     val owner: RuntimeOwner = RuntimeOwner.None,
     val phase: RuntimePhase = RuntimePhase.Idle,
-    val targetMode: ProxyMode = ProxyMode.Tun,
+    val runMode: RunMode = RunMode.VpnService,
     val profileReady: Boolean = false,
     val groupsReady: Boolean = false,
     val trafficReady: Boolean = false,

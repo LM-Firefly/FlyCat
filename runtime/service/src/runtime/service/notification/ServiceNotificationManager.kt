@@ -194,12 +194,5 @@ class ServiceNotificationManager(
                 channelId = "yumebox_vpn_service",
                 channelName = "YumeBox VPN Service",
             )
-
-        val httpConfig =
-            Config(
-                notificationId = 1002,
-                channelId = "yumebox_http_service",
-                channelName = "YumeBox HTTP Service",
-            )
     }
 }

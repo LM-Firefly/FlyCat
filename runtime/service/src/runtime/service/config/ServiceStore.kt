@@ -20,7 +20,7 @@
 
 package com.github.yumelira.yumebox.runtime.service.config
 
-import com.github.yumelira.yumebox.core.model.RootTunDnsMode
+import com.github.yumelira.yumebox.core.model.TunDnsMode
 import com.tencent.mmkv.MMKV
 import kotlinx.serialization.json.Json
 import java.util.UUID
@@ -216,71 +216,65 @@ class ServiceStore {
             networkSettings.encode("tunRouteExcludeAddress", json.encodeToString(value))
         }
 
-    var rootTunIfName: String
-        get() = readString("rootTunIfName", "root_tun_if_name", "Yume")
+    var tunIfName: String
+        get() = readString("tunIfName", "tun_if_name", "Yume")
         set(value) {
-            networkSettings.encode("rootTunIfName", value)
-            store.provider.setString("root_tun_if_name", value)
+            networkSettings.encode("tunIfName", value)
+            store.provider.setString("tun_if_name", value)
         }
 
-    var rootTunMtu: Int
-        get() = readInt("rootTunMtu", "root_tun_mtu", 1500)
+    var tunMtu: Int
+        get() = readInt("tunMtu", "tun_mtu", 1500)
         set(value) {
-            networkSettings.encode("rootTunMtu", value)
-            store.provider.setInt("root_tun_mtu", value)
+            networkSettings.encode("tunMtu", value)
+            store.provider.setInt("tun_mtu", value)
         }
 
-    var rootTunAutoRoute: Boolean
-        get() = readBoolean("rootTunAutoRoute", "root_tun_auto_route", true)
+    var tunAutoRoute: Boolean
+        get() = readBoolean("tunAutoRoute", "tun_auto_route", true)
         set(value) {
-            networkSettings.encode("rootTunAutoRoute", value)
-            store.provider.setBoolean("root_tun_auto_route", value)
+            networkSettings.encode("tunAutoRoute", value)
+            store.provider.setBoolean("tun_auto_route", value)
         }
 
-    var rootTunStrictRoute: Boolean
-        get() = readBoolean("rootTunStrictRoute", "root_tun_strict_route", true)
+    var tunStrictRoute: Boolean
+        get() = readBoolean("tunStrictRoute", "tun_strict_route", true)
         set(value) {
-            networkSettings.encode("rootTunStrictRoute", value)
-            store.provider.setBoolean("root_tun_strict_route", value)
+            networkSettings.encode("tunStrictRoute", value)
+            store.provider.setBoolean("tun_strict_route", value)
         }
 
-    var rootTunAutoRedirect: Boolean
-        get() = readBoolean("rootTunAutoRedirect", "root_tun_auto_redirect", true)
+    var tunAutoRedirect: Boolean
+        get() = readBoolean("tunAutoRedirect", "tun_auto_redirect", true)
         set(value) {
-            networkSettings.encode("rootTunAutoRedirect", value)
-            store.provider.setBoolean("root_tun_auto_redirect", value)
+            networkSettings.encode("tunAutoRedirect", value)
+            store.provider.setBoolean("tun_auto_redirect", value)
         }
 
-    var rootTunIncludeAndroidUser: List<Int>
-        get() = readIntList("rootTunIncludeAndroidUser", listOf(0, 10))
+    var tunIncludeAndroidUser: List<Int>
+        get() = readIntList("tunIncludeAndroidUser", listOf(0, 10))
         set(value) {
-            networkSettings.encode("rootTunIncludeAndroidUser", json.encodeToString(value))
+            networkSettings.encode("tunIncludeAndroidUser", json.encodeToString(value))
         }
 
-    var rootTunRouteExcludeAddress: List<String>
-        get() = readStringList("rootTunRouteExcludeAddress", emptyList())
+    var tunDnsMode: TunDnsMode
+        get() = readEnum("tunDnsMode", TunDnsMode.RedirHost)
         set(value) {
-            networkSettings.encode("rootTunRouteExcludeAddress", json.encodeToString(value))
+            networkSettings.encode("tunDnsMode", value.name)
         }
 
-    var rootTunDnsMode: RootTunDnsMode
-        get() = readEnum("rootTunDnsMode", RootTunDnsMode.RedirHost)
+    var tunFakeIpRange: String
+        get() = readString("tunFakeIpRange", "tun_fake_ip_range", "198.18.0.1/16")
         set(value) {
-            networkSettings.encode("rootTunDnsMode", value.name)
+            networkSettings.encode("tunFakeIpRange", value)
+            store.provider.setString("tun_fake_ip_range", value)
         }
 
-    var rootTunFakeIpRange: String
-        get() = readString("rootTunFakeIpRange", "root_tun_fake_ip_range", "198.18.0.1/16")
+    var tunFakeIpRange6: String
+        get() = readString("tunFakeIpRange6", "tun_fake_ip_range6", "fc00::/18")
         set(value) {
-            networkSettings.encode("rootTunFakeIpRange", value)
-            store.provider.setString("root_tun_fake_ip_range", value)
-        }
-
-    var rootTunFakeIpRange6: String
-        get() = readString("rootTunFakeIpRange6", "root_tun_fake_ip_range6", "fc00::/18")
-        set(value) {
-            networkSettings.encode("rootTunFakeIpRange6", value)
-            store.provider.setString("root_tun_fake_ip_range6", value)
+            networkSettings.encode("tunFakeIpRange6", value)
+            store.provider.setString("tun_fake_ip_range6", value)
         }
 
     var showTrafficNotification by

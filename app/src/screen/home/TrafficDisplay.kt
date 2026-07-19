@@ -52,7 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.common.util.formatBytesForDisplay
 import com.github.yumelira.yumebox.core.model.TunnelState
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.domain.model.TrafficData
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Activity
@@ -75,7 +75,7 @@ fun TrafficDisplay(
     profileName: String?,
     tunnelMode: TunnelState.Mode?,
     controlState: HomeProxyControlState,
-    proxyMode: ProxyMode,
+    proxyMode: RunMode,
     isRemoteController: Boolean,
     isEnabled: Boolean,
     onClick: () -> Unit,
@@ -226,7 +226,7 @@ private val trafficUnitFontSize = 24.sp
 private fun UploadSection(
     uploadSpeed: Long,
     controlState: HomeProxyControlState,
-    proxyMode: ProxyMode,
+    proxyMode: RunMode,
     isRemoteController: Boolean,
 ) {
     val spacing = AppTheme.spacing
@@ -302,7 +302,7 @@ private fun UploadSection(
 }
 
 @Composable
-private fun ProxyTypeCapsule(proxyMode: ProxyMode) {
+private fun ProxyTypeCapsule(proxyMode: RunMode) {
     val spacing = AppTheme.spacing
     val componentSizes = AppTheme.sizes
     val opacity = AppTheme.opacity
@@ -321,8 +321,9 @@ private fun ProxyTypeCapsule(proxyMode: ProxyMode) {
             Icon(
                 imageVector =
                     when (proxyMode) {
-                        ProxyMode.Tun -> Yume.PlaneTakeoff
-                        ProxyMode.Http -> Yume.Wifi
+                        RunMode.VpnService -> Yume.PlaneTakeoff
+                        RunMode.Tun -> Yume.PlaneTakeoff
+                        RunMode.Tproxy -> Yume.Wifi
                     },
                 contentDescription = null,
                 tint = primary,
@@ -331,8 +332,9 @@ private fun ProxyTypeCapsule(proxyMode: ProxyMode) {
             Text(
                 text =
                     when (proxyMode) {
-                        ProxyMode.Tun -> MLang.Home.ProxyMode.Vpn
-                        ProxyMode.Http -> MLang.Home.ProxyMode.Http
+                        RunMode.VpnService -> MLang.Home.ProxyMode.Vpn
+                        RunMode.Tun -> MLang.Home.ProxyMode.Tun
+                        RunMode.Tproxy -> MLang.Home.ProxyMode.Tproxy
                     },
                 style =
                     MiuixTheme.textStyles.footnote1.copy(

@@ -47,15 +47,6 @@
         </service>
 
         <service
-            android:name="com.github.yumelira.yumebox.runtime.service.ClashService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="yumebox_proxy" />
-        </service>
-
-        <service
             android:name="com.github.yumelira.yumebox.runtime.service.LogRecordService"
             android:exported="false"
             android:foregroundServiceType="specialUse">

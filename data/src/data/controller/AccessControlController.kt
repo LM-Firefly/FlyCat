@@ -20,17 +20,17 @@
 
 package com.github.yumelira.yumebox.data.controller
 
+import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.data.model.AccessControlMode
-import com.github.yumelira.yumebox.data.model.ProxyMode
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import kotlinx.coroutines.CancellationException
 
 class AccessControlController(
     private val store: NetworkSettingsStore,
     isRunning: () -> Boolean,
-    private val resolveActiveMode: () -> ProxyMode?,
-    private val restartProxy: suspend (ProxyMode) -> Unit,
-    private val beforeRestart: suspend (ProxyMode) -> Unit = {},
+    private val resolveActiveMode: () -> RunMode?,
+    private val restartProxy: suspend (RunMode) -> Unit,
+    private val beforeRestart: suspend (RunMode) -> Unit = {},
 ) {
     private val restarter =
         DebouncedProxyRestarter(
@@ -54,8 +54,7 @@ class AccessControlController(
     @Suppress("TooGenericExceptionCaught")
     private fun scheduleApply() {
         restarter.schedule {
-            val targetMode = resolveActiveMode() ?: store.proxyMode.value
-            if (targetMode == ProxyMode.Http) return@schedule
+            val targetMode = resolveActiveMode() ?: store.runMode.value
             if (store.accessControlMode.value == AccessControlMode.ALLOW_ALL) return@schedule
 
             try {

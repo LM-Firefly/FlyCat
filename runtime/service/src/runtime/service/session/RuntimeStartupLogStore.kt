@@ -21,7 +21,7 @@
 package com.github.yumelira.yumebox.runtime.service.session
 
 import android.content.Context
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import java.io.File
 import java.nio.charset.StandardCharsets
@@ -35,7 +35,6 @@ class RuntimeStartupLogStore(
         val tag: String,
     ) {
         LOCAL_TUN("local_tun_startup.log", "LOCAL_TUN"),
-        LOCAL_HTTP("local_http_startup.log", "LOCAL_HTTP"),
         ROOT_TUN("root_tun_startup.log", "ROOT_TUN"),
     }
 
@@ -73,10 +72,10 @@ class RuntimeStartupLogStore(
     companion object {
         private val lock = Any()
 
-        fun scopeForMode(mode: ProxyMode): Scope =
+        fun scopeForMode(mode: RunMode): Scope =
             when (mode) {
-                ProxyMode.Tun -> Scope.LOCAL_TUN
-                ProxyMode.Http -> Scope.LOCAL_HTTP
+                RunMode.VpnService -> Scope.LOCAL_TUN
+                RunMode.Tun, RunMode.Tproxy -> Scope.ROOT_TUN
             }
     }
 }

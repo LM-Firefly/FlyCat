@@ -26,7 +26,6 @@ import androidx.lifecycle.viewModelScope
 import com.github.yumelira.yumebox.common.util.stateInWhileSubscribed
 import com.github.yumelira.yumebox.data.controller.NetworkSettingsController
 import com.github.yumelira.yumebox.data.model.AccessControlMode
-import com.github.yumelira.yumebox.data.model.ProxyMode
 import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.Preference
@@ -45,7 +44,6 @@ class NetworkSettingsViewModel(
     settings: NetworkSettingsStore,
     private val controller: NetworkSettingsController,
 ) : AndroidViewModel(application) {
-    val proxyMode: Preference<ProxyMode> = settings.proxyMode
     val runMode: Preference<RunMode> = settings.runMode
     val bypassPrivateNetwork: Preference<Boolean> = settings.bypassPrivateNetwork
     val dnsHijack: Preference<Boolean> = settings.dnsHijack
@@ -56,7 +54,7 @@ class NetworkSettingsViewModel(
     val accessControlMode: Preference<AccessControlMode> = settings.accessControlMode
 
     val uiState: StateFlow<NetworkSettingsUiState> =
-        proxyMode.state
+        runMode.state
             .map { NetworkSettingsUiState(configuredMode = it) }
             .distinctUntilChanged()
             .stateInWhileSubscribed(viewModelScope, NetworkSettingsUiState())
@@ -94,14 +92,9 @@ class NetworkSettingsViewModel(
                 ),
             )
 
-    fun onProxyModeChange(mode: ProxyMode) {
-        controller.setProxyMode(mode)
-    }
-
-    /** Selects the UI run mode. VpnService maps to the actual [ProxyMode.Tun] runtime transport. */
+    /** Selects the run mode (VpnService / Tun / Tproxy) — the single mode key across the runtime. */
     fun onRunModeChange(mode: RunMode) {
-        runMode.set(mode)
-        if (mode == RunMode.VpnService) controller.setProxyMode(ProxyMode.Tun)
+        controller.setRunMode(mode)
     }
 
     fun onBypassPrivateNetworkChange(enabled: Boolean) {
@@ -134,7 +127,7 @@ class NetworkSettingsViewModel(
 }
 
 data class NetworkSettingsUiState(
-    val configuredMode: ProxyMode = ProxyMode.Tun,
+    val configuredMode: RunMode = RunMode.VpnService,
 )
 
 data class CommonTunOptionsUiState(

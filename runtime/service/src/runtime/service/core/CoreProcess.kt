@@ -24,9 +24,11 @@ import android.content.Context
 import android.os.ParcelFileDescriptor
 import com.github.yumelira.yumebox.core.bridge.Channel
 import com.github.yumelira.yumebox.core.bridge.NativeProcess
+import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.core.util.runtimeHomeDir
 import com.github.yumelira.yumebox.runtime.api.IClashManager
 import com.github.yumelira.yumebox.runtime.service.manager.HttpClashManager
+import com.topjohnwu.superuser.Shell
 import java.io.File
 import java.security.SecureRandom
 import timber.log.Timber
@@ -98,27 +100,38 @@ class CoreProcess(private val context: Context) {
         return CoreEndpoint(sock, secret).also { current = it }
     }
 
-    /** Fork the core for HTTP-proxy mode (no TUN): stream config, terminate without an fd. */
-    fun startHttp(config: String): CoreEndpoint {
+    /**
+     * Launch the core as a detached ROOT daemon (tun / tproxy) via `su`, so it runs in the root
+     * SELinux domain — free to open a kernel TUN, program routes, and set up iptables. Unlike the
+     * VPN/HTTP child cores this is NOT a tracked child: it outlives the app process and is reattached
+     * over the REST socket (see [reconnectRoot]). [mode] is "tun" or "tproxy".
+     */
+    fun startRoot(mode: String, config: String): CoreEndpoint {
         val home = context.runtimeHomeDir.apply { mkdirs() }
         val sock = File(home, SOCK).absolutePath
         val secret = secretFromConfig(config) ?: randomSecret()
-        val args = arrayOf("--home", home.absolutePath, "--controller", sock, "--secret", secret)
-        Timber.tag(TAG).i("launch core (HTTP)")
-        val proc = spawn(home, args)
-        process = proc
-        running = proc
-        runCatching {
-            val channel = Channel(proc.channelFd)
-            val bytes = config.toByteArray(Charsets.UTF_8)
-            var offset = 0
-            while (offset < bytes.size) {
-                val len = minOf(CHUNK, bytes.size - offset)
-                channel.writeMessage(bytes, offset, len)
-                offset += len
-            }
-            channel.close() // EOF terminates the config stream (no TUN fd in HTTP mode)
-        }.onFailure { Timber.tag(TAG).w(it, "config handoff failed") }
+
+        // A detached `su` process can't inherit the app's socketpair, so hand the compiled config to
+        // the daemon via a file it reads with --config. It stays in the app-private home dir; on a
+        // rooted device root can already read process memory, so this is no additional exposure.
+        val configFile = File(home, ROOT_CONFIG).apply { writeText(config) }
+        val lib = File(context.applicationInfo.nativeLibraryDir, LIB).absolutePath
+        val logFile = File(home, "core.log").absolutePath
+        val command =
+            "exec ${quote(lib)} --mode $mode --home ${quote(home.absolutePath)} " +
+                "--controller ${quote(sock)} --secret ${quote(secret)} " +
+                "--config ${quote(configFile.absolutePath)} " +
+                "</dev/null >${quote(logFile)} 2>&1 & echo \$!"
+
+        Timber.tag(TAG).i("launch root core, mode=%s", mode)
+        val result = Shell.cmd(command).exec()
+        val pid = result.out.asSequence().mapNotNull { it.trim().toIntOrNull() }.firstOrNull()
+        check(result.isSuccess && pid != null && pid > 0) {
+            "root core launch failed (success=${result.isSuccess} out=${result.out})"
+        }
+
+        RootDaemonState.save(RootDaemonState.Record(pid = pid, secret = secret, mode = mode))
+        Timber.tag(TAG).i("root core launched, pid=%d mode=%s", pid, mode)
         return CoreEndpoint(sock, secret).also { current = it }
     }
 
@@ -197,6 +210,47 @@ class CoreProcess(private val context: Context) {
             running?.let { runCatching { it.kill() } }
             running = null
         }
+
+        /** True if the persisted root daemon is still alive (`kill -0` via su). */
+        fun isRootDaemonAlive(): Boolean {
+            val record = RootDaemonState.load() ?: return false
+            return runCatching { Shell.cmd("kill -0 ${record.pid}").exec().isSuccess }
+                .getOrDefault(false)
+        }
+
+        /** The run mode of the persisted root daemon ("tun"/"tproxy" → [RunMode]), or null when none. */
+        fun rootDaemonMode(): RunMode? = RunMode.fromCoreArg(RootDaemonState.load()?.mode)
+
+        /**
+         * Reattach to a still-running root daemon after an app restart: probe liveness and, if alive,
+         * republish [current] from the persisted secret WITHOUT relaunching. Returns the running mode
+         * ("tun"/"tproxy"), or null when no live daemon exists (stale state is cleared).
+         */
+        fun reconnectRoot(context: Context): String? {
+            val record = RootDaemonState.load() ?: return null
+            val alive =
+                runCatching { Shell.cmd("kill -0 ${record.pid}").exec().isSuccess }
+                    .getOrDefault(false)
+            if (!alive) {
+                RootDaemonState.clear()
+                return null
+            }
+            current = CoreEndpoint(context.runtimeHomeDir.resolve(SOCK).absolutePath, record.secret)
+            return record.mode
+        }
+
+        /** Explicitly stop the root daemon (`su kill`, SIGTERM so mihomo tears down tun/iptables). */
+        fun stopRoot() {
+            RootDaemonState.load()?.let { record ->
+                runCatching { Shell.cmd("kill ${record.pid}").exec() }
+            }
+            RootDaemonState.clear()
+            current = null
+        }
+
+        private const val ROOT_CONFIG = "run.yaml"
+
+        private fun quote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 
         /** Controller socket filename under the runtime home dir. Read by the client's REST manager. */
         const val SOCK = "clash.sock"

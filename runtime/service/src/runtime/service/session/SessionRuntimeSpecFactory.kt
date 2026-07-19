@@ -22,6 +22,8 @@ package com.github.yumelira.yumebox.runtime.service.session
 
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.OverrideSpec
+import com.github.yumelira.yumebox.core.model.RunMode
+import com.github.yumelira.yumebox.core.model.TunConfig
 import com.github.yumelira.yumebox.data.store.MMKVProvider
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
@@ -43,19 +45,29 @@ class SessionRuntimeSpecFactory(
         NetworkSettingsStore(MMKVProvider().getMMKV("network_settings"))
     }
 
-    fun createTunSpec(): RuntimeSpec = createLocalSpec(RuntimeOwner.LocalTun)
+    fun createVpnSpec(): RuntimeSpec = createSpec(RuntimeOwner.VpnService, RunMode.VpnService)
 
-    fun createHttpSpec(): RuntimeSpec = createLocalSpec(RuntimeOwner.LocalHttp)
+    fun createRootSpec(runMode: RunMode): RuntimeSpec = createSpec(RuntimeOwner.RootDaemon, runMode)
 
-    private fun createLocalSpec(owner: RuntimeOwner): RuntimeSpec {
+    private fun createSpec(owner: RuntimeOwner, runMode: RunMode): RuntimeSpec {
         val profile = requireActiveProfile()
         val profileDir = context.importedDir.resolve(profile.uuid.toString())
-        // "Disable all overrides" skips the whole override chain and hands the core the raw config.
-        val overrideSpecs =
-            if (networkSettings.disableAllOverride.value) {
+        val disableOverrides = networkSettings.disableAllOverride.value
+        // "Disable all overrides" skips the whole override chain (incl. the built-in Tun override).
+        val userOverrides =
+            if (disableOverrides) {
                 emptyList()
             } else {
                 compiledConfigPipeline.resolveOverrideSpecs(profile.uuid.toString())
+            }
+        // Root modes inject the Tun geometry as a built-in override — but subject to the same
+        // disable-all-overrides switch (user's choice), so append it only when overrides are on.
+        val tunConfig = if (runMode != RunMode.VpnService) buildTunConfig() else null
+        val overrideSpecs =
+            if (tunConfig != null && !disableOverrides) {
+                userOverrides + TunOverride.materialize(tunConfig, profileDir)
+            } else {
+                userOverrides
             }
         val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
         return RuntimeSpec(
@@ -66,11 +78,28 @@ class SessionRuntimeSpecFactory(
             runtimeConfigPath = profileDir.resolve("runtime.yaml").absolutePath,
             ageSecretKey = ageSecretKey,
             overrideSpecs = overrideSpecs,
+            runMode = runMode,
+            tunConfig = tunConfig,
             effectiveFingerprint =
                 buildEffectiveFingerprint(profile.uuid.toString(), overrideSpecs, ageSecretKey),
             profileFingerprint = buildProfileFingerprint(profile.uuid.toString()),
         )
     }
+
+    private fun buildTunConfig(): TunConfig =
+        TunConfig(
+            ifName = networkSettings.tunIfName.value,
+            mtu = networkSettings.tunMtu.value,
+            autoRoute = networkSettings.tunAutoRoute.value,
+            strictRoute = networkSettings.tunStrictRoute.value,
+            autoRedirect = networkSettings.tunAutoRedirect.value,
+            includeAndroidUser = networkSettings.tunIncludeAndroidUser.value,
+            routeExcludeAddress = networkSettings.tunRouteExcludeAddress.value,
+            dnsMode = networkSettings.tunDnsMode.value,
+            fakeIpRange = networkSettings.tunFakeIpRange.value,
+            fakeIpRange6 = networkSettings.tunFakeIpRange6.value,
+            allowIpv6 = networkSettings.enableIPv6.value,
+        )
 
     private fun requireActiveProfile():
         com.github.yumelira.yumebox.runtime.service.profile.Imported {

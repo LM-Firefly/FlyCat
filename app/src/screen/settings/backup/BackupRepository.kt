@@ -170,7 +170,7 @@ class BackupRepository(
                 ),
             networkSettings =
                 NetworkSettingsBackup(
-                    proxyMode = networkSettings.proxyMode.value,
+                    runMode = networkSettings.runMode.value,
                     bypassPrivateNetwork = networkSettings.bypassPrivateNetwork.value,
                     dnsHijack = networkSettings.dnsHijack.value,
                     allowBypass = networkSettings.allowBypass.value,
@@ -178,16 +178,15 @@ class BackupRepository(
                     systemProxy = networkSettings.systemProxy.value,
                     tunStack = networkSettings.tunStack.value,
                     tunRouteExcludeAddress = networkSettings.tunRouteExcludeAddress.value,
-                    rootTunIfName = networkSettings.rootTunIfName.value,
-                    rootTunMtu = networkSettings.rootTunMtu.value,
-                    rootTunAutoRoute = networkSettings.rootTunAutoRoute.value,
-                    rootTunStrictRoute = networkSettings.rootTunStrictRoute.value,
-                    rootTunAutoRedirect = networkSettings.rootTunAutoRedirect.value,
-                    rootTunIncludeAndroidUser = networkSettings.rootTunIncludeAndroidUser.value,
-                    rootTunRouteExcludeAddress = networkSettings.rootTunRouteExcludeAddress.value,
-                    rootTunDnsMode = networkSettings.rootTunDnsMode.value,
-                    rootTunFakeIpRange = networkSettings.rootTunFakeIpRange.value,
-                    rootTunFakeIpRange6 = networkSettings.rootTunFakeIpRange6.value,
+                    tunIfName = networkSettings.tunIfName.value,
+                    tunMtu = networkSettings.tunMtu.value,
+                    tunAutoRoute = networkSettings.tunAutoRoute.value,
+                    tunStrictRoute = networkSettings.tunStrictRoute.value,
+                    tunAutoRedirect = networkSettings.tunAutoRedirect.value,
+                    tunIncludeAndroidUser = networkSettings.tunIncludeAndroidUser.value,
+                    tunDnsMode = networkSettings.tunDnsMode.value,
+                    tunFakeIpRange = networkSettings.tunFakeIpRange.value,
+                    tunFakeIpRange6 = networkSettings.tunFakeIpRange6.value,
                     accessControlMode = networkSettings.accessControlMode.value,
                     accessControlPackages = networkSettings.accessControlPackages.value,
                     accessControlSelectedFirst = networkSettings.accessControlSelectedFirst.value,
@@ -330,7 +329,7 @@ class BackupRepository(
             appSettings.customUserAgent,
         )
         refreshAfterRawStoreClear(
-            networkSettings.proxyMode,
+            networkSettings.runMode,
             networkSettings.bypassPrivateNetwork,
             networkSettings.dnsHijack,
             networkSettings.allowBypass,
@@ -338,16 +337,15 @@ class BackupRepository(
             networkSettings.systemProxy,
             networkSettings.tunStack,
             networkSettings.tunRouteExcludeAddress,
-            networkSettings.rootTunIfName,
-            networkSettings.rootTunMtu,
-            networkSettings.rootTunAutoRoute,
-            networkSettings.rootTunStrictRoute,
-            networkSettings.rootTunAutoRedirect,
-            networkSettings.rootTunIncludeAndroidUser,
-            networkSettings.rootTunRouteExcludeAddress,
-            networkSettings.rootTunDnsMode,
-            networkSettings.rootTunFakeIpRange,
-            networkSettings.rootTunFakeIpRange6,
+            networkSettings.tunIfName,
+            networkSettings.tunMtu,
+            networkSettings.tunAutoRoute,
+            networkSettings.tunStrictRoute,
+            networkSettings.tunAutoRedirect,
+            networkSettings.tunIncludeAndroidUser,
+            networkSettings.tunDnsMode,
+            networkSettings.tunFakeIpRange,
+            networkSettings.tunFakeIpRange6,
             networkSettings.accessControlMode,
             networkSettings.accessControlPackages,
             networkSettings.accessControlSelectedFirst,
@@ -410,7 +408,7 @@ class BackupRepository(
     }
 
     private fun applyNetworkSettings(value: NetworkSettingsBackup) {
-        networkSettings.proxyMode.set(value.proxyMode)
+        networkSettings.runMode.set(value.runMode)
         networkSettings.bypassPrivateNetwork.set(value.bypassPrivateNetwork)
         networkSettings.dnsHijack.set(value.dnsHijack)
         networkSettings.allowBypass.set(value.allowBypass)
@@ -418,16 +416,15 @@ class BackupRepository(
         networkSettings.systemProxy.set(value.systemProxy)
         networkSettings.tunStack.set(value.tunStack)
         networkSettings.tunRouteExcludeAddress.set(value.tunRouteExcludeAddress)
-        networkSettings.rootTunIfName.set(value.rootTunIfName)
-        networkSettings.rootTunMtu.set(value.rootTunMtu)
-        networkSettings.rootTunAutoRoute.set(value.rootTunAutoRoute)
-        networkSettings.rootTunStrictRoute.set(value.rootTunStrictRoute)
-        networkSettings.rootTunAutoRedirect.set(value.rootTunAutoRedirect)
-        networkSettings.rootTunIncludeAndroidUser.set(value.rootTunIncludeAndroidUser)
-        networkSettings.rootTunRouteExcludeAddress.set(value.rootTunRouteExcludeAddress)
-        networkSettings.rootTunDnsMode.set(value.rootTunDnsMode)
-        networkSettings.rootTunFakeIpRange.set(value.rootTunFakeIpRange)
-        networkSettings.rootTunFakeIpRange6.set(value.rootTunFakeIpRange6)
+        networkSettings.tunIfName.set(value.tunIfName)
+        networkSettings.tunMtu.set(value.tunMtu)
+        networkSettings.tunAutoRoute.set(value.tunAutoRoute)
+        networkSettings.tunStrictRoute.set(value.tunStrictRoute)
+        networkSettings.tunAutoRedirect.set(value.tunAutoRedirect)
+        networkSettings.tunIncludeAndroidUser.set(value.tunIncludeAndroidUser)
+        networkSettings.tunDnsMode.set(value.tunDnsMode)
+        networkSettings.tunFakeIpRange.set(value.tunFakeIpRange)
+        networkSettings.tunFakeIpRange6.set(value.tunFakeIpRange6)
         networkSettings.accessControlMode.set(value.accessControlMode)
         networkSettings.accessControlPackages.set(value.accessControlPackages)
         networkSettings.accessControlSelectedFirst.set(value.accessControlSelectedFirst)

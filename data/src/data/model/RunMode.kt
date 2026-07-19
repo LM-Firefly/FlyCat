@@ -21,12 +21,7 @@
 package com.github.yumelira.yumebox.data.model
 
 /**
- * The user-facing proxy run mode selected on the network settings page. [VpnService] is the only mode
- * available today (it maps to [ProxyMode.Tun]); [RootTun] and [Tproxy] are root-only and land with the
- * future libsu path. Distinct from [ProxyMode], which is the runtime transport (Tun/Http).
+ * [RunMode] was hoisted to `:core` so `:runtime:api` (which cannot depend on `:data`) can use it.
+ * This alias keeps existing `data.model.RunMode` references working.
  */
-enum class RunMode {
-    VpnService,
-    RootTun,
-    Tproxy,
-}
+typealias RunMode = com.github.yumelira.yumebox.core.model.RunMode

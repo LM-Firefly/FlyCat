@@ -28,7 +28,7 @@ import android.content.IntentFilter
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.github.yumelira.yumebox.core.model.LogMessage
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 import com.github.yumelira.yumebox.runtime.service.notification.ServiceNotificationManager
@@ -60,7 +60,7 @@ import kotlin.concurrent.thread
 class RuntimeForegroundController(
     private val service: Service,
     private val scope: CoroutineScope,
-    private val mode: ProxyMode,
+    private val mode: RunMode,
     private val label: String,
     private val notificationConfig: ServiceNotificationManager.Config,
     private val logScope: RuntimeStartupLogStore.Scope,
@@ -139,7 +139,7 @@ class RuntimeForegroundController(
                         host =
                             object : RuntimeHost {
                                 override val context = service
-                                override val mode: ProxyMode = this@RuntimeForegroundController.mode
+                                override val mode: RunMode = this@RuntimeForegroundController.mode
 
                                 override fun onStarting(spec: RuntimeSpec) = Unit
 

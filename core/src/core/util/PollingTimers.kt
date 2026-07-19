@@ -57,7 +57,6 @@ object PollingTimerSpecs {
     val RuntimeProxyGroupSyncSlow = PollingTimerSpec("runtime_proxy_group_sync_slow", 3_000L, 0L)
     val RuntimeRootLogPolling = PollingTimerSpec("runtime_root_log_polling", 300L, 0L)
     val ServiceTrafficNotification = PollingTimerSpec("service_traffic_notification", 1_000L, 0L)
-    val RootTunStatusNotification = PollingTimerSpec("root_tun_status_notification", 1_000L, 0L)
     val ProxyTileRefresh = PollingTimerSpec("proxy_tile_refresh", 1_000L, 0L)
     val SessionConnectionTracking = PollingTimerSpec("session_connection_tracking", 2_000L, 0L)
     val HomeIpRefresh = PollingTimerSpec("home_ip_refresh", 15_000L, 0L)
@@ -65,7 +64,6 @@ object PollingTimerSpecs {
     val ProxyHealthcheckRefresh = PollingTimerSpec("proxy_healthcheck_refresh", 1_500L, 1_500L)
     val ProxyTestingSortHold = PollingTimerSpec("proxy_testing_sort_hold", 2_200L, 2_200L)
     val ProxySwitchFeedback = PollingTimerSpec("proxy_switch_feedback", 500L, 500L)
-    val RootTunReloadDebounce = PollingTimerSpec("root_tun_reload_debounce", 100L, 100L)
 
     fun dynamic(
         name: String,

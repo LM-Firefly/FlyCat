@@ -20,8 +20,8 @@
 
 package com.github.yumelira.yumebox.screen.settings.backup
 
-import com.github.yumelira.yumebox.core.model.ProxyMode
-import com.github.yumelira.yumebox.core.model.RootTunDnsMode
+import com.github.yumelira.yumebox.core.model.RunMode
+import com.github.yumelira.yumebox.core.model.TunDnsMode
 import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.data.model.AccessControlMode
 import com.github.yumelira.yumebox.data.model.AccessControlSortMode
@@ -95,7 +95,7 @@ data class AppSettingsBackup(
 
 @Serializable
 data class NetworkSettingsBackup(
-    val proxyMode: ProxyMode = ProxyMode.Tun,
+    val runMode: RunMode = RunMode.VpnService,
     val bypassPrivateNetwork: Boolean = true,
     val dnsHijack: Boolean = true,
     val allowBypass: Boolean = true,
@@ -103,16 +103,15 @@ data class NetworkSettingsBackup(
     val systemProxy: Boolean = true,
     val tunStack: TunStack = TunStack.System,
     val tunRouteExcludeAddress: List<String> = emptyList(),
-    val rootTunIfName: String = "Yume",
-    val rootTunMtu: Int = 1500,
-    val rootTunAutoRoute: Boolean = true,
-    val rootTunStrictRoute: Boolean = true,
-    val rootTunAutoRedirect: Boolean = true,
-    val rootTunIncludeAndroidUser: List<Int> = listOf(0, 10),
-    val rootTunRouteExcludeAddress: List<String> = emptyList(),
-    val rootTunDnsMode: RootTunDnsMode = RootTunDnsMode.RedirHost,
-    val rootTunFakeIpRange: String = "198.18.0.1/16",
-    val rootTunFakeIpRange6: String = "fc00::/18",
+    val tunIfName: String = "Yume",
+    val tunMtu: Int = 1500,
+    val tunAutoRoute: Boolean = true,
+    val tunStrictRoute: Boolean = true,
+    val tunAutoRedirect: Boolean = true,
+    val tunIncludeAndroidUser: List<Int> = listOf(0, 10),
+    val tunDnsMode: TunDnsMode = TunDnsMode.RedirHost,
+    val tunFakeIpRange: String = "198.18.0.1/16",
+    val tunFakeIpRange6: String = "fc00::/18",
     val accessControlMode: AccessControlMode = AccessControlMode.ALLOW_ALL,
     val accessControlPackages: Set<String> = emptySet(),
     val accessControlSelectedFirst: Boolean = true,

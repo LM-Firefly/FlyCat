@@ -5,9 +5,11 @@ use std::path::{Path, PathBuf};
 use crate::compiler::schema::{
     field_behavior, DEFAULT_FAKE_IP_FILTER, DEFAULT_FAKE_IP_RANGE, DEFAULT_NAME_SERVERS,
 };
-use crate::model::{FieldBehavior, ListStyle, ParsedKey, PatchModifier, PatchOperations, SchemaId};
+use crate::model::{
+    FieldBehavior, ListStyle, ParsedKey, PatchModifier, PatchOperations, RunMode, SchemaId,
+};
 
-pub fn patch_static_runtime(root: &mut JsonValue, profile_dir: &Path) {
+pub fn patch_static_runtime(root: &mut JsonValue, profile_dir: &Path, run_mode: RunMode) {
     let Some(object) = root.as_object_mut() else {
         return;
     };
@@ -105,13 +107,18 @@ pub fn patch_static_runtime(root: &mut JsonValue, profile_dir: &Path) {
         }
     }
 
-    // The VpnService TUN is attached at runtime via a file descriptor (tun.Start(fd)); never let a
-    // config-provided tun block open its own /dev/net/tun — it would fail on non-root and fight the
-    // fd-based listener. Force any such block off (absent means mihomo defaults to disabled already).
-    if let Some(tun) = object.get_mut("tun").and_then(JsonValue::as_object_mut) {
-        tun.insert("enable".to_string(), JsonValue::Bool(false));
-        tun.insert("auto-route".to_string(), JsonValue::Bool(false));
-        tun.insert("auto-detect-interface".to_string(), JsonValue::Bool(false));
+    // In the VpnService path the TUN is attached at runtime via a file descriptor; a config-provided
+    // tun block must never open its own /dev/net/tun (it would fail on non-root and fight the
+    // fd-based listener). TPROXY also needs TUN off (mihomo refuses to program iptables while a tun is
+    // up). So force any tun block off — EXCEPT in tun mode, where the compiled tun block is
+    // authoritative and the core opens its own kernel device (auto-route / auto-detect-interface) in
+    // the root domain.
+    if run_mode != RunMode::Tun {
+        if let Some(tun) = object.get_mut("tun").and_then(JsonValue::as_object_mut) {
+            tun.insert("enable".to_string(), JsonValue::Bool(false));
+            tun.insert("auto-route".to_string(), JsonValue::Bool(false));
+            tun.insert("auto-detect-interface".to_string(), JsonValue::Bool(false));
+        }
     }
 
     patch_listeners(object);

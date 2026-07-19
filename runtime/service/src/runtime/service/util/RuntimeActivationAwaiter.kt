@@ -21,7 +21,7 @@
 package com.github.yumelira.yumebox.runtime.service.util
 
 import android.os.SystemClock
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import kotlinx.coroutines.delay
 import kotlin.math.min
@@ -32,17 +32,17 @@ data class RuntimeActivationState(
 )
 
 sealed interface RuntimeActivationResult {
-    val mode: ProxyMode
+    val mode: RunMode
 
-    data class Running(override val mode: ProxyMode) : RuntimeActivationResult
+    data class Running(override val mode: RunMode) : RuntimeActivationResult
 
     data class Failed(
-        override val mode: ProxyMode,
+        override val mode: RunMode,
         val error: String?,
     ) : RuntimeActivationResult
 
     data class TimedOut(
-        override val mode: ProxyMode,
+        override val mode: RunMode,
         val lastState: RuntimeActivationState,
     ) : RuntimeActivationResult
 }
@@ -52,7 +52,7 @@ class RuntimeActivationAwaiter(
     private val delayMillis: suspend (Long) -> Unit = { delay(it) },
 ) {
     suspend fun await(
-        mode: ProxyMode,
+        mode: RunMode,
         timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
         pollIntervalMillis: Long = DEFAULT_POLL_INTERVAL_MILLIS,
         queryState: suspend () -> RuntimeActivationState,

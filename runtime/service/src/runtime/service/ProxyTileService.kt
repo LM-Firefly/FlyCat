@@ -31,8 +31,9 @@ import android.service.quicksettings.TileService
 import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.data.store.MMKVProvider
+import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
 import com.github.yumelira.yumebox.runtime.api.Components
@@ -134,7 +135,7 @@ class ProxyTileService : TileService() {
 
                     updateTilePendingState(isStarting = true)
                     when (currentMode) {
-                        ProxyMode.Tun -> {
+                        RunMode.VpnService -> {
                             val vpnIntent = VpnService.prepare(this@ProxyTileService)
                             if (vpnIntent != null) {
                                 updateTileInactiveState(subtitle = MLang.Service.Tile.ClickToOpen)
@@ -145,16 +146,21 @@ class ProxyTileService : TileService() {
 
                             RuntimeServiceLauncher.start(
                                 this@ProxyTileService,
-                                ProxyMode.Tun,
+                                RunMode.VpnService,
                                 RuntimeServiceLauncher.SOURCE_TILE,
                             )
                         }
-                        ProxyMode.Http -> {
-                            RuntimeServiceLauncher.start(
-                                this@ProxyTileService,
-                                ProxyMode.Http,
-                                RuntimeServiceLauncher.SOURCE_TILE,
-                            )
+                        RunMode.Tun,
+                        RunMode.Tproxy -> {
+                            // Root modes need a root launch + config compile; defer to the app UI.
+                            updateTileInactiveState(subtitle = MLang.Service.Tile.ClickToOpen)
+                            val intent =
+                                Intent(Intent.ACTION_MAIN).apply {
+                                    component = Components.MAIN_ACTIVITY
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                            startActivityAndCollapseCompat(intent, requestCode = 1003)
+                            return@launch
                         }
                     }
                 }
@@ -176,13 +182,12 @@ class ProxyTileService : TileService() {
     }
 
     private fun currentSnapshot(): RuntimeSnapshot {
-        val configuredMode = networkSettingsStorage.proxyMode.value
-        val tunPhase = StatusProvider.queryRuntimePhase(ProxyMode.Tun)
-        val httpPhase = StatusProvider.queryRuntimePhase(ProxyMode.Http)
+        val configuredMode = networkSettingsStorage.runMode.value
+        val vpnPhase = StatusProvider.queryRuntimePhase(RunMode.VpnService)
         val owner =
             when {
-                tunPhase != RuntimePhase.Idle -> RuntimeOwner.LocalTun
-                httpPhase != RuntimePhase.Idle -> RuntimeOwner.LocalHttp
+                vpnPhase != RuntimePhase.Idle -> RuntimeOwner.VpnService
+                CoreProcess.isRootDaemonAlive() -> RuntimeOwner.RootDaemon
                 else -> RuntimeOwner.None
             }
 
@@ -190,54 +195,36 @@ class ProxyTileService : TileService() {
             RuntimeSnapshot(
                 owner = RuntimeOwner.None,
                 phase = RuntimePhase.Idle,
-                targetMode = configuredMode,
+                runMode = configuredMode,
             )
         } else {
             RuntimeSnapshot(
                 owner = owner,
                 phase =
                     when (owner) {
-                        RuntimeOwner.LocalTun -> tunPhase
-                        RuntimeOwner.LocalHttp -> httpPhase
+                        RuntimeOwner.VpnService -> vpnPhase
+                        RuntimeOwner.RootDaemon -> RuntimePhase.Running
                         RuntimeOwner.RemoteController -> RuntimePhase.Running
                         RuntimeOwner.None -> RuntimePhase.Idle
                     },
-                targetMode = modeForOwner(owner) ?: configuredMode,
+                // VpnService owner is always the VPN mode; a running root daemon matches the
+                // configured root mode (Tun/Tproxy).
+                runMode = if (owner == RuntimeOwner.VpnService) RunMode.VpnService else configuredMode,
             )
         }
     }
 
-    private fun modeForOwner(owner: RuntimeOwner): ProxyMode? =
-        when (owner) {
-            RuntimeOwner.LocalTun -> ProxyMode.Tun
-            RuntimeOwner.LocalHttp -> ProxyMode.Http
-            RuntimeOwner.RemoteController -> null
-            RuntimeOwner.None -> null
-        }
-
-    // Mirrors the home-screen stop path: ask the runtime service to stop, then apply the same
-    // local core/service fallback used by ProxyRuntimeControl.
+    // Mirrors the home-screen stop path: broadcast a stop, tear down the VPN service, and — since the
+    // root daemon isn't a service — explicitly stop it (this is a deliberate user stop).
     private fun stopLocalRuntime() {
         runCatching { sendBroadcastSelf(Intent(Intents.ACTION_CLASH_REQUEST_STOP)) }
         runCatching {
             applicationContext.stopService(Intent(applicationContext, TunService::class.java))
-            applicationContext.stopService(Intent(applicationContext, ClashService::class.java))
         }
-        // Fallback for an orphaned core only; a live service owns its own core teardown.
-        if (
-            !StatusProvider.isLocalRuntimeServiceAlive(ProxyMode.Tun) &&
-                !StatusProvider.isLocalRuntimeServiceAlive(ProxyMode.Http)
-        ) {
-            // Services already dead; the core process was torn down with them. Nothing to reset.
-        }
+        runCatching { CoreProcess.stopRoot() }
     }
 
-    private fun effectiveMode(snapshot: RuntimeSnapshot): ProxyMode =
-        if (snapshot.phase.isActiveOrStopping) {
-            modeForOwner(snapshot.owner) ?: snapshot.targetMode
-        } else {
-            snapshot.targetMode
-        }
+    private fun effectiveMode(snapshot: RuntimeSnapshot): RunMode = snapshot.runMode
 
     private fun updateTileState(isRunning: Boolean) {
         val tile = qsTile ?: return

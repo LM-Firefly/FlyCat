@@ -31,7 +31,7 @@ import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.data.gateway.IpMonitoringState
 import com.github.yumelira.yumebox.data.gateway.NetworkInfoService
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.domain.model.TrafficData
 import com.github.yumelira.yumebox.runtime.api.Profile
@@ -127,8 +127,8 @@ class HomeViewModel(
     val trafficNow = proxyFacade.trafficNow
     val proxyGroups = proxyFacade.proxyGroups
 
-    private val _proxyMode = MutableStateFlow(ProxyMode.Tun)
-    val proxyMode: StateFlow<ProxyMode> = _proxyMode.asStateFlow()
+    private val _proxyMode = MutableStateFlow(RunMode.VpnService)
+    val proxyMode: StateFlow<RunMode> = _proxyMode.asStateFlow()
 
     private val _pendingTransition = MutableStateFlow(PendingTransition.None)
     private var pendingStartRequest: PendingStartRequest? = null
@@ -294,7 +294,7 @@ class HomeViewModel(
         viewModelScope.launch {
             runtimeSnapshot
                 .map {
-                    RuntimeStateMapper.resolveDisplayMode(it, networkSettingsStore.proxyMode.value)
+                    RuntimeStateMapper.resolveDisplayMode(it, networkSettingsStore.runMode.value)
                 }
                 .distinctUntilChanged()
                 .collect { refreshProxyMode() }
@@ -316,7 +316,7 @@ class HomeViewModel(
     }
 
     fun refreshProxyMode() {
-        val configuredMode = networkSettingsStore.proxyMode.value
+        val configuredMode = networkSettingsStore.runMode.value
         _proxyMode.value =
             RuntimeStateMapper.resolveDisplayMode(runtimeSnapshot.value, configuredMode)
     }
@@ -377,7 +377,7 @@ class HomeViewModel(
     fun isCurrentProfile(profileId: java.util.UUID): Boolean =
         currentProfile.value?.uuid == profileId
 
-    fun startProxy(profileId: String, mode: ProxyMode? = null) {
+    fun startProxy(profileId: String, mode: RunMode? = null) {
         if (!controlState.value.canInteract || controlState.value != HomeProxyControlState.Idle) {
             return
         }
@@ -385,7 +385,7 @@ class HomeViewModel(
         val request =
             PendingStartRequest(
                 profileId = profileId,
-                mode = mode ?: networkSettingsStore.proxyMode.value,
+                mode = mode ?: networkSettingsStore.runMode.value,
             )
         pendingStartRequest = request
         _pendingTransition.value = PendingTransition.Starting
@@ -549,7 +549,7 @@ class HomeViewModel(
 
     private data class PendingStartRequest(
         val profileId: String,
-        val mode: ProxyMode,
+        val mode: RunMode,
     )
 
     data class HomeUiState(

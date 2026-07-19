@@ -63,7 +63,7 @@ class IntentController(private val scope: CoroutineScope) : KoinComponent {
                     Timber.i("External start: profile=${activeProfile.name}")
                     AutoStartSessionGate.clearManualPaused()
 
-                    val mode = networkSettingsStorage.proxyMode.value
+                    val mode = networkSettingsStorage.runMode.value
                     proxyFacade.startProxy(mode)
 
                     Timber.i("External start ok")

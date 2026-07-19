@@ -23,7 +23,7 @@ package com.github.yumelira.yumebox.common.util
 import android.content.Context
 import android.net.VpnService
 import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.util.AutoStartExecutionGate
@@ -82,9 +82,9 @@ object ProxyAutoStartHelper {
             return
         }
 
-        val mode = deps.networkSettingsStorage.proxyMode.value
-        if (mode == ProxyMode.Tun && VpnService.prepare(context) != null) {
-            Timber.tag(TAG).i("Skip auto start: VPN permission is missing for Tun mode")
+        val mode = deps.networkSettingsStorage.runMode.value
+        if (mode == RunMode.VpnService && VpnService.prepare(context) != null) {
+            Timber.tag(TAG).i("Skip auto start: VPN permission is missing for VpnService mode")
             return
         }
 

@@ -27,10 +27,10 @@ import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 data class RootAccessStatus(val rootAccessGranted: Boolean) {
-    val canStartRootTun: Boolean
+    val canStartRoot: Boolean
         get() = rootAccessGranted
 
-    fun rootTunBlockedMessage(): String = MLang.NetworkSettings.Error.RootRequired
+    fun rootBlockedMessage(): String = MLang.NetworkSettings.Error.RootRequired
 }
 
 object RootAccessSupport {
@@ -58,8 +58,8 @@ object RootAccessSupport {
                 .onFailure { resume(false) }
         }
 
-    suspend fun requireRootTunAccess(context: Context): RootAccessStatus =
+    suspend fun requireRootAccess(context: Context): RootAccessStatus =
         evaluateAsync(context).also { status ->
-            check(status.canStartRootTun) { status.rootTunBlockedMessage() }
+            check(status.canStartRoot) { status.rootBlockedMessage() }
         }
 }

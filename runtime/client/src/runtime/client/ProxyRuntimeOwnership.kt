@@ -20,30 +20,37 @@
 
 package com.github.yumelira.yumebox.runtime.client
 
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 
 internal object ProxyRuntimeOwnership {
-    fun detectOwner(isLocalSessionActive: (ProxyMode) -> Boolean): RuntimeOwner =
+    /** VpnService (in-process service) vs the root daemon (out-of-process, survives app death). */
+    fun detectOwner(isVpnActive: () -> Boolean, isRootActive: () -> Boolean): RuntimeOwner =
         when {
-            isLocalSessionActive(ProxyMode.Tun) -> RuntimeOwner.LocalTun
-            isLocalSessionActive(ProxyMode.Http) -> RuntimeOwner.LocalHttp
+            isVpnActive() -> RuntimeOwner.VpnService
+            isRootActive() -> RuntimeOwner.RootDaemon
             else -> RuntimeOwner.None
+        }
+
+    fun ownerForMode(mode: RunMode): RuntimeOwner =
+        when (mode) {
+            RunMode.VpnService -> RuntimeOwner.VpnService
+            RunMode.Tun, RunMode.Tproxy -> RuntimeOwner.RootDaemon
         }
 
     fun startingSnapshot(
         owner: RuntimeOwner,
-        targetMode: ProxyMode,
+        runMode: RunMode,
         profile: Profile,
         generation: Long,
     ): RuntimeSnapshot =
         RuntimeSnapshot(
             owner = owner,
             phase = RuntimePhase.Starting,
-            targetMode = targetMode,
+            runMode = runMode,
             profileReady = true,
             profileUuid = profile.uuid.toString(),
             profileName = profile.name,
@@ -53,7 +60,7 @@ internal object ProxyRuntimeOwnership {
 
     fun activeSnapshot(
         owner: RuntimeOwner,
-        configuredMode: ProxyMode,
+        runMode: RunMode,
         localPhase: RuntimePhase = RuntimePhase.Idle,
         localStartedAt: Long? = null,
     ): RuntimeSnapshot =
@@ -61,16 +68,16 @@ internal object ProxyRuntimeOwnership {
             owner = owner,
             phase =
                 when (owner) {
-                    RuntimeOwner.LocalTun,
-                    RuntimeOwner.LocalHttp -> localPhase
+                    RuntimeOwner.VpnService,
+                    RuntimeOwner.RootDaemon -> localPhase
                     RuntimeOwner.RemoteController -> RuntimePhase.Running
                     RuntimeOwner.None -> RuntimePhase.Idle
                 },
-            targetMode = modeForOwner(owner, configuredMode),
+            runMode = runMode,
             startedAt =
                 when (owner) {
-                    RuntimeOwner.LocalTun,
-                    RuntimeOwner.LocalHttp -> localStartedAt
+                    RuntimeOwner.VpnService,
+                    RuntimeOwner.RootDaemon -> localStartedAt
                     RuntimeOwner.RemoteController -> null
                     RuntimeOwner.None -> null
                 },
@@ -79,22 +86,12 @@ internal object ProxyRuntimeOwnership {
     fun startedSnapshot(
         current: RuntimeSnapshot,
         owner: RuntimeOwner,
-        configuredMode: ProxyMode,
+        runMode: RunMode,
     ): RuntimeSnapshot =
         current.copy(
             owner = owner,
             phase = RuntimePhase.Running,
-            targetMode = modeForOwner(owner, configuredMode),
+            runMode = runMode,
             lastError = null,
         )
-
-    fun ownerForMode(mode: ProxyMode): RuntimeOwner =
-        when (mode) {
-            ProxyMode.Tun -> RuntimeOwner.LocalTun
-            ProxyMode.Http -> RuntimeOwner.LocalHttp
-        }
-
-    fun modeForOwner(owner: RuntimeOwner, configuredMode: ProxyMode): ProxyMode =
-        RuntimeStateMapper.modeForOwner(owner) ?: configuredMode
-
 }

@@ -27,9 +27,10 @@ import android.net.Uri
 import android.os.Bundle
 import com.github.yumelira.yumebox.core.Global
 import com.github.yumelira.yumebox.core.util.enumByNameOrNull
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.initializeServiceGlobal
+import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.tencent.mmkv.MMKV
 import java.util.UUID
 
@@ -103,7 +104,7 @@ class StatusProvider : ContentProvider() {
             private set
 
         @Volatile
-        var runningMode: ProxyMode? = null
+        var runningMode: RunMode? = null
             private set
 
         @Volatile
@@ -112,16 +113,16 @@ class StatusProvider : ContentProvider() {
 
         @Volatile var currentProfile: String? = null
 
-        // ---- session-token lifecycle (local TUN/HTTP runtimes) ----
-        // The phase store holds a single mode slot shared by every writer (launcher, both
-        // foreground services, RootTun sync). A late write from an outgoing service instance
-        // must not stomp the state of its replacement, so local-session writers carry a token:
-        // writes with a stale token are dropped. RootTun keeps using the token-less force
+        // ---- session-token lifecycle (VpnService runtime) ----
+        // The phase store holds a single mode slot shared by every writer (launcher, the
+        // VpnService, the root daemon launcher). A late write from an outgoing service instance
+        // must not stomp the state of its replacement, so VpnService writers carry a token:
+        // writes with a stale token are dropped. The root daemon uses the token-less force
         // writes below — its phase has its own single-writer discipline.
 
         /** Claims the phase slot for a new local session and returns its write token. */
         @Synchronized
-        fun beginRuntimeSession(mode: ProxyMode): String {
+        fun beginRuntimeSession(mode: RunMode): String {
             val token = UUID.randomUUID().toString()
             persistRuntimeState(
                 mode = mode,
@@ -135,7 +136,7 @@ class StatusProvider : ContentProvider() {
 
         /** Adopts the token the launcher created for this start, or claims a fresh session. */
         @Synchronized
-        fun adoptOrBeginRuntimeSession(mode: ProxyMode): String {
+        fun adoptOrBeginRuntimeSession(mode: RunMode): String {
             val (persistedMode, persistedPhase) = readPersistedRuntimeState()
             val token = currentSessionToken()
             if (persistedMode == mode && persistedPhase == RuntimePhase.Starting && token != null) {
@@ -146,32 +147,32 @@ class StatusProvider : ContentProvider() {
         }
 
         @Synchronized
-        fun markRuntimeRunning(mode: ProxyMode, token: String) {
+        fun markRuntimeRunning(mode: RunMode, token: String) {
             markRuntimePhaseOwned(mode, RuntimePhase.Running, token)
         }
 
         @Synchronized
-        fun markRuntimeStopping(mode: ProxyMode, token: String) {
+        fun markRuntimeStopping(mode: RunMode, token: String) {
             markRuntimePhaseOwned(mode, RuntimePhase.Stopping, token)
         }
 
         @Synchronized
-        fun markRuntimeFailed(mode: ProxyMode, token: String, error: String?) {
+        fun markRuntimeFailed(mode: RunMode, token: String, error: String?) {
             markRuntimePhaseOwned(mode, RuntimePhase.Failed, token, error)
         }
 
         @Synchronized
-        fun markRuntimeIdle(mode: ProxyMode, token: String) {
+        fun markRuntimeIdle(mode: RunMode, token: String) {
             markRuntimePhaseOwned(mode, RuntimePhase.Idle, token)
         }
 
-        fun queryRuntimeLastError(mode: ProxyMode): String? {
+        fun queryRuntimeLastError(mode: RunMode): String? {
             val (persistedMode, persistedPhase) = readPersistedRuntimeState()
             if (persistedMode != mode || persistedPhase != RuntimePhase.Failed) return null
             return serviceCache().decodeString(KEY_RUNTIME_LAST_ERROR)?.takeIf { it.isNotBlank() }
         }
 
-        fun isRuntimeStartingWithinGrace(mode: ProxyMode): Boolean {
+        fun isRuntimeStartingWithinGrace(mode: RunMode): Boolean {
             val (persistedMode, persistedPhase) = readPersistedRuntimeState()
             // The liveness check keeps a Starting record orphaned by a process death from
             // blocking the user's next start for the rest of the grace window.
@@ -181,38 +182,38 @@ class StatusProvider : ContentProvider() {
                 isLocalRuntimeServiceAlive(mode)
         }
 
-        // ---- token-less force writes (RootTun sync, explicit user stops, cleanup) ----
+        // ---- token-less force writes (root daemon, explicit user stops, cleanup) ----
 
         @Synchronized
-        fun markRuntimeStarting(mode: ProxyMode) {
+        fun markRuntimeStarting(mode: RunMode) {
             markRuntimePhase(mode, RuntimePhase.Starting)
         }
 
         @Synchronized
-        fun markRuntimeRunning(mode: ProxyMode) {
+        fun markRuntimeRunning(mode: RunMode) {
             markRuntimePhase(mode, RuntimePhase.Running)
         }
 
         @Synchronized
-        fun markRuntimeStopping(mode: ProxyMode) {
+        fun markRuntimeStopping(mode: RunMode) {
             markRuntimePhase(mode, RuntimePhase.Stopping)
         }
 
         @Synchronized
-        fun markRuntimeFailed(mode: ProxyMode, error: String? = null) {
+        fun markRuntimeFailed(mode: RunMode, error: String? = null) {
             markRuntimePhase(mode, RuntimePhase.Failed, error)
         }
 
         @Synchronized
-        fun markRuntimeIdle(mode: ProxyMode) {
+        fun markRuntimeIdle(mode: RunMode) {
             markRuntimePhase(mode, RuntimePhase.Idle)
         }
 
         // Failed is a terminal record kept for diagnosis, not an engaged runtime.
-        fun isRuntimeActive(mode: ProxyMode): Boolean =
+        fun isRuntimeActive(mode: RunMode): Boolean =
             queryRuntimePhase(mode).isActiveOrStopping
 
-        fun queryRuntimePhase(mode: ProxyMode): RuntimePhase {
+        fun queryRuntimePhase(mode: RunMode): RuntimePhase {
             reconcilePersistedRuntimeState()
             val (persistedMode, persistedPhase) = readPersistedRuntimeState()
             updateInMemoryRuntimeState(persistedMode, persistedPhase)
@@ -220,7 +221,7 @@ class StatusProvider : ContentProvider() {
         }
 
         @Synchronized
-        fun queryRuntimeStartedAt(mode: ProxyMode): Long? {
+        fun queryRuntimeStartedAt(mode: RunMode): Long? {
             reconcilePersistedRuntimeState()
             val (persistedMode, persistedPhase) = readPersistedRuntimeState()
             var startedAt = readPersistedRuntimeStartedAt()
@@ -280,26 +281,22 @@ class StatusProvider : ContentProvider() {
             currentProfile = null
         }
 
-        // Both foreground runtime services (TunService/ClashService) run in this same app process,
-        // so a plain in-process flag driven from their lifecycle is an accurate, O(1) liveness
-        // signal. It replaces an ActivityManager.getRunningServices(Int.MAX_VALUE) binder scan that
-        // ran on the caller's thread — including the main thread during reconcile / QS tile refresh
-        // — and stalled the UI for tens of milliseconds on every navigation.
-        @Volatile private var tunServiceAlive = false
-        @Volatile private var httpServiceAlive = false
+        // Only VpnService is an in-process foreground service, so a plain flag driven from its
+        // lifecycle is an accurate, O(1) liveness signal (it replaced an
+        // ActivityManager.getRunningServices binder scan that stalled the UI). The root Tun/Tproxy
+        // daemon is out-of-process and survives app death, so its liveness comes from a pid probe
+        // (CoreProcess.isRootDaemonAlive), not a flag.
+        @Volatile private var vpnServiceAlive = false
 
-        /** Set from [RuntimeForegroundController.onCreate]/onDestroy as each runtime service lives. */
-        fun setServiceAlive(mode: ProxyMode, alive: Boolean) {
-            when (mode) {
-                ProxyMode.Tun -> tunServiceAlive = alive
-                ProxyMode.Http -> httpServiceAlive = alive
-            }
+        /** Set from [RuntimeForegroundController.onCreate]/onDestroy for the VpnService. */
+        fun setServiceAlive(mode: RunMode, alive: Boolean) {
+            if (mode == RunMode.VpnService) vpnServiceAlive = alive
         }
 
-        fun isLocalRuntimeServiceAlive(mode: ProxyMode): Boolean =
+        fun isLocalRuntimeServiceAlive(mode: RunMode): Boolean =
             when (mode) {
-                ProxyMode.Tun -> tunServiceAlive
-                ProxyMode.Http -> httpServiceAlive
+                RunMode.VpnService -> vpnServiceAlive
+                RunMode.Tun, RunMode.Tproxy -> CoreProcess.isRootDaemonAlive()
             }
 
         fun clearLegacyStateFiles() {
@@ -311,7 +308,7 @@ class StatusProvider : ContentProvider() {
             MMKV.mmkvWithID(SERVICE_CACHE_ID, MMKV.MULTI_PROCESS_MODE)
 
         private fun markRuntimePhaseOwned(
-            mode: ProxyMode,
+            mode: RunMode,
             phase: RuntimePhase,
             token: String,
             error: String? = null,
@@ -345,10 +342,10 @@ class StatusProvider : ContentProvider() {
             }
         }
 
-        private fun markRuntimePhase(mode: ProxyMode, phase: RuntimePhase, error: String? = null) {
+        private fun markRuntimePhase(mode: RunMode, phase: RuntimePhase, error: String? = null) {
             if (phase == RuntimePhase.Idle) {
                 // Force-idle only releases the slot the caller owns; another mode's live
-                // session (e.g. RootTun sync racing a local start) must not be wiped.
+                // session (e.g. the root daemon racing a VpnService start) must not be wiped.
                 val (persistedMode, _) = readPersistedRuntimeState()
                 if (persistedMode != null && persistedMode != mode) return
             }
@@ -367,7 +364,7 @@ class StatusProvider : ContentProvider() {
             serviceCache().decodeString(KEY_RUNTIME_SESSION)?.takeIf { it.isNotEmpty() }
 
         private fun persistRuntimeState(
-            mode: ProxyMode?,
+            mode: RunMode?,
             phase: RuntimePhase,
             startedAt: Long? = null,
             token: String? = null,
@@ -401,13 +398,13 @@ class StatusProvider : ContentProvider() {
             }
         }
 
-        private fun readPersistedRuntimeState(): Pair<ProxyMode?, RuntimePhase> {
+        private fun readPersistedRuntimeState(): Pair<RunMode?, RuntimePhase> {
             val cache = serviceCache()
             val phase =
                 enumByNameOrNull<RuntimePhase>(cache.decodeString(KEY_RUNTIME_PHASE))
                     ?: RuntimePhase.Idle
             val mode =
-                enumByNameOrNull<ProxyMode>(cache.decodeString(KEY_RUNTIME_MODE))
+                enumByNameOrNull<RunMode>(cache.decodeString(KEY_RUNTIME_MODE))
                     ?.takeIf { phase.isNotIdle }
             return mode to phase
         }
@@ -422,7 +419,7 @@ class StatusProvider : ContentProvider() {
             return System.currentTimeMillis() - startedAt in 0..STARTING_GRACE_MS
         }
 
-        private fun resolveRuntimeStartedAt(mode: ProxyMode?, phase: RuntimePhase): Long? {
+        private fun resolveRuntimeStartedAt(mode: RunMode?, phase: RuntimePhase): Long? {
             if (!phase.isNotIdle || mode == null) {
                 return null
             }
@@ -436,7 +433,7 @@ class StatusProvider : ContentProvider() {
                 ?: System.currentTimeMillis()
         }
 
-        private fun updateInMemoryRuntimeState(mode: ProxyMode?, phase: RuntimePhase) {
+        private fun updateInMemoryRuntimeState(mode: RunMode?, phase: RuntimePhase) {
             runningMode = mode.takeIf { phase == RuntimePhase.Running }
             localRuntimePhase = phase
             serviceRunning = phase == RuntimePhase.Running

@@ -23,10 +23,11 @@ package com.github.yumelira.yumebox.core.model
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/** Geometry for the root native-TUN run mode: the core opens its own kernel device from these. */
 @Serializable
-data class RootTunConfig(
-    val ifName: String = "yume",
-    val mtu: Int = 9000,
+data class TunConfig(
+    val ifName: String = "Yume",
+    val mtu: Int = 1500,
     val stack: String = "system",
     val inet4Address: List<String> = listOf("172.19.0.1/30"),
     val inet6Address: List<String> = listOf("fdfe:dcba:9876::1/126"),
@@ -39,7 +40,7 @@ data class RootTunConfig(
     val includeAndroidUser: List<Int> = listOf(0, 10),
     val routeAddress: List<String> = emptyList(),
     val routeExcludeAddress: List<String> = emptyList(),
-    val dnsMode: RootTunDnsMode = RootTunDnsMode.RedirHost,
+    val dnsMode: TunDnsMode = TunDnsMode.RedirHost,
     val fakeIpRange: String? = "198.18.0.1/16",
     val fakeIpRange6: String? = "fc00::/18",
     val allowIpv6: Boolean = true,
@@ -47,7 +48,7 @@ data class RootTunConfig(
 )
 
 @Serializable
-enum class RootTunDnsMode {
+enum class TunDnsMode {
     @SerialName("redir-host") RedirHost,
     @SerialName("fake-ip") FakeIp,
 }

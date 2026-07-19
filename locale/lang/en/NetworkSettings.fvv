@@ -3,7 +3,6 @@ NetworkSettings = {
     Title = "Network Settings"
 
     Section = {
-        VpnService = "Proxy Mode"
         VpnOptions = "Service Options"
         Advanced = "Advanced"
         ProxyOptions = "Access Control"
@@ -11,13 +10,6 @@ NetworkSettings = {
 
     Advanced = {
         DisableOverrideTitle = "Disable All Overrides"
-    }
-
-    VpnService = {
-        RouteTrafficTitle = "Route System Traffic"
-        VpnMode = "VPN Mode"
-        RootTunMode = "Root TUN"
-        SystemProxy = "HTTP System Proxy"
     }
 
     RunMode = {
@@ -39,7 +31,6 @@ NetworkSettings = {
     }
 
     ProxyOptions = {
-        TunStackTitle = "TUN Stack"
         AccessControlModeTitle = "Access Control Mode"
         AllowAll = "Allow All"
         AllowSelected = "Allow Selected"
@@ -47,25 +38,8 @@ NetworkSettings = {
         ManageAccessControlTitle = "Manage Access Control"
     }
 
-    RootTun = {
-        IfNameTitle = "Interface Name"
-        IfNameSummary = "Virtual interface name created by RootTun"
-        MtuTitle = "MTU"
-        MtuSummary = "Maximum transmission unit used by RootTun"
-        AutoRouteTitle = "Auto Route"
-        StrictRouteTitle = "Strict Route"
-        AutoRedirectTitle = "Auto Redirect"
-        DnsModeTitle = "DNS Mode"
-        DnsModeRedirHost = "RedirHost"
-        DnsModeFakeIp = "FakeIP"
-        FakeIpRangeTitle = "FakeIP IPv4 Range"
-        FakeIpRangeSummary = "Only effective when DNS mode is FakeIP"
-        FakeIpRange6Title = "FakeIP IPv6 Range"
-        FakeIpRange6Summary = "Only effective when DNS mode is FakeIP"
-    }
-
     Error = {
         VpnDenied = "VPN permission denied"
-        RootRequired = "RootTun requires YumeBox to have working root access"
+        RootRequired = "Tun / TPROXY requires YumeBox to have working root access"
     }
 }

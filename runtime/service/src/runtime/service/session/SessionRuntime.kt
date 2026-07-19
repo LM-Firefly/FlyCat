@@ -69,7 +69,7 @@ class SessionRuntime(
 
     @Volatile private var interruptReason: String? = null
     private var currentSpec: RuntimeSpec? = null
-    @Volatile private var currentSnapshot: RuntimeSnapshot = RuntimeSnapshot(targetMode = host.mode)
+    @Volatile private var currentSnapshot: RuntimeSnapshot = RuntimeSnapshot(runMode = host.mode)
     private var networkObserver: ServiceNetworkObserver? = null
     private var timeZoneReceiver: BroadcastReceiver? = null
     private val queryCache = SessionRuntimeQueryCache()
@@ -281,7 +281,7 @@ class SessionRuntime(
             RuntimeSnapshot(
                 owner = spec.owner,
                 phase = RuntimePhase.Starting,
-                targetMode = host.mode,
+                runMode = host.mode,
                 profileUuid = spec.profileUuid,
                 profileName = spec.profileName,
                 profileReady = true,
@@ -400,7 +400,7 @@ class SessionRuntime(
             RuntimeSnapshot(
                 owner = RuntimeOwner.None,
                 phase = RuntimePhase.Idle,
-                targetMode = host.mode,
+                runMode = host.mode,
                 lastError = reason,
             )
         )
@@ -420,7 +420,7 @@ class SessionRuntime(
             RuntimeSnapshot(
                 owner = spec.owner,
                 phase = RuntimePhase.Failed,
-                targetMode = host.mode,
+                runMode = host.mode,
                 profileUuid = spec.profileUuid,
                 profileName = spec.profileName,
                 profileReady = false,
@@ -650,8 +650,8 @@ class SessionRuntime(
     private fun startupLog(spec: RuntimeSpec, message: String) {
         val scope =
             when (spec.owner) {
-                RuntimeOwner.LocalTun -> RuntimeStartupLogStore.Scope.LOCAL_TUN
-                RuntimeOwner.LocalHttp -> RuntimeStartupLogStore.Scope.LOCAL_HTTP
+                RuntimeOwner.VpnService -> RuntimeStartupLogStore.Scope.LOCAL_TUN
+                RuntimeOwner.RootDaemon -> RuntimeStartupLogStore.Scope.ROOT_TUN
                 RuntimeOwner.RemoteController,
                 RuntimeOwner.None -> return
             }

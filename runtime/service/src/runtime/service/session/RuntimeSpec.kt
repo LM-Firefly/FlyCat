@@ -21,7 +21,8 @@
 package com.github.yumelira.yumebox.runtime.service.session
 
 import com.github.yumelira.yumebox.core.model.OverrideSpec
-import com.github.yumelira.yumebox.core.model.RootTunConfig
+import com.github.yumelira.yumebox.core.model.RunMode
+import com.github.yumelira.yumebox.core.model.TunConfig
 import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import kotlinx.serialization.Serializable
 
@@ -34,7 +35,8 @@ data class RuntimeSpec(
     val runtimeConfigPath: String = "",
     val ageSecretKey: String? = null,
     val overrideSpecs: List<OverrideSpec> = emptyList(),
-    val rootTunConfig: RootTunConfig? = null,
+    val runMode: RunMode = RunMode.VpnService,
+    val tunConfig: TunConfig? = null,
     val staticPlanFingerprint: String = "",
     val transportFingerprint: String = "",
     val effectiveFingerprint: String = "",

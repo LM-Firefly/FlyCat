@@ -102,7 +102,7 @@ fn compile_root(request: &CompileRequest) -> Result<CompiledRoot, String> {
     if !root.is_object() {
         return Err("compiled root config must be an object".to_string());
     }
-    patch::patch_static_runtime(&mut root, profile_dir);
+    patch::patch_static_runtime(&mut root, profile_dir, request.run_mode);
 
     let object = root
         .as_object_mut()

@@ -20,17 +20,14 @@
 
 package com.github.yumelira.yumebox.data.store
 
-import com.github.yumelira.yumebox.core.model.RootTunDnsMode
+import com.github.yumelira.yumebox.core.model.TunDnsMode
 import com.github.yumelira.yumebox.data.model.AccessControlMode
 import com.github.yumelira.yumebox.data.model.AccessControlSortMode
-import com.github.yumelira.yumebox.data.model.ProxyMode
 import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.data.model.TunStack
 import com.tencent.mmkv.MMKV
 
 class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
-    val proxyMode by enumFlow(ProxyMode.Tun)
-
     // The run mode selected in the UI. Only VpnService is available today; the root modes gate a few
     // options (e.g. disable-all-overrides) that only apply to them.
     val runMode by enumFlow(RunMode.VpnService)
@@ -48,16 +45,15 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     // work too but route egress through cross-process protect; users can opt into them in settings.
     val tunStack by enumFlow(TunStack.GVisor)
     val tunRouteExcludeAddress by stringListFlow(emptyList())
-    val rootTunIfName by strFlow("Yume")
-    val rootTunMtu by intFlow(1500)
-    val rootTunAutoRoute by boolFlow(true)
-    val rootTunStrictRoute by boolFlow(true)
-    val rootTunAutoRedirect by boolFlow(true)
-    val rootTunIncludeAndroidUser by intListFlow(listOf(0, 10))
-    val rootTunRouteExcludeAddress by stringListFlow(emptyList())
-    val rootTunDnsMode by enumFlow(RootTunDnsMode.RedirHost)
-    val rootTunFakeIpRange by strFlow("198.18.0.1/16")
-    val rootTunFakeIpRange6 by strFlow("fc00::/18")
+    val tunIfName by strFlow("Yume")
+    val tunMtu by intFlow(1500)
+    val tunAutoRoute by boolFlow(true)
+    val tunStrictRoute by boolFlow(true)
+    val tunAutoRedirect by boolFlow(true)
+    val tunIncludeAndroidUser by intListFlow(listOf(0, 10))
+    val tunDnsMode by enumFlow(TunDnsMode.RedirHost)
+    val tunFakeIpRange by strFlow("198.18.0.1/16")
+    val tunFakeIpRange6 by strFlow("fc00::/18")
     val accessControlMode by enumFlow(AccessControlMode.ALLOW_ALL)
     val accessControlPackages by stringSetFlow(emptySet())
     val accessControlSelectedFirst by boolFlow(true)

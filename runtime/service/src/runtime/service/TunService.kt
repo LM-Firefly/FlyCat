@@ -22,7 +22,7 @@ package com.github.yumelira.yumebox.runtime.service
 
 import android.content.Intent
 import android.net.VpnService
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.api.initializeServiceGlobal
 import com.github.yumelira.yumebox.runtime.service.notification.ServiceNotificationManager
@@ -38,12 +38,12 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         RuntimeForegroundController(
             service = this,
             scope = this,
-            mode = ProxyMode.Tun,
+            mode = RunMode.VpnService,
             label = "Tun",
             notificationConfig = ServiceNotificationManager.vpnConfig,
             logScope = RuntimeStartupLogStore.Scope.LOCAL_TUN,
             createTransport = { VpnTunTransport(this) },
-            createSpec = { SessionRuntimeSpecFactory(appContextOrSelf).createTunSpec() },
+            createSpec = { SessionRuntimeSpecFactory(appContextOrSelf).createVpnSpec() },
         )
 
     override fun onCreate() {

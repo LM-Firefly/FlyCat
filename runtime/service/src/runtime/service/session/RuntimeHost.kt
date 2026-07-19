@@ -22,12 +22,12 @@ package com.github.yumelira.yumebox.runtime.service.session
 
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.LogMessage
-import com.github.yumelira.yumebox.data.model.ProxyMode
+import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 
 interface RuntimeHost {
     val context: Context
-    val mode: ProxyMode
+    val mode: RunMode
 
     fun onStarting(spec: RuntimeSpec)
 

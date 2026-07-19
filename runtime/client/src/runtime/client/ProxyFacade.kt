@@ -30,9 +30,9 @@ import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
 import com.github.yumelira.yumebox.core.model.Proxy
 import com.github.yumelira.yumebox.core.model.ProxySort
 import com.github.yumelira.yumebox.core.model.Traffic
+import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.data.model.ProxyMode
 import com.github.yumelira.yumebox.data.store.MMKVProvider
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
@@ -46,6 +46,7 @@ import com.github.yumelira.yumebox.runtime.api.VpnPermissionRequired
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
+import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -109,7 +110,7 @@ class ProxyFacade(
 
     private val runtimeControl = ProxyRuntimeControl(appContext) { actionClashRequestStop }
     private val _runtimeSnapshot =
-        MutableStateFlow(RuntimeStateMapper.idleSnapshot(networkSettingsStorage.proxyMode.value))
+        MutableStateFlow(RuntimeStateMapper.idleSnapshot(networkSettingsStorage.runMode.value))
     val runtimeSnapshot: StateFlow<RuntimeSnapshot> = _runtimeSnapshot.asStateFlow()
 
     private val actionServiceRecreated: String
@@ -228,7 +229,7 @@ class ProxyFacade(
                     RuntimeSnapshot(
                         owner = RuntimeOwner.RemoteController,
                         phase = RuntimePhase.Running,
-                        targetMode = networkSettingsStorage.proxyMode.value,
+                        runMode = networkSettingsStorage.runMode.value,
                         generation = nextGeneration(),
                         startedAt = System.currentTimeMillis(),
                     )
@@ -278,8 +279,8 @@ class ProxyFacade(
         runCatching {
             val owner = detectActiveOwner()
             if (
-                owner == RuntimeOwner.LocalTun ||
-                    owner == RuntimeOwner.LocalHttp
+                owner == RuntimeOwner.VpnService ||
+                    owner == RuntimeOwner.RootDaemon
             ) {
                 Timber.i("Controller switch: stopping local runtime owner=$owner")
                 runtimeControl.stop(owner)
@@ -345,9 +346,9 @@ class ProxyFacade(
             return
         }
         operationMutex.withLock {
-            val configuredMode = networkSettingsStorage.proxyMode.value
+            val configuredMode = networkSettingsStorage.runMode.value
             StatusProvider.reconcilePersistedRuntimeState()
-            val owner = ProxyRuntimeOwnership.detectOwner(::isLocalSessionActive)
+            val owner = detectOwner()
 
             if (owner == RuntimeOwner.None) {
                 stopTrafficPolling()
@@ -367,7 +368,7 @@ class ProxyFacade(
             publishRuntimeSnapshot(
                 ProxyRuntimeOwnership.activeSnapshot(
                     owner = owner,
-                    configuredMode = configuredMode,
+                    runMode = configuredMode,
                     localPhase = localRuntimePhaseForOwner(owner),
                     localStartedAt = localRuntimeStartedAtForOwner(owner),
                 )
@@ -397,7 +398,7 @@ class ProxyFacade(
             .onFailure { error -> Timber.d(error, "Warm up proxy groups skipped") }
     }
 
-    suspend fun startProxy(mode: ProxyMode = networkSettingsStorage.proxyMode.value) {
+    suspend fun startProxy(mode: RunMode = networkSettingsStorage.runMode.value) {
         if (isRemoteControllerActive()) {
             Timber.i("Ignoring startProxy: remote controller mode active")
             return
@@ -408,7 +409,7 @@ class ProxyFacade(
         val activeProfile = ServiceClient.profile().queryActive()
         check(activeProfile != null) { "No profile selected" }
 
-        if (mode == ProxyMode.Tun) {
+        if (mode == RunMode.VpnService) {
             val vpnIntent = VpnService.prepare(context)
             if (vpnIntent != null) {
                 throw VpnPermissionRequired(vpnIntent)
@@ -431,7 +432,7 @@ class ProxyFacade(
             publishRuntimeSnapshot(
                 ProxyRuntimeOwnership.startingSnapshot(
                     owner = targetOwner,
-                    targetMode = mode,
+                    runMode = mode,
                     profile = activeProfile,
                     generation = generation,
                 )
@@ -454,12 +455,12 @@ class ProxyFacade(
         }
     }
 
-    suspend fun stopProxy(mode: ProxyMode? = null) {
+    suspend fun stopProxy(mode: RunMode? = null) {
         if (isRemoteControllerActive()) {
             Timber.i("Ignoring stopProxy: remote controller mode active")
             return
         }
-        val targetMode = mode ?: networkSettingsStorage.proxyMode.value
+        val targetMode = mode ?: networkSettingsStorage.runMode.value
 
         operationMutex.withLock { stopProxyInternal(targetMode) }
     }
@@ -676,7 +677,7 @@ class ProxyFacade(
     }
 
     private suspend fun stopProxyInternal(
-        targetMode: ProxyMode,
+        targetMode: RunMode,
         completeImmediately: Boolean = false,
     ) {
         val owner =
@@ -698,7 +699,7 @@ class ProxyFacade(
             previousSnapshot.copy(
                 owner = owner,
                 phase = RuntimePhase.Stopping,
-                targetMode = targetMode,
+                runMode = targetMode,
                 profileReady = false,
                 groupsReady = false,
                 trafficReady = false,
@@ -787,10 +788,10 @@ class ProxyFacade(
             applyRemoteControllerState()
             return
         }
-        val configuredMode = networkSettingsStorage.proxyMode.value
+        val configuredMode = networkSettingsStorage.runMode.value
         clearLegacyRuntimeCaches()
         StatusProvider.reconcilePersistedRuntimeState()
-        val owner = ProxyRuntimeOwnership.detectOwner(::isLocalSessionActive)
+        val owner = detectOwner()
 
         if (owner == RuntimeOwner.None) {
             clearRuntimeState(resetGroups = false)
@@ -807,7 +808,7 @@ class ProxyFacade(
         publishRuntimeSnapshot(
             ProxyRuntimeOwnership.activeSnapshot(
                 owner = owner,
-                configuredMode = configuredMode,
+                runMode = configuredMode,
                 localPhase = localRuntimePhaseForOwner(owner),
                 localStartedAt = localRuntimeStartedAtForOwner(owner),
             )
@@ -821,28 +822,44 @@ class ProxyFacade(
         }
     }
 
+    private fun detectOwner(): RuntimeOwner =
+        ProxyRuntimeOwnership.detectOwner(::isVpnSessionActive, ::isRootDaemonActive)
+
     private fun detectActiveOwner(): RuntimeOwner {
         StatusProvider.reconcilePersistedRuntimeState()
-        return ProxyRuntimeOwnership.detectOwner(::isLocalSessionActive)
+        return detectOwner()
     }
 
-    private fun isLocalSessionActive(mode: ProxyMode?): Boolean {
-        if (mode == null) return false
-        return StatusProvider.isRuntimeActive(mode)
-    }
+    // VpnService liveness is the in-process phase store; the root daemon is out-of-process and
+    // survives app death, so its liveness is a pid probe (guarded by persisted state — no `su` call
+    // when no daemon was ever launched).
+    private fun isVpnSessionActive(): Boolean = StatusProvider.isRuntimeActive(RunMode.VpnService)
 
-    private fun localRuntimePhaseForOwner(owner: RuntimeOwner): RuntimePhase {
-        val localMode = localModeForOwner(owner) ?: return RuntimePhase.Idle
-        return StatusProvider.queryRuntimePhase(localMode)
-    }
+    private fun isRootDaemonActive(): Boolean = CoreProcess.isRootDaemonAlive()
 
-    private fun localRuntimeStartedAtForOwner(owner: RuntimeOwner): Long? {
-        val localMode = localModeForOwner(owner) ?: return null
-        return StatusProvider.queryRuntimeStartedAt(localMode)
-            ?: _runtimeSnapshot.value.startedAt?.takeIf { _runtimeSnapshot.value.owner == owner }
-    }
+    private fun localRuntimePhaseForOwner(owner: RuntimeOwner): RuntimePhase =
+        when (owner) {
+            RuntimeOwner.VpnService -> StatusProvider.queryRuntimePhase(RunMode.VpnService)
+            RuntimeOwner.RootDaemon ->
+                if (isRootDaemonActive()) RuntimePhase.Running else RuntimePhase.Idle
+            RuntimeOwner.RemoteController,
+            RuntimeOwner.None -> RuntimePhase.Idle
+        }
 
-    private fun localModeForOwner(owner: RuntimeOwner): ProxyMode? =
+    private fun localRuntimeStartedAtForOwner(owner: RuntimeOwner): Long? =
+        when (owner) {
+            RuntimeOwner.VpnService ->
+                StatusProvider.queryRuntimeStartedAt(RunMode.VpnService)
+                    ?: _runtimeSnapshot.value.startedAt?.takeIf {
+                        _runtimeSnapshot.value.owner == owner
+                    }
+            RuntimeOwner.RootDaemon ->
+                _runtimeSnapshot.value.startedAt?.takeIf { _runtimeSnapshot.value.owner == owner }
+            RuntimeOwner.RemoteController,
+            RuntimeOwner.None -> null
+        }
+
+    private fun localModeForOwner(owner: RuntimeOwner): RunMode? =
         RuntimeStateMapper.modeForOwner(owner)
 
     private suspend fun handleRuntimeStarted(forceOwner: RuntimeOwner? = null) {
@@ -857,7 +874,7 @@ class ProxyFacade(
             ProxyRuntimeOwnership.startedSnapshot(
                 current = currentSnapshot,
                 owner = owner,
-                configuredMode = networkSettingsStorage.proxyMode.value,
+                runMode = networkSettingsStorage.runMode.value,
             )
         )
         startTrafficPolling()
@@ -869,7 +886,7 @@ class ProxyFacade(
             applyRemoteControllerState()
             return
         }
-        val configuredMode = networkSettingsStorage.proxyMode.value
+        val configuredMode = networkSettingsStorage.runMode.value
         val generation = nextGeneration()
 
         clearRuntimeState(resetGroups = false)
@@ -893,7 +910,7 @@ class ProxyFacade(
         clearRuntimeState(resetGroups = false)
         publishRuntimeSnapshot(
             RuntimeStateMapper.idleSnapshot(
-                configuredMode = networkSettingsStorage.proxyMode.value,
+                configuredMode = networkSettingsStorage.runMode.value,
                 generation = generation,
                 lastError = error ?: "root runtime failed",
             )
@@ -1046,7 +1063,7 @@ class ProxyFacade(
         clearRuntimeState(resetGroups = false)
         publishRuntimeSnapshot(
             RuntimeStateMapper.idleSnapshot(
-                configuredMode = networkSettingsStorage.proxyMode.value,
+                configuredMode = networkSettingsStorage.runMode.value,
                 generation = nextGeneration(),
                 lastError = reason,
             )
