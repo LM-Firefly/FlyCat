@@ -1,4 +1,4 @@
-name: Reusable Build Native ABI
+name: Build Native
 
 on:
   workflow_call:

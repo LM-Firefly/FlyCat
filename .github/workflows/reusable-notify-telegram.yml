@@ -1,4 +1,4 @@
-name: Reusable Notify Telegram
+name: Notify Telegram
 
 on:
   workflow_call:

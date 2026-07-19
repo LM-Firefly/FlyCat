@@ -1,4 +1,4 @@
-name: Pull Request CI
+name: Pull Request
 
 on:
   pull_request:
@@ -17,12 +17,14 @@ permissions:
 
 jobs:
   build-geo-pr:
+    name: Geo (PR)
     uses: ./.github/workflows/reusable-build-geo.yml
     with:
       channel: pr
     secrets: inherit
 
   build-native-abi-pr-armeabi-v7a:
+    name: Native v7a (PR)
     uses: ./.github/workflows/reusable-build-native-abi.yml
     with:
       channel: pr
@@ -31,6 +33,7 @@ jobs:
     secrets: inherit
 
   build-native-abi-pr-arm64-v8a:
+    name: Native v8a (PR)
     uses: ./.github/workflows/reusable-build-native-abi.yml
     with:
       channel: pr
@@ -39,6 +42,7 @@ jobs:
     secrets: inherit
 
   build-native-abi-pr-x86:
+    name: Native x86 (PR)
     uses: ./.github/workflows/reusable-build-native-abi.yml
     with:
       channel: pr
@@ -47,6 +51,7 @@ jobs:
     secrets: inherit
 
   build-native-abi-pr-x86_64:
+    name: Native x64 (PR)
     uses: ./.github/workflows/reusable-build-native-abi.yml
     with:
       channel: pr
@@ -55,6 +60,7 @@ jobs:
     secrets: inherit
 
   bundle-native-pr:
+    name: Bundle (PR)
     needs:
       - build-geo-pr
       - build-native-abi-pr-armeabi-v7a
@@ -72,6 +78,7 @@ jobs:
   # PR merge commit's whole parent chain). The commit hash in versionName (and the PR
   # number in the release tag) additionally identifies the build.
   build-apk-pr-app:
+    name: APK (PR)
     needs: bundle-native-pr
     uses: ./.github/workflows/reusable-build-apk-only.yml
     with:
@@ -88,6 +95,7 @@ jobs:
   # installer artifacts. Fork-run intermediates simply age out because their
   # read-only GITHUB_TOKEN cannot delete artifacts.
   cleanup-artifacts:
+    name: Cleanup
     needs: build-apk-pr-app
     if: github.event.pull_request.head.repo.full_name == github.repository
     permissions:

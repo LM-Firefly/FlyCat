@@ -1,4 +1,4 @@
-name: Reusable Build APK Only
+name: Build APK
 
 on:
   workflow_call:

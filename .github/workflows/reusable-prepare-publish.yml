@@ -1,4 +1,4 @@
-name: Reusable Prepare Publish
+name: Prepare Publish
 
 on:
   workflow_call:

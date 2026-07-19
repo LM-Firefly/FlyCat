@@ -1,4 +1,4 @@
-name: Reusable Cleanup Artifacts
+name: Cleanup Artifacts
 
 # Deletes this run's intermediate artifacts (native libs, geo payloads, raw
 # APK stages) once the pipeline has succeeded, keeping only the user-facing

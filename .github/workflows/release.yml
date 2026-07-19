@@ -33,12 +33,14 @@ permissions:
 # edited by hand afterwards) and make_latest=true (channel == 'stable').
 jobs:
   build-geo-stable:
+    name: Geo (Stable)
     uses: ./.github/workflows/reusable-build-geo.yml
     with:
       channel: stable
     secrets: inherit
 
   build-native-abi-stable-armeabi-v7a:
+    name: Native v7a (Stable)
     uses: ./.github/workflows/reusable-build-native-abi.yml
     with:
       channel: stable
@@ -47,6 +49,7 @@ jobs:
     secrets: inherit
 
   build-native-abi-stable-arm64-v8a:
+    name: Native v8a (Stable)
     uses: ./.github/workflows/reusable-build-native-abi.yml
     with:
       channel: stable
@@ -55,6 +58,7 @@ jobs:
     secrets: inherit
 
   build-native-abi-stable-x86:
+    name: Native x86 (Stable)
     uses: ./.github/workflows/reusable-build-native-abi.yml
     with:
       channel: stable
@@ -63,6 +67,7 @@ jobs:
     secrets: inherit
 
   build-native-abi-stable-x86_64:
+    name: Native x64 (Stable)
     uses: ./.github/workflows/reusable-build-native-abi.yml
     with:
       channel: stable
@@ -71,6 +76,7 @@ jobs:
     secrets: inherit
 
   bundle-native-stable:
+    name: Bundle (Stable)
     needs:
       - build-geo-stable
       - build-native-abi-stable-armeabi-v7a
@@ -83,6 +89,7 @@ jobs:
     secrets: inherit
 
   build-apk-stable-app:
+    name: APK (Stable)
     needs: bundle-native-stable
     uses: ./.github/workflows/reusable-build-apk-only.yml
     with:
@@ -94,6 +101,7 @@ jobs:
     secrets: inherit
 
   prepare-publish-stable-app:
+    name: Publish (Stable)
     needs: build-apk-stable-app
     uses: ./.github/workflows/reusable-prepare-publish.yml
     with:
@@ -109,6 +117,7 @@ jobs:
     secrets: inherit
 
   publish-release-stable:
+    name: Release (Stable)
     needs: prepare-publish-stable-app
     uses: ./.github/workflows/reusable-publish-release.yml
     with:
@@ -121,6 +130,7 @@ jobs:
     secrets: inherit
 
   cleanup-artifacts:
+    name: Cleanup
     needs: publish-release-stable
     permissions:
       actions: write

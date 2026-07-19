@@ -1,4 +1,4 @@
-name: Reusable Build Geo
+name: Build Geo
 
 on:
   workflow_call:

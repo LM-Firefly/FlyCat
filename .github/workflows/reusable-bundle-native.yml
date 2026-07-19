@@ -1,4 +1,4 @@
-name: Reusable Bundle Native
+name: Bundle Native
 
 on:
   workflow_call:
