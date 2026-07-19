@@ -42,6 +42,11 @@ jobs:
         with:
           go-download-base-url: 'https://github.com/MetaCubeX/go/releases/download/build'
           go-version: '1.26'
+          # No go.mod at the repo root (modules live in lib/native/go + the later-synced
+          # mihomo tree), so setup-go's dependency cache can't resolve one — disable it to
+          # drop the "Restore cache failed: ... go.mod" warning. Go module caching, if ever
+          # wanted, would need an explicit actions/cache keyed on the real go.sum paths.
+          cache: false
 
       - name: Apply Go patches
         run: |
