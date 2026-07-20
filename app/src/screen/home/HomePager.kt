@@ -21,19 +21,8 @@
 package com.github.yumelira.yumebox.screen.home
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -50,9 +39,9 @@ import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 
@@ -118,7 +107,7 @@ fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
             profilesLoaded && profiles.isNotEmpty() && controlState.canInteract
         }
 
-    Scaffold(topBar = { TopBar(title = MLang.Home.Title, scrollBehavior = scrollBehavior) }) {
+    Scaffold(topBar = { TopBar(title = YumeTxt.Home.Title, scrollBehavior = scrollBehavior) }) {
         innerPadding ->
         ScreenLazyColumn(
             scrollBehavior = scrollBehavior,
@@ -157,7 +146,7 @@ fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
                                 return@TrafficDisplay
                             }
                             if (!hasEnabledProfile || recommendedProfile == null) {
-                                context.toast(MLang.ProfilesVM.Error.ProfileNotExist)
+                                context.toast(YumeTxt.ProfilesVM.Error.ProfileNotExist)
                                 return@TrafficDisplay
                             }
                             hapticFeedback.performHapticFeedback(HapticFeedbackType.VirtualKey)

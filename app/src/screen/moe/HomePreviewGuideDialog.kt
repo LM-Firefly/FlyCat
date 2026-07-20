@@ -20,33 +20,18 @@
 
 package com.github.yumelira.yumebox.screen.moe
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.layout.DialogDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -65,18 +50,18 @@ internal fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit)
         modifier = Modifier,
         title =
             when (page) {
-                0 -> MLang.Home.PreviewGuide.Title
-                1 -> MLang.Home.PreviewGuide.WallpaperTitle
-                2 -> MLang.Home.PreviewGuide.SwipeTitle
-                else -> MLang.Home.PreviewGuide.AddTitle
+                0 -> YumeTxt.Home.PreviewGuide.Title
+                1 -> YumeTxt.Home.PreviewGuide.WallpaperTitle
+                2 -> YumeTxt.Home.PreviewGuide.SwipeTitle
+                else -> YumeTxt.Home.PreviewGuide.AddTitle
             },
         titleColor = DialogDefaults.titleColor(),
         summary =
             when (page) {
-                0 -> MLang.Home.PreviewGuide.Description
-                1 -> MLang.Home.PreviewGuide.WallpaperDescription
-                2 -> MLang.Home.PreviewGuide.SwipeDescription
-                else -> MLang.Home.PreviewGuide.AddDescription
+                0 -> YumeTxt.Home.PreviewGuide.Description
+                1 -> YumeTxt.Home.PreviewGuide.WallpaperDescription
+                2 -> YumeTxt.Home.PreviewGuide.SwipeDescription
+                else -> YumeTxt.Home.PreviewGuide.AddDescription
             },
         summaryColor = DialogDefaults.summaryColor(),
         backgroundColor = DialogDefaults.backgroundColor(),
@@ -131,13 +116,13 @@ internal fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit)
 
                 if (page < 3) {
                     GuideButton(
-                        text = MLang.Home.PreviewGuide.Next,
+                        text = YumeTxt.Home.PreviewGuide.Next,
                         onClick = { page += 1 },
                         modifier = Modifier.fillMaxWidth(),
                     )
                 } else {
                     GuideButton(
-                        text = MLang.Home.PreviewGuide.Start,
+                        text = YumeTxt.Home.PreviewGuide.Start,
                         onClick = onDismissRequest,
                         modifier = Modifier.fillMaxWidth(),
                     )

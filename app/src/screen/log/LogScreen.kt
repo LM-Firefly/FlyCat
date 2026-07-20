@@ -22,30 +22,13 @@ package com.github.yumelira.yumebox.screen.log
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -55,24 +38,19 @@ import com.github.yumelira.yumebox.core.model.LogMessage
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.data.store.LogStore
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.CenteredText
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Play
 import com.github.yumelira.yumebox.presentation.icon.yume.PowerOff
 import com.github.yumelira.yumebox.presentation.icon.yume.Share
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -104,7 +82,7 @@ fun LogScreen(navigator: Navigator) {
             scope.launch(Dispatchers.IO) {
                 val success = viewModel.saveTempLog(uri)
                 if (!success) {
-                    launch(Dispatchers.Main) { context.toast(MLang.Util.Error.UnknownError) }
+                    launch(Dispatchers.Main) { context.toast(YumeTxt.Util.Error.UnknownError) }
                 }
             }
         }
@@ -130,7 +108,7 @@ fun LogScreen(navigator: Navigator) {
     Scaffold(
         topBar = {
             TopBar(
-                title = MLang.Log.Title,
+                title = YumeTxt.Log.Title,
                 scrollBehavior = scrollBehavior,
                 actions = {
                     if (logEntries.isNotEmpty()) {
@@ -208,16 +186,16 @@ fun LogScreen(navigator: Navigator) {
     ) { innerPadding ->
         if (logEntries.isEmpty() && isRecording.not()) {
             CenteredText(
-                firstLine = MLang.Log.Empty.NoLogs,
-                secondLine = MLang.Log.Empty.StartRecordingHint,
+                firstLine = YumeTxt.Log.Empty.NoLogs,
+                secondLine = YumeTxt.Log.Empty.StartRecordingHint,
             )
             return@Scaffold
         }
 
         if (logEntries.isEmpty() && isRecording) {
             CenteredText(
-                firstLine = MLang.Log.Detail.WaitingLog,
-                secondLine = MLang.Log.Detail.WillShowWhenGenerated,
+                firstLine = YumeTxt.Log.Detail.WaitingLog,
+                secondLine = YumeTxt.Log.Detail.WillShowWhenGenerated,
             )
             return@Scaffold
         }

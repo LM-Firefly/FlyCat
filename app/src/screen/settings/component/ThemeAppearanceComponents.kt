@@ -20,11 +20,7 @@
 
 package com.github.yumelira.yumebox.screen.settings.component
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,7 +38,7 @@ import com.github.yumelira.yumebox.presentation.icon.yume.Palette
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.theme.colorFromArgb
 import com.github.yumelira.yumebox.presentation.theme.colorToArgbLong
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ColorPicker
 import top.yukonga.miuix.kmp.basic.Icon
@@ -65,14 +61,14 @@ internal fun ThemeModeAndColorItems(
 @Composable
 internal fun ThemeModeSelectorItem(themeMode: ThemeMode, onThemeModeChange: (ThemeMode) -> Unit) {
     EnumSelector(
-        title = MLang.AppSettings.Interface.ThemeModeTitle,
-        summary = MLang.AppSettings.Interface.ThemeModeSummary,
+        title = YumeTxt.AppSettings.Interface.ThemeModeTitle,
+        summary = YumeTxt.AppSettings.Interface.ThemeModeSummary,
         currentValue = themeMode,
         items =
             listOf(
-                MLang.AppSettings.Interface.ThemeModeSystem,
-                MLang.AppSettings.Interface.ThemeModeLight,
-                MLang.AppSettings.Interface.ThemeModeDark,
+                YumeTxt.AppSettings.Interface.ThemeModeSystem,
+                YumeTxt.AppSettings.Interface.ThemeModeLight,
+                YumeTxt.AppSettings.Interface.ThemeModeDark,
             ),
         values = ThemeMode.entries,
         onValueChange = onThemeModeChange,
@@ -101,9 +97,9 @@ internal fun ThemeColorPickerItem(
     val showThemeColorPicker = remember { mutableStateOf(false) }
 
     BasicComponent(
-        title = MLang.AppSettings.Interface.ColorThemeTitle,
+        title = YumeTxt.AppSettings.Interface.ColorThemeTitle,
         summary =
-            MLang.AppSettings.Interface.ColorThemeCustomSummary.format(
+            YumeTxt.AppSettings.Interface.ColorThemeCustomSummary.format(
                 formatThemeSeedHex(themeSeedColorArgb)
             ),
         onClick = {
@@ -163,7 +159,7 @@ internal fun ThemeColorPickerSheet(
     AppActionBottomSheet(
         show = show,
         modifier = Modifier,
-        title = MLang.AppSettings.Interface.ColorThemePickerTitle,
+        title = YumeTxt.AppSettings.Interface.ColorThemePickerTitle,
         onDismissRequest = onDismissRequest,
         enableNestedScroll = true,
         renderInRootScaffold = renderInRootScaffold,
@@ -190,7 +186,7 @@ internal fun ThemeColorPickerSheet(
                         hexField.value = upper
                         parseThemeHexColorOrNull(upper.text)?.let { pickerColor.value = it }
                     },
-                    label = MLang.AppSettings.Interface.ColorThemeCodeLabel,
+                    label = YumeTxt.AppSettings.Interface.ColorThemeCodeLabel,
                     modifier = Modifier.fillMaxWidth().padding(top = UiDp.dp8),
                 )
             }

@@ -107,7 +107,7 @@ enum class StatisticsTimeRange(val days: Int) {
     val label: String
         get() =
             when (this) {
-                TODAY -> dev.oom_wg.purejoy.mlang.MLang.TrafficStatistics.TimeRange.Today
-                WEEK -> dev.oom_wg.purejoy.mlang.MLang.TrafficStatistics.TimeRange.Week
+                TODAY -> tf.gal.yumebox.locale.YumeTxt.TrafficStatistics.TimeRange.Today
+                WEEK -> tf.gal.yumebox.locale.YumeTxt.TrafficStatistics.TimeRange.Week
             }
 }

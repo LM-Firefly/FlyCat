@@ -24,6 +24,7 @@ import android.app.Application
 import android.content.Intent
 import androidx.lifecycle.viewModelScope
 import com.github.yumelira.yumebox.common.util.stateInWhileSubscribed
+import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.core.presentation.AndroidContractStateViewModel
 import com.github.yumelira.yumebox.core.presentation.LoadableState
 import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
@@ -31,7 +32,6 @@ import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.data.gateway.IpMonitoringState
 import com.github.yumelira.yumebox.data.gateway.NetworkInfoService
-import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.domain.model.TrafficData
 import com.github.yumelira.yumebox.runtime.api.Profile
@@ -41,28 +41,10 @@ import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
 import com.github.yumelira.yumebox.runtime.client.ProxyGroupSyncPriority
 import com.github.yumelira.yumebox.runtime.client.RuntimeStateMapper
-import com.github.yumelira.yumebox.runtime.service.root.RootAccessSupport
-import dev.oom_wg.purejoy.mlang.MLang
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.*
+import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
 
 enum class HomeProxyControlState {
@@ -250,7 +232,7 @@ class HomeViewModel(
                         isStartingProxy = state == HomeProxyControlState.Connecting,
                         loadingProgress =
                             if (state == HomeProxyControlState.Connecting) {
-                                MLang.Home.Message.Preparing
+                                YumeTxt.Home.Message.Preparing
                             } else {
                                 null
                             },
@@ -368,8 +350,8 @@ class HomeViewModel(
             val activeProfile = profilesRepository.queryActiveProfile()
             if (activeProfile == null) {
                 showError(
-                    MLang.Home.Message.ConfigSwitchFailed.format(
-                        MLang.ProfilesVM.Error.ProfileNotExist
+                    YumeTxt.Home.Message.ConfigSwitchFailed.format(
+                        YumeTxt.ProfilesVM.Error.ProfileNotExist
                     )
                 )
                 return
@@ -378,11 +360,11 @@ class HomeViewModel(
             profilesRepository.updateProfile(activeProfile.uuid)
 
             profilesRepository.setActiveProfile(activeProfile.uuid)
-            showMessage(MLang.Home.Message.ConfigSwitched)
+            showMessage(YumeTxt.Home.Message.ConfigSwitched)
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             Timber.e(error, "Failed to reload profile")
-            showError(MLang.Home.Message.ConfigSwitchFailed.format(error.message))
+            showError(YumeTxt.Home.Message.ConfigSwitchFailed.format(error.message))
         } finally {
             applyLoading(false)
         }
@@ -442,7 +424,7 @@ class HomeViewModel(
             if (error is CancellationException) throw error
             _pendingTransition.value = PendingTransition.None
             Timber.e(error, "Failed to stop proxy")
-            showError(MLang.Home.Message.StopFailed.format(error.message))
+            showError(YumeTxt.Home.Message.StopFailed.format(error.message))
         }
     }
 
@@ -523,7 +505,7 @@ class HomeViewModel(
             clearPendingStart()
             _pendingTransition.value = PendingTransition.None
             Timber.e(error, "Failed to start proxy")
-            showError(MLang.Home.Message.StartFailed.format(error.message))
+            showError(YumeTxt.Home.Message.StartFailed.format(error.message))
         }
     }
 

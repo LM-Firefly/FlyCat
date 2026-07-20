@@ -25,36 +25,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
-import com.github.yumelira.yumebox.presentation.component.AppConfirmDialog
-import com.github.yumelira.yumebox.presentation.component.AppFormDialog
-import com.github.yumelira.yumebox.presentation.component.AppTextFieldDialog
-import com.github.yumelira.yumebox.presentation.component.EditorAction
-import com.github.yumelira.yumebox.presentation.component.EditorEmptyState
-import com.github.yumelira.yumebox.presentation.component.EditorListItem
-import com.github.yumelira.yumebox.presentation.component.EditorScaffold
-import com.github.yumelira.yumebox.presentation.component.LocalTopBarHazeState
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.PreferenceValueItem
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.Title
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.`Badge-plus`
 import dev.chrisbanes.haze.hazeSource
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Switch
@@ -64,7 +44,7 @@ import top.yukonga.miuix.kmp.icon.extended.AddCircle
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Reset
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
-import java.util.UUID
+import java.util.*
 
 object EditorDataHolder {
     var listEditorTitle: String = ""
@@ -160,7 +140,7 @@ fun StringListEditorScreen(navigator: Navigator) {
     val items = remember { mutableStateListOf<TextDraftItem>() }
     val title = EditorDataHolder.listEditorTitle
     val placeholder = EditorDataHolder.listEditorPlaceholder
-    val isOverrideRuleEditor = title == MLang.Override.Label.RulesReplace
+    val isOverrideRuleEditor = title == YumeTxt.Override.Label.RulesReplace
     var dialogState by remember {
         mutableStateOf<StringListDialogState>(StringListDialogState.None)
     }
@@ -212,8 +192,8 @@ fun StringListEditorScreen(navigator: Navigator) {
         val combinedInnerPadding = combinePaddingValues(innerPadding, mainLikePadding)
         if (items.isEmpty()) {
             EditorEmptyState(
-                title = MLang.Component.Editor.Empty.Title,
-                hint = MLang.Component.Editor.Empty.Hint,
+                title = YumeTxt.Component.Editor.Empty.Title,
+                hint = YumeTxt.Component.Editor.Empty.Hint,
                 modifier =
                     Modifier.fillMaxSize()
                         .let { mod ->
@@ -229,7 +209,7 @@ fun StringListEditorScreen(navigator: Navigator) {
                 modifier = Modifier.fillMaxSize(),
             ) {
                 item {
-                    Title(MLang.Component.Editor.CountItems.format(items.size))
+                    Title(YumeTxt.Component.Editor.CountItems.format(items.size))
                 }
                 items(items = items, key = { it.id }) { item ->
                     val index =
@@ -251,7 +231,7 @@ fun StringListEditorScreen(navigator: Navigator) {
         StringListDialogState.None -> Unit
         StringListDialogState.Add -> {
             SimpleTextEditorDialog(
-                title = MLang.Component.Editor.Dialog.AddTitle,
+                title = YumeTxt.Component.Editor.Dialog.AddTitle,
                 placeholder = placeholder,
                 initialValue = "",
                 onDismiss = { dialogState = StringListDialogState.None },
@@ -266,7 +246,7 @@ fun StringListEditorScreen(navigator: Navigator) {
             val currentItem = items.firstOrNull { it.id == state.itemId }
             if (currentItem != null) {
                 SimpleTextEditorDialog(
-                    title = MLang.Component.Editor.Dialog.EditTitle,
+                    title = YumeTxt.Component.Editor.Dialog.EditTitle,
                     placeholder = placeholder,
                     initialValue = currentItem.value,
                     onDismiss = { dialogState = StringListDialogState.None },
@@ -286,8 +266,8 @@ fun StringListEditorScreen(navigator: Navigator) {
         StringListDialogState.Reset -> {
             AppConfirmDialog(
                 show = true,
-                title = MLang.Component.Editor.Dialog.ResetTitle,
-                message = MLang.Component.Editor.Dialog.ResetMessage,
+                title = YumeTxt.Component.Editor.Dialog.ResetTitle,
+                message = YumeTxt.Component.Editor.Dialog.ResetMessage,
                 onDismissRequest = { dialogState = StringListDialogState.None },
                 onConfirm = {
                     dialogState = StringListDialogState.None
@@ -300,7 +280,7 @@ fun StringListEditorScreen(navigator: Navigator) {
 
         StringListDialogState.AddRule -> {
             RuleEditorDialog(
-                title = MLang.Component.Editor.Dialog.AddTitle,
+                title = YumeTxt.Component.Editor.Dialog.AddTitle,
                 onDismiss = { dialogState = StringListDialogState.None },
                 onConfirm = { value ->
                     items.add(TextDraftItem(UUID.randomUUID().toString(), value))
@@ -361,8 +341,8 @@ fun KeyValueEditorScreen(navigator: Navigator) {
         val combinedInnerPadding = combinePaddingValues(innerPadding, mainLikePadding)
         if (items.isEmpty()) {
             EditorEmptyState(
-                title = MLang.Component.Editor.Empty.Title,
-                hint = MLang.Component.Editor.Empty.Hint,
+                title = YumeTxt.Component.Editor.Empty.Title,
+                hint = YumeTxt.Component.Editor.Empty.Hint,
                 modifier =
                     Modifier.fillMaxSize()
                         .let { mod ->
@@ -378,7 +358,7 @@ fun KeyValueEditorScreen(navigator: Navigator) {
                 modifier = Modifier.fillMaxSize(),
             ) {
                 item {
-                    Title(MLang.Component.Editor.CountItems.format(items.size))
+                    Title(YumeTxt.Component.Editor.CountItems.format(items.size))
                 }
                 items(items = items, key = { it.id }) { item ->
                     val index =
@@ -401,7 +381,7 @@ fun KeyValueEditorScreen(navigator: Navigator) {
         KeyValueDialogState.None -> Unit
         KeyValueDialogState.Add -> {
             KeyValueFormDialog(
-                title = MLang.Component.Editor.Dialog.AddTitle,
+                title = YumeTxt.Component.Editor.Dialog.AddTitle,
                 keyPlaceholder = keyPlaceholder,
                 valuePlaceholder = valuePlaceholder,
                 existingKeys = items.map(KeyValueDraftItem::key).toSet(),
@@ -419,7 +399,7 @@ fun KeyValueEditorScreen(navigator: Navigator) {
             val currentItem = items.firstOrNull { it.id == state.itemId }
             if (currentItem != null) {
                 KeyValueFormDialog(
-                    title = MLang.Component.Editor.Dialog.EditTitle,
+                    title = YumeTxt.Component.Editor.Dialog.EditTitle,
                     keyPlaceholder = keyPlaceholder,
                     valuePlaceholder = valuePlaceholder,
                     existingKeys = items.map(KeyValueDraftItem::key).toSet(),
@@ -443,8 +423,8 @@ fun KeyValueEditorScreen(navigator: Navigator) {
         KeyValueDialogState.Reset -> {
             AppConfirmDialog(
                 show = true,
-                title = MLang.Component.Editor.Dialog.ResetTitle,
-                message = MLang.Component.Editor.Dialog.ResetMessage,
+                title = YumeTxt.Component.Editor.Dialog.ResetTitle,
+                message = YumeTxt.Component.Editor.Dialog.ResetMessage,
                 onDismissRequest = { dialogState = KeyValueDialogState.None },
                 onConfirm = {
                     dialogState = KeyValueDialogState.None
@@ -570,9 +550,9 @@ private fun KeyValueFormDialog(
             val normalizedValue = valueTextFieldValue.text.trim()
             error =
                 when {
-                    normalizedKey.isBlank() -> MLang.Component.Editor.Error.KeyEmpty
+                    normalizedKey.isBlank() -> YumeTxt.Component.Editor.Error.KeyEmpty
                     normalizedKey != currentEditingKey && normalizedKey in existingKeys ->
-                        MLang.Component.Editor.Error.KeyExists
+                        YumeTxt.Component.Editor.Error.KeyExists
                     else -> null
                 }
             if (error == null) {
@@ -605,16 +585,16 @@ private fun KeyValueFormDialog(
 private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var ruleType by remember { mutableStateOf("DOMAIN-SUFFIX") }
     var payloadTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
-    var target by remember { mutableStateOf(MLang.Component.Editor.Rule.TargetReject) }
+    var target by remember { mutableStateOf(YumeTxt.Component.Editor.Rule.TargetReject) }
     var useSrc by remember { mutableStateOf(false) }
     var useNoResolve by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
     val targetItems = remember {
         listOf(
-            MLang.Component.Editor.Rule.TargetReject,
-            MLang.Component.Editor.Rule.TargetDirect,
-            MLang.Component.Editor.Rule.TargetMatch,
+            YumeTxt.Component.Editor.Rule.TargetReject,
+            YumeTxt.Component.Editor.Rule.TargetDirect,
+            YumeTxt.Component.Editor.Rule.TargetMatch,
         )
     }
     val selectedRuleTypeIndex =
@@ -632,13 +612,13 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
             val normalizedType = ruleType.trim().uppercase()
             val normalizedPayload = payloadTextFieldValue.text.trim()
 
-            if (target != MLang.Component.Editor.Rule.TargetMatch && normalizedPayload.isBlank()) {
-                error = MLang.Component.Editor.Rule.ErrorContentRequired
+            if (target != YumeTxt.Component.Editor.Rule.TargetMatch && normalizedPayload.isBlank()) {
+                error = YumeTxt.Component.Editor.Rule.ErrorContentRequired
                 return@AppFormDialog
             }
 
             val result =
-                if (target == MLang.Component.Editor.Rule.TargetMatch) {
+                if (target == YumeTxt.Component.Editor.Rule.TargetMatch) {
                     "MATCH"
                 } else {
                     buildList {
@@ -657,7 +637,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
         error = error,
     ) {
         WindowDropdownPreference(
-            title = MLang.Component.Editor.Rule.Type,
+            title = YumeTxt.Component.Editor.Rule.Type,
             items = ruleTypePresets,
             selectedIndex = selectedRuleTypeIndex,
             onSelectedIndexChange = { index ->
@@ -666,7 +646,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
             },
         )
         WindowDropdownPreference(
-            title = MLang.Component.Editor.Rule.Target,
+            title = YumeTxt.Component.Editor.Rule.Target,
             items = targetItems,
             selectedIndex = selectedTargetIndex,
             onSelectedIndexChange = { index ->
@@ -680,12 +660,12 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
                 payloadTextFieldValue = updatedTextFieldValue
                 error = null
             },
-            label = MLang.Component.Editor.Rule.Content,
+            label = YumeTxt.Component.Editor.Rule.Content,
             modifier = Modifier.fillMaxWidth(),
         )
         if (supportsRuleExtra(ruleType)) {
             PreferenceValueItem(
-                title = MLang.Component.Editor.Rule.Src,
+                title = YumeTxt.Component.Editor.Rule.Src,
                 summary = null,
                 onClick = { useSrc = !useSrc },
                 endActions = {
@@ -696,7 +676,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
                 },
             )
             PreferenceValueItem(
-                title = MLang.Component.Editor.Rule.NoResolve,
+                title = YumeTxt.Component.Editor.Rule.NoResolve,
                 summary = null,
                 onClick = { useNoResolve = !useNoResolve },
                 endActions = {

@@ -27,30 +27,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -66,35 +48,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.graphics.drawable.toBitmap
 import com.github.yumelira.yumebox.data.model.AccessControlSortMode
-import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.SearchBarPadding
-import com.github.yumelira.yumebox.presentation.component.SearchPager
-import com.github.yumelira.yumebox.presentation.component.SearchStatus
-import com.github.yumelira.yumebox.presentation.component.TopAppBarAnim
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.`Settings-2`
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.AppTheme.spacing
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
-import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.InputField
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Text
+import tf.gal.yumebox.locale.YumeTxt
+import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Search
 import top.yukonga.miuix.kmp.icon.extended.Sort
@@ -117,7 +80,7 @@ fun AccessControlScreen(navigator: Navigator) {
     var searchStatus by remember {
         mutableStateOf(
             SearchStatus(
-                label = MLang.AccessControl.Search.Placeholder,
+                label = YumeTxt.AccessControl.Search.Placeholder,
                 searchText = uiState.searchQuery,
             )
         )
@@ -177,7 +140,7 @@ fun AccessControlScreen(navigator: Navigator) {
             topBar = {
                 currentSearchStatus.TopAppBarAnim {
                     TopBar(
-                        title = MLang.AccessControl.Title,
+                        title = YumeTxt.AccessControl.Title,
                         scrollBehavior = scrollBehavior,
                         actions = {
                             Box {
@@ -187,7 +150,7 @@ fun AccessControlScreen(navigator: Navigator) {
                                 ) {
                                     Icon(
                                         imageVector = MiuixIcons.Sort,
-                                        contentDescription = MLang.AccessControl.Settings.SortMode,
+                                        contentDescription = YumeTxt.AccessControl.Settings.SortMode,
                                         tint = MiuixTheme.colorScheme.onSurface,
                                     )
                                 }
@@ -202,7 +165,7 @@ fun AccessControlScreen(navigator: Navigator) {
                                 IconButton(onClick = { showOpsMenu = true }) {
                                     Icon(
                                         imageVector = Yume.`Settings-2`,
-                                        contentDescription = MLang.AccessControl.Settings.Title,
+                                        contentDescription = YumeTxt.AccessControl.Settings.Title,
                                         tint = MiuixTheme.colorScheme.onSurface,
                                     )
                                 }
@@ -326,7 +289,7 @@ fun AccessControlScreen(navigator: Navigator) {
                 ),
             emptyResult = {
                 SearchEmptyState(
-                    text = MLang.AccessControl.Search.Empty,
+                    text = YumeTxt.AccessControl.Search.Empty,
                     modifier = Modifier.padding(bottom = mainLikePadding.calculateBottomPadding()),
                 )
             },
@@ -371,7 +334,7 @@ private fun AccessControlCollapsedSearchBar(
         leadingIcon = {
             Icon(
                 imageVector = MiuixIcons.Basic.Search,
-                contentDescription = MLang.Component.Editor.Action.Search,
+                contentDescription = YumeTxt.Component.Editor.Action.Search,
                 modifier =
                     Modifier.size(AppTheme.sizes.searchIconTouchTarget)
                         .padding(start = spacing.space16, end = spacing.space8),
@@ -389,15 +352,15 @@ private fun AccessControlCollapsedSearchBar(
     )
 }
 
-// :data cannot depend on MLang, so the display-name mapping for the persisted sort-mode enum
+// :data cannot depend on YumeTxt, so the display-name mapping for the persisted sort-mode enum
 // stays here on the :app side.
 private val AccessControlSortMode.displayName: String
     get() =
         when (this) {
-            AccessControlSortMode.PACKAGE_NAME -> MLang.AccessControl.SortMode.PackageName
-            AccessControlSortMode.LABEL -> MLang.AccessControl.SortMode.Label
-            AccessControlSortMode.INSTALL_TIME -> MLang.AccessControl.SortMode.InstallTime
-            AccessControlSortMode.UPDATE_TIME -> MLang.AccessControl.SortMode.UpdateTime
+            AccessControlSortMode.PACKAGE_NAME -> YumeTxt.AccessControl.SortMode.PackageName
+            AccessControlSortMode.LABEL -> YumeTxt.AccessControl.SortMode.Label
+            AccessControlSortMode.INSTALL_TIME -> YumeTxt.AccessControl.SortMode.InstallTime
+            AccessControlSortMode.UPDATE_TIME -> YumeTxt.AccessControl.SortMode.UpdateTime
         }
 
 @Composable
@@ -454,7 +417,7 @@ private fun AccessControlOperationsMenu(
         remember(context) {
             context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         }
-    val settings = MLang.AccessControl.Settings
+    val settings = YumeTxt.AccessControl.Settings
 
     val entries =
         listOf(

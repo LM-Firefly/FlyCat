@@ -33,10 +33,10 @@ import com.github.yumelira.yumebox.data.store.AppSettingsStore
 import com.github.yumelira.yumebox.data.store.FeatureStore
 import com.github.yumelira.yumebox.data.store.Preference
 import com.github.yumelira.yumebox.presentation.theme.DEFAULT_CUSTOM_THEME_SEED_ARGB
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import tf.gal.yumebox.locale.YumeTxt
 
 class AppSettingsViewModel(
     private val application: Application,
@@ -107,7 +107,7 @@ class AppSettingsViewModel(
             } else {
                 moeWallpaperUri.set(sourceUri)
                 moeWallpaperSourceUri.set(sourceUri)
-                application.toast(MLang.AppSettings.Interface.HomeWallpaperImportFailed)
+                application.toast(YumeTxt.AppSettings.Interface.HomeWallpaperImportFailed)
             }
             onApplied()
         }

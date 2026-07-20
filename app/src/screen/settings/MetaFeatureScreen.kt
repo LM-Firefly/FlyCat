@@ -24,12 +24,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.state.ToggleableState
@@ -38,22 +33,16 @@ import com.github.yumelira.yumebox.core.model.GeoFileType
 import com.github.yumelira.yumebox.core.model.GeoXItem
 import com.github.yumelira.yumebox.core.model.geoXItems
 import com.github.yumelira.yumebox.core.util.runtimeHomeDir
-import com.github.yumelira.yumebox.presentation.component.AppDialog
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.Title
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.substore.util.SubStoreDownloadClient
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
@@ -75,7 +64,7 @@ fun MetaFeatureScreen(navigator: Navigator) {
     val ageKeyDialogVisible = remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { TopBar(title = MLang.MetaFeature.Title, scrollBehavior = scrollBehavior) }
+        topBar = { TopBar(title = YumeTxt.MetaFeature.Title, scrollBehavior = scrollBehavior) }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
@@ -83,52 +72,52 @@ fun MetaFeatureScreen(navigator: Navigator) {
             innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
         ) {
             item {
-                Title(MLang.MetaFeature.Section.ConnectionAndTraffic)
+                Title(YumeTxt.MetaFeature.Section.ConnectionAndTraffic)
                 Card {
                     ArrowPreference(
-                        title = MLang.Connection.Title,
-                        summary = MLang.Connection.Summary,
+                        title = YumeTxt.Connection.Title,
+                        summary = YumeTxt.Connection.Summary,
                         onClick = { navigator.push(Route.Connection) },
                     )
                     ArrowPreference(
-                        title = MLang.TrafficStatistics.Title,
-                        summary = MLang.TrafficStatistics.EntrySummary,
+                        title = YumeTxt.TrafficStatistics.Title,
+                        summary = YumeTxt.TrafficStatistics.EntrySummary,
                         onClick = { navigator.push(Route.TrafficStatistics) },
                     )
                     ArrowPreference(
-                        title = MLang.Settings.More.Logs,
-                        summary = MLang.Settings.More.LogsSummary,
+                        title = YumeTxt.Settings.More.Logs,
+                        summary = YumeTxt.Settings.More.LogsSummary,
                         onClick = { navigator.push(Route.Log) },
                     )
                 }
             }
             item {
-                Title(MLang.MetaFeature.Section.Routing)
+                Title(YumeTxt.MetaFeature.Section.Routing)
                 Card {
                     ArrowPreference(
-                        title = MLang.MetaFeature.CustomRouting.Title,
-                        summary = MLang.MetaFeature.CustomRouting.Summary,
+                        title = YumeTxt.MetaFeature.CustomRouting.Title,
+                        summary = YumeTxt.MetaFeature.CustomRouting.Summary,
                         onClick = { navigator.push(Route.CustomRouting) },
                     )
                     ArrowPreference(
-                        title = MLang.MetaFeature.GeoX.OnlineUpdateTitle,
-                        summary = MLang.MetaFeature.GeoX.OnlineUpdateSummary,
+                        title = YumeTxt.MetaFeature.GeoX.OnlineUpdateTitle,
+                        summary = YumeTxt.MetaFeature.GeoX.OnlineUpdateSummary,
                         onClick = { showGeoXDownloadSheet.value = true },
                     )
                 }
             }
             item {
-                Title(MLang.MetaFeature.AgeKey.Section)
+                Title(YumeTxt.MetaFeature.AgeKey.Section)
                 Card {
                     ArrowPreference(
-                        title = MLang.MetaFeature.AgeKey.X25519Title,
+                        title = YumeTxt.MetaFeature.AgeKey.X25519Title,
                         onClick = {
                             ageKeyHybrid.value = false
                             ageKeyDialogVisible.value = true
                         },
                     )
                     ArrowPreference(
-                        title = MLang.MetaFeature.AgeKey.HybridTitle,
+                        title = YumeTxt.MetaFeature.AgeKey.HybridTitle,
                         onClick = {
                             ageKeyHybrid.value = true
                             ageKeyDialogVisible.value = true
@@ -167,7 +156,7 @@ private fun GeoXDownloadDialog(
 
     AppDialog(
         show = show.value,
-        title = MLang.MetaFeature.Download.DialogTitle,
+        title = YumeTxt.MetaFeature.Download.DialogTitle,
         onDismissRequest = { show.value = false },
     ) {
         Column(
@@ -198,12 +187,12 @@ private fun GeoXDownloadDialog(
                 horizontalArrangement = Arrangement.spacedBy(spacing.space16),
             ) {
                 TextButton(
-                    text = MLang.Component.Button.Cancel,
+                    text = YumeTxt.Component.Button.Cancel,
                     onClick = { show.value = false },
                     modifier = Modifier.weight(1f),
                 )
                 TextButton(
-                    text = MLang.Component.Button.Confirm,
+                    text = YumeTxt.Component.Button.Confirm,
                     onClick = {
                         val itemsToDownload = geoXItems.filter { selectedItems[it.type] == true }
                         if (itemsToDownload.isEmpty()) {
@@ -239,6 +228,6 @@ private fun downloadGeoXFiles(
                 }
             }
         }
-        context.toast(MLang.MetaFeature.Download.DownloadComplete.format(successCount, items.size))
+        context.toast(YumeTxt.MetaFeature.Download.DownloadComplete.format(successCount, items.size))
     }
 }

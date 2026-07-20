@@ -20,7 +20,7 @@
 
 package com.github.yumelira.yumebox.substore.model
 
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 
 enum class AutoCloseMode(val minutes: Int?) {
     ALWAYS_ON(null),
@@ -29,8 +29,8 @@ enum class AutoCloseMode(val minutes: Int?) {
 
     fun getDisplayName(): String =
         when (this) {
-            ALWAYS_ON -> MLang.Feature.ServiceStatus.AutoCloseModeAlwaysOn
-            MINUTES_5 -> MLang.Feature.ServiceStatus.AutoCloseMode5Min
-            MINUTES_10 -> MLang.Feature.ServiceStatus.AutoCloseMode10Min
+            ALWAYS_ON -> YumeTxt.Feature.ServiceStatus.AutoCloseModeAlwaysOn
+            MINUTES_5 -> YumeTxt.Feature.ServiceStatus.AutoCloseMode5Min
+            MINUTES_10 -> YumeTxt.Feature.ServiceStatus.AutoCloseMode10Min
         }
 }

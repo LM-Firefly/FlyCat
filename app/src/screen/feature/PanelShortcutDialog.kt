@@ -26,19 +26,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,7 +43,7 @@ import com.github.panpf.sketch.request.ImageRequest
 import com.github.yumelira.yumebox.R
 import com.github.yumelira.yumebox.presentation.component.AppFormDialog
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -89,7 +79,7 @@ fun PanelShortcutDialog(
 
     AppFormDialog(
         show = show,
-        title = MLang.Feature.Panel.ShortcutTitle,
+        title = YumeTxt.Feature.Panel.ShortcutTitle,
         onDismissRequest = onDismiss,
         onConfirm = { if (canConfirm) onConfirm(name.trim(), customIconUri) },
         confirmEnabled = canConfirm,
@@ -127,7 +117,7 @@ fun PanelShortcutDialog(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextButton(
-                    text = MLang.Feature.Panel.ShortcutPickIcon,
+                    text = YumeTxt.Feature.Panel.ShortcutPickIcon,
                     onClick = { pickIconLauncher.launch("image/*") },
                     modifier = Modifier.weight(1f),
                 )
@@ -141,7 +131,7 @@ fun PanelShortcutDialog(
                     ) {
                         Icon(
                             imageVector = MiuixIcons.Reset,
-                            contentDescription = MLang.Feature.Panel.ShortcutResetIcon,
+                            contentDescription = YumeTxt.Feature.Panel.ShortcutResetIcon,
                             tint = MiuixTheme.colorScheme.onSurface,
                             modifier = Modifier.size(28.dp),
                         )
@@ -152,7 +142,7 @@ fun PanelShortcutDialog(
             TextField(
                 value = name,
                 onValueChange = { name = it },
-                label = MLang.Feature.Panel.ShortcutName,
+                label = YumeTxt.Feature.Panel.ShortcutName,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )

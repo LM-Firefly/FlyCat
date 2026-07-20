@@ -22,15 +22,7 @@ package com.github.yumelira.yumebox.presentation.component
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -45,18 +37,10 @@ import com.github.yumelira.yumebox.presentation.icon.yume.Delete
 import com.github.yumelira.yumebox.presentation.icon.yume.Edit
 import com.github.yumelira.yumebox.presentation.icon.yume.Share
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.util.enabled
-import com.github.yumelira.yumebox.presentation.util.getDisplayProvider
-import com.github.yumelira.yumebox.presentation.util.getInfoText
-import com.github.yumelira.yumebox.presentation.util.isConfigSaved
-import com.github.yumelira.yumebox.presentation.util.shouldShowUpdateButton
+import com.github.yumelira.yumebox.presentation.util.*
 import com.github.yumelira.yumebox.runtime.api.Profile
-import dev.oom_wg.purejoy.mlang.MLang
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.Text
+import tf.gal.yumebox.locale.YumeTxt
+import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.File
 
@@ -259,7 +243,7 @@ fun ProfileCard(
                         Text(
                             modifier =
                                 Modifier.padding(end = componentSizes.textLineCompactSpacing),
-                            text = MLang.Component.ProfileCard.Update,
+                            text = YumeTxt.Component.ProfileCard.Update,
                             color = updateTint,
                             fontWeight = FontWeight.Medium,
                             fontSize = 15.sp,
@@ -291,7 +275,7 @@ fun ProfileCard(
                                 start = spacing.space4,
                                 end = componentSizes.textLineCompactSpacing,
                             ),
-                        text = MLang.Component.ProfileCard.Delete,
+                        text = YumeTxt.Component.ProfileCard.Delete,
                         color = actionIconTint,
                         fontWeight = FontWeight.Medium,
                         fontSize = 15.sp,

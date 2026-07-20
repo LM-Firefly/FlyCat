@@ -33,71 +33,31 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.common.util.formatBytesForDisplay
-import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
-import com.github.yumelira.yumebox.presentation.component.CountryFlagCircle
-import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
-import com.github.yumelira.yumebox.presentation.component.PreferenceValueItem
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Repeat
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.presentation.util.extractFlaggedName
 import com.github.yumelira.yumebox.screen.home.HomeProxyControlState
-import dev.oom_wg.purejoy.mlang.MLang
-import top.yukonga.miuix.kmp.basic.Card
+import kotlinx.coroutines.delay
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.blur.BlendColorEntry
-import top.yukonga.miuix.kmp.blur.BlurBlendMode
-import top.yukonga.miuix.kmp.blur.BlurDefaults
-import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import top.yukonga.miuix.kmp.blur.textureBlur
+import top.yukonga.miuix.kmp.blur.*
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.util.Calendar
-import kotlinx.coroutines.delay
 
 @Composable
 internal fun MoeSidebarDecoration(
@@ -314,15 +274,15 @@ internal fun MoeLaunchButton(
     val targetLabel =
         when {
             isRemoteController && isRunning -> "运行中"
-            !enabled && controlState == HomeProxyControlState.Idle -> MLang.Home.Traffic.NoProfile
+            !enabled && controlState == HomeProxyControlState.Idle -> YumeTxt.Home.Traffic.NoProfile
             else ->
                 when (controlState) {
-                    HomeProxyControlState.Idle -> MLang.Home.Control.Start
-                    HomeProxyControlState.Connecting -> MLang.Home.Status.Connecting
+                    HomeProxyControlState.Idle -> YumeTxt.Home.Control.Start
+                    HomeProxyControlState.Connecting -> YumeTxt.Home.Status.Connecting
                     HomeProxyControlState.Running ->
-                        if (isRemoteController) "运行中" else MLang.Home.Control.Stop
+                        if (isRemoteController) "运行中" else YumeTxt.Home.Control.Stop
                     HomeProxyControlState.Lost -> "失联"
-                    HomeProxyControlState.Disconnecting -> MLang.Home.Status.Disconnecting
+                    HomeProxyControlState.Disconnecting -> YumeTxt.Home.Status.Disconnecting
                 }
         }
     var displayedLabel by remember { mutableStateOf(targetLabel) }

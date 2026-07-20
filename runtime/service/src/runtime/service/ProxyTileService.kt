@@ -33,25 +33,16 @@ import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.data.store.MMKVProvider
-import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
-import com.github.yumelira.yumebox.runtime.api.Components
-import com.github.yumelira.yumebox.runtime.api.Intents
-import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
-import com.github.yumelira.yumebox.runtime.api.RuntimePhase
-import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
+import com.github.yumelira.yumebox.runtime.api.*
+import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.github.yumelira.yumebox.runtime.service.profile.ProfileManager
 import com.github.yumelira.yumebox.runtime.service.session.RootSessionLauncher
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
 import com.github.yumelira.yumebox.runtime.service.util.sendBroadcastSelf
-import dev.oom_wg.purejoy.mlang.MLang
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
 
 @SuppressLint("NewApi")
@@ -123,7 +114,7 @@ class ProxyTileService : TileService() {
                 } else {
                     val activeProfile = withContext(Dispatchers.IO) { profileManager.queryActive() }
                     if (activeProfile == null) {
-                        updateTileInactiveState(subtitle = MLang.Service.Tile.ClickToOpen)
+                        updateTileInactiveState(subtitle = YumeTxt.Service.Tile.ClickToOpen)
 
                         val intent =
                             Intent(Intent.ACTION_MAIN).apply {
@@ -139,7 +130,7 @@ class ProxyTileService : TileService() {
                         RunMode.VpnService -> {
                             val vpnIntent = VpnService.prepare(this@ProxyTileService)
                             if (vpnIntent != null) {
-                                updateTileInactiveState(subtitle = MLang.Service.Tile.ClickToOpen)
+                                updateTileInactiveState(subtitle = YumeTxt.Service.Tile.ClickToOpen)
                                 vpnIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 startActivityAndCollapseCompat(vpnIntent, requestCode = 1002)
                                 return@launch
@@ -230,9 +221,9 @@ class ProxyTileService : TileService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             tile.subtitle =
                 if (isRunning) {
-                    MLang.Service.Tile.ClickToStopProxy
+                    YumeTxt.Service.Tile.ClickToStopProxy
                 } else {
-                    MLang.Service.Tile.ClickToStartProxy
+                    YumeTxt.Service.Tile.ClickToStartProxy
                 }
         }
 
@@ -249,9 +240,9 @@ class ProxyTileService : TileService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             tile.subtitle =
                 if (isStarting) {
-                    MLang.Service.Tile.Connecting
+                    YumeTxt.Service.Tile.Connecting
                 } else {
-                    MLang.Service.Tile.Disconnecting
+                    YumeTxt.Service.Tile.Disconnecting
                 }
         }
 

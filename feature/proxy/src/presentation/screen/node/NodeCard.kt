@@ -21,27 +21,12 @@
 package com.github.yumelira.yumebox.presentation.screen.node
 
 import androidx.compose.animation.animateColor
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -63,7 +48,7 @@ import com.github.yumelira.yumebox.presentation.icon.yume.CircleGauge
 import com.github.yumelira.yumebox.presentation.icon.yume.Cloud
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.util.extractNodeTags
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -74,14 +59,14 @@ import top.yukonga.miuix.kmp.utils.pressable
 internal fun nodeLatencyLabel(delay: Int?): Pair<String, Color>? =
     when {
         delay == null -> null
-        delay < 0 -> MLang.Proxy.Node.Timeout to AppTheme.colors.latency.timeout
+        delay < 0 -> YumeTxt.Proxy.Node.Timeout to AppTheme.colors.latency.timeout
         delay == 0 -> null
         delay in 1..300 ->
-            MLang.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.fast
+            YumeTxt.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.fast
         delay in 301..1000 ->
-            MLang.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.moderate
+            YumeTxt.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.moderate
         delay in 1001..3000 ->
-            MLang.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.slow
+            YumeTxt.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.slow
         else -> null
     }
 
@@ -144,7 +129,7 @@ internal fun RotatingCircleGauge(
     isRotating: Boolean,
     modifier: Modifier = Modifier,
     tint: Color = MiuixTheme.colorScheme.primary,
-    contentDescription: String? = MLang.Proxy.Action.Test,
+    contentDescription: String? = YumeTxt.Proxy.Action.Test,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "circle_gauge_rotation")
     val rotation by
@@ -336,7 +321,7 @@ internal fun NodeCard(
                             } else {
                                 Icon(
                                     imageVector = Yume.Cloud,
-                                    contentDescription = MLang.Proxy.Action.Test,
+                                    contentDescription = YumeTxt.Proxy.Action.Test,
                                     tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                     modifier =
                                         Modifier.padding(start = sizes.nodeCardTrailingGap)

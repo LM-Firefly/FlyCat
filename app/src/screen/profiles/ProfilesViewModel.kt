@@ -32,14 +32,14 @@ import com.github.yumelira.yumebox.runtime.api.IFetchObserver
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.client.ProfilePatch
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
-import java.util.UUID
+import java.util.*
 
 class ProfilesViewModel(
     application: Application,
@@ -83,7 +83,7 @@ class ProfilesViewModel(
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to refresh profiles")
-                showError(MLang.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown"))
+                showError(YumeTxt.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown"))
             } finally {
                 setLoading(false)
             }
@@ -109,7 +109,7 @@ class ProfilesViewModel(
                 createdUuid = uuid
 
                 _downloadProgress.value =
-                    DownloadProgress(percent = 0, message = MLang.ProfilesVM.Progress.Preparing)
+                    DownloadProgress(percent = 0, message = YumeTxt.ProfilesVM.Progress.Preparing)
 
                 val observer = IFetchObserver { status ->
                     _downloadProgress.value = status.toDownloadProgress()
@@ -123,11 +123,11 @@ class ProfilesViewModel(
                 _downloadProgress.value =
                     DownloadProgress(
                         percent = 100,
-                        message = MLang.ProfilesVM.Progress.ImportComplete,
+                        message = YumeTxt.ProfilesVM.Progress.ImportComplete,
                         isCompleted = true,
                     )
 
-                showMessage(MLang.ProfilesVM.Message.ProfileAdded.format(name))
+                showMessage(YumeTxt.ProfilesVM.Message.ProfileAdded.format(name))
                 refreshProfiles()
                 Timber.i("Profile created: $uuid")
             } catch (error: Exception) {
@@ -140,7 +140,7 @@ class ProfilesViewModel(
                         }
                 }
                 refreshProfiles()
-                showError(MLang.ProfilesVM.Message.AddFailed.format(error.message ?: "Unknown"))
+                showError(YumeTxt.ProfilesVM.Message.AddFailed.format(error.message ?: "Unknown"))
                 _downloadProgress.value = null
             } finally {
                 setLoading(false)
@@ -155,13 +155,13 @@ class ProfilesViewModel(
             try {
                 setLoading(true)
                 val newUuid = profilesRepository.cloneProfile(uuid)
-                showMessage(MLang.ProfilesVM.Message.ProfileAdded.format("Clone"))
+                showMessage(YumeTxt.ProfilesVM.Message.ProfileAdded.format("Clone"))
                 refreshProfiles()
                 Timber.i("Profile cloned: from=$uuid to=$newUuid")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to clone profile")
-                showError(MLang.ProfilesVM.Message.AddFailed.format(error.message ?: "Unknown"))
+                showError(YumeTxt.ProfilesVM.Message.AddFailed.format(error.message ?: "Unknown"))
             } finally {
                 setLoading(false)
             }
@@ -175,13 +175,13 @@ class ProfilesViewModel(
             try {
                 setLoading(true)
                 profilesRepository.deleteProfile(uuid)
-                showMessage(MLang.ProfilesVM.Message.ProfileDeleted)
+                showMessage(YumeTxt.ProfilesVM.Message.ProfileDeleted)
                 refreshProfiles()
                 Timber.i("Profile deleted: $uuid")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to delete profile")
-                showError(MLang.ProfilesVM.Message.DeleteFailed.format(error.message ?: "Unknown"))
+                showError(YumeTxt.ProfilesVM.Message.DeleteFailed.format(error.message ?: "Unknown"))
             } finally {
                 setLoading(false)
             }
@@ -195,13 +195,13 @@ class ProfilesViewModel(
             try {
                 setLoading(true)
                 profilesRepository.setActiveProfile(uuid)
-                showMessage(MLang.ProfilesVM.Message.ProfileUpdated.format("Active"))
+                showMessage(YumeTxt.ProfilesVM.Message.ProfileUpdated.format("Active"))
                 refreshProfiles()
                 Timber.i("Profile activated: $uuid")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to activate profile")
-                showError(MLang.ProfilesVM.Message.ToggleFailed.format(error.message ?: "Unknown"))
+                showError(YumeTxt.ProfilesVM.Message.ToggleFailed.format(error.message ?: "Unknown"))
             } finally {
                 setLoading(false)
             }
@@ -215,7 +215,7 @@ class ProfilesViewModel(
             try {
                 setLoading(true)
                 _downloadProgress.value =
-                    DownloadProgress(percent = 0, message = MLang.ProfilesVM.Progress.Preparing)
+                    DownloadProgress(percent = 0, message = YumeTxt.ProfilesVM.Progress.Preparing)
 
                 val observer = IFetchObserver { status ->
                     _downloadProgress.value = status.toDownloadProgress()
@@ -226,16 +226,16 @@ class ProfilesViewModel(
                 _downloadProgress.value =
                     DownloadProgress(
                         percent = 100,
-                        message = MLang.ProfilesVM.Progress.ImportComplete,
+                        message = YumeTxt.ProfilesVM.Progress.ImportComplete,
                         isCompleted = true,
                     )
-                showMessage(MLang.ProfilesVM.Message.ProfileUpdated.format(uuid.toString()))
+                showMessage(YumeTxt.ProfilesVM.Message.ProfileUpdated.format(uuid.toString()))
                 refreshProfiles()
                 Timber.i("Profile updated: $uuid")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to update profile")
-                showError(MLang.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown"))
+                showError(YumeTxt.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown"))
                 _downloadProgress.value = null
             } finally {
                 setLoading(false)
@@ -250,13 +250,13 @@ class ProfilesViewModel(
             try {
                 setLoading(true)
                 profilesRepository.patchProfile(uuid, patch)
-                showMessage(MLang.ProfilesVM.Message.ProfileUpdated.format(patch.name))
+                showMessage(YumeTxt.ProfilesVM.Message.ProfileUpdated.format(patch.name))
                 refreshProfiles()
                 Timber.i("Profile patched: $uuid")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to patch profile")
-                showError(MLang.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown"))
+                showError(YumeTxt.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown"))
             } finally {
                 setLoading(false)
             }
@@ -300,17 +300,17 @@ class ProfilesViewModel(
 
                 if (profile.active) {
                     profilesRepository.clearActiveProfile(profile)
-                    showMessage(MLang.ProfilesVM.Message.ProfileUpdated.format(profile.name))
+                    showMessage(YumeTxt.ProfilesVM.Message.ProfileUpdated.format(profile.name))
                 } else {
                     profilesRepository.setActiveProfile(uuid)
-                    showMessage(MLang.ProfilesVM.Message.ProfileUpdated.format(profile.name))
+                    showMessage(YumeTxt.ProfilesVM.Message.ProfileUpdated.format(profile.name))
                 }
                 refreshProfiles()
                 Timber.d("Profile toggled: $uuid, active=${!profile.active}")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to toggle profile")
-                showError(MLang.ProfilesVM.Message.ToggleFailed.format(error.message ?: "Unknown"))
+                showError(YumeTxt.ProfilesVM.Message.ToggleFailed.format(error.message ?: "Unknown"))
             }
         }
     }

@@ -23,15 +23,9 @@ package com.github.yumelira.yumebox.screen.settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.Title
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
-import dev.oom_wg.purejoy.mlang.MLang
+import com.github.yumelira.yumebox.presentation.component.*
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 
@@ -48,7 +42,7 @@ fun VpnServiceOptionsScreen() {
 
     Scaffold(
         topBar = {
-            TopBar(title = MLang.NetworkSettings.Section.VpnOptions, scrollBehavior = scrollBehavior)
+            TopBar(title = YumeTxt.NetworkSettings.Section.VpnOptions, scrollBehavior = scrollBehavior)
         }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
@@ -57,30 +51,30 @@ fun VpnServiceOptionsScreen() {
             innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
         ) {
             item {
-                Title(MLang.NetworkSettings.RunMode.VpnServiceTitle)
+                Title(YumeTxt.NetworkSettings.RunMode.VpnServiceTitle)
                 Card {
                     PreferenceSwitchItem(
-                        title = MLang.NetworkSettings.VpnOptions.BypassPrivateTitle,
+                        title = YumeTxt.NetworkSettings.VpnOptions.BypassPrivateTitle,
                         checked = tunOptions.common.bypassPrivateNetwork,
                         onCheckedChange = viewModel::onBypassPrivateNetworkChange,
                     )
                     PreferenceSwitchItem(
-                        title = MLang.NetworkSettings.VpnOptions.DnsHijackTitle,
+                        title = YumeTxt.NetworkSettings.VpnOptions.DnsHijackTitle,
                         checked = tunOptions.common.dnsHijack,
                         onCheckedChange = viewModel::onDnsHijackChange,
                     )
                     PreferenceSwitchItem(
-                        title = MLang.NetworkSettings.VpnOptions.EnableIpv6Title,
+                        title = YumeTxt.NetworkSettings.VpnOptions.EnableIpv6Title,
                         checked = tunOptions.common.enableIPv6,
                         onCheckedChange = viewModel::onEnableIPv6Change,
                     )
                     PreferenceSwitchItem(
-                        title = MLang.NetworkSettings.VpnOptions.AllowBypassTitle,
+                        title = YumeTxt.NetworkSettings.VpnOptions.AllowBypassTitle,
                         checked = tunOptions.allowBypass,
                         onCheckedChange = viewModel::onAllowBypassChange,
                     )
                     PreferenceSwitchItem(
-                        title = MLang.NetworkSettings.VpnOptions.SystemProxyTitle,
+                        title = YumeTxt.NetworkSettings.VpnOptions.SystemProxyTitle,
                         checked = tunOptions.systemProxy,
                         onCheckedChange = viewModel::onSystemProxyChange,
                     )

@@ -29,15 +29,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -52,24 +44,14 @@ import com.github.yumelira.yumebox.common.util.LocaleUtil
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.data.model.AppLanguage
 import com.github.yumelira.yumebox.data.model.ThemeMode
-import com.github.yumelira.yumebox.presentation.component.AppTextFieldDialog
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.PreferenceArrowItem
-import com.github.yumelira.yumebox.presentation.component.PreferenceEnumItem
-import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
-import com.github.yumelira.yumebox.presentation.component.PreferenceValueItem
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.Title
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.WarningBottomSheet
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.screen.settings.component.ThemeColorPickerItem
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Slider
@@ -83,7 +65,7 @@ fun AppSettingsScreen() {
     val viewModel = koinViewModel<AppSettingsViewModel>()
 
     Scaffold(
-        topBar = { TopBar(title = MLang.AppSettings.Title, scrollBehavior = scrollBehavior) }
+        topBar = { TopBar(title = YumeTxt.AppSettings.Title, scrollBehavior = scrollBehavior) }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
@@ -106,21 +88,21 @@ private fun AppBehaviorSettingsSection(viewModel: AppSettingsViewModel) {
         viewModel.autoUpdateCurrentProfileOnStart.state.collectAsState()
     val isChineseLocale = remember { LocaleUtil.isChineseLocale() }
 
-    Title(MLang.AppSettings.Section.Behavior)
+    Title(YumeTxt.AppSettings.Section.Behavior)
     Card {
         PreferenceSwitchItem(
-            title = MLang.AppSettings.Behavior.AutoStartTitle,
+            title = YumeTxt.AppSettings.Behavior.AutoStartTitle,
             checked = automaticRestart,
             onCheckedChange = viewModel::onAutomaticRestartChange,
         )
         PreferenceSwitchItem(
-            title = MLang.AppSettings.Behavior.AutoUpdateOnStartTitle,
+            title = YumeTxt.AppSettings.Behavior.AutoUpdateOnStartTitle,
             checked = autoUpdateCurrentProfileOnStart,
             onCheckedChange = viewModel::onAutoUpdateCurrentProfileOnStartChange,
         )
         if (isChineseLocale) {
             PreferenceSwitchItem(
-                title = MLang.AppSettings.Behavior.OneChinaTitle,
+                title = YumeTxt.AppSettings.Behavior.OneChinaTitle,
                 checked = true,
                 onCheckedChange = {},
                 enabled = false,
@@ -140,22 +122,22 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
     val pageScale by viewModel.pageScale.state.collectAsState()
     val classicHomeEnabled by viewModel.classicHomeEnabled.state.collectAsState()
 
-    Title(MLang.AppSettings.Interface.ColorThemeTitle)
+    Title(YumeTxt.AppSettings.Interface.ColorThemeTitle)
     Card {
         PreferenceEnumItem(
-            title = MLang.AppSettings.Interface.ThemeModeTitle,
+            title = YumeTxt.AppSettings.Interface.ThemeModeTitle,
             currentValue = themeMode,
             items =
                 listOf(
-                    MLang.AppSettings.Interface.ThemeModeSystem,
-                    MLang.AppSettings.Interface.ThemeModeLight,
-                    MLang.AppSettings.Interface.ThemeModeDark,
+                    YumeTxt.AppSettings.Interface.ThemeModeSystem,
+                    YumeTxt.AppSettings.Interface.ThemeModeLight,
+                    YumeTxt.AppSettings.Interface.ThemeModeDark,
                 ),
             values = ThemeMode.entries,
             onValueChange = viewModel::onThemeModeChange,
         )
         PreferenceSwitchItem(
-            title = MLang.AppSettings.Interface.ThemeColorPolarityInvertTitle,
+            title = YumeTxt.AppSettings.Interface.ThemeColorPolarityInvertTitle,
             checked = invertOnPrimaryColors,
             onCheckedChange = viewModel::onInvertOnPrimaryColorsChange,
         )
@@ -164,36 +146,36 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
             onThemeSeedColorChange = viewModel::onThemeSeedColorChange,
         )
     }
-    Title(MLang.AppSettings.Section.Interface)
+    Title(YumeTxt.AppSettings.Section.Interface)
     Card {
         PreferenceEnumItem(
-            title = MLang.AppSettings.Interface.LanguageTitle,
+            title = YumeTxt.AppSettings.Interface.LanguageTitle,
             currentValue = appLanguage,
             items =
                 listOf(
-                    MLang.AppSettings.Interface.LanguageSystem,
-                    MLang.AppSettings.Interface.LanguageChinese,
-                    MLang.AppSettings.Interface.LanguageEnglish,
+                    YumeTxt.AppSettings.Interface.LanguageSystem,
+                    YumeTxt.AppSettings.Interface.LanguageChinese,
+                    YumeTxt.AppSettings.Interface.LanguageEnglish,
                 ),
             values = AppLanguage.entries,
             onValueChange = viewModel::onAppLanguageChange,
         )
         PreferenceSwitchItem(
-            title = MLang.AppSettings.Interface.AutoHideNavbarTitle,
+            title = YumeTxt.AppSettings.Interface.AutoHideNavbarTitle,
             checked = bottomBarAutoHide,
             onCheckedChange = viewModel::onBottomBarAutoHideChange,
         )
         PreferenceSwitchItem(
-            title = MLang.AppSettings.Interface.TopBarBlurTitle,
+            title = YumeTxt.AppSettings.Interface.TopBarBlurTitle,
             checked = topBarBlurEnabled,
             onCheckedChange = viewModel::onTopBarBlurEnabledChange,
         )
         PageScalePreferenceItem(pageScale = pageScale, onApply = viewModel::onPageScaleChange)
     }
-    Title(MLang.AppSettings.Section.Home)
+    Title(YumeTxt.AppSettings.Section.Home)
     Card {
         PreferenceSwitchItem(
-            title = MLang.AppSettings.Interface.ClassicHomeTitle,
+            title = YumeTxt.AppSettings.Interface.ClassicHomeTitle,
             checked = classicHomeEnabled,
             onCheckedChange = viewModel::onClassicHomeEnabledChange,
         )
@@ -205,7 +187,7 @@ private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
     val context = LocalContext.current
     val excludeFromRecents by viewModel.excludeFromRecents.state.collectAsState()
 
-    Title(MLang.AppSettings.Section.Privacy)
+    Title(YumeTxt.AppSettings.Section.Privacy)
     Card {
         HideAppIconPreferenceItem(
             hideAppIconFlow = viewModel.hideAppIcon.state,
@@ -213,7 +195,7 @@ private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
             context = context,
         )
         PreferenceSwitchItem(
-            title = MLang.AppSettings.Privacy.HideFromRecentsTitle,
+            title = YumeTxt.AppSettings.Privacy.HideFromRecentsTitle,
             checked = excludeFromRecents,
             onCheckedChange = viewModel::onExcludeFromRecentsChange,
         )
@@ -245,9 +227,9 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
     val batteryOptimizationSummary =
         remember(batteryOptimizationIgnored) {
             if (batteryOptimizationIgnored) {
-                MLang.AppSettings.ServiceSection.BatteryOptimizationSummaryEnabled
+                YumeTxt.AppSettings.ServiceSection.BatteryOptimizationSummaryEnabled
             } else {
-                MLang.AppSettings.ServiceSection.BatteryOptimizationSummaryDisabled
+                YumeTxt.AppSettings.ServiceSection.BatteryOptimizationSummaryDisabled
             }
         }
 
@@ -261,25 +243,25 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    Title(MLang.AppSettings.Section.Service)
+    Title(YumeTxt.AppSettings.Section.Service)
     Card {
         PreferenceSwitchItem(
-            title = MLang.AppSettings.ServiceSection.TrafficNotificationTitle,
+            title = YumeTxt.AppSettings.ServiceSection.TrafficNotificationTitle,
             checked = showTrafficNotification,
             onCheckedChange = viewModel::onShowTrafficNotificationChange,
         )
         PreferenceSwitchItem(
-            title = MLang.AppSettings.ServiceSection.SingleNodeTestTitle,
+            title = YumeTxt.AppSettings.ServiceSection.SingleNodeTestTitle,
             checked = singleNodeTest,
             onCheckedChange = viewModel::onSingleNodeTestChange,
         )
         PreferenceSwitchItem(
-            title = MLang.AppSettings.ServiceSection.ExitUiWhenBackgroundTitle,
+            title = YumeTxt.AppSettings.ServiceSection.ExitUiWhenBackgroundTitle,
             checked = exitUiWhenBackground,
             onCheckedChange = viewModel::onExitUiWhenBackgroundChange,
         )
         PreferenceArrowItem(
-            title = MLang.AppSettings.ServiceSection.BatteryOptimizationTitle,
+            title = YumeTxt.AppSettings.ServiceSection.BatteryOptimizationTitle,
             summary = batteryOptimizationSummary,
             onClick = {
                 val launched =
@@ -287,7 +269,7 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
                         runCatching { batteryOptimizationLauncher.launch(intent) }.isSuccess
                     }
                 if (!launched) {
-                    context.toast(MLang.Util.Error.UnknownError)
+                    context.toast(YumeTxt.Util.Error.UnknownError)
                 }
             },
         )
@@ -298,7 +280,7 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
 private fun AppNetworkSettingsSection(viewModel: AppSettingsViewModel) {
     val customUserAgent by viewModel.customUserAgent.state.collectAsState()
 
-    Title(MLang.AppSettings.Section.Network)
+    Title(YumeTxt.AppSettings.Section.Network)
     Card {
         CustomUserAgentPreferenceItem(
             customUserAgent = customUserAgent,
@@ -317,7 +299,7 @@ private fun HideAppIconPreferenceItem(
     val showHideIconDialogState = remember { mutableStateOf(false) }
 
     PreferenceSwitchItem(
-        title = MLang.AppSettings.Privacy.HideIconTitle,
+        title = YumeTxt.AppSettings.Privacy.HideIconTitle,
         checked = hideAppIcon,
         onCheckedChange = { checked ->
             if (checked) {
@@ -331,11 +313,11 @@ private fun HideAppIconPreferenceItem(
 
     WarningBottomSheet(
         show = showHideIconDialogState,
-        title = MLang.AppSettings.WarningDialog.Title,
+        title = YumeTxt.AppSettings.WarningDialog.Title,
         messages =
             listOf(
-                MLang.AppSettings.WarningDialog.HideIconMsg1,
-                MLang.AppSettings.WarningDialog.HideIconMsg2,
+                YumeTxt.AppSettings.WarningDialog.HideIconMsg1,
+                YumeTxt.AppSettings.WarningDialog.HideIconMsg2,
             ),
         onConfirm = {
             onHideAppIconChange(true)
@@ -392,7 +374,7 @@ private fun PageScalePreferenceItem(pageScale: Float, onApply: (Float) -> Unit) 
     val showPageScaleDialogState = remember { mutableStateOf(false) }
 
     PreferenceArrowItem(
-        title = MLang.AppSettings.Interface.PageScaleTitle,
+        title = YumeTxt.AppSettings.Interface.PageScaleTitle,
         endActions = {
             Text(
                 text = pageScalePercentText,
@@ -426,7 +408,7 @@ private fun PageScalePreferenceItem(pageScale: Float, onApply: (Float) -> Unit) 
 private fun CustomUserAgentPreferenceItem(customUserAgent: String, onConfirm: (String) -> Unit) {
     val customUserAgentSummary =
         remember(customUserAgent) {
-            customUserAgent.ifEmpty { MLang.AppSettings.Network.CustomUserAgentSummaryDefault }
+            customUserAgent.ifEmpty { YumeTxt.AppSettings.Network.CustomUserAgentSummaryDefault }
         }
     val showEditCustomUserAgentDialog = remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
@@ -437,7 +419,7 @@ private fun CustomUserAgentPreferenceItem(customUserAgent: String, onConfirm: (S
     }
 
     PreferenceArrowItem(
-        title = MLang.AppSettings.Network.CustomUserAgentTitle,
+        title = YumeTxt.AppSettings.Network.CustomUserAgentTitle,
         summary = customUserAgentSummary,
         onClick = {
             localTextFieldValue =
@@ -452,7 +434,7 @@ private fun CustomUserAgentPreferenceItem(customUserAgent: String, onConfirm: (S
 
     AppTextFieldDialog(
         show = showEditCustomUserAgentDialog.value,
-        title = MLang.AppSettings.EditDialog.UserAgentTitle,
+        title = YumeTxt.AppSettings.EditDialog.UserAgentTitle,
         textFieldValue = localTextFieldValue,
         onTextFieldValueChange = { updatedTextFieldValue ->
             localTextFieldValue = updatedTextFieldValue
@@ -491,7 +473,7 @@ private fun PageScaleDialog(
 
     AppTextFieldDialog(
         show = show,
-        title = MLang.AppSettings.Interface.PageScaleTitle,
+        title = YumeTxt.AppSettings.Interface.PageScaleTitle,
         value = scaleText,
         onValueChange = { value ->
             if (value.isEmpty() || value.all(Char::isDigit)) {
@@ -506,7 +488,7 @@ private fun PageScaleDialog(
             onApply(clampedScale)
             onDismissRequest()
         },
-        summary = MLang.AppSettings.Interface.PageScaleDialogSummary,
+        summary = YumeTxt.AppSettings.Interface.PageScaleDialogSummary,
         renderInRootScaffold = true,
         singleLine = true,
         trailingIcon = {

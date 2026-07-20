@@ -20,24 +20,12 @@
 
 package com.github.yumelira.yumebox
 
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.unit.DpSize
 import com.github.yumelira.yumebox.domain.model.isSelectable
@@ -53,12 +41,12 @@ import com.github.yumelira.yumebox.presentation.screen.rememberProxyGroupSelecti
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.viewmodel.ProxyViewModel
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -133,7 +121,7 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
 
     WindowBottomSheet(
         show = showSheet.value,
-        title = selectedGroup?.name ?: MLang.Proxy.Title,
+        title = selectedGroup?.name ?: YumeTxt.Proxy.Title,
         backgroundColor = MiuixTheme.colorScheme.surface,
         startAction = {
             AnimatedContent(
@@ -191,7 +179,7 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
                         action =
                             AppBottomSheetAction(
                                 icon = MiuixIcons.Back,
-                                contentDescription = MLang.Component.Navigation.Back,
+                                contentDescription = YumeTxt.Component.Navigation.Back,
                                 onClick = groupSelection.clearSelection,
                             )
                     )
@@ -201,7 +189,7 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
                             action =
                                 AppBottomSheetAction(
                                     icon = Yume.`List-chevrons-up-down`,
-                                    contentDescription = MLang.Proxy.Action.Sort,
+                                    contentDescription = YumeTxt.Proxy.Action.Sort,
                                     onClick = { showSortPopup.value = true },
                                 )
                         )
@@ -221,7 +209,7 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
                 action =
                     AppBottomSheetAction(
                         icon = Yume.Speed,
-                        contentDescription = MLang.Proxy.Action.Test,
+                        contentDescription = YumeTxt.Proxy.Action.Test,
                         onClick = {
                             if (selectedGroup == null) {
                                 triggerTopDelayTest()

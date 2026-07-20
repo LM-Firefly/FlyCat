@@ -25,34 +25,18 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.github.yumelira.yumebox.common.util.showToastDialog
 import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_FILE
-import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
-import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_URL
-import com.github.yumelira.yumebox.presentation.util.importTypeIndexFor
-import com.github.yumelira.yumebox.presentation.util.profileNameFromConfigFileName
-import com.github.yumelira.yumebox.presentation.util.readClipboardSubscriptionUrl
-import com.github.yumelira.yumebox.presentation.util.sourceFileName
+import com.github.yumelira.yumebox.presentation.util.*
 import com.github.yumelira.yumebox.runtime.api.Profile
-import dev.oom_wg.purejoy.mlang.MLang
-import java.util.UUID
+import tf.gal.yumebox.locale.YumeTxt
+import java.util.*
 import kotlin.math.max
 
 @Composable
@@ -125,7 +109,7 @@ internal fun AddProfileSheet(
             isGranted ->
             hasCameraPermission = isGranted
             if (!isGranted) {
-                context.toast(MLang.ProfilesPage.QrScanner.NeedCamera, Toast.LENGTH_LONG)
+                context.toast(YumeTxt.ProfilesPage.QrScanner.NeedCamera, Toast.LENGTH_LONG)
                 selectedTypeIndex = PROFILE_IMPORT_TYPE_URL
             }
         }
@@ -210,12 +194,12 @@ internal fun AddProfileSheet(
                     applyNameText(
                         profileNameFromConfigFileName(
                             fileName,
-                            MLang.ProfilesPage.Input.NewProfile,
+                            YumeTxt.ProfilesPage.Input.NewProfile,
                         )
                     )
                 }
             },
-            onUnsupportedFile = { error = MLang.ProfilesPage.Validation.YamlOnly },
+            onUnsupportedFile = { error = YumeTxt.ProfilesPage.Validation.YamlOnly },
             onQrDecoded = { url ->
                 applyUrlText(url)
                 selectedTypeIndex = PROFILE_IMPORT_TYPE_URL

@@ -24,20 +24,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.github.yumelira.yumebox.core.bridge.Compiler
 import com.github.yumelira.yumebox.presentation.component.AppDialog
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -66,7 +61,7 @@ fun AgeKeyGeneratorDialog(
     AppDialog(
         show = show,
         title =
-            if (hybrid) MLang.MetaFeature.AgeKey.HybridTitle else MLang.MetaFeature.AgeKey.X25519Title,
+            if (hybrid) YumeTxt.MetaFeature.AgeKey.HybridTitle else YumeTxt.MetaFeature.AgeKey.X25519Title,
         onDismissRequest = onDismiss,
         onDismissFinished = onDismissFinished,
     ) {
@@ -77,14 +72,14 @@ fun AgeKeyGeneratorDialog(
             TextField(
                 value = secretKey,
                 onValueChange = { secretKey = it },
-                label = MLang.MetaFeature.AgeKey.SecretKey,
+                label = YumeTxt.MetaFeature.AgeKey.SecretKey,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
             TextField(
                 value = publicKey,
                 onValueChange = { publicKey = it },
-                label = MLang.MetaFeature.AgeKey.PublicKey,
+                label = YumeTxt.MetaFeature.AgeKey.PublicKey,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -94,7 +89,7 @@ fun AgeKeyGeneratorDialog(
                 horizontalArrangement = Arrangement.spacedBy(spacing.space12),
             ) {
                 TextButton(
-                    text = MLang.MetaFeature.AgeKey.DerivePublicKey,
+                    text = YumeTxt.MetaFeature.AgeKey.DerivePublicKey,
                     onClick = {
                         scope.launch {
                             val derived =
@@ -110,7 +105,7 @@ fun AgeKeyGeneratorDialog(
                     modifier = Modifier.weight(1f),
                 )
                 TextButton(
-                    text = MLang.MetaFeature.AgeKey.Generate,
+                    text = YumeTxt.MetaFeature.AgeKey.Generate,
                     onClick = {
                         if (generating) return@TextButton
                         generating = true

@@ -87,7 +87,6 @@ YumeBox does not use Git submodules. A clean checkout needs the mihomo source an
 5. Generate locale sources, native libraries, and bundled Geo assets:
 
    ```bash
-   kotlin scripts/generate-locale.main.kts .
    kotlin scripts/native-build.main.kts --all
    ```
 

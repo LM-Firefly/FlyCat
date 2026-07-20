@@ -24,17 +24,11 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import tf.gal.yumebox.locale.YumeTxt
 
 data class BackupRestoreUiState(
     val isBusy: Boolean = false,
@@ -60,7 +54,7 @@ class BackupRestoreViewModel(
         launchBusy {
             application.contentResolver.openOutputStream(uri)?.use { output ->
                 repository.exportBackup(output)
-            } ?: error(MLang.Feature.BackupRestore.Error.OpenOutputFailed)
+            } ?: error(YumeTxt.Feature.BackupRestore.Error.OpenOutputFailed)
         }
     }
 
@@ -68,8 +62,8 @@ class BackupRestoreViewModel(
         launchBusy {
             application.contentResolver.openInputStream(uri)?.use { input ->
                 repository.restoreBackup(input)
-            } ?: error(MLang.Feature.BackupRestore.Error.OpenInputFailed)
-            emitMessage(MLang.Feature.BackupRestore.Message.RestoreSuccess)
+            } ?: error(YumeTxt.Feature.BackupRestore.Error.OpenInputFailed)
+            emitMessage(YumeTxt.Feature.BackupRestore.Message.RestoreSuccess)
         }
     }
 
@@ -80,8 +74,8 @@ class BackupRestoreViewModel(
             runCatching { withContext(Dispatchers.IO) { block() } }
                 .onFailure { error ->
                     emitMessage(
-                        MLang.Feature.BackupRestore.Error.OperationFailed.format(
-                            error.message ?: MLang.Util.Error.UnknownError
+                        YumeTxt.Feature.BackupRestore.Error.OperationFailed.format(
+                            error.message ?: YumeTxt.Util.Error.UnknownError
                         )
                     )
                 }

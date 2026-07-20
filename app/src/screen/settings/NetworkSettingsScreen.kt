@@ -28,19 +28,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import com.github.yumelira.yumebox.data.model.AccessControlMode
 import com.github.yumelira.yumebox.data.model.RunMode
-import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.PreferenceArrowItem
-import com.github.yumelira.yumebox.presentation.component.PreferenceEnumItem
-import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.Title
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
-import dev.oom_wg.purejoy.mlang.MLang
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.RadioButton
@@ -64,7 +55,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
     val rootAvailable by viewModel.rootAvailable.collectAsState()
 
     Scaffold(
-        topBar = { TopBar(title = MLang.NetworkSettings.Title, scrollBehavior = scrollBehavior) }
+        topBar = { TopBar(title = YumeTxt.NetworkSettings.Title, scrollBehavior = scrollBehavior) }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
@@ -72,25 +63,25 @@ fun NetworkSettingsScreen(navigator: Navigator) {
             innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
         ) {
             item {
-                Title(MLang.NetworkSettings.RunMode.SectionTitle)
+                Title(YumeTxt.NetworkSettings.RunMode.SectionTitle)
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     ModeCard(
-                        title = MLang.NetworkSettings.RunMode.VpnServiceTitle,
-                        summary = MLang.NetworkSettings.RunMode.VpnServiceSummary,
+                        title = YumeTxt.NetworkSettings.RunMode.VpnServiceTitle,
+                        summary = YumeTxt.NetworkSettings.RunMode.VpnServiceSummary,
                         selected = runMode == RunMode.VpnService,
                         enabled = true,
                         onSelect = { viewModel.onRunModeChange(RunMode.VpnService) },
                     )
                     ModeCard(
-                        title = MLang.NetworkSettings.RunMode.TunTitle,
-                        summary = MLang.NetworkSettings.RunMode.TunSummary,
+                        title = YumeTxt.NetworkSettings.RunMode.TunTitle,
+                        summary = YumeTxt.NetworkSettings.RunMode.TunSummary,
                         selected = runMode == RunMode.Tun,
                         enabled = rootAvailable,
                         onSelect = { viewModel.onRunModeChange(RunMode.Tun) },
                     )
                     ModeCard(
-                        title = MLang.NetworkSettings.RunMode.TproxyTitle,
-                        summary = MLang.NetworkSettings.RunMode.TproxySummary,
+                        title = YumeTxt.NetworkSettings.RunMode.TproxyTitle,
+                        summary = YumeTxt.NetworkSettings.RunMode.TproxySummary,
                         selected = runMode == RunMode.Tproxy,
                         enabled = rootAvailable,
                         onSelect = { viewModel.onRunModeChange(RunMode.Tproxy) },
@@ -98,10 +89,10 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                 }
             }
             item {
-                Title(MLang.NetworkSettings.Section.Advanced)
+                Title(YumeTxt.NetworkSettings.Section.Advanced)
                 Card {
                     PreferenceArrowItem(
-                        title = MLang.NetworkSettings.Section.VpnOptions,
+                        title = YumeTxt.NetworkSettings.Section.VpnOptions,
                         // Each mode's service config lives behind its own page; open the one that
                         // matches the selected run mode (Tproxy reuses the Tun geometry page for now).
                         onClick = {
@@ -113,7 +104,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                         },
                     )
                     PreferenceSwitchItem(
-                        title = MLang.NetworkSettings.Advanced.DisableOverrideTitle,
+                        title = YumeTxt.NetworkSettings.Advanced.DisableOverrideTitle,
                         checked = disableAllOverride,
                         // Only the root Tun / TPROXY modes do their own routing where skipping the
                         // override chain makes sense; it stays disabled under VPN 服务.
@@ -123,22 +114,22 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                 }
             }
             item {
-                Title(MLang.NetworkSettings.Section.ProxyOptions)
+                Title(YumeTxt.NetworkSettings.Section.ProxyOptions)
                 Card {
                     PreferenceEnumItem(
-                        title = MLang.NetworkSettings.ProxyOptions.AccessControlModeTitle,
+                        title = YumeTxt.NetworkSettings.ProxyOptions.AccessControlModeTitle,
                         currentValue = accessControlMode,
                         items =
                             listOf(
-                                MLang.NetworkSettings.ProxyOptions.AllowAll,
-                                MLang.NetworkSettings.ProxyOptions.AllowSelected,
-                                MLang.NetworkSettings.ProxyOptions.RejectSelected,
+                                YumeTxt.NetworkSettings.ProxyOptions.AllowAll,
+                                YumeTxt.NetworkSettings.ProxyOptions.AllowSelected,
+                                YumeTxt.NetworkSettings.ProxyOptions.RejectSelected,
                             ),
                         values = AccessControlMode.entries,
                         onValueChange = viewModel::onAccessControlModeChange,
                     )
                     PreferenceArrowItem(
-                        title = MLang.NetworkSettings.ProxyOptions.ManageAccessControlTitle,
+                        title = YumeTxt.NetworkSettings.ProxyOptions.ManageAccessControlTitle,
                         onClick = { navigator.push(Route.AccessControl) },
                     )
                 }

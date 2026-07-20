@@ -24,8 +24,8 @@ import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_FILE
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_URL
 import com.github.yumelira.yumebox.runtime.api.Profile
-import dev.oom_wg.purejoy.mlang.MLang
-import java.util.UUID
+import tf.gal.yumebox.locale.YumeTxt
+import java.util.*
 
 internal typealias AddProfile = (String, String, Profile.Type, Long, Uri?, String) -> Unit
 internal typealias UpdateProfile = (UUID, String, String, Long) -> Unit
@@ -53,11 +53,11 @@ context(actions: ProfileSubmissionActions)
 internal fun submitProfile(draft: ProfileDraft) {
     if (draft.typeIndex == PROFILE_IMPORT_TYPE_QR || draft.isDownloading) return
     if (draft.typeIndex == PROFILE_IMPORT_TYPE_URL && draft.url.isBlank()) {
-        actions.showError(MLang.ProfilesPage.Validation.EnterUrl)
+        actions.showError(YumeTxt.ProfilesPage.Validation.EnterUrl)
         return
     }
     if (draft.typeIndex == PROFILE_IMPORT_TYPE_FILE && draft.filePath.isBlank()) {
-        actions.showError(MLang.ProfilesPage.Validation.SelectFile)
+        actions.showError(YumeTxt.ProfilesPage.Validation.SelectFile)
         return
     }
 
@@ -70,7 +70,7 @@ internal fun submitProfile(draft: ProfileDraft) {
         actions.updateProfile(profile.uuid, draft.name, source, profile.interval)
     } else if (draft.typeIndex == PROFILE_IMPORT_TYPE_URL) {
         actions.addProfile(
-            draft.name.ifBlank { MLang.ProfilesPage.Input.NewProfile },
+            draft.name.ifBlank { YumeTxt.ProfilesPage.Input.NewProfile },
             draft.url,
             Profile.Type.Url,
             0L,
@@ -79,7 +79,7 @@ internal fun submitProfile(draft: ProfileDraft) {
         )
     } else {
         actions.addProfile(
-            draft.name.ifBlank { MLang.ProfilesPage.Input.NewProfile },
+            draft.name.ifBlank { YumeTxt.ProfilesPage.Input.NewProfile },
             draft.filePath,
             Profile.Type.File,
             0L,

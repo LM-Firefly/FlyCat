@@ -31,16 +31,10 @@ import com.github.yumelira.yumebox.data.model.TrafficStatisticsBuckets
 import com.github.yumelira.yumebox.data.store.TrafficStatisticsStore
 import com.github.yumelira.yumebox.presentation.component.TrafficDonutSlice
 import com.github.yumelira.yumebox.presentation.theme.AppColors
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import tf.gal.yumebox.locale.YumeTxt
 
 class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStatisticsStore) :
     ViewModel() {
@@ -121,7 +115,7 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
                 add(
                     TrafficDonutSlice(
                         key = OTHER_SLICE_KEY,
-                        label = MLang.TrafficStatistics.Donut.Other,
+                        label = YumeTxt.TrafficStatistics.Donut.Other,
                         value = overflowBytes,
                         color = appColors.traffic.other,
                     )

@@ -27,12 +27,12 @@ import androidx.lifecycle.viewModelScope
 import com.github.yumelira.yumebox.core.model.Provider
 import com.github.yumelira.yumebox.data.controller.ProvidersController
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import tf.gal.yumebox.locale.YumeTxt
 
 class ProvidersViewModel(
     private val proxyFacade: ProxyFacade,
@@ -61,7 +61,7 @@ class ProvidersViewModel(
                     _uiState.update {
                         it.copy(
                             error =
-                                MLang.Providers.Message.FetchFailed.format(
+                                YumeTxt.Providers.Message.FetchFailed.format(
                                     error.message ?: "Unknown error"
                                 )
                         )
@@ -81,7 +81,7 @@ class ProvidersViewModel(
                     refreshProviders()
                     _uiState.update {
                         it.copy(
-                            message = MLang.Providers.Message.UpdateSuccess.format(provider.name)
+                            message = YumeTxt.Providers.Message.UpdateSuccess.format(provider.name)
                         )
                     }
                 }
@@ -89,7 +89,7 @@ class ProvidersViewModel(
                     _uiState.update {
                         it.copy(
                             error =
-                                MLang.Providers.Message.UpdateFailed.format(
+                                YumeTxt.Providers.Message.UpdateFailed.format(
                                     error.message ?: "Unknown error"
                                 )
                         )
@@ -114,12 +114,12 @@ class ProvidersViewModel(
                 .onSuccess { updateResult ->
                     refreshProviders()
                     if (updateResult.failedProviders.isEmpty()) {
-                        _uiState.update { it.copy(message = MLang.Providers.Message.AllUpdated) }
+                        _uiState.update { it.copy(message = YumeTxt.Providers.Message.AllUpdated) }
                     } else {
                         _uiState.update {
                             it.copy(
                                 error =
-                                    MLang.Providers.Message.UpdateFailed.format(
+                                    YumeTxt.Providers.Message.UpdateFailed.format(
                                         "Failed providers: ${updateResult.failedProviders.joinToString(", ")}"
                                     )
                             )
@@ -130,7 +130,7 @@ class ProvidersViewModel(
                     _uiState.update {
                         it.copy(
                             error =
-                                MLang.Providers.Message.UpdateFailed.format(
+                                YumeTxt.Providers.Message.UpdateFailed.format(
                                     error.message ?: "Unknown error"
                                 )
                         )
@@ -160,7 +160,7 @@ class ProvidersViewModel(
                     refreshProviders()
                     _uiState.update {
                         it.copy(
-                            message = MLang.Providers.Message.UploadSuccess.format(provider.name)
+                            message = YumeTxt.Providers.Message.UploadSuccess.format(provider.name)
                         )
                     }
                 }
@@ -168,7 +168,7 @@ class ProvidersViewModel(
                     _uiState.update {
                         it.copy(
                             error =
-                                MLang.Providers.Message.UploadFailed.format(
+                                YumeTxt.Providers.Message.UploadFailed.format(
                                     error.message ?: "Unknown error"
                                 )
                         )

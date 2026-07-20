@@ -21,13 +21,7 @@
 package com.github.yumelira.yumebox.screen.profiles
 
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
@@ -35,7 +29,7 @@ import com.github.yumelira.yumebox.data.store.LinkOpenMode
 import com.github.yumelira.yumebox.data.store.ProfileLink
 import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumelira.yumebox.presentation.component.AppFormDialog
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.TextField
 
 @Composable
@@ -52,7 +46,7 @@ internal fun LinkSettingsDialog(
 ) {
     AppActionBottomSheet(
         show = show.value,
-        title = MLang.ProfilesPage.LinkSettings.Title,
+        title = YumeTxt.ProfilesPage.LinkSettings.Title,
         onDismissRequest = { show.value = false },
         enableNestedScroll = true,
         content = {
@@ -107,19 +101,19 @@ internal fun AddLinkDialog(
         show = show.value,
         title =
             if (linkToEdit != null) {
-                MLang.ProfilesPage.LinkSettings.EditLink
+                YumeTxt.ProfilesPage.LinkSettings.EditLink
             } else {
-                MLang.ProfilesPage.LinkSettings.AddLink
+                YumeTxt.ProfilesPage.LinkSettings.AddLink
             },
         onDismissRequest = onDismiss,
         onConfirm = {
             error =
                 when {
                     currentName.text.isBlank() ->
-                        MLang.ProfilesPage.LinkSettings.Validation.EnterName
-                    currentUrl.text.isBlank() -> MLang.ProfilesPage.LinkSettings.Validation.EnterUrl
+                        YumeTxt.ProfilesPage.LinkSettings.Validation.EnterName
+                    currentUrl.text.isBlank() -> YumeTxt.ProfilesPage.LinkSettings.Validation.EnterUrl
                     !currentUrl.text.startsWith("http", ignoreCase = true) ->
-                        MLang.ProfilesPage.LinkSettings.Validation.InvalidUrl
+                        YumeTxt.ProfilesPage.LinkSettings.Validation.InvalidUrl
                     else -> ""
                 }
             if (error.isEmpty()) {
@@ -129,8 +123,8 @@ internal fun AddLinkDialog(
             }
         },
         error = error.ifBlank { null },
-        cancelText = MLang.ProfilesPage.Button.Cancel,
-        confirmText = MLang.ProfilesPage.Button.Confirm,
+        cancelText = YumeTxt.ProfilesPage.Button.Cancel,
+        confirmText = YumeTxt.ProfilesPage.Button.Confirm,
     ) {
         TextField(
             value = currentName,
@@ -138,7 +132,7 @@ internal fun AddLinkDialog(
                 currentName = it
                 error = ""
             },
-            label = MLang.ProfilesPage.LinkSettings.Name,
+            label = YumeTxt.ProfilesPage.LinkSettings.Name,
             useLabelAsPlaceholder = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -148,7 +142,7 @@ internal fun AddLinkDialog(
                 currentUrl = it
                 error = ""
             },
-            label = MLang.ProfilesPage.LinkSettings.Url,
+            label = YumeTxt.ProfilesPage.LinkSettings.Url,
             useLabelAsPlaceholder = true,
             modifier = Modifier.fillMaxWidth(),
         )

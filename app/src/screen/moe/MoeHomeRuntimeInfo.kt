@@ -11,14 +11,7 @@
 
 package com.github.yumelira.yumebox.screen.moe
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -32,15 +25,15 @@ import com.github.yumelira.yumebox.common.util.formatBytesForDisplay
 import com.github.yumelira.yumebox.presentation.component.CountryFlagCircle
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.util.extractFlaggedName
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun MoeTrafficStrip(downloadSpeed: Long, uploadSpeed: Long, modifier: Modifier = Modifier) {
     Row(modifier, Arrangement.spacedBy(MoeUi.Hero.trafficRowGap), Alignment.CenterVertically) {
-        Box(Modifier.weight(1f), Alignment.CenterStart) { MoeTrafficItem(MLang.Home.Traffic.UpShort, uploadSpeed) }
-        Box(Modifier.weight(1f), Alignment.CenterEnd) { MoeTrafficItem(MLang.Home.Traffic.DownShort, downloadSpeed) }
+        Box(Modifier.weight(1f), Alignment.CenterStart) { MoeTrafficItem(YumeTxt.Home.Traffic.UpShort, uploadSpeed) }
+        Box(Modifier.weight(1f), Alignment.CenterEnd) { MoeTrafficItem(YumeTxt.Home.Traffic.DownShort, downloadSpeed) }
     }
 }
 
@@ -85,7 +78,7 @@ internal fun MoeHomeInfoPanel(serverName: String?, serverPing: Int?, modifier: M
     val ping =
         serverPing
             ?.takeIf { it in 1..1000 }
-            ?.let { value -> MLang.Home.NodeInfo.DelayValue.format(value) }
+            ?.let { value -> YumeTxt.Home.NodeInfo.DelayValue.format(value) }
     Row(
         modifier = modifier.fillMaxWidth().heightIn(min = MoeUi.Hero.infoRowMinHeight),
         horizontalArrangement = Arrangement.SpaceBetween,

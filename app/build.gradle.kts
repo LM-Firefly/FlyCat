@@ -24,17 +24,12 @@ import com.android.build.api.artifact.ArtifactTransformationRequest
 import com.android.build.api.artifact.SingleArtifact
 import dev.yume.packer.BuildLoaderDexTask
 import dev.yume.packer.PackApkTask
-import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.TaskAction
-import java.io.File
-import java.util.Properties
+import java.util.*
 
 plugins {
     id("com.android.application")
     kotlin("plugin.serialization")
     kotlin("plugin.compose")
-    id("org.jetbrains.compose")
     id("com.google.devtools.ksp")
     id("com.mikepenz.aboutlibraries.plugin.android")
 }

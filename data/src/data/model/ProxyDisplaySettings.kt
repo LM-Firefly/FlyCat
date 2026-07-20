@@ -20,7 +20,7 @@
 
 package com.github.yumelira.yumebox.data.model
 
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 
 const val PROXY_SHEET_HEIGHT_FRACTION_MIN = 0.5f
 const val PROXY_SHEET_HEIGHT_FRACTION_MAX = 0.8f
@@ -38,10 +38,10 @@ enum class ProxyDisplayMode {
     val displayName: String
         get() =
             when (this) {
-                SINGLE_DETAILED -> MLang.Proxy.DisplayMode.SingleDetailed
-                SINGLE_SIMPLE -> MLang.Proxy.DisplayMode.SingleSimple
-                DOUBLE_DETAILED -> MLang.Proxy.DisplayMode.DoubleDetailed
-                DOUBLE_SIMPLE -> MLang.Proxy.DisplayMode.DoubleSimple
+                SINGLE_DETAILED -> YumeTxt.Proxy.DisplayMode.SingleDetailed
+                SINGLE_SIMPLE -> YumeTxt.Proxy.DisplayMode.SingleSimple
+                DOUBLE_DETAILED -> YumeTxt.Proxy.DisplayMode.DoubleDetailed
+                DOUBLE_SIMPLE -> YumeTxt.Proxy.DisplayMode.DoubleSimple
             }
 
     val isSingleColumn: Boolean
@@ -59,8 +59,8 @@ enum class ProxySortMode {
     val displayName: String
         get() =
             when (this) {
-                DEFAULT -> MLang.Proxy.SortMode.Default
-                BY_NAME -> MLang.Proxy.SortMode.ByName
-                BY_LATENCY -> MLang.Proxy.SortMode.ByLatency
+                DEFAULT -> YumeTxt.Proxy.SortMode.Default
+                BY_NAME -> YumeTxt.Proxy.SortMode.ByName
+                BY_LATENCY -> YumeTxt.Proxy.SortMode.ByLatency
             }
 }

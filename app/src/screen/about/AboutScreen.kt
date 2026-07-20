@@ -20,12 +20,7 @@
 
 package com.github.yumelira.yumebox.screen.about
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -45,17 +40,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.BuildConfig
 import com.github.yumelira.yumebox.common.util.openUrl
-import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.Title
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
-import kotlinx.coroutines.CancellationException
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -82,11 +70,11 @@ fun AboutScreen(navigator: Navigator) {
     val context = LocalContext.current
     val scrollBehavior = MiuixScrollBehavior()
     val coreVersion by
-        produceState(initialValue = MLang.About.App.VersionLoading) {
+        produceState(initialValue = YumeTxt.About.App.VersionLoading) {
             value = loadCoreVersionOrFallback()
         }
 
-    Scaffold(topBar = { TopBar(title = MLang.About.Title, scrollBehavior = scrollBehavior) }) {
+    Scaffold(topBar = { TopBar(title = YumeTxt.About.Title, scrollBehavior = scrollBehavior) }) {
         innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
@@ -184,7 +172,7 @@ fun AboutScreen(navigator: Navigator) {
                     )
                 }
 
-                Title(MLang.About.Section.ProjectLinks)
+                Title(YumeTxt.About.Section.ProjectLinks)
                 Card {
                     AboutLinkItem(
                         title = "YumeBox",
@@ -200,32 +188,32 @@ fun AboutScreen(navigator: Navigator) {
                     )
                 }
 
-                Title(MLang.About.Section.More)
+                Title(YumeTxt.About.Section.More)
                 Card {
                     AboutLinkItem(
-                        title = MLang.About.Link.TelegramGroup,
+                        title = YumeTxt.About.Link.TelegramGroup,
                         url = "https://t.me/OOM_Group",
                         onOpenUrl = { url -> openUrl(context, url) },
                         showArrow = true,
                     )
                     AboutLinkItem(
-                        title = MLang.About.Link.TelegramChannel,
+                        title = YumeTxt.About.Link.TelegramChannel,
                         url = "https://t.me/YumeLira",
                         onOpenUrl = { url -> openUrl(context, url) },
                         showArrow = true,
                     )
                 }
 
-                Title(MLang.About.Section.License)
+                Title(YumeTxt.About.Section.License)
                 Card {
                     ArrowPreference(
-                        title = MLang.About.License.Libraries,
-                        summary = MLang.About.License.LibrariesSummary,
+                        title = YumeTxt.About.License.Libraries,
+                        summary = YumeTxt.About.License.LibrariesSummary,
                         onClick = { navigator.push(Route.OpenSourceLicenses) },
                     )
                     BasicComponent(
-                        title = MLang.About.License.AgplName,
-                        summary = MLang.About.License.AgplDescription,
+                        title = YumeTxt.About.License.AgplName,
+                        summary = YumeTxt.About.License.AgplDescription,
                     )
                 }
             }
@@ -235,7 +223,7 @@ fun AboutScreen(navigator: Navigator) {
                     modifier = Modifier.fillMaxWidth().padding(top = UiDp.dp32),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(text = MLang.About.Copyright, style = MiuixTheme.textStyles.footnote1)
+                    Text(text = YumeTxt.About.Copyright, style = MiuixTheme.textStyles.footnote1)
                 }
                 Spacer(modifier = Modifier.height(UiDp.dp32))
             }

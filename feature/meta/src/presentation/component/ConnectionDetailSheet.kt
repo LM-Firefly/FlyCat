@@ -21,26 +21,11 @@
 package com.github.yumelira.yumebox.feature.meta.presentation.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,10 +36,10 @@ import com.github.yumelira.yumebox.common.util.formatBytes
 import com.github.yumelira.yumebox.core.model.ConnectionInfo
 import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
@@ -153,29 +138,29 @@ private fun ConnectionInfoSection(
                 size = sizes.connectionLeadingIconSize,
                 bitmapSize = CONNECTION_LEADING_ICON_BITMAP_SIZE,
             )
-            SectionTitle(MLang.Connection.Detail.Section.Info)
+            SectionTitle(YumeTxt.Connection.Detail.Section.Info)
         }
 
-        InfoRow(label = MLang.Connection.Detail.Label.Protocol, value = state.network.uppercase())
+        InfoRow(label = YumeTxt.Connection.Detail.Label.Protocol, value = state.network.uppercase())
         if (state.process.isNotEmpty()) {
-            InfoRow(label = MLang.Connection.Detail.Label.Process, value = state.process)
+            InfoRow(label = YumeTxt.Connection.Detail.Label.Process, value = state.process)
         }
-        InfoRow(label = MLang.Connection.Detail.Label.SourceAddress, value = state.sourceAddress)
+        InfoRow(label = YumeTxt.Connection.Detail.Label.SourceAddress, value = state.sourceAddress)
         if (state.destinationAddress.isNotEmpty()) {
             InfoRow(
-                label = MLang.Connection.Detail.Label.DestinationAddress,
+                label = YumeTxt.Connection.Detail.Label.DestinationAddress,
                 value = state.destinationAddress,
             )
         }
-        InfoRow(label = MLang.Connection.Detail.Label.Duration, value = state.duration)
+        InfoRow(label = YumeTxt.Connection.Detail.Label.Duration, value = state.duration)
 
         InfoRow(
-            label = MLang.Connection.Detail.Label.Upload,
+            label = YumeTxt.Connection.Detail.Label.Upload,
             value = formatBytes(upload),
             valueColor = appColors.protocol.tcp,
         )
         InfoRow(
-            label = MLang.Connection.Detail.Label.Download,
+            label = YumeTxt.Connection.Detail.Label.Download,
             value = formatBytes(download),
             valueColor = appColors.protocol.udp,
         )
@@ -228,9 +213,9 @@ private fun InterruptConnectionButton(isInterrupting: Boolean, onInterrupt: () -
         Text(
             text =
                 if (isInterrupting) {
-                    MLang.Connection.Detail.Action.Interrupting
+                    YumeTxt.Connection.Detail.Action.Interrupting
                 } else {
-                    MLang.Connection.Detail.Action.Interrupt
+                    YumeTxt.Connection.Detail.Action.Interrupt
                 },
             color = MiuixTheme.colorScheme.error,
         )
@@ -293,11 +278,11 @@ private fun RuleInfoSection(rule: String, rulePayload: String) {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(spacing.space12),
     ) {
-        SectionTitle(MLang.Connection.Detail.Section.Rule)
+        SectionTitle(YumeTxt.Connection.Detail.Section.Rule)
 
-        InfoRow(label = MLang.Connection.Detail.Label.Type, value = rule)
+        InfoRow(label = YumeTxt.Connection.Detail.Label.Type, value = rule)
         if (rulePayload.isNotEmpty()) {
-            InfoRow(label = MLang.Connection.Detail.Label.Content, value = rulePayload)
+            InfoRow(label = YumeTxt.Connection.Detail.Label.Content, value = rulePayload)
         }
     }
 }

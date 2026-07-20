@@ -22,7 +22,7 @@ package com.github.yumelira.yumebox.runtime.service.notification
 
 import com.github.yumelira.yumebox.common.util.formatBytes
 import com.github.yumelira.yumebox.common.util.formatSpeed
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 
 internal data class NotificationPresentation(
     val title: String,
@@ -58,13 +58,13 @@ internal object NotificationPresentationFactory {
     private fun buildSpeedLine(trafficNow: Long): String {
         val upNow = decodeTrafficHalf(trafficNow ushr 32)
         val downNow = decodeTrafficHalf(trafficNow and 0xFFFFFFFFL)
-        return MLang.Service.Notification.SpeedLine.format(formatSpeed(downNow), formatSpeed(upNow))
+        return YumeTxt.Service.Notification.SpeedLine.format(formatSpeed(downNow), formatSpeed(upNow))
     }
 
     private fun buildTotalLine(trafficTotal: Long): String {
         val upTotal = decodeTrafficHalf(trafficTotal ushr 32)
         val downTotal = decodeTrafficHalf(trafficTotal and 0xFFFFFFFFL)
-        return MLang.Service.Notification.TotalTraffic.format(formatBytes(upTotal + downTotal))
+        return YumeTxt.Service.Notification.TotalTraffic.format(formatBytes(upTotal + downTotal))
     }
 
     private fun decodeTrafficHalf(encoded: Long): Long {

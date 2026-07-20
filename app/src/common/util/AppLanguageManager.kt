@@ -27,8 +27,8 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import com.github.yumelira.yumebox.data.model.AppLanguage
-import dev.oom_wg.purejoy.mlang.MLang
-import java.util.Locale
+import tf.gal.shirosu.fyl.fytxt.FYTxtConfig
+import java.util.*
 
 object AppLanguageManager {
     @Volatile private var activeLanguage: AppLanguage = AppLanguage.System
@@ -50,7 +50,11 @@ object AppLanguageManager {
 
         Locale.setDefault(locale)
         LocaleUtil.setCurrentLocale(locale)
-        MLang.updateLocale(locale)
+        when (language) {
+            AppLanguage.System -> FYTxtConfig.updateTags(lock = false)
+            AppLanguage.Zh -> FYTxtConfig.updateTags(listOf("ZH"), lock = true)
+            AppLanguage.En -> FYTxtConfig.updateTags(listOf("EN"), lock = true)
+        }
     }
 
     fun wrap(base: Context): Context {

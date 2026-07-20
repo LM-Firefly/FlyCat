@@ -21,37 +21,17 @@
 package com.github.yumelira.yumebox.feature.meta.presentation.screen
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetItem
-import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetRegion
-import com.github.yumelira.yumebox.feature.meta.presentation.util.OverridePresetTemplateSelection
-import com.github.yumelira.yumebox.feature.meta.presentation.util.orderedBasePresetItems
-import com.github.yumelira.yumebox.feature.meta.presentation.util.orderedPresetRegions
-import com.github.yumelira.yumebox.feature.meta.presentation.util.orderedServicePresetItems
-import com.github.yumelira.yumebox.feature.meta.presentation.util.presetGroupTypeIconUrl
-import com.github.yumelira.yumebox.feature.meta.presentation.util.sortPresetItems
-import com.github.yumelira.yumebox.feature.meta.presentation.util.sortPresetRegions
+import com.github.yumelira.yumebox.feature.meta.presentation.util.*
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.CustomRoutingViewModel
-import com.github.yumelira.yumebox.presentation.component.RoutingSwitchCard
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Edit
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -122,14 +102,14 @@ fun CustomRoutingScreen(
     Scaffold(
         topBar = {
             TopBar(
-                title = MLang.MetaFeature.CustomRouting.Title,
+                title = YumeTxt.MetaFeature.CustomRouting.Title,
                 scrollBehavior = scrollBehavior,
                 actions = {
                     IconButton(
                         enabled = !isSaving,
                         onClick = {
                             onOpenYamlEditor(
-                                MLang.MetaFeature.CustomRouting.EditYaml,
+                                YumeTxt.MetaFeature.CustomRouting.EditYaml,
                                 customRoutingContent,
                             ) { content ->
                                 viewModel.saveCustomRoutingYaml(content).getOrElse { throw it }
@@ -149,14 +129,14 @@ fun CustomRoutingScreen(
         ) {
             item(key = "group-type") {
                 RoutingSwitchCard(
-                    title = MLang.MetaFeature.CustomRouting.GroupTypeTitle,
+                    title = YumeTxt.MetaFeature.CustomRouting.GroupTypeTitle,
                     items = listOf("urltest", "fallback"),
                     iconUrl = ::presetGroupTypeIconUrl,
                     itemTitle = { type ->
                         if (type == "urltest") {
-                            MLang.MetaFeature.CustomRouting.GroupTypeUrlTest
+                            YumeTxt.MetaFeature.CustomRouting.GroupTypeUrlTest
                         } else {
-                            MLang.MetaFeature.CustomRouting.GroupTypeFallback
+                            YumeTxt.MetaFeature.CustomRouting.GroupTypeFallback
                         }
                     },
                     isChecked = { type ->
@@ -175,7 +155,7 @@ fun CustomRoutingScreen(
 
             item(key = "urltest-regions") {
                 RoutingSwitchCard(
-                    title = MLang.MetaFeature.CustomRouting.UrlTestRegionGroupTitle,
+                    title = YumeTxt.MetaFeature.CustomRouting.UrlTestRegionGroupTitle,
                     items = orderedPresetRegions(),
                     iconUrl = OverridePresetRegion::icon,
                     itemTitle = OverridePresetRegion::displayName,
@@ -189,7 +169,7 @@ fun CustomRoutingScreen(
 
             item(key = "fallback-regions") {
                 RoutingSwitchCard(
-                    title = MLang.MetaFeature.CustomRouting.FallbackRegionGroupTitle,
+                    title = YumeTxt.MetaFeature.CustomRouting.FallbackRegionGroupTitle,
                     items = orderedPresetRegions(),
                     iconUrl = OverridePresetRegion::icon,
                     itemTitle = OverridePresetRegion::displayName,
@@ -203,7 +183,7 @@ fun CustomRoutingScreen(
 
             item(key = "base-items") {
                 RoutingSwitchCard(
-                    title = MLang.Override.Draft.BasicRouting,
+                    title = YumeTxt.Override.Draft.BasicRouting,
                     items = orderedBasePresetItems(),
                     iconUrl = OverridePresetItem::icon,
                     itemTitle = OverridePresetItem::title,
@@ -217,7 +197,7 @@ fun CustomRoutingScreen(
 
             item(key = "service-items") {
                 RoutingSwitchCard(
-                    title = MLang.Override.Draft.ServiceRouting,
+                    title = YumeTxt.Override.Draft.ServiceRouting,
                     items = orderedServicePresetItems(),
                     iconUrl = OverridePresetItem::icon,
                     itemTitle = OverridePresetItem::title,

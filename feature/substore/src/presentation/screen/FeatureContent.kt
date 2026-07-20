@@ -25,17 +25,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.github.yumelira.yumebox.common.util.DeviceUtil
-import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.EnumSelector
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.Title
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.viewmodel.FeatureViewModel
 import com.github.yumelira.yumebox.substore.model.AutoCloseMode
-import dev.oom_wg.purejoy.mlang.MLang
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -73,7 +67,7 @@ fun FeatureContent(
 
     LaunchedEffect(Unit) { viewModel.initializeSubStoreStatus() }
 
-    Scaffold(topBar = { TopBar(title = MLang.Feature.Title, scrollBehavior = scrollBehavior) }) {
+    Scaffold(topBar = { TopBar(title = YumeTxt.Feature.Title, scrollBehavior = scrollBehavior) }) {
         innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
@@ -84,15 +78,15 @@ fun FeatureContent(
 
             item {
                 val currentPanelName =
-                    panelDisplayNames.getOrElse(selectedPanelType) { MLang.Feature.Panel.Unknown }
+                    panelDisplayNames.getOrElse(selectedPanelType) { YumeTxt.Feature.Panel.Unknown }
                 val panelUrl = panelUrlFor(selectedPanelType)
 
-                Title(MLang.Feature.Panel.Section)
+                Title(YumeTxt.Feature.Panel.Section)
                 Card {
                     val safeSelectedPanelType =
                         selectedPanelType.coerceIn(0, panelDisplayNames.lastIndex)
                     WindowDropdownPreference(
-                        title = MLang.Feature.Panel.SelectPanel,
+                        title = YumeTxt.Feature.Panel.SelectPanel,
                         summary = null,
                         items = panelDisplayNames,
                         selectedIndex = safeSelectedPanelType,
@@ -100,7 +94,7 @@ fun FeatureContent(
                     )
 
                     ArrowPreference(
-                        title = MLang.Feature.Panel.CreateShortcut,
+                        title = YumeTxt.Feature.Panel.CreateShortcut,
                         summary = null,
                         enabled = panelUrl.isNotBlank(),
                         onClick = { onCreatePanelShortcut(panelUrl, currentPanelName) },
@@ -109,13 +103,13 @@ fun FeatureContent(
             }
 
             item {
-                Title(MLang.Feature.ServiceStatus.Section)
+                Title(YumeTxt.Feature.ServiceStatus.Section)
                 Card {
                     val autoCloseItems = AutoCloseMode.entries.map { it.getDisplayName() }
                     val autoCloseValues = AutoCloseMode.entries
 
                     SwitchPreference(
-                        title = MLang.Feature.ServiceStatus.SwitchStartSubStore,
+                        title = YumeTxt.Feature.ServiceStatus.SwitchStartSubStore,
                         summary = null,
                         checked = isServiceRunning,
                         onCheckedChange = {
@@ -123,13 +117,13 @@ fun FeatureContent(
                         },
                     )
                     SwitchPreference(
-                        title = MLang.Feature.ServiceStatus.AllowLan,
+                        title = YumeTxt.Feature.ServiceStatus.AllowLan,
                         summary = null,
                         checked = allowLanAccess,
                         onCheckedChange = { viewModel.setAllowLanAccess(it) },
                     )
                     EnumSelector(
-                        title = MLang.Feature.ServiceStatus.AutoCloseModeTitle,
+                        title = YumeTxt.Feature.ServiceStatus.AutoCloseModeTitle,
                         summary = null,
                         currentValue = autoCloseMode,
                         items = autoCloseItems,
@@ -137,7 +131,7 @@ fun FeatureContent(
                         onValueChange = { viewModel.setAutoCloseMode(it) },
                     )
                     ArrowPreference(
-                        title = MLang.Feature.ServiceStatus.OpenSubStorePanel,
+                        title = YumeTxt.Feature.ServiceStatus.OpenSubStorePanel,
                         summary = null,
                         enabled = !DeviceUtil.is32BitDevice() && isServiceRunning,
                         onClick = {
@@ -149,21 +143,21 @@ fun FeatureContent(
             }
 
             item {
-                Title(MLang.Feature.SubStore.Section)
+                Title(YumeTxt.Feature.SubStore.Section)
                 Card {
                     ArrowPreference(
                         title =
                             if (isExtensionInstalled) {
-                                MLang.Feature.SubStore.ExtensionInstalled
+                                YumeTxt.Feature.SubStore.ExtensionInstalled
                             } else {
-                                MLang.Feature.SubStore.ExtensionInstall
+                                YumeTxt.Feature.SubStore.ExtensionInstall
                             },
                         summary =
                             when {
                                 isExtensionInstalled && isJavetLoaded ->
-                                    MLang.Feature.SubStore.JavetAvailable
-                                isExtensionInstalled -> MLang.Feature.SubStore.JavetPending
-                                else -> MLang.Feature.SubStore.DownloadHint
+                                    YumeTxt.Feature.SubStore.JavetAvailable
+                                isExtensionInstalled -> YumeTxt.Feature.SubStore.JavetPending
+                                else -> YumeTxt.Feature.SubStore.DownloadHint
                             },
                         onClick = {
                             if (!isExtensionInstalled) {
@@ -176,8 +170,8 @@ fun FeatureContent(
                         },
                     )
                     ArrowPreference(
-                        title = MLang.Feature.SubStore.DownloadResources,
-                        summary = MLang.Feature.SubStore.DownloadResourcesSummary,
+                        title = YumeTxt.Feature.SubStore.DownloadResources,
+                        summary = YumeTxt.Feature.SubStore.DownloadResourcesSummary,
                         onClick = { viewModel.downloadSubStoreAll() },
                         enabled = !isDownloadingSubStoreFrontend && !isDownloadingSubStoreBackend,
                     )

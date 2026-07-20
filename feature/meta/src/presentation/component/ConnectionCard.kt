@@ -24,13 +24,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -43,8 +37,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.core.model.ConnectionInfo
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.serialization.json.jsonPrimitive
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
@@ -159,7 +153,7 @@ fun ConnectionCard(
 
                     if (connectionInfo.chains.isNotEmpty()) {
                         ConnectionTagChip(
-                            label = MLang.Connection.ChainCount.format(connectionInfo.chains.size)
+                            label = YumeTxt.Connection.ChainCount.format(connectionInfo.chains.size)
                         )
                     }
                 }
@@ -211,14 +205,14 @@ private fun formatRelativeTime(start: String): String {
         val days = hours / 24
 
         when {
-            seconds < 60 -> MLang.Connection.RelativeTime.JustNow
-            minutes < 60 -> MLang.Connection.RelativeTime.MinutesAgo.format(minutes)
-            hours < 24 -> MLang.Connection.RelativeTime.HoursAgo.format(hours)
-            days < 7 -> MLang.Connection.RelativeTime.DaysAgo.format(days)
+            seconds < 60 -> YumeTxt.Connection.RelativeTime.JustNow
+            minutes < 60 -> YumeTxt.Connection.RelativeTime.MinutesAgo.format(minutes)
+            hours < 24 -> YumeTxt.Connection.RelativeTime.HoursAgo.format(hours)
+            days < 7 -> YumeTxt.Connection.RelativeTime.DaysAgo.format(days)
             else -> {
                 val date =
                     java.time.LocalDateTime.ofInstant(startTime, java.time.ZoneId.systemDefault())
-                MLang.Connection.RelativeTime.Date.format(date.monthValue, date.dayOfMonth)
+                YumeTxt.Connection.RelativeTime.Date.format(date.monthValue, date.dayOfMonth)
             }
         }
     } catch (_: Exception) { // fault barrier: date parse or a malformed locale format string must not crash UI

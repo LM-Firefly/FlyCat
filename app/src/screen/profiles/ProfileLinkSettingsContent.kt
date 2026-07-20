@@ -21,11 +21,7 @@
 package com.github.yumelira.yumebox.screen.profiles
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,14 +32,8 @@ import com.github.yumelira.yumebox.presentation.component.PreferenceEnumItem
 import com.github.yumelira.yumebox.presentation.component.SectionCard
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
+import tf.gal.yumebox.locale.YumeTxt
+import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -74,14 +64,14 @@ internal fun LinkSettingsContent(
 
 @Composable
 private fun LinkOpenModeSection(mode: LinkOpenMode, onChange: (LinkOpenMode) -> Unit) {
-    SectionCard(title = MLang.ProfilesPage.LinkSettings.OpenMode) {
+    SectionCard(title = YumeTxt.ProfilesPage.LinkSettings.OpenMode) {
         PreferenceEnumItem(
-            title = MLang.ProfilesPage.LinkSettings.OpenMode,
+            title = YumeTxt.ProfilesPage.LinkSettings.OpenMode,
             currentValue = mode,
             items =
                 listOf(
-                    MLang.ProfilesPage.LinkSettings.OpenModeInApp,
-                    MLang.ProfilesPage.LinkSettings.OpenModeExternal,
+                    YumeTxt.ProfilesPage.LinkSettings.OpenModeInApp,
+                    YumeTxt.ProfilesPage.LinkSettings.OpenModeExternal,
                 ),
             values = listOf(LinkOpenMode.IN_APP, LinkOpenMode.EXTERNAL_BROWSER),
             onValueChange = onChange,
@@ -97,10 +87,10 @@ private fun DefaultLinkSection(
 ) {
     if (links.isEmpty()) return
 
-    SectionCard(title = MLang.ProfilesPage.LinkSettings.DefaultLink) {
+    SectionCard(title = YumeTxt.ProfilesPage.LinkSettings.DefaultLink) {
         PreferenceEnumItem(
-            title = MLang.ProfilesPage.LinkSettings.DefaultLink,
-            summary = MLang.ProfilesPage.LinkSettings.DefaultLinkSummary,
+            title = YumeTxt.ProfilesPage.LinkSettings.DefaultLink,
+            summary = YumeTxt.ProfilesPage.LinkSettings.DefaultLinkSummary,
             currentValue = links.firstOrNull { it.id == defaultLinkId }?.id ?: links.first().id,
             items = links.map { it.name },
             values = links.map { it.id },
@@ -120,7 +110,7 @@ private fun ProfileLinkList(
     val spacing = AppTheme.spacing
     val opacity = AppTheme.opacity
     val sizes = AppTheme.sizes
-    SectionCard(title = MLang.ProfilesPage.LinkSettings.Title) {
+    SectionCard(title = YumeTxt.ProfilesPage.LinkSettings.Title) {
         Column(modifier = Modifier.fillMaxWidth()) {
             links.forEachIndexed { index, link ->
                 Row(
@@ -170,7 +160,7 @@ private fun LinkSettingsActions(onClose: () -> Unit, onAdd: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(spacing.space12),
     ) {
         TextButton(
-            text = MLang.ProfilesPage.LinkSettings.Close,
+            text = YumeTxt.ProfilesPage.LinkSettings.Close,
             onClick = onClose,
             modifier = Modifier.weight(1f),
         )
@@ -180,7 +170,7 @@ private fun LinkSettingsActions(onClose: () -> Unit, onAdd: () -> Unit) {
             colors = ButtonDefaults.buttonColorsPrimary(),
         ) {
             Text(
-                MLang.ProfilesPage.LinkSettings.AddLink,
+                YumeTxt.ProfilesPage.LinkSettings.AddLink,
                 color = MiuixTheme.colorScheme.onPrimary,
             )
         }

@@ -22,7 +22,7 @@ package com.github.yumelira.yumebox.presentation.util
 
 import com.github.yumelira.yumebox.common.util.ByteFormatter
 import com.github.yumelira.yumebox.runtime.api.Profile
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import java.io.File
 
 val Profile.enabled: Boolean
@@ -45,9 +45,9 @@ val Profile.lastUpdatedAt: Long?
 
 fun Profile.getDisplayProvider(): String =
     when (type) {
-        Profile.Type.Url -> provider ?: MLang.Component.ProfileCard.RemoteSubscription
-        Profile.Type.File -> MLang.Component.ProfileCard.LocalFile
-        Profile.Type.External -> MLang.Component.ProfileCard.LocalConfig
+        Profile.Type.Url -> provider ?: YumeTxt.Component.ProfileCard.RemoteSubscription
+        Profile.Type.File -> YumeTxt.Component.ProfileCard.LocalFile
+        Profile.Type.External -> YumeTxt.Component.ProfileCard.LocalConfig
     }
 
 fun Profile.getInfoText(): String =
@@ -58,7 +58,7 @@ fun Profile.getInfoText(): String =
                 if (totalBytesValue != null && totalBytesValue > 0) {
                     val usedPercent = usedBytes * 100 / totalBytesValue
                     append(
-                        MLang.Component.ProfileCard.Traffic.format(
+                        YumeTxt.Component.ProfileCard.Traffic.format(
                             ByteFormatter.format(usedBytes),
                             ByteFormatter.format(totalBytesValue),
                             usedPercent.toInt(),
@@ -66,12 +66,12 @@ fun Profile.getInfoText(): String =
                     )
                 } else if (usedBytes > 0) {
                     append(
-                        MLang.Component.ProfileCard.UsedTraffic.format(
+                        YumeTxt.Component.ProfileCard.UsedTraffic.format(
                             ByteFormatter.format(usedBytes)
                         )
                     )
                 } else {
-                    append(MLang.Component.ProfileCard.ClickToUpdate)
+                    append(YumeTxt.Component.ProfileCard.ClickToUpdate)
                 }
 
                 expireAt?.let { expireTime ->
@@ -86,15 +86,15 @@ fun Profile.getInfoText(): String =
 
                     if (daysLeft > 0) {
                         append(
-                            MLang.Component.ProfileCard.ExpireAt.format(
+                            YumeTxt.Component.ProfileCard.ExpireAt.format(
                                 expireDate,
                                 daysLeft.toInt(),
                             )
                         )
                     } else if (daysLeft == 0L) {
-                        append(MLang.Component.ProfileCard.ExpireToday)
+                        append(YumeTxt.Component.ProfileCard.ExpireToday)
                     } else {
-                        append(MLang.Component.ProfileCard.Expired.format(expireDate))
+                        append(YumeTxt.Component.ProfileCard.Expired.format(expireDate))
                     }
                 }
 
@@ -105,8 +105,8 @@ fun Profile.getInfoText(): String =
             }
         }
 
-        Profile.Type.File -> MLang.Component.ProfileCard.LocalConfig
-        Profile.Type.External -> MLang.Component.ProfileCard.LocalConfig
+        Profile.Type.File -> YumeTxt.Component.ProfileCard.LocalConfig
+        Profile.Type.External -> YumeTxt.Component.ProfileCard.LocalConfig
     }
 
 fun Profile.shouldShowUpdateButton(): Boolean = type == Profile.Type.Url
@@ -120,12 +120,12 @@ private fun getRelativeTimeString(timestamp: Long): String {
     val hours = diff / (1000 * 60 * 60)
 
     return when {
-        diff < 60 * 1000 -> MLang.Component.ProfileCard.JustNow
-        minutes < 60 -> MLang.Component.ProfileCard.MinutesAgo.format(minutes.toInt())
-        hours < 24 -> MLang.Component.ProfileCard.HoursAgo.format(hours.toInt())
+        diff < 60 * 1000 -> YumeTxt.Component.ProfileCard.JustNow
+        minutes < 60 -> YumeTxt.Component.ProfileCard.MinutesAgo.format(minutes.toInt())
+        hours < 24 -> YumeTxt.Component.ProfileCard.HoursAgo.format(hours.toInt())
         else -> {
             val days = diff / (1000 * 60 * 60 * 24)
-            MLang.Component.ProfileCard.DaysAgo.format(days.toInt())
+            YumeTxt.Component.ProfileCard.DaysAgo.format(days.toInt())
         }
     }
 }

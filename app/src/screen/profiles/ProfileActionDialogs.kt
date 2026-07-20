@@ -22,11 +22,7 @@ package com.github.yumelira.yumebox.screen.profiles
 
 import android.content.Context
 import android.content.Intent
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
 import com.github.yumelira.yumebox.App
@@ -36,7 +32,7 @@ import com.github.yumelira.yumebox.presentation.component.LocalNavigator
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.util.OverrideEditorStore
 import com.github.yumelira.yumebox.runtime.api.Profile
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 
 @Composable
 internal fun ProfileShareDialog(
@@ -86,7 +82,7 @@ internal fun ProfileEditOptionsDialogHost(
             openProfileConfigPreview(
                 targetFile = configFile,
                 missingMessage =
-                    MLang.ProfilesPage.SettingsDialog.ConfigMissing.format(configFile.absolutePath),
+                    YumeTxt.ProfilesPage.SettingsDialog.ConfigMissing.format(configFile.absolutePath),
                 editable = true,
                 onReadFailed = context::toast,
             ) { content, callback ->
@@ -121,7 +117,7 @@ internal fun ProfileEditOptionsDialogHost(
 private fun shareProfileFile(context: Context, profile: Profile) {
     val file = importedConfigFile(profile)
     if (!file.exists()) {
-        context.toast(MLang.ProfilesPage.ShareDialog.ImportedConfigMissing.format(file.absolutePath))
+        context.toast(YumeTxt.ProfilesPage.ShareDialog.ImportedConfigMissing.format(file.absolutePath))
         return
     }
 
@@ -140,7 +136,7 @@ private fun shareProfileFile(context: Context, profile: Profile) {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
             context.startActivity(
-                Intent.createChooser(shareIntent, MLang.ProfilesPage.ShareDialog.ShareFile)
+                Intent.createChooser(shareIntent, YumeTxt.ProfilesPage.ShareDialog.ShareFile)
                     .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
             )
         }
@@ -151,7 +147,7 @@ private fun shareProfileLink(profile: Profile) {
     val context = App.instance
     val url = profile.source.takeIf { profile.type == Profile.Type.Url }
     if (url == null) {
-        context.toast(MLang.ProfilesPage.ShareDialog.NoLink)
+        context.toast(YumeTxt.ProfilesPage.ShareDialog.NoLink)
         return
     }
 
@@ -162,7 +158,7 @@ private fun shareProfileLink(profile: Profile) {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     context.startActivity(
-        Intent.createChooser(shareIntent, MLang.ProfilesPage.ShareDialog.ShareLink)
+        Intent.createChooser(shareIntent, YumeTxt.ProfilesPage.ShareDialog.ShareLink)
             .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
     )
 }

@@ -34,11 +34,11 @@ import com.github.yumelira.yumebox.runtime.service.R
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.profile.ImportedDao
 import com.tencent.mmkv.MMKV
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import tf.gal.yumebox.locale.YumeTxt
 
 class ServiceNotificationManager(
     private val service: Service,
@@ -81,7 +81,7 @@ class ServiceNotificationManager(
             NotificationPresentationFactory.createStatus(
                 profileName =
                     service.applicationInfo.loadLabel(service.packageManager).toString(),
-                status = MLang.Service.Notification.Running,
+                status = YumeTxt.Service.Notification.Running,
             )
         )
 
@@ -116,7 +116,7 @@ class ServiceNotificationManager(
             return buildNotification(
                 NotificationPresentationFactory.createStatus(
                     profileName = profileName,
-                    status = MLang.Service.Notification.Running,
+                    status = YumeTxt.Service.Notification.Running,
                 )
             )
         }
@@ -170,9 +170,9 @@ class ServiceNotificationManager(
     }
 
     private fun resolveProfileName(): String {
-        val active = serviceStore.activeProfile ?: return MLang.Service.Notification.UnknownProfile
+        val active = serviceStore.activeProfile ?: return YumeTxt.Service.Notification.UnknownProfile
         return ImportedDao.queryByUUID(active)?.name?.takeIf { it.isNotBlank() }
-            ?: MLang.Service.Notification.UnknownProfile
+            ?: YumeTxt.Service.Notification.UnknownProfile
     }
 
     private fun shouldShowTrafficNotification(): Boolean {

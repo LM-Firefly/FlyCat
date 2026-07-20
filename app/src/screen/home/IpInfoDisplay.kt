@@ -21,14 +21,7 @@
 package com.github.yumelira.yumebox.screen.home
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,7 +40,7 @@ import com.github.yumelira.yumebox.common.util.LocaleUtil
 import com.github.yumelira.yumebox.data.gateway.IpMonitoringState
 import com.github.yumelira.yumebox.presentation.component.CountryFlagCircle
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -63,7 +56,7 @@ fun IpInfoDisplay(state: IpMonitoringState, modifier: Modifier = Modifier) {
     when {
         externalIp != null -> {
             IpInfoRow(
-                label = MLang.Home.IpInfo.ExitIp,
+                label = YumeTxt.Home.IpInfo.ExitIp,
                 value = buildDisplayIpValue(ipAddress = externalIp.ip, isIpVisible = isIpVisible),
                 valueColor = MiuixTheme.colorScheme.onSurface,
                 countryCode = externalIp.countryCode,
@@ -75,7 +68,7 @@ fun IpInfoDisplay(state: IpMonitoringState, modifier: Modifier = Modifier) {
 
         else -> {
             IpInfoRow(
-                label = MLang.Home.IpInfo.ExitIp,
+                label = YumeTxt.Home.IpInfo.ExitIp,
                 value = "--",
                 valueColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 countryCode = null,

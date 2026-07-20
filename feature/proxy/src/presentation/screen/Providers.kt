@@ -24,23 +24,10 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -48,20 +35,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.core.model.Provider
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.CenteredText
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.Title
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.`Circle-fading-arrow-up`
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.viewmodel.ProvidersViewModel
-import dev.oom_wg.purejoy.mlang.MLang
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -76,15 +57,14 @@ import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowListPopup
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 private fun Provider.VehicleType.localizedDisplayName(): String =
     when (this) {
-        Provider.VehicleType.HTTP -> MLang.Providers.VehicleType.Http
-        Provider.VehicleType.File -> MLang.Providers.VehicleType.File
-        Provider.VehicleType.Inline -> MLang.Providers.VehicleType.Inline
-        Provider.VehicleType.Compatible -> MLang.Providers.VehicleType.Compatible
+        Provider.VehicleType.HTTP -> YumeTxt.Providers.VehicleType.Http
+        Provider.VehicleType.File -> YumeTxt.Providers.VehicleType.File
+        Provider.VehicleType.Inline -> YumeTxt.Providers.VehicleType.Inline
+        Provider.VehicleType.Compatible -> YumeTxt.Providers.VehicleType.Compatible
     }
 
 private data class ProviderSection(
@@ -132,7 +112,7 @@ fun ProvidersContent(navigator: Navigator) {
                 if (proxyProviders.isNotEmpty()) {
                     add(
                         ProviderSection(
-                            title = MLang.Providers.Type.ProxyProviders.format(proxyProviders.size),
+                            title = YumeTxt.Providers.Type.ProxyProviders.format(proxyProviders.size),
                             providers = proxyProviders,
                         )
                     )
@@ -140,7 +120,7 @@ fun ProvidersContent(navigator: Navigator) {
                 if (ruleProviders.isNotEmpty()) {
                     add(
                         ProviderSection(
-                            title = MLang.Providers.Type.RuleProviders.format(ruleProviders.size),
+                            title = YumeTxt.Providers.Type.RuleProviders.format(ruleProviders.size),
                             providers = ruleProviders,
                         )
                     )
@@ -151,14 +131,14 @@ fun ProvidersContent(navigator: Navigator) {
     Scaffold(
         topBar = {
             TopBar(
-                title = MLang.Providers.Title,
+                title = YumeTxt.Providers.Title,
                 scrollBehavior = scrollBehavior,
                 actions = {
                     if (isRunning && updatableProviders.isNotEmpty()) {
                         IconButton(onClick = { viewModel.updateAllProviders() }) {
                             Icon(
                                 imageVector = Yume.`Circle-fading-arrow-up`,
-                                contentDescription = MLang.Providers.Action.UpdateAll,
+                                contentDescription = YumeTxt.Providers.Action.UpdateAll,
                             )
                         }
                     }
@@ -168,14 +148,14 @@ fun ProvidersContent(navigator: Navigator) {
     ) { innerPadding ->
         if (!isRunning) {
             CenteredText(
-                firstLine = MLang.Providers.Empty.NotRunning,
-                secondLine = MLang.Providers.Empty.NotRunningHint,
+                firstLine = YumeTxt.Providers.Empty.NotRunning,
+                secondLine = YumeTxt.Providers.Empty.NotRunningHint,
                 showEmptyResourceIllustration = true,
             )
         } else if (providers.isEmpty() && !uiState.isLoading) {
             CenteredText(
-                firstLine = MLang.Providers.Empty.NoProviders,
-                secondLine = MLang.Providers.Empty.NoProvidersHint,
+                firstLine = YumeTxt.Providers.Empty.NoProviders,
+                secondLine = YumeTxt.Providers.Empty.NoProvidersHint,
                 showEmptyResourceIllustration = true,
             )
         } else {
@@ -277,11 +257,11 @@ private fun ProviderCard(
                                 modifier = Modifier.size(UiDp.dp20),
                                 imageVector = MiuixIcons.Edit,
                                 tint = updateTint,
-                                contentDescription = MLang.Providers.Action.Operation,
+                                contentDescription = YumeTxt.Providers.Action.Operation,
                             )
                             Text(
                                 modifier = Modifier.padding(end = UiDp.dp3),
-                                text = MLang.Providers.Action.Operation,
+                                text = YumeTxt.Providers.Action.Operation,
                                 color = updateTint,
                                 fontWeight = FontWeight.Medium,
                                 fontSize = 15.sp,
@@ -290,7 +270,7 @@ private fun ProviderCard(
                     }
 
                     val popupItems =
-                        listOf(MLang.Providers.Action.Update, MLang.Providers.Action.Upload)
+                        listOf(YumeTxt.Providers.Action.Update, YumeTxt.Providers.Action.Upload)
 
                     WindowListPopup(
                         show = showPopup.value,

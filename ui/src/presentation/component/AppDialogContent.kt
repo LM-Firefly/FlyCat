@@ -27,7 +27,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -58,8 +58,8 @@ internal fun AppConfirmDialogContent(
     message: String,
     onCancel: () -> Unit,
     onConfirm: () -> Unit,
-    cancelText: String = MLang.Component.Button.Cancel,
-    confirmText: String = MLang.Component.Button.Confirm,
+    cancelText: String = YumeTxt.Component.Button.Cancel,
+    confirmText: String = YumeTxt.Component.Button.Confirm,
     confirmEnabled: Boolean = true,
 ) {
     AppDialogColumn {

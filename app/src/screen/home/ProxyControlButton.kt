@@ -20,16 +20,9 @@
 
 package com.github.yumelira.yumebox.screen.home
 
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,8 +39,8 @@ import com.github.yumelira.yumebox.presentation.icon.yume.Play
 import com.github.yumelira.yumebox.presentation.icon.yume.Square
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -76,9 +69,9 @@ fun ProxyControlButton(
     ) {
         if (profilesLoaded) {
             if (!hasProfiles) {
-                HintText(MLang.Home.Control.HintAddProfile)
+                HintText(YumeTxt.Home.Control.HintAddProfile)
             } else if (!hasEnabledProfile) {
-                HintText(MLang.Home.Control.HintEnableProfile)
+                HintText(YumeTxt.Home.Control.HintEnableProfile)
             }
         }
 

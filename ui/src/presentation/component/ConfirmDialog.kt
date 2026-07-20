@@ -23,7 +23,7 @@ package com.github.yumelira.yumebox.presentation.component
 import androidx.compose.runtime.Composable
 import com.github.yumelira.yumebox.presentation.util.DialogState
 import com.github.yumelira.yumebox.presentation.util.rememberDialogVisibilityState
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 
 @Composable
 fun ConfirmDialog(
@@ -32,8 +32,8 @@ fun ConfirmDialog(
     message: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit = { show.dismiss() },
-    cancelText: String = MLang.Component.Button.Cancel,
-    confirmText: String = MLang.Component.Button.Confirm,
+    cancelText: String = YumeTxt.Component.Button.Cancel,
+    confirmText: String = YumeTxt.Component.Button.Confirm,
 ) {
     AppActionBottomSheet(show = show.isShown, title = title, onDismissRequest = onDismiss) {
         ConfirmDialogContent(
@@ -52,8 +52,8 @@ fun ConfirmDialogSimple(
     message: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    cancelText: String = MLang.Component.Button.Cancel,
-    confirmText: String = MLang.Component.Button.Confirm,
+    cancelText: String = YumeTxt.Component.Button.Cancel,
+    confirmText: String = YumeTxt.Component.Button.Confirm,
 ) {
     val show = rememberDialogVisibilityState()
     if (!show.isShown) {

@@ -22,30 +22,16 @@ package com.github.yumelira.yumebox.screen.settings
 
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumelira.yumebox.core.model.TunDnsMode
 import com.github.yumelira.yumebox.data.model.TunStack
-import com.github.yumelira.yumebox.presentation.component.AppTextFieldDialog
-import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.PreferenceArrowItem
-import com.github.yumelira.yumebox.presentation.component.PreferenceEnumItem
-import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.Title
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
-import dev.oom_wg.purejoy.mlang.MLang
+import com.github.yumelira.yumebox.presentation.component.*
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 
@@ -68,7 +54,7 @@ fun TunServiceOptionsScreen() {
 
     Scaffold(
         topBar = {
-            TopBar(title = MLang.NetworkSettings.TunOptions.Title, scrollBehavior = scrollBehavior)
+            TopBar(title = YumeTxt.NetworkSettings.TunOptions.Title, scrollBehavior = scrollBehavior)
         }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
@@ -77,60 +63,60 @@ fun TunServiceOptionsScreen() {
             innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
         ) {
             item {
-                Title(MLang.NetworkSettings.RunMode.TunTitle)
+                Title(YumeTxt.NetworkSettings.RunMode.TunTitle)
                 Card {
                     TextInputArrowItem(
-                        title = MLang.NetworkSettings.TunOptions.IfNameTitle,
+                        title = YumeTxt.NetworkSettings.TunOptions.IfNameTitle,
                         value = ifName,
                         keyboardType = KeyboardType.Text,
                         onConfirm = viewModel::onTunIfNameChange,
                     )
                     TextInputArrowItem(
-                        title = MLang.NetworkSettings.TunOptions.MtuTitle,
+                        title = YumeTxt.NetworkSettings.TunOptions.MtuTitle,
                         value = mtu.toString(),
                         keyboardType = KeyboardType.Number,
                         onConfirm = { it.toIntOrNull()?.let(viewModel::onTunMtuChange) },
                     )
                     PreferenceEnumItem(
-                        title = MLang.NetworkSettings.TunOptions.StackTitle,
+                        title = YumeTxt.NetworkSettings.TunOptions.StackTitle,
                         currentValue = stack,
                         items =
                             listOf(
-                                MLang.NetworkSettings.TunOptions.StackSystem,
-                                MLang.NetworkSettings.TunOptions.StackGVisor,
-                                MLang.NetworkSettings.TunOptions.StackMixed,
+                                YumeTxt.NetworkSettings.TunOptions.StackSystem,
+                                YumeTxt.NetworkSettings.TunOptions.StackGVisor,
+                                YumeTxt.NetworkSettings.TunOptions.StackMixed,
                             ),
                         values = listOf(TunStack.System, TunStack.GVisor, TunStack.Mixed),
                         onValueChange = viewModel::onTunStackChange,
                     )
                     PreferenceEnumItem(
-                        title = MLang.NetworkSettings.TunOptions.DnsModeTitle,
+                        title = YumeTxt.NetworkSettings.TunOptions.DnsModeTitle,
                         currentValue = dnsMode,
                         items =
                             listOf(
-                                MLang.NetworkSettings.TunOptions.DnsRedirHost,
-                                MLang.NetworkSettings.TunOptions.DnsFakeIp,
+                                YumeTxt.NetworkSettings.TunOptions.DnsRedirHost,
+                                YumeTxt.NetworkSettings.TunOptions.DnsFakeIp,
                             ),
                         values = listOf(TunDnsMode.RedirHost, TunDnsMode.FakeIp),
                         onValueChange = viewModel::onTunDnsModeChange,
                     )
                     PreferenceSwitchItem(
-                        title = MLang.NetworkSettings.TunOptions.AutoRouteTitle,
+                        title = YumeTxt.NetworkSettings.TunOptions.AutoRouteTitle,
                         checked = autoRoute,
                         onCheckedChange = viewModel::onTunAutoRouteChange,
                     )
                     PreferenceSwitchItem(
-                        title = MLang.NetworkSettings.TunOptions.StrictRouteTitle,
+                        title = YumeTxt.NetworkSettings.TunOptions.StrictRouteTitle,
                         checked = strictRoute,
                         onCheckedChange = viewModel::onTunStrictRouteChange,
                     )
                     PreferenceSwitchItem(
-                        title = MLang.NetworkSettings.TunOptions.AutoRedirectTitle,
+                        title = YumeTxt.NetworkSettings.TunOptions.AutoRedirectTitle,
                         checked = autoRedirect,
                         onCheckedChange = viewModel::onTunAutoRedirectChange,
                     )
                     PreferenceSwitchItem(
-                        title = MLang.NetworkSettings.TunOptions.Ipv6Title,
+                        title = YumeTxt.NetworkSettings.TunOptions.Ipv6Title,
                         checked = enableIPv6,
                         onCheckedChange = viewModel::onEnableIPv6Change,
                     )

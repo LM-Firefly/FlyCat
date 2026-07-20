@@ -25,13 +25,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.github.yumelira.yumebox.common.util.toast
@@ -39,8 +33,8 @@ import com.github.yumelira.yumebox.presentation.component.AppDialog
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.component.Title
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
@@ -75,20 +69,20 @@ fun BackupRestoreSection() {
         }
     }
 
-    Title(MLang.Feature.BackupRestore.Section)
+    Title(YumeTxt.Feature.BackupRestore.Section)
     Card {
         ArrowPreference(
-            title = MLang.Feature.BackupRestore.ExportTitle,
-            summary = MLang.Feature.BackupRestore.ExportSummary,
+            title = YumeTxt.Feature.BackupRestore.ExportTitle,
+            summary = YumeTxt.Feature.BackupRestore.ExportSummary,
             enabled = !uiState.isBusy,
             onClick = {
                 runCatching { exportLauncher.launch(viewModel.defaultBackupFileName()) }
-                    .onFailure { context.toast(MLang.Feature.BackupRestore.Error.OpenOutputFailed) }
+                    .onFailure { context.toast(YumeTxt.Feature.BackupRestore.Error.OpenOutputFailed) }
             },
         )
         ArrowPreference(
-            title = MLang.Feature.BackupRestore.RestoreTitle,
-            summary = MLang.Feature.BackupRestore.RestoreSummary,
+            title = YumeTxt.Feature.BackupRestore.RestoreTitle,
+            summary = YumeTxt.Feature.BackupRestore.RestoreSummary,
             enabled = !uiState.isBusy,
             onClick = {
                 runCatching {
@@ -96,16 +90,16 @@ fun BackupRestoreSection() {
                             arrayOf("application/zip", "application/octet-stream", "*/*")
                         )
                     }
-                    .onFailure { context.toast(MLang.Feature.BackupRestore.Error.OpenInputFailed) }
+                    .onFailure { context.toast(YumeTxt.Feature.BackupRestore.Error.OpenInputFailed) }
             },
         )
     }
 
     BackupConfirmDialog(
         show = restoreUri != null,
-        title = MLang.Feature.BackupRestore.RestoreDialog.Title,
-        message = MLang.Feature.BackupRestore.RestoreDialog.Message,
-        confirmText = MLang.Feature.BackupRestore.RestoreTitle,
+        title = YumeTxt.Feature.BackupRestore.RestoreDialog.Title,
+        message = YumeTxt.Feature.BackupRestore.RestoreDialog.Message,
+        confirmText = YumeTxt.Feature.BackupRestore.RestoreTitle,
         onDismiss = { restoreUri = null },
         onConfirm = {
             val uri = restoreUri ?: return@BackupConfirmDialog
@@ -127,7 +121,7 @@ private fun BackupConfirmDialog(
     AppDialog(show = show, title = title, summary = message, onDismissRequest = onDismiss) {
         Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
             Button(modifier = Modifier.weight(1f), onClick = onDismiss) {
-                Text(MLang.Feature.BackupRestore.Cancel)
+                Text(YumeTxt.Feature.BackupRestore.Cancel)
             }
             Button(
                 modifier = Modifier.weight(1f),

@@ -20,34 +20,20 @@
 
 package com.github.yumelira.yumebox.screen.feature
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.data.model.RemoteBackend
-import com.github.yumelira.yumebox.presentation.component.AppDialog
-import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.PreferenceArrowItem
-import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
-import com.github.yumelira.yumebox.presentation.component.Title
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.screen.settings.RemoteControllerViewModel
-import dev.oom_wg.purejoy.mlang.MLang
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -75,10 +61,10 @@ fun RemoteControllerSection(
         backends.indexOfFirst { it.id == activeBackend?.id }.takeIf { it >= 0 } ?: 0
     val backendItems = backends.map { it.displayName() }
 
-    Title(MLang.Feature.RemoteController.Section)
+    Title(YumeTxt.Feature.RemoteController.Section)
     Card {
         PreferenceSwitchItem(
-            title = MLang.Feature.RemoteController.ModeTitle,
+            title = YumeTxt.Feature.RemoteController.ModeTitle,
             checked = controllerEnabled,
             onCheckedChange = viewModel::setEnabled,
             enabled = backends.isNotEmpty(),
@@ -86,7 +72,7 @@ fun RemoteControllerSection(
 
         if (backends.isNotEmpty()) {
             WindowDropdownPreference(
-                title = MLang.Feature.RemoteController.ControlBackend,
+                title = YumeTxt.Feature.RemoteController.ControlBackend,
                 summary = null,
                 items = backendItems,
                 selectedIndex = selectedBackendIndex,
@@ -97,7 +83,7 @@ fun RemoteControllerSection(
         }
 
         PreferenceArrowItem(
-            title = MLang.Feature.RemoteController.AddBackend,
+            title = YumeTxt.Feature.RemoteController.AddBackend,
             onClick = {
                 sheetState = BackendSheetState.Add(BackendFormState.empty())
                 sheetVisible = true
@@ -106,7 +92,7 @@ fun RemoteControllerSection(
 
         activeBackend?.let { backend ->
             PreferenceArrowItem(
-                title = MLang.Feature.RemoteController.EditBackend,
+                title = YumeTxt.Feature.RemoteController.EditBackend,
                 onClick = {
                     sheetState = BackendSheetState.Edit(BackendFormState.from(backend))
                     sheetVisible = true
@@ -119,7 +105,7 @@ fun RemoteControllerSection(
         BackendEditSheet(
             show = sheetVisible,
             state = state.form,
-            title = if (state is BackendSheetState.Add) MLang.Feature.RemoteController.AddBackend else MLang.Feature.RemoteController.EditBackend,
+            title = if (state is BackendSheetState.Add) YumeTxt.Feature.RemoteController.AddBackend else YumeTxt.Feature.RemoteController.EditBackend,
             onDismiss = { sheetVisible = false },
             onDismissFinished = { sheetState = null },
             onConfirm = { name, host, port, secret ->
@@ -189,7 +175,7 @@ private fun BackendEditSheet(
                 TextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = MLang.Feature.RemoteController.Name,
+                    label = YumeTxt.Feature.RemoteController.Name,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -206,14 +192,14 @@ private fun BackendEditSheet(
                             host = input.host
                             port = input.port
                         },
-                        label = MLang.Feature.RemoteController.Host,
+                        label = YumeTxt.Feature.RemoteController.Host,
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
                     TextField(
                         value = port,
                         onValueChange = { port = it.filter(Char::isDigit).take(5) },
-                        label = MLang.Feature.RemoteController.Port,
+                        label = YumeTxt.Feature.RemoteController.Port,
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(0.45f),
@@ -223,14 +209,14 @@ private fun BackendEditSheet(
                 TextField(
                     value = secret,
                     onValueChange = { secret = it },
-                    label = MLang.Feature.RemoteController.Secret,
+                    label = YumeTxt.Feature.RemoteController.Secret,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
                 if (!portValid && port.isNotBlank()) {
                     Text(
-                        text = MLang.Feature.RemoteController.PortRangeError,
+                        text = YumeTxt.Feature.RemoteController.PortRangeError,
                         style = MiuixTheme.textStyles.body2,
                         color = MiuixTheme.colorScheme.error,
                         modifier = Modifier.padding(start = spacing.space12),
@@ -244,7 +230,7 @@ private fun BackendEditSheet(
             ) {
                 if (onDelete != null) {
                     TextButton(
-                        text = MLang.Feature.RemoteController.Delete,
+                        text = YumeTxt.Feature.RemoteController.Delete,
                         onClick = onDelete,
                         modifier = Modifier.weight(1f),
                         colors =
@@ -254,13 +240,13 @@ private fun BackendEditSheet(
                     )
                 } else {
                     TextButton(
-                        text = MLang.Component.Button.Cancel,
+                        text = YumeTxt.Component.Button.Cancel,
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
                     )
                 }
                 TextButton(
-                    text = MLang.Component.Button.Confirm,
+                    text = YumeTxt.Component.Button.Confirm,
                     onClick = { if (canConfirm) onConfirm(name, normalizedHost, parsedPort, secret) },
                     modifier = Modifier.weight(1f),
                     enabled = canConfirm,

@@ -28,7 +28,7 @@ import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.github.yumelira.yumebox.runtime.api.Components
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
 
 class DialerReceiver : BroadcastReceiver() {
@@ -54,7 +54,7 @@ class DialerReceiver : BroadcastReceiver() {
                             CHANNEL_ID,
                             NotificationManagerCompat.IMPORTANCE_HIGH,
                         )
-                        .setName(MLang.Service.Tile.ClickToOpen)
+                        .setName(YumeTxt.Service.Tile.ClickToOpen)
                         .build()
                 )
 
@@ -74,7 +74,7 @@ class DialerReceiver : BroadcastReceiver() {
                 val notification =
                     NotificationCompat.Builder(context, CHANNEL_ID)
                         .setSmallIcon(R.drawable.ic_logo_service)
-                        .setContentTitle(MLang.Service.Tile.ClickToOpen)
+                        .setContentTitle(YumeTxt.Service.Tile.ClickToOpen)
                         .setContentIntent(pendingIntent)
                         .setAutoCancel(true)
                         .setPriority(NotificationCompat.PRIORITY_HIGH)

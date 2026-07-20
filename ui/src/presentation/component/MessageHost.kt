@@ -23,17 +23,13 @@ package com.github.yumelira.yumebox.presentation.component
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 enum class MessageType {
@@ -73,7 +69,7 @@ fun MessageHost(message: Message?, onDismiss: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().padding(UiDp.dp16),
                 contentAlignment = Alignment.CenterEnd,
             ) {
-                ArrowPreference(title = MLang.Component.Message.Confirm, onClick = dismissDialog)
+                ArrowPreference(title = YumeTxt.Component.Message.Confirm, onClick = dismissDialog)
             }
         }
 
@@ -106,7 +102,7 @@ private fun getTitle(type: MessageType, title: String): String {
 @Composable
 fun SimpleMessage(message: String?, onDismiss: () -> Unit) {
     if (message != null) {
-        MessageHost(message = Message(MLang.Component.Message.Hint, message), onDismiss = onDismiss)
+        MessageHost(message = Message(YumeTxt.Component.Message.Hint, message), onDismiss = onDismiss)
     }
 }
 
@@ -115,7 +111,7 @@ fun ErrorMessage(error: String?, onDismiss: () -> Unit) {
     if (error != null) {
         MessageHost(
             message =
-                Message(MLang.Component.Message.Error, error, MessageType.ERROR, autoClose = false),
+                Message(YumeTxt.Component.Message.Error, error, MessageType.ERROR, autoClose = false),
             onDismiss = onDismiss,
         )
     }
@@ -125,7 +121,7 @@ fun ErrorMessage(error: String?, onDismiss: () -> Unit) {
 fun SuccessMessage(message: String?, onDismiss: () -> Unit) {
     if (message != null) {
         MessageHost(
-            message = Message(MLang.Component.Message.Success, message, MessageType.SUCCESS),
+            message = Message(YumeTxt.Component.Message.Success, message, MessageType.SUCCESS),
             onDismiss = onDismiss,
         )
     }

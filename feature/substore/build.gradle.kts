@@ -21,7 +21,6 @@
 plugins {
     id("com.android.library")
     kotlin("plugin.compose")
-    id("org.jetbrains.compose")
     kotlin("plugin.serialization")
 }
 

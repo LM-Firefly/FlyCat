@@ -33,9 +33,9 @@ import com.github.yumelira.yumebox.feature.meta.presentation.util.CustomRoutingB
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.client.ProfilePatch
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
 
 @Composable
@@ -203,7 +203,7 @@ private suspend fun saveProfileOverrides(
         runCatching { routingBootstrapper.ensureDefaultContent() }
             .onFailure { error ->
                 Timber.e(error, "Failed to generate custom routing content for profile %s", profileId)
-                context.toast(error.message ?: MLang.ProfilesPage.SettingsDialog.CustomRouting)
+                context.toast(error.message ?: YumeTxt.ProfilesPage.SettingsDialog.CustomRouting)
             }
     }
 

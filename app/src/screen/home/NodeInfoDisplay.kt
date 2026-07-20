@@ -20,14 +20,7 @@
 
 package com.github.yumelira.yumebox.screen.home
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -37,7 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.presentation.component.CountryFlagCircle
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.util.extractFlaggedName
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -59,7 +52,7 @@ fun NodeInfoDisplay(serverName: String?, serverPing: Int?, modifier: Modifier = 
             modifier = Modifier.weight(1f).padding(end = spacing.space16),
         ) {
             Text(
-                text = MLang.Home.NodeInfo.Node,
+                text = YumeTxt.Home.NodeInfo.Node,
                 style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
@@ -84,7 +77,7 @@ fun NodeInfoDisplay(serverName: String?, serverPing: Int?, modifier: Modifier = 
                 }
             } else {
                 Text(
-                    text = MLang.Home.NodeInfo.Unknown,
+                    text = YumeTxt.Home.NodeInfo.Unknown,
                     style = MiuixTheme.textStyles.body1.copy(lineHeight = 20.sp),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier.height(infoTextHeight),
@@ -97,7 +90,7 @@ fun NodeInfoDisplay(serverName: String?, serverPing: Int?, modifier: Modifier = 
             modifier = Modifier.width(componentSizes.nodeDelayColumnWidth),
         ) {
             Text(
-                text = MLang.Home.NodeInfo.Delay,
+                text = YumeTxt.Home.NodeInfo.Delay,
                 style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
@@ -119,7 +112,7 @@ private fun PingValue(ping: Int?) {
                 semanticColors.latency.moderate
             }
         Text(
-            text = MLang.Home.NodeInfo.DelayValue.format(ping),
+            text = YumeTxt.Home.NodeInfo.DelayValue.format(ping),
             style = MiuixTheme.textStyles.body1.copy(lineHeight = 20.sp),
             color = color,
             modifier = Modifier.height(infoTextHeight),

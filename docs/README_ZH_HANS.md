@@ -87,7 +87,6 @@ YumeBox 不使用 Git submodule。从干净检出开始构建前，需要先准�
 5. 生成本地化源码、原生库和内置 Geo 资源：
 
    ```bash
-   kotlin scripts/generate-locale.main.kts .
    kotlin scripts/native-build.main.kts --all
    ```
 

@@ -23,13 +23,7 @@ package com.github.yumelira.yumebox.presentation.screen.node
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -55,7 +49,7 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.chevron
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -108,7 +102,7 @@ internal fun NodeGroupCard(
         }
     val currentNodeName =
         remember(currentNode.displayName, group.now) {
-            currentNode.displayName.ifBlank { group.now.trim() }.ifBlank { MLang.Proxy.Mode.Direct }
+            currentNode.displayName.ifBlank { group.now.trim() }.ifBlank { YumeTxt.Proxy.Mode.Direct }
         }
     val iconUri =
         remember(group.icon) {
@@ -186,7 +180,7 @@ internal fun NodeGroupCard(
                     }
 
                     Text(
-                        text = MLang.Proxy.Node.Count.format(group.proxies.size),
+                        text = YumeTxt.Proxy.Node.Count.format(group.proxies.size),
                         style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         modifier = Modifier.padding(start = UiDp.dp8),

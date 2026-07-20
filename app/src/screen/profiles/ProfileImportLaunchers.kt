@@ -29,8 +29,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.presentation.util.isYamlConfigFileName
 import com.github.yumelira.yumebox.presentation.util.readDisplayName
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
+import tf.gal.yumebox.locale.YumeTxt
 
 internal data class ProfileImportLaunchers(
     val pickFile: () -> Unit,
@@ -48,7 +48,7 @@ internal fun rememberProfileImportLaunchers(
     val file =
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             uri ?: return@rememberLauncherForActivityResult
-            val fileName = readDisplayName(context, uri, MLang.ProfilesPage.Message.UnknownFile)
+            val fileName = readDisplayName(context, uri, YumeTxt.ProfilesPage.Message.UnknownFile)
             if (!isYamlConfigFileName(fileName)) {
                 onUnsupportedFile()
                 return@rememberLauncherForActivityResult
@@ -63,13 +63,13 @@ internal fun rememberProfileImportLaunchers(
                 try {
                     val value = readQrFromImage(context, uri)
                     if (value == null) {
-                        context.toast(MLang.ProfilesPage.QrScanner.RecognizeFailed)
+                        context.toast(YumeTxt.ProfilesPage.QrScanner.RecognizeFailed)
                     } else {
                         onQrDecoded(value)
-                        context.toast(MLang.ProfilesPage.QrScanner.RecognizeSuccess)
+                        context.toast(YumeTxt.ProfilesPage.QrScanner.RecognizeSuccess)
                     }
                 } catch (error: Exception) {
-                    context.toast(MLang.ProfilesPage.QrScanner.RecognizeError.format(error.message ?: ""))
+                    context.toast(YumeTxt.ProfilesPage.QrScanner.RecognizeError.format(error.message ?: ""))
                 }
             }
         }

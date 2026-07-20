@@ -38,7 +38,7 @@ import com.github.panpf.sketch.request.ImageRequest
 import com.github.yumelira.yumebox.common.util.LocaleUtil
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 
 @Composable
 fun CountryFlagCircle(countryCode: String, modifier: Modifier = Modifier, size: Dp = UiDp.dp18) {
@@ -61,7 +61,7 @@ fun CountryFlagCircle(countryCode: String, modifier: Modifier = Modifier, size: 
                     alignment = Alignment.Center,
                     contentScale = ContentScale.Crop,
                 ),
-            contentDescription = MLang.Component.Flag.ContentDescription.format(countryCode),
+            contentDescription = YumeTxt.Component.Flag.ContentDescription(countryCode),
             modifier = Modifier.matchParentSize(),
             contentScale = ContentScale.Crop,
         )

@@ -28,21 +28,17 @@ enableFeaturePreview("STABLE_CONFIGURATION_CACHE")
 
 pluginManagement {
     repositories {
-        google()
+        mavenLocal()
         mavenCentral()
+        google()
+        gradlePluginPortal()
+
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap")
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
         maven("https://jitpack.io")
         maven("https://maven.aliyun.com/nexus/content/repositories/releases/")
 
-        maven("https://oom-maven.sawahara.host") {
-            content {
-                includeGroupAndSubgroups("ren.shiror")
-                includeGroupAndSubgroups("work.niggergo")
-                includeGroupAndSubgroups("dev.oom-wg")
-            }
-        }
-        gradlePluginPortal()
+        maven("https://maven.oom-wg.dev")
     }
 }
 
@@ -60,20 +56,17 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
 
     repositories {
-        google()
+        mavenLocal()
         mavenCentral()
+        google()
+        gradlePluginPortal()
+
         maven("https://jitpack.io")
         maven("https://raw.githubusercontent.com/MetaCubeX/maven-backup/main/releases")
         maven ("https://maven.aliyun.com/nexus/content/repositories/releases/")
-
-        maven("https://oom-maven.sawahara.host") {
-            content {
-                includeGroupAndSubgroups("ren.shiror")
-                includeGroupAndSubgroups("work.niggergo")
-                includeGroupAndSubgroups("dev.oom-wg")
-            }
-        }
         maven("https://maven.kr328.app/releases")
+
+        maven("https://maven.oom-wg.dev")
     }
 }
 

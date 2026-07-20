@@ -20,23 +20,12 @@
 
 package com.github.yumelira.yumebox.screen.profiles
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
@@ -57,14 +46,8 @@ import com.github.yumelira.yumebox.presentation.icon.yume.`Package-check`
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_URL
-import dev.oom_wg.purejoy.mlang.MLang
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
+import tf.gal.yumebox.locale.YumeTxt
+import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -221,12 +204,12 @@ private fun ProfileTypeSelectorCard(
                     )
         ) {
             WindowSpinnerPreference(
-                title = MLang.ProfilesPage.Type.Title,
+                title = YumeTxt.ProfilesPage.Type.Title,
                 items =
                     listOf(
-                        DropdownItem(title = MLang.ProfilesPage.Type.Subscription),
-                        DropdownItem(title = MLang.ProfilesPage.Type.LocalFile),
-                        DropdownItem(title = MLang.ProfilesPage.Type.QrScan),
+                        DropdownItem(title = YumeTxt.ProfilesPage.Type.Subscription),
+                        DropdownItem(title = YumeTxt.ProfilesPage.Type.LocalFile),
+                        DropdownItem(title = YumeTxt.ProfilesPage.Type.QrScan),
                     ),
                 selectedIndex = selectedTypeIndex,
                 onSelectedIndexChange = onTypeSelected,
@@ -258,14 +241,14 @@ private fun QrScannerContent(
             if (showCameraPreview) {
                 key("qr_scanner_stable") { StableQrScanner(onScanned = onQrScanned) }
             } else if (!hasCameraPermission) {
-                Text(MLang.ProfilesPage.QrScanner.NeedPermission)
+                Text(YumeTxt.ProfilesPage.QrScanner.NeedPermission)
             } else {
                 CircularProgressIndicator(modifier = Modifier.size(UiDp.dp32))
             }
         }
 
         TextButton(
-            text = MLang.ProfilesPage.QrScanner.SelectFromAlbum,
+            text = YumeTxt.ProfilesPage.QrScanner.SelectFromAlbum,
             onClick = onSelectQrImage,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -293,7 +276,7 @@ private fun ManualProfileContent(
         TextField(
             value = nameTextFieldValue,
             onValueChange = onNameChange,
-            label = MLang.ProfilesPage.Input.ProfileName,
+            label = YumeTxt.ProfilesPage.Input.ProfileName,
             useLabelAsPlaceholder = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -302,7 +285,7 @@ private fun ManualProfileContent(
             TextField(
                 value = urlTextFieldValue,
                 onValueChange = onUrlChange,
-                label = MLang.ProfilesPage.Input.SubscriptionUrl,
+                label = YumeTxt.ProfilesPage.Input.SubscriptionUrl,
                 useLabelAsPlaceholder = true,
                 maxLines = 2,
                 readOnly = profileLocked,
@@ -313,7 +296,7 @@ private fun ManualProfileContent(
             TextField(
                 value = fileNameTextFieldValue,
                 onValueChange = {},
-                label = MLang.ProfilesPage.Input.SelectFile,
+                label = YumeTxt.ProfilesPage.Input.SelectFile,
                 useLabelAsPlaceholder = true,
                 readOnly = true,
                 enabled = false,
@@ -330,7 +313,7 @@ private fun ManualProfileContent(
         AgeSecretKeyField(
             value = ageSecretKeyTextFieldValue,
             onValueChange = onAgeSecretKeyChange,
-            label = MLang.ProfilesPage.Input.AgeSecretKey,
+            label = YumeTxt.ProfilesPage.Input.AgeSecretKey,
             modifier = Modifier.fillMaxWidth(),
         )
         if (error.isNotEmpty()) {

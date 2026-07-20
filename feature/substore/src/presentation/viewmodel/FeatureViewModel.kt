@@ -36,18 +36,13 @@ import com.github.yumelira.yumebox.substore.SubStoreServiceRequest
 import com.github.yumelira.yumebox.substore.engine.NativeLibraryManager
 import com.github.yumelira.yumebox.substore.model.AutoCloseMode
 import com.github.yumelira.yumebox.substore.util.SubStoreDownloadClient
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import tf.gal.yumebox.locale.YumeTxt
 
 class FeatureViewModel(
     store: FeatureStore,
@@ -100,7 +95,7 @@ class FeatureViewModel(
 
     fun startService() {
         if (DeviceUtil.is32BitDevice()) {
-            showToast(MLang.Feature.SubStore.Not32Bit)
+            showToast(YumeTxt.Feature.SubStore.Not32Bit)
             return
         }
         if (!checkSubStoreReadiness()) return
@@ -117,24 +112,24 @@ class FeatureViewModel(
                     )
                 }
                 .onSuccess { setupAutoCloseTimer() }
-                .onFailure { error -> showToast(error.message ?: MLang.Util.Error.UnknownError) }
+                .onFailure { error -> showToast(error.message ?: YumeTxt.Util.Error.UnknownError) }
         }
     }
 
     private fun checkSubStoreReadiness(): Boolean =
         when {
             !_isExtensionInstalled.value -> {
-                showToast(MLang.Feature.SubStore.InstallExtension)
+                showToast(YumeTxt.Feature.SubStore.InstallExtension)
                 false
             }
 
             !_isSubStoreInitialized.value -> {
-                showToast(MLang.Feature.SubStore.DownloadSubStoreFirst)
+                showToast(YumeTxt.Feature.SubStore.DownloadSubStoreFirst)
                 false
             }
 
             !_isJavetLoaded.value -> {
-                showToast(MLang.Feature.SubStore.JavetNotReady)
+                showToast(YumeTxt.Feature.SubStore.JavetNotReady)
                 false
             }
 
@@ -206,8 +201,8 @@ class FeatureViewModel(
     fun downloadSubStoreFrontend() {
         launchResourceDownload(
             loadingState = _isDownloadingSubStoreFrontend,
-            successMessage = MLang.Feature.SubStore.FrontendDownloadSuccess,
-            failureMessage = MLang.Feature.SubStore.FrontendDownloadFailed,
+            successMessage = YumeTxt.Feature.SubStore.FrontendDownloadSuccess,
+            failureMessage = YumeTxt.Feature.SubStore.FrontendDownloadFailed,
         ) {
             SubStorePaths.ensureStructure()
             SubStorePaths.frontendDir.apply { if (!exists()) mkdirs() }
@@ -222,8 +217,8 @@ class FeatureViewModel(
     fun downloadSubStoreBackend() {
         launchResourceDownload(
             loadingState = _isDownloadingSubStoreBackend,
-            successMessage = MLang.Feature.SubStore.BackendDownloadSuccess,
-            failureMessage = MLang.Feature.SubStore.BackendDownloadFailed,
+            successMessage = YumeTxt.Feature.SubStore.BackendDownloadSuccess,
+            failureMessage = YumeTxt.Feature.SubStore.BackendDownloadFailed,
         ) {
             SubStorePaths.ensureStructure()
             SubStorePaths.backendDir.apply { if (!exists()) mkdirs() }
@@ -274,8 +269,8 @@ class FeatureViewModel(
                 }
                 .onFailure { error ->
                     showToast(
-                        MLang.Feature.SubStore.DownloadError.format(
-                            error.message ?: MLang.Util.Error.UnknownError
+                        YumeTxt.Feature.SubStore.DownloadError.format(
+                            error.message ?: YumeTxt.Util.Error.UnknownError
                         )
                     )
                 }
@@ -296,7 +291,7 @@ class FeatureViewModel(
                         initialDelayMillis = timeoutMillis,
                     )
                 )
-                showToast(MLang.Feature.ServiceStatus.AutoClosed)
+                showToast(YumeTxt.Feature.ServiceStatus.AutoClosed)
                 stopService()
             }
         }

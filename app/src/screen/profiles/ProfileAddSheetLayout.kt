@@ -20,15 +20,9 @@
 
 package com.github.yumelira.yumebox.screen.profiles
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -44,7 +38,7 @@ import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAct
 import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 
 internal class ProfileAddSheetActions(
     val dismiss: () -> Unit,
@@ -86,7 +80,7 @@ internal fun ProfileAddSheetContent(
 
     AppActionBottomSheet(
         show = show,
-        title = if (isEditing) MLang.ProfilesPage.Sheet.EditTitle else MLang.ProfilesPage.Sheet.AddTitle,
+        title = if (isEditing) YumeTxt.ProfilesPage.Sheet.EditTitle else YumeTxt.ProfilesPage.Sheet.AddTitle,
         startAction = {
             if (!isDownloading) {
                 AppBottomSheetCloseAction(contentDescription = "Cancel", onClick = actions.dismiss)

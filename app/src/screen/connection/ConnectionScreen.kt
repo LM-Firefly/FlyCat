@@ -20,28 +20,13 @@
 
 package com.github.yumelira.yumebox.screen.connection
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.github.yumelira.yumebox.feature.meta.presentation.component.ConnectionCard
@@ -55,17 +40,9 @@ import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import dev.oom_wg.purejoy.mlang.MLang
 import org.koin.androidx.compose.koinViewModel
-import top.yukonga.miuix.kmp.basic.DropdownImpl
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
+import tf.gal.yumebox.locale.YumeTxt
+import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.icon.extended.Sort
@@ -77,10 +54,10 @@ private val SortModes =
 
 private fun ConnectionSort.getDisplayName(): String =
     when (this) {
-        ConnectionSort.Time -> MLang.Connection.Sort.Time
-        ConnectionSort.Upload -> MLang.Connection.Sort.Upload
-        ConnectionSort.Download -> MLang.Connection.Sort.Download
-        ConnectionSort.Host -> MLang.Connection.Sort.Host
+        ConnectionSort.Time -> YumeTxt.Connection.Sort.Time
+        ConnectionSort.Upload -> YumeTxt.Connection.Sort.Upload
+        ConnectionSort.Download -> YumeTxt.Connection.Sort.Download
+        ConnectionSort.Host -> YumeTxt.Connection.Sort.Host
     }
 
 @Composable
@@ -100,7 +77,7 @@ fun ConnectionScreen(navigator: Navigator) {
     }
     var showDetailSheet by remember { mutableStateOf(false) }
 
-    val tabs = listOf(MLang.Connection.Tab.Active, MLang.Connection.Tab.Closed)
+    val tabs = listOf(YumeTxt.Connection.Tab.Active, YumeTxt.Connection.Tab.Closed)
     var selectedTabIndex by
         rememberSaveable(state.selectedTab) {
             mutableIntStateOf(
@@ -114,9 +91,9 @@ fun ConnectionScreen(navigator: Navigator) {
         remember(state.sortBy) { SortModes.indexOf(state.sortBy).coerceAtLeast(0) }
     val emptyStateText =
         when {
-            state.isLoading -> MLang.Connection.Loading
-            state.searchQuery.isNotEmpty() -> MLang.Connection.NoResults
-            else -> MLang.Connection.Empty
+            state.isLoading -> YumeTxt.Connection.Loading
+            state.searchQuery.isNotEmpty() -> YumeTxt.Connection.NoResults
+            else -> YumeTxt.Connection.Empty
         }
 
     LaunchedEffect(selectedTabIndex) {
@@ -152,7 +129,7 @@ fun ConnectionScreen(navigator: Navigator) {
     Scaffold(
         topBar = {
             TopBar(
-                title = MLang.Connection.Title,
+                title = YumeTxt.Connection.Title,
                 scrollBehavior = scrollBehavior,
                 actions = {
                     Box {
@@ -162,7 +139,7 @@ fun ConnectionScreen(navigator: Navigator) {
                         ) {
                             Icon(
                                 imageVector = MiuixIcons.Sort,
-                                contentDescription = MLang.Connection.SortBy.trimEnd(':', '：'),
+                                contentDescription = YumeTxt.Connection.SortBy.trimEnd(':', '：'),
                                 tint = MiuixTheme.colorScheme.onSurface,
                             )
                         }
@@ -190,7 +167,7 @@ fun ConnectionScreen(navigator: Navigator) {
                     IconButton(onClick = { showSearchBar = !showSearchBar }) {
                         Icon(
                             imageVector = MiuixIcons.Search,
-                            contentDescription = MLang.Connection.Search,
+                            contentDescription = YumeTxt.Connection.Search,
                             tint = MiuixTheme.colorScheme.onSurface,
                         )
                     }
@@ -241,7 +218,7 @@ fun ConnectionScreen(navigator: Navigator) {
                             value = searchText,
                             onValueChange = { searchText = it },
                             modifier = Modifier.weight(1f),
-                            label = MLang.Connection.SearchHint,
+                            label = YumeTxt.Connection.SearchHint,
                             singleLine = true,
                         )
                     }

@@ -22,15 +22,15 @@ package com.github.yumelira.yumebox.runtime.service.root
 
 import android.content.Context
 import com.topjohnwu.superuser.Shell
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
+import tf.gal.yumebox.locale.YumeTxt
 
 data class RootAccessStatus(val rootAccessGranted: Boolean) {
     val canStartRoot: Boolean
         get() = rootAccessGranted
 
-    fun rootBlockedMessage(): String = MLang.NetworkSettings.Error.RootRequired
+    fun rootBlockedMessage(): String = YumeTxt.NetworkSettings.Error.RootRequired
 }
 
 object RootAccessSupport {

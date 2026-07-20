@@ -20,20 +20,10 @@
 
 package com.github.yumelira.yumebox.screen.profiles
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextRange
@@ -45,21 +35,10 @@ import com.github.yumelira.yumebox.presentation.component.AgeSecretKeyField
 import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
 import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
-import com.github.yumelira.yumebox.presentation.component.AppDialog
-import com.github.yumelira.yumebox.presentation.component.AppTextFieldDialog
-import com.github.yumelira.yumebox.presentation.component.DialogButtonRow
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.runtime.api.Profile
-import dev.oom_wg.purejoy.mlang.MLang
-import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.layout.DialogDefaults
+import tf.gal.yumebox.locale.YumeTxt
+import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -161,17 +140,17 @@ internal fun ProfileSettingsDialog(
     AppActionBottomSheet(
         show = show,
         modifier = Modifier,
-        title = MLang.ProfilesPage.SettingsDialog.Title,
+        title = YumeTxt.ProfilesPage.SettingsDialog.Title,
         startAction = {
             AppBottomSheetCloseAction(
                 onClick = onDismiss,
-                contentDescription = MLang.ProfilesPage.Button.Cancel,
+                contentDescription = YumeTxt.ProfilesPage.Button.Cancel,
             )
         },
         endAction = {
             AppBottomSheetConfirmAction(
                 onClick = saveSettings,
-                contentDescription = MLang.ProfilesPage.Button.Confirm,
+                contentDescription = YumeTxt.ProfilesPage.Button.Confirm,
             )
         },
         onDismissRequest = onDismiss,
@@ -192,7 +171,7 @@ internal fun ProfileSettingsDialog(
                 TextField(
                     value = editName,
                     onValueChange = { editName = it },
-                    label = MLang.ProfilesPage.Input.ProfileName,
+                    label = YumeTxt.ProfilesPage.Input.ProfileName,
                     useLabelAsPlaceholder = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -201,7 +180,7 @@ internal fun ProfileSettingsDialog(
                     TextField(
                         value = editSource,
                         onValueChange = { editSource = it },
-                        label = MLang.ProfilesPage.SettingsDialog.ChangeLink,
+                        label = YumeTxt.ProfilesPage.SettingsDialog.ChangeLink,
                         useLabelAsPlaceholder = true,
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 2,
@@ -214,15 +193,15 @@ internal fun ProfileSettingsDialog(
                         editAgeSecretKey = it
                         ageSecretKeyEdited = true
                     },
-                    label = MLang.ProfilesPage.SettingsDialog.AgeSecretKey,
+                    label = YumeTxt.ProfilesPage.SettingsDialog.AgeSecretKey,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
                 Card {
                     Column {
                         SwitchPreference(
-                            title = MLang.ProfilesPage.SettingsDialog.CustomRouting,
-                            summary = MLang.ProfilesPage.SettingsDialog.CustomRoutingSummary,
+                            title = YumeTxt.ProfilesPage.SettingsDialog.CustomRouting,
+                            summary = YumeTxt.ProfilesPage.SettingsDialog.CustomRoutingSummary,
                             checked = customRoutingSelected,
                             onCheckedChange = {
                                 overrideSelectionInitialized = true
@@ -247,7 +226,7 @@ internal fun ProfileSettingsDialog(
                                     title = config.name,
                                     summary =
                                         config.description?.takeIf { it.isNotBlank() }
-                                            ?: MLang.ProfilesPage.SettingsDialog.NoDescription,
+                                            ?: YumeTxt.ProfilesPage.SettingsDialog.NoDescription,
                                     endActions = {
                                         Checkbox(
                                             state = ToggleableState(isSelected),

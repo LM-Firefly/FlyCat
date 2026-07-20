@@ -22,14 +22,7 @@ package com.github.yumelira.yumebox.screen.settings
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,25 +38,16 @@ import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.BuildConfig
 import com.github.yumelira.yumebox.WebViewActivity
 import com.github.yumelira.yumebox.common.util.toast
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.LocalNavigator
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.Title
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.FlaskConical
-import com.github.yumelira.yumebox.presentation.icon.yume.`Git-merge`
-import com.github.yumelira.yumebox.presentation.icon.yume.Github
-import com.github.yumelira.yumebox.presentation.icon.yume.Meta
-import com.github.yumelira.yumebox.presentation.icon.yume.`Settings-2`
-import com.github.yumelira.yumebox.presentation.icon.yume.`Wifi-cog`
+import com.github.yumelira.yumebox.presentation.icon.yume.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.viewmodel.SettingEvent
 import com.github.yumelira.yumebox.presentation.viewmodel.SettingViewModel
-import dev.oom_wg.purejoy.mlang.MLang
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -144,7 +128,7 @@ fun SettingPager(mainInnerPadding: PaddingValues) {
                     runCatching { WebViewActivity.start(context, event.url) }
                         .getOrElse { throwable ->
                             context.toast(
-                                MLang.Settings.Error.WebviewFailed.format(throwable.message)
+                                YumeTxt.Settings.Error.WebviewFailed.format(throwable.message)
                             )
                         }
                 }
@@ -152,42 +136,42 @@ fun SettingPager(mainInnerPadding: PaddingValues) {
         }
     }
 
-    Scaffold(topBar = { TopBar(title = MLang.Settings.Title, scrollBehavior = scrollBehavior) }) {
+    Scaffold(topBar = { TopBar(title = YumeTxt.Settings.Title, scrollBehavior = scrollBehavior) }) {
         innerPadding ->
         ScreenLazyColumn(
             scrollBehavior = scrollBehavior,
             innerPadding = combinePaddingValues(innerPadding, mainInnerPadding),
         ) {
             item {
-                Title(MLang.Settings.Section.UiSettings)
+                Title(YumeTxt.Settings.Section.UiSettings)
                 Card {
                     ArrowPreference(
-                        title = MLang.Settings.UiSettings.App,
-                        summary = MLang.Settings.UiSettings.AppSummary,
+                        title = YumeTxt.Settings.UiSettings.App,
+                        summary = YumeTxt.Settings.UiSettings.AppSummary,
                         onClick = { navigator.push(Route.AppSettings) },
                         startAction = {
                             CircularIcon(imageVector = Yume.`Settings-2`, contentDescription = null)
                         },
                     )
                     ArrowPreference(
-                        title = MLang.Settings.UiSettings.Network,
-                        summary = MLang.Settings.UiSettings.NetworkSummary,
+                        title = YumeTxt.Settings.UiSettings.Network,
+                        summary = YumeTxt.Settings.UiSettings.NetworkSummary,
                         onClick = { navigator.push(Route.NetworkSettings) },
                         startAction = {
                             CircularIcon(imageVector = Yume.`Wifi-cog`, contentDescription = null)
                         },
                     )
                     ArrowPreference(
-                        title = MLang.Settings.UiSettings.Override,
-                        summary = MLang.Settings.UiSettings.OverrideSummary,
+                        title = YumeTxt.Settings.UiSettings.Override,
+                        summary = YumeTxt.Settings.UiSettings.OverrideSummary,
                         onClick = { navigator.push(Route.Override) },
                         startAction = {
                             CircularIcon(imageVector = Yume.`Git-merge`, contentDescription = null)
                         },
                     )
                     ArrowPreference(
-                        title = MLang.Settings.UiSettings.MetaFeatures,
-                        summary = MLang.Settings.UiSettings.MetaFeaturesSummary,
+                        title = YumeTxt.Settings.UiSettings.MetaFeatures,
+                        summary = YumeTxt.Settings.UiSettings.MetaFeaturesSummary,
                         onClick = { navigator.push(Route.MetaFeature) },
                         startAction = {
                             CircularIcon(imageVector = Yume.Meta, contentDescription = null)
@@ -196,20 +180,20 @@ fun SettingPager(mainInnerPadding: PaddingValues) {
                 }
             }
             item {
-                Title(MLang.Settings.Section.More)
+                Title(YumeTxt.Settings.Section.More)
 
                 Card {
                     ArrowPreference(
-                        title = MLang.Settings.More.Lab,
-                        summary = MLang.Settings.More.LabSummary,
+                        title = YumeTxt.Settings.More.Lab,
+                        summary = YumeTxt.Settings.More.LabSummary,
                         onClick = { navigator.push(Route.Feature) },
                         startAction = {
                             CircularIcon(imageVector = Yume.FlaskConical, contentDescription = null)
                         },
                     )
                     ArrowPreference(
-                        title = MLang.Settings.More.About,
-                        summary = MLang.Settings.More.AboutSummary,
+                        title = YumeTxt.Settings.More.About,
+                        summary = YumeTxt.Settings.More.AboutSummary,
                         onClick = { navigator.push(Route.About) },
                         startAction = {
                             CircularIcon(imageVector = Yume.Github, contentDescription = null)

@@ -28,24 +28,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import com.github.yumelira.yumebox.App
-import com.github.yumelira.yumebox.presentation.component.CenteredText
-import com.github.yumelira.yumebox.presentation.component.ProfileCard
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.icon.ShellIcons
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import tf.gal.yumebox.locale.YumeTxt
+import top.yukonga.miuix.kmp.basic.*
 
 @Composable
 internal fun ProfilesPageHost(
@@ -124,13 +116,13 @@ internal fun ProfilesPageContent(
     Scaffold(
         topBar = {
             TopBar(
-                title = MLang.ProfilesPage.Title,
+                title = YumeTxt.ProfilesPage.Title,
                 scrollBehavior = scrollBehavior,
                 actions = {
                     IconButton(onClick = onAddProfile) {
                         Icon(
                             imageVector = ShellIcons.AddProfile,
-                            contentDescription = MLang.ProfilesPage.Action.AddProfile,
+                            contentDescription = YumeTxt.ProfilesPage.Action.AddProfile,
                         )
                     }
                 },
@@ -139,8 +131,8 @@ internal fun ProfilesPageContent(
     ) { innerPadding ->
         if (profiles.isEmpty()) {
             CenteredText(
-                firstLine = MLang.ProfilesPage.Empty.NoProfiles,
-                secondLine = MLang.ProfilesPage.Empty.Hint,
+                firstLine = YumeTxt.ProfilesPage.Empty.NoProfiles,
+                secondLine = YumeTxt.ProfilesPage.Empty.Hint,
             )
         } else {
             ProfilesList(

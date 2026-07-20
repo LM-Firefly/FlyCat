@@ -29,7 +29,6 @@ import com.github.yumelira.yumebox.data.model.OverrideContentType
 import com.github.yumelira.yumebox.data.model.OverrideMetadata
 import com.github.yumelira.yumebox.data.store.OverrideConfigStore
 import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,11 +36,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLDecoder
-import java.util.Locale
+import java.util.*
 
 class OverrideConfigViewModel(
     private val configRepo: OverrideConfigStore,
@@ -195,13 +195,13 @@ class OverrideConfigViewModel(
             OverrideContentType.fromFileName(sourceName) ?: fallbackContentType
                 ?: return Result.failure(
                     IllegalArgumentException(
-                        MLang.Override.Import.Failed.format(MLang.Override.Import.UnsupportedType)
+                        YumeTxt.Override.Import.Failed.format(YumeTxt.Override.Import.UnsupportedType)
                     )
                 )
         if (contentType == OverrideContentType.JavaScript && content.isBlank()) {
             return Result.failure(
                 IllegalArgumentException(
-                    MLang.Override.Import.Failed.format(MLang.Override.Import.EmptyJavaScript)
+                    YumeTxt.Override.Import.Failed.format(YumeTxt.Override.Import.EmptyJavaScript)
                 )
             )
         }
@@ -211,7 +211,7 @@ class OverrideConfigViewModel(
                 id = OverrideMetadata.generateId(),
                 name =
                     normalizeImportedConfigSourceName(sourceName)
-                        ?: MLang.Override.Save.ImportDefaultName,
+                        ?: YumeTxt.Override.Save.ImportDefaultName,
                 description = null,
                 contentType = contentType,
                 content = content,
@@ -236,7 +236,7 @@ class OverrideConfigViewModel(
                     val url = URL(rawUrl.trim())
                     require(url.protocol.equals("http", ignoreCase = true) ||
                         url.protocol.equals("https", ignoreCase = true)) {
-                        MLang.Override.Import.InvalidUrl
+                        YumeTxt.Override.Import.InvalidUrl
                     }
 
                     val connection = (url.openConnection() as HttpURLConnection).apply {
@@ -249,7 +249,7 @@ class OverrideConfigViewModel(
                     try {
                         val responseCode = connection.responseCode
                         require(responseCode in 200..299) {
-                            MLang.Override.Import.HttpError.format(responseCode)
+                            YumeTxt.Override.Import.HttpError.format(responseCode)
                         }
 
                         val contentTypeHeader = connection.contentType.orEmpty()
@@ -317,7 +317,7 @@ private fun resolveNetworkImportSourceName(
 
     val extension =
         inferContentTypeFromHeader(contentType)?.extension ?: OverrideContentType.Yaml.extension
-    return "${url.host.ifBlank { MLang.Override.Save.ImportDefaultName }}.$extension"
+    return "${url.host.ifBlank { YumeTxt.Override.Save.ImportDefaultName }}.$extension"
 }
 
 private fun parseFilenameFromContentDisposition(contentDisposition: String?): String? {

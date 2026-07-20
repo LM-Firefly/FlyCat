@@ -23,11 +23,7 @@ package com.github.yumelira.yumebox.screen.profiles
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
@@ -36,7 +32,7 @@ import com.github.yumelira.yumebox.presentation.component.AppTextFieldDialog
 import com.github.yumelira.yumebox.presentation.component.DialogButtonRow
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.runtime.api.Profile
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
@@ -57,12 +53,12 @@ internal fun EditProfileNameDialog(
 
     AppTextFieldDialog(
         show = show,
-        title = MLang.ProfilesPage.EditDialog.Title,
+        title = YumeTxt.ProfilesPage.EditDialog.Title,
         textFieldValue = editName,
         onTextFieldValueChange = { editName = it },
         onDismissRequest = onDismiss,
         onConfirm = { onConfirm(editName.text) },
-        label = MLang.ProfilesPage.Input.ProfileName,
+        label = YumeTxt.ProfilesPage.Input.ProfileName,
         useLabelAsPlaceholder = true,
         singleLine = true,
     )
@@ -79,9 +75,9 @@ internal fun DeleteConfirmDialog(
     AppDialog(
         show = show,
         modifier = Modifier,
-        title = MLang.ProfilesPage.DeleteDialog.Title,
+        title = YumeTxt.ProfilesPage.DeleteDialog.Title,
         titleColor = DialogDefaults.titleColor(),
-        summary = MLang.ProfilesPage.DeleteDialog.Message.format(profileName),
+        summary = YumeTxt.ProfilesPage.DeleteDialog.Message.format(profileName),
         summaryColor = DialogDefaults.summaryColor(),
         backgroundColor = DialogDefaults.backgroundColor(),
         enableWindowDim = true,
@@ -94,8 +90,8 @@ internal fun DeleteConfirmDialog(
             DialogButtonRow(
                 onCancel = onDismiss,
                 onConfirm = onConfirm,
-                cancelText = MLang.ProfilesPage.Button.Cancel,
-                confirmText = MLang.ProfilesPage.DeleteDialog.Confirm,
+                cancelText = YumeTxt.ProfilesPage.Button.Cancel,
+                confirmText = YumeTxt.ProfilesPage.DeleteDialog.Confirm,
             )
         },
     )
@@ -115,7 +111,7 @@ internal fun ShareOptionsDialog(
     AppDialog(
         show = show,
         modifier = Modifier,
-        title = MLang.ProfilesPage.ShareDialog.Title,
+        title = YumeTxt.ProfilesPage.ShareDialog.Title,
         titleColor = DialogDefaults.titleColor(),
         summary = null,
         summaryColor = DialogDefaults.summaryColor(),
@@ -135,7 +131,7 @@ internal fun ShareOptionsDialog(
                         colors = ButtonDefaults.buttonColorsPrimary(),
                     ) {
                         Text(
-                            MLang.ProfilesPage.ShareDialog.ShareLink,
+                            YumeTxt.ProfilesPage.ShareDialog.ShareLink,
                             color = MiuixTheme.colorScheme.onPrimary,
                         )
                     }
@@ -145,14 +141,14 @@ internal fun ShareOptionsDialog(
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(),
                 ) {
-                    Text(MLang.ProfilesPage.ShareDialog.ShareFile)
+                    Text(YumeTxt.ProfilesPage.ShareDialog.ShareFile)
                 }
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(),
                 ) {
-                    Text(MLang.ProfilesPage.Button.Cancel)
+                    Text(YumeTxt.ProfilesPage.Button.Cancel)
                 }
             }
         },

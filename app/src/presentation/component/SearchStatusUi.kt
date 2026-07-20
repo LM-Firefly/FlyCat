@@ -21,41 +21,15 @@
 package com.github.yumelira.yumebox.presentation.component
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -75,7 +49,7 @@ import androidx.compose.ui.zIndex
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.Sizes
 import com.github.yumelira.yumebox.presentation.theme.Spacing
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -249,7 +223,7 @@ private fun SearchPagerCancelButton(
         exit = fadeOut() + shrinkHorizontally(),
     ) {
         Text(
-            text = MLang.Component.Button.Cancel,
+            text = YumeTxt.Component.Button.Cancel,
             fontWeight = FontWeight.Bold,
             color = colorScheme.primary,
             modifier =
@@ -370,7 +344,7 @@ private fun SearchBar(
 private fun SearchBarLeadingIcon(componentSizes: Sizes, spacing: Spacing) {
     Icon(
         imageVector = MiuixIcons.Basic.Search,
-        contentDescription = MLang.Component.Editor.Action.Search,
+        contentDescription = YumeTxt.Component.Editor.Action.Search,
         modifier =
             Modifier.size(componentSizes.searchIconTouchTarget)
                 .padding(start = spacing.space16, end = spacing.space8),
@@ -392,7 +366,7 @@ private fun SearchBarClearButton(
     ) {
         Icon(
             imageVector = MiuixIcons.Basic.SearchCleanup,
-            contentDescription = MLang.Component.Button.Clear,
+            contentDescription = YumeTxt.Component.Button.Clear,
             tint = colorScheme.onSurface,
             modifier =
                 Modifier.size(componentSizes.searchIconTouchTarget)

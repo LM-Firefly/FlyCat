@@ -22,7 +22,7 @@ package com.github.yumelira.yumebox.screen.profiles
 
 import com.github.yumelira.yumebox.core.model.FetchStatus
 import com.github.yumelira.yumebox.core.presentation.LoadableState
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 
 sealed interface ProfilesUiEffect {
     data class ShowMessage(val message: String) : ProfilesUiEffect
@@ -56,14 +56,14 @@ internal fun FetchStatus.toDownloadProgress(): DownloadProgress {
         when (action) {
             FetchStatus.Action.FetchConfiguration ->
                 if (percent == null || percent <= 5) {
-                    MLang.ProfilesVM.Progress.Preparing
+                    YumeTxt.ProfilesVM.Progress.Preparing
                 } else {
-                    detail.ifBlank { MLang.ProfilesPage.Progress.Downloading }
+                    detail.ifBlank { YumeTxt.ProfilesPage.Progress.Downloading }
                 }
 
             FetchStatus.Action.FetchProviders -> detail
             FetchStatus.Action.SubscriptionInfo -> ""
-            FetchStatus.Action.Verifying -> detail.ifBlank { MLang.ProfilesVM.Progress.Verifying }
+            FetchStatus.Action.Verifying -> detail.ifBlank { YumeTxt.ProfilesVM.Progress.Verifying }
         }
     val itemProgress =
         if (action == FetchStatus.Action.FetchProviders && max > 0) {

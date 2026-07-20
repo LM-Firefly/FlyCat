@@ -21,53 +21,23 @@
 package com.github.yumelira.yumebox.presentation.screen
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.github.yumelira.yumebox.data.model.ProxySortMode
 import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
 import com.github.yumelira.yumebox.domain.model.isSelectable
-import com.github.yumelira.yumebox.presentation.component.CenteredText
-import com.github.yumelira.yumebox.presentation.component.LocalPagerState
-import com.github.yumelira.yumebox.presentation.component.LocalTopBarHazeState
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.TopBar
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.Folders
 import com.github.yumelira.yumebox.presentation.icon.yume.Eye
+import com.github.yumelira.yumebox.presentation.icon.yume.Folders
 import com.github.yumelira.yumebox.presentation.icon.yume.`List-chevrons-up-down`
 import com.github.yumelira.yumebox.presentation.icon.yume.Speed
 import com.github.yumelira.yumebox.presentation.screen.node.NodeSortPopup
@@ -80,18 +50,10 @@ import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.util.KeepLazyListTopAnchorOnReorder
 import com.github.yumelira.yumebox.presentation.viewmodel.ProxyViewModel
 import dev.chrisbanes.haze.hazeSource
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-import top.yukonga.miuix.kmp.basic.FloatingActionButton
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.Text
+import tf.gal.yumebox.locale.YumeTxt
+import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -229,7 +191,7 @@ fun ProxyPager(
                 ) {
                     Icon(
                         imageVector = Yume.Speed,
-                        contentDescription = MLang.Proxy.Action.Test,
+                        contentDescription = YumeTxt.Proxy.Action.Test,
                         tint = MiuixTheme.colorScheme.onPrimary,
                     )
                 }
@@ -237,7 +199,7 @@ fun ProxyPager(
         },
         topBar = {
             ProxyTopBar(
-                title = MLang.Proxy.Title,
+                title = YumeTxt.Proxy.Title,
                 scrollBehavior = groupScrollBehavior,
                 showBack = false,
                 onBack = {},
@@ -288,8 +250,8 @@ fun ProxyPager(
                 if (targetGroupName == null) {
                     if (proxyGroups.isEmpty()) {
                         CenteredText(
-                            firstLine = MLang.Proxy.Empty.NoNodes,
-                            secondLine = MLang.Proxy.Empty.Hint,
+                            firstLine = YumeTxt.Proxy.Empty.NoNodes,
+                            secondLine = YumeTxt.Proxy.Empty.Hint,
                             showEmptyResourceIllustration = true,
                         )
                     } else {
@@ -355,12 +317,12 @@ private fun ProxyTopBar(
             Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
                 if (showBack) {
                     IconButton(onClick = onBack) {
-                        Icon(MiuixIcons.Back, contentDescription = MLang.Component.Navigation.Back)
+                        Icon(MiuixIcons.Back, contentDescription = YumeTxt.Component.Navigation.Back)
                     }
                 } else {
                     if (onNavigateToProviders != null) {
                         IconButton(onClick = onNavigateToProviders) {
-                            Icon(Yume.Folders, contentDescription = MLang.Providers.Title)
+                            Icon(Yume.Folders, contentDescription = YumeTxt.Providers.Title)
                         }
                     }
                 }
@@ -377,7 +339,7 @@ private fun ProxyTopBar(
             }
             Box {
                 IconButton(onClick = { onShowSortPopupChange(true) }) {
-                    Icon(Yume.`List-chevrons-up-down`, contentDescription = MLang.Proxy.Action.Sort)
+                    Icon(Yume.`List-chevrons-up-down`, contentDescription = YumeTxt.Proxy.Action.Sort)
                 }
                 NodeSortPopup(
                     show = showSortPopup,
@@ -409,8 +371,8 @@ private fun NodeListPage(
 ) {
     if (group == null) {
         CenteredText(
-            firstLine = MLang.Proxy.Empty.NoNodes,
-            secondLine = MLang.Proxy.Empty.Hint,
+            firstLine = YumeTxt.Proxy.Empty.NoNodes,
+            secondLine = YumeTxt.Proxy.Empty.Hint,
             showEmptyResourceIllustration = true,
         )
         return
@@ -483,7 +445,7 @@ private fun NodeListPage(
                 ) {
                     InfiniteProgressIndicator(modifier = Modifier.size(UiDp.dp24))
                     Text(
-                        text = MLang.Proxy.Testing.InProgress,
+                        text = YumeTxt.Proxy.Testing.InProgress,
                         style = MiuixTheme.textStyles.subtitle,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )

@@ -126,13 +126,6 @@ jobs:
             echo "keystore.path=release.keystore" >> signing.properties
           fi
 
-      - name: Generate locale sources
-        shell: bash
-        run: |
-          set -eu
-          kotlin scripts/generate-locale.main.kts .
-          test -f "locale/build/generated/fytxt/kotlin/commonMain/kotlin/fytxt.kt"
-
       - name: Compute APK output name
         id: apk_name
         shell: bash

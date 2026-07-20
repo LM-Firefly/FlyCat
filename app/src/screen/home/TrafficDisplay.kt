@@ -20,27 +20,12 @@
 
 package com.github.yumelira.yumebox.screen.home
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -51,19 +36,14 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.common.util.formatBytesForDisplay
-import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.model.RunMode
+import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.domain.model.TrafficData
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.Activity
-import com.github.yumelira.yumebox.presentation.icon.yume.PlaneTakeoff
-import com.github.yumelira.yumebox.presentation.icon.yume.Rocket
-import com.github.yumelira.yumebox.presentation.icon.yume.Tun
-import com.github.yumelira.yumebox.presentation.icon.yume.Waiting
-import com.github.yumelira.yumebox.presentation.icon.yume.Wifi
+import com.github.yumelira.yumebox.presentation.icon.yume.*
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
@@ -161,7 +141,7 @@ private fun ProfileModeBadge(profileName: String?, tunnelMode: TunnelState.Mode?
             horizontalArrangement = Arrangement.spacedBy(spacing.space8),
         ) {
             Text(
-                text = profileName ?: MLang.Home.Traffic.NoProfile,
+                text = profileName ?: YumeTxt.Home.Traffic.NoProfile,
                 style =
                     MiuixTheme.textStyles.footnote1.copy(
                         fontSize = 12.sp,
@@ -332,9 +312,9 @@ private fun ProxyTypeCapsule(proxyMode: RunMode) {
             Text(
                 text =
                     when (proxyMode) {
-                        RunMode.VpnService -> MLang.Home.ProxyMode.Vpn
-                        RunMode.Tun -> MLang.Home.ProxyMode.Tun
-                        RunMode.Tproxy -> MLang.Home.ProxyMode.Tproxy
+                        RunMode.VpnService -> YumeTxt.Home.ProxyMode.Vpn
+                        RunMode.Tun -> YumeTxt.Home.ProxyMode.Tun
+                        RunMode.Tproxy -> YumeTxt.Home.ProxyMode.Tproxy
                     },
                 style =
                     MiuixTheme.textStyles.footnote1.copy(
@@ -420,16 +400,16 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState, isRemoteCont
                 Text(
                     text =
                         when (state) {
-                            HomeProxyControlState.Idle -> MLang.Home.Status.TapToStart
-                            HomeProxyControlState.Connecting -> MLang.Home.Status.Connecting
+                            HomeProxyControlState.Idle -> YumeTxt.Home.Status.TapToStart
+                            HomeProxyControlState.Connecting -> YumeTxt.Home.Status.Connecting
                             HomeProxyControlState.Running ->
                                 if (isRemoteController) {
                                     "运行中"
                                 } else {
-                                    MLang.Home.Status.Running
+                                    YumeTxt.Home.Status.Running
                                 }
                             HomeProxyControlState.Lost -> "失联"
-                            HomeProxyControlState.Disconnecting -> MLang.Home.Status.Disconnecting
+                            HomeProxyControlState.Disconnecting -> YumeTxt.Home.Status.Disconnecting
                         },
                     style =
                         MiuixTheme.textStyles.footnote1.copy(

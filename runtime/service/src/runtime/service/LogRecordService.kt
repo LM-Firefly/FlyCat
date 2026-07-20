@@ -20,11 +20,7 @@
 
 package com.github.yumelira.yumebox.runtime.service
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.app.Service
+import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
@@ -34,22 +30,14 @@ import com.github.yumelira.yumebox.core.model.LogMessage
 import com.github.yumelira.yumebox.runtime.api.Components
 import com.github.yumelira.yumebox.runtime.api.IClashManager
 import com.github.yumelira.yumebox.runtime.api.ILogObserver
-import dev.oom_wg.purejoy.mlang.MLang
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 class LogRecordService : Service() {
     companion object {
@@ -246,7 +234,7 @@ class LogRecordService : Service() {
         val channel =
             NotificationChannel(
                     CHANNEL_ID,
-                    MLang.Service.Notification.LogChannel,
+                    YumeTxt.Service.Notification.LogChannel,
                     NotificationManager.IMPORTANCE_LOW,
                 )
                 .apply { setShowBadge(false) }
@@ -275,15 +263,15 @@ class LogRecordService : Service() {
             )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(MLang.Service.Notification.LogRecording)
-            .setContentText(currentLogFileName ?: MLang.Service.Notification.LogRecordingPending)
+            .setContentTitle(YumeTxt.Service.Notification.LogRecording)
+            .setContentText(currentLogFileName ?: YumeTxt.Service.Notification.LogRecordingPending)
             .setSmallIcon(R.drawable.ic_logo_service)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .addAction(
                 android.R.drawable.ic_menu_close_clear_cancel,
-                MLang.Service.Notification.Stop,
+                YumeTxt.Service.Notification.Stop,
                 stopPendingIntent,
             )
             .build()

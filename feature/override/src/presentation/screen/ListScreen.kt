@@ -28,29 +28,10 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -68,37 +49,19 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.data.model.OverrideConfig
 import com.github.yumelira.yumebox.data.model.OverrideContentType
-import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
-import com.github.yumelira.yumebox.presentation.component.AppDialog
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.CenteredText
-import com.github.yumelira.yumebox.presentation.component.OverrideAnimatedFab
-import com.github.yumelira.yumebox.presentation.component.OverrideCardActionIconButton
-import com.github.yumelira.yumebox.presentation.component.OverrideStatusBadge
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberOverrideFabController
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.`Badge-plus`
-import com.github.yumelira.yumebox.presentation.icon.yume.Copy
-import com.github.yumelira.yumebox.presentation.icon.yume.Delete
-import com.github.yumelira.yumebox.presentation.icon.yume.Edit
-import com.github.yumelira.yumebox.presentation.icon.yume.Share
-import com.github.yumelira.yumebox.presentation.icon.yume.ShieldCheck
-import com.github.yumelira.yumebox.presentation.icon.yume.ShieldMinus
+import com.github.yumelira.yumebox.presentation.icon.yume.*
 import com.github.yumelira.yumebox.presentation.theme.Spacing
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableCollectionItemScope
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.DropdownItem
@@ -162,13 +125,13 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
                     context.contentResolver.openOutputStream(uri)?.use { output ->
                         output.write(targetConfig.content.toByteArray())
                         output.flush()
-                    } ?: error(MLang.Override.Export.Failed.format(targetConfig.name))
+                    } ?: error(YumeTxt.Override.Export.Failed.format(targetConfig.name))
                 }
                 .onSuccess {
-                    context.toast(MLang.Override.Export.Success.format(targetConfig.name))
+                    context.toast(YumeTxt.Override.Export.Success.format(targetConfig.name))
                 }
                 .onFailure { error ->
-                    context.toast(MLang.Override.Export.Failed.format(error.message))
+                    context.toast(YumeTxt.Override.Export.Failed.format(error.message))
                 }
 
             exportTargetConfig.value = null
@@ -198,14 +161,14 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
                 controller = createFabController,
                 visible = !showCreateDialog.value,
                 imageVector = Yume.`Badge-plus`,
-                contentDescription = MLang.Override.Action.Create,
+                contentDescription = YumeTxt.Override.Action.Create,
                 onClick = {
                     createDialogMode = OverrideConfigInputMode.CreateNew
                     showCreateDialog.value = true
                 },
             )
         },
-        topBar = { TopBar(title = MLang.Override.Title, scrollBehavior = scrollBehavior) },
+        topBar = { TopBar(title = YumeTxt.Override.Title, scrollBehavior = scrollBehavior) },
     ) { paddingValues ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
@@ -218,8 +181,8 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
                 userConfigs.isEmpty() -> {
                     item(key = "override-empty", contentType = "override-empty") {
                         CenteredText(
-                            firstLine = MLang.Override.Empty.Title,
-                            secondLine = MLang.Override.Empty.Hint,
+                            firstLine = YumeTxt.Override.Empty.Title,
+                            secondLine = YumeTxt.Override.Empty.Hint,
                             modifier = Modifier.fillParentMaxSize(),
                             showEmptyResourceIllustration = true,
                         )
@@ -269,7 +232,7 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
                     .importConfig(content, sourceName)
                     .onSuccess { showCreateDialog.value = false }
                     .onFailure { error ->
-                        context.toast(error.message ?: MLang.Override.Import.ReadError)
+                        context.toast(error.message ?: YumeTxt.Override.Import.ReadError)
                     }
             },
             onConfirmNetworkImport = viewModel::importConfigFromUrl,
@@ -354,12 +317,12 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
                 Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp8)) {
                     OverrideCardActionIconButton(
                         imageVector = Yume.Copy,
-                        contentDescription = MLang.Override.Card.Copy,
+                        contentDescription = YumeTxt.Override.Card.Copy,
                         onClick = onCopy,
                     )
                     OverrideCardActionIconButton(
                         imageVector = Yume.Share,
-                        contentDescription = MLang.Override.Card.Export,
+                        contentDescription = YumeTxt.Override.Card.Export,
                         onClick = onExport,
                     )
                 }
@@ -382,11 +345,11 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
                             modifier = Modifier.size(UiDp.dp20),
                             imageVector = Yume.Edit,
                             tint = accentTintColor,
-                            contentDescription = MLang.Override.Card.Edit,
+                            contentDescription = YumeTxt.Override.Card.Edit,
                         )
                         Text(
                             modifier = Modifier.padding(end = UiDp.dp3),
-                            text = MLang.Override.Card.EditButton,
+                            text = YumeTxt.Override.Card.EditButton,
                             color = accentTintColor,
                             fontWeight = FontWeight.Medium,
                             fontSize = 15.sp,
@@ -408,11 +371,11 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
                             modifier = Modifier.size(UiDp.dp20),
                             imageVector = Yume.Delete,
                             tint = colorScheme.onSurface.copy(alpha = 0.85f),
-                            contentDescription = MLang.Override.Card.Delete,
+                            contentDescription = YumeTxt.Override.Card.Delete,
                         )
                         Text(
                             modifier = Modifier.padding(start = UiDp.dp4, end = UiDp.dp3),
-                            text = MLang.Override.Card.DeleteButton,
+                            text = YumeTxt.Override.Card.DeleteButton,
                             color = colorScheme.onSurface.copy(alpha = 0.85f),
                             fontWeight = FontWeight.Medium,
                             fontSize = 15.sp,
@@ -430,7 +393,7 @@ private fun OverrideConfigStateIndicator(inUse: Boolean) {
     OverrideStatusBadge(
         imageVector = if (inUse) Yume.ShieldCheck else Yume.ShieldMinus,
         contentDescription =
-            if (inUse) MLang.Override.Status.InUse else MLang.Override.Status.NotInUse,
+            if (inUse) YumeTxt.Override.Status.InUse else YumeTxt.Override.Status.NotInUse,
         tint = tint,
         backgroundColor =
             if (inUse) {
@@ -512,12 +475,12 @@ private fun CreateConfigDialog(
 
     AppActionBottomSheet(
         show = show.value,
-        title = MLang.Override.Dialog.Create.Title,
+        title = YumeTxt.Override.Dialog.Create.Title,
         startAction = { AppBottomSheetCloseAction(onClick = onDismiss) },
         endAction = {
             AppBottomSheetConfirmAction(
                 enabled = canConfirm && !isNetworkImporting,
-                contentDescription = MLang.Override.Action.Create,
+                contentDescription = YumeTxt.Override.Action.Create,
                 onClick = {
                     if (!canConfirm) return@AppBottomSheetConfirmAction
                     keyboardController?.hide()
@@ -533,14 +496,14 @@ private fun CreateConfigDialog(
                                         .openInputStream(importUri)
                                         ?.bufferedReader()
                                         ?.use { reader -> reader.readText() }
-                                        ?: error(MLang.Override.Import.ReadError)
+                                        ?: error(YumeTxt.Override.Import.ReadError)
                                 }
                                 .onSuccess { content ->
                                     onConfirmImport(content, selectedImportFileName)
                                 }
                                 .onFailure { error ->
                                     context.toast(
-                                        MLang.Override.Import.FileError.format(error.message)
+                                        YumeTxt.Override.Import.FileError.format(error.message)
                                     )
                                 }
                         }
@@ -553,8 +516,8 @@ private fun CreateConfigDialog(
                                     .onSuccess { show.value = false }
                                     .onFailure { error ->
                                         context.toast(
-                                            MLang.Override.Import.NetworkError.format(
-                                                error.message ?: MLang.Util.Error.UnknownError
+                                            YumeTxt.Override.Import.NetworkError.format(
+                                                error.message ?: YumeTxt.Util.Error.UnknownError
                                             )
                                         )
                                     }
@@ -602,7 +565,7 @@ private fun CreateConfigDialog(
                                     onValueChange = { updatedTextFieldValue ->
                                         nameTextFieldValueState.value = updatedTextFieldValue
                                     },
-                                    label = MLang.Override.Dialog.Create.Name,
+                                    label = YumeTxt.Override.Dialog.Create.Name,
                                     useLabelAsPlaceholder = true,
                                 )
                             }
@@ -649,7 +612,7 @@ private fun OverrideInputModeSelector(
 
     top.yukonga.miuix.kmp.basic.Card {
         WindowSpinnerPreference(
-            title = MLang.ProfilesPage.Type.Title,
+            title = YumeTxt.ProfilesPage.Type.Title,
             items = inputModeOptions.map { inputMode -> DropdownItem(title = inputMode.label) },
             selectedIndex = selectedModeIndex,
             onSelectedIndexChange = { index ->
@@ -669,7 +632,7 @@ private fun OverrideTypeSelector(
 
     top.yukonga.miuix.kmp.basic.Card {
         WindowDropdownPreference(
-            title = MLang.Override.Dialog.Create.Type,
+            title = YumeTxt.Override.Dialog.Create.Type,
             items = contentTypeOptions.map { it.label },
             selectedIndex = selectedTypeIndex,
             onSelectedIndexChange = { index ->
@@ -696,7 +659,7 @@ private fun ImportOverrideFileContent(
         TextField(
             value = fileName,
             onValueChange = {},
-            label = MLang.ProfilesPage.Input.SelectFile,
+            label = YumeTxt.ProfilesPage.Input.SelectFile,
             useLabelAsPlaceholder = true,
             readOnly = true,
             enabled = false,
@@ -715,7 +678,7 @@ private fun ImportOverrideNetworkContent(
     TextField(
         value = url,
         onValueChange = onUrlChange,
-        label = MLang.Override.Dialog.Create.Url,
+        label = YumeTxt.Override.Dialog.Create.Url,
         useLabelAsPlaceholder = true,
         singleLine = true,
         enabled = enabled,
@@ -740,26 +703,26 @@ private fun DeleteConfirmDialog(
     val summary =
         when {
             config == null -> ""
-            isInUse -> MLang.Override.Dialog.Delete.InUseMessage.format(config.name)
-            else -> MLang.Override.Dialog.Delete.Message.format(config.name)
+            isInUse -> YumeTxt.Override.Dialog.Delete.InUseMessage.format(config.name)
+            else -> YumeTxt.Override.Dialog.Delete.Message.format(config.name)
         }
 
     AppDialog(
         show = show.value,
-        title = MLang.Override.Dialog.Delete.Title,
+        title = YumeTxt.Override.Dialog.Delete.Title,
         summary = summary,
         onDismissRequest = onDismiss,
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
             Button(modifier = Modifier.weight(1f), onClick = onDismiss) {
-                Text(MLang.Override.Dialog.Button.Cancel)
+                Text(YumeTxt.Override.Dialog.Button.Cancel)
             }
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
-                Text(text = MLang.Override.Dialog.Button.Delete, color = colorScheme.onPrimary)
+                Text(text = YumeTxt.Override.Dialog.Button.Delete, color = colorScheme.onPrimary)
             }
         }
     }
@@ -786,7 +749,7 @@ private val OverrideContentType.label: String
 private val OverrideConfigInputMode.label: String
     get() =
         when (this) {
-            OverrideConfigInputMode.CreateNew -> MLang.Override.Action.New
-            OverrideConfigInputMode.LocalFile -> MLang.ProfilesPage.Type.LocalFile
-            OverrideConfigInputMode.NetworkUrl -> MLang.Override.Action.NetworkImport
+            OverrideConfigInputMode.CreateNew -> YumeTxt.Override.Action.New
+            OverrideConfigInputMode.LocalFile -> YumeTxt.ProfilesPage.Type.LocalFile
+            OverrideConfigInputMode.NetworkUrl -> YumeTxt.Override.Action.NetworkImport
         }

@@ -32,17 +32,10 @@ import com.github.yumelira.yumebox.data.store.ProxyDisplaySettingsStore
 import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
 import com.github.yumelira.yumebox.runtime.client.ProxyGroupSyncPriority
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import tf.gal.yumebox.locale.YumeTxt
 
 class ProxyViewModel(
     private val runtimeOverrideController: RuntimeOverrideController,
@@ -142,13 +135,13 @@ class ProxyViewModel(
 
             val result = runCatching {
                 if (groupName != null) {
-                    showMessage(MLang.Proxy.Testing.Group.format(groupName))
+                    showMessage(YumeTxt.Proxy.Testing.Group.format(groupName))
                     proxyFacade.healthCheck(groupName)
                     PollingTimers.awaitTick(PollingTimerSpecs.ProxyHealthcheckRefresh)
                     proxyFacade.refreshProxyGroup(groupName)
-                    showMessage(MLang.Proxy.Testing.RequestSent)
+                    showMessage(YumeTxt.Proxy.Testing.RequestSent)
                 } else {
-                    showMessage(MLang.Proxy.Testing.All)
+                    showMessage(YumeTxt.Proxy.Testing.All)
                     proxyFacade.healthCheckAll()
                     if (currentGroups.isNotEmpty()) {
                         PollingTimers.awaitTick(PollingTimerSpecs.ProxyHealthcheckRefresh)
@@ -165,7 +158,7 @@ class ProxyViewModel(
             }
 
             result.exceptionOrNull()?.let { error ->
-                showError(MLang.Proxy.Testing.Failed.format(error.message))
+                showError(YumeTxt.Proxy.Testing.Failed.format(error.message))
             }
         }
     }
@@ -179,13 +172,13 @@ class ProxyViewModel(
             runCatching {
                     val success = proxyFacade.selectProxy(groupName, proxyName)
                     if (success) {
-                        showMessage(MLang.Proxy.Selection.Switched.format(proxyName))
+                        showMessage(YumeTxt.Proxy.Selection.Switched.format(proxyName))
                     } else {
-                        showError(MLang.Proxy.Selection.Failed)
+                        showError(YumeTxt.Proxy.Selection.Failed)
                     }
                 }
                 .onFailure { error ->
-                    showError(MLang.Proxy.Selection.Error.format(error.message))
+                    showError(YumeTxt.Proxy.Selection.Error.format(error.message))
                 }
         }
     }

@@ -23,14 +23,7 @@ package com.github.yumelira.yumebox.screen.traffic
 import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -61,16 +54,12 @@ import com.github.yumelira.yumebox.presentation.component.TrafficDonutChart
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import dev.oom_wg.purejoy.mlang.MLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
+import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -91,18 +80,18 @@ fun TrafficStatisticsScreen() {
     Scaffold(
         topBar = {
             TopBar(
-                title = MLang.TrafficStatistics.Title,
+                title = YumeTxt.TrafficStatistics.Title,
                 scrollBehavior = scrollBehavior,
                 actions = {
                     IconButton(
                         onClick = {
                             viewModel.clearAllStatistics()
-                            context.toast(MLang.TrafficStatistics.Action.ClearSuccess)
+                            context.toast(YumeTxt.TrafficStatistics.Action.ClearSuccess)
                         }
                     ) {
                         Icon(
                             imageVector = MiuixIcons.Delete,
-                            contentDescription = MLang.TrafficStatistics.Action.Clear,
+                            contentDescription = YumeTxt.TrafficStatistics.Action.Clear,
                             tint = MiuixTheme.colorScheme.onSurface,
                         )
                     }
@@ -167,9 +156,9 @@ fun TrafficStatisticsScreen() {
                                                 uiState.selectedTimeRange ==
                                                     StatisticsTimeRange.TODAY
                                             ) {
-                                                MLang.TrafficStatistics.Summary.TodayTraffic
+                                                YumeTxt.TrafficStatistics.Summary.TodayTraffic
                                             } else {
-                                                MLang.TrafficStatistics.Summary.WeekTraffic
+                                                YumeTxt.TrafficStatistics.Summary.WeekTraffic
                                             },
                                         style = MiuixTheme.textStyles.footnote1,
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -183,7 +172,7 @@ fun TrafficStatisticsScreen() {
             }
 
             item {
-                Title(MLang.TrafficStatistics.Section.Traffic)
+                Title(YumeTxt.TrafficStatistics.Section.Traffic)
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.space16),
                     verticalArrangement = Arrangement.spacedBy(spacing.space10),
@@ -195,7 +184,7 @@ fun TrafficStatisticsScreen() {
                 }
             }
 
-            item { Title(MLang.TrafficStatistics.Section.TopApps) }
+            item { Title(YumeTxt.TrafficStatistics.Section.TopApps) }
 
             if (uiState.topApps.isEmpty()) {
                 item {
@@ -210,7 +199,7 @@ fun TrafficStatisticsScreen() {
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = MLang.TrafficStatistics.Section.EmptyApps,
+                                text = YumeTxt.TrafficStatistics.Section.EmptyApps,
                                 style = MiuixTheme.textStyles.body2,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
@@ -247,12 +236,12 @@ private fun TrafficMetricCard(downloadValue: String, uploadValue: String) {
             verticalArrangement = Arrangement.spacedBy(spacing.space18),
         ) {
             TrafficMetricLine(
-                label = MLang.TrafficStatistics.Metric.Download,
+                label = YumeTxt.TrafficStatistics.Metric.Download,
                 value = downloadValue,
                 valueColor = semanticColors.traffic.download,
             )
             TrafficMetricLine(
-                label = MLang.TrafficStatistics.Metric.Upload,
+                label = YumeTxt.TrafficStatistics.Metric.Upload,
                 value = uploadValue,
                 valueColor = semanticColors.traffic.upload,
             )
@@ -314,7 +303,7 @@ private fun AppTrafficRow(context: Context, usage: AppTrafficUsage, total: Long)
                 )
                 Text(
                     text =
-                        MLang.TrafficStatistics.Metric.UsageLine.format(
+                        YumeTxt.TrafficStatistics.Metric.UsageLine.format(
                             formatBytes(usage.totalDownload),
                             formatBytes(usage.totalUpload),
                         ),

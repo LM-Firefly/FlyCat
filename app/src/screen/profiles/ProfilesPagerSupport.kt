@@ -27,7 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.github.yumelira.yumebox.presentation.component.AppDialog
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.oom_wg.purejoy.mlang.MLang
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
@@ -59,7 +59,7 @@ internal fun openProfileConfigPreview(
                 runCatching { targetFile.writeText(updatedContent) }
                     .getOrElse {
                         throw IllegalStateException(
-                            it.message ?: MLang.ProfilesPage.SettingsDialog.SaveFailed,
+                            it.message ?: YumeTxt.ProfilesPage.SettingsDialog.SaveFailed,
                             it,
                         )
                     }
@@ -81,13 +81,13 @@ internal fun ProfileEditOptionsDialog(
 ) {
     AppDialog(
         show = show,
-        title = MLang.ProfilesPage.SettingsDialog.EditProfile,
+        title = YumeTxt.ProfilesPage.SettingsDialog.EditProfile,
         onDismissRequest = onDismiss,
         onDismissFinished = onDismissFinished,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
             Button(modifier = Modifier.fillMaxWidth(), onClick = onOpenConfig) {
-                Text(MLang.ProfilesPage.SettingsDialog.OpenConfig)
+                Text(YumeTxt.ProfilesPage.SettingsDialog.OpenConfig)
             }
 
             Button(
@@ -96,7 +96,7 @@ internal fun ProfileEditOptionsDialog(
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
                 Text(
-                    text = MLang.ProfilesPage.SettingsDialog.EditSettings,
+                    text = YumeTxt.ProfilesPage.SettingsDialog.EditSettings,
                     color = MiuixTheme.colorScheme.onPrimary,
                 )
             }
