@@ -62,9 +62,8 @@ dependencyResolutionManagement {
         gradlePluginPortal()
 
         maven("https://jitpack.io")
-        maven("https://raw.githubusercontent.com/MetaCubeX/maven-backup/main/releases")
         maven ("https://maven.aliyun.com/nexus/content/repositories/releases/")
-        maven("https://maven.kr328.app/releases")
+        maven("https://raw.githubusercontent.com/MetaCubeX/maven-backup/main/releases")
 
         maven("https://maven.oom-wg.dev")
     }
