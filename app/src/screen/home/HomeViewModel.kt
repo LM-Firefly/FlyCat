@@ -115,6 +115,20 @@ class HomeViewModel(
         runtimeSnapshot
             .map { it.owner == RuntimeOwner.RemoteController }
             .stateInWhileSubscribed(viewModelScope, runtimeSnapshot.value.owner == RuntimeOwner.RemoteController)
+    val isRemoteControllerMode: StateFlow<Boolean> =
+        combine(
+                remoteControllerStore.controllerEnabled.state,
+                remoteControllerStore.activeBackendId.state,
+                remoteControllerStore.backends.state,
+            ) { enabled, activeBackendId, backends ->
+                enabled && backends.any { it.id == activeBackendId }
+            }
+            .stateInWhileSubscribed(
+                viewModelScope,
+                remoteControllerStore.controllerEnabled.value &&
+                    remoteControllerStore.activeBackend() != null,
+            )
+    val isConfigReloading: StateFlow<Boolean> = proxyFacade.isConfigReloading
     val controllerBackendName: StateFlow<String?> =
         combine(
                 remoteControllerStore.activeBackendId.state,

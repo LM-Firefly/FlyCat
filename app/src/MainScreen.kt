@@ -97,7 +97,6 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeSource
-import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -107,21 +106,14 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
     val homeViewModel = koinViewModel<HomeViewModel>()
     val runtimeSnapshot by homeViewModel.runtimeSnapshot.collectAsState()
-    val runtimeTransitionActive =
-        runtimeSnapshot.phase == RuntimePhase.Starting ||
+    val isConfigReloading by homeViewModel.isConfigReloading.collectAsState()
+    val isRemoteControllerMode by homeViewModel.isRemoteControllerMode.collectAsState()
+    val showProxyDestination =
+        isRemoteControllerMode ||
+            isConfigReloading ||
+            runtimeSnapshot.phase == RuntimePhase.Starting ||
             runtimeSnapshot.phase == RuntimePhase.Running ||
             runtimeSnapshot.phase == RuntimePhase.Stopping
-    var showProxyDestination by remember { mutableStateOf(runtimeTransitionActive) }
-    LaunchedEffect(runtimeTransitionActive) {
-        if (runtimeTransitionActive) {
-            showProxyDestination = true
-        } else {
-            // A root config reload briefly crosses Idle between Stopping and Starting. Do not let
-            // that internal hand-off reshape the pager and bottom bar for a single frame.
-            delay(180)
-            showProxyDestination = false
-        }
-    }
     val visibleDestinations =
         remember(showProxyDestination) {
             BottomBarDestination.entries.filter { destination ->

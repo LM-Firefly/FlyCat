@@ -139,6 +139,8 @@ class ProxyFacade(
 
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+    private val _isConfigReloading = MutableStateFlow(false)
+    val isConfigReloading: StateFlow<Boolean> = _isConfigReloading.asStateFlow()
 
     private val groupStore =
         ProxyGroupStore(
@@ -175,12 +177,22 @@ class ProxyFacade(
             override fun onReceive(context: Context?, intent: Intent?) {
                 when (intent?.action ?: return) {
                     actionClashStarted -> {
-                        scope.launch { reconcileAndRefreshRuntimeState() }
+                        scope.launch {
+                            try {
+                                reconcileAndRefreshRuntimeState()
+                            } finally {
+                                _isConfigReloading.value = false
+                            }
+                        }
                     }
 
                     actionClashStopped -> {
-                        scope.launch {
-                            handleRuntimeStopped(intent.getStringExtra(Intents.EXTRA_STOP_REASON))
+                        if (_isConfigReloading.value) {
+                            Timber.d("Ignoring stale runtime-stopped event during config reload")
+                        } else {
+                            scope.launch {
+                                handleRuntimeStopped(intent.getStringExtra(Intents.EXTRA_STOP_REASON))
+                            }
                         }
                     }
 
@@ -407,8 +419,12 @@ class ProxyFacade(
      */
     private suspend fun onConfigChanged() {
         if (!isRemoteControllerActive() && detectActiveOwner() == RuntimeOwner.RootDaemon) {
+            _isConfigReloading.value = true
             runCatching { startProxy(networkSettingsStorage.runMode.value) }
-                .onFailure { error -> Timber.w(error, "Root daemon config reload failed") }
+                .onFailure { error ->
+                    _isConfigReloading.value = false
+                    Timber.w(error, "Root daemon config reload failed")
+                }
         } else {
             reconcileAndRefreshRuntimeState()
         }
