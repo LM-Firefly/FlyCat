@@ -22,6 +22,10 @@ package com.github.yumelira.yumebox.runtime.service.profile
 
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.FetchStatus
+import com.github.yumelira.yumebox.core.util.PROXY_PROVIDER_SCOPE
+import com.github.yumelira.yumebox.core.util.RULE_PROVIDER_SCOPE
+import com.github.yumelira.yumebox.core.util.YamlCodec
+import com.github.yumelira.yumebox.core.util.profileProviderScopeDir
 import com.github.yumelira.yumebox.runtime.api.IFetchObserver
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.service.util.importedDir
@@ -31,11 +35,15 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import io.ktor.http.isSuccess
+import io.ktor.utils.io.jvm.javaio.toInputStream
 import com.tencent.mmkv.MMKV
 import java.io.File
 import java.net.URLDecoder
+import java.security.MessageDigest
 import java.util.Base64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -62,6 +70,12 @@ object ProfileProcessor {
     private data class UpdateSnapshot(
         val imported: Imported,
         val hasCommittedConfig: Boolean,
+    )
+
+    private data class ExternalProvider(
+        val url: String,
+        val target: File,
+        val headers: List<Pair<String, String>>,
     )
 
     /**
@@ -132,6 +146,194 @@ object ProfileProcessor {
     }
 
     private const val DEFAULT_SUBSCRIPTION_UA = "ClashMetaForAndroid"
+
+    /**
+     * Pre-fetches HTTP providers into the same profile-private paths that liboverride emits into
+     * the runtime config. This is deliberately best-effort: mihomo remains the fallback owner and
+     * downloads a missing resource itself, so one failed provider must never reject an import.
+     */
+    private suspend fun fetchExternalProviders(
+        stagingDir: File,
+        profileDir: File,
+        onStatus: (FetchStatus) -> Unit,
+    ) {
+        val config = stagingDir.resolve("config.yaml")
+        if (!config.isFile) return
+        val providers =
+            runCatching {
+                collectExternalProviders(
+                    root = YamlCodec.loadMap(config.readText()),
+                    stagingDir = stagingDir,
+                    profileDir = profileDir,
+                )
+            }
+                .onFailure { Timber.w(it, "Skip external provider prefetch: config parse failed") }
+                .getOrDefault(emptyList())
+        if (providers.isEmpty()) return
+
+        val client =
+            HttpClient(OkHttp) {
+                install(HttpTimeout) {
+                    connectTimeoutMillis = 15_000
+                    requestTimeoutMillis = 60_000
+                }
+                followRedirects = true
+            }
+        try {
+            providers.forEachIndexed { index, provider ->
+                onStatus(
+                    FetchStatus(
+                        action = FetchStatus.Action.FetchProviders,
+                        args = listOf(provider.url),
+                        progress = index,
+                        max = providers.size,
+                    )
+                )
+                runCatching { downloadExternalProvider(client, provider) }
+                    .onFailure { error ->
+                        Timber.w(error, "Skip external provider download: %s", provider.url)
+                    }
+                onStatus(
+                    FetchStatus(
+                        action = FetchStatus.Action.FetchProviders,
+                        args = listOf(provider.url),
+                        progress = index + 1,
+                        max = providers.size,
+                    )
+                )
+            }
+        } finally {
+            client.close()
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun collectExternalProviders(
+        root: Map<String, Any?>,
+        stagingDir: File,
+        profileDir: File,
+    ): List<ExternalProvider> =
+        buildList {
+            listOf(
+                "rule-providers" to RULE_PROVIDER_SCOPE,
+                "proxy-providers" to PROXY_PROVIDER_SCOPE,
+            ).forEach { (field, scope) ->
+                val definitions = root[field] as? Map<*, *> ?: return@forEach
+                definitions.forEach { (_, rawDefinition) ->
+                    val definition = rawDefinition as? Map<*, *> ?: return@forEach
+                    val type = definition["type"]?.toString()?.trim().orEmpty()
+                    val url = definition["url"]?.toString()?.trim().orEmpty()
+                    if (!type.equals("http", ignoreCase = true) || !url.isHttpUrl()) return@forEach
+
+                    val extension =
+                        if (
+                            scope == RULE_PROVIDER_SCOPE &&
+                                definition["format"]?.toString()?.equals("mrs", ignoreCase = true) == true
+                        ) {
+                            "mrs"
+                        } else {
+                            "yaml"
+                        }
+                    val target =
+                        profileProviderScopeDir(stagingDir, scope).resolve(
+                            providerRelativePath(
+                                path = definition["path"]?.toString().orEmpty(),
+                                url = url,
+                                extension = extension,
+                                profileProviderDir = profileProviderScopeDir(profileDir, scope),
+                            )
+                        )
+                    add(ExternalProvider(url = url, target = target, headers = providerHeaders(definition)))
+                }
+            }
+        }
+
+    private fun providerRelativePath(
+        path: String,
+        url: String,
+        extension: String,
+        profileProviderDir: File,
+    ): String {
+        val raw = path.trim()
+        val segments =
+            if (raw.isBlank()) {
+                emptyList()
+            } else if (File(raw).isAbsolute) {
+                absoluteProviderPathTail(raw, profileProviderDir) ?: listOf(File(raw).name)
+            } else {
+                raw.replace('\\', '/').split('/')
+            }
+        val cleaned = mutableListOf<String>()
+        segments.forEach { segment ->
+            when (segment) {
+                "", "." -> Unit
+                ".." -> if (cleaned.isNotEmpty()) cleaned.removeLast()
+                else -> cleaned += segment
+            }
+        }
+        while (cleaned.firstOrNull() in providerPathPrefixes) cleaned.removeFirst()
+        val relative = cleaned.joinToString("/")
+        val withExtension =
+            when {
+                relative.isBlank() -> "${sha256(url)}.$extension"
+                File(relative).extension.isNotBlank() -> relative
+                else -> "$relative.$extension"
+            }
+        return withExtension
+    }
+
+    private fun absoluteProviderPathTail(path: String, providerDir: File): List<String>? {
+        val normalizedPath = path.replace('\\', '/').trimEnd('/')
+        val normalizedBase = providerDir.absolutePath.replace('\\', '/').trimEnd('/')
+        if (!normalizedPath.startsWith("$normalizedBase/")) return null
+        return normalizedPath.removePrefix("$normalizedBase/").split('/')
+    }
+
+    private fun providerHeaders(definition: Map<*, *>): List<Pair<String, String>> {
+        val rawHeaders = definition["header"] as? Map<*, *> ?: return emptyList()
+        return buildList {
+            rawHeaders.forEach { (rawName, rawValue) ->
+                val name = rawName?.toString()?.trim().orEmpty()
+                if (name.isBlank()) return@forEach
+                when (rawValue) {
+                    is Iterable<*> -> rawValue.forEach { value ->
+                        value?.toString()?.takeIf(String::isNotBlank)?.let { add(name to it) }
+                    }
+                    else -> rawValue?.toString()?.takeIf(String::isNotBlank)?.let { add(name to it) }
+                }
+            }
+        }
+    }
+
+    private suspend fun downloadExternalProvider(client: HttpClient, provider: ExternalProvider) {
+        val temporary = File(provider.target.parentFile, ".${provider.target.name}.download")
+        provider.target.parentFile?.mkdirs()
+        temporary.delete()
+        try {
+            client.get(provider.url) {
+                header(HttpHeaders.UserAgent, resolveSubscriptionUserAgent())
+                provider.headers.forEach { (name, value) -> header(name, value) }
+            }.let { response ->
+                check(response.status.isSuccess()) { "HTTP ${response.status.value}" }
+                response.bodyAsChannel().toInputStream().use { input ->
+                    temporary.outputStream().buffered().use { output -> input.copyTo(output) }
+                }
+            }
+            temporary.copyTo(provider.target, overwrite = true)
+        } finally {
+            temporary.delete()
+        }
+    }
+
+    private fun String.isHttpUrl(): Boolean =
+        startsWith("https://", ignoreCase = true) || startsWith("http://", ignoreCase = true)
+
+    private fun sha256(value: String): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(value.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+
+    private val providerPathPrefixes = setOf("providers", "provider", "clash", "ruleset", "rules", "proxies")
 
     /** The user's configured User-Agent (settings store), or the airport-recognized default. */
     private fun resolveSubscriptionUserAgent(): String {
@@ -284,6 +486,15 @@ object ProfileProcessor {
                                 cb = null
                                 Timber.w(error, "Report fetch status: %s", error.message)
                             }
+                        }
+                    }
+
+                    fetchExternalProviders(stagingDir, targetDir) { status ->
+                        try {
+                            cb?.updateStatus(status)
+                        } catch (error: Exception) {
+                            cb = null
+                            Timber.w(error, "Report provider fetch status: %s", error.message)
                         }
                     }
 
