@@ -73,7 +73,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-private const val BottomBarLayoutAnimationDurationMillis = 260
+private const val BottomBarLayoutAnimationDurationMillis = 380
+private const val ProxyDestinationRevealDurationMillis = 300
 
 class MainPagerState(
     val pagerState: PagerState,
@@ -302,7 +303,11 @@ private fun FloatingBottomBarContent(
                 animateFloatAsState(
                     targetValue =
                         if (destination != BottomBarDestination.Proxy || revealProxyDestination) 1f else 0f,
-                    animationSpec = tween(durationMillis = 180, easing = AnimationSpecs.EmphasizedDecelerate),
+                    animationSpec =
+                        tween(
+                            durationMillis = ProxyDestinationRevealDurationMillis,
+                            easing = AnimationSpecs.EmphasizedDecelerate,
+                        ),
                     label = "bottom_bar_proxy_item_alpha",
                 )
             BottomBarTab(
@@ -467,31 +472,11 @@ private fun LegacyBottomNavigationIndicator(
     indicatorContainerColor: Color,
 ) {
     val density = LocalDensity.current
-    val animatedOffsetPx by
-        animateFloatAsState(
-            targetValue = indicatorOffsetPx,
-            animationSpec =
-                tween(
-                    durationMillis = BottomBarLayoutAnimationDurationMillis,
-                    easing = AnimationSpecs.EmphasizedDecelerate,
-                ),
-            label = "bottom_bar_indicator_offset",
-        )
-    val animatedWidthPx by
-        animateFloatAsState(
-            targetValue = indicatorWidthPx,
-            animationSpec =
-                tween(
-                    durationMillis = BottomBarLayoutAnimationDurationMillis,
-                    easing = AnimationSpecs.EmphasizedDecelerate,
-                ),
-            label = "bottom_bar_indicator_width",
-        )
     Box(
         modifier =
             modifier
-                .offset { IntOffset(animatedOffsetPx.roundToInt(), 0) }
-                .width(with(density) { animatedWidthPx.toDp() })
+                .offset { IntOffset(indicatorOffsetPx.roundToInt(), 0) }
+                .width(with(density) { indicatorWidthPx.toDp() })
                 .height(UiDp.dp48)
                 .background(indicatorContainerColor, Capsule())
     )

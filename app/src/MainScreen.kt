@@ -148,8 +148,13 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val selectedDestination by
         remember(mainPagerState, visibleDestinations) {
             derivedStateOf {
-                visibleDestinations.getOrElse(mainPagerState.selectedPage) {
-                    BottomBarDestination.Home
+                if (previousDestinations != visibleDestinations) {
+                    previousDestinations.getOrNull(mainPagerState.selectedPage)
+                        ?: settledDestination
+                } else {
+                    visibleDestinations.getOrElse(mainPagerState.selectedPage) {
+                        BottomBarDestination.Home
+                    }
                 }
             }
         }
@@ -205,7 +210,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
             currentDestination.takeIf { it in visibleDestinations } ?: BottomBarDestination.Config
         val targetPage = visibleDestinations.indexOf(targetDestination)
         if (mainPagerState.pagerState.currentPage != targetPage) {
-            mainPagerState.pagerState.scrollToPage(targetPage)
+            mainPagerState.pagerState.requestScrollToPage(targetPage)
         }
         mainPagerState.syncPage()
         settledDestination = targetDestination
@@ -337,8 +342,19 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                             orientation = Orientation.Horizontal,
                         ),
                 ) { page ->
+                    val destination =
+                        if (
+                            previousDestinations != visibleDestinations &&
+                                page == mainPagerState.pagerState.currentPage
+                        ) {
+                            previousDestinations.getOrNull(page) ?: settledDestination
+                        } else {
+                            visibleDestinations.getOrNull(page)
+                                ?: previousDestinations.getOrNull(page)
+                                ?: settledDestination
+                        }
                     MainRootPageContent(
-                        destination = visibleDestinations[page],
+                        destination = destination,
                         mainInnerPadding = mainInnerPadding,
                         classicHomeEnabled = classicHomeEnabled,
                         moeWallpaperUri = moeWallpaperUri,

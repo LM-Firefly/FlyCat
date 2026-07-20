@@ -419,14 +419,23 @@ class ProxyFacade(
      */
     private suspend fun onConfigChanged() {
         if (!isRemoteControllerActive() && detectActiveOwner() == RuntimeOwner.RootDaemon) {
-            _isConfigReloading.value = true
-            runCatching { startProxy(networkSettingsStorage.runMode.value) }
+            runCatching { reloadProxy(networkSettingsStorage.runMode.value) }
                 .onFailure { error ->
-                    _isConfigReloading.value = false
                     Timber.w(error, "Root daemon config reload failed")
                 }
         } else {
             reconcileAndRefreshRuntimeState()
+        }
+    }
+
+    suspend fun reloadProxy(mode: RunMode = networkSettingsStorage.runMode.value) {
+        if (isRemoteControllerActive()) return
+        _isConfigReloading.value = true
+        try {
+            startProxy(mode)
+        } catch (error: Throwable) {
+            _isConfigReloading.value = false
+            throw error
         }
     }
 

@@ -100,7 +100,7 @@ val appDataRuntimeModule = module {
         NetworkSettingsController(
             store = get(),
             isRunning = { RuntimeStateMapper.isActuallyRunning(proxyFacade.runtimeSnapshot.value) },
-            restartProxy = { mode -> proxyFacade.startProxy(mode) },
+            restartProxy = { mode -> proxyFacade.reloadProxy(mode) },
         )
     }
     single {
@@ -111,7 +111,7 @@ val appDataRuntimeModule = module {
             resolveActiveMode = {
                 RuntimeStateMapper.modeForOwner(proxyFacade.runtimeSnapshot.value.owner)
             },
-            restartProxy = { mode -> proxyFacade.startProxy(mode) },
+            restartProxy = { mode -> proxyFacade.reloadProxy(mode) },
         )
     }
     single { LogStore(androidApplication(), get()) }
