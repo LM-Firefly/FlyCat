@@ -22,6 +22,7 @@ package com.github.yumelira.yumebox.runtime.service.core
 
 import android.content.Context
 import android.os.ParcelFileDescriptor
+import android.system.Os
 import com.github.yumelira.yumebox.core.bridge.Channel
 import com.github.yumelira.yumebox.core.bridge.NativeProcess
 import com.github.yumelira.yumebox.core.model.RunMode
@@ -30,7 +31,8 @@ import com.github.yumelira.yumebox.runtime.api.IClashManager
 import com.github.yumelira.yumebox.runtime.service.manager.HttpClashManager
 import com.topjohnwu.superuser.Shell
 import java.io.File
-import java.security.SecureRandom
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -63,14 +65,14 @@ class CoreProcess(private val context: Context) {
     ): CoreEndpoint {
         val home = context.runtimeHomeDir.apply { mkdirs() }
         val sock = File(home, SOCK).absolutePath
-        // Reuse the config's own bearer secret so a web dashboard on external-controller shares it;
-        // fall back to a random one when the profile sets none (the unix socket is uid-protected too).
-        val secret = secretFromConfig(config) ?: randomSecret()
+        // The core keeps the controller secret parsed from the in-memory config. Do not pass it as
+        // a process argument: command lines are visible to other processes (and, for root modes,
+        // to the root shell implementation).
+        val secret = secretFromConfig(config).orEmpty()
 
         val args = arrayOf(
             "--home", home.absolutePath,
             "--controller", sock,
-            "--secret", secret,
             "--gateway", gateway,
             "--portal", portal,
             "--dns", dns,
@@ -107,25 +109,47 @@ class CoreProcess(private val context: Context) {
     fun startRoot(mode: String, config: String): CoreEndpoint {
         val home = context.runtimeHomeDir.apply { mkdirs() }
         val sock = File(home, SOCK).absolutePath
-        val secret = secretFromConfig(config) ?: randomSecret()
+        val secret = secretFromConfig(config).orEmpty()
 
-        // A detached `su` process can't inherit the socketpair, so hand it the config via a --config
-        // file in the app-private home dir (root can already read process memory — no extra exposure).
-        val configFile = File(home, ROOT_CONFIG).apply { writeText(config) }
+        // A detached `su` daemon can't inherit the config socketpair the VPN core streams over, so
+        // hand the compiled config (proxy secrets) through a named pipe instead of a file: the core
+        // reads it once via --config and nothing is ever written to disk — the same no-plaintext-at-
+        // rest posture as VPN. Drop any legacy plaintext run.yaml an older build left behind.
+        File(home, LEGACY_ROOT_CONFIG).delete()
+        val fifo = File(home, ROOT_CONFIG_PIPE).apply { delete() }
+        Os.mkfifo(fifo.absolutePath, ROOT_PIPE_MODE)
+
         val lib = File(context.applicationInfo.nativeLibraryDir, LIB).absolutePath
         val logFile = File(home, ROOT_LOG).absolutePath
         val command =
             "exec ${quote(lib)} --mode $mode --home ${quote(home.absolutePath)} " +
-                "--controller ${quote(sock)} --secret ${quote(secret)} " +
-                "--config ${quote(configFile.absolutePath)} " +
+                "--controller ${quote(sock)} " +
+                "--config ${quote(fifo.absolutePath)} " +
                 "</dev/null >${quote(logFile)} 2>&1 & echo \$!"
 
         Timber.tag(TAG).i("launch root core, mode=%s", mode)
         val result = Shell.cmd(command).exec()
         val pid = result.out.asSequence().mapNotNull { it.trim().toIntOrNull() }.firstOrNull()
-        check(result.isSuccess && pid != null && pid > 0) {
-            "root core launch failed (success=${result.isSuccess} out=${result.out})"
+        if (!(result.isSuccess && pid != null && pid > 0)) {
+            fifo.delete()
+            error("root core launch failed (success=${result.isSuccess} out=${result.out})")
         }
+
+        // Feed the config into the pipe; the core's ReadFile blocks until we open+write. Run it on a
+        // daemon thread with a timeout so a core that died on launch (no reader) can't block the
+        // caller forever; then unlink the pipe node (it holds nothing at rest either way).
+        val writer = Thread {
+            runCatching { FileOutputStream(fifo).use { it.write(config.toByteArray(Charsets.UTF_8)) } }
+                .onFailure { Timber.tag(TAG).w(it, "root config pipe write failed") }
+        }.apply { isDaemon = true; start() }
+        writer.join(FIFO_WRITE_TIMEOUT_MS)
+        if (writer.isAlive) {
+            // No reader turned up: open one ourselves to release the blocked writer thread. The dead
+            // daemon then surfaces via the launcher's startup probe (core.log shows the read failure).
+            Timber.tag(TAG).w("root config handoff timed out; core likely died on launch")
+            runCatching { FileInputStream(fifo).use { it.readBytes() } }
+        }
+        fifo.delete()
 
         RootDaemonState.save(RootDaemonState.Record(pid = pid, secret = secret, mode = mode))
         Timber.tag(TAG).i("root core launched, pid=%d mode=%s", pid, mode)
@@ -177,12 +201,6 @@ class CoreProcess(private val context: Context) {
         dst.setReadable(true, false)
         dst.setExecutable(true, false)
         return dst
-    }
-
-    private fun randomSecret(): String {
-        val bytes = ByteArray(24)
-        SecureRandom().nextBytes(bytes)
-        return bytes.joinToString("") { "%02x".format(it) }
     }
 
     companion object {
@@ -255,7 +273,12 @@ class CoreProcess(private val context: Context) {
             stopScope.launch { runCatching { Shell.cmd("kill ${record.pid}").exec() } }
         }
 
-        private const val ROOT_CONFIG = "run.yaml"
+        // Config is delivered over this named pipe (never persisted); LEGACY_ROOT_CONFIG is the old
+        // plaintext file, deleted on launch. 0600 = owner-only (app creates it, root reads it).
+        private const val ROOT_CONFIG_PIPE = "run.pipe"
+        private const val LEGACY_ROOT_CONFIG = "run.yaml"
+        private const val ROOT_PIPE_MODE = 384
+        private const val FIFO_WRITE_TIMEOUT_MS = 5000L
         private const val ROOT_LOG = "core.log"
 
         private fun quote(value: String): String = "'" + value.replace("'", "'\\''") + "'"

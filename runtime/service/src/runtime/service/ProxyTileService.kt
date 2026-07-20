@@ -42,6 +42,7 @@ import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 import com.github.yumelira.yumebox.runtime.service.profile.ProfileManager
+import com.github.yumelira.yumebox.runtime.service.session.RootSessionLauncher
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
 import com.github.yumelira.yumebox.runtime.service.util.sendBroadcastSelf
 import dev.oom_wg.purejoy.mlang.MLang
@@ -152,15 +153,7 @@ class ProxyTileService : TileService() {
                         }
                         RunMode.Tun,
                         RunMode.Tproxy -> {
-                            // Root modes need a root launch + config compile; defer to the app UI.
-                            updateTileInactiveState(subtitle = MLang.Service.Tile.ClickToOpen)
-                            val intent =
-                                Intent(Intent.ACTION_MAIN).apply {
-                                    component = Components.MAIN_ACTIVITY
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                            startActivityAndCollapseCompat(intent, requestCode = 1003)
-                            return@launch
+                            RootSessionLauncher.start(this@ProxyTileService, currentMode)
                         }
                     }
                 }
@@ -207,9 +200,11 @@ class ProxyTileService : TileService() {
                         RuntimeOwner.RemoteController -> RuntimePhase.Running
                         RuntimeOwner.None -> RuntimePhase.Idle
                     },
-                // VpnService owner is always the VPN mode; a running root daemon matches the
-                // configured root mode (Tun/Tproxy).
-                runMode = if (owner == RuntimeOwner.VpnService) RunMode.VpnService else configuredMode,
+                // VpnService owner is always the VPN mode. A root daemon can outlive a settings
+                // change, so use its persisted mode instead of the current selection.
+                runMode =
+                    if (owner == RuntimeOwner.VpnService) RunMode.VpnService
+                    else CoreProcess.rootDaemonMode() ?: configuredMode,
             )
         }
     }
@@ -221,7 +216,7 @@ class ProxyTileService : TileService() {
         runCatching {
             applicationContext.stopService(Intent(applicationContext, TunService::class.java))
         }
-        runCatching { CoreProcess.stopRoot() }
+        runCatching { RootSessionLauncher.stop(applicationContext) }
     }
 
     private fun effectiveMode(snapshot: RuntimeSnapshot): RunMode = snapshot.runMode

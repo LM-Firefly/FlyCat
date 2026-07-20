@@ -36,7 +36,6 @@ func main() {
 		gitVersion  = flag.String("git-version", "", "git version string")
 		sdkVersion  = flag.Int("sdk", 0, "android platform SDK int")
 		controller  = flag.String("controller", "", "external-controller-unix socket path")
-		secret      = flag.String("secret", "", "external controller bearer secret")
 		gateway     = flag.String("gateway", "", "tun gateway CIDR(s)")
 		portal      = flag.String("portal", "", "tun portal address(es)")
 		dns         = flag.String("dns", "", "tun DNS hijack address(es)")
@@ -94,10 +93,9 @@ func main() {
 		fatal("parse compiled config: %v", err)
 	}
 	if *controller != "" {
-		// Add the app's unix socket + secret but KEEP any user external-controller (TCP) so a web
-		// dashboard can connect; the app derives the same secret from the config.
+		// Add the app's unix socket but KEEP the secret parsed from the config. Passing it via
+		// command line would expose it through the process list and root shell command history.
 		cfg.Controller.ExternalControllerUnix = *controller
-		cfg.Controller.Secret = *secret
 	}
 
 	// TUN setup is mode-specific: vpn injects the VpnService fd before ApplyConfig (gVisor stack);

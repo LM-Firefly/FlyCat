@@ -47,6 +47,15 @@
         </service>
 
         <service
+            android:name="com.github.yumelira.yumebox.runtime.service.RootForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="root_tun_tproxy_notification" />
+        </service>
+
+        <service
             android:name="com.github.yumelira.yumebox.runtime.service.LogRecordService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
