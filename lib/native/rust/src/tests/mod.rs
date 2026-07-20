@@ -25,6 +25,7 @@ fn test_request(profile_dir: &Path, profile_path: &Path) -> CompileRequest {
         output_path: String::new(),
         age_secret_key: None,
         run_mode: RunMode::default(),
+        skip_runtime_patches: false,
     }
 }
 
@@ -113,6 +114,7 @@ fn compile_root_with_geosite_matcher(
         output_path: String::new(),
         age_secret_key: None,
         run_mode: RunMode::default(),
+        skip_runtime_patches: false,
     };
 
     let result = compile_request(request, false);
@@ -500,6 +502,7 @@ fn compile_request_emits_warning_for_empty_override_file() {
         output_path: String::new(),
         age_secret_key: None,
         run_mode: RunMode::default(),
+        skip_runtime_patches: false,
     };
 
     let result = compile_request(request, false).expect("compile request should succeed");

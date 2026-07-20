@@ -55,21 +55,25 @@ class SessionRuntimeSpecFactory(
     private fun createSpec(owner: RuntimeOwner, runMode: RunMode): RuntimeSpec {
         val profile = requireActiveProfile()
         val profileDir = context.importedDir.resolve(profile.uuid.toString())
-        val disableOverrides = networkSettings.disableAllOverride.value
-        // "Disable all overrides" skips the whole override chain (incl. the built-in Tun override).
+        val skipRuntimePatches =
+            networkSettings.disableAllOverride.value &&
+                (runMode == RunMode.Tun || runMode == RunMode.Tproxy)
+        // Root users can opt out of every visual/runtime patch and make their profile YAML fully
+        // authoritative. VPN never takes this path because Android owns its TUN transport.
         val userOverrides =
-            if (disableOverrides) {
+            if (skipRuntimePatches) {
                 emptyList()
             } else {
                 compiledConfigPipeline.resolveOverrideSpecs(profile.uuid.toString())
             }
         // Each mode injects its own built-in override (subject to disable-all-overrides): Tun the tun
         // geometry, Tproxy tproxy-port + iptables; VpnService gets its fd path and needs neither.
-        val tunConfig = if (runMode == RunMode.Tun) buildTunConfig() else null
-        val tproxyConfig = if (runMode == RunMode.Tproxy) buildTproxyConfig() else null
+        val tunConfig = if (!skipRuntimePatches && runMode == RunMode.Tun) buildTunConfig() else null
+        val tproxyConfig =
+            if (!skipRuntimePatches && runMode == RunMode.Tproxy) buildTproxyConfig() else null
         val overrideSpecs =
             when {
-                disableOverrides -> userOverrides
+                skipRuntimePatches -> userOverrides
                 tunConfig != null -> userOverrides + TunOverride.materialize(tunConfig, profileDir)
                 tproxyConfig != null ->
                     userOverrides + TproxyOverride.materialize(tproxyConfig, profileDir)
@@ -85,10 +89,16 @@ class SessionRuntimeSpecFactory(
             ageSecretKey = ageSecretKey,
             overrideSpecs = overrideSpecs,
             runMode = runMode,
+            skipRuntimePatches = skipRuntimePatches,
             tunConfig = tunConfig,
             tproxyConfig = tproxyConfig,
             effectiveFingerprint =
-                buildEffectiveFingerprint(profile.uuid.toString(), overrideSpecs, ageSecretKey),
+                buildEffectiveFingerprint(
+                    profile.uuid.toString(),
+                    overrideSpecs,
+                    ageSecretKey,
+                    skipRuntimePatches,
+                ),
             profileFingerprint = buildProfileFingerprint(profile.uuid.toString()),
         )
     }
@@ -185,12 +195,14 @@ class SessionRuntimeSpecFactory(
         profileUuid: String,
         overrideSpecs: List<OverrideSpec>,
         ageSecretKey: String?,
+        skipRuntimePatches: Boolean,
     ): String {
         val profileDir = context.importedDir.resolve(profileUuid)
         val metadataFile = context.filesDir.resolve("overrides/metadata.yaml")
         return sha256 {
             update(profileUuid.toByteArray())
             updateAgeSecretKeyDigest(ageSecretKey)
+            update("skip-runtime-patches:$skipRuntimePatches".toByteArray())
             updateFile(profileDir.resolve("config.yaml"))
             updateFile(metadataFile)
             overrideSpecs.forEach { overrideSpec ->

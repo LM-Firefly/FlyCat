@@ -37,6 +37,7 @@ data class RuntimeSpec(
     val ageSecretKey: String? = null,
     val overrideSpecs: List<OverrideSpec> = emptyList(),
     val runMode: RunMode = RunMode.VpnService,
+    val skipRuntimePatches: Boolean = false,
     val tunConfig: TunConfig? = null,
     val tproxyConfig: TproxyConfig? = null,
     val staticPlanFingerprint: String = "",

@@ -239,9 +239,12 @@ private fun FloatingBottomBarContent(
     val bottomBarScrollBehavior = LocalBottomBarScrollBehavior.current
     val mainPagerState = LocalMainPagerState.current
     val pagerState = mainPagerState.pagerState
-    val page by remember(mainPagerState) { derivedStateOf { mainPagerState.selectedPage } }
+    // Selection and indicator must share the pager's physical position. selectedPage is updated
+    // optimistically before animateScrollBy starts, which previously recolored an icon while the
+    // indicator was still parked on the old page.
+    val page by remember(pagerState) { derivedStateOf { pagerState.currentPage } }
     val indicatorProgress by
-        remember(pagerState) {
+        remember(pagerState, destinations.size) {
             derivedStateOf {
                 (pagerState.currentPage.toFloat() + pagerState.currentPageOffsetFraction).coerceIn(
                     0f,
@@ -293,7 +296,7 @@ private fun FloatingBottomBarContent(
     val handlePageChange = LocalHandlePageChange.current
     val onItemClick: (BottomBarDestination) -> Unit = { destination ->
         val index = destinations.indexOf(destination)
-        if (index != mainPagerState.selectedPage) {
+        if (index != pagerState.currentPage) {
             handlePageChange(destination.ordinal)
         }
     }

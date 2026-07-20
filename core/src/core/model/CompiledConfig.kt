@@ -40,6 +40,9 @@ data class CompileRequest(
     // Forwarded to liboverride: in Tun mode it keeps the compiled `tun:` block authoritative (the
     // core opens its own kernel device) instead of force-disabling it as for VpnService / TPROXY.
     val runMode: RunMode = RunMode.VpnService,
+    // Root-only escape hatch for users who want the profile YAML to remain authoritative. This
+    // bypasses visual settings, built-in mode patches, provider-path rewriting and user overrides.
+    val skipRuntimePatches: Boolean = false,
 )
 
 @Serializable

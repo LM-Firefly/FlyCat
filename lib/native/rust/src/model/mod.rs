@@ -19,6 +19,8 @@ pub struct CompileRequest {
     pub age_secret_key: Option<String>,
     #[serde(default)]
     pub run_mode: RunMode,
+    #[serde(default)]
+    pub skip_runtime_patches: bool,
 }
 
 /// The proxy run mode the app selected. Controls mode-specific config patching — chiefly whether the

@@ -195,6 +195,7 @@ class CompiledConfigPipeline(private val context: Context) {
                 spec.runtimeConfigPath.ifBlank { profileDir.resolve("runtime.yaml").absolutePath },
             ageSecretKey = spec.ageSecretKey,
             runMode = spec.runMode,
+            skipRuntimePatches = spec.skipRuntimePatches,
         )
     }
 

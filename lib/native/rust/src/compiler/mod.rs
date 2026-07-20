@@ -109,13 +109,17 @@ fn compile_root_from_source(
     if !root.is_object() {
         return Err("compiled root config must be an object".to_string());
     }
-    patch::patch_static_runtime(&mut root, profile_dir, request.run_mode);
+    if !request.skip_runtime_patches {
+        patch::patch_static_runtime(&mut root, profile_dir, request.run_mode);
+    }
 
     let object = root
         .as_object_mut()
         .ok_or_else(|| "compiled root config must be an object".to_string())?;
     validate_root_config(object)?;
-    patch::validate_provider_paths(object, profile_dir)?;
+    if !request.skip_runtime_patches {
+        patch::validate_provider_paths(object, profile_dir)?;
+    }
 
     Ok(CompiledRoot { root, warnings })
 }
