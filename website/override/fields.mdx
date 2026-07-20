@@ -1,143 +1,90 @@
 ---
-title: 覆写语法参考
+title: 覆写语法
 sidebarTitle: 语法参考
-description: YAML 和 JavaScript 覆写的语义、脚本 API 与故障行为。
 icon: braces
 ---
 
-本页是覆写系统的语义参考。入门说明见 [覆写](/override/index)。
-
 ## 文件类型
 
-| 后缀 | 处理方式 |
-|------|----------|
-| `.yaml` / `.yml` | 解析为补丁文档，并按覆写语义合并到当前配置 |
-| `.js` | 执行 `main(profile)`，使用返回对象作为下一版配置 |
+| 后缀 | 行为 |
+| --- | --- |
+| `.yaml` / `.yml` | 解析为补丁并合并到当前配置。 |
+| `.js` | 执行 `main(profile)`，返回值作为下一版配置。 |
 
-空文件会被跳过并记录 warning。未知后缀会中断编译。
+空文件会跳过并记录 warning。未知扩展名会使配置编译失败。
 
-## YAML 补丁语义
+## YAML 字段修饰符
 
 | 写法 | 行为 |
-|------|------|
-| `key: value` | 标量覆盖；对象递归合并；列表替换 |
-| `key-start: [...]` | 插入到列表开头 |
-| `key-end: [...]` | 追加到列表末尾 |
-| `key-merge: {...}` | 合并 Map |
-| `key-force: value` | 强制替换整个字段 |
-| `<key-end>: value` | 将带修饰符样式的字段名按普通字段处理 |
+| --- | --- |
+| `key: value` | 标量覆盖；对象递归合并；普通列表替换。 |
+| `key-start: [...]` | 在原列表开头插入项目。 |
+| `key-end: [...]` | 在原列表末尾追加项目。 |
+| `key-merge: {...}` | 递归合并 Map，不移除已有键。 |
+| `key-force: value` | 完整替换字段，不做合并。 |
+| `<key-end>: value` | 把带修饰符的字段名当作普通字段名。 |
 
-### 对象合并
-
-```yaml
-dns:
-  enable: true
-  enhanced-mode: fake-ip
-```
-
-对象默认递归合并。未写出的子字段会保留。
-
-### 列表处理
+`rules`、`proxies` 和 `proxy-groups` 等已知列表支持 `-start`、`-end`。同名代理或策略组在合并后保留最后出现的定义。
 
 ```yaml
+rules-start:
+  - DOMAIN-SUFFIX,lan,DIRECT
+
 rules-end:
-  - DOMAIN-SUFFIX,example.com,DIRECT
-```
+  - DOMAIN-SUFFIX,example.com,PROXY
 
-不带修饰符的列表会替换原列表。需要保留原列表时使用 `-start` 或 `-end`。
-
-对 `proxies`、`proxy-groups` 这类带 `name` 的列表，合并后会按 `name` 去重，后出现的同名项生效。
-
-### Map 合并
-
-```yaml
 hosts-merge:
   router.local: 192.168.1.1
-  nas.local: 192.168.1.100
-```
 
-`-merge` 会保留已有键，并写入或覆盖指定键。
-
-### 强制替换
-
-```yaml
 dns-force:
   enable: true
   nameserver:
-    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
 ```
 
-`-force` 会替换整个字段。未写出的子字段不会保留。
+## JavaScript
 
-## JavaScript 覆写
-
-JS 覆写必须定义 `main(profile)`。函数可以同步返回，也可以返回 Promise。
+`main(profile)` 可以直接修改并返回 `profile`，也可以返回新的对象。返回 `undefined`、数组或标量会使当前脚本失败，并保留执行前配置。
 
 ```js
-function main(profile) {
-  profile.mode = "rule";
+async function main(profile) {
+  const response = await fetch("http://127.0.0.1:8080/rules.yaml");
+  if (!response.ok) return profile;
 
-  return deepMerge(profile, {
-    "rules-end": ["DOMAIN-SUFFIX,example.com,DIRECT"],
-  }, true);
+  const remote = await response.yaml();
+  return deepMerge(profile, remote, true);
 }
 ```
 
-返回值必须是对象。返回字符串、数字、数组或 `undefined` 都会被视为脚本失败。
+### `deepMerge`
+
+| JS 写法 | 行为 |
+| --- | --- |
+| `key: value` | 覆盖标量或列表；对象递归合并。 |
+| `"+key": [...]` | 在列表开头插入项目。 |
+| `"key+": [...]` | 在列表末尾追加项目。 |
+| `"key!": {...}` | 用对象完整替换目标字段。 |
+| `"<key>": value` | 使用字面字段名，避免修饰符被识别。 |
 
 ### 可用 API
 
-| API | 说明 |
-|-----|------|
-| `yaml.parse(text)` | YAML 字符串转对象 |
-| `yaml.stringify(value)` | 对象转 YAML 字符串 |
-| `deepMerge(target, patch, true)` | 使用 JS helper 的覆写语义合并对象 |
-| `fetch(url, init?)` | HTTP 请求，仅支持 `http://` |
-| `response.text()` | 读取响应文本 |
-| `response.json()` | 读取 JSON 响应 |
-| `response.yaml()` | 读取 YAML 响应 |
-| `console.log/info/warn/error/debug` | 写入同名 `.log` 文件 |
-| `Buffer.from(...)` | 支持 `utf8` 与 `base64` |
-| `b64e(value)` / `b64d(value)` | Base64 编码与解码 |
+| API | 用途 |
+| --- | --- |
+| `yaml.parse(text)` / `yaml.stringify(value)` | YAML 与对象互转。 |
+| `deepMerge(target, patch, true)` | 使用 JS 覆写规则合并对象。 |
+| `fetch(url, init?)` | 发起 HTTP 请求。 |
+| `response.text()` / `json()` / `yaml()` | 读取响应体。 |
+| `console.log/info/warn/error/debug` | 写入同名 `.log` 文件。 |
+| `Buffer.from()`、`b64e()`、`b64d()` | UTF-8/Base64 转换。 |
 
-<Warning>
-嵌入式 `fetch` 只支持 `http://`，不支持 `https://`。
-</Warning>
+<Warning>内置 `fetch` 只支持 `http://`，不支持 HTTPS。网络导入覆写文件本身可以使用 HTTP 或 HTTPS。</Warning>
 
-### JS helper 的列表写法
+## 失败行为
 
-JS 内置 `deepMerge` 使用 `+key` 和 `key+` 处理列表：
+| 情况 | 结果 |
+| --- | --- |
+| YAML 解析失败 | 本次配置编译失败。 |
+| JS 运行或返回值失败 | 跳过当前 JS 覆写，保留执行前配置并记录 warning。 |
+| age 加密配置 | 覆写 warning 和 JS 日志会隐藏配置内容。 |
 
-```js
-function main(profile) {
-  return deepMerge(profile, {
-    "+rules": ["DOMAIN-SUFFIX,first.example,DIRECT"],
-    "rules+": ["DOMAIN-SUFFIX,last.example,DIRECT"],
-  }, true);
-}
-```
-
-这和 YAML 的 `rules-start` / `rules-end` 作用相同。
-
-## 日志与失败行为
-
-| 场景 | 行为 |
-|------|------|
-| JS 执行成功 | 写入开始、日志输出和成功记录 |
-| JS 执行失败 | 跳过当前 JS 覆写，保留执行前配置，并记录 warning |
-| 空覆写文件 | 跳过并记录 warning |
-| age 加密订阅 | warning 与 JS 日志隐藏敏感配置内容 |
-
-JS 日志路径与脚本同名，例如 `example.js` 对应 `example.log`。
-
-## 编译后补丁
-
-覆写完成后，native 编译器还会应用运行时补丁：
-
-- 清空 `interface-name`，设置 `routing-mark`。
-- 补齐 `profile.store-selected` 与 `profile.store-fake-ip`。
-- 在需要时补齐 DNS 默认配置。
-- 清理不适用于 Android 运行态的 listener。
-- 规范化 `proxy-providers` 与 `rule-providers` 的 `path`。
-
-这些补丁属于 YumeBox 运行时约束，不需要在用户覆写中重复声明。
+YumeBox 随后还会应用运行时约束，例如 provider 私有路径、DNS 默认值与当前运行模式所需的补丁。Root 模式启用“禁用所有覆写”时，这些运行时补丁也会跳过。

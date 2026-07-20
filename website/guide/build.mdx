@@ -1,0 +1,54 @@
+---
+title: 构建指南
+sidebarTitle: 构建
+icon: hammer
+---
+
+## 环境
+
+需要 OpenJDK 24、Android SDK 37、NDK `30.0.14904198`、CMake `3.22.1`、Kotlin CLI、Go 1.26、Rust nightly、Git 和 `patch`。Android SDK 可用下面的命令安装所需组件：
+
+```bash
+sdkmanager "platforms;android-37" "ndk;30.0.14904198" "cmake;3.22.1"
+```
+
+在项目根目录创建 `local.properties`：
+
+```properties
+sdk.dir=/path/to/android-sdk
+```
+
+## 准备内核
+
+项目不使用 Git submodule。先拉取 mihomo 源码；`alpha`、`meta` 和 `smart` 是可选通道。
+
+```bash
+./scripts/sync-kernel.sh alpha
+```
+
+准备 Rust Android target 和 `cargo-ndk`：
+
+```bash
+rustup toolchain install nightly --component rust-src
+rustup target add --toolchain nightly armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
+cargo install cargo-ndk
+```
+
+生成本地化代码、原生库和资源：
+
+```bash
+kotlin scripts/generate-locale.main.kts .
+kotlin scripts/native-build.main.kts --all
+```
+
+## 构建 APK
+
+```bash
+./gradlew :app:assembleDebug
+./gradlew -Pgeo.bundle=true :app:assembleDebug
+./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
+```
+
+Windows 使用 `gradlew.bat`。APK 输出在 `app/build/outputs/apk/<build-type>/`。本地默认 Debug 只构建 `arm64-v8a`，且不内置 Geo 数据；Release 命令会为已配置 ABI 构建并额外生成通用 APK。
+
+<Note>签名发布前再放入 `release.keystore` 并配置 `signing.properties`；不要把这两个文件提交到仓库。</Note>

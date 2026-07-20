@@ -2,65 +2,64 @@
 title: 覆写
 sidebarTitle: 覆写
 icon: file-code
-description: YumeBox 运行时覆写系统的使用方式与编译链路。
 ---
 
-覆写（Override）位于订阅配置与 mihomo 加载之间，用于在启动时合并本机配置、运行时补丁和脚本化处理。
+覆写是在订阅配置加载前叠加的一层本机配置。它不会修改订阅源文件；每次启动或重载时，YumeBox 按绑定顺序把覆写应用到当前配置，再交给 mihomo。
 
-订阅文件不会被改写。每次启动或重载时，YumeBox 会读取当前订阅，按绑定顺序应用覆写，再把结果加载到 mihomo。
+## 什么时候用
 
-## 适用场景
+- 给所有订阅补充固定 DNS、日志级别或规则。
+- 只替换一个策略组或一段 hosts。
+- 用 JavaScript 根据配置内容生成补丁。
+- 从本地文件或 URL 导入可复用的覆写文件。
 
-- 固定本机端口、DNS、日志级别等运行参数。
-- 在订阅规则前后追加本机规则。
-- 调整 TUN、provider path、外部控制器等运行时字段。
-- 用 JavaScript 根据条件生成配置片段或读取本地 HTTP 数据。
+## 创建和绑定
 
-## 覆写格式
+<Steps>
+  <Step title="创建或导入">
+    在“覆写”页面新建 YAML/JavaScript，或从本地文件、网络 URL 导入。扩展名决定类型：`.yaml`、`.yml` 或 `.js`。
+  </Step>
+  <Step title="编写内容">
+    YAML 适合固定字段；需要条件逻辑时使用 JavaScript。
+  </Step>
+  <Step title="绑定到配置">
+    在目标配置的覆写设置中添加文件，并调整顺序。后面的覆写基于前面的结果继续执行。
+  </Step>
+  <Step title="重启代理">
+    覆写只在编译配置时生效。保存后重启或重载代理，再从日志确认结果。
+  </Step>
+</Steps>
 
-| 格式 | 定位 | 适合场景 |
-|------|------|----------|
-| YAML | 声明式补丁 | 固定配置、规则追加、DNS/TUN 调整 |
-| JavaScript | 脚本化转换 | 条件逻辑、远程片段、批量处理、调试输出 |
+## YAML 示例
 
-<Warning>
-当前覆写文件只按 `.yaml`、`.yml`、`.js` 处理。旧版 JSON-only 写法不再对应当前实现。
-</Warning>
-
-## 快速示例
+下面的写法保留订阅的原有规则，并在最后追加一条本机规则：
 
 ```yaml
-mode: rule
-log-level: info
-
 dns:
   enable: true
   nameserver:
     - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
 
 rules-end:
   - DOMAIN-SUFFIX,example.com,DIRECT
 ```
 
-这段 YAML 会递归合并 `dns` 对象，并把规则追加到原 `rules` 末尾。更多语义见 [语法参考](/override/fields)。
+对象字段会递归合并；普通列表会替换原列表。要在保留原列表的基础上插入项目，使用 `-start` 或 `-end`。完整规则见 [覆写语法](/override/fields)。
 
-## 绑定与执行顺序
+## JavaScript 示例
 
-<Steps>
-  <Step title="创建覆写">
-    在覆写页面创建 YAML 或 JS 配置。
-  </Step>
-  <Step title="绑定订阅">
-    将一个或多个覆写绑定到目标订阅。
-  </Step>
-  <Step title="按链叠加">
-    启动或重载时，YumeBox 按绑定顺序应用覆写链，后一个覆写基于前一个的结果继续处理。
-  </Step>
-</Steps>
+JavaScript 必须定义 `main(profile)` 并返回配置对象。JS 的列表追加语法是 `rules+`，不是 YAML 的 `rules-end`。
 
-多个覆写按绑定顺序执行，叠加结果在 native 编译层一次性合并并加载进内核。
+```js
+function main(profile) {
+  return deepMerge(profile, {
+    "rules+": ["DOMAIN-SUFFIX,example.com,DIRECT"],
+  }, true);
+}
+```
 
-<Card title="启动流程" icon="rocket" href="/index#启动流程">
-  覆写如何在启动时被解析、编译并加载进 mihomo。
+<Warning>Root TUN 和透明代理开启“禁用所有覆写”后，用户覆写和运行时补丁都不会执行。</Warning>
+
+<Card title="覆写语法" icon="braces" href="/override/fields">
+  查看 YAML 修饰符、JavaScript API 和失败行为。
 </Card>

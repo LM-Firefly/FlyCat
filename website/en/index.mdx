@@ -1,0 +1,49 @@
+---
+title: YumeBox
+sidebarTitle: Overview
+icon: house
+---
+
+<Frame><img src="/images/og.webp" alt="YumeBox" noZoom={true} /></Frame>
+
+## What it does
+
+YumeBox is an Android client for mihomo. It manages subscriptions, local profiles, and overrides, compiles the effective configuration, and runs mihomo with views for proxies, connections, traffic, and logs.
+
+## How it works
+
+1. Import a subscription or a local YAML profile and choose the active profile.
+2. Optionally bind YAML or JavaScript overrides.
+3. Start VPN, Root TUN, or transparent proxy mode.
+4. While mihomo is running, YumeBox exposes live proxy, rule, connection, and traffic data. Those runtime views disappear when the proxy stops.
+
+YumeBox does not edit the subscription source file. Provider files are kept in the active profile's private directory so profiles cannot overwrite each other.
+
+## Start here
+
+<CardGroup cols={2}>
+  <Card title="App guide" icon="smartphone" href="/guide/app">
+    Learn about modes, providers, and common settings.
+  </Card>
+  <Card title="Overrides" icon="file-code" href="/override/override">
+    Layer local YAML or JavaScript onto a subscription.
+  </Card>
+  <Card title="Build guide" icon="hammer" href="/guide/build">
+    Prepare native dependencies and build an APK.
+  </Card>
+</CardGroup>
+
+## Download and feedback
+
+<CardGroup cols={2}>
+  <Card title="Download" icon="download" href="https://github.com/YumeYucca/YumeBox/releases">
+    Get an APK from GitHub Releases.
+  </Card>
+  <Card title="Report an issue" icon="message-square" href="https://github.com/YumeYucca/YumeBox/issues">
+    Include reproduction steps, logs, and device details.
+  </Card>
+</CardGroup>
+
+<Card title="mihomo configuration reference" icon="book-open" href="https://wiki.metacubex.one/config/">
+  mihomo maintains the full reference for configuration fields, rules, and providers.
+</Card>

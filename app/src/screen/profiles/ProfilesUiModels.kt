@@ -45,6 +45,7 @@ data class ProfilesUiState(
 data class DownloadProgress(
     val percent: Int?,
     val message: String,
+    val itemProgress: String? = null,
     val isCompleted: Boolean = false,
 )
 
@@ -64,6 +65,12 @@ internal fun FetchStatus.toDownloadProgress(): DownloadProgress {
             FetchStatus.Action.SubscriptionInfo -> ""
             FetchStatus.Action.Verifying -> detail.ifBlank { MLang.ProfilesVM.Progress.Verifying }
         }
+    val itemProgress =
+        if (action == FetchStatus.Action.FetchProviders && max > 0) {
+            "${progress.coerceIn(1, max)} / $max"
+        } else {
+            null
+        }
 
-    return DownloadProgress(percent = percent, message = message)
+    return DownloadProgress(percent = percent, message = message, itemProgress = itemProgress)
 }

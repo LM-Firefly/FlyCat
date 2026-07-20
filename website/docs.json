@@ -12,13 +12,14 @@
   },
   "favicon": "/images/logo.webp",
   "banner": {
-    "content": "0.5.3 版本现已上线！查看[更新日志](/update/history)了解详情",
+    "content": "v0.5.3 已发布 / available · [更新日志 / changelog](/update/history)",
     "dismissible": true
   },
   "navigation": {
     "languages": [
       {
         "language": "zh-Hans",
+        "default": true,
         "groups": [
           {
             "group": "开始",
@@ -29,8 +30,8 @@
             "pages": ["/guide/app"]
           },
           {
-            "group": "覆写",
-            "pages": ["/override/override", "/override/fields"]
+            "group": "开发",
+            "pages": ["/override/override", "/override/fields", "/guide/build"]
           },
           {
             "group": "API",
@@ -149,6 +150,23 @@
                 "pages": ["PUT /debug/gc"]
               }
             ]
+          }
+        ]
+      },
+      {
+        "language": "en",
+        "groups": [
+          {
+            "group": "Start here",
+            "pages": ["/en/index", "/en/update/history"]
+          },
+          {
+            "group": "App guide",
+            "pages": ["/en/guide/app"]
+          },
+          {
+            "group": "Development",
+            "pages": ["/en/override/override", "/en/override/fields", "/en/guide/build"]
           }
         ]
       }

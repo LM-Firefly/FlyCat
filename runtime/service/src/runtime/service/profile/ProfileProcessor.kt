@@ -73,6 +73,7 @@ object ProfileProcessor {
     )
 
     private data class ExternalProvider(
+        val name: String,
         val url: String,
         val target: File,
         val headers: List<Pair<String, String>>,
@@ -184,8 +185,8 @@ object ProfileProcessor {
                 onStatus(
                     FetchStatus(
                         action = FetchStatus.Action.FetchProviders,
-                        args = listOf(provider.url),
-                        progress = index,
+                        args = listOf(provider.name),
+                        progress = index + 1,
                         max = providers.size,
                     )
                 )
@@ -193,14 +194,6 @@ object ProfileProcessor {
                     .onFailure { error ->
                         Timber.w(error, "Skip external provider download: %s", provider.url)
                     }
-                onStatus(
-                    FetchStatus(
-                        action = FetchStatus.Action.FetchProviders,
-                        args = listOf(provider.url),
-                        progress = index + 1,
-                        max = providers.size,
-                    )
-                )
             }
         } finally {
             client.close()
@@ -219,7 +212,7 @@ object ProfileProcessor {
                 "proxy-providers" to PROXY_PROVIDER_SCOPE,
             ).forEach { (field, scope) ->
                 val definitions = root[field] as? Map<*, *> ?: return@forEach
-                definitions.forEach { (_, rawDefinition) ->
+                definitions.forEach { (rawName, rawDefinition) ->
                     val definition = rawDefinition as? Map<*, *> ?: return@forEach
                     val type = definition["type"]?.toString()?.trim().orEmpty()
                     val url = definition["url"]?.toString()?.trim().orEmpty()
@@ -243,7 +236,15 @@ object ProfileProcessor {
                                 profileProviderDir = profileProviderScopeDir(profileDir, scope),
                             )
                         )
-                    add(ExternalProvider(url = url, target = target, headers = providerHeaders(definition)))
+                    val name = rawName?.toString()?.trim().takeUnless { it.isNullOrEmpty() } ?: target.name
+                    add(
+                        ExternalProvider(
+                            name = name,
+                            url = url,
+                            target = target,
+                            headers = providerHeaders(definition),
+                        )
+                    )
                 }
             }
         }

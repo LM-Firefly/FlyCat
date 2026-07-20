@@ -1,0 +1,51 @@
+---
+title: App guide
+sidebarTitle: App guide
+icon: smartphone
+---
+
+## Run modes
+
+| Mode | Root required | Use it when |
+| --- | --- | --- |
+| VPN | No | The default choice. Android's VpnService handles traffic after system approval. |
+| Root TUN | Yes | The Root daemon and mihomo create the TUN device. |
+| Transparent proxy | Yes | The Root daemon configures TPROXY and redirect rules. |
+
+For Root modes, verify that `su` works first. After startup, check the persistent notification. If it is absent, allow notifications and remove battery restrictions in system settings.
+
+## Proxies, providers, and rules
+
+The Proxy page reads live data from mihomo; it is not a static preview of a subscription. It is available only while the proxy is running.
+
+During an import or subscription update, YumeBox prefetches HTTP rule and proxy providers. Each provider is independent: a failed download does not fail the profile import, and mihomo downloads missing files when it runs.
+
+## Disable all overrides
+
+In Root TUN and transparent proxy modes, **Disable all overrides** leaves the profile YAML in charge. YumeBox skips user overrides, built-in mode patches, visual runtime settings, and provider path rewriting.
+
+Use it only when you maintain a complete mihomo configuration yourself. VPN mode remains managed by Android's VpnService and cannot use this bypass.
+
+## Common settings
+
+| Setting | Recommendation |
+| --- | --- |
+| Update profile on start | Keep it enabled for subscriptions. |
+| Custom User-Agent | Set it only when a subscription requires a specific client identifier. |
+| Traffic notification | Keep it enabled so the running service remains visible. |
+| Unrestricted battery usage | Recommended to reduce background termination. |
+| DNS hijack | Usually enabled in VPN mode; change it only for a deliberate DNS setup. |
+
+## Deep links
+
+| Link | Opens |
+| --- | --- |
+| `yumebox://page/home` | Home |
+| `yumebox://page/proxy` | Live Proxy page |
+| `yumebox://page/profiles` | Profiles |
+| `yumebox://page/settings` | Settings |
+| `yumebox://screen/network` | Network settings |
+| `yumebox://screen/override` | Overrides |
+| `yumebox://screen/log` | Logs |
+
+<Note>Unknown deep links are ignored and leave the current page open.</Note>

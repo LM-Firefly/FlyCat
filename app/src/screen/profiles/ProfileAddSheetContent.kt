@@ -128,6 +128,15 @@ internal fun DownloadProgressContent(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        downloadProgress?.itemProgress?.let { itemProgress ->
+            Text(
+                text = itemProgress,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 

@@ -1,0 +1,54 @@
+---
+title: Build guide
+sidebarTitle: Build
+icon: hammer
+---
+
+## Requirements
+
+Install OpenJDK 24, Android SDK 37, NDK `30.0.14904198`, CMake `3.22.1`, Kotlin CLI, Go 1.26, Rust nightly, Git, and `patch`.
+
+```bash
+sdkmanager "platforms;android-37" "ndk;30.0.14904198" "cmake;3.22.1"
+```
+
+Create `local.properties` in the project root:
+
+```properties
+sdk.dir=/path/to/android-sdk
+```
+
+## Prepare native dependencies
+
+The repository does not use Git submodules. Fetch mihomo first; valid channels are `alpha`, `meta`, and `smart`.
+
+```bash
+./scripts/sync-kernel.sh alpha
+```
+
+Install Android Rust targets and `cargo-ndk`:
+
+```bash
+rustup toolchain install nightly --component rust-src
+rustup target add --toolchain nightly armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
+cargo install cargo-ndk
+```
+
+Generate locale sources, native libraries, and bundled assets:
+
+```bash
+kotlin scripts/generate-locale.main.kts .
+kotlin scripts/native-build.main.kts --all
+```
+
+## Build an APK
+
+```bash
+./gradlew :app:assembleDebug
+./gradlew -Pgeo.bundle=true :app:assembleDebug
+./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
+```
+
+Use `gradlew.bat` on Windows. APKs are written to `app/build/outputs/apk/<build-type>/`. The default local Debug build targets `arm64-v8a` without bundled Geo data; the Release command builds every configured ABI and a universal APK.
+
+<Note>For a signed release, add `release.keystore` and `signing.properties` locally. Do not commit either file.</Note>

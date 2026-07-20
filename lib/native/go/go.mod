@@ -2,12 +2,7 @@ module cfa
 
 go 1.26.5
 
-require (
-	github.com/dlclark/regexp2 v1.12.0
-	github.com/metacubex/mihomo v1.7.0
-	golang.org/x/sync v0.22.0
-	gopkg.in/yaml.v3 v3.0.1
-)
+require github.com/metacubex/mihomo v1.7.0
 
 replace github.com/metacubex/mihomo => ../../mihomo/mihomo
 
@@ -23,6 +18,7 @@ require (
 	github.com/bodgit/windows v1.0.1 // indirect
 	github.com/coder/websocket v1.8.12 // indirect
 	github.com/coreos/go-iptables v0.8.0 // indirect
+	github.com/dlclark/regexp2 v1.12.0 // indirect
 	github.com/dunglas/httpsfv v1.0.2 // indirect
 	github.com/enfein/mieru/v3 v3.34.0 // indirect
 	github.com/ericlagergren/aegis v0.0.0-20250325060835-cd0defd64358 // indirect
@@ -70,8 +66,8 @@ require (
 	github.com/metacubex/hkdf v0.1.0 // indirect
 	github.com/metacubex/hpke v0.1.0 // indirect
 	github.com/metacubex/http v0.1.6 // indirect
-	github.com/metacubex/jls-quic-go v0.0.0-20260712113821-d34e6f9b4c7f // indirect
-	github.com/metacubex/jls-tls v0.0.0-20260712171131-15870a03ac51 // indirect
+	github.com/metacubex/jls-quic-go v0.0.0-20260717074316-85a8decdd355 // indirect
+	github.com/metacubex/jls-tls v0.0.0-20260716145614-4bf88db633e2 // indirect
 	github.com/metacubex/jsonv2 v0.0.0-20260518173308-f4597c22f1df // indirect
 	github.com/metacubex/kcp-go v0.0.0-20260105040817-550693377604 // indirect
 	github.com/metacubex/mhurl v0.1.0 // indirect
@@ -84,7 +80,7 @@ require (
 	github.com/metacubex/sevenzip v1.6.4 // indirect
 	github.com/metacubex/sing v0.5.7 // indirect
 	github.com/metacubex/sing-mux v0.3.10 // indirect
-	github.com/metacubex/sing-quic v0.0.0-20260527143057-68e10a6afdc3 // indirect
+	github.com/metacubex/sing-quic v0.0.0-20260720020849-6c62e17225e8 // indirect
 	github.com/metacubex/sing-shadowsocks v0.2.12 // indirect
 	github.com/metacubex/sing-shadowsocks2 v0.2.7 // indirect
 	github.com/metacubex/sing-tun v0.4.21 // indirect
@@ -136,12 +132,14 @@ require (
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.27.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
 	golang.org/x/tools v0.44.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace google.golang.org/protobuf => github.com/metacubex/protobuf-go v0.0.0-20260306035419-7ceee0674686
