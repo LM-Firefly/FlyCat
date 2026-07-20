@@ -14,28 +14,25 @@ fn normalize_object_with_schema(value: &JsonValue, schema: SchemaId) -> YamlValu
     };
 
     let mut mapping = YamlMapping::new();
-    let mut written = std::collections::HashSet::<String>::new();
+    let schema_keys = ordered_keys(schema);
 
-    for key in ordered_keys(schema) {
+    for key in schema_keys {
         if let Some(field_value) = object.get(*key) {
             mapping.insert(
                 YamlValue::String((*key).to_string()),
                 normalize_field_value(schema, key, field_value),
             );
-            written.insert((*key).to_string());
         }
     }
 
-    let mut remaining = object
-        .keys()
-        .filter(|key| !written.contains(*key))
-        .cloned()
-        .collect::<Vec<_>>();
-    remaining.sort();
-
-    for key in remaining {
-        if let Some(field_value) = object.get(&key) {
-            mapping.insert(YamlValue::String(key), normalize_generic_value(field_value));
+    // serde_json's default Map is already key-ordered. Iterating it directly avoids allocating,
+    // hashing and sorting a temporary key list for every proxy/rule object.
+    for (key, field_value) in object {
+        if !schema_keys.contains(&key.as_str()) {
+            mapping.insert(
+                YamlValue::String(key.clone()),
+                normalize_generic_value(field_value),
+            );
         }
     }
 
@@ -89,19 +86,15 @@ fn normalize_object_map(value: &JsonValue, item_schema: Option<SchemaId>) -> Yam
         return normalize_generic_value(value);
     };
 
-    let mut keys = object.keys().cloned().collect::<Vec<_>>();
-    keys.sort();
-
     let mut mapping = YamlMapping::new();
-    for key in keys {
-        let field_value = object.get(&key).expect("map key exists");
+    for (key, field_value) in object {
         let normalized = match item_schema {
             Some(schema) if field_value.is_object() => {
                 normalize_object_with_schema(field_value, schema)
             }
             _ => normalize_generic_value(field_value),
         };
-        mapping.insert(YamlValue::String(key), normalized);
+        mapping.insert(YamlValue::String(key.clone()), normalized);
     }
     YamlValue::Mapping(mapping)
 }
@@ -120,25 +113,25 @@ pub fn normalize_generic_value(value: &JsonValue) -> YamlValue {
 }
 
 fn normalize_generic_object(object: &JsonMap<String, JsonValue>) -> YamlValue {
-    let mut keys = object.keys().cloned().collect::<Vec<_>>();
-    keys.sort();
     let mut mapping = YamlMapping::new();
-    for key in keys {
-        let field_value = object.get(&key).expect("object key exists");
-        mapping.insert(YamlValue::String(key), normalize_generic_value(field_value));
+    for (key, field_value) in object {
+        mapping.insert(
+            YamlValue::String(key.clone()),
+            normalize_generic_value(field_value),
+        );
     }
     YamlValue::Mapping(mapping)
 }
 
 fn normalize_number(value: &serde_json::Number) -> YamlValue {
     if let Some(number) = value.as_i64() {
-        return serde_yaml::to_value(number).expect("yaml i64");
+        return YamlValue::Number(number.into());
     }
     if let Some(number) = value.as_u64() {
-        return serde_yaml::to_value(number).expect("yaml u64");
+        return YamlValue::Number(number.into());
     }
     if let Some(number) = value.as_f64() {
-        return serde_yaml::to_value(number).expect("yaml f64");
+        return YamlValue::Number(number.into());
     }
     YamlValue::Null
 }

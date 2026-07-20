@@ -122,12 +122,12 @@ pub enum FieldBehavior {
 }
 
 #[derive(Default)]
-pub struct PatchOperations {
-    pub replace: Option<JsonValue>,
-    pub start: Option<JsonValue>,
-    pub end: Option<JsonValue>,
-    pub merge: Option<JsonValue>,
-    pub force: Option<JsonValue>,
+pub struct PatchOperations<'a> {
+    pub replace: Option<&'a JsonValue>,
+    pub start: Option<&'a JsonValue>,
+    pub end: Option<&'a JsonValue>,
+    pub merge: Option<&'a JsonValue>,
+    pub force: Option<&'a JsonValue>,
 }
 
 fn default_request_schema_version() -> u32 {

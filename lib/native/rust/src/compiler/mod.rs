@@ -21,14 +21,18 @@ pub fn compile_request(
     request: CompileRequest,
     write_output: bool,
 ) -> Result<CompileResult, String> {
-    if request_source_is_age_encrypted(&request)? {
+    validate_request_schema(&request)?;
+    let source_bytes =
+        fs::read(&request.profile_path).map_err(|err| format!("read profile yaml: {err}"))?;
+    if is_age_encrypted(&source_bytes) {
         return Err(
             "encrypted profiles must use native compile raw output; YAML output is disabled"
                 .to_string(),
         );
     }
-
-    let compiled = compile_root(&request)?;
+    let source_yaml = String::from_utf8(source_bytes)
+        .map_err(|err| format!("source yaml is not utf-8: {err}"))?;
+    let compiled = compile_root_from_source(&request, source_yaml, false)?;
 
     let final_yaml = serde_yaml::to_string(&normalize::normalize_root(&compiled.root))
         .map_err(|err| format!("encode final yaml: {err}"))?;
@@ -72,23 +76,26 @@ pub fn compile_raw_request(request: CompileRequest) -> Result<CompileRawResult, 
 }
 
 fn compile_root(request: &CompileRequest) -> Result<CompiledRoot, String> {
-    if request.schema_version != REQUEST_SCHEMA_VERSION {
-        return Err(format!(
-            "unsupported schema version: {}",
-            request.schema_version
-        ));
-    }
-
+    validate_request_schema(request)?;
     let (source_yaml, encrypted) = load_source_yaml(request)?;
+    compile_root_from_source(request, source_yaml, encrypted)
+}
+
+fn compile_root_from_source(
+    request: &CompileRequest,
+    source_yaml: String,
+    encrypted: bool,
+) -> Result<CompiledRoot, String> {
     let mut source_value: YamlValue =
         serde_yaml::from_str(&source_yaml).map_err(|err| format!("parse source yaml: {err}"))?;
-    // serde_yaml resolves `&`/`*` anchor aliases but does NOT expand the YAML merge key
-    // (`<<`). Without this, every `<<: *anchor` becomes a literal `"<<"` key and the
-    // inherited fields (`type`, `behavior`, …) never reach mihomo. apply_merge walks the
-    // whole tree and uses explicit-key-wins semantics.
-    source_value
-        .apply_merge()
-        .map_err(|err| format!("apply yaml merge keys: {err}"))?;
+    // serde_yaml resolves `&`/`*` aliases but not YAML merge keys (`<<`). Applying merges walks
+    // the full document, which is costly for subscriptions with thousands of nodes or rules, so
+    // avoid it entirely unless the source can actually contain a merge key.
+    if source_yaml.contains("<<:") {
+        source_value
+            .apply_merge()
+            .map_err(|err| format!("apply yaml merge keys: {err}"))?;
+    }
     let mut root: JsonValue = serde_json::to_value(source_value)
         .map_err(|err| format!("convert source yaml to json: {err}"))?;
 
@@ -113,6 +120,16 @@ fn compile_root(request: &CompileRequest) -> Result<CompiledRoot, String> {
     Ok(CompiledRoot { root, warnings })
 }
 
+fn validate_request_schema(request: &CompileRequest) -> Result<(), String> {
+    if request.schema_version != REQUEST_SCHEMA_VERSION {
+        return Err(format!(
+            "unsupported schema version: {}",
+            request.schema_version
+        ));
+    }
+    Ok(())
+}
+
 fn load_source_yaml(request: &CompileRequest) -> Result<(String, bool), String> {
     let source_bytes =
         fs::read(&request.profile_path).map_err(|err| format!("read profile yaml: {err}"))?;
@@ -125,12 +142,6 @@ fn load_source_yaml(request: &CompileRequest) -> Result<(String, bool), String> 
     let source_yaml =
         String::from_utf8(plaintext).map_err(|err| format!("source yaml is not utf-8: {err}"))?;
     Ok((source_yaml, encrypted))
-}
-
-fn request_source_is_age_encrypted(request: &CompileRequest) -> Result<bool, String> {
-    let source_bytes =
-        fs::read(&request.profile_path).map_err(|err| format!("read profile yaml: {err}"))?;
-    Ok(is_age_encrypted(&source_bytes))
 }
 
 fn is_age_encrypted(bytes: &[u8]) -> bool {

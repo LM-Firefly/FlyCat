@@ -417,8 +417,8 @@ class RustBuilder(private val config: ProjectConfig) {
             "-t", abi,
             "-o", outputDir.absolutePath,
             "build", "--release", "--lib",
-            // Rebuild std from source so the size profile (opt-level=z, LTO,
-            // immediate-abort) applies to it too. Requires the nightly
+            // Rebuild std from source so the runtime-performance profile (opt-level=3, LTO)
+            // applies to it too. Requires the nightly
             // toolchain pinned below plus the rust-src component.
             "-Z", "build-std=std,panic_abort",
         )
@@ -430,16 +430,12 @@ class RustBuilder(private val config: ProjectConfig) {
                 // -Z flags and -Cpanic=immediate-abort are nightly-only; pin via
                 // rustup so the build does not depend on the host default toolchain.
                 "RUSTUP_TOOLCHAIN" to "nightly",
-                // immediate-abort drops all panic message/formatting machinery
-                // (~18% smaller liboverride.so). Panics already aborted the
-                // process (profile panic=abort); they just lose the logcat
-                // message. Compile errors are reported via Result/JSON and are
-                // unaffected. gc-sections + lld ICF fold what LTO leaves behind.
+                // Panic handling is irrelevant to normal compilation throughput. Keep immediate
+                // abort for the native failure boundary, but avoid size-only linker passes that
+                // can trade code layout for a smaller output.
                 "RUSTFLAGS" to listOf(
                     "-Zunstable-options",
                     "-Cpanic=immediate-abort",
-                    "-C", "link-arg=-Wl,--gc-sections",
-                    "-C", "link-arg=-Wl,--icf=all",
                     // liboverride is loaded via System.loadLibrary("override"); give it a stable
                     // soname so it resolves whether packed (code_cache) or raw (nativeLibraryDir).
                     "-C", "link-arg=-Wl,-soname,liboverride.so",

@@ -1,5 +1,6 @@
 use serde_json::{Map as JsonMap, Value as JsonValue};
 use sha2::{Digest, Sha256};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use crate::compiler::schema::{
@@ -293,17 +294,17 @@ fn apply_field(
     target_object: &mut JsonMap<String, JsonValue>,
     base_key: &str,
     behavior: FieldBehavior,
-    operations: PatchOperations,
+    operations: PatchOperations<'_>,
 ) {
     if let Some(force) = operations.force {
-        target_object.insert(base_key.to_string(), clone_raw_value(&force));
+        target_object.insert(base_key.to_string(), clone_raw_value(force));
         return;
     }
 
     match behavior {
         FieldBehavior::Scalar => {
             if let Some(replace) = operations.replace {
-                target_object.insert(base_key.to_string(), clone_raw_value(&replace));
+                target_object.insert(base_key.to_string(), clone_raw_value(replace));
             }
         }
         FieldBehavior::List(style) => apply_list_field(target_object, base_key, style, operations),
@@ -312,10 +313,10 @@ fn apply_field(
                 let entry = target_object
                     .entry(base_key.to_string())
                     .or_insert_with(|| JsonValue::Object(JsonMap::new()));
-                merge_raw_map(entry, &merge);
+                merge_raw_map(entry, merge);
             }
             if let Some(replace) = operations.replace {
-                target_object.insert(base_key.to_string(), clone_raw_value(&replace));
+                target_object.insert(base_key.to_string(), clone_raw_value(replace));
             }
         }
         FieldBehavior::Object(schema) => {
@@ -324,16 +325,16 @@ fn apply_field(
                     .entry(base_key.to_string())
                     .or_insert_with(|| JsonValue::Object(JsonMap::new()));
                 if replace.is_object() {
-                    apply_nested_object_with_schema(entry, &replace, schema);
+                    apply_nested_object_with_schema(entry, replace, schema);
                 } else {
-                    *entry = clone_raw_value(&replace);
+                    *entry = clone_raw_value(replace);
                 }
             }
             if let Some(merge) = operations.merge {
                 let entry = target_object
                     .entry(base_key.to_string())
                     .or_insert_with(|| JsonValue::Object(JsonMap::new()));
-                merge_raw_map(entry, &merge);
+                merge_raw_map(entry, merge);
             }
         }
         FieldBehavior::Rules => {
@@ -345,37 +346,35 @@ fn apply_field(
 fn apply_generic_field(
     target_object: &mut JsonMap<String, JsonValue>,
     base_key: &str,
-    operations: PatchOperations,
+    operations: PatchOperations<'_>,
 ) {
     if let Some(force) = operations.force {
-        target_object.insert(base_key.to_string(), clone_raw_value(&force));
+        target_object.insert(base_key.to_string(), clone_raw_value(force));
         return;
     }
     if let Some(merge) = operations.merge {
         let entry = target_object
             .entry(base_key.to_string())
             .or_insert_with(|| JsonValue::Object(JsonMap::new()));
-        merge_raw_map(entry, &merge);
+        merge_raw_map(entry, merge);
     }
     if let Some(replace) = operations.replace {
         if replace.is_object() {
             let entry = target_object
                 .entry(base_key.to_string())
                 .or_insert_with(|| JsonValue::Object(JsonMap::new()));
-            apply_override_document(entry, &replace);
+            apply_override_document(entry, replace);
         } else {
-            target_object.insert(base_key.to_string(), clone_raw_value(&replace));
+            target_object.insert(base_key.to_string(), clone_raw_value(replace));
         }
     }
     if operations.start.is_some() || operations.end.is_some() {
         let mut items = Vec::<JsonValue>::new();
-        if let Some(start) = operations.start.as_ref() {
+        if let Some(start) = operations.start {
             items.extend(collect_array_items(start));
         }
-        if let Some(existing) = target_object.get(base_key).and_then(JsonValue::as_array) {
-            items.extend(existing.iter().cloned());
-        }
-        if let Some(end) = operations.end.as_ref() {
+        items.append(&mut take_array_field(target_object, base_key));
+        if let Some(end) = operations.end {
             items.extend(collect_array_items(end));
         }
         target_object.insert(base_key.to_string(), JsonValue::Array(items));
@@ -386,23 +385,23 @@ fn apply_list_field(
     target_object: &mut JsonMap<String, JsonValue>,
     base_key: &str,
     style: ListStyle,
-    operations: PatchOperations,
+    operations: PatchOperations<'_>,
 ) {
     if let Some(force) = operations.force {
-        target_object.insert(base_key.to_string(), clone_raw_value(&force));
+        target_object.insert(base_key.to_string(), clone_raw_value(force));
         return;
     }
 
-    let mut items = Vec::<JsonValue>::new();
-    if let Some(start) = operations.start.as_ref() {
+    let mut items = Vec::new();
+    if let Some(start) = operations.start {
         items.extend(collect_array_items(start));
     }
-    if let Some(replace) = operations.replace.as_ref() {
+    if let Some(replace) = operations.replace {
         items.extend(collect_array_items(replace));
-    } else if let Some(existing) = target_object.get(base_key).and_then(JsonValue::as_array) {
-        items.extend(existing.iter().cloned());
+    } else {
+        items.append(&mut take_array_field(target_object, base_key));
     }
-    if let Some(end) = operations.end.as_ref() {
+    if let Some(end) = operations.end {
         items.extend(collect_array_items(end));
     }
     if matches!(style, ListStyle::NamedObjects) {
@@ -428,25 +427,27 @@ fn apply_nested_object_with_schema(target: &mut JsonValue, patch: &JsonValue, sc
     }
 }
 
-fn group_patch_keys(map: &JsonMap<String, JsonValue>) -> Vec<(String, PatchOperations)> {
-    let mut grouped = Vec::<(String, PatchOperations)>::new();
+fn group_patch_keys<'a>(map: &'a JsonMap<String, JsonValue>) -> Vec<(String, PatchOperations<'a>)> {
+    let mut grouped = Vec::<(String, PatchOperations<'a>)>::with_capacity(map.len());
+    let mut positions = HashMap::<String, usize>::with_capacity(map.len());
     for (key, value) in map {
         let parsed = parse_modifier_key(key);
-        let base_key = parsed.base.to_string();
-        let index = grouped
-            .iter()
-            .position(|(existing, _)| existing == &base_key)
-            .unwrap_or_else(|| {
-                grouped.push((base_key.clone(), PatchOperations::default()));
-                grouped.len() - 1
-            });
+        let index = if let Some(index) = positions.get(parsed.base) {
+            *index
+        } else {
+            let index = grouped.len();
+            let base_key = parsed.base.to_string();
+            positions.insert(base_key.clone(), index);
+            grouped.push((base_key, PatchOperations::default()));
+            index
+        };
         let operations = &mut grouped[index].1;
         match parsed.modifier {
-            PatchModifier::Replace => operations.replace = Some(value.clone()),
-            PatchModifier::Start => operations.start = Some(value.clone()),
-            PatchModifier::End => operations.end = Some(value.clone()),
-            PatchModifier::Merge => operations.merge = Some(value.clone()),
-            PatchModifier::Force => operations.force = Some(value.clone()),
+            PatchModifier::Replace => operations.replace = Some(value),
+            PatchModifier::Start => operations.start = Some(value),
+            PatchModifier::End => operations.end = Some(value),
+            PatchModifier::Merge => operations.merge = Some(value),
+            PatchModifier::Force => operations.force = Some(value),
         }
     }
     grouped
@@ -517,6 +518,13 @@ fn collect_array_items(value: &JsonValue) -> Vec<JsonValue> {
         JsonValue::Null => Vec::new(),
         JsonValue::Array(items) => items.iter().map(clone_raw_value).collect(),
         _ => vec![clone_raw_value(value)],
+    }
+}
+
+fn take_array_field(target_object: &mut JsonMap<String, JsonValue>, key: &str) -> Vec<JsonValue> {
+    match target_object.remove(key) {
+        Some(JsonValue::Array(items)) => items,
+        _ => Vec::new(),
     }
 }
 
