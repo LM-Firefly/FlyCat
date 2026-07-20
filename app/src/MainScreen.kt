@@ -51,7 +51,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -67,6 +67,7 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.github.yumelira.yumebox.presentation.component.BottomBarContent
+import com.github.yumelira.yumebox.presentation.component.BottomBarDestination
 import com.github.yumelira.yumebox.presentation.component.LocalBottomBarHazeState
 import com.github.yumelira.yumebox.presentation.component.LocalBottomBarHazeStyle
 import com.github.yumelira.yumebox.presentation.component.LocalBottomBarScrollBehavior
@@ -101,13 +102,32 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
-    val initialMainPage = initialPage.coerceIn(0, 3)
-    val pagerState = rememberPagerState(initialPage = initialMainPage, pageCount = { 4 })
-    val mainPagerState = rememberMainPagerState(pagerState)
-    val hazeState = remember { HazeState() }
-
     val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
     val homeViewModel = koinViewModel<HomeViewModel>()
+    val proxyGroups by homeViewModel.proxyGroups.collectAsState()
+    val isRuntimeRunning by homeViewModel.isRunning.collectAsState()
+    val visibleDestinations =
+        remember(isRuntimeRunning, proxyGroups) {
+            BottomBarDestination.entries.filter { destination ->
+                destination != BottomBarDestination.Proxy ||
+                    (isRuntimeRunning && proxyGroups.isNotEmpty())
+            }
+        }
+    val initialDestination =
+        BottomBarDestination.entries.getOrElse(initialPage.coerceIn(0, 3)) {
+            BottomBarDestination.Home
+        }
+    val initialMainPage = visibleDestinations.indexOf(initialDestination).takeIf { it >= 0 } ?: 0
+    val pagerState =
+        rememberPagerState(
+            initialPage = initialMainPage,
+            pageCount = { visibleDestinations.size },
+        )
+    val mainPagerState = rememberMainPagerState(pagerState)
+    val hazeState = remember { HazeState() }
+    var previousDestinations by remember { mutableStateOf(visibleDestinations) }
+    var settledDestination by remember { mutableStateOf(visibleDestinations[initialMainPage]) }
+
     val bottomBarAutoHideEnabled by appSettingsViewModel.bottomBarAutoHide.state.collectAsState()
     val topBarBlurEnabled by appSettingsViewModel.topBarBlurEnabled.state.collectAsState()
     val classicHomeEnabled by appSettingsViewModel.classicHomeEnabled.state.collectAsState()
@@ -118,7 +138,14 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val bottomBarScrollBehavior =
         rememberBottomBarScrollBehavior(autoHideEnabled = bottomBarAutoHideEnabled)
     val pagerFlingBehavior = rememberMainPagerFlingBehavior(mainPagerState.pagerState)
-    var settledMainPage by remember { mutableIntStateOf(initialMainPage) }
+    val selectedDestination by
+        remember(mainPagerState, visibleDestinations) {
+            derivedStateOf {
+                visibleDestinations.getOrElse(mainPagerState.selectedPage) {
+                    BottomBarDestination.Home
+                }
+            }
+        }
     val homeVisibility by
         remember(mainPagerState) {
             derivedStateOf {
@@ -131,12 +158,12 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     // Floating nav bar (with the proxy FAB) shows on the classic home and every other page; the
     // default home has its own chrome, so it stays hidden there.
     val bottomBarVisible by
-        remember(classicHomeEnabled, settledMainPage, mainPagerState.selectedPage) {
+        remember(classicHomeEnabled, settledDestination, selectedDestination) {
             derivedStateOf {
                 when {
                     classicHomeEnabled -> true
-                    mainPagerState.selectedPage == 0 -> false
-                    settledMainPage != 0 -> true
+                    selectedDestination == BottomBarDestination.Home -> false
+                    settledDestination != BottomBarDestination.Home -> true
                     else -> false
                 }
             }
@@ -162,6 +189,22 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
             )
         }
 
+    LaunchedEffect(visibleDestinations) {
+        // The runtime only publishes groups after the core is running. Inserting/removing the proxy
+        // page moves Config/Setting between physical pager slots, so preserve the semantic page.
+        val currentDestination =
+            previousDestinations.getOrNull(mainPagerState.pagerState.currentPage) ?: settledDestination
+        val targetDestination =
+            currentDestination.takeIf { it in visibleDestinations } ?: BottomBarDestination.Config
+        val targetPage = visibleDestinations.indexOf(targetDestination)
+        if (mainPagerState.pagerState.currentPage != targetPage) {
+            mainPagerState.pagerState.scrollToPage(targetPage)
+        }
+        mainPagerState.syncPage()
+        settledDestination = targetDestination
+        previousDestinations = visibleDestinations
+    }
+
     LaunchedEffect(mainPagerState.pagerState.currentPage) { mainPagerState.syncPage() }
 
     LaunchedEffect(
@@ -169,7 +212,10 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         mainPagerState.pagerState.isScrollInProgress,
     ) {
         if (!mainPagerState.pagerState.isScrollInProgress) {
-            settledMainPage = mainPagerState.pagerState.currentPage
+            settledDestination =
+                visibleDestinations.getOrElse(mainPagerState.pagerState.currentPage) {
+                    BottomBarDestination.Home
+                }
         }
     }
 
@@ -185,7 +231,18 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     }
 
     val handlePageChange: (Int) -> Unit =
-        remember(mainPagerState) { { targetPage -> mainPagerState.animateToPage(targetPage) } }
+        remember(mainPagerState, visibleDestinations) {
+            { targetPage ->
+                val destination =
+                    BottomBarDestination.entries
+                        .getOrElse(targetPage.coerceIn(0, BottomBarDestination.entries.lastIndex)) {
+                            BottomBarDestination.Home
+                        }
+                val targetDestination =
+                    destination.takeIf { it in visibleDestinations } ?: BottomBarDestination.Config
+                mainPagerState.animateToPage(visibleDestinations.indexOf(targetDestination))
+            }
+        }
 
     val pendingDeepLink by MainActivity.pendingDeepLink.collectAsState()
     LaunchedEffect(pendingDeepLink) {
@@ -274,7 +331,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                         ),
                 ) { page ->
                     MainRootPageContent(
-                        page = page,
+                        destination = visibleDestinations[page],
                         mainInnerPadding = mainInnerPadding,
                         classicHomeEnabled = classicHomeEnabled,
                         moeWallpaperUri = moeWallpaperUri,
@@ -283,7 +340,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                         moeWallpaperBiasY = moeWallpaperBiasY,
                         navigator = navigator,
                         homePageProgress = homeVisibility,
-                        selectedPage = settledMainPage,
+                        selectedDestination = settledDestination,
                     )
                 }
 
@@ -298,7 +355,10 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Bottom,
                 ) {
-                    BottomBarContent(isVisible = bottomBarVisible)
+                    BottomBarContent(
+                        isVisible = bottomBarVisible,
+                        destinations = visibleDestinations,
+                    )
                 }
             }
         }
@@ -350,7 +410,7 @@ private fun MainScreenBackHandler(mainPagerState: MainPagerState) {
 
 @Composable
 private fun MainRootPageContent(
-    page: Int,
+    destination: BottomBarDestination,
     mainInnerPadding: PaddingValues,
     classicHomeEnabled: Boolean,
     moeWallpaperUri: String,
@@ -359,14 +419,14 @@ private fun MainRootPageContent(
     moeWallpaperBiasY: Float,
     navigator: Navigator,
     homePageProgress: Float,
-    selectedPage: Int,
+    selectedDestination: BottomBarDestination,
 ) {
-    when (page) {
-        0 -> {
+    when (destination) {
+        BottomBarDestination.Home -> {
             if (classicHomeEnabled) {
                 HomePager(
                     mainInnerPadding = mainInnerPadding,
-                    isActive = selectedPage == 0,
+                    isActive = selectedDestination == BottomBarDestination.Home,
                 )
             } else {
                 MoeHomePage(
@@ -375,22 +435,22 @@ private fun MainRootPageContent(
                     wallpaperZoom = moeWallpaperZoom,
                     wallpaperBiasX = moeWallpaperBiasX,
                     wallpaperBiasY = moeWallpaperBiasY,
-                    isActive = selectedPage == 0,
+                    isActive = selectedDestination == BottomBarDestination.Home,
                     pageProgress = homePageProgress,
                 )
             }
         }
 
-        1 ->
+        BottomBarDestination.Proxy ->
             ProxyPager(
                 mainInnerPadding = mainInnerPadding,
                 onNavigateToProviders = {
                     navigator.push(Route.Providers)
                 },
-                isActive = selectedPage == 1,
+                isActive = selectedDestination == BottomBarDestination.Proxy,
             )
 
-        2 -> ProfilesPager(mainInnerPadding)
-        3 -> SettingPager(mainInnerPadding)
+        BottomBarDestination.Config -> ProfilesPager(mainInnerPadding)
+        BottomBarDestination.Setting -> SettingPager(mainInnerPadding)
     }
 }

@@ -27,6 +27,8 @@ import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.animateBounds
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -72,6 +74,7 @@ import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
@@ -221,12 +224,18 @@ private fun Modifier.bottomBarHazeEffect(state: HazeState?, style: HazeStyle?): 
 }
 
 @Composable
-fun BottomBarContent(isVisible: Boolean = true) {
-    FloatingBottomBarContent(isVisible = isVisible)
+fun BottomBarContent(
+    isVisible: Boolean = true,
+    destinations: List<BottomBarDestination> = BottomBarDestination.entries,
+) {
+    FloatingBottomBarContent(isVisible = isVisible, destinations = destinations)
 }
 
 @Composable
-private fun FloatingBottomBarContent(isVisible: Boolean = true) {
+private fun FloatingBottomBarContent(
+    isVisible: Boolean = true,
+    destinations: List<BottomBarDestination> = BottomBarDestination.entries,
+) {
     val bottomBarScrollBehavior = LocalBottomBarScrollBehavior.current
     val mainPagerState = LocalMainPagerState.current
     val pagerState = mainPagerState.pagerState
@@ -236,11 +245,14 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
             derivedStateOf {
                 (pagerState.currentPage.toFloat() + pagerState.currentPageOffsetFraction).coerceIn(
                     0f,
-                    (BottomBarDestination.entries.size - 1).toFloat(),
+                    (destinations.size - 1).toFloat(),
                 )
             }
         }
     val bottomBarVisible = isVisible && (bottomBarScrollBehavior?.isBottomBarVisible ?: true)
+    val showProxyDestination = BottomBarDestination.Proxy in destinations
+    var revealProxyDestination by remember { mutableStateOf(false) }
+    LaunchedEffect(showProxyDestination) { revealProxyDestination = showProxyDestination }
     val density = LocalDensity.current
     val opacity = AppTheme.opacity
     val exitOffsetPx =
@@ -279,9 +291,10 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
     }
 
     val handlePageChange = LocalHandlePageChange.current
-    val onItemClick: (Int) -> Unit = { index ->
+    val onItemClick: (BottomBarDestination) -> Unit = { destination ->
+        val index = destinations.indexOf(destination)
         if (index != mainPagerState.selectedPage) {
-            handlePageChange(index)
+            handlePageChange(destination.ordinal)
         }
     }
 
@@ -298,7 +311,7 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
 
     LegacyBottomNavigationBar(
         indicatorProgress = indicatorProgress,
-        tabsCount = BottomBarDestination.entries.size,
+        tabsCount = destinations.size,
         containerColor = containerColor,
         indicatorContainerColor = indicatorContainerColor,
         modifier =
@@ -313,35 +326,69 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true) {
                     alpha = animatedAlpha
                     translationY = animatedTranslationY.value
                 },
-    ) {
-        BottomBarDestination.entries.forEachIndexed { index, destination ->
-            val itemColor = if (page == index) selectedColor else unselectedColor
-            LegacyBottomNavigationTabItem(
-                enabled = bottomBarVisible,
-                onClick = { onItemClick(index) },
-            ) {
-                Box(modifier = Modifier.size(UiDp.dp20), contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = destination.icon,
-                        contentDescription = destination.label,
-                        tint = itemColor,
-                    )
-                }
-                BasicText(
-                    text = destination.label,
-                    style =
-                        TextStyle(
-                            color = itemColor,
-                            fontSize = 11.sp,
-                            fontWeight =
-                                if (page == index) FontWeight.SemiBold else FontWeight.Medium,
-                        ),
+    ) { lookaheadScope ->
+        destinations.forEach { destination ->
+            val proxyItemAlpha by
+                animateFloatAsState(
+                    targetValue =
+                        if (destination != BottomBarDestination.Proxy || revealProxyDestination) 1f else 0f,
+                    animationSpec = tween(durationMillis = 180, easing = AnimationSpecs.EmphasizedDecelerate),
+                    label = "bottom_bar_proxy_item_alpha",
                 )
-            }
+            BottomBarTab(
+                destination = destination,
+                selected = destinations.getOrNull(page) == destination,
+                enabled = bottomBarVisible,
+                selectedColor = selectedColor,
+                unselectedColor = unselectedColor,
+                onClick = { onItemClick(destination) },
+                modifier =
+                    Modifier.weight(1f).graphicsLayer {
+                        alpha = proxyItemAlpha
+                        scaleX = if (destination == BottomBarDestination.Proxy) 0.82f + proxyItemAlpha * 0.18f else 1f
+                        scaleY = if (destination == BottomBarDestination.Proxy) 0.82f + proxyItemAlpha * 0.18f else 1f
+                    }.animateBounds(lookaheadScope),
+            )
         }
     }
 }
 
+@Composable
+private fun BottomBarTab(
+    destination: BottomBarDestination,
+    selected: Boolean,
+    enabled: Boolean,
+    selectedColor: Color,
+    unselectedColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier,
+) {
+    val itemColor = if (selected) selectedColor else unselectedColor
+    LegacyBottomNavigationTabItem(
+        modifier = modifier,
+        enabled = enabled,
+        onClick = onClick,
+    ) {
+        Box(modifier = Modifier.size(UiDp.dp20), contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = destination.icon,
+                contentDescription = destination.label,
+                tint = itemColor,
+            )
+        }
+        BasicText(
+            text = destination.label,
+            style =
+                TextStyle(
+                    color = itemColor,
+                    fontSize = 11.sp,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                ),
+        )
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun LegacyBottomNavigationBar(
     indicatorProgress: Float,
@@ -349,7 +396,7 @@ private fun LegacyBottomNavigationBar(
     containerColor: Color,
     indicatorContainerColor: Color,
     modifier: Modifier = Modifier,
-    content: @Composable RowScope.() -> Unit,
+    content: @Composable RowScope.(LookaheadScope) -> Unit,
 ) {
     val opacity = AppTheme.opacity
     val density = LocalDensity.current
@@ -414,15 +461,18 @@ private fun LegacyBottomNavigationBar(
             )
         }
 
-        Row(
-            modifier =
-                Modifier.padding(UiDp.dp4)
-                    .height(UiDp.dp48)
-                    .fillMaxWidth()
-                    .align(Alignment.CenterStart),
-            verticalAlignment = Alignment.CenterVertically,
-            content = content,
-        )
+        LookaheadScope {
+            Row(
+                modifier =
+                    Modifier.padding(UiDp.dp4)
+                        .height(UiDp.dp48)
+                        .fillMaxWidth()
+                        .align(Alignment.CenterStart),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                content(this@LookaheadScope)
+            }
+        }
 
         LegacyBottomNavigationBorders(
             outerBorderColor = outerBorderColor,
@@ -439,11 +489,23 @@ private fun LegacyBottomNavigationIndicator(
     indicatorContainerColor: Color,
 ) {
     val density = LocalDensity.current
+    val animatedOffsetPx by
+        animateFloatAsState(
+            targetValue = indicatorOffsetPx,
+            animationSpec = tween(durationMillis = 220, easing = AnimationSpecs.EmphasizedDecelerate),
+            label = "bottom_bar_indicator_offset",
+        )
+    val animatedWidthPx by
+        animateFloatAsState(
+            targetValue = indicatorWidthPx,
+            animationSpec = tween(durationMillis = 220, easing = AnimationSpecs.EmphasizedDecelerate),
+            label = "bottom_bar_indicator_width",
+        )
     Box(
         modifier =
             modifier
-                .offset { IntOffset(indicatorOffsetPx.roundToInt(), 0) }
-                .width(with(density) { indicatorWidthPx.toDp() })
+                .offset { IntOffset(animatedOffsetPx.roundToInt(), 0) }
+                .width(with(density) { animatedWidthPx.toDp() })
                 .height(UiDp.dp48)
                 .background(indicatorContainerColor, Capsule())
     )
@@ -469,7 +531,7 @@ private fun BoxScope.LegacyBottomNavigationBorders(
 }
 
 @Composable
-private fun RowScope.LegacyBottomNavigationTabItem(
+private fun LegacyBottomNavigationTabItem(
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -487,7 +549,7 @@ private fun RowScope.LegacyBottomNavigationTabItem(
                     onClick = onClick,
                 )
                 .fillMaxHeight()
-                .weight(1f),
+                .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(UiDp.dp2, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
         content = content,
