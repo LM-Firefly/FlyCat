@@ -2,7 +2,7 @@
 // Copyright (C) 2016-present ShIroRRen <http://shiror.ren>.                                         =
 //                                                                                                   =
 // Part of the FVV Language.                                                                         =
-// Part of the PureJoy Project.                                                                      =
+// Part of the ShiroSU Series.                                                                       =
 // Licensed under the File to Downloader License.                                                    =
 //                                                                                                   =
 // YOU MAY NOT USE THIS FILE EXCEPT IN COMPLIANCE WITH THE LICENSE.                                  =
@@ -10,24 +10,12 @@
 // unless required by applicable law or agreed to in writing.                                        =
 //                                                                                                   =
 // For the FVV Language, visit: <http://fvvlang.sbs>.                                                =
-// For the PureJoy Project, visit: <https://oom-wg.dev>.                                             =
+// For the ShiroSU Series, visit: <http://shirosu.gal.tf>.                                           =
 // For the File to Downloader License terms and conditions, visit: <http://license.fileto.download>. =
 //====================================================================================================
 
 
-@file:Suppress(
-    "PackageDirectoryMismatch",
-    "PackageName",
-    "ClassName",
-    "ObjectPropertyName",
-    "PropertyName",
-    "FunctionName",
-    "NonAsciiCharacters",
-    "RemoveRedundantBackticks",
-    "REDUNDANT_ELSE_IN_WHEN",
-    "UnusedExpression",
-    "unused"
-) @file:Repository("https://repo.maven.apache.org/maven2") @file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.9.0")
+@file:Repository("https://repo.maven.apache.org/maven2") @file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.11.0")
 
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -47,6 +35,12 @@ private val SUPPRESS_ANNOTATION =
     "@file:Suppress(\"PackageDirectoryMismatch\", \"PackageName\", \"ClassName\", \"ObjectPropertyName\", \"PropertyName\", \"FunctionName\", \"NonAsciiCharacters\", \"RemoveRedundantBackticks\", \"REDUNDANT_ELSE_IN_WHEN\", \"UnusedExpression\", \"unused\")\n"
 
 // detekt LargeClass: FVVV is the self-contained .fvv parser/serializer core; splitting it would break cohesion.
+/**
+  * FVV Language
+  *
+  * @see https://github.com/FVV-Lang/FVV.kt
+  * @author ShIroRRen
+  */
 @Suppress("LargeClass")
 open class FVVV(
     value: Any? = null,
@@ -1158,6 +1152,12 @@ class LocaleProjectConfig(private val arguments: Array<String>) {
     }
 }
 
+/**
+  * ShiroSU FYL - FYTxt
+  *
+  * @see https://github.com/OOM-WG/ShiroSU-FYL
+  * @author ShIroRRen
+  */
 class LocaleGenerator(private val config: LocaleProjectConfig) {
     fun generate() {
         config.validate()
