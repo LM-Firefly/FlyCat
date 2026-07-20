@@ -184,7 +184,12 @@ class ProxyFacade(
                         }
                     }
 
-                    actionProfileChanged,
+                    actionProfileChanged -> {
+                        if (intent.getBooleanExtra(Intents.EXTRA_AFFECTS_RUNTIME, true)) {
+                            scope.launch { onConfigChanged() }
+                        }
+                    }
+
                     actionOverrideChanged -> {
                         scope.launch { onConfigChanged() }
                     }

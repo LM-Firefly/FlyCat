@@ -75,4 +75,5 @@ object Intents {
     const val EXTRA_RESTART = "restart"
     const val EXTRA_RUNTIME_MODE = "runtime_mode"
     const val EXTRA_UUID = "uuid"
+    const val EXTRA_AFFECTS_RUNTIME = "affects_runtime"
 }

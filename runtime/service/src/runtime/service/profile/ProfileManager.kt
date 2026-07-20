@@ -134,7 +134,7 @@ class ProfileManager(private val context: Context) :
             )
 
         ImportedDao.update(updated)
-        context.sendProfileChanged(uuid)
+        context.sendProfileChanged(uuid, affectsRuntime = store.activeProfile == uuid)
     }
 
     override suspend fun update(uuid: UUID, callback: IFetchObserver?) {
@@ -172,13 +172,13 @@ class ProfileManager(private val context: Context) :
     override suspend fun setActive(profile: Profile) {
         store.activeProfile = profile.uuid
         StatusProvider.currentProfile = profile.name
-        context.sendProfileChanged(profile.uuid)
+        context.sendProfileChanged(profile.uuid, affectsRuntime = true)
     }
 
     override suspend fun clearActive(profile: Profile) {
         store.activeProfile = null
         StatusProvider.currentProfile = null
-        context.sendProfileChanged(profile.uuid)
+        context.sendProfileChanged(profile.uuid, affectsRuntime = true)
     }
 
     override suspend fun reorder(uuids: List<UUID>) {

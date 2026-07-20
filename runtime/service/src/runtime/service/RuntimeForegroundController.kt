@@ -100,7 +100,12 @@ class RuntimeForegroundController(
         object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 when (intent?.action ?: return) {
-                    Intents.ACTION_PROFILE_CHANGED,
+                    Intents.ACTION_PROFILE_CHANGED -> {
+                        if (intent.getBooleanExtra(Intents.EXTRA_AFFECTS_RUNTIME, true)) {
+                            scheduleReload()
+                        }
+                    }
+
                     Intents.ACTION_OVERRIDE_CHANGED -> scheduleReload()
 
                     Intents.ACTION_CLASH_REQUEST_STOP -> {

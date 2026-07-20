@@ -28,6 +28,7 @@ import com.github.yumelira.yumebox.core.util.YamlCodec
 import com.github.yumelira.yumebox.core.util.profileProviderScopeDir
 import com.github.yumelira.yumebox.runtime.api.IFetchObserver
 import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.util.importedDir
 import com.github.yumelira.yumebox.runtime.service.util.sendProfileChanged
 import io.ktor.client.HttpClient
@@ -531,7 +532,11 @@ object ProfileProcessor {
                                 )
                             ImportedDao.update(updated)
 
-                            context.sendProfileChanged(snapshot.imported.uuid)
+                            context.sendProfileChanged(
+                                snapshot.imported.uuid,
+                                affectsRuntime =
+                                    ServiceStore().activeProfile == snapshot.imported.uuid,
+                            )
                         }
                     }
                 } catch (error: Exception) {
@@ -544,7 +549,11 @@ object ProfileProcessor {
                         ) {
                             ImportedDao.remove(snapshot.imported.uuid)
                             targetDir.deleteRecursively()
-                            context.sendProfileChanged(snapshot.imported.uuid)
+                            context.sendProfileChanged(
+                                snapshot.imported.uuid,
+                                affectsRuntime =
+                                    ServiceStore().activeProfile == snapshot.imported.uuid,
+                            )
                         }
                     }
                     // Provide a more user-friendly error message for age decryption failures
@@ -570,12 +579,13 @@ object ProfileProcessor {
     suspend fun delete(context: Context, uuid: UUID) {
         withContext(Dispatchers.IO + NonCancellable) {
             profileLock.withLock {
+                val affectsRuntime = ServiceStore().activeProfile == uuid
                 ImportedDao.remove(uuid)
 
                 val imported = context.importedDir.resolve(uuid.toString())
                 imported.deleteRecursively()
 
-                context.sendProfileChanged(uuid)
+                context.sendProfileChanged(uuid, affectsRuntime = affectsRuntime)
             }
         }
     }

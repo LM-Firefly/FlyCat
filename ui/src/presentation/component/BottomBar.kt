@@ -108,6 +108,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.max
 import kotlin.math.roundToInt
 
+private const val BottomBarLayoutAnimationDurationMillis = 260
+
 class MainPagerState(
     val pagerState: PagerState,
     private val coroutineScope: CoroutineScope,
@@ -350,7 +352,15 @@ private fun FloatingBottomBarContent(
                         alpha = proxyItemAlpha
                         scaleX = if (destination == BottomBarDestination.Proxy) 0.82f + proxyItemAlpha * 0.18f else 1f
                         scaleY = if (destination == BottomBarDestination.Proxy) 0.82f + proxyItemAlpha * 0.18f else 1f
-                    }.animateBounds(lookaheadScope),
+                    }.animateBounds(
+                        lookaheadScope = lookaheadScope,
+                        boundsTransform = { _, _ ->
+                            tween(
+                                durationMillis = BottomBarLayoutAnimationDurationMillis,
+                                easing = AnimationSpecs.EmphasizedDecelerate,
+                            )
+                        },
+                    ),
             )
         }
     }
@@ -495,13 +505,21 @@ private fun LegacyBottomNavigationIndicator(
     val animatedOffsetPx by
         animateFloatAsState(
             targetValue = indicatorOffsetPx,
-            animationSpec = tween(durationMillis = 220, easing = AnimationSpecs.EmphasizedDecelerate),
+            animationSpec =
+                tween(
+                    durationMillis = BottomBarLayoutAnimationDurationMillis,
+                    easing = AnimationSpecs.EmphasizedDecelerate,
+                ),
             label = "bottom_bar_indicator_offset",
         )
     val animatedWidthPx by
         animateFloatAsState(
             targetValue = indicatorWidthPx,
-            animationSpec = tween(durationMillis = 220, easing = AnimationSpecs.EmphasizedDecelerate),
+            animationSpec =
+                tween(
+                    durationMillis = BottomBarLayoutAnimationDurationMillis,
+                    easing = AnimationSpecs.EmphasizedDecelerate,
+                ),
             label = "bottom_bar_indicator_width",
         )
     Box(

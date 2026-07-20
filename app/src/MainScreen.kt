@@ -85,6 +85,7 @@ import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.screen.ProxyPager
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.screen.home.HomePager
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
 import com.github.yumelira.yumebox.screen.moe.MoeHomePage
@@ -96,6 +97,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeSource
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -104,13 +106,26 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
     val homeViewModel = koinViewModel<HomeViewModel>()
-    val proxyGroups by homeViewModel.proxyGroups.collectAsState()
-    val isRuntimeRunning by homeViewModel.isRunning.collectAsState()
+    val runtimeSnapshot by homeViewModel.runtimeSnapshot.collectAsState()
+    val runtimeTransitionActive =
+        runtimeSnapshot.phase == RuntimePhase.Starting ||
+            runtimeSnapshot.phase == RuntimePhase.Running ||
+            runtimeSnapshot.phase == RuntimePhase.Stopping
+    var showProxyDestination by remember { mutableStateOf(runtimeTransitionActive) }
+    LaunchedEffect(runtimeTransitionActive) {
+        if (runtimeTransitionActive) {
+            showProxyDestination = true
+        } else {
+            // A root config reload briefly crosses Idle between Stopping and Starting. Do not let
+            // that internal hand-off reshape the pager and bottom bar for a single frame.
+            delay(180)
+            showProxyDestination = false
+        }
+    }
     val visibleDestinations =
-        remember(isRuntimeRunning, proxyGroups) {
+        remember(showProxyDestination) {
             BottomBarDestination.entries.filter { destination ->
-                destination != BottomBarDestination.Proxy ||
-                    (isRuntimeRunning && proxyGroups.isNotEmpty())
+                destination != BottomBarDestination.Proxy || showProxyDestination
             }
         }
     val initialDestination =
@@ -190,8 +205,8 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         }
 
     LaunchedEffect(visibleDestinations) {
-        // The runtime only publishes groups after the core is running. Inserting/removing the proxy
-        // page moves Config/Setting between physical pager slots, so preserve the semantic page.
+        // Runtime transitions insert/remove the proxy page and move Config/Setting between physical
+        // pager slots, so preserve the semantic page.
         val currentDestination =
             previousDestinations.getOrNull(mainPagerState.pagerState.currentPage) ?: settledDestination
         val targetDestination =
