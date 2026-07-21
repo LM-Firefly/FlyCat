@@ -30,6 +30,8 @@ Connection = {
     }
 
     Detail = {
+        Title = "连接详情"
+
         Action = {
             Interrupting = "正在打断连接..."
             Interrupt = "打断连接"
@@ -38,9 +40,11 @@ Connection = {
         Section = {
             Info = "连接信息"
             Rule = "规则"
+            Chain = "代理链路"
         }
 
         Label = {
+            Host = "目标主机"
             Protocol = "协议"
             Process = "进程"
             SourceAddress = "源地址"
@@ -50,6 +54,7 @@ Connection = {
             Download = "下载"
             Type = "类型"
             Content = "内容"
+            Chain = "链路"
         }
     }
 

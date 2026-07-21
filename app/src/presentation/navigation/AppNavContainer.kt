@@ -51,6 +51,7 @@ import com.github.yumelira.yumebox.presentation.component.LocalNavigator
 import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.screen.about.AboutScreen
 import com.github.yumelira.yumebox.screen.about.OpenSourceLicensesScreen
+import com.github.yumelira.yumebox.screen.connection.ConnectionDetailScreen
 import com.github.yumelira.yumebox.screen.connection.ConnectionScreen
 import com.github.yumelira.yumebox.screen.log.LogScreen
 import com.github.yumelira.yumebox.screen.rules.RulesScreen
@@ -126,6 +127,12 @@ fun AppNavContainer() {
                     entry<Route.AccessControl> { AccessControlScreen(navigator) }
                     entry<Route.MetaFeature> { MetaFeatureScreen(navigator) }
                     entry<Route.Connection> { ConnectionScreen(navigator) }
+                    entry<Route.ConnectionDetail> { route ->
+                        ConnectionDetailScreen(
+                            navigator = navigator,
+                            connectionId = route.connectionId,
+                        )
+                    }
                     entry<Route.TrafficStatistics> { TrafficStatisticsScreen() }
                     entry<Route.Log> { LogScreen(navigator) }
                     entry<Route.Rules> { RulesScreen(navigator) }

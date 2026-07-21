@@ -64,6 +64,9 @@ sealed interface Route : NavKey {
     data object Connection : Route
 
     @Serializable
+    data class ConnectionDetail(val connectionId: String) : Route
+
+    @Serializable
     data object TrafficStatistics : Route
 
     @Serializable

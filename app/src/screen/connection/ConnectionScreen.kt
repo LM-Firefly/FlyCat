@@ -23,8 +23,11 @@ package com.github.yumelira.yumebox.screen.connection
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -46,18 +49,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.ime
 import com.github.yumelira.yumebox.core.model.ConnectionInfo
 import com.github.yumelira.yumebox.feature.meta.presentation.component.ConnectionCard
-import com.github.yumelira.yumebox.feature.meta.presentation.component.ConnectionDetailSheet
 import com.github.yumelira.yumebox.feature.meta.presentation.component.TabRowWithContour
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.ConnectionSort
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.ConnectionTab
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.ConnectionViewModel
-import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.CollapsedSearchBar
+import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.component.SearchBarPadding
 import com.github.yumelira.yumebox.presentation.component.SearchPager
@@ -66,6 +65,7 @@ import com.github.yumelira.yumebox.presentation.component.TopAppBarAnim
 import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
+import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
@@ -104,9 +104,6 @@ fun ConnectionScreen(navigator: Navigator) {
 
     val scrollBehavior = MiuixScrollBehavior()
     var showSortPopup by remember { mutableStateOf(false) }
-
-    var selectedConnection by remember { mutableStateOf<ConnectionInfo?>(null) }
-    var showDetailSheet by remember { mutableStateOf(false) }
 
     val tabs = listOf(YumeTxt.Connection.Tab.Active, YumeTxt.Connection.Tab.Closed)
     var selectedTabIndex by
@@ -170,20 +167,33 @@ fun ConnectionScreen(navigator: Navigator) {
         }
     }
 
-    LaunchedEffect(showDetailSheet, selectedConnection) {
-        if (showDetailSheet && selectedConnection == null) {
-            showDetailSheet = false
-        }
-    }
-    LaunchedEffect(state.snapshot, selectedConnection?.id) {
-        val selectedId = selectedConnection?.id ?: return@LaunchedEffect
-        state.snapshot?.connections?.firstOrNull { it.id == selectedId }?.let {
-            selectedConnection = it
-        }
-    }
     LaunchedEffect(Unit) { viewModel.startPolling() }
 
-    // Same shell as AccessControl: outer Box, Scaffold, SearchPager always composed.
+    fun openConnectionDetail(connection: ConnectionInfo) {
+        // Collapse search first so the expand gesture never races the detail push.
+        if (!currentSearchStatus.isCollapsed()) {
+            searchStatus =
+                currentSearchStatus.copy(current = SearchStatus.Status.COLLAPSING)
+        }
+        ConnectionDetailHolder.setup(
+            info = connection,
+            canInterrupt = state.selectedTab == ConnectionTab.ACTIVE,
+        )
+        navigator.push(Route.ConnectionDetail(connectionId = connection.id))
+    }
+
+    /*
+     * Layering (AccessControl search pattern — no sheet sibling anymore):
+     *
+     *   Box (full window)
+     *   ├─ Scaffold
+     *   │    topBar: collapsed search chrome
+     *   │    content: connection list
+     *   └─ SearchPager                    ← full-window sibling (window-top offsetY animation)
+     *
+     * SearchPager is always composed; when settled collapsed it is size-0 and not a hit target.
+     * Detail is a real navigation page so it never competes with search expand.
+     */
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
@@ -263,7 +273,7 @@ fun ConnectionScreen(navigator: Navigator) {
                                             } else {
                                                 Modifier
                                             }
-                                        )
+                                        ),
                             ) {
                                 CollapsedSearchBar(
                                     label = currentSearchStatus.label,
@@ -277,6 +287,7 @@ fun ConnectionScreen(navigator: Navigator) {
                 }
             }
         ) { innerPadding ->
+            // Keep list during COLLAPSING so it is already under the fading overlay.
             if (currentSearchStatus.shouldCollapse()) {
                 val combinedInnerPadding = combinePaddingValues(innerPadding, mainLikePadding)
                 ScreenLazyColumn(
@@ -288,7 +299,8 @@ fun ConnectionScreen(navigator: Navigator) {
                             start = listStartPadding,
                             end = listEndPadding,
                             top = combinedInnerPadding.calculateTopPadding(),
-                            bottom = combinedInnerPadding.calculateBottomPadding() + spacing.space12,
+                            bottom =
+                                combinedInnerPadding.calculateBottomPadding() + spacing.space12,
                         ),
                 ) {
                     item {
@@ -320,10 +332,7 @@ fun ConnectionScreen(navigator: Navigator) {
                         ) { connection ->
                             ConnectionCard(
                                 connectionInfo = connection,
-                                onClick = {
-                                    selectedConnection = connection
-                                    showDetailSheet = true
-                                },
+                                onClick = { openConnectionDetail(connection) },
                                 modifier = Modifier.padding(vertical = spacing.space6),
                             )
                         }
@@ -332,8 +341,6 @@ fun ConnectionScreen(navigator: Navigator) {
             }
         }
 
-        // Always composed (AccessControl pattern). Gating with !isCollapsed remounts the pager
-        // and breaks expand/collapse continuity.
         currentSearchStatus.SearchPager(
             onSearchStatusChange = { searchStatus = it },
             padding =
@@ -381,24 +388,12 @@ fun ConnectionScreen(navigator: Navigator) {
                 ) { connection ->
                     ConnectionCard(
                         connectionInfo = connection,
-                        onClick = {
-                            selectedConnection = connection
-                            showDetailSheet = true
-                        },
+                        onClick = { openConnectionDetail(connection) },
                         modifier = Modifier.padding(vertical = spacing.space6),
                     )
                 }
             }
         }
-
-        ConnectionDetailSheet(
-            show = showDetailSheet,
-            connectionInfo = selectedConnection,
-            canInterrupt = state.selectedTab == ConnectionTab.ACTIVE,
-            onInterruptConnection = { id -> viewModel.closeConnection(id) },
-            onDismiss = { showDetailSheet = false },
-            onDismissFinished = { selectedConnection = null },
-        )
     }
 }
 
