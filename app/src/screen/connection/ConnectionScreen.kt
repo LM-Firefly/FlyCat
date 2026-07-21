@@ -183,7 +183,9 @@ fun ConnectionScreen(navigator: Navigator) {
     }
     LaunchedEffect(Unit) { viewModel.startPolling() }
 
-    Scaffold(
+    // Same shell as AccessControl: outer Box, Scaffold, SearchPager always composed.
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
             topBar = {
                 currentSearchStatus.TopAppBarAnim {
                     TopBar(
@@ -274,8 +276,7 @@ fun ConnectionScreen(navigator: Navigator) {
                     )
                 }
             }
-    ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize()) {
+        ) { innerPadding ->
             if (currentSearchStatus.shouldCollapse()) {
                 val combinedInnerPadding = combinePaddingValues(innerPadding, mainLikePadding)
                 ScreenLazyColumn(
@@ -329,74 +330,75 @@ fun ConnectionScreen(navigator: Navigator) {
                     }
                 }
             }
-            if (!currentSearchStatus.isCollapsed()) {
-                currentSearchStatus.SearchPager(
-                onSearchStatusChange = { searchStatus = it },
-                padding =
-                    SearchBarPadding(
-                        top = dynamicTopPadding,
-                        start = listStartPadding,
-                        end = listEndPadding,
-                    ),
-                emptyResult = {
-                    ConnectionSearchEmptyState(
-                        text = YumeTxt.Connection.NoResults,
-                        modifier =
-                            Modifier.padding(bottom = mainLikePadding.calculateBottomPadding()),
-                    )
-                },
-                ) {
-                    val searchListState = rememberLazyListState()
-                    val imeBottomPadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+        }
 
-                    LaunchedEffect(currentSearchStatus.searchText) {
-                        if (currentSearchStatus.searchText.isNotBlank()) {
-                            searchListState.scrollToItem(0)
-                        }
-                    }
+        // Always composed (AccessControl pattern). Gating with !isCollapsed remounts the pager
+        // and breaks expand/collapse continuity.
+        currentSearchStatus.SearchPager(
+            onSearchStatusChange = { searchStatus = it },
+            padding =
+                SearchBarPadding(
+                    top = dynamicTopPadding,
+                    start = listStartPadding,
+                    end = listEndPadding,
+                ),
+            emptyResult = {
+                ConnectionSearchEmptyState(
+                    text = YumeTxt.Connection.NoResults,
+                    modifier =
+                        Modifier.padding(bottom = mainLikePadding.calculateBottomPadding()),
+                )
+            },
+        ) {
+            val searchListState = rememberLazyListState()
+            val imeBottomPadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
 
-                    LazyColumn(
-                        state = searchListState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding =
-                            PaddingValues(
-                                start = listStartPadding,
-                                end = listEndPadding,
-                                top = spacing.space6,
-                                bottom =
-                                    maxOf(
-                                        mainLikePadding.calculateBottomPadding(),
-                                        imeBottomPadding,
-                                    ),
-                            ),
-                    ) {
-                        items(
-                            items = filteredConnections,
-                            key = { it.id },
-                            contentType = { "connection" },
-                        ) { connection ->
-                            ConnectionCard(
-                                connectionInfo = connection,
-                                onClick = {
-                                    selectedConnection = connection
-                                    showDetailSheet = true
-                                },
-                                modifier = Modifier.padding(vertical = spacing.space6),
-                            )
-                        }
-                    }
+            LaunchedEffect(currentSearchStatus.searchText) {
+                if (currentSearchStatus.searchText.isNotBlank()) {
+                    searchListState.scrollToItem(0)
                 }
             }
 
-            ConnectionDetailSheet(
-                show = showDetailSheet,
-                connectionInfo = selectedConnection,
-                canInterrupt = state.selectedTab == ConnectionTab.ACTIVE,
-                onInterruptConnection = { id -> viewModel.closeConnection(id) },
-                onDismiss = { showDetailSheet = false },
-                onDismissFinished = { selectedConnection = null },
-            )
+            LazyColumn(
+                state = searchListState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding =
+                    PaddingValues(
+                        start = listStartPadding,
+                        end = listEndPadding,
+                        top = spacing.space6,
+                        bottom =
+                            maxOf(
+                                mainLikePadding.calculateBottomPadding(),
+                                imeBottomPadding,
+                            ),
+                    ),
+            ) {
+                items(
+                    items = filteredConnections,
+                    key = { it.id },
+                    contentType = { "connection" },
+                ) { connection ->
+                    ConnectionCard(
+                        connectionInfo = connection,
+                        onClick = {
+                            selectedConnection = connection
+                            showDetailSheet = true
+                        },
+                        modifier = Modifier.padding(vertical = spacing.space6),
+                    )
+                }
+            }
         }
+
+        ConnectionDetailSheet(
+            show = showDetailSheet,
+            connectionInfo = selectedConnection,
+            canInterrupt = state.selectedTab == ConnectionTab.ACTIVE,
+            onInterruptConnection = { id -> viewModel.closeConnection(id) },
+            onDismiss = { showDetailSheet = false },
+            onDismissFinished = { selectedConnection = null },
+        )
     }
 }
 

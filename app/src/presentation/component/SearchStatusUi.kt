@@ -139,7 +139,9 @@ fun SearchStatus.SearchPager(
         )
 
     val searchStatus = this
-    val isCollapsed = searchStatus.shouldCollapse()
+    // Fully-settled collapsed only. COLLAPSING must keep the expanded chrome so the bar
+    // can animate back to offsetY instead of vanishing and "flying" away.
+    val fullyCollapsed = searchStatus.isCollapsed()
     val isExpanded = searchStatus.isExpanded()
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
     val topPadding by
@@ -158,27 +160,26 @@ fun SearchStatus.SearchPager(
         animateFloatAsState(
             targetValue = if (searchStatus.shouldExpand()) 1f else 0f,
             // Match topPadding's duration/easing so the surface dim and the layout settle on the
-            // same
-            // frame. Previously the dim finished 100ms earlier (200 vs 300), exposing the content
-            // mid-collapse and reading as an end-of-animation hitch.
+            // same frame. Previously the dim finished 100ms earlier (200 vs 300), exposing the
+            // content mid-collapse and reading as an end-of-animation hitch.
             animationSpec = tween(300, easing = LinearOutSlowInEasing),
             label = "SearchSurfaceAlpha",
         )
 
-    BackHandler(enabled = !isCollapsed) {
+    BackHandler(enabled = !fullyCollapsed) {
         onSearchStatusChange(
             searchStatus.copy(searchText = "", current = SearchStatus.Status.COLLAPSING)
         )
     }
 
-    // When collapsed, do NOT fill the screen or install a hit target — a full-size transparent
-    // overlay sits above the page content and eats clicks (e.g. connection cards). Only expand
-    // into a full-screen layer while the search UI is active.
+    // Always stay in composition (callers must not gate this with isCollapsed). When fully
+    // collapsed we only occupy width so we don't eat clicks on the page underneath; while
+    // expanding/collapsing/expanded we take the full screen and dim.
     Column(
         modifier =
             Modifier.zIndex(5f)
                 .then(
-                    if (isCollapsed) {
+                    if (fullyCollapsed) {
                         Modifier.fillMaxWidth()
                     } else {
                         Modifier.fillMaxSize()
@@ -192,6 +193,7 @@ fun SearchStatus.SearchPager(
             onSearchStatusChange = onSearchStatusChange,
             topPadding = topPadding,
             barPadding = resolvedPadding,
+            fullyCollapsed = fullyCollapsed,
         )
         SearchPagerResultsLayer(
             searchStatus = searchStatus,
@@ -209,14 +211,14 @@ private fun SearchPagerTopRow(
     onSearchStatusChange: (SearchStatus) -> Unit,
     topPadding: Dp,
     barPadding: SearchBarPadding,
+    fullyCollapsed: Boolean,
 ) {
-    val isCollapsed = searchStatus.shouldCollapse()
     Row(
         modifier =
             Modifier.fillMaxWidth()
                 .padding(top = topPadding)
                 .then(
-                    if (!isCollapsed) {
+                    if (!fullyCollapsed) {
                         Modifier.background(colorScheme.surface)
                     } else {
                         Modifier
@@ -225,7 +227,9 @@ private fun SearchPagerTopRow(
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (!isCollapsed) {
+        // Keep the bar through COLLAPSING so topPadding can animate back to the collapsed
+        // offset; only hide once fully settled.
+        if (!fullyCollapsed) {
             SearchBar(
                 searchStatus = searchStatus,
                 onSearchStatusChange = onSearchStatusChange,

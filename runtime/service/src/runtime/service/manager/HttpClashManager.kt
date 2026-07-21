@@ -57,6 +57,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.URLBuilder
 import io.ktor.http.appendPathSegments
+import io.ktor.http.content.TextContent
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
@@ -75,6 +76,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 
@@ -182,6 +184,15 @@ class HttpClashManager(
             header(HttpHeaders.Authorization, "Bearer $secret")
         }
     }
+
+    /**
+     * Encode [value] with the same [json] used for responses, then wrap as application/json.
+     * Prefer this for free-form maps (OpenAPI additionalProperties) so ContentNegotiation never
+     * has to invent a serializer for an erased `Any`/`Map` type parameter.
+     * Fixed DTOs like [SelectBody] still go through [setBody] + ContentNegotiation.
+     */
+    private inline fun <reified T> jsonBody(value: T): TextContent =
+        TextContent(json.encodeToString(value), ContentType.Application.Json)
 
     // ---- Tunnel / traffic ------------------------------------------------
 
@@ -422,36 +433,30 @@ class HttpClashManager(
 
     override fun queryRules(): List<RuntimeRule> = runBlocking(Dispatchers.IO) { fetchRules() }
 
+    /**
+     * `PATCH /rules/disable` — OpenAPI body is a free-form object
+     * `{ "<index>": <disabled bool>, ... }` (example: `{ "0": false, "1": true }`).
+     * Same request helper as [patchSelector]; body encoded like other JSON payloads.
+     * Response is 204 No Content; re-GET /rules for the confirmed table.
+     */
     override suspend fun setRuleDisabled(
         rule: RuntimeRule,
         disabled: Boolean,
     ): List<RuntimeRule> {
-        val current = fetchRules().firstOrNull { it.index == rule.index }
-            ?: error("rule ${rule.index} no longer exists")
-        check(current.hasSameIdentity(rule)) { "rule ${rule.index} changed before update" }
-
+        // Matches website/api/openapi.json + mihomo hub/route/rules.go (map[int]bool).
         request(
             HttpMethod.Patch,
             "rules",
             "disable",
-            body = mapOf(rule.index.toString() to disabled),
+            body = jsonBody(mapOf(rule.index.toString() to disabled)),
         )
-
-        val updatedRules = fetchRules()
-        val updated = updatedRules.firstOrNull { it.index == rule.index }
-            ?: error("rule ${rule.index} disappeared after update")
-        check(updated.hasSameIdentity(rule)) { "rule ${rule.index} changed during update" }
-        check(updated.disabled == disabled) { "rule ${rule.index} state was not applied" }
-        return updatedRules
+        return fetchRules()
     }
 
     private suspend fun fetchRules(): List<RuntimeRule> {
         val raw = request(HttpMethod.Get, "rules").bodyAsText()
         return json.decodeFromString<RawRulesResponse>(raw).rules.map { it.toRuntimeRule() }
     }
-
-    private fun RuntimeRule.hasSameIdentity(other: RuntimeRule): Boolean =
-        index == other.index && type == other.type && payload == other.payload && proxy == other.proxy
 
     // ---- Lifecycle (no-ops in pure-remote mode) --------------------------
 

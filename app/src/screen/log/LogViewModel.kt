@@ -20,6 +20,7 @@
 
 package com.github.yumelira.yumebox.screen.log
 
+import android.annotation.SuppressLint
 import android.net.Uri
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -236,7 +237,7 @@ class LogViewModel(private val appContext: Context) : ViewModel() {
 
     private companion object {
         const val MAX_ENTRIES = 2_000
-        const val LOG_BATCH_WINDOW_MS = 32L
+        const val LOG_BATCH_WINDOW_MS = 280L
         const val INITIAL_CONNECT_RETRY_MS = 500L
         const val MAX_CONNECT_RETRY_MS = 5_000L
     }

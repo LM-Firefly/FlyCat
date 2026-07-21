@@ -27,8 +27,11 @@ import com.github.yumelira.yumebox.core.model.RuntimeRule
 import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -42,12 +45,29 @@ data class RulesUiState(
     val error: String? = null,
     val toggleError: String? = null,
     val togglingIndexes: Set<Int> = emptySet(),
+    val searchQuery: String = "",
 )
 
 class RulesViewModel(private val appContext: Context) : ViewModel() {
     private val _uiState = MutableStateFlow(RulesUiState())
     val uiState: StateFlow<RulesUiState> = _uiState.asStateFlow()
     private val toggleMutex = Mutex()
+
+    val filteredRules: StateFlow<List<RuntimeRule>> =
+        _uiState
+            .map { state ->
+                val query = state.searchQuery.trim()
+                if (query.isEmpty()) {
+                    state.rules
+                } else {
+                    state.rules.filter { it.matches(query) }
+                }
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyList(),
+            )
 
     fun refresh() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -73,6 +93,10 @@ class RulesViewModel(private val appContext: Context) : ViewModel() {
                     }
                 }
         }
+    }
+
+    fun setSearchQuery(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
     }
 
     /**
@@ -128,4 +152,10 @@ class RulesViewModel(private val appContext: Context) : ViewModel() {
     fun consumeToggleError() {
         _uiState.update { it.copy(toggleError = null) }
     }
+
+    private fun RuntimeRule.matches(query: String): Boolean =
+        payload.contains(query, ignoreCase = true) ||
+            type.contains(query, ignoreCase = true) ||
+            proxy.contains(query, ignoreCase = true) ||
+            index.toString().contains(query)
 }

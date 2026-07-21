@@ -25,6 +25,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -180,6 +181,9 @@ fun LogScreen(navigator: Navigator) {
     }
     LaunchedEffect(filteredEntries.firstOrNull()?.id, currentSearchStatus.current) {
         if (filteredEntries.isEmpty()) return@LaunchedEffect
+        // Newest-first: LazyColumn anchors to the previous head key after prepend, so the
+        // new rows land above the viewport. Pin back to 0 while following so placement
+        // animation can push older rows downward (not a fade-only flash).
         if (currentSearchStatus.shouldCollapse() && followLatest) {
             listState.requestScrollToItem(0)
         } else if (currentSearchStatus.shouldExpand() && followLatestInSearch) {
@@ -319,8 +323,11 @@ fun LogScreen(navigator: Navigator) {
                                 onClick = { copyLogEntry(context, entry) },
                                 modifier =
                                     Modifier.animateItem(
-                                        fadeInSpec = tween(180),
-                                        placementSpec = tween(220),
+                                        // New head fades in; existing rows keep placement
+                                        // so they slide down as newer logs push from top.
+                                        fadeInSpec = tween(160, easing = FastOutSlowInEasing),
+                                        placementSpec =
+                                            tween(260, easing = FastOutSlowInEasing),
                                         fadeOutSpec = tween(100),
                                     ),
                             )
@@ -345,52 +352,50 @@ fun LogScreen(navigator: Navigator) {
             }
         }
 
-        if (!currentSearchStatus.isCollapsed()) {
-            currentSearchStatus.SearchPager(
-                onSearchStatusChange = {
-                    searchStatus = it
-                    viewModel.setSearchQuery(it.searchText)
-                },
-                padding =
-                    SearchBarPadding(
-                        top = dynamicTopPadding,
-                        start = listStartPadding,
-                        end = listEndPadding,
+        // Always composed — same as AccessControl. Do not gate with !isCollapsed().
+        currentSearchStatus.SearchPager(
+            onSearchStatusChange = {
+                searchStatus = it
+                viewModel.setSearchQuery(it.searchText)
+            },
+            padding =
+                SearchBarPadding(
+                    top = dynamicTopPadding,
+                    start = listStartPadding,
+                    end = listEndPadding,
+                ),
+            emptyResult = {
+                CenteredText(
+                    firstLine = YumeTxt.Log.Empty.NoResults,
+                    secondLine = currentSearchStatus.searchText,
+                )
+            },
+        ) {
+            LazyColumn(
+                state = searchListState,
+                modifier = Modifier.fillMaxSize(),
+                // Horizontal inset is owned by Card.horizontalPadding(); only vertical here.
+                contentPadding =
+                    PaddingValues(
+                        top = spacing.space6,
+                        bottom = mainLikePadding.calculateBottomPadding(),
                     ),
-                emptyResult = {
-                    CenteredText(
-                        firstLine = YumeTxt.Log.Empty.NoResults,
-                        secondLine = currentSearchStatus.searchText,
-                    )
-                },
             ) {
-                LazyColumn(
-                    state = searchListState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding =
-                        PaddingValues(
-                            start = listStartPadding,
-                            end = listEndPadding,
-                            top = spacing.space6,
-                            bottom = mainLikePadding.calculateBottomPadding(),
-                        ),
-                ) {
-                    itemsIndexed(
-                        items = filteredEntries,
-                        key = { _, item -> item.id },
-                        contentType = { _, _ -> "log" },
-                    ) { _, entry ->
-                        LogEntryRow(
-                            entry = entry,
-                            onClick = { copyLogEntry(context, entry) },
-                            modifier =
-                                Modifier.animateItem(
-                                    fadeInSpec = tween(180),
-                                    placementSpec = tween(220),
-                                    fadeOutSpec = tween(100),
-                                ),
-                        )
-                    }
+                itemsIndexed(
+                    items = filteredEntries,
+                    key = { _, item -> item.id },
+                    contentType = { _, _ -> "log" },
+                ) { _, entry ->
+                    LogEntryRow(
+                        entry = entry,
+                        onClick = { copyLogEntry(context, entry) },
+                        modifier =
+                            Modifier.animateItem(
+                                fadeInSpec = tween(160, easing = FastOutSlowInEasing),
+                                placementSpec = tween(260, easing = FastOutSlowInEasing),
+                                fadeOutSpec = tween(100),
+                            ),
+                    )
                 }
             }
         }
