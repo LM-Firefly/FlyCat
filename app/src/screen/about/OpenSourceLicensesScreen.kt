@@ -25,20 +25,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import com.github.yumelira.yumebox.R
+import com.github.yumelira.yumebox.common.util.openUrl
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.mikepenz.aboutlibraries.entity.Library
 import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
-import com.mikepenz.aboutlibraries.ui.compose.util.strippedLicenseContent
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -48,11 +48,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun OpenSourceLicensesScreen(navigator: Navigator) {
+    val context = LocalContext.current
     val spacing = AppTheme.spacing
 
     val scrollBehavior = MiuixScrollBehavior()
-    var showLicenseSheet by remember { mutableStateOf(false) }
-    var selectedLibrary by remember { mutableStateOf<Library?>(null) }
 
     BackHandler { navigator.pop() }
 
@@ -62,38 +61,33 @@ fun OpenSourceLicensesScreen(navigator: Navigator) {
     Scaffold(
         topBar = { TopBar(title = YumeTxt.OpenSourceLicenses.Title, scrollBehavior = scrollBehavior) }
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            val mainLikePadding = rememberStandalonePageMainPadding()
-            ScreenLazyColumn(
-                scrollBehavior = scrollBehavior,
-                innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
-            ) {
-                if (libraryItems.isNotEmpty()) {
-                    items(
-                        items = libraryItems,
-                        key = { library ->
-                            "${library.uniqueId}:${library.artifactId}:${library.name}"
+        val mainLikePadding = rememberStandalonePageMainPadding()
+        ScreenLazyColumn(
+            scrollBehavior = scrollBehavior,
+            innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
+        ) {
+            // Match About page: breathing room under the large TopBar title.
+            item { Spacer(modifier = Modifier.height(UiDp.dp24)) }
+
+            if (libraryItems.isNotEmpty()) {
+                items(
+                    items = libraryItems,
+                    key = { library ->
+                        "${library.uniqueId}:${library.artifactId}:${library.name}"
+                    },
+                ) { library ->
+                    LibraryItem(
+                        library = library,
+                        onClick = {
+                            val url = library.projectUrl
+                            if (!url.isNullOrBlank()) {
+                                openUrl(context, url)
+                            }
                         },
-                    ) { library ->
-                        LibraryItem(
-                            library = library,
-                            onClick = {
-                                selectedLibrary = library
-                                showLicenseSheet = true
-                            },
-                        )
-                    }
-
-                    item { Spacer(modifier = Modifier.height(spacing.space24)) }
+                    )
                 }
-            }
 
-            selectedLibrary?.let { library ->
-                LicenseBottomSheet(
-                    show = showLicenseSheet,
-                    library = library,
-                    onDismiss = { showLicenseSheet = false },
-                )
+                item { Spacer(modifier = Modifier.height(spacing.space24)) }
             }
         }
     }
@@ -103,6 +97,7 @@ fun OpenSourceLicensesScreen(navigator: Navigator) {
 @Composable
 private fun LibraryItem(library: Library, onClick: () -> Unit) {
     val spacing = AppTheme.spacing
+    val hasUrl = !library.projectUrl.isNullOrBlank()
 
     Card(
         modifier = Modifier.padding(bottom = spacing.space12),
@@ -110,7 +105,15 @@ private fun LibraryItem(library: Library, onClick: () -> Unit) {
     ) {
         Column(
             modifier =
-                Modifier.fillMaxWidth().clickable(onClick = onClick).padding(spacing.space16),
+                Modifier.fillMaxWidth()
+                    .then(
+                        if (hasUrl) {
+                            Modifier.clickable(onClick = onClick)
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .padding(spacing.space16),
             verticalArrangement = Arrangement.spacedBy(spacing.space10),
         ) {
             Row(
@@ -176,44 +179,8 @@ private fun LicenseChip(licenseName: String) {
     }
 }
 
-@Composable
-private fun LicenseBottomSheet(show: Boolean, library: Library, onDismiss: () -> Unit) {
-    val spacing = AppTheme.spacing
-    val componentSizes = AppTheme.sizes
-
-    val scrollState = rememberScrollState()
-    val licenseContent =
-        remember(library) { library.strippedLicenseContent.takeIf { it.isNotEmpty() } }
-
-    AppActionBottomSheet(
-        show = show,
-        title = library.name,
-        onDismissRequest = onDismiss,
-        content = {
-            Column(
-                modifier =
-                    Modifier.fillMaxWidth().heightIn(max = componentSizes.dialogSheetMaxHeight)
-            ) {
-                if (licenseContent != null) {
-                    Text(
-                        modifier = Modifier.verticalScroll(scrollState),
-                        text = licenseContent,
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurface,
-                    )
-                } else {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(spacing.space16),
-                    ) {
-                        Text(
-                            text = YumeTxt.OpenSourceLicenses.LicenseSheet.NoContent,
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    }
-                }
-            }
-        },
-    )
-}
+/** Prefer website, then SCM url — both come from the artifact pom. */
+private val Library.projectUrl: String?
+    get() =
+        website?.takeIf { it.isNotBlank() }
+            ?: scm?.url?.takeIf { it.isNotBlank() }
