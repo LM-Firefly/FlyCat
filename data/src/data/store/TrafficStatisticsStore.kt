@@ -23,6 +23,8 @@ package com.github.yumelira.yumebox.data.store
 import com.github.yumelira.yumebox.data.model.AppRouteTrafficUsage
 import com.github.yumelira.yumebox.data.model.AppTrafficDeltaRecord
 import com.github.yumelira.yumebox.data.model.AppTrafficUsage
+import com.github.yumelira.yumebox.data.model.DailyTrafficSummary
+import com.github.yumelira.yumebox.data.model.HourlyTrafficSummary
 import com.github.yumelira.yumebox.data.model.StatisticsTimeRange
 import com.github.yumelira.yumebox.data.model.TrafficStatisticsBuckets
 import com.github.yumelira.yumebox.data.store.room.AppTrafficDelta
@@ -96,6 +98,9 @@ class TrafficStatisticsStore(
         if (appDeltas.isEmpty()) return
 
         dao.recordBatch(
+            hourStartMillis = startOfHour(timestamp),
+            hourlyUploadDelta = appDeltas.sumOf(AppTrafficDelta::uploadDelta),
+            hourlyDownloadDelta = appDeltas.sumOf(AppTrafficDelta::downloadDelta),
             appDeltas = appDeltas,
             routeDeltas = routeDeltas,
             retentionCutoffMillis = now() - (MAX_APP_DAYS_TO_KEEP * DAY_MS),
@@ -108,6 +113,12 @@ class TrafficStatisticsStore(
 
     fun getAppUsagesFlow(range: StatisticsTimeRange): Flow<List<AppTrafficUsage>> =
         dao.getAppUsagesFlow(rangeCutoff(range))
+
+    fun getDailyTotalsFlow(range: StatisticsTimeRange): Flow<List<DailyTrafficSummary>> =
+        dao.getDailyTotalsFlow(rangeCutoff(range))
+
+    fun getTodayHourlyTotalsFlow(): Flow<List<HourlyTrafficSummary>> =
+        dao.getHourlyTotalsFlow(startOfDay(now()))
 
     suspend fun getAppUsagesSorted(range: StatisticsTimeRange): List<AppTrafficUsage> =
         dao.getAppUsagesSorted(rangeCutoff(range))
@@ -171,6 +182,14 @@ class TrafficStatisticsStore(
     private fun startOfDay(timestamp: Long): Long {
         val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
         calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        return calendar.timeInMillis
+    }
+
+    private fun startOfHour(timestamp: Long): Long {
+        val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
         calendar.set(Calendar.MINUTE, 0)
         calendar.set(Calendar.SECOND, 0)
         calendar.set(Calendar.MILLISECOND, 0)

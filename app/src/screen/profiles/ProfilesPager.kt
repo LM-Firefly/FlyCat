@@ -54,12 +54,6 @@ fun ProfilesPager(mainInnerPadding: PaddingValues) {
         }
     }
 
-    LaunchedEffect(dialogs.showSettings.value) {
-        if (dialogs.showSettings.value) {
-            overrideConfigViewModel.refresh()
-        }
-    }
-
     ProfilesPageHost(
         mainInnerPadding = mainInnerPadding,
         profiles = profiles,
@@ -75,6 +69,7 @@ fun ProfilesPager(mainInnerPadding: PaddingValues) {
         homeViewModel = homeViewModel,
         builtInConfigs = builtInConfigs,
         userConfigs = userConfigs,
+        refreshOverrides = overrideConfigViewModel::refreshAndAwait,
         isRunning = isRunning,
     )
 }

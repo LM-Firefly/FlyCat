@@ -20,29 +20,44 @@
 
 package com.github.yumelira.yumebox.presentation.component
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.common.util.formatBytes
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
@@ -55,103 +70,248 @@ data class BarChartItem(
     val isHighlighted: Boolean = false,
 )
 
+/**
+ * Traffic chart shared by the 24-hour and seven-day views.
+ *
+ * [animationKey] identifies a chart session. Live traffic updates deliberately do not participate
+ * in the key, so polling cannot restart the entrance animation.
+ */
 @Composable
 fun TrafficBarChart(
     items: List<BarChartItem>,
     modifier: Modifier = Modifier,
+    animationKey: Any? = null,
     maxDisplayValue: Long? = null,
+    averageValue: Long? = null,
+    averageLabel: String? = null,
+    showSelectionTip: Boolean = false,
+    tipTitleFor: (BarChartItem) -> String = { it.label },
     onItemClick: ((Int) -> Unit)? = null,
     selectedIndex: Int = -1,
-    barColor: Color = MiuixTheme.colorScheme.primary.copy(alpha = AppTheme.opacity.medium),
+    barColor: Color = MiuixTheme.colorScheme.primary,
     highlightColor: Color = MiuixTheme.colorScheme.primary,
     chartHeight: Dp = AppTheme.sizes.trafficBarChartHeight,
     barWidth: Dp = AppTheme.sizes.trafficBarWidth,
 ) {
     val spacing = AppTheme.spacing
     val radii = AppTheme.radii
-    val componentSizes = AppTheme.sizes
+    val sizes = AppTheme.sizes
+    val displayItems = items.ifEmpty { listOf(BarChartItem("", 0L)) }
+    val slotCount = displayItems.size
+    val safeMaxValue =
+        (maxDisplayValue
+                ?: maxOf(displayItems.maxOfOrNull(BarChartItem::value) ?: 0L, averageValue ?: 0L))
+            .coerceAtLeast(1L)
+    val hasTraffic = displayItems.any { it.value > 0L }
 
-    val computedMaxValue = maxDisplayValue ?: items.maxOfOrNull { it.value } ?: 1L
-    val safeMaxValue = if (computedMaxValue <= 0L) 1L else computedMaxValue
-
-    val animatedMaxValue by
-        animateFloatAsState(
-            targetValue = safeMaxValue.toFloat(),
-            animationSpec = spring(dampingRatio = 0.85f, stiffness = 380f),
-            label = "maxValue",
-        )
-
-    val displayItems =
-        remember(items) {
-            if (items.size <= 7) {
-                items + List(7 - items.size) { BarChartItem("", 0L) }
-            } else {
-                items.take(7)
-            }
+    val growth = remember(animationKey) { Animatable(0f) }
+    LaunchedEffect(animationKey, hasTraffic) {
+        if (hasTraffic) {
+            growth.snapTo(0f)
+            growth.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            )
+        } else {
+            growth.snapTo(1f)
         }
+    }
+
+    val defaultIndex =
+        displayItems.indexOfFirst(BarChartItem::isHighlighted).takeIf { it >= 0 }
+            ?: displayItems.lastIndex
+    var internalSelectedIndex by
+        remember(animationKey, slotCount) { mutableIntStateOf(defaultIndex) }
+    val activeIndex =
+        selectedIndex.takeIf { it in displayItems.indices }
+            ?: internalSelectedIndex.takeIf { it in displayItems.indices }
+            ?: defaultIndex
+    val averageFraction =
+        averageValue
+            ?.takeIf { it > 0L }
+            ?.let { (it.toFloat() / safeMaxValue.toFloat()).coerceIn(0f, 1f) }
+
+    val horizontalGridColor = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+    val verticalGridColor = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.24f)
+    val guideColor = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.28f)
+    val labelColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
+    val averageLineColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.48f)
+    val tipBubbleHeight = 60.dp
+    val tipHeight = if (showSelectionTip) 72.dp else 0.dp
+    val scaleWidth = 60.dp
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().height(componentSizes.trafficBarLabelHeight),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = formatBytes(animatedMaxValue.toLong()),
-                style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 1,
-            )
-        }
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(chartHeight)) {
+            val plotWidth = (maxWidth - scaleWidth).coerceAtLeast(1.dp)
+            val plotHeight = (chartHeight - tipHeight).coerceAtLeast(1.dp)
+            val slotWidth = plotWidth / slotCount
+            val actualBarWidth = barWidth.coerceAtMost(slotWidth * 0.68f)
 
-        Spacer(modifier = Modifier.height(spacing.space4))
+            if (showSelectionTip && activeIndex in displayItems.indices) {
+                val selectedCenter = slotWidth * (activeIndex + 0.5f)
+                Canvas(modifier = Modifier.width(plotWidth).fillMaxHeight()) {
+                    drawLine(
+                        color = guideColor,
+                        start = Offset(selectedCenter.toPx(), tipBubbleHeight.toPx()),
+                        end = Offset(selectedCenter.toPx(), size.height),
+                        strokeWidth = 0.75.dp.toPx(),
+                    )
+                }
+            }
 
-        Row(
-            modifier = Modifier.fillMaxWidth().height(chartHeight),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            displayItems.forEachIndexed { index, item ->
-                val isSelected = index == selectedIndex || item.isHighlighted
-                val isValidItem = item.label.isNotEmpty()
+            Box(
+                modifier =
+                    Modifier.width(plotWidth)
+                        .height(plotHeight)
+                        .align(Alignment.BottomStart)
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val thinStroke = 0.5.dp.toPx()
+                    val verticalDash =
+                        PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx()))
 
-                val targetHeight =
-                    if (animatedMaxValue > 0 && item.value > 0) {
-                        (item.value.toFloat() / animatedMaxValue).coerceIn(0.04f, 1f)
-                    } else {
-                        0.04f
+                    listOf(0f, size.height / 2f, size.height).forEach { y ->
+                        drawLine(
+                            color = horizontalGridColor,
+                            start = Offset.Zero.copy(y = y),
+                            end = Offset(size.width, y),
+                            strokeWidth = thinStroke,
+                        )
                     }
 
-                val animatedHeight by
-                    animateFloatAsState(
-                        targetValue = if (isValidItem) targetHeight else 0f,
-                        animationSpec = spring(dampingRatio = 0.82f, stiffness = 400f),
-                        label = "barHeight_$index",
-                    )
+                    val verticalLines =
+                        if (slotCount == 24) {
+                            listOf(0, 6, 12, 18, 24)
+                        } else {
+                            (0..slotCount).toList()
+                        }
+                    verticalLines.forEach { position ->
+                        val x = size.width * position / slotCount
+                        drawLine(
+                            color = verticalGridColor,
+                            start = Offset(x, 0f),
+                            end = Offset(x, size.height),
+                            strokeWidth = thinStroke,
+                            pathEffect = verticalDash,
+                        )
+                    }
 
-                Box(
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
-                    contentAlignment = Alignment.BottomCenter,
+                    averageFraction?.let { fraction ->
+                        val y = size.height * (1f - fraction)
+                        drawLine(
+                            color = averageLineColor,
+                            start = Offset(0f, y),
+                            end = Offset(size.width, y),
+                            strokeWidth = 1.25.dp.toPx(),
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.Bottom,
                 ) {
-                    if (isValidItem && animatedHeight > 0f) {
-                        Spacer(
+                    displayItems.forEachIndexed { index, item ->
+                        val targetFraction =
+                            (item.value.toFloat() / safeMaxValue.toFloat()).coerceIn(0f, 1f)
+                        val heightFraction = targetFraction * growth.value
+                        Box(
                             modifier =
-                                Modifier.width(barWidth)
-                                    .fillMaxHeight(animatedHeight)
-                                    .clip(
-                                        RoundedCornerShape(
-                                            topStart = radii.radius4,
-                                            topEnd = radii.radius4,
-                                        )
-                                    )
-                                    .background(if (isSelected) highlightColor else barColor)
-                                    .then(
-                                        if (onItemClick != null) {
-                                            Modifier.clickable { onItemClick(index) }
-                                        } else {
-                                            Modifier
-                                        }
-                                    )
+                                Modifier.weight(1f)
+                                    .fillMaxHeight()
+                                    .clickable(
+                                        enabled = showSelectionTip,
+                                        indication = null,
+                                        interactionSource =
+                                            remember { MutableInteractionSource() },
+                                    ) {
+                                        internalSelectedIndex = index
+                                        onItemClick?.invoke(index)
+                                    },
+                            contentAlignment = Alignment.BottomCenter,
+                        ) {
+                            if (heightFraction > 0f) {
+                                Spacer(
+                                    modifier =
+                                        Modifier.width(actualBarWidth)
+                                            .fillMaxHeight(heightFraction)
+                                            .clip(
+                                                RoundedCornerShape(
+                                                    topStart = radii.radius4,
+                                                    topEnd = radii.radius4,
+                                                )
+                                            )
+                                            .background(
+                                                if (index == activeIndex && showSelectionTip) {
+                                                    highlightColor
+                                                } else {
+                                                    barColor.copy(alpha = 0.92f)
+                                                }
+                                            )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Box(
+                modifier =
+                    Modifier.width(scaleWidth)
+                        .height(plotHeight)
+                        .align(Alignment.BottomEnd)
+                        .padding(start = spacing.space8)
+            ) {
+                ScaleLabel(formatBytes(safeMaxValue), Modifier.align(Alignment.TopStart))
+                ScaleLabel(formatBytes(safeMaxValue / 2), Modifier.align(Alignment.CenterStart))
+                ScaleLabel("0", Modifier.align(Alignment.BottomStart))
+
+                if (averageFraction != null && !averageLabel.isNullOrBlank()) {
+                    val labelHeight = 16.dp
+                    val top =
+                        (plotHeight * (1f - averageFraction) - labelHeight / 2f)
+                            .coerceIn(0.dp, plotHeight - labelHeight)
+                    Text(
+                        text = averageLabel,
+                        modifier = Modifier.offset(y = top),
+                        style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
+                        color = MiuixTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                    )
+                }
+            }
+
+            if (showSelectionTip && activeIndex in displayItems.indices) {
+                val selectedItem = displayItems[activeIndex]
+                val selectedCenter = slotWidth * (activeIndex + 0.5f)
+                val bubbleWidth = 136.dp.coerceAtMost(maxWidth)
+                val bubbleLeft =
+                    (selectedCenter - bubbleWidth / 2f)
+                        .coerceIn(0.dp, (maxWidth - bubbleWidth).coerceAtLeast(0.dp))
+                Box(
+                    modifier =
+                        Modifier.offset(x = bubbleLeft)
+                            .width(bubbleWidth)
+                            .height(tipBubbleHeight)
+                            .clip(RoundedCornerShape(radii.radius14))
+                            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+                            .padding(horizontal = spacing.space14, vertical = spacing.space10)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(spacing.space2)) {
+                        Text(
+                            text = tipTitleFor(selectedItem),
+                            style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
+                            color = labelColor,
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = formatBytes(selectedItem.value),
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
                         )
                     }
                 }
@@ -160,26 +320,43 @@ fun TrafficBarChart(
 
         Spacer(modifier = Modifier.height(spacing.space8))
 
-        Row(
-            modifier = Modifier.fillMaxWidth().height(componentSizes.trafficBarLabelHeight),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth().height(sizes.trafficBarLabelHeight)
         ) {
+            val plotWidth = (maxWidth - scaleWidth).coerceAtLeast(1.dp)
+            val slotWidth = plotWidth / slotCount
+            val labelWidth = if (slotCount == 24) 44.dp else slotWidth
             displayItems.forEachIndexed { index, item ->
-                val isSelected = index == selectedIndex || item.isHighlighted
+                if (item.label.isEmpty()) return@forEachIndexed
+                val center = slotWidth * (index + 0.5f)
+                val left =
+                    (center - labelWidth / 2f)
+                        .coerceIn(0.dp, (plotWidth - labelWidth).coerceAtLeast(0.dp))
                 Text(
-                    modifier = Modifier.weight(1f).wrapContentWidth(Alignment.CenterHorizontally),
                     text = item.label,
-                    style = MiuixTheme.textStyles.footnote1.copy(fontSize = 9.sp),
+                    modifier = Modifier.offset(x = left).width(labelWidth),
+                    style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
                     color =
-                        if (isSelected) {
+                        if (showSelectionTip && index == activeIndex) {
                             MiuixTheme.colorScheme.primary
                         } else {
-                            MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            labelColor
                         },
+                    textAlign = TextAlign.Center,
                     maxLines = 1,
                 )
             }
         }
     }
+}
+
+@Composable
+private fun ScaleLabel(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        modifier = modifier.wrapContentWidth(),
+        style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        maxLines = 1,
+    )
 }

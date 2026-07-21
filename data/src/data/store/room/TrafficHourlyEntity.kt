@@ -6,7 +6,7 @@
  * published by the Free Software Foundation, either version 3 of the
  * License.
  *
- * This program is distributed in the hope that it will be useful,
+ * YumeBox is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
@@ -20,22 +20,12 @@
 
 package com.github.yumelira.yumebox.data.store.room
 
-import androidx.room.Database
-import androidx.room.RoomDatabase
+import androidx.room.ColumnInfo
+import androidx.room.Entity
 
-@Database(
-    entities = [
-        AppTrafficDailyEntity::class,
-        RouteTrafficDailyEntity::class,
-        TrafficHourlyEntity::class,
-    ],
-    version = 2,
-    exportSchema = true,
+@Entity(tableName = "traffic_hourly", primaryKeys = ["hour_start_millis"])
+data class TrafficHourlyEntity(
+    @ColumnInfo(name = "hour_start_millis") val hourStartMillis: Long,
+    @ColumnInfo(name = "total_upload") val totalUpload: Long = 0L,
+    @ColumnInfo(name = "total_download") val totalDownload: Long = 0L,
 )
-abstract class TrafficDatabase : RoomDatabase() {
-    abstract fun trafficStatisticsDao(): TrafficStatisticsDao
-
-    companion object {
-        const val DATABASE_NAME = "traffic_statistics.db"
-    }
-}

@@ -36,6 +36,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
@@ -73,6 +75,7 @@ class OverrideConfigViewModel(
 
     private val _pendingRevealConfigId = MutableStateFlow<String?>(null)
     val pendingRevealConfigId: StateFlow<String?> = _pendingRevealConfigId.asStateFlow()
+    private val refreshMutex = Mutex()
 
     init {
         refresh()
@@ -83,7 +86,16 @@ class OverrideConfigViewModel(
 
     @Suppress("TooGenericExceptionCaught")
     fun refresh() {
-        viewModelScope.launch {
+        viewModelScope.launch { refreshNow() }
+    }
+
+    suspend fun refreshAndAwait() {
+        refreshNow()
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun refreshNow() {
+        refreshMutex.withLock {
             _isLoading.value = true
             try {
                 // Load independently: a built-in asset hiccup must not wipe imported overrides
@@ -124,7 +136,7 @@ class OverrideConfigViewModel(
 
         viewModelScope.launch {
             activeProfileOverrideReloader.reapplyActiveProfileIfUsingOverride(configId)
-            refresh()
+            refreshNow()
         }
         return true
     }
@@ -145,7 +157,7 @@ class OverrideConfigViewModel(
                         )
                     configRepo.save(config)
                     _pendingRevealConfigId.value = config.id
-                    refresh()
+                    refreshNow()
                 }
                 .onFailure { error -> Timber.tag(TAG).e(error, "Failed to create override") }
         }
@@ -161,7 +173,7 @@ class OverrideConfigViewModel(
                     if (deleted && shouldResyncRuntime) {
                         activeProfileOverrideReloader.reapplyActiveProfileOverride()
                     }
-                    refresh()
+                    refreshNow()
                 }
                 .onFailure { error -> Timber.tag(TAG).e(error, "Failed to delete override") }
         }
@@ -192,7 +204,7 @@ class OverrideConfigViewModel(
                     if (duplicated != null) {
                         _pendingRevealConfigId.value = duplicated.id
                     }
-                    refresh()
+                    refreshNow()
                 }
                 .onFailure { error -> Timber.tag(TAG).e(error, "Failed to duplicate override") }
         }
@@ -213,11 +225,11 @@ class OverrideConfigViewModel(
 
             runCatching { configRepo.reorderUserConfigs(reorderedConfigs.map(OverrideConfig::id)) }
                 .onFailure { error -> Timber.tag(TAG).e(error, "Failed to reorder overrides") }
-            refresh()
+            refreshNow()
         }
     }
 
-    fun importConfig(content: String, sourceName: String?): Result<OverrideConfig> {
+    suspend fun importConfig(content: String, sourceName: String?): Result<OverrideConfig> {
         return importConfig(
             content = content,
             sourceName = sourceName,
@@ -225,7 +237,7 @@ class OverrideConfigViewModel(
         )
     }
 
-    private fun importConfig(
+    private suspend fun importConfig(
         content: String,
         sourceName: String?,
         fallbackContentType: OverrideContentType?,
@@ -258,15 +270,13 @@ class OverrideConfigViewModel(
                 updatedAt = System.currentTimeMillis(),
             )
 
-        viewModelScope.launch {
-            runCatching {
-                    configRepo.save(config)
-                    _pendingRevealConfigId.value = config.id
-                    refresh()
-                }
-                .onFailure { error -> Timber.tag(TAG).e(error, "Failed to import override") }
-        }
-        return Result.success(config)
+        return runCatching {
+                configRepo.save(config)
+                _pendingRevealConfigId.value = config.id
+                refreshNow()
+                config
+            }
+            .onFailure { error -> Timber.tag(TAG).e(error, "Failed to import override") }
     }
 
     suspend fun importConfigFromUrl(rawUrl: String): Result<OverrideConfig> =

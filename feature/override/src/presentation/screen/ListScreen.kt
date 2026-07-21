@@ -26,8 +26,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -64,7 +62,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -72,8 +70,7 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
-import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
+import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 private val overrideConfigItemGap = Spacing().space12
@@ -285,14 +282,7 @@ fun OverrideListScreen(
                 viewModel.createConfig(name = name, contentType = contentType)
                 showCreateDialog.value = false
             },
-            onConfirmImport = { content, sourceName ->
-                viewModel
-                    .importConfig(content, sourceName)
-                    .onSuccess { showCreateDialog.value = false }
-                    .onFailure { error ->
-                        context.toast(error.message ?: YumeTxt.Override.Import.ReadError)
-                    }
-            },
+            onConfirmImport = viewModel::importConfig,
             onConfirmNetworkImport = viewModel::importConfigFromUrl,
             onDismiss = { showCreateDialog.value = false },
         )
@@ -544,7 +534,7 @@ private fun CreateConfigDialog(
     show: MutableState<Boolean>,
     initialMode: OverrideConfigInputMode,
     onConfirmCreate: (String, OverrideContentType) -> Unit,
-    onConfirmImport: (String, String) -> Unit,
+    onConfirmImport: suspend (String, String) -> Result<OverrideConfig>,
     onConfirmNetworkImport: suspend (String) -> Result<OverrideConfig>,
     onDismiss: () -> Unit,
 ) {
@@ -558,14 +548,14 @@ private fun CreateConfigDialog(
     var selectedImportUri by remember(show.value) { mutableStateOf<Uri?>(null) }
     var selectedImportFileName by remember(show.value) { mutableStateOf("") }
     var networkImportUrl by remember(show.value) { mutableStateOf("") }
-    var isNetworkImporting by remember(show.value) { mutableStateOf(false) }
+    var isImporting by remember(show.value) { mutableStateOf(false) }
     var stableContentHeightPx by remember(show.value) { mutableStateOf(0) }
     val canConfirm =
         when (inputMode) {
             OverrideConfigInputMode.CreateNew -> nameTextFieldValueState.value.text.isNotBlank()
             OverrideConfigInputMode.LocalFile ->
                 selectedImportUri != null && selectedImportFileName.isNotBlank()
-            OverrideConfigInputMode.NetworkUrl -> networkImportUrl.isNotBlank() && !isNetworkImporting
+            OverrideConfigInputMode.NetworkUrl -> networkImportUrl.isNotBlank() && !isImporting
         }
     val stableContentHeight =
         remember(stableContentHeightPx, density) {
@@ -614,7 +604,7 @@ private fun CreateConfigDialog(
         startAction = { AppBottomSheetCloseAction(onClick = onDismiss) },
         endAction = {
             AppBottomSheetConfirmAction(
-                enabled = canConfirm && !isNetworkImporting,
+                enabled = canConfirm && !isImporting,
                 contentDescription = YumeTxt.Override.Action.Create,
                 onClick = {
                     if (!canConfirm) return@AppBottomSheetConfirmAction
@@ -634,7 +624,18 @@ private fun CreateConfigDialog(
                                         ?: error(YumeTxt.Override.Import.ReadError)
                                 }
                                 .onSuccess { content ->
-                                    onConfirmImport(content, selectedImportFileName)
+                                    scope.launch {
+                                        isImporting = true
+                                        onConfirmImport(content, selectedImportFileName)
+                                            .onSuccess { show.value = false }
+                                            .onFailure { error ->
+                                                context.toast(
+                                                    error.message
+                                                        ?: YumeTxt.Override.Import.ReadError
+                                                )
+                                            }
+                                        isImporting = false
+                                    }
                                 }
                                 .onFailure { error ->
                                     context.toast(
@@ -646,7 +647,7 @@ private fun CreateConfigDialog(
                         OverrideConfigInputMode.NetworkUrl -> {
                             val url = networkImportUrl.trim()
                             scope.launch {
-                                isNetworkImporting = true
+                                isImporting = true
                                 onConfirmNetworkImport(url)
                                     .onSuccess { show.value = false }
                                     .onFailure { error ->
@@ -656,7 +657,7 @@ private fun CreateConfigDialog(
                                             )
                                         )
                                     }
-                                isNetworkImporting = false
+                                isImporting = false
                             }
                         }
                     }
@@ -726,7 +727,7 @@ private fun CreateConfigDialog(
                                             maxOf(stableContentHeightPx, it.height)
                                     },
                                 url = networkImportUrl,
-                                enabled = !isNetworkImporting,
+                                enabled = !isImporting,
                                 onUrlChange = { networkImportUrl = it },
                             )
                         }
@@ -746,9 +747,9 @@ private fun OverrideInputModeSelector(
     val selectedModeIndex = inputModeOptions.indexOf(selectedMode).coerceAtLeast(0)
 
     top.yukonga.miuix.kmp.basic.Card {
-        WindowSpinnerPreference(
+        OverlayDropdownPreference(
             title = YumeTxt.ProfilesPage.Type.Title,
-            items = inputModeOptions.map { inputMode -> DropdownItem(title = inputMode.label) },
+            items = inputModeOptions.map(OverrideConfigInputMode::label),
             selectedIndex = selectedModeIndex,
             onSelectedIndexChange = { index ->
                 inputModeOptions.getOrNull(index)?.let(onSelectedModeChange)
@@ -766,7 +767,7 @@ private fun OverrideTypeSelector(
     val selectedTypeIndex = contentTypeOptions.indexOf(selectedType).coerceAtLeast(0)
 
     top.yukonga.miuix.kmp.basic.Card {
-        WindowDropdownPreference(
+        OverlayDropdownPreference(
             title = YumeTxt.Override.Dialog.Create.Type,
             items = contentTypeOptions.map { it.label },
             selectedIndex = selectedTypeIndex,
@@ -783,23 +784,15 @@ private fun ImportOverrideFileContent(
     fileName: String,
     onPickFile: () -> Unit,
 ) {
-    Box(
-        modifier =
-            modifier.clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() },
+    Box(modifier = modifier) {
+        top.yukonga.miuix.kmp.basic.Card {
+            BasicComponent(
+                title = YumeTxt.ProfilesPage.Input.SelectFile,
+                summary =
+                    fileName.ifBlank { YumeTxt.ProfilesPage.Validation.SelectFile },
                 onClick = onPickFile,
             )
-    ) {
-        TextField(
-            value = fileName,
-            onValueChange = {},
-            label = YumeTxt.ProfilesPage.Input.SelectFile,
-            useLabelAsPlaceholder = true,
-            readOnly = true,
-            enabled = false,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        }
     }
 }
 

@@ -29,10 +29,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
+import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.data.model.OverrideConfig
 import com.github.yumelira.yumebox.data.model.ProfileBinding
 import com.github.yumelira.yumebox.presentation.component.AgeSecretKeyField
@@ -42,6 +44,7 @@ import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmA
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.runtime.api.Profile
+import kotlinx.coroutines.launch
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -63,8 +66,10 @@ internal fun ProfileSettingsDialog(
     onDismiss: () -> Unit,
     onDismissFinished: () -> Unit,
     onSaveProfileMeta: (ProfileMetaUpdate) -> Unit,
-    onSaveOverrideSettings: (List<String>) -> Unit,
+    onSaveOverrideSettings: suspend (List<String>) -> Unit,
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val spacing = AppTheme.spacing
     val opacity = AppTheme.opacity
     val componentSizes = AppTheme.sizes
@@ -90,6 +95,7 @@ internal fun ProfileSettingsDialog(
     // The binding loads ASYNCHRONOUSLY after the dialog is interactive, so a late binding arrival
     // must not clobber a toggle the user already changed.
     var overrideSelectionInitialized by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
 
     // Reset per dialog-open identity only (NOT on every binding change), so re-firing when the
     // async binding loads cannot wipe edits already in progress.
@@ -125,35 +131,53 @@ internal fun ProfileSettingsDialog(
             toggleOverrideIdSelection(pendingSelectedOverrideIds, overrideId, isSelected)
     }
     val saveSettings = {
-        val trimmedName = editName.text.trim()
-        val trimmedSource = editSource.text.trim()
-        val trimmedAgeSecretKey = editAgeSecretKey.text.trim()
-        val targetSource =
-            if (profile.type == Profile.Type.Url && trimmedSource.isNotEmpty()) {
-                trimmedSource
-            } else {
-                profile.source
-            }
-        val hasMetaChanges =
-            trimmedName != profile.name || targetSource != profile.source || ageSecretKeyEdited
-        if (trimmedName.isNotEmpty() && targetSource.isNotEmpty() && hasMetaChanges) {
-            onSaveProfileMeta(
-                ProfileMetaUpdate(
-                    name = trimmedName,
-                    source = targetSource,
-                    updateAgeSecretKey = ageSecretKeyEdited,
-                    ageSecretKey = if (ageSecretKeyEdited) trimmedAgeSecretKey else null,
-                )
-            )
-        }
+        if (!isSaving) {
+            scope.launch {
+                isSaving = true
+                runCatching {
+                        val trimmedName = editName.text.trim()
+                        val trimmedSource = editSource.text.trim()
+                        val trimmedAgeSecretKey = editAgeSecretKey.text.trim()
+                        val targetSource =
+                            if (profile.type == Profile.Type.Url && trimmedSource.isNotEmpty()) {
+                                trimmedSource
+                            } else {
+                                profile.source
+                            }
+                        val hasMetaChanges =
+                            trimmedName != profile.name ||
+                                targetSource != profile.source ||
+                                ageSecretKeyEdited
+                        if (
+                            trimmedName.isNotEmpty() &&
+                                targetSource.isNotEmpty() &&
+                                hasMetaChanges
+                        ) {
+                            onSaveProfileMeta(
+                                ProfileMetaUpdate(
+                                    name = trimmedName,
+                                    source = targetSource,
+                                    updateAgeSecretKey = ageSecretKeyEdited,
+                                    ageSecretKey =
+                                        if (ageSecretKeyEdited) trimmedAgeSecretKey else null,
+                                )
+                            )
+                        }
 
-        val finalSelectedOverrideIds =
-            buildFinalOverrideIds(
-                selectedOverrideIds = pendingSelectedOverrideIds,
-                customRoutingSelected = customRoutingSelected,
-            )
-        onSaveOverrideSettings(finalSelectedOverrideIds)
-        onDismiss()
+                        val finalSelectedOverrideIds =
+                            buildFinalOverrideIds(
+                                selectedOverrideIds = pendingSelectedOverrideIds,
+                                customRoutingSelected = customRoutingSelected,
+                            )
+                        onSaveOverrideSettings(finalSelectedOverrideIds)
+                    }
+                    .onSuccess { onDismiss() }
+                    .onFailure { error ->
+                        context.toast(error.message ?: YumeTxt.Util.Error.UnknownError)
+                    }
+                isSaving = false
+            }
+        }
     }
 
     AppActionBottomSheet(
@@ -168,6 +192,7 @@ internal fun ProfileSettingsDialog(
         },
         endAction = {
             AppBottomSheetConfirmAction(
+                enabled = !isSaving,
                 onClick = saveSettings,
                 contentDescription = YumeTxt.ProfilesPage.Button.Confirm,
             )

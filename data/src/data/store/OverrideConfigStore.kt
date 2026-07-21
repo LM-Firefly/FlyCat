@@ -147,15 +147,20 @@ class OverrideConfigStore(
             if (BuiltInOverrideCatalog.isBuiltIn(id)) {
                 return@withContext false
             }
-            cleanupStaleConfigFiles(id)
-            val metadataExists = loadMetadataIndex().getById(id) != null
-            if (!metadataExists) {
+            val currentIndex = loadMetadataIndex()
+            if (currentIndex.getById(id) == null) {
                 refreshConfigsFlow()
                 return@withContext false
             }
 
-            val updatedIndex = loadMetadataIndex().remove(id)
+            // Remove metadata and every profile reference in the same write. Keeping these as two
+            // independent read-modify-write operations allowed a stale binding snapshot to restore
+            // the deleted id.
+            val updatedIndex =
+                currentIndex.remove(id).removeOverrideFromProfileChains(id)
             saveMetadataIndex(updatedIndex)
+            cleanupStaleConfigFiles(id)
+            // The persistent snapshot is already clean; this synchronizes the binding StateFlow.
             bindingProvider.removeOverrideFromAllBindings(id)
             val userConfigsById =
                 configsFlow.value.associateBy(OverrideConfig::id).toMutableMap().apply {
@@ -464,7 +469,9 @@ class OverrideConfigStore(
                 binding.copy(
                     overrideIds =
                         binding.overrideIds.filterNot { id ->
-                            isLegacySystemPresetId(id)
+                            isLegacySystemPresetId(id) ||
+                                (id.startsWith(OverrideMetadata.ID_PREFIX) &&
+                                    id !in sanitizedConfigs)
                         }
                 )
             }

@@ -22,6 +22,8 @@ package com.github.yumelira.yumebox.data.store.room
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Builds the traffic-statistics Room database and returns its DAO.
@@ -37,5 +39,22 @@ fun createTrafficStatisticsDao(context: Context): TrafficStatisticsDao =
             TrafficDatabase::class.java,
             TrafficDatabase.DATABASE_NAME,
         )
+        .addMigrations(TRAFFIC_MIGRATION_1_2)
         .build()
         .trafficStatisticsDao()
+
+private val TRAFFIC_MIGRATION_1_2 =
+    object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `traffic_hourly` (
+                    `hour_start_millis` INTEGER NOT NULL,
+                    `total_upload` INTEGER NOT NULL,
+                    `total_download` INTEGER NOT NULL,
+                    PRIMARY KEY(`hour_start_millis`)
+                )
+                """.trimIndent()
+            )
+        }
+    }

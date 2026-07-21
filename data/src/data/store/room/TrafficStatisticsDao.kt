@@ -26,6 +26,8 @@ import androidx.room.Query
 import androidx.room.Transaction
 import com.github.yumelira.yumebox.data.model.AppRouteTrafficUsage
 import com.github.yumelira.yumebox.data.model.AppTrafficUsage
+import com.github.yumelira.yumebox.data.model.DailyTrafficSummary
+import com.github.yumelira.yumebox.data.model.HourlyTrafficSummary
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -57,10 +59,31 @@ abstract class TrafficStatisticsDao {
      */
     @Transaction
     open suspend fun recordBatch(
+        hourStartMillis: Long,
+        hourlyUploadDelta: Long,
+        hourlyDownloadDelta: Long,
         appDeltas: List<AppTrafficDelta>,
         routeDeltas: List<RouteTrafficDelta>,
         retentionCutoffMillis: Long,
     ) {
+        if (hourlyUploadDelta > 0L || hourlyDownloadDelta > 0L) {
+            val updated =
+                accumulateHourly(
+                    hourStartMillis = hourStartMillis,
+                    uploadDelta = hourlyUploadDelta,
+                    downloadDelta = hourlyDownloadDelta,
+                )
+            if (updated == 0) {
+                insertHourly(
+                    TrafficHourlyEntity(
+                        hourStartMillis = hourStartMillis,
+                        totalUpload = hourlyUploadDelta,
+                        totalDownload = hourlyDownloadDelta,
+                    )
+                )
+            }
+        }
+
         appDeltas.forEach { delta ->
             if (delta.uploadDelta <= 0L && delta.downloadDelta <= 0L) return@forEach
             val updated =
@@ -117,7 +140,25 @@ abstract class TrafficStatisticsDao {
 
         deleteAppOlderThan(retentionCutoffMillis)
         deleteRouteOlderThan(retentionCutoffMillis)
+        deleteHourlyOlderThan(retentionCutoffMillis)
     }
+
+    @Query(
+        """
+        UPDATE traffic_hourly
+        SET total_upload = total_upload + :uploadDelta,
+            total_download = total_download + :downloadDelta
+        WHERE hour_start_millis = :hourStartMillis
+        """
+    )
+    protected abstract suspend fun accumulateHourly(
+        hourStartMillis: Long,
+        uploadDelta: Long,
+        downloadDelta: Long,
+    ): Int
+
+    @Insert
+    protected abstract suspend fun insertHourly(entity: TrafficHourlyEntity)
 
     @Query(
         """
@@ -238,6 +279,35 @@ abstract class TrafficStatisticsDao {
         cutoffMillis: Long,
     ): List<AppRouteTrafficUsage>
 
+    /**
+     * Daily totals over `[cutoffMillis, +inf)`, one row per day, oldest first. Used by the week bar
+     * chart (screen-time style).
+     */
+    @Query(
+        """
+        SELECT date_millis AS dateMillis,
+               SUM(total_upload) AS totalUpload,
+               SUM(total_download) AS totalDownload
+        FROM app_traffic_daily
+        WHERE date_millis >= :cutoffMillis
+        GROUP BY date_millis
+        ORDER BY date_millis ASC
+        """
+    )
+    abstract fun getDailyTotalsFlow(cutoffMillis: Long): Flow<List<DailyTrafficSummary>>
+
+    @Query(
+        """
+        SELECT hour_start_millis AS hourStartMillis,
+               total_upload AS totalUpload,
+               total_download AS totalDownload
+        FROM traffic_hourly
+        WHERE hour_start_millis >= :cutoffMillis
+        ORDER BY hour_start_millis ASC
+        """
+    )
+    abstract fun getHourlyTotalsFlow(cutoffMillis: Long): Flow<List<HourlyTrafficSummary>>
+
     // endregion
 
     // region retention & clear
@@ -246,6 +316,7 @@ abstract class TrafficStatisticsDao {
     open suspend fun deleteOlderThan(cutoffMillis: Long) {
         deleteAppOlderThan(cutoffMillis)
         deleteRouteOlderThan(cutoffMillis)
+        deleteHourlyOlderThan(cutoffMillis)
     }
 
     @Query("DELETE FROM app_traffic_daily WHERE date_millis < :cutoffMillis")
@@ -254,10 +325,14 @@ abstract class TrafficStatisticsDao {
     @Query("DELETE FROM route_traffic_daily WHERE date_millis < :cutoffMillis")
     protected abstract suspend fun deleteRouteOlderThan(cutoffMillis: Long): Int
 
+    @Query("DELETE FROM traffic_hourly WHERE hour_start_millis < :cutoffMillis")
+    protected abstract suspend fun deleteHourlyOlderThan(cutoffMillis: Long): Int
+
     @Transaction
     open suspend fun clearAll() {
         clearAllApp()
         clearAllRoute()
+        clearAllHourly()
     }
 
     @Query("DELETE FROM app_traffic_daily")
@@ -265,6 +340,9 @@ abstract class TrafficStatisticsDao {
 
     @Query("DELETE FROM route_traffic_daily")
     protected abstract suspend fun clearAllRoute()
+
+    @Query("DELETE FROM traffic_hourly")
+    protected abstract suspend fun clearAllHourly()
 
     // endregion
 }

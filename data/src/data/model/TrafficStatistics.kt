@@ -37,6 +37,16 @@ data class DailyTrafficSummary(
 }
 
 @Serializable
+data class HourlyTrafficSummary(
+    val hourStartMillis: Long,
+    val totalUpload: Long,
+    val totalDownload: Long,
+) {
+    val total: Long
+        get() = totalUpload + totalDownload
+}
+
+@Serializable
 data class AppTrafficUsage(
     val appKey: String,
     val packageName: String? = null,

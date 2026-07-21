@@ -45,6 +45,7 @@ internal fun ProfilesDialogHost(
     homeViewModel: HomeViewModel,
     builtInConfigs: List<OverrideConfig>,
     userConfigs: List<OverrideConfig>,
+    refreshOverrides: suspend () -> Unit,
     isRunning: Boolean,
 ) {
     val context = LocalContext.current
@@ -97,9 +98,10 @@ internal fun ProfilesDialogHost(
         onSettingsRequested = { profile ->
             state.profileToEdit = profile
             scope.launch {
+                refreshOverrides()
                 state.binding = bindingProvider.getBinding(profile.uuid.toString())
+                state.showSettings.value = true
             }
-            state.showSettings.value = true
         },
     )
 }
@@ -136,8 +138,6 @@ private fun ProfileSettingsDialogHost(
 ) {
     val profile = state.profileToEdit ?: return
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
     ProfileSettingsDialog(
         show = state.showSettings.value,
         profile = profile,
@@ -165,20 +165,18 @@ private fun ProfileSettingsDialogHost(
             }
         },
         onSaveOverrideSettings = { ids ->
-            scope.launch {
-                state.binding =
-                    saveProfileOverrides(
-                        profile = profile,
-                        selectedIds = ids,
-                        binding = state.binding,
-                        bindingProvider = bindingProvider,
-                        routingBootstrapper = routingBootstrapper,
-                        overrideService = overrideService,
-                        homeViewModel = homeViewModel,
-                        isRunning = isRunning,
-                        context = context,
-                    )
-            }
+            state.binding =
+                saveProfileOverrides(
+                    profile = profile,
+                    selectedIds = ids,
+                    binding = state.binding,
+                    bindingProvider = bindingProvider,
+                    routingBootstrapper = routingBootstrapper,
+                    overrideService = overrideService,
+                    homeViewModel = homeViewModel,
+                    isRunning = isRunning,
+                    context = context,
+                )
         },
     )
 }

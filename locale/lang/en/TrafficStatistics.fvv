@@ -5,15 +5,15 @@ TrafficStatistics = {
 
     TimeRange = {
         Today = "Today"
-        Week = "This Week"
+        Week = "Week"
     }
 
     Summary = {
         TodayTraffic = "Today's Traffic"
         WeekTraffic = "This Week's Traffic"
+        Average = "Avg"
+        DayTrafficTip = "%s traffic"
     }
-
-
 
     Donut = {
         Other = "Other"
@@ -27,6 +27,9 @@ TrafficStatistics = {
     Section = {
         Traffic = "Traffic"
         TopApps = "Top Apps"
+        TodayApps = "Today's Apps"
+        WeekApps = "Last 7 Days Apps"
+        SystemTraffic = "System Traffic"
         EmptyApps = "No app traffic statistics"
     }
 
@@ -34,5 +37,18 @@ TrafficStatistics = {
         Download = "Download"
         Upload = "Upload"
         UsageLine = "Down %s  Up %s"
+        SortByName = "Name"
+        SortByUsage = "Usage"
+    }
+
+    Weekday = {
+        Mon = "Mon"
+        Tue = "Tue"
+        Wed = "Wed"
+        Thu = "Thu"
+        Fri = "Fri"
+        Sat = "Sat"
+        Sun = "Sun"
+        Today = "Today"
     }
 }
