@@ -88,10 +88,10 @@ require (
 	github.com/metacubex/qpack v0.6.0 // indirect
 	github.com/metacubex/quic-go v0.59.1-0.20260606115121-0662b57ad5bf // indirect
 	github.com/metacubex/randv2 v0.2.0 // indirect
-	github.com/metacubex/restls-client-go v0.1.8 // indirect
+	github.com/metacubex/restls-client-go v0.1.9 // indirect
 	github.com/metacubex/sing v0.5.7 // indirect
 	github.com/metacubex/sing-mux v0.3.10 // indirect
-	github.com/metacubex/sing-quic v0.0.0-20260527143057-68e10a6afdc3 // indirect; indirect
+	github.com/metacubex/sing-quic v0.0.0-20260720020849-6c62e17225e8 // indirect; indirect
 	github.com/metacubex/sing-shadowsocks2 v0.2.7 // indirect
 	github.com/metacubex/sing-tun v0.4.21 // indirect
 	github.com/metacubex/sing-vmess v0.2.5 // indirect
@@ -139,7 +139,7 @@ require (
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/sys v0.47.0
 	golang.org/x/term v0.45.0 // indirect
 	golang.org/x/text v0.40.0 // indirect; indirect
 	golang.org/x/tools v0.48.0 // indirect
