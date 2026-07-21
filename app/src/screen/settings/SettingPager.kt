@@ -26,11 +26,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,7 +43,6 @@ import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
-import com.github.yumelira.yumebox.presentation.navigation.SettingsDetailRootRoutes
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.viewmodel.SettingEvent
 import com.github.yumelira.yumebox.presentation.viewmodel.SettingViewModel
@@ -131,15 +125,6 @@ fun SettingPager(
     val context = LocalContext.current
     val versionInfo = "v${BuildConfig.BASE_VERSION}"
 
-    // Highlight only after the user opens a settings item (no default selection).
-    var selectedRootKey by rememberSaveable { mutableStateOf<String?>(null) }
-    val selectedRootRoute =
-        remember(selectedRootKey) {
-            selectedRootKey?.let { key ->
-                SettingsDetailRootRoutes.firstOrNull { it::class.simpleName == key }
-            }
-        }
-
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
@@ -156,8 +141,8 @@ fun SettingPager(
     }
 
     // Phone: push on root navigator. Tablet shell: replace right pane.
+    // No persistent selected highlight on the list — opens should not leave a tint.
     val openRoot: (Route) -> Unit = { route ->
-        selectedRootKey = route::class.simpleName
         if (detailNavigator != null) {
             detailNavigator.replaceAll(listOf(route))
         } else {
@@ -169,7 +154,6 @@ fun SettingPager(
         mainInnerPadding = mainInnerPadding,
         scrollBehavior = scrollBehavior,
         versionInfo = versionInfo,
-        selectedRoute = selectedRootRoute,
         onOpen = openRoot,
     )
 }
@@ -179,7 +163,6 @@ private fun SettingsMasterList(
     mainInnerPadding: PaddingValues,
     scrollBehavior: top.yukonga.miuix.kmp.basic.ScrollBehavior,
     versionInfo: String,
-    selectedRoute: Route?,
     onOpen: (Route) -> Unit,
 ) {
     Scaffold(topBar = { TopBar(title = YumeTxt.Settings.Title, scrollBehavior = scrollBehavior) }) {
@@ -194,28 +177,24 @@ private fun SettingsMasterList(
                     SettingsRootPreference(
                         title = YumeTxt.Settings.UiSettings.App,
                         summary = YumeTxt.Settings.UiSettings.AppSummary,
-                        selected = selectedRoute == Route.AppSettings,
                         onClick = { onOpen(Route.AppSettings) },
                         icon = Yume.`Settings-2`,
                     )
                     SettingsRootPreference(
                         title = YumeTxt.Settings.UiSettings.Network,
                         summary = YumeTxt.Settings.UiSettings.NetworkSummary,
-                        selected = selectedRoute == Route.NetworkSettings,
                         onClick = { onOpen(Route.NetworkSettings) },
                         icon = Yume.`Wifi-cog`,
                     )
                     SettingsRootPreference(
                         title = YumeTxt.Settings.UiSettings.Override,
                         summary = YumeTxt.Settings.UiSettings.OverrideSummary,
-                        selected = selectedRoute == Route.Override,
                         onClick = { onOpen(Route.Override) },
                         icon = Yume.`Git-merge`,
                     )
                     SettingsRootPreference(
                         title = YumeTxt.Settings.UiSettings.MetaFeatures,
                         summary = YumeTxt.Settings.UiSettings.MetaFeaturesSummary,
-                        selected = selectedRoute == Route.MetaFeature,
                         onClick = { onOpen(Route.MetaFeature) },
                         icon = Yume.Meta,
                     )
@@ -227,7 +206,6 @@ private fun SettingsMasterList(
                     SettingsRootPreference(
                         title = YumeTxt.Settings.More.Lab,
                         summary = YumeTxt.Settings.More.LabSummary,
-                        selected = selectedRoute == Route.Feature,
                         onClick = { onOpen(Route.Feature) },
                         icon = Yume.FlaskConical,
                     )
@@ -250,27 +228,15 @@ private fun SettingsMasterList(
 private fun SettingsRootPreference(
     title: String,
     summary: String,
-    selected: Boolean,
     onClick: () -> Unit,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
 ) {
-    val opacity = AppTheme.opacity
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(
-                    if (selected) MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtle)
-                    else MiuixTheme.colorScheme.surface.copy(alpha = 0f)
-                )
-    ) {
-        ArrowPreference(
-            title = title,
-            summary = summary,
-            onClick = onClick,
-            startAction = { CircularIcon(imageVector = icon, contentDescription = null) },
-        )
-    }
+    ArrowPreference(
+        title = title,
+        summary = summary,
+        onClick = onClick,
+        startAction = { CircularIcon(imageVector = icon, contentDescription = null) },
+    )
 }
 
 @Composable
