@@ -20,6 +20,10 @@
 
 package com.github.yumelira.yumebox.screen.profiles
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -36,14 +40,18 @@ import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
 import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.runtime.api.Profile
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private const val PROFILE_SETTINGS_MIN_HEIGHT_FRACTION = 0.5f
-private const val PROFILE_SETTINGS_MAX_HEIGHT_FRACTION = 0.7f
+private enum class ProfileSettingsSection {
+    Subscription,
+    Override,
+}
 
 @Composable
 internal fun ProfileSettingsDialog(
@@ -61,7 +69,15 @@ internal fun ProfileSettingsDialog(
     val opacity = AppTheme.opacity
     val componentSizes = AppTheme.sizes
     val selectableConfigs = remember(builtInConfigs, userConfigs) { builtInConfigs + userConfigs }
+    val sectionOptions =
+        remember {
+            listOf(
+                ProfileSettingsSection.Subscription,
+                ProfileSettingsSection.Override,
+            )
+        }
 
+    var selectedSection by remember { mutableStateOf(ProfileSettingsSection.Subscription) }
     var editName by remember {
         mutableStateOf(TextFieldValue(profile.name, TextRange(profile.name.length)))
     }
@@ -79,6 +95,7 @@ internal fun ProfileSettingsDialog(
     // async binding loads cannot wipe edits already in progress.
     LaunchedEffect(show, profile.uuid, profile.name, profile.source, profile.hasAgeSecretKey) {
         if (show) {
+            selectedSection = ProfileSettingsSection.Subscription
             editName = TextFieldValue(profile.name, TextRange(profile.name.length))
             editSource = TextFieldValue()
             editAgeSecretKey = TextFieldValue()
@@ -159,94 +176,149 @@ internal fun ProfileSettingsDialog(
         onDismissFinished = onDismissFinished,
         enableNestedScroll = true,
     ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val minimumSheetHeight = maxHeight * PROFILE_SETTINGS_MIN_HEIGHT_FRACTION
-            val maximumSheetHeight = maxHeight * PROFILE_SETTINGS_MAX_HEIGHT_FRACTION
-
-            Column(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .heightIn(min = minimumSheetHeight, max = maximumSheetHeight)
-                        .padding(bottom = spacing.space16),
-                verticalArrangement = Arrangement.spacedBy(spacing.space16),
-            ) {
-                TextField(
-                    value = editName,
-                    onValueChange = { editName = it },
-                    label = YumeTxt.ProfilesPage.Input.ProfileName,
-                    useLabelAsPlaceholder = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                if (profile.type == Profile.Type.Url) {
-                    TextField(
-                        value = editSource,
-                        onValueChange = { editSource = it },
-                        label = YumeTxt.ProfilesPage.SettingsDialog.ChangeLink,
-                        useLabelAsPlaceholder = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        maxLines = 2,
-                    )
-                }
-
-                AgeSecretKeyField(
-                    value = editAgeSecretKey,
-                    onValueChange = {
-                        editAgeSecretKey = it
-                        ageSecretKeyEdited = true
+        // Match Add Profile sheet: content-sized + animate height on section switch.
+        // Do NOT force a min/max fraction of the screen — that freezes height and kills animation.
+        Column(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .wrapContentHeight()
+                    .animateContentSize(animationSpec = tween(300, easing = FastOutSlowInEasing))
+                    .padding(bottom = UiDp.dp16),
+            verticalArrangement = Arrangement.spacedBy(spacing.space16),
+        ) {
+            Card {
+                WindowSpinnerPreference(
+                    title = YumeTxt.ProfilesPage.SettingsDialog.SectionType,
+                    items =
+                        listOf(
+                            DropdownItem(
+                                title = YumeTxt.ProfilesPage.SettingsDialog.SectionSubscription
+                            ),
+                            DropdownItem(
+                                title = YumeTxt.ProfilesPage.SettingsDialog.SectionOverride
+                            ),
+                        ),
+                    selectedIndex = sectionOptions.indexOf(selectedSection).coerceAtLeast(0),
+                    onSelectedIndexChange = { index ->
+                        sectionOptions.getOrNull(index)?.let { selectedSection = it }
                     },
-                    label = YumeTxt.ProfilesPage.SettingsDialog.AgeSecretKey,
-                    modifier = Modifier.fillMaxWidth(),
                 )
+            }
 
-                Card {
-                    Column {
-                        SwitchPreference(
-                            title = YumeTxt.ProfilesPage.SettingsDialog.CustomRouting,
-                            summary = YumeTxt.ProfilesPage.SettingsDialog.CustomRoutingSummary,
-                            checked = customRoutingSelected,
-                            onCheckedChange = {
-                                overrideSelectionInitialized = true
-                                customRoutingSelected = it
-                            },
-                        )
-                    }
-                }
-
-                if (selectableConfigs.isNotEmpty()) {
-                    Card {
-                        LazyColumn(
-                            modifier =
-                                Modifier.fillMaxWidth()
-                                    .heightIn(max = componentSizes.profileSettingsListMaxHeight)
+            Crossfade(
+                targetState = selectedSection,
+                animationSpec = tween(200),
+                label = "ProfileSettingsSection",
+            ) { section ->
+                when (section) {
+                    ProfileSettingsSection.Subscription -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(spacing.space16),
                         ) {
-                            itemsIndexed(selectableConfigs, key = { _, config -> config.id }) {
-                                index,
-                                config ->
-                                val isSelected = config.id in pendingSelectedOverrideIds
-                                BasicComponent(
-                                    title = config.name,
-                                    endActions = {
-                                        Checkbox(
-                                            state = ToggleableState(isSelected),
-                                            onClick = {
-                                                toggleUserOverrideSelection(config.id, isSelected)
-                                            },
-                                        )
-                                    },
-                                    onClick = {
-                                        toggleUserOverrideSelection(config.id, isSelected)
-                                    },
+                            TextField(
+                                value = editName,
+                                onValueChange = { editName = it },
+                                label = YumeTxt.ProfilesPage.Input.ProfileName,
+                                useLabelAsPlaceholder = true,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+
+                            if (profile.type == Profile.Type.Url) {
+                                TextField(
+                                    value = editSource,
+                                    onValueChange = { editSource = it },
+                                    label = YumeTxt.ProfilesPage.SettingsDialog.ChangeLink,
+                                    useLabelAsPlaceholder = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    maxLines = 2,
                                 )
-                                if (index < selectableConfigs.lastIndex) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = spacing.space16),
-                                        thickness = componentSizes.thinDividerThickness,
-                                        color =
-                                            MiuixTheme.colorScheme.outline.copy(
-                                                alpha = opacity.outline
-                                            ),
+                            }
+
+                            AgeSecretKeyField(
+                                value = editAgeSecretKey,
+                                onValueChange = {
+                                    editAgeSecretKey = it
+                                    ageSecretKeyEdited = true
+                                },
+                                label = YumeTxt.ProfilesPage.SettingsDialog.AgeSecretKey,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+
+                    ProfileSettingsSection.Override -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(spacing.space16),
+                        ) {
+                            Card {
+                                Column {
+                                    SwitchPreference(
+                                        title = YumeTxt.ProfilesPage.SettingsDialog.CustomRouting,
+                                        summary =
+                                            YumeTxt.ProfilesPage.SettingsDialog.CustomRoutingSummary,
+                                        checked = customRoutingSelected,
+                                        onCheckedChange = {
+                                            overrideSelectionInitialized = true
+                                            customRoutingSelected = it
+                                        },
                                     )
+                                }
+                            }
+
+                            if (selectableConfigs.isNotEmpty()) {
+                                Card {
+                                    LazyColumn(
+                                        modifier =
+                                            Modifier.fillMaxWidth()
+                                                .heightIn(
+                                                    max =
+                                                        componentSizes.profileSettingsListMaxHeight
+                                                )
+                                    ) {
+                                        itemsIndexed(
+                                            selectableConfigs,
+                                            key = { _, config -> config.id },
+                                        ) { index, config ->
+                                            val isSelected =
+                                                config.id in pendingSelectedOverrideIds
+                                            BasicComponent(
+                                                title = config.name,
+                                                endActions = {
+                                                    Checkbox(
+                                                        state = ToggleableState(isSelected),
+                                                        onClick = {
+                                                            toggleUserOverrideSelection(
+                                                                config.id,
+                                                                isSelected,
+                                                            )
+                                                        },
+                                                    )
+                                                },
+                                                onClick = {
+                                                    toggleUserOverrideSelection(
+                                                        config.id,
+                                                        isSelected,
+                                                    )
+                                                },
+                                            )
+                                            if (index < selectableConfigs.lastIndex) {
+                                                HorizontalDivider(
+                                                    modifier =
+                                                        Modifier.padding(
+                                                            horizontal = spacing.space16
+                                                        ),
+                                                    thickness =
+                                                        componentSizes.thinDividerThickness,
+                                                    color =
+                                                        MiuixTheme.colorScheme.outline.copy(
+                                                            alpha = opacity.outline
+                                                        ),
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

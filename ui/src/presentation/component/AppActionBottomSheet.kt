@@ -39,7 +39,10 @@ import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 object AppBottomSheetDefaults {
-    val insideMargin = DpSize(UiDp.dp32, UiDp.dp16)
+
+    val insideMargin = DpSize(UiDp.dp24, UiDp.dp16)
+
+    val outsideMargin = DpSize(UiDp.dp0, UiDp.dp0)
 
     @Composable fun backgroundColor(): Color = MiuixTheme.colorScheme.surface
 
@@ -126,7 +129,7 @@ fun AppActionBottomSheet(
     cornerRadius: androidx.compose.ui.unit.Dp = BottomSheetDefaults.cornerRadius,
     sheetMaxWidth: androidx.compose.ui.unit.Dp = BottomSheetDefaults.maxWidth,
     onDismissFinished: (() -> Unit)? = null,
-    outsideMargin: DpSize = BottomSheetDefaults.outsideMargin,
+    outsideMargin: DpSize = AppBottomSheetDefaults.outsideMargin,
     insideMargin: DpSize = AppBottomSheetDefaults.insideMargin,
     defaultWindowInsetsPadding: Boolean = true,
     dragHandleColor: Color = Color.Unspecified,
