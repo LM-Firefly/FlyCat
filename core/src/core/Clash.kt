@@ -123,15 +123,44 @@ interface ClashEngine {
 }
 
 /**
- * Singleton gateway to the mihomo native engine via JNI.
+ * Singleton gateway to the mihomo native engine.
  *
- * **Thread safety**: All methods in this object delegate to native code through [Bridge].
+ * Supports two transport modes:
+ * - **JNI mode** (default): Direct JNI calls through [Bridge] to libclash.so in-process.
+ * - **UDS mode**: Unix Domain Socket IPC to a separate Go process via [UdsClashEngine].
+ *
+ * Use [switchToUds] / [switchToJni] to toggle between modes.
+ *
+ * **Thread safety**: All methods in this object delegate to native code.
  * The native engine is responsible for its own synchronization. Kotlin callers may invoke
  * these methods from any thread, but long-running operations (e.g. [compilePreview],
  * [fetchAndValid]) should be called from a background dispatcher ([Dispatchers.IO] or
  * [Dispatchers.Default]) to avoid blocking the main thread.
  */
 object Clash : ClashEngine {
+
+    /** When non-null, all calls are delegated to this engine instead of JNI. */
+    @Volatile
+    private var udsEngine: com.github.yumelira.yumebox.core.uds.UdsClashEngine? = null
+
+    /** Returns true if the UDS transport mode is active. */
+    val isUdsMode: Boolean get() = udsEngine != null
+
+    /**
+     * Switches to UDS transport mode. All subsequent calls will go through
+     * the [UdsClashEngine] instead of JNI.
+     */
+    fun switchToUds(engine: com.github.yumelira.yumebox.core.uds.UdsClashEngine) {
+        udsEngine = engine
+    }
+
+    /**
+     * Switches back to JNI transport mode (the default).
+     */
+    fun switchToJni() {
+        udsEngine = null
+    }
+
     private val ClashJson = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -174,27 +203,31 @@ object Clash : ClashEngine {
     }
 
     override fun reset() {
-        Bridge.nativeReset()
+        udsEngine?.reset() ?: Bridge.nativeReset()
     }
 
     override fun forceGc() {
-        Bridge.nativeForceGc()
+        udsEngine?.forceGc() ?: Bridge.nativeForceGc()
     }
 
     override fun suspendCore(suspended: Boolean) {
-        Bridge.nativeSuspend(suspended)
+        udsEngine?.suspendCore(suspended) ?: Bridge.nativeSuspend(suspended)
     }
 
     override fun queryTunnelState(): TunnelState {
+        udsEngine?.let { return it.queryTunnelState() }
         val json = Bridge.nativeQueryTunnelState()
         return Json.decodeFromString(TunnelState.serializer(), json)
     }
 
-    override fun queryTrafficNow(): Traffic = Bridge.nativeQueryTrafficNow()
+    override fun queryTrafficNow(): Traffic =
+        udsEngine?.queryTrafficNow() ?: Bridge.nativeQueryTrafficNow()
 
-    override fun queryTrafficTotal(): Traffic = Bridge.nativeQueryTrafficTotal()
+    override fun queryTrafficTotal(): Traffic =
+        udsEngine?.queryTrafficTotal() ?: Bridge.nativeQueryTrafficTotal()
 
     override fun queryConnections(): ConnectionSnapshot {
+        udsEngine?.let { return it.queryConnections() }
         val rawJson = Bridge.nativeQueryConnections()
         val element = ClashJson.parseToJsonElement(rawJson)
         val normalized = if (element is JsonObject && element["connections"] == JsonNull) { JsonObject(element.toMutableMap().apply { put("connections", JsonArray(emptyList())) }) } else { element }
@@ -204,18 +237,21 @@ object Clash : ClashEngine {
         )
     }
 
-    override fun closeConnection(id: String): Boolean = Bridge.nativeCloseConnection(id)
+    override fun closeConnection(id: String): Boolean =
+        udsEngine?.closeConnection(id) ?: Bridge.nativeCloseConnection(id)
 
     override fun closeAllConnections() {
-        Bridge.nativeCloseAllConnections()
+        udsEngine?.closeAllConnections() ?: Bridge.nativeCloseAllConnections()
     }
 
     override fun notifyDnsChanged(dns: List<String>) {
-        Bridge.nativeNotifyDnsChanged(dns.toSet().joinToString(separator = ","))
+        udsEngine?.notifyDnsChanged(dns)
+            ?: Bridge.nativeNotifyDnsChanged(dns.toSet().joinToString(separator = ","))
     }
 
     override fun notifyTimeZoneChanged(name: String, offset: Int) {
-        Bridge.nativeNotifyTimeZoneChanged(name, offset)
+        udsEngine?.notifyTimeZoneChanged(name, offset)
+            ?: Bridge.nativeNotifyTimeZoneChanged(name, offset)
     }
 
     override fun startTun(
@@ -271,6 +307,7 @@ object Clash : ClashEngine {
     }
 
     override fun queryGroupNames(excludeNotSelectable: Boolean): List<String> {
+        udsEngine?.let { return it.queryGroupNames(excludeNotSelectable) }
         val names =
             Json.decodeFromString(
                 JsonArray.serializer(),
@@ -284,11 +321,13 @@ object Clash : ClashEngine {
     }
 
     override fun inspectCompiledGroups(yamlText: String, profileDir: File, excludeNotSelectable: Boolean): List<ProxyGroup> {
+        udsEngine?.let { return it.inspectCompiledGroups(yamlText, profileDir, excludeNotSelectable) }
         val groupsYaml = Bridge.nativeInspectCompiledGroups(yamlText, profileDir.absolutePath, excludeNotSelectable) ?: return emptyList()
         return runCatching { YamlCodec.decode(ListSerializer(ProxyGroup.serializer()), groupsYaml) }.getOrElse { emptyList() }
     }
 
     override fun inspectCompiledGroupNames(yamlText: String, excludeNotSelectable: Boolean): List<String> {
+        udsEngine?.let { return it.inspectCompiledGroupNames(yamlText, excludeNotSelectable) }
         val namesJson = Bridge.nativeInspectCompiledGroupNames(yamlText, excludeNotSelectable)?: return emptyList()
         return runCatching {
             val array = Json.decodeFromString(JsonArray.serializer(), namesJson)
@@ -299,26 +338,32 @@ object Clash : ClashEngine {
         }.getOrElse { emptyList() }
     }
 
-    override fun queryGroup(name: String, sort: ProxySort): ProxyGroup =
-        Bridge.nativeQueryGroup(name, sort.name)?.let {
+    override fun queryGroup(name: String, sort: ProxySort): ProxyGroup {
+        udsEngine?.let { return it.queryGroup(name, sort) }
+        return Bridge.nativeQueryGroup(name, sort.name)?.let {
             ClashJson.decodeFromString(ProxyGroup.serializer(), it)
         } ?: ProxyGroup(name = name, type = Proxy.Type.Unknown, proxies = emptyList(), now = "")
+    }
 
-    override fun healthCheck(name: String): CompletableDeferred<Unit> =
-        CompletableDeferred<Unit>().apply { Bridge.nativeHealthCheck(this, name) }
+    override fun healthCheck(name: String): CompletableDeferred<Unit> {
+        udsEngine?.let { return it.healthCheck(name) }
+        return CompletableDeferred<Unit>().apply { Bridge.nativeHealthCheck(this, name) }
+    }
 
-    override fun healthCheckProxy(proxyName: String): CompletableDeferred<String> =
-        CompletableDeferred<String>().apply { Bridge.nativeHealthCheckProxy(this, proxyName) }
+    override fun healthCheckProxy(proxyName: String): CompletableDeferred<String> {
+        udsEngine?.let { return it.healthCheckProxy(proxyName) }
+        return CompletableDeferred<String>().apply { Bridge.nativeHealthCheckProxy(this, proxyName) }
+    }
 
     override fun healthCheckAll() {
-        Bridge.nativeHealthCheckAll()
+        udsEngine?.healthCheckAll() ?: Bridge.nativeHealthCheckAll()
     }
 
     override fun patchSelector(selector: String, name: String): Boolean =
-        Bridge.nativePatchSelector(selector, name)
+        udsEngine?.patchSelector(selector, name) ?: Bridge.nativePatchSelector(selector, name)
 
     override fun patchForceSelector(selector: String, name: String): Boolean =
-        Bridge.nativeForcePatchSelector(selector, name)
+        udsEngine?.patchForceSelector(selector, name) ?: Bridge.nativeForcePatchSelector(selector, name)
 
     override fun patchTunnelMode(mode: TunnelState.Mode): Boolean =
         run {
@@ -359,6 +404,7 @@ object Clash : ClashEngine {
         }
 
     override fun queryProviders(): List<Provider> {
+        udsEngine?.let { return it.queryProviders() }
         val providers = Json.decodeFromString(JsonArray.serializer(), Bridge.nativeQueryProviders())
         return List(providers.size) {
             Json.decodeFromJsonElement(Provider.serializer(), providers[it])
@@ -366,15 +412,19 @@ object Clash : ClashEngine {
     }
 
     override fun updateProvider(type: Provider.Type, name: String): CompletableDeferred<Unit> {
+        udsEngine?.let { return it.updateProvider(type, name) }
         return CompletableDeferred<Unit>().apply {
             Bridge.nativeUpdateProvider(this, type.toString(), name)
         }
     }
 
-    override fun queryConfiguration(): UiConfiguration =
-        Json.decodeFromString(UiConfiguration.serializer(), Bridge.nativeQueryConfiguration())
+    override fun queryConfiguration(): UiConfiguration {
+        udsEngine?.let { return it.queryConfiguration() }
+        return Json.decodeFromString(UiConfiguration.serializer(), Bridge.nativeQueryConfiguration())
+    }
 
     override fun subscribeLogcat(): ReceiveChannel<LogMessage> {
+        udsEngine?.let { return it.subscribeLogcat() }
         return Channel<LogMessage>(32).apply {
             Bridge.nativeSubscribeLogcat(
                 object : LogcatInterface {
@@ -387,11 +437,11 @@ object Clash : ClashEngine {
     }
 
     override fun setCustomUserAgent(userAgent: String) {
-        Bridge.nativeSetCustomUserAgent(userAgent)
+        udsEngine?.setCustomUserAgent(userAgent) ?: Bridge.nativeSetCustomUserAgent(userAgent)
     }
 
     override fun setAgeSecretKey(key: String) {
-        Bridge.nativeSetAgeSecretKey(key)
+        udsEngine?.setAgeSecretKey(key) ?: Bridge.nativeSetAgeSecretKey(key)
     }
 
     override fun genX25519KeyPair(): Pair<String, String>? {
