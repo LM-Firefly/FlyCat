@@ -41,6 +41,7 @@ fun ProfilesPager(mainInnerPadding: PaddingValues) {
     val isRunning by homeViewModel.isRunning.collectAsState()
 
     val overrideConfigViewModel = koinViewModel<OverrideConfigViewModel>()
+    val builtInConfigs by overrideConfigViewModel.builtInConfigs.collectAsState()
     val userConfigs by overrideConfigViewModel.userConfigs.collectAsState()
     val dialogs = rememberProfilesDialogState()
     val pendingImportUrl by MainActivity.pendingImportUrl.collectAsState()
@@ -72,6 +73,7 @@ fun ProfilesPager(mainInnerPadding: PaddingValues) {
         state = dialogs,
         profilesViewModel = profilesViewModel,
         homeViewModel = homeViewModel,
+        builtInConfigs = builtInConfigs,
         userConfigs = userConfigs,
         isRunning = isRunning,
     )

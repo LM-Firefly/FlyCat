@@ -49,6 +49,7 @@ private const val PROFILE_SETTINGS_MAX_HEIGHT_FRACTION = 0.7f
 internal fun ProfileSettingsDialog(
     show: Boolean,
     profile: Profile,
+    builtInConfigs: List<OverrideConfig>,
     userConfigs: List<OverrideConfig>,
     binding: ProfileBinding?,
     onDismiss: () -> Unit,
@@ -59,6 +60,7 @@ internal fun ProfileSettingsDialog(
     val spacing = AppTheme.spacing
     val opacity = AppTheme.opacity
     val componentSizes = AppTheme.sizes
+    val selectableConfigs = remember(builtInConfigs, userConfigs) { builtInConfigs + userConfigs }
 
     var editName by remember {
         mutableStateOf(TextFieldValue(profile.name, TextRange(profile.name.length)))
@@ -211,22 +213,19 @@ internal fun ProfileSettingsDialog(
                     }
                 }
 
-                if (userConfigs.isNotEmpty()) {
+                if (selectableConfigs.isNotEmpty()) {
                     Card {
                         LazyColumn(
                             modifier =
                                 Modifier.fillMaxWidth()
                                     .heightIn(max = componentSizes.profileSettingsListMaxHeight)
                         ) {
-                            itemsIndexed(userConfigs, key = { _, config -> config.id }) {
+                            itemsIndexed(selectableConfigs, key = { _, config -> config.id }) {
                                 index,
                                 config ->
                                 val isSelected = config.id in pendingSelectedOverrideIds
                                 BasicComponent(
                                     title = config.name,
-                                    summary =
-                                        config.description?.takeIf { it.isNotBlank() }
-                                            ?: YumeTxt.ProfilesPage.SettingsDialog.NoDescription,
                                     endActions = {
                                         Checkbox(
                                             state = ToggleableState(isSelected),
@@ -239,7 +238,7 @@ internal fun ProfileSettingsDialog(
                                         toggleUserOverrideSelection(config.id, isSelected)
                                     },
                                 )
-                                if (index < userConfigs.lastIndex) {
+                                if (index < selectableConfigs.lastIndex) {
                                     HorizontalDivider(
                                         modifier = Modifier.padding(horizontal = spacing.space16),
                                         thickness = componentSizes.thinDividerThickness,

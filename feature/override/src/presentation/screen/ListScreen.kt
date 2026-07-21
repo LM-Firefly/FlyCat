@@ -79,8 +79,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 private val overrideConfigItemGap = Spacing().space12
 
 @Composable
-fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
-    val viewModel: OverrideConfigViewModel = koinViewModel()
+fun OverrideListScreen(
+    onOpenCodeEditor: (OverrideConfig) -> Unit,
+    viewModel: OverrideConfigViewModel = koinViewModel(),
+) {
+    val builtInConfigs by viewModel.builtInConfigs.collectAsState()
     val userConfigs by viewModel.userConfigs.collectAsState()
     val usageCountMap by viewModel.usageCountMap.collectAsState()
     val pendingRevealConfigId by viewModel.pendingRevealConfigId.collectAsState()
@@ -97,18 +100,41 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
 
     val listState = rememberLazyListState()
     val createFabController = rememberOverrideFabController()
-    val configItems =
+    val builtInItems =
+        remember(builtInConfigs, usageCountMap) {
+            builtInConfigs.map { config ->
+                OverrideConfigListItem(
+                    config = config,
+                    isInUse = (usageCountMap[config.id] ?: 0) > 0,
+                    isBuiltIn = true,
+                )
+            }
+        }
+    val userItems =
         remember(userConfigs, usageCountMap) {
             userConfigs.map { config ->
                 OverrideConfigListItem(
                     config = config,
                     isInUse = (usageCountMap[config.id] ?: 0) > 0,
+                    isBuiltIn = false,
                 )
             }
         }
+    // Reorder only applies to the user section; list indices must skip built-in rows + titles.
+    // Layout: [builtin title?] + N built-in cards + [user title?] + M user cards
+    val userListIndexOffset =
+        remember(builtInItems, userItems) {
+            val builtinBlock =
+                if (builtInItems.isEmpty()) 0 else 1 + builtInItems.size
+            val userTitle = if (userItems.isEmpty()) 0 else 1
+            builtinBlock + userTitle
+        }
     val reorderState =
         rememberReorderableLazyListState(listState) { from, to ->
-            viewModel.reorderUserConfigs(from.index, to.index)
+            val fromUser = from.index - userListIndexOffset
+            val toUser = to.index - userListIndexOffset
+            if (fromUser < 0 || toUser < 0) return@rememberReorderableLazyListState
+            viewModel.reorderUserConfigs(fromUser, toUser)
         }
 
     val exportConfigLauncher =
@@ -147,11 +173,20 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(configItems, pendingRevealConfigId) {
+    // Only jump after an explicit create/import/duplicate. Re-run when list data arrives so we
+    // don't consume the pending id before the new row is composed.
+    LaunchedEffect(pendingRevealConfigId, builtInItems, userItems, userListIndexOffset) {
         val targetId = pendingRevealConfigId ?: return@LaunchedEffect
-        val targetIndex = configItems.indexOfFirst { it.config.id == targetId }
-        if (targetIndex < 0) return@LaunchedEffect
-        listState.animateScrollToItem((targetIndex - 1).coerceAtLeast(0))
+        val builtInIndex = builtInItems.indexOfFirst { it.config.id == targetId }
+        val userIndex = userItems.indexOfFirst { it.config.id == targetId }
+        val targetIndex =
+            when {
+                builtInIndex >= 0 ->
+                    (if (builtInItems.isEmpty()) 0 else 1) + builtInIndex
+                userIndex >= 0 -> userListIndexOffset + userIndex
+                else -> return@LaunchedEffect
+            }
+        listState.animateScrollToItem(targetIndex.coerceAtLeast(0))
         viewModel.consumePendingRevealConfig(targetId)
     }
 
@@ -177,44 +212,67 @@ fun OverrideListScreen(onOpenCodeEditor: (OverrideConfig) -> Unit) {
             lazyListState = listState,
             onScrollDirectionChanged = createFabController::onScrollDirectionChanged,
         ) {
-            when {
-                userConfigs.isEmpty() -> {
-                    item(key = "override-empty", contentType = "override-empty") {
-                        CenteredText(
-                            firstLine = YumeTxt.Override.Empty.Title,
-                            secondLine = YumeTxt.Override.Empty.Hint,
-                            modifier = Modifier.fillParentMaxSize(),
-                            showEmptyResourceIllustration = true,
-                        )
-                    }
+            // Built-ins first. No empty-state placeholder — with bundled overrides the list is never blank.
+            if (builtInItems.isNotEmpty()) {
+                item(key = "section-builtin", contentType = "section-title") {
+                    Title(YumeTxt.Override.Section.BuiltIn)
                 }
-
-                else -> {
-                    items(
-                        items = configItems,
-                        key = { it.config.id },
-                        contentType = { "override-config-card" },
-                    ) { item ->
-                        val config = item.config
-                        ReorderableItem(state = reorderState, key = config.id) { isDragging ->
-                            OverrideConfigCard(
-                                config = config,
-                                isDragging = isDragging,
-                                isInUse = item.isInUse,
-                                onCopy = { viewModel.duplicateConfig(config.id) },
-                                onExport = {
-                                    exportTargetConfig.value = config
-                                    exportConfigLauncher.launch(
-                                        "${config.name}.${config.contentType.extension}"
-                                    )
-                                },
-                                onEdit = { onOpenCodeEditor(config) },
-                                onDelete = {
-                                    deleteTargetConfig.value = config
-                                    showDeleteDialog.value = true
-                                },
+                items(
+                    items = builtInItems,
+                    key = { it.config.id },
+                    contentType = { "override-builtin-card" },
+                ) { item ->
+                    val config = item.config
+                    OverrideConfigCard(
+                        config = config,
+                        isDragging = false,
+                        isInUse = item.isInUse,
+                        isBuiltIn = true,
+                        onCopy = { viewModel.duplicateConfig(config.id) },
+                        onExport = {
+                            exportTargetConfig.value = config
+                            exportConfigLauncher.launch(
+                                "${config.name}.${config.contentType.extension}"
                             )
-                        }
+                        },
+                        onEdit = { onOpenCodeEditor(config) },
+                        onDelete = null,
+                        enableDrag = false,
+                    )
+                }
+            }
+
+            // "导入覆写" section only appears when the user actually has imports — no empty title/hint.
+            if (userItems.isNotEmpty()) {
+                item(key = "section-user", contentType = "section-title") {
+                    Title(YumeTxt.Override.Section.User)
+                }
+                items(
+                    items = userItems,
+                    key = { it.config.id },
+                    contentType = { "override-config-card" },
+                ) { item ->
+                    val config = item.config
+                    ReorderableItem(state = reorderState, key = config.id) { isDragging ->
+                        OverrideConfigCard(
+                            config = config,
+                            isDragging = isDragging,
+                            isInUse = item.isInUse,
+                            isBuiltIn = false,
+                            onCopy = { viewModel.duplicateConfig(config.id) },
+                            onExport = {
+                                exportTargetConfig.value = config
+                                exportConfigLauncher.launch(
+                                    "${config.name}.${config.contentType.extension}"
+                                )
+                            },
+                            onEdit = { onOpenCodeEditor(config) },
+                            onDelete = {
+                                deleteTargetConfig.value = config
+                                showDeleteDialog.value = true
+                            },
+                            enableDrag = true,
+                        )
                     }
                 }
             }
@@ -261,10 +319,71 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
     config: OverrideConfig,
     isDragging: Boolean,
     isInUse: Boolean,
+    isBuiltIn: Boolean,
     onCopy: () -> Unit,
     onExport: () -> Unit,
     onEdit: () -> Unit,
-    onDelete: () -> Unit,
+    onDelete: (() -> Unit)?,
+    enableDrag: Boolean,
+) {
+    OverrideConfigCardContent(
+        config = config,
+        isDragging = isDragging,
+        isInUse = isInUse,
+        isBuiltIn = isBuiltIn,
+        onCopy = onCopy,
+        onExport = onExport,
+        onEdit = onEdit,
+        onDelete = onDelete,
+        modifier =
+            if (enableDrag) {
+                Modifier.longPressDraggableHandle()
+            } else {
+                Modifier
+            },
+    )
+}
+
+@Composable
+private fun OverrideConfigCard(
+    config: OverrideConfig,
+    isDragging: Boolean,
+    isInUse: Boolean,
+    isBuiltIn: Boolean,
+    onCopy: () -> Unit,
+    onExport: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: (() -> Unit)?,
+    enableDrag: Boolean,
+) {
+    // Non-reorderable overload for built-ins (no ReorderableCollectionItemScope receiver).
+    OverrideConfigCardContent(
+        config = config,
+        isDragging = isDragging,
+        isInUse = isInUse,
+        isBuiltIn = isBuiltIn,
+        onCopy = onCopy,
+        onExport = onExport,
+        onEdit = onEdit,
+        onDelete = onDelete,
+        modifier = Modifier,
+    )
+    // silence unused for symmetry with reorderable overload
+    @Suppress("UNUSED_EXPRESSION")
+    enableDrag
+}
+
+@Composable
+private fun OverrideConfigCardContent(
+    config: OverrideConfig,
+    isDragging: Boolean,
+    isInUse: Boolean,
+    isBuiltIn: Boolean,
+    onCopy: () -> Unit,
+    onExport: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: (() -> Unit)?,
+    modifier: Modifier,
 ) {
     val accentTintColor = colorScheme.primary
 
@@ -272,7 +391,7 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
         modifier =
             Modifier.fillMaxWidth()
                 .padding(vertical = overrideConfigItemGap / 2)
-                .longPressDraggableHandle()
+                .then(modifier)
                 .alpha(if (isDragging) 0.92f else 1f),
         insideMargin = PaddingValues(UiDp.dp16),
     ) {
@@ -304,7 +423,11 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                OverrideConfigStateIndicator(inUse = isInUse)
+                if (isBuiltIn) {
+                    OverrideBuiltInBadge()
+                } else {
+                    OverrideConfigStateIndicator(inUse = isInUse)
+                }
             }
 
             HorizontalDivider(
@@ -330,7 +453,7 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
                 Spacer(modifier = Modifier.weight(1f))
 
                 IconButton(
-                    modifier = Modifier.padding(end = UiDp.dp8),
+                    modifier = Modifier.padding(end = if (onDelete != null) UiDp.dp8 else UiDp.dp0),
                     backgroundColor = colorScheme.primary.copy(alpha = 0.1f),
                     minHeight = UiDp.dp35,
                     minWidth = UiDp.dp35,
@@ -357,29 +480,31 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
                     }
                 }
 
-                IconButton(
-                    backgroundColor = colorScheme.secondaryContainer.copy(alpha = 0.78f),
-                    minHeight = UiDp.dp35,
-                    minWidth = UiDp.dp35,
-                    onClick = onDelete,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = UiDp.dp10),
-                        verticalAlignment = Alignment.CenterVertically,
+                if (onDelete != null) {
+                    IconButton(
+                        backgroundColor = colorScheme.secondaryContainer.copy(alpha = 0.78f),
+                        minHeight = UiDp.dp35,
+                        minWidth = UiDp.dp35,
+                        onClick = onDelete,
                     ) {
-                        Icon(
-                            modifier = Modifier.size(UiDp.dp20),
-                            imageVector = Yume.Delete,
-                            tint = colorScheme.onSurface.copy(alpha = 0.85f),
-                            contentDescription = YumeTxt.Override.Card.Delete,
-                        )
-                        Text(
-                            modifier = Modifier.padding(start = UiDp.dp4, end = UiDp.dp3),
-                            text = YumeTxt.Override.Card.DeleteButton,
-                            color = colorScheme.onSurface.copy(alpha = 0.85f),
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 15.sp,
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = UiDp.dp10),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(UiDp.dp20),
+                                imageVector = Yume.Delete,
+                                tint = colorScheme.onSurface.copy(alpha = 0.85f),
+                                contentDescription = YumeTxt.Override.Card.Delete,
+                            )
+                            Text(
+                                modifier = Modifier.padding(start = UiDp.dp4, end = UiDp.dp3),
+                                text = YumeTxt.Override.Card.DeleteButton,
+                                color = colorScheme.onSurface.copy(alpha = 0.85f),
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 15.sp,
+                            )
+                        }
                     }
                 }
             }
@@ -401,6 +526,16 @@ private fun OverrideConfigStateIndicator(inUse: Boolean) {
             } else {
                 colorScheme.secondaryContainer.copy(alpha = 0.78f)
             },
+    )
+}
+
+@Composable
+private fun OverrideBuiltInBadge() {
+    OverrideStatusBadge(
+        imageVector = Yume.ShieldCheck,
+        contentDescription = YumeTxt.Override.Status.BuiltIn,
+        tint = colorScheme.onSurfaceVariantSummary,
+        backgroundColor = colorScheme.secondaryContainer.copy(alpha = 0.78f),
     )
 }
 
@@ -731,6 +866,7 @@ private fun DeleteConfirmDialog(
 private data class OverrideConfigListItem(
     val config: OverrideConfig,
     val isInUse: Boolean,
+    val isBuiltIn: Boolean = false,
 )
 
 private enum class OverrideConfigInputMode {

@@ -23,4 +23,9 @@ package com.github.yumelira.yumebox.core.model
 object OverrideInternalConstants {
     const val CUSTOM_ROUTING_OVERRIDE_ID = "__custom_routing__"
     const val CUSTOM_ROUTING_FILE_NAME = "custom-routing.yaml"
+
+    /** Stable id prefix for APK-bundled built-in overrides (not user-owned, not reordered). */
+    const val BUILTIN_OVERRIDE_PREFIX = "builtin-"
+
+    fun isBuiltInOverrideId(id: String): Boolean = id.startsWith(BUILTIN_OVERRIDE_PREFIX)
 }

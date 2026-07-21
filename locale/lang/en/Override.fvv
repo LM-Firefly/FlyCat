@@ -11,11 +11,19 @@ Override = {
     Empty = {
         Title = "No override configs"
         Hint = "Click the button below to create a new config, or import a config file"
+        UserTitle = "No imported overrides"
+        UserHint = "Create or import a YAML / JS override"
+    }
+
+    Section = {
+        BuiltIn = "Built-in"
+        User = "Imported"
     }
 
     Status = {
         InUse = "In Use"
         NotInUse = "Not in Use"
+        BuiltIn = "Built-in"
     }
 
     Card = {

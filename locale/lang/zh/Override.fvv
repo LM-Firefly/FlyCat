@@ -11,11 +11,19 @@ Override = {
     Empty = {
         Title = "暂无覆写配置"
         Hint = "点击下方按钮创建新配置，或导入配置文件"
+        UserTitle = "暂无导入覆写"
+        UserHint = "可新建或导入 YAML / JS 覆写"
+    }
+
+    Section = {
+        BuiltIn = "内置覆写"
+        User = "导入覆写"
     }
 
     Status = {
         InUse = "使用中"
         NotInUse = "未使用"
+        BuiltIn = "内置"
     }
 
     Card = {

@@ -2,6 +2,7 @@
 Component = {
     ProfileCard = {
         Update = "更新"
+        Edit = "编辑"
         Delete = "删除"
         RemoteSubscription = "远程订阅"
         LocalFile = "本地文件"

@@ -23,6 +23,8 @@ package com.github.yumelira.yumebox.data.store
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
 import com.github.yumelira.yumebox.core.util.YamlCodec
+import com.github.yumelira.yumebox.data.model.BuiltInOverrideCatalog
+import com.github.yumelira.yumebox.data.model.BuiltInOverrideDefinition
 import com.github.yumelira.yumebox.data.model.MetadataIndex
 import com.github.yumelira.yumebox.data.model.OverrideConfig
 import com.github.yumelira.yumebox.data.model.OverrideContentType
@@ -77,29 +79,42 @@ class OverrideConfigStore(
 
     override suspend fun getById(id: String): OverrideConfig? =
         withContext(Dispatchers.IO) {
+            if (BuiltInOverrideCatalog.isBuiltIn(id)) {
+                return@withContext loadBuiltInConfig(id)
+            }
             val metadata = loadMetadataIndex().getById(id) ?: return@withContext null
             loadConfigContent(metadata)
         }
 
     override suspend fun getUserConfigs(): List<OverrideConfig> =
         withContext(Dispatchers.IO) {
-            loadUserConfigs().filter {
-                it.id != OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID
-            }
+            loadUserConfigs().filter(::isUserOwnedConfig)
+        }
+
+    /** Bundled templates, always listed above user imports. Materializes assets on first read. */
+    suspend fun getBuiltInConfigs(): List<OverrideConfig> =
+        withContext(Dispatchers.IO) {
+            BuiltInOverrideCatalog.all.mapNotNull { def -> loadBuiltInConfig(def.id) }
         }
 
     override fun getUserConfigsFlow(): Flow<List<OverrideConfig>> =
         flow {
                 emit(
-                    loadUserConfigs().filter {
-                        it.id != OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID
-                    }
+                    loadUserConfigs().filter(::isUserOwnedConfig)
                 )
             }
             .flowOn(Dispatchers.IO)
 
     override suspend fun save(config: OverrideConfig) =
         withContext(Dispatchers.IO) {
+            if (BuiltInOverrideCatalog.isBuiltIn(config.id)) {
+                // Built-ins are not metadata-owned; only rewrite the materialized file.
+                configsDir.mkdirs()
+                cleanupStaleConfigFiles(config.id, keepExtension = config.contentType.extension)
+                resolveConfigFile(config.id, config.contentType).writeText(config.content)
+                return@withContext
+            }
+
             configsDir.mkdirs()
             cleanupStaleConfigFiles(config.id, keepExtension = config.contentType.extension)
             resolveConfigFile(config.id, config.contentType).writeText(config.content)
@@ -128,6 +143,10 @@ class OverrideConfigStore(
 
     override suspend fun delete(id: String): Boolean =
         withContext(Dispatchers.IO) {
+            // Built-ins cannot be deleted from the store (UI also hides the action).
+            if (BuiltInOverrideCatalog.isBuiltIn(id)) {
+                return@withContext false
+            }
             cleanupStaleConfigFiles(id)
             val metadataExists = loadMetadataIndex().getById(id) != null
             if (!metadataExists) {
@@ -163,6 +182,9 @@ class OverrideConfigStore(
 
     override suspend fun exists(id: String): Boolean =
         withContext(Dispatchers.IO) {
+            if (BuiltInOverrideCatalog.isBuiltIn(id)) {
+                return@withContext loadBuiltInConfig(id) != null
+            }
             loadMetadataIndex().getById(id)?.let(::findConfigFile) != null
         }
 
@@ -200,12 +222,27 @@ class OverrideConfigStore(
         }
 
     fun getConfigContent(id: String): String? {
+        if (BuiltInOverrideCatalog.isBuiltIn(id)) {
+            return materializeBuiltInFile(id)?.let { file ->
+                runCatching { file.readText() }.getOrNull()
+            }
+        }
         val metadata = loadMetadataIndex().getById(id) ?: return null
         val file = findConfigFile(metadata) ?: return null
         return runCatching { file.readText() }.getOrNull()
     }
 
     fun saveConfigContent(id: String, content: String): Boolean {
+        if (BuiltInOverrideCatalog.isBuiltIn(id)) {
+            val def = BuiltInOverrideCatalog.find(id) ?: return false
+            return runCatching {
+                    configsDir.mkdirs()
+                    cleanupStaleConfigFiles(id, keepExtension = def.contentType.extension)
+                    resolveConfigFile(id, def.contentType).writeText(content)
+                    true
+                }
+                .getOrDefault(false)
+        }
         val metadata = loadMetadataIndex().getById(id) ?: return false
         return runCatching {
                 val file = findConfigFile(metadata) ?: resolveConfigFile(id, metadata.contentType)
@@ -233,6 +270,9 @@ class OverrideConfigStore(
     }
 
     fun getConfigFilePath(id: String): File? {
+        if (BuiltInOverrideCatalog.isBuiltIn(id)) {
+            return materializeBuiltInFile(id)
+        }
         val metadata = loadMetadataIndex().getById(id) ?: return null
         return findConfigFile(metadata)
     }
@@ -275,13 +315,77 @@ class OverrideConfigStore(
         }
 
     private fun loadUserConfigs(): List<OverrideConfig> {
-        if (!configsDir.exists()) return emptyList()
+        // Never short-circuit on a missing configsDir — imported overrides live in metadata and
+        // may still resolve after the directory is recreated (e.g. first built-in materialize).
+        if (!configsDir.exists()) {
+            configsDir.mkdirs()
+        }
         return loadMetadataIndex().sortedUserMetadata().mapNotNull { metadata ->
-            if (isInternalRuntimeConfig(metadata.id)) {
+            if (isInternalRuntimeConfig(metadata.id) || BuiltInOverrideCatalog.isBuiltIn(metadata.id)) {
                 return@mapNotNull null
             }
             loadConfigContent(metadata)
         }
+    }
+
+    private fun isUserOwnedConfig(config: OverrideConfig): Boolean =
+        config.id != OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID &&
+            !BuiltInOverrideCatalog.isBuiltIn(config.id) &&
+            !isInternalRuntimeConfig(config.id)
+
+    private fun loadBuiltInConfig(id: String): OverrideConfig? {
+        val def = BuiltInOverrideCatalog.find(id) ?: return null
+        // Prefer the materialized file (may include local edits); fall back to reading the APK asset
+        // so the list never goes empty when file materialization fails.
+        val file = materializeBuiltInFile(def)
+        val content =
+            file?.let { runCatching { it.readText() }.getOrNull() }
+                ?: readBuiltInAsset(def)
+                ?: return null
+        val now = System.currentTimeMillis()
+        return OverrideConfig(
+            id = def.id,
+            name = def.name,
+            description = def.description,
+            contentType = def.contentType,
+            content = content,
+            createdAt = now,
+            updatedAt = file?.lastModified()?.takeIf { it > 0L } ?: now,
+        )
+    }
+
+    private fun readBuiltInAsset(def: BuiltInOverrideDefinition): String? =
+        runCatching {
+                context.assets.open(def.assetPath).bufferedReader().use { it.readText() }
+            }
+            .onFailure { error ->
+                Timber.w(error, "Failed to read built-in override asset: %s", def.assetPath)
+            }
+            .getOrNull()
+
+    /**
+     * Copy the asset into `configsDir` if missing so fork/exec override resolution can open a real
+     * path. Existing files (including user edits) are preserved.
+     */
+    private fun materializeBuiltInFile(id: String): File? {
+        val def = BuiltInOverrideCatalog.find(id) ?: return null
+        return materializeBuiltInFile(def)
+    }
+
+    private fun materializeBuiltInFile(def: BuiltInOverrideDefinition): File? {
+        val target = resolveConfigFile(def.id, def.contentType)
+        if (target.exists()) return target
+        return runCatching {
+                configsDir.mkdirs()
+                context.assets.open(def.assetPath).use { input ->
+                    target.outputStream().use { output -> input.copyTo(output) }
+                }
+                target
+            }
+            .onFailure { error ->
+                Timber.w(error, "Failed to materialize built-in override: %s", def.id)
+            }
+            .getOrNull()
     }
 
     private fun loadConfigContent(metadata: OverrideMetadata): OverrideConfig? {
@@ -352,10 +456,17 @@ class OverrideConfigStore(
 
     private fun sanitizeMetadataIndex(index: MetadataIndex): MetadataIndex {
         val sanitizedConfigs =
-            index.configs.filterValues { metadata -> !isLegacySystemPresetId(metadata.id) }
+            index.configs.filterValues { metadata ->
+                !isLegacySystemPresetId(metadata.id) && !BuiltInOverrideCatalog.isBuiltIn(metadata.id)
+            }
         val sanitizedProfileChains =
             index.profileChains.mapValues { (_, binding) ->
-                binding.copy(overrideIds = binding.overrideIds.filterNot(::isLegacySystemPresetId))
+                binding.copy(
+                    overrideIds =
+                        binding.overrideIds.filterNot { id ->
+                            isLegacySystemPresetId(id)
+                        }
+                )
             }
         return if (
             sanitizedConfigs == index.configs && sanitizedProfileChains == index.profileChains

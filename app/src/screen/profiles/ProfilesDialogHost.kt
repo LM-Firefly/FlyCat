@@ -43,6 +43,7 @@ internal fun ProfilesDialogHost(
     state: ProfilesDialogState,
     profilesViewModel: ProfilesViewModel,
     homeViewModel: HomeViewModel,
+    builtInConfigs: List<OverrideConfig>,
     userConfigs: List<OverrideConfig>,
     isRunning: Boolean,
 ) {
@@ -75,6 +76,7 @@ internal fun ProfilesDialogHost(
         state = state,
         profilesViewModel = profilesViewModel,
         homeViewModel = homeViewModel,
+        builtInConfigs = builtInConfigs,
         userConfigs = userConfigs,
         bindingProvider = bindingProvider,
         overrideService = overrideService,
@@ -125,6 +127,7 @@ private fun ProfileSettingsDialogHost(
     state: ProfilesDialogState,
     profilesViewModel: ProfilesViewModel,
     homeViewModel: HomeViewModel,
+    builtInConfigs: List<OverrideConfig>,
     userConfigs: List<OverrideConfig>,
     bindingProvider: ProfileBindingProvider,
     overrideService: OverrideService,
@@ -138,6 +141,7 @@ private fun ProfileSettingsDialogHost(
     ProfileSettingsDialog(
         show = state.showSettings.value,
         profile = profile,
+        builtInConfigs = builtInConfigs,
         userConfigs = userConfigs,
         binding = state.binding,
         onDismiss = { state.showSettings.value = false },

@@ -29,13 +29,16 @@ import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.screen.OverrideListScreen
 import com.github.yumelira.yumebox.presentation.util.OverrideEditorStore
 import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
-import org.koin.compose.koinInject
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun OverrideScreen(navigator: Navigator) {
-    val overrideConfigViewModel: OverrideConfigViewModel = koinInject()
+    // Must share the same ViewModelStoreOwner instance as OverrideListScreen (koinViewModel),
+    // not koinInject — inject creates/returns a separate instance and first paint stays empty.
+    val overrideConfigViewModel: OverrideConfigViewModel = koinViewModel()
 
     OverrideListScreen(
+        viewModel = overrideConfigViewModel,
         onOpenCodeEditor = { config ->
             OverrideEditorStore.setupConfigPreview(
                 title = config.name,
@@ -48,7 +51,7 @@ fun OverrideScreen(navigator: Navigator) {
                 },
             )
             navigator.push(Route.OverrideConfigPreview)
-        }
+        },
     )
 }
 

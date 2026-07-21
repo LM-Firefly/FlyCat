@@ -24,6 +24,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.yumelira.yumebox.data.controller.ActiveProfileOverrideReloader
 import com.github.yumelira.yumebox.data.controller.OverrideResolver
+import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
 import com.github.yumelira.yumebox.data.model.OverrideConfig
 import com.github.yumelira.yumebox.data.model.OverrideContentType
 import com.github.yumelira.yumebox.data.model.OverrideMetadata
@@ -58,6 +59,9 @@ class OverrideConfigViewModel(
     private val _configs = MutableStateFlow<List<OverrideConfig>>(emptyList())
     val configs: StateFlow<List<OverrideConfig>> = _configs.asStateFlow()
 
+    private val _builtInConfigs = MutableStateFlow<List<OverrideConfig>>(emptyList())
+    val builtInConfigs: StateFlow<List<OverrideConfig>> = _builtInConfigs.asStateFlow()
+
     private val _userConfigs = MutableStateFlow<List<OverrideConfig>>(emptyList())
     val userConfigs: StateFlow<List<OverrideConfig>> = _userConfigs.asStateFlow()
 
@@ -82,9 +86,23 @@ class OverrideConfigViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val users = configRepo.getUserConfigs()
+                // Load independently: a built-in asset hiccup must not wipe imported overrides
+                // (and vice versa). First open used to fail the whole try when materialize threw.
+                val builtIns =
+                    runCatching { configRepo.getBuiltInConfigs() }
+                        .onFailure { error ->
+                            Timber.tag(TAG).e(error, "Failed to load built-in overrides")
+                        }
+                        .getOrDefault(_builtInConfigs.value)
+                val users =
+                    runCatching { configRepo.getUserConfigs() }
+                        .onFailure { error ->
+                            Timber.tag(TAG).e(error, "Failed to load imported overrides")
+                        }
+                        .getOrDefault(_userConfigs.value)
+                _builtInConfigs.value = builtIns
                 _userConfigs.value = users
-                _configs.value = users
+                _configs.value = builtIns + users
                 loadUsageCounts()
             } catch (error: Exception) { // fault barrier: top-level ViewModel load handler, log and reset loading
                 Timber.tag(TAG).e(error, "Failed to load overrides")
@@ -97,6 +115,8 @@ class OverrideConfigViewModel(
     fun getConfigById(id: String): OverrideConfig? = _configs.value.find { it.id == id }
 
     fun getConfigContent(configId: String): String? = configRepo.getConfigContent(configId)
+
+    fun isBuiltInConfig(id: String): Boolean = OverrideInternalConstants.isBuiltInOverrideId(id)
 
     fun saveConfigContent(configId: String, content: String): Boolean {
         val saved = configRepo.saveConfigContent(configId, content)
@@ -132,6 +152,7 @@ class OverrideConfigViewModel(
     }
 
     fun deleteConfig(id: String) {
+        if (isBuiltInConfig(id)) return
         viewModelScope.launch {
             runCatching {
                     val shouldResyncRuntime =
@@ -149,7 +170,25 @@ class OverrideConfigViewModel(
     fun duplicateConfig(id: String) {
         viewModelScope.launch {
             runCatching {
-                    val duplicated = configRepo.duplicate(id)
+                    val source =
+                        getConfigById(id) ?: configRepo.getById(id) ?: return@runCatching
+                    // Built-ins have no metadata row — materialize a user copy instead of store.duplicate.
+                    val duplicated =
+                        if (isBuiltInConfig(id)) {
+                            val now = System.currentTimeMillis()
+                            OverrideConfig(
+                                    id = OverrideMetadata.generateId(),
+                                    name = "${source.name} (副本)",
+                                    description = source.description,
+                                    contentType = source.contentType,
+                                    content = source.content,
+                                    createdAt = now,
+                                    updatedAt = now,
+                                )
+                                .also { configRepo.save(it) }
+                        } else {
+                            configRepo.duplicate(id)
+                        }
                     if (duplicated != null) {
                         _pendingRevealConfigId.value = duplicated.id
                     }
@@ -170,7 +209,7 @@ class OverrideConfigViewModel(
                     configs.add(toIndex.coerceIn(0, configs.size), moving)
                 }
             _userConfigs.value = reorderedConfigs
-            _configs.value = reorderedConfigs
+            _configs.value = _builtInConfigs.value + reorderedConfigs
 
             runCatching { configRepo.reorderUserConfigs(reorderedConfigs.map(OverrideConfig::id)) }
                 .onFailure { error -> Timber.tag(TAG).e(error, "Failed to reorder overrides") }

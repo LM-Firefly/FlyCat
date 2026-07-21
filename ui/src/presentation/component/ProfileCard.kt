@@ -208,13 +208,13 @@ fun ProfileCard(
                 minHeight = componentSizes.compactActionButtonSize,
                 minWidth = componentSizes.compactActionButtonSize,
                 enabled = !isDownloading,
-                onClick = { if (!isDownloading) onEdit(profile) },
+                onClick = { if (!isDownloading) onDelete(profile) },
             ) {
                 Icon(
                     modifier = Modifier.size(spacing.space20),
-                    imageVector = Yume.Edit,
+                    imageVector = Yume.Delete,
                     tint = actionIconTint,
-                    contentDescription = "Edit",
+                    contentDescription = "Delete",
                 )
             }
 
@@ -256,7 +256,7 @@ fun ProfileCard(
                 minHeight = componentSizes.compactActionButtonSize,
                 minWidth = componentSizes.compactActionButtonSize,
                 enabled = !isDownloading,
-                onClick = { if (!isDownloading) onDelete(profile) },
+                onClick = { if (!isDownloading) onEdit(profile) },
                 backgroundColor = secondaryContainer,
             ) {
                 Row(
@@ -265,9 +265,9 @@ fun ProfileCard(
                 ) {
                     Icon(
                         modifier = Modifier.size(spacing.space20),
-                        imageVector = Yume.Delete,
+                        imageVector = Yume.Edit,
                         tint = actionIconTint,
-                        contentDescription = "Delete",
+                        contentDescription = "Edit",
                     )
                     Text(
                         modifier =
@@ -275,7 +275,7 @@ fun ProfileCard(
                                 start = spacing.space4,
                                 end = componentSizes.textLineCompactSpacing,
                             ),
-                        text = YumeTxt.Component.ProfileCard.Delete,
+                        text = YumeTxt.Component.ProfileCard.Edit,
                         color = actionIconTint,
                         fontWeight = FontWeight.Medium,
                         fontSize = 15.sp,

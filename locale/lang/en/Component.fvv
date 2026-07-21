@@ -2,6 +2,7 @@
 Component = {
     ProfileCard = {
         Update = "Update"
+        Edit = "Edit"
         Delete = "Delete"
         RemoteSubscription = "Remote Subscription"
         LocalFile = "Local File"
