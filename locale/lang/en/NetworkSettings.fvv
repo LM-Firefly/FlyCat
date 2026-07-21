@@ -17,9 +17,9 @@ NetworkSettings = {
         VpnServiceTitle = "Vpn Service"
         VpnServiceSummary = "System VPN, global proxy"
         TunTitle = "Tun"
-        TunSummary = "Root · kernel TUN tunnel"
+        TunSummary = "Kernel TUN tunnel with root"
         TproxyTitle = "TPROXY"
-        TproxySummary = "Root · kernel transparent proxy"
+        TproxySummary = "Kernel transparent proxy with root"
     }
 
     VpnOptions = {

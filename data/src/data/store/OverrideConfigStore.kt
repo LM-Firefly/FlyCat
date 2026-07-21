@@ -115,30 +115,33 @@ class OverrideConfigStore(
                 return@withContext
             }
 
-            configsDir.mkdirs()
-            cleanupStaleConfigFiles(config.id, keepExtension = config.contentType.extension)
-            resolveConfigFile(config.id, config.contentType).writeText(config.content)
+            synchronized(OverrideMetadataFileLock.monitor) {
+                configsDir.mkdirs()
+                cleanupStaleConfigFiles(config.id, keepExtension = config.contentType.extension)
+                resolveConfigFile(config.id, config.contentType).writeText(config.content)
 
-            val metadataIndex = loadMetadataIndex()
-            val existingMetadata = metadataIndex.getById(config.id)
-            val metadata =
-                OverrideMetadata(
-                    id = config.id,
-                    name = config.name,
-                    description = config.description,
-                    contentType = config.contentType,
-                    createdAt = config.createdAt,
-                    updatedAt = config.updatedAt,
-                    sortOrder = existingMetadata?.sortOrder ?: metadataIndex.nextUserSortOrder(),
-                )
-            val updatedIndex = metadataIndex.upsert(metadata)
-            saveMetadataIndex(updatedIndex)
+                val metadataIndex = loadMetadataIndex()
+                val existingMetadata = metadataIndex.getById(config.id)
+                val metadata =
+                    OverrideMetadata(
+                        id = config.id,
+                        name = config.name,
+                        description = config.description,
+                        contentType = config.contentType,
+                        createdAt = config.createdAt,
+                        updatedAt = config.updatedAt,
+                        sortOrder =
+                            existingMetadata?.sortOrder ?: metadataIndex.nextUserSortOrder(),
+                    )
+                val updatedIndex = metadataIndex.upsert(metadata)
+                saveMetadataIndex(updatedIndex)
 
-            val userConfigsById =
-                configsFlow.value.associateBy(OverrideConfig::id).toMutableMap().apply {
-                    put(config.id, config)
-                }
-            updateConfigsFlowSnapshot(updatedIndex, userConfigsById)
+                val userConfigsById =
+                    configsFlow.value.associateBy(OverrideConfig::id).toMutableMap().apply {
+                        put(config.id, config)
+                    }
+                updateConfigsFlowSnapshot(updatedIndex, userConfigsById)
+            }
         }
 
     override suspend fun delete(id: String): Boolean =
@@ -147,19 +150,22 @@ class OverrideConfigStore(
             if (BuiltInOverrideCatalog.isBuiltIn(id)) {
                 return@withContext false
             }
-            val currentIndex = loadMetadataIndex()
-            if (currentIndex.getById(id) == null) {
+            val updatedIndex =
+                synchronized(OverrideMetadataFileLock.monitor) {
+                    val currentIndex = loadMetadataIndex()
+                    if (currentIndex.getById(id) == null) {
+                        return@synchronized null
+                    }
+
+                    val updated = currentIndex.remove(id).removeOverrideFromProfileChains(id)
+                    saveMetadataIndex(updated)
+                    cleanupStaleConfigFiles(id)
+                    updated
+                }
+            if (updatedIndex == null) {
                 refreshConfigsFlow()
                 return@withContext false
             }
-
-            // Remove metadata and every profile reference in the same write. Keeping these as two
-            // independent read-modify-write operations allowed a stale binding snapshot to restore
-            // the deleted id.
-            val updatedIndex =
-                currentIndex.remove(id).removeOverrideFromProfileChains(id)
-            saveMetadataIndex(updatedIndex)
-            cleanupStaleConfigFiles(id)
             // The persistent snapshot is already clean; this synchronizes the binding StateFlow.
             bindingProvider.removeOverrideFromAllBindings(id)
             val userConfigsById =
@@ -248,30 +254,33 @@ class OverrideConfigStore(
                 }
                 .getOrDefault(false)
         }
-        val metadata = loadMetadataIndex().getById(id) ?: return false
-        return runCatching {
-                val file = findConfigFile(metadata) ?: resolveConfigFile(id, metadata.contentType)
-                file.parentFile?.mkdirs()
-                file.writeText(content)
+        return synchronized(OverrideMetadataFileLock.monitor) {
+            val metadata = loadMetadataIndex().getById(id) ?: return@synchronized false
+            runCatching {
+                    val file = findConfigFile(metadata) ?: resolveConfigFile(id, metadata.contentType)
+                    file.parentFile?.mkdirs()
+                    file.writeText(content)
 
-                val updatedIndex =
-                    loadMetadataIndex()
-                        .upsert(metadata.copy(updatedAt = System.currentTimeMillis()))
-                saveMetadataIndex(updatedIndex)
-                val userConfigsById =
-                    configsFlow.value.associateBy(OverrideConfig::id).toMutableMap().apply {
-                        loadConfigContent(
-                                metadata.copy(
-                                    updatedAt =
-                                        updatedIndex.getById(id)?.updatedAt ?: metadata.updatedAt
+                    val updatedIndex =
+                        loadMetadataIndex()
+                            .upsert(metadata.copy(updatedAt = System.currentTimeMillis()))
+                    saveMetadataIndex(updatedIndex)
+                    val userConfigsById =
+                        configsFlow.value.associateBy(OverrideConfig::id).toMutableMap().apply {
+                            loadConfigContent(
+                                    metadata.copy(
+                                        updatedAt =
+                                            updatedIndex.getById(id)?.updatedAt
+                                                ?: metadata.updatedAt
+                                    )
                                 )
-                            )
-                            ?.let { put(id, it) }
-                    }
-                updateConfigsFlowSnapshot(updatedIndex, userConfigsById)
-                true
-            }
-            .isSuccess
+                                ?.let { put(id, it) }
+                        }
+                    updateConfigsFlowSnapshot(updatedIndex, userConfigsById)
+                    true
+                }
+                .isSuccess
+        }
     }
 
     fun getConfigFilePath(id: String): File? {
@@ -286,36 +295,38 @@ class OverrideConfigStore(
 
     suspend fun reorderUserConfigs(orderedIds: List<String>) =
         withContext(Dispatchers.IO) {
-            if (orderedIds.isEmpty()) return@withContext
+            synchronized(OverrideMetadataFileLock.monitor) {
+                if (orderedIds.isEmpty()) return@synchronized
 
-            val metadataIndex = loadMetadataIndex()
-            val sortedUserMetadata = metadataIndex.sortedUserMetadata()
-            if (sortedUserMetadata.isEmpty()) return@withContext
+                val metadataIndex = loadMetadataIndex()
+                val sortedUserMetadata = metadataIndex.sortedUserMetadata()
+                if (sortedUserMetadata.isEmpty()) return@synchronized
 
-            val userMetadataById = sortedUserMetadata.associateBy(OverrideMetadata::id)
-            val reorderedIds = orderedIds.filter(userMetadataById::containsKey)
-            if (reorderedIds.isEmpty()) return@withContext
+                val userMetadataById = sortedUserMetadata.associateBy(OverrideMetadata::id)
+                val reorderedIds = orderedIds.filter(userMetadataById::containsKey)
+                if (reorderedIds.isEmpty()) return@synchronized
 
-            val remainingIds =
-                sortedUserMetadata.map(OverrideMetadata::id).filterNot(reorderedIds::contains)
-            val finalOrder = reorderedIds + remainingIds
-            val updatedConfigs = metadataIndex.configs.toMutableMap()
-            var hasChanges = false
+                val remainingIds =
+                    sortedUserMetadata.map(OverrideMetadata::id).filterNot(reorderedIds::contains)
+                val finalOrder = reorderedIds + remainingIds
+                val updatedConfigs = metadataIndex.configs.toMutableMap()
+                var hasChanges = false
 
-            finalOrder.forEachIndexed { index, id ->
-                val metadata = userMetadataById[id] ?: return@forEachIndexed
-                val newSortOrder = index.toLong() + 1L
-                if (metadata.sortOrder != newSortOrder) {
-                    updatedConfigs[id] = metadata.copy(sortOrder = newSortOrder)
-                    hasChanges = true
+                finalOrder.forEachIndexed { index, id ->
+                    val metadata = userMetadataById[id] ?: return@forEachIndexed
+                    val newSortOrder = index.toLong() + 1L
+                    if (metadata.sortOrder != newSortOrder) {
+                        updatedConfigs[id] = metadata.copy(sortOrder = newSortOrder)
+                        hasChanges = true
+                    }
                 }
-            }
 
-            if (hasChanges) {
-                val updatedIndex = metadataIndex.copy(configs = updatedConfigs)
-                saveMetadataIndex(updatedIndex)
-                val userConfigsById = configsFlow.value.associateBy(OverrideConfig::id)
-                updateConfigsFlowSnapshot(updatedIndex, userConfigsById)
+                if (hasChanges) {
+                    val updatedIndex = metadataIndex.copy(configs = updatedConfigs)
+                    saveMetadataIndex(updatedIndex)
+                    val userConfigsById = configsFlow.value.associateBy(OverrideConfig::id)
+                    updateConfigsFlowSnapshot(updatedIndex, userConfigsById)
+                }
             }
         }
 
@@ -407,34 +418,37 @@ class OverrideConfigStore(
         )
     }
 
-    private fun loadMetadataIndex(): MetadataIndex {
-        val metadataIndex =
-            if (!metadataFile.exists()) {
-                MetadataIndex()
-            } else {
-                runCatching {
-                        YamlCodec.decode(MetadataIndex.serializer(), metadataFile.readText())
-                    }
-                    .getOrElse { error ->
-                        Timber.w(
-                            error,
-                            "Failed to decode override metadata: %s",
-                            metadataFile.absolutePath,
-                        )
-                        MetadataIndex()
-                    }
+    private fun loadMetadataIndex(): MetadataIndex =
+        synchronized(OverrideMetadataFileLock.monitor) {
+            val metadataIndex =
+                if (!metadataFile.exists()) {
+                    MetadataIndex()
+                } else {
+                    runCatching {
+                            YamlCodec.decode(MetadataIndex.serializer(), metadataFile.readText())
+                        }
+                        .getOrElse { error ->
+                            Timber.w(
+                                error,
+                                "Failed to decode override metadata: %s",
+                                metadataFile.absolutePath,
+                            )
+                            MetadataIndex()
+                        }
+                }
+            val sanitizedIndex = sanitizeMetadataIndex(metadataIndex)
+            val normalizedIndex = sanitizedIndex.normalizeUserSortOrders()
+            if (normalizedIndex != metadataIndex) {
+                saveMetadataIndex(normalizedIndex)
             }
-        val sanitizedIndex = sanitizeMetadataIndex(metadataIndex)
-        val normalizedIndex = sanitizedIndex.normalizeUserSortOrders()
-        if (normalizedIndex != metadataIndex) {
-            saveMetadataIndex(normalizedIndex)
+            normalizedIndex
         }
-        return normalizedIndex
-    }
 
     private fun saveMetadataIndex(index: MetadataIndex) {
-        overridesDir.mkdirs()
-        metadataFile.writeText(YamlCodec.encode(MetadataIndex.serializer(), index))
+        synchronized(OverrideMetadataFileLock.monitor) {
+            overridesDir.mkdirs()
+            metadataFile.writeText(YamlCodec.encode(MetadataIndex.serializer(), index))
+        }
     }
 
     private fun resolveConfigFile(id: String, contentType: OverrideContentType): File =

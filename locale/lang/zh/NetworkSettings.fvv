@@ -17,9 +17,9 @@ NetworkSettings = {
         VpnServiceTitle = "Vpn Service"
         VpnServiceSummary = "系统 VPN 全局代理"
         TunTitle = "Tun"
-        TunSummary = "Root · 内核虚拟网卡直连"
+        TunSummary = "需要 Root 的内核虚拟网卡"
         TproxyTitle = "TPROXY"
-        TproxySummary = "Root · 内核透明代理"
+        TproxySummary = "需要 Root 的内核透明代理"
     }
 
     VpnOptions = {

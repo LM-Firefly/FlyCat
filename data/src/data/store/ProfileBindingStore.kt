@@ -51,16 +51,23 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
 
     override suspend fun setBinding(binding: ProfileBinding) =
         withContext(Dispatchers.IO) {
-            val map = loadBindings().toMutableMap()
-            map[binding.profileId] = binding
-            saveBindings(map)
+            synchronized(OverrideMetadataFileLock.monitor) {
+                val index = loadMetadataIndex()
+                val sanitizedBinding = sanitizeBinding(binding, index)
+                val bindings = index.profileChains + (binding.profileId to sanitizedBinding)
+                saveMetadataIndex(index.copy(profileChains = bindings))
+                bindingsStateFlow.value = bindings
+            }
         }
 
     override suspend fun removeBinding(profileId: String) =
         withContext(Dispatchers.IO) {
-            val map = loadBindings().toMutableMap()
-            map.remove(profileId)
-            saveBindings(map)
+            synchronized(OverrideMetadataFileLock.monitor) {
+                val index = loadMetadataIndex()
+                val bindings = index.profileChains - profileId
+                saveMetadataIndex(index.copy(profileChains = bindings))
+                bindingsStateFlow.value = bindings
+            }
         }
 
     override suspend fun getAllBindings(): List<ProfileBinding> =
@@ -102,12 +109,14 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
 
     override suspend fun removeOverrideFromAllBindings(overrideId: String) =
         withContext(Dispatchers.IO) {
-            val currentIndex = loadMetadataIndex()
-            val updatedIndex = currentIndex.removeOverrideFromProfileChains(overrideId)
-            if (updatedIndex != currentIndex) {
-                saveMetadataIndex(updatedIndex)
+            synchronized(OverrideMetadataFileLock.monitor) {
+                val currentIndex = loadMetadataIndex()
+                val updatedIndex = currentIndex.removeOverrideFromProfileChains(overrideId)
+                if (updatedIndex != currentIndex) {
+                    saveMetadataIndex(updatedIndex)
+                }
+                bindingsStateFlow.value = updatedIndex.profileChains
             }
-            bindingsStateFlow.value = updatedIndex.profileChains
         }
 
     override suspend fun clearOverrides(profileId: String) {
@@ -117,8 +126,11 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
 
     suspend fun clearAll() =
         withContext(Dispatchers.IO) {
-            val index = loadMetadataIndex()
-            saveMetadataIndex(index.copy(profileChains = emptyMap()))
+            synchronized(OverrideMetadataFileLock.monitor) {
+                val index = loadMetadataIndex()
+                saveMetadataIndex(index.copy(profileChains = emptyMap()))
+                bindingsStateFlow.value = emptyMap()
+            }
         }
 
     suspend fun setOverrides(profileId: String, overrideIds: List<String>) {
@@ -146,44 +158,44 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
             emptyMap()
         }
 
-    private fun saveBindings(map: Map<String, ProfileBinding>) {
-        val index = loadMetadataIndex().copy(profileChains = map)
-        saveMetadataIndex(index)
-        bindingsStateFlow.value = map
-    }
-
-    private fun loadMetadataIndex(): MetadataIndex {
-        if (!metadataFile.exists()) return MetadataIndex()
-        val index =
-            runCatching { YamlCodec.decode(MetadataIndex.serializer(), metadataFile.readText()) }
-                .getOrElse { error ->
-                    Timber.w(error, "Failed to decode override metadata index")
-                    MetadataIndex()
-                }
-        val sanitized = sanitizeMetadataIndex(index)
-        if (sanitized != index) {
-            saveMetadataIndex(sanitized)
+    private fun loadMetadataIndex(): MetadataIndex =
+        synchronized(OverrideMetadataFileLock.monitor) {
+            if (!metadataFile.exists()) return@synchronized MetadataIndex()
+            val index =
+                runCatching { YamlCodec.decode(MetadataIndex.serializer(), metadataFile.readText()) }
+                    .getOrElse { error ->
+                        Timber.w(error, "Failed to decode override metadata index")
+                        MetadataIndex()
+                    }
+            val sanitized = sanitizeMetadataIndex(index)
+            if (sanitized != index) {
+                saveMetadataIndex(sanitized)
+            }
+            sanitized
         }
-        return sanitized
-    }
 
     private fun saveMetadataIndex(index: MetadataIndex) {
-        metadataFile.parentFile?.mkdirs()
-        metadataFile.writeText(YamlCodec.encode(MetadataIndex.serializer(), index))
+        synchronized(OverrideMetadataFileLock.monitor) {
+            metadataFile.parentFile?.mkdirs()
+            metadataFile.writeText(YamlCodec.encode(MetadataIndex.serializer(), index))
+        }
     }
 
     private fun sanitizeMetadataIndex(index: MetadataIndex): MetadataIndex =
         index.copy(
             profileChains =
                 index.profileChains.mapValues { (_, binding) ->
-                    binding.copy(
-                        overrideIds =
-                            binding.overrideIds.filterNot { overrideId ->
-                                isLegacyPresetOverrideId(overrideId) ||
-                                    (overrideId.startsWith(OverrideMetadata.ID_PREFIX) &&
-                                        overrideId !in index.configs)
-                            }
-                    )
+                    sanitizeBinding(binding, index)
+                }
+        )
+
+    private fun sanitizeBinding(binding: ProfileBinding, index: MetadataIndex): ProfileBinding =
+        binding.copy(
+            overrideIds =
+                binding.overrideIds.filterNot { overrideId ->
+                    isLegacyPresetOverrideId(overrideId) ||
+                        (overrideId.startsWith(OverrideMetadata.ID_PREFIX) &&
+                            overrideId !in index.configs)
                 }
         )
 

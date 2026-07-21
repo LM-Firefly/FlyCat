@@ -9,18 +9,18 @@ Settings = {
 
     UiSettings = {
         App = "App"
-        AppSummary = "Theme · Language · Behavior"
+        AppSummary = "Theme, language, and behavior"
         Network = "Network"
-        NetworkSummary = "Proxy Mode · DNS · Access Control"
+        NetworkSummary = "Proxy mode, DNS, and access control"
         Override = "Override"
-        OverrideSummary = "YAML · JS · Rule Override"
+        OverrideSummary = "YAML, JS, and rule overrides"
         MetaFeatures = "Meta Features"
-        MetaFeaturesSummary = "Connections · Logs · Rules · Statistics"
+        MetaFeaturesSummary = "Connections, logs, rules, and statistics"
     }
 
     More = {
         Lab = "Lab"
-        LabSummary = "Sub-Store · Experiments"
+        LabSummary = "Sub-Store and experiments"
         Logs = "Logs"
         LogsSummary = "Runtime Logs"
         Onboarding = "Setup Guide"

@@ -3,7 +3,7 @@ MetaFeature = {
     Title = "Meta Features"
 
     Section = {
-        ConnectionAndTraffic = "Connections · Logs · Rules"
+        ConnectionAndTraffic = "Connections, logs, and rules"
         Routing = "Routing"
     }
 

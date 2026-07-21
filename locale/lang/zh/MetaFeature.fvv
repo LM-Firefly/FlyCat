@@ -3,7 +3,7 @@ MetaFeature = {
     Title = "Meta 功能"
 
     Section = {
-        ConnectionAndTraffic = "连接 · 日志 · 规则"
+        ConnectionAndTraffic = "连接、日志与规则"
         Routing = "分流相关"
     }
 

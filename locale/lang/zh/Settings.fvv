@@ -9,18 +9,18 @@ Settings = {
 
     UiSettings = {
         App = "应用"
-        AppSummary = "主题 · 语言 · 行为"
+        AppSummary = "主题、语言与行为"
         Network = "网络"
-        NetworkSummary = "代理模式 · DNS · 访问控制"
+        NetworkSummary = "代理模式、DNS 与访问控制"
         Override = "覆写"
-        OverrideSummary = "YAML · JS · 规则覆写"
+        OverrideSummary = "YAML、JS 与规则覆写"
         MetaFeatures = "Meta 功能"
-        MetaFeaturesSummary = "连接 · 日志 · 规则 · 统计"
+        MetaFeaturesSummary = "连接、日志、规则与统计"
     }
 
     More = {
         Lab = "实验室"
-        LabSummary = "Sub-Store · 实验功能"
+        LabSummary = "Sub-Store 与实验功能"
         Logs = "日志"
         LogsSummary = "运行日志"
         Onboarding = "新手引导"
