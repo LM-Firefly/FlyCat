@@ -21,20 +21,10 @@
 package com.github.yumelira.yumebox.screen.settings
 
 import android.annotation.SuppressLint
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,19 +40,6 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.NavEntryDecorator
-import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberDecoratedNavEntries
-import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.scene.SceneInfo
-import androidx.navigation3.scene.SinglePaneSceneStrategy
-import androidx.navigation3.scene.rememberSceneState
-import androidx.navigation3.ui.NavDisplay
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
 import com.github.yumelira.yumebox.BuildConfig
 import com.github.yumelira.yumebox.WebViewActivity
 import com.github.yumelira.yumebox.common.util.toast
@@ -72,7 +49,6 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.navigation.SettingsDetailRootRoutes
-import com.github.yumelira.yumebox.presentation.navigation.yumeSecondaryEntries
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.viewmodel.SettingEvent
 import com.github.yumelira.yumebox.presentation.viewmodel.SettingViewModel
@@ -86,9 +62,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private const val DETAIL_DURATION = 340
-private const val DETAIL_FADE = 140
-private val detailSlideEasing = CubicBezierEasing(0.25f, 0.10f, 0.25f, 1.0f)
 
 @Composable
 private fun CircularIcon(
@@ -149,21 +122,16 @@ private fun CircularIcon(
 @Composable
 fun SettingPager(
     mainInnerPadding: PaddingValues,
-    windowLayoutMode: WindowLayoutMode = WindowLayoutMode.Compact,
+    @Suppress("UNUSED_PARAMETER") windowLayoutMode: WindowLayoutMode = WindowLayoutMode.Compact,
 ) {
     val viewModel = koinViewModel<SettingViewModel>()
     val scrollBehavior = MiuixScrollBehavior()
     val rootNavigator = LocalNavigator.current
     val detailNavigator = LocalDetailNavigator.current
     val context = LocalContext.current
-    // Dual-pane shell: list stays on the left, open destinations on the right.
-    val usesShellDetail = detailNavigator != null
-    val usesMasterDetail = !usesShellDetail && windowLayoutMode.usesNavigationRail
-    val showTwoPanes = !usesShellDetail && windowLayoutMode.usesTwoPanes
-
     val versionInfo = "v${BuildConfig.BASE_VERSION}"
 
-    // Only highlight after the user actually opens a settings item (no default green).
+    // Highlight only after the user opens a settings item (no default selection).
     var selectedRootKey by rememberSaveable { mutableStateOf<String?>(null) }
     val selectedRootRoute =
         remember(selectedRootKey) {
@@ -171,16 +139,6 @@ fun SettingPager(
                 SettingsDetailRootRoutes.firstOrNull { it::class.simpleName == key }
             }
         }
-
-    val moduleDetailBackStack = rememberNavBackStack(Route.AppSettings)
-    val moduleDetailNavigator = remember(moduleDetailBackStack) { Navigator(moduleDetailBackStack) }
-
-    LaunchedEffect(selectedRootRoute, usesMasterDetail) {
-        if (!usesMasterDetail || selectedRootRoute == null) return@LaunchedEffect
-        if (moduleDetailBackStack.firstOrNull() != selectedRootRoute || moduleDetailBackStack.size != 1) {
-            moduleDetailNavigator.replaceAll(listOf(selectedRootRoute))
-        }
-    }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -197,60 +155,22 @@ fun SettingPager(
         }
     }
 
-    var railShowDetail by rememberSaveable(showTwoPanes) { mutableStateOf(showTwoPanes) }
-    val effectiveShowDetail = showTwoPanes || (usesMasterDetail && railShowDetail)
-
-    BackHandler(enabled = usesMasterDetail && !showTwoPanes && railShowDetail) {
-        if (moduleDetailBackStack.size > 1) moduleDetailNavigator.pop() else railShowDetail = false
-    }
-
-    val shellDetailNavigator = detailNavigator
-    val openRootForLayout: (Route) -> Unit = { route ->
-        when {
-            shellDetailNavigator != null -> {
-                selectedRootKey = route::class.simpleName
-                shellDetailNavigator.replaceAll(listOf(route))
-            }
-            usesMasterDetail -> {
-                selectedRootKey = route::class.simpleName
-                moduleDetailNavigator.replaceAll(listOf(route))
-                railShowDetail = true
-            }
-            else -> rootNavigator.push(route)
+    // Phone: push on root navigator. Tablet shell: replace right pane.
+    val openRoot: (Route) -> Unit = { route ->
+        selectedRootKey = route::class.simpleName
+        if (detailNavigator != null) {
+            detailNavigator.replaceAll(listOf(route))
+        } else {
+            rootNavigator.push(route)
         }
     }
 
-    if (!usesMasterDetail) {
-        SettingsMasterList(
-            mainInnerPadding = mainInnerPadding,
-            scrollBehavior = scrollBehavior,
-            versionInfo = versionInfo,
-            selectedRoute = selectedRootRoute,
-            onOpen = openRootForLayout,
-        )
-        return
-    }
-
-    MasterDetailLayout(
-        windowLayoutMode = windowLayoutMode,
-        showDetail = effectiveShowDetail,
-        masterMinWidth = PaneWidths.SettingsMasterMin,
-        masterMaxWidth = PaneWidths.SettingsMasterMax,
-        master = {
-            SettingsMasterList(
-                mainInnerPadding = mainInnerPadding,
-                scrollBehavior = scrollBehavior,
-                versionInfo = versionInfo,
-                selectedRoute = selectedRootRoute,
-                onOpen = openRootForLayout,
-            )
-        },
-        detail = {
-            SettingsDetailHost(
-                backStack = moduleDetailBackStack,
-                navigator = moduleDetailNavigator,
-            )
-        },
+    SettingsMasterList(
+        mainInnerPadding = mainInnerPadding,
+        scrollBehavior = scrollBehavior,
+        versionInfo = versionInfo,
+        selectedRoute = selectedRootRoute,
+        onOpen = openRoot,
     )
 }
 
@@ -351,99 +271,6 @@ private fun SettingsRootPreference(
             startAction = { CircularIcon(imageVector = icon, contentDescription = null) },
         )
     }
-}
-
-@Composable
-private fun SettingsDetailHost(
-    backStack: MutableList<NavKey>,
-    navigator: Navigator,
-) {
-    val entries =
-        rememberDecoratedNavEntries(
-            backStack = backStack,
-            entryDecorators =
-                listOf(
-                    rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator(),
-                    NavEntryDecorator { content ->
-                        CompositionLocalProvider(LocalNavigator provides navigator) {
-                            content.Content()
-                        }
-                    },
-                ),
-            entryProvider =
-                entryProvider {
-                    yumeSecondaryEntries(navigator)
-                },
-        )
-
-    val sceneState =
-        rememberSceneState(
-            entries = entries,
-            sceneStrategies = listOf(SinglePaneSceneStrategy()),
-            sceneDecoratorStrategies = emptyList(),
-            sharedTransitionScope = null,
-            onBack = { navigator.pop() },
-        )
-    val scene = sceneState.currentScene
-    val gestureState =
-        rememberNavigationEventState(
-            currentInfo = SceneInfo(scene),
-            backInfo = sceneState.previousScenes.map { SceneInfo(it) },
-        )
-
-    NavigationBackHandler(
-        state = gestureState,
-        isBackEnabled = scene.previousEntries.isNotEmpty(),
-        onBackCancelled = {},
-        onBackCompleted = { navigator.pop() },
-    )
-
-    NavDisplay(
-        sceneState = sceneState,
-        navigationEventState = gestureState,
-        contentAlignment = Alignment.TopStart,
-        sizeTransform = null,
-        transitionSpec = {
-            ContentTransform(
-                slideInHorizontally(
-                    animationSpec = tween(DETAIL_DURATION, easing = detailSlideEasing),
-                    initialOffsetX = { it },
-                ) + fadeIn(animationSpec = tween(DETAIL_FADE, easing = LinearEasing)),
-                slideOutHorizontally(
-                    animationSpec = tween(DETAIL_DURATION, easing = detailSlideEasing),
-                    targetOffsetX = { -it },
-                ) + fadeOut(animationSpec = tween(DETAIL_FADE, easing = LinearEasing)),
-                sizeTransform = null,
-            )
-        },
-        popTransitionSpec = {
-            ContentTransform(
-                slideInHorizontally(
-                    animationSpec = tween(DETAIL_DURATION, easing = detailSlideEasing),
-                    initialOffsetX = { -it },
-                ) + fadeIn(animationSpec = tween(DETAIL_FADE, easing = LinearEasing)),
-                slideOutHorizontally(
-                    animationSpec = tween(DETAIL_DURATION, easing = detailSlideEasing),
-                    targetOffsetX = { it },
-                ) + fadeOut(animationSpec = tween(DETAIL_FADE, easing = LinearEasing)),
-                sizeTransform = null,
-            )
-        },
-        predictivePopTransitionSpec = { _ ->
-            ContentTransform(
-                slideInHorizontally(
-                    animationSpec = tween(DETAIL_DURATION, easing = detailSlideEasing),
-                    initialOffsetX = { -it },
-                ) + fadeIn(animationSpec = tween(DETAIL_FADE, easing = LinearEasing)),
-                slideOutHorizontally(
-                    animationSpec = tween(DETAIL_DURATION, easing = detailSlideEasing),
-                    targetOffsetX = { it },
-                ) + fadeOut(animationSpec = tween(DETAIL_FADE, easing = LinearEasing)),
-                sizeTransform = null,
-            )
-        },
-    )
 }
 
 @Composable

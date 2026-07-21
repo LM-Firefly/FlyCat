@@ -154,7 +154,7 @@ fun AppActionBottomSheet(
         }
     // Dual-pane shell: each pane has its own root Scaffold. Rendering in that root lets sheets
     // cover the floating bottom bar while staying inside the left (or right) pane bounds.
-    val inSplitShell = LocalDetailNavigator.current != null
+    val inSplitShell = LocalDetailNavigator.current.isSplitShell
     val resolvedRenderInRoot = renderInRootScaffold ?: true
     val resolvedSheetMaxWidth =
         if (inSplitShell && sheetMaxWidth == BottomSheetDefaults.maxWidth) {

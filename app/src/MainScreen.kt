@@ -23,29 +23,7 @@ package com.github.yumelira.yumebox
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -56,19 +34,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.Dp
 import androidx.core.net.toUri
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import com.github.yumelira.yumebox.presentation.component.BottomBarContent
 import com.github.yumelira.yumebox.presentation.component.BottomBarDestination
 import com.github.yumelira.yumebox.presentation.component.LocalBottomBarHazeState
 import com.github.yumelira.yumebox.presentation.component.LocalBottomBarHazeStyle
@@ -79,21 +50,15 @@ import com.github.yumelira.yumebox.presentation.component.LocalNavigator
 import com.github.yumelira.yumebox.presentation.component.LocalPagerState
 import com.github.yumelira.yumebox.presentation.component.MainPagerState
 import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.DualPaneLayout
 import com.github.yumelira.yumebox.presentation.component.LocalDetailNavigator
 import com.github.yumelira.yumebox.presentation.component.WindowLayoutMode
-import com.github.yumelira.yumebox.presentation.component.rememberBottomBarReservedHeight
 import com.github.yumelira.yumebox.presentation.component.rememberBottomBarScrollBehavior
-import com.github.yumelira.yumebox.presentation.component.rememberMainPagerFlingBehavior
 import com.github.yumelira.yumebox.presentation.component.rememberMainPagerState
 import com.github.yumelira.yumebox.presentation.component.rememberWindowLayoutMode
 import com.github.yumelira.yumebox.presentation.navigation.Route
-import com.github.yumelira.yumebox.presentation.navigation.SecondaryDetailHost
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.github.yumelira.yumebox.presentation.screen.ProxyPager
-import com.github.yumelira.yumebox.presentation.screen.ProxyShellNodeDetail
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.screen.home.HomePager
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
@@ -105,9 +70,7 @@ import com.github.yumelira.yumebox.screen.settings.SettingPager
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeSource
 import org.koin.androidx.compose.koinViewModel
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -154,7 +117,6 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val moeWallpaperBiasY by appSettingsViewModel.moeWallpaperBiasY.state.collectAsState()
     val bottomBarScrollBehavior =
         rememberBottomBarScrollBehavior(autoHideEnabled = bottomBarAutoHideEnabled)
-    val pagerFlingBehavior = rememberMainPagerFlingBehavior(mainPagerState.pagerState)
     val selectedDestination by
         remember(mainPagerState, visibleDestinations) {
             derivedStateOf {
@@ -267,7 +229,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
             }
         }
 
-    val usesSplitShell = windowLayoutMode.usesNavigationRail
+    val usesSplitShell = windowLayoutMode.usesSplitShell
     val detailBackStack = rememberNavBackStack(Route.About)
     val detailNavigator = remember(detailBackStack) { Navigator(detailBackStack) }
 
@@ -330,192 +292,28 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         LocalBottomBarHazeState provides if (topBarBlurEnabled) hazeState else null,
         LocalBottomBarHazeStyle provides if (topBarBlurEnabled) bottomBarHazeStyle else null,
     ) {
-        val layoutDirection = LocalLayoutDirection.current
-        val visibleBottomBarReservedHeight = rememberBottomBarReservedHeight()
-        val bottomBarReservedHeight by
-            animateDpAsState(
-                targetValue = if (bottomBarVisible) visibleBottomBarReservedHeight else UiDp.dp0,
-                animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-                label = "main_bottom_bar_reserved_height",
-            )
-
-        // Left content always renders as phone compact so Moe home/sidebar are not stretched.
-        val leftLayoutMode = WindowLayoutMode.Compact
-
-        @Composable
-        fun MainPagerHost(
-            layoutMode: WindowLayoutMode,
-            enableUserScroll: Boolean,
-            mainInnerPadding: PaddingValues,
-        ) {
-            Box(Modifier.fillMaxSize()) {
-                HorizontalPager(
-                    modifier =
-                        Modifier.fillMaxSize().let { modifier ->
-                            if (topBarBlurEnabled) {
-                                modifier.hazeSource(state = hazeState)
-                            } else {
-                                modifier
-                            }
-                        },
-                    state = mainPagerState.pagerState,
-                    beyondViewportPageCount = 2,
-                    flingBehavior = pagerFlingBehavior,
-                    userScrollEnabled = enableUserScroll,
-                    overscrollEffect = null,
-                    pageNestedScrollConnection =
-                        PagerDefaults.pageNestedScrollConnection(
-                            state = mainPagerState.pagerState,
-                            orientation = Orientation.Horizontal,
-                        ),
-                ) { page ->
-                    val destination =
-                        if (
-                            previousDestinations != visibleDestinations &&
-                                page == mainPagerState.pagerState.currentPage
-                        ) {
-                            previousDestinations.getOrNull(page) ?: settledDestination
-                        } else {
-                            visibleDestinations.getOrNull(page)
-                                ?: previousDestinations.getOrNull(page)
-                                ?: settledDestination
-                        }
-                    MainRootPageContent(
-                        destination = destination,
-                        mainInnerPadding = mainInnerPadding,
-                        classicHomeEnabled = classicHomeEnabled,
-                        moeWallpaperUri = moeWallpaperUri,
-                        moeWallpaperZoom = moeWallpaperZoom,
-                        moeWallpaperBiasX = moeWallpaperBiasX,
-                        moeWallpaperBiasY = moeWallpaperBiasY,
-                        navigator = navigator,
-                        homePageProgress = homeVisibility,
-                        selectedDestination = settledDestination,
-                        windowLayoutMode = layoutMode,
-                    )
-                }
-
-                BottomEdgeScrim(
-                    color = bottomBarScrimColor,
-                    visible = bottomBarVisible && bottomBarScrollBehavior.isBottomBarVisible,
-                    height = visibleBottomBarReservedHeight + UiDp.dp28,
-                )
-
-                // Bottom bar stays in content; sheet overlays attach to the pane Scaffold popup
-                // host above this Box so open sheets correctly cover the floating nav bar.
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Bottom,
-                ) {
-                    BottomBarContent(
-                        isVisible = bottomBarVisible,
-                        destinations = visibleDestinations,
-                    )
-                }
-            }
-        }
-
-        @Composable
-        fun paneInnerPadding(scaffoldPadding: PaddingValues, reserveBottomBar: Boolean): PaddingValues {
-            val bottomExtra = if (reserveBottomBar) bottomBarReservedHeight else UiDp.dp0
-            return PaddingValues(
-                top = scaffoldPadding.calculateTopPadding(),
-                bottom = scaffoldPadding.calculateBottomPadding() + bottomExtra,
-                start =
-                    WindowInsets.systemBars
-                        .asPaddingValues()
-                        .calculateStartPadding(layoutDirection),
-                end =
-                    WindowInsets.systemBars
-                        .asPaddingValues()
-                        .calculateEndPadding(layoutDirection),
-            )
-        }
-
-        if (usesSplitShell) {
-            // Separate Scaffold roots per pane so sheets/dialogs stay inside their pane and
-            // the left-root popup host can cover the floating bottom bar.
-            DualPaneLayout(
-                left = {
-                    Scaffold { leftPadding ->
-                        MainPagerHost(
-                            layoutMode = leftLayoutMode,
-                            enableUserScroll = true,
-                            mainInnerPadding = paneInnerPadding(leftPadding, reserveBottomBar = true),
-                        )
-                    }
-                },
-                right = {
-                    Scaffold { rightPadding ->
-                        val rightInnerPadding =
-                            paneInnerPadding(rightPadding, reserveBottomBar = false)
-                        val showProxyNodes =
-                            settledDestination == BottomBarDestination.Proxy &&
-                                detailBackStack.lastOrNull() !is Route.Providers
-                        // Keep right-pane swaps local: never animate the whole shell / left pager.
-                        if (showProxyNodes) {
-                            ProxyShellNodeDetail(
-                                mainInnerPadding = rightInnerPadding,
-                                onNavigateToProviders = {
-                                    detailNavigator.replaceAll(listOf(Route.Providers))
-                                },
-                            )
-                        } else {
-                            SecondaryDetailHost(
-                                backStack = detailBackStack,
-                                navigator = detailNavigator,
-                            )
-                        }
-                    }
-                },
-                initialLeftFraction = 0.42f,
-                minLeftFraction = 0.34f,
-                maxLeftFraction = 0.50f,
-                showDivider = true,
-                dividerDraggable = true,
-                maxLeftWidth = UiDp.dp420,
-            )
-        } else {
-            Scaffold { innerPadding ->
-                MainPagerHost(
-                    layoutMode = windowLayoutMode,
-                    enableUserScroll = true,
-                    mainInnerPadding = paneInnerPadding(innerPadding, reserveBottomBar = true),
-                )
-            }
-        }
-    }
-}
-
-// Edge fade behind the floating nav bar: page content scrolling into the bottom of the screen
-// dissolves into the page background (white in light theme) instead of colliding with the bar
-// and the system navigation area. Transparent at the top, opaque at the screen edge; purely
-// decorative, so it never intercepts touch input.
-@Composable
-private fun BoxScope.BottomEdgeScrim(color: Color, visible: Boolean, height: Dp) {
-    val alpha by
-        animateFloatAsState(
-            targetValue = if (visible) 1f else 0f,
-            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-            label = "main_bottom_edge_scrim",
+        MainContentHost(
+            usesSplitShell = usesSplitShell,
+            windowLayoutMode = windowLayoutMode,
+            mainPagerState = mainPagerState,
+            visibleDestinations = visibleDestinations,
+            previousDestinations = previousDestinations,
+            settledDestination = settledDestination,
+            bottomBarVisible = bottomBarVisible,
+            topBarBlurEnabled = topBarBlurEnabled,
+            hazeState = hazeState,
+            bottomBarScrimColor = bottomBarScrimColor,
+            classicHomeEnabled = classicHomeEnabled,
+            moeWallpaperUri = moeWallpaperUri,
+            moeWallpaperZoom = moeWallpaperZoom,
+            moeWallpaperBiasX = moeWallpaperBiasX,
+            moeWallpaperBiasY = moeWallpaperBiasY,
+            homeVisibility = homeVisibility,
+            navigator = navigator,
+            detailBackStack = detailBackStack,
+            detailNavigator = detailNavigator,
         )
-    if (alpha <= 0f) return
-    Box(
-        modifier =
-            Modifier.align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(height)
-                .graphicsLayer { this.alpha = alpha }
-                .background(
-                    Brush.verticalGradient(
-                        0f to color.copy(alpha = 0f),
-                        0.25f to color.copy(alpha = 0.55f),
-                        0.55f to color.copy(alpha = 0.88f),
-                        1f to color,
-                    )
-                )
-    )
+    }
 }
 
 @Composable
@@ -532,7 +330,7 @@ private fun MainScreenBackHandler(mainPagerState: MainPagerState) {
 }
 
 @Composable
-private fun MainRootPageContent(
+internal fun MainRootPageContent(
     destination: BottomBarDestination,
     mainInnerPadding: PaddingValues,
     classicHomeEnabled: Boolean,

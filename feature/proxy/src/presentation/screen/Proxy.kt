@@ -108,7 +108,7 @@ fun ProxyPager(
     mainInnerPadding: PaddingValues,
     onNavigateToProviders: (() -> Unit)?,
     isActive: Boolean,
-    windowLayoutMode: WindowLayoutMode = WindowLayoutMode.Compact,
+    @Suppress("UNUSED_PARAMETER") windowLayoutMode: WindowLayoutMode = WindowLayoutMode.Compact,
 ) {
     val proxyViewModel = koinViewModel<ProxyViewModel>()
 
@@ -123,27 +123,23 @@ fun ProxyPager(
 
     var showSortPopup by rememberSaveable { mutableStateOf(false) }
     // Dual-pane shell: left list + right nodes share selection via ViewModel.
-    val usesShellSplit = LocalDetailNavigator.current != null
+    val inSplitShell = LocalDetailNavigator.current.isSplitShell
     val uiSelectedGroupName by proxyViewModel.uiSelectedGroupName.collectAsState()
     val groupSelection =
         rememberProxyGroupSelectionState(
             proxyGroups = proxyGroups,
             onRefreshGroup = proxyViewModel::refreshGroup,
             retainLastKnownGroup = true,
-            controlledSelectedGroupName = if (usesShellSplit) uiSelectedGroupName else null,
+            controlledSelectedGroupName = if (inSplitShell) uiSelectedGroupName else null,
             onControlledSelectedGroupNameChange =
-                if (usesShellSplit) proxyViewModel::selectUiGroup else null,
+                if (inSplitShell) proxyViewModel::selectUiGroup else null,
         )
     val selectedGroupName = groupSelection.selectedGroupName
     val displayGroup = groupSelection.displayGroup
-    val usesMasterDetail = !usesShellSplit && windowLayoutMode.usesNavigationRail
-    val showTwoPanes = !usesShellSplit && windowLayoutMode.usesTwoPanes
-    // Shell: groups only on the left; nodes render in MainScreen right pane.
-    val shellGroupsOnly = usesShellSplit
 
     // Keep a group selected so the shell detail pane always has content.
-    LaunchedEffect(usesMasterDetail, shellGroupsOnly, proxyGroups, selectedGroupName) {
-        if ((!usesMasterDetail && !shellGroupsOnly) || proxyGroups.isEmpty()) return@LaunchedEffect
+    LaunchedEffect(inSplitShell, proxyGroups, selectedGroupName) {
+        if (!inSplitShell || proxyGroups.isEmpty()) return@LaunchedEffect
         if (selectedGroupName == null || proxyGroups.none { it.name == selectedGroupName }) {
             groupSelection.selectGroup(proxyGroups.first())
         }
@@ -186,7 +182,7 @@ fun ProxyPager(
             }
         }
 
-    BackHandler(enabled = !shellGroupsOnly && !showTwoPanes && selectedGroupName != null) { groupSelection.clearSelection() }
+    BackHandler(enabled = !inSplitShell && selectedGroupName != null) { groupSelection.clearSelection() }
 
     LaunchedEffect(isActive) { proxyViewModel.ensureCoreLoaded(isActive, source = "proxy_page") }
 
@@ -198,7 +194,7 @@ fun ProxyPager(
         floatingActionButton = {
             AnimatedVisibility(
                 visible =
-                    !shellGroupsOnly &&
+                    !inSplitShell &&
                         selectedGroupName != null &&
                         fabGroup != null &&
                         !fabHidden &&
@@ -227,16 +223,16 @@ fun ProxyPager(
             val detailOpen = selectedGroupName != null
             ProxyTopBar(
                 title =
-                    if (!shellGroupsOnly && !showTwoPanes && detailOpen) {
+                    if (!inSplitShell && detailOpen) {
                         displayGroup?.name ?: YumeTxt.Proxy.Title
                     } else {
                         YumeTxt.Proxy.Title
                     },
                 scrollBehavior = groupScrollBehavior,
-                showBack = !shellGroupsOnly && !showTwoPanes && detailOpen,
+                showBack = !inSplitShell && detailOpen,
                 onBack = groupSelection.clearSelection,
                 onNavigateToProviders =
-                    onNavigateToProviders.takeIf { shellGroupsOnly || showTwoPanes || !detailOpen },
+                    onNavigateToProviders.takeIf { inSplitShell || !detailOpen },
                 onLocateCurrentProxy = locateCurrentProxy,
                 showSortPopup = showSortPopup,
                 onShowSortPopupChange = { showSortPopup = it },
@@ -251,7 +247,7 @@ fun ProxyPager(
                     if (topBarHazeState != null) mod.hazeSource(state = topBarHazeState) else mod
                 }
         ) {
-            if (shellGroupsOnly) {
+            if (inSplitShell) {
                 if (proxyGroups.isEmpty()) {
                     CenteredText(
                         firstLine = YumeTxt.Proxy.Empty.NoNodes,
@@ -269,57 +265,6 @@ fun ProxyPager(
                         onGroupClick = groupSelection.selectGroup,
                     )
                 }
-            } else if (showTwoPanes) {
-                MasterDetailLayout(
-                    windowLayoutMode = windowLayoutMode,
-                    showDetail = true,
-                    masterMinWidth = PaneWidths.ProxyMasterMin,
-                    masterMaxWidth = PaneWidths.ProxyMasterMax,
-                    master = {
-                        if (proxyGroups.isEmpty()) {
-                            CenteredText(
-                                firstLine = YumeTxt.Proxy.Empty.NoNodes,
-                                secondLine = YumeTxt.Proxy.Empty.Hint,
-                                showEmptyResourceIllustration = true,
-                            )
-                        } else {
-                            ProxyContent(
-                                proxyGroups = proxyGroups,
-                                scrollBehavior = groupScrollBehavior,
-                                innerPadding = scaffoldPadding,
-                                mainInnerPadding = mainInnerPadding,
-                                testingGroupNames = testingGroupNames,
-                                selectedGroupName = selectedGroupName,
-                                onGroupClick = groupSelection.selectGroup,
-                            )
-                        }
-                    },
-                    detail = {
-                        val currentGroup = groupSelection.selectedGroup ?: displayGroup
-                        NodeListPage(
-                            group = currentGroup,
-                            sortMode = sortMode,
-                            testingGroupNames = testingGroupNames,
-                            testingProxyNames = testingProxyNames,
-                            mainInnerPadding = mainInnerPadding,
-                            outerInnerPadding = scaffoldPadding,
-                            scrollBehavior = groupScrollBehavior,
-                            listState = nodeListState,
-                            onSelectProxy = { groupName, proxyName ->
-                                proxyViewModel.selectProxy(groupName, proxyName)
-                            },
-                            onTestDelay = requestSelectedGroupDelayTest,
-                            onTestProxyDelay = { proxyName ->
-                                currentGroup?.name?.let { groupName ->
-                                    proxyViewModel.testProxyDelay(groupName, proxyName)
-                                }
-                            },
-                            onScrollDirectionChanged = { hidden -> fabHidden = hidden },
-                            singleNodeTestEnabled = singleNodeTest,
-                            useAdaptiveGrid = true,
-                        )
-                    },
-                )
             } else {
                 AnimatedContent(
                     targetState = selectedGroupName,
@@ -390,7 +335,7 @@ fun ProxyPager(
                             },
                             onScrollDirectionChanged = { hidden -> fabHidden = hidden },
                             singleNodeTestEnabled = singleNodeTest,
-                            useAdaptiveGrid = usesMasterDetail,
+                            useAdaptiveGrid = false,
                         )
                     }
                 }

@@ -13,13 +13,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 
+/**
+ * Window size class for adaptive layout.
+ *
+ * Product rule (main tabs):
+ * - [Compact]: phone single stack; secondary screens push on the root navigator.
+ * - [RailSingle]/[TwoPane]: tablet dual-pane shell (left main pager + right detail host).
+ *
+ * Module-level master/detail inside a tab is intentionally not used anymore; tablet detail
+ * always goes through [LocalDetailNavigator] in the shell right pane.
+ */
 enum class WindowLayoutMode {
     Compact,
     RailSingle,
     TwoPane;
 
-    val usesNavigationRail: Boolean
+    /** Tablet dual-pane shell should be used (left pager + right detail). */
+    val usesSplitShell: Boolean
         get() = this != Compact
+
+    /** @deprecated Prefer [usesSplitShell]; kept for existing call sites. */
+    val usesNavigationRail: Boolean
+        get() = usesSplitShell
 
     val usesTwoPanes: Boolean
         get() = this == TwoPane

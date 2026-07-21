@@ -139,8 +139,18 @@ val LocalHandlePageChange =
     compositionLocalOf<(Int) -> Unit> { error("LocalHandlePageChange is not provided") }
 val LocalNavigator =
     compositionLocalOf<Navigator> { error("LocalNavigator is not provided") }
-/** Optional right-pane navigator for tablet dual-pane shell. Null on phone. */
+
+/**
+ * Right-pane navigator for the tablet dual-pane shell.
+ *
+ * Non-null only when [WindowLayoutMode.usesSplitShell] is active. Treat non-null as the single
+ * source of truth for "we are in split shell" — do not re-derive shell mode from width in modules.
+ */
 val LocalDetailNavigator = compositionLocalOf<Navigator?> { null }
+
+/** True when the composition is hosted inside the tablet dual-pane shell. */
+inline val Navigator?.isSplitShell: Boolean
+    get() = this != null
 
 val LocalBottomBarHazeState = compositionLocalOf<HazeState?> { null }
 val LocalBottomBarHazeStyle = compositionLocalOf<HazeStyle?> { null }
