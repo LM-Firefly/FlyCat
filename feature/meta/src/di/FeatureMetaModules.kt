@@ -25,12 +25,13 @@ import com.github.yumelira.yumebox.feature.meta.presentation.util.CustomRoutingB
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.ConnectionViewModel
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.CustomRoutingViewModel
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.TrafficStatisticsViewModel
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val featureMetaViewModelModule = module {
     single { CustomRoutingBootstrapper(get()) }
-    viewModel { ConnectionViewModel() }
+    viewModel { ConnectionViewModel(androidContext()) }
     viewModel { TrafficStatisticsViewModel(get<TrafficStatisticsStore>()) }
     viewModel { CustomRoutingViewModel(get(), get(), get()) }
 }

@@ -35,8 +35,6 @@ import com.github.yumelira.yumebox.di.appModule
 import com.github.yumelira.yumebox.feature.meta.presentation.util.CustomRoutingBootstrapper
 import com.github.yumelira.yumebox.runtime.api.Components
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
-import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
-import com.github.yumelira.yumebox.runtime.service.LogRecordService
 import com.github.yumelira.yumebox.screen.settings.MoeWallpaperImporter
 import com.github.yumelira.yumebox.substore.util.AppUtil
 import com.tencent.mmkv.MMKV
@@ -78,13 +76,6 @@ class App : Application() {
         val koinApp = startKoin {
             androidContext(this@App)
             modules(appModule)
-        }
-
-        // Recording must tap the mode-aware log channel (local/root/remote); the service module
-        // cannot depend on the client gateway, so the binding is injected here.
-        LogRecordService.clashManagerProvider = {
-            ServiceClient.connect(this)
-            ServiceClient.clash()
         }
 
         val appSettingsStorage: AppSettingsStore = koinApp.koin.get()

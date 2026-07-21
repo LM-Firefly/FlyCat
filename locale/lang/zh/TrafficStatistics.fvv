@@ -1,6 +1,6 @@
 <Traffic Statistics Page>
 TrafficStatistics = {
-    Title = "流量统计"
+    Title = "统计"
     EntrySummary = "查看流量使用情况"
 
     TimeRange = {

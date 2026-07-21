@@ -53,6 +53,7 @@ import com.github.yumelira.yumebox.screen.about.AboutScreen
 import com.github.yumelira.yumebox.screen.about.OpenSourceLicensesScreen
 import com.github.yumelira.yumebox.screen.connection.ConnectionScreen
 import com.github.yumelira.yumebox.screen.log.LogScreen
+import com.github.yumelira.yumebox.screen.rules.RulesScreen
 import com.github.yumelira.yumebox.screen.navigation.CustomRoutingRoute
 import com.github.yumelira.yumebox.screen.navigation.FeatureScreen
 import com.github.yumelira.yumebox.screen.navigation.KeyValueEditorScreen
@@ -127,6 +128,7 @@ fun AppNavContainer() {
                     entry<Route.Connection> { ConnectionScreen(navigator) }
                     entry<Route.TrafficStatistics> { TrafficStatisticsScreen() }
                     entry<Route.Log> { LogScreen(navigator) }
+                    entry<Route.Rules> { RulesScreen(navigator) }
                     entry<Route.About> { AboutScreen(navigator) }
                     entry<Route.OpenSourceLicenses> { OpenSourceLicensesScreen(navigator) }
                     entry<Route.Override> { OverrideScreen(navigator) }

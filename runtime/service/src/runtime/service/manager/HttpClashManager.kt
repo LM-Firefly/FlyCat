@@ -20,26 +20,32 @@
 
 package com.github.yumelira.yumebox.runtime.service.manager
 
+import com.github.yumelira.yumebox.core.bridge.UnixSocketFactory
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
+import com.github.yumelira.yumebox.core.model.LogMessage
 import com.github.yumelira.yumebox.core.model.Provider
 import com.github.yumelira.yumebox.core.model.ProviderList
 import com.github.yumelira.yumebox.core.model.Proxy
 import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.model.ProxySort
+import com.github.yumelira.yumebox.core.model.RuntimeRule
 import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.model.UiConfiguration
 import com.github.yumelira.yumebox.core.util.encodeTrafficValue
-import com.github.yumelira.yumebox.core.bridge.UnixSocketFactory
 import com.github.yumelira.yumebox.data.model.RemoteBackend
 import com.github.yumelira.yumebox.runtime.api.IClashManager
 import com.github.yumelira.yumebox.runtime.api.ILogObserver
+import com.github.yumelira.yumebox.runtime.api.ILogSubscription
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.HttpTimeoutConfig
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.patch
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -55,10 +61,22 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.readUTF8Line
+import java.time.Instant
+import java.util.Date
+import java.io.IOException
+import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import timber.log.Timber
 
 /**
  * [IClashManager] over a mihomo REST controller (https://wiki.metacubex.one/api/). Serves BOTH:
@@ -83,8 +101,13 @@ class HttpClashManager(
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    private val logScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val logSink = AtomicReference<LogSink?>(null)
+    @Volatile private var logJob: Job? = null
+
     private val client: HttpClient by lazy {
         HttpClient(OkHttp) {
+            expectSuccess = true
             install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
             // Without timeouts a runBlocking REST call against an unreachable backend blocks its
             // IO thread until the OS TCP timeout (tens of seconds). The traffic poller and proxy
@@ -94,7 +117,8 @@ class HttpClashManager(
             // covers the streaming /traffic read (one JSON line per second) without killing it.
             install(HttpTimeout) {
                 connectTimeoutMillis = CONNECT_TIMEOUT_MS
-                socketTimeoutMillis = SOCKET_TIMEOUT_MS
+                socketTimeoutMillis = REQUEST_TIMEOUT_MS
+                requestTimeoutMillis = REQUEST_TIMEOUT_MS
             }
             // Local mode: route every connection over the core's UNIX controller socket regardless
             // of the (dummy) request host. Remote mode uses OkHttp's default TCP socket factory.
@@ -134,6 +158,14 @@ class HttpClashManager(
                 client.delete(url) { applyAuth() }
             HttpMethod.Put ->
                 client.put(url) {
+                    applyAuth()
+                    if (body != null) {
+                        contentType(ContentType.Application.Json)
+                        setBody(body)
+                    }
+                }
+            HttpMethod.Patch ->
+                client.patch(url) {
                     applyAuth()
                     if (body != null) {
                         contentType(ContentType.Application.Json)
@@ -186,10 +218,14 @@ class HttpClashManager(
     override fun queryConnections(): ConnectionSnapshot =
         runBlocking(Dispatchers.IO) { fetchConnections() }
 
-    private suspend fun fetchConnections(): ConnectionSnapshot {
-        val raw = request(HttpMethod.Get, "connections").bodyAsText()
-        return json.decodeFromString<ConnectionSnapshot>(raw)
-    }
+    private suspend fun fetchConnections(): ConnectionSnapshot =
+        client.prepareGet(buildUrl("connections", query = CONNECTIONS_QUERY)) {
+            applyAuth()
+        }.execute { response ->
+            val line = response.bodyAsChannel().readUTF8Line()
+                ?: error("connections stream ended before the first snapshot")
+            json.decodeFromString<ConnectionSnapshot>(line)
+        }
 
     // ---- Local-profile-only (irrelevant in pure-remote mode) -------------
 
@@ -316,19 +352,106 @@ class HttpClashManager(
 
     // ---- Providers -------------------------------------------------------
 
-    override fun queryProviders(): ProviderList {
-        // TODO(M7): map /providers/proxies + /providers/rules → ProviderList.
-        return ProviderList(emptyList())
+    /**
+     * Lists proxy + rule providers from the mihomo REST controller
+     * (`GET /providers/proxies` + `GET /providers/rules`, see website/api/openapi.json).
+     * Built-in Compatible providers are omitted — they are not user external resources.
+     */
+    override fun queryProviders(): ProviderList =
+        runBlocking(Dispatchers.IO) {
+            val proxies = runCatching {
+                fetchProviders(category = "proxies", type = Provider.Type.Proxy)
+            }
+            val rules = runCatching {
+                fetchProviders(category = "rules", type = Provider.Type.Rule)
+            }
+            if (proxies.isFailure && rules.isFailure) {
+                throw requireNotNull(proxies.exceptionOrNull()).also { proxyError ->
+                    rules.exceptionOrNull()?.let(proxyError::addSuppressed)
+                }
+            }
+            ProviderList(proxies.getOrDefault(emptyList()) + rules.getOrDefault(emptyList()))
+        }
+
+    private suspend fun fetchProviders(
+        category: String,
+        type: Provider.Type,
+    ): List<Provider> {
+        val raw = request(HttpMethod.Get, "providers", category).bodyAsText()
+        val response = json.decodeFromString<RawProvidersResponse>(raw)
+        return response.providers.mapNotNull { (key, entry) ->
+            val vehicle = parseVehicleType(entry.vehicleType) ?: return@mapNotNull null
+            // Compatible is mihomo's built-in "default" bucket, not a user external resource.
+            if (vehicle == Provider.VehicleType.Compatible) return@mapNotNull null
+            val name = entry.name.ifBlank { key }.ifBlank { return@mapNotNull null }
+            Provider(
+                name = name,
+                type = type,
+                vehicleType = vehicle,
+                updatedAt = parseUpdatedAtMillis(entry.updatedAt),
+                // REST payload has no path; file-upload UI stays gated on a non-blank path elsewhere.
+                path = "",
+            )
+        }
+    }
+
+    private fun parseVehicleType(raw: String): Provider.VehicleType? =
+        when (raw.trim().lowercase()) {
+            "http" -> Provider.VehicleType.HTTP
+            "file" -> Provider.VehicleType.File
+            "inline" -> Provider.VehicleType.Inline
+            "compatible" -> Provider.VehicleType.Compatible
+            else -> null
+        }
+
+    private fun parseUpdatedAtMillis(raw: String?): Long {
+        if (raw.isNullOrBlank()) return 0L
+        return runCatching { Instant.parse(raw).toEpochMilli() }.getOrDefault(0L)
     }
 
     override suspend fun updateProvider(type: Provider.Type, name: String) {
         val category = if (type == Provider.Type.Proxy) "proxies" else "rules"
-        runCatching { request(HttpMethod.Put, "providers", category, name) }
+        request(HttpMethod.Put, "providers", category, name)
     }
 
     // ---- Configuration ---------------------------------------------------
 
     override fun queryConfiguration(): UiConfiguration = UiConfiguration()
+
+    // ---- Rules -----------------------------------------------------------
+
+    override fun queryRules(): List<RuntimeRule> = runBlocking(Dispatchers.IO) { fetchRules() }
+
+    override suspend fun setRuleDisabled(
+        rule: RuntimeRule,
+        disabled: Boolean,
+    ): List<RuntimeRule> {
+        val current = fetchRules().firstOrNull { it.index == rule.index }
+            ?: error("rule ${rule.index} no longer exists")
+        check(current.hasSameIdentity(rule)) { "rule ${rule.index} changed before update" }
+
+        request(
+            HttpMethod.Patch,
+            "rules",
+            "disable",
+            body = mapOf(rule.index.toString() to disabled),
+        )
+
+        val updatedRules = fetchRules()
+        val updated = updatedRules.firstOrNull { it.index == rule.index }
+            ?: error("rule ${rule.index} disappeared after update")
+        check(updated.hasSameIdentity(rule)) { "rule ${rule.index} changed during update" }
+        check(updated.disabled == disabled) { "rule ${rule.index} state was not applied" }
+        return updatedRules
+    }
+
+    private suspend fun fetchRules(): List<RuntimeRule> {
+        val raw = request(HttpMethod.Get, "rules").bodyAsText()
+        return json.decodeFromString<RawRulesResponse>(raw).rules.map { it.toRuntimeRule() }
+    }
+
+    private fun RuntimeRule.hasSameIdentity(other: RuntimeRule): Boolean =
+        index == other.index && type == other.type && payload == other.payload && proxy == other.proxy
 
     // ---- Lifecycle (no-ops in pure-remote mode) --------------------------
 
@@ -336,9 +459,91 @@ class HttpClashManager(
         // No-op: we don't own the remote core, so there is nothing to stop.
     }
 
-    override fun setLogObserver(observer: ILogObserver?) {
-        // TODO(M7): stream WS /logs. MVP no-op.
+    @Synchronized
+    override fun subscribeLogs(observer: ILogObserver): ILogSubscription {
+        val sink = LogSink(observer = observer)
+        logSink.set(sink)
+        logJob?.cancel()
+        logJob =
+            logScope.launch {
+                while (isActive && logSink.get() === sink) {
+                    try {
+                        streamLogsOnce(sink)
+                        if (logSink.get() === sink) {
+                            sink.observer.onError(IOException("log stream ended"))
+                        }
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Throwable) {
+                        if (logSink.get() === sink) sink.observer.onError(error)
+                        Timber.w(error, "log stream failed; retrying")
+                    }
+                    delay(LOG_STREAM_RETRY_MS)
+                }
+            }
+        return ILogSubscription {
+            synchronized(this@HttpClashManager) {
+                if (logSink.compareAndSet(sink, null)) {
+                    logJob?.cancel()
+                    logJob = null
+                }
+            }
+        }
     }
+
+    /**
+     * Opens `GET /logs` as a line-delimited stream and forwards each JSON line to the active
+     * [ILogObserver]. Returns when the stream ends or the observer is cleared.
+     */
+    private suspend fun streamLogsOnce(sink: LogSink) {
+        client.prepareGet(buildUrl("logs", query = LOG_QUERY)) {
+            applyAuth()
+            timeout {
+                requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+                socketTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+            }
+        }.execute { response ->
+            if (logSink.get() !== sink) return@execute
+            sink.observer.onConnected()
+            val channel = response.bodyAsChannel()
+            while (logSink.get() === sink && !channel.isClosedForRead) {
+                val line = channel.readUTF8Line() ?: break
+                if (line.isBlank()) continue
+                val entry =
+                    runCatching { json.decodeFromString<RawLogLine>(line) }.getOrNull()
+                        ?: continue
+                val message =
+                    LogMessage(
+                        level = parseLogLevel(entry.type),
+                        message = entry.payload,
+                        time = Date(),
+                    )
+                sink.observer.newItem(message)
+            }
+        }
+    }
+
+    private fun parseLogLevel(raw: String): LogMessage.Level =
+        when (raw.trim().lowercase()) {
+            "debug" -> LogMessage.Level.Debug
+            "info" -> LogMessage.Level.Info
+            "warning", "warn" -> LogMessage.Level.Warning
+            "error" -> LogMessage.Level.Error
+            "silent" -> LogMessage.Level.Silent
+            else -> LogMessage.Level.Unknown
+        }
+
+    private fun RawRule.toRuntimeRule(): RuntimeRule =
+        RuntimeRule(
+            index = index,
+            type = type,
+            payload = payload,
+            proxy = proxy,
+            size = size,
+            disabled = extra?.disabled ?: false,
+            hitCount = extra?.hitCount ?: 0L,
+            missCount = extra?.missCount ?: 0L,
+        )
 
     // ---- Adapters --------------------------------------------------------
 
@@ -386,6 +591,21 @@ class HttpClashManager(
     // ---- DTOs ------------------------------------------------------------
 
     @Serializable
+    private data class RawProvidersResponse(val providers: Map<String, RawProvider> = emptyMap())
+
+    /**
+     * Shared shape of entries under GET /providers/proxies and /providers/rules
+     * (website/api/openapi.json). Extra fields (proxies, subscriptionInfo, behavior, …)
+     * are ignored via [json]'s ignoreUnknownKeys.
+     */
+    @Serializable
+    private data class RawProvider(
+        val name: String = "",
+        val vehicleType: String = "",
+        val updatedAt: String? = null,
+    )
+
+    @Serializable
     private data class RawProxiesResponse(val proxies: Map<String, RawProxy> = emptyMap())
 
     @Serializable
@@ -423,17 +643,50 @@ class HttpClashManager(
     @Serializable
     private data class SelectBody(val name: String)
 
+    @Serializable
+    private data class RawRulesResponse(val rules: List<RawRule> = emptyList())
+
+    @Serializable
+    private data class RawRule(
+        val index: Int = 0,
+        val type: String = "",
+        val payload: String = "",
+        val proxy: String = "",
+        val size: Int = -1,
+        val extra: RawRuleExtra? = null,
+    )
+
+    @Serializable
+    private data class RawRuleExtra(
+        val disabled: Boolean = false,
+        val hitCount: Long = 0L,
+        val missCount: Long = 0L,
+    )
+
+    @Serializable
+    private data class RawLogLine(
+        val type: String = "info",
+        val payload: String = "",
+    )
+
+    private data class LogSink(
+        val observer: ILogObserver,
+    )
+
     private companion object {
         const val CONNECT_TIMEOUT_MS = 5_000L
-        const val SOCKET_TIMEOUT_MS = 10_000L
+        const val REQUEST_TIMEOUT_MS = 10_000L
+        const val LOG_STREAM_RETRY_MS = 1_500L
 
         // Dummy authority for local mode: the UnixSocketFactory ignores host/port and always
         // connects to the core's controller socket, so only the path/scheme matter here.
         const val LOCAL_BASE_URL = "http://localhost"
 
         val delayQuery = mapOf(
-            "url" to "http://www.gstatic.com/generate_204",
+            "url" to "https://www.gstatic.com/generate_204",
             "timeout" to "5000",
         )
+        val LOG_QUERY = mapOf("level" to "debug")
+        val CONNECTIONS_QUERY = mapOf("interval" to "1000")
     }
 }

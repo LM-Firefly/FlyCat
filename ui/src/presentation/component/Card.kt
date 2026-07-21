@@ -26,9 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.theme.horizontalPadding
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardColors
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
+import top.yukonga.miuix.kmp.basic.Card as MiuixCard
 
 @Composable
 fun Card(
@@ -37,19 +38,29 @@ fun Card(
     insideMargin: PaddingValues = PaddingValues(UiDp.dp0),
     applyHorizontalPadding: Boolean = true,
     colors: CardColors = CardDefaults.defaultColors(),
+    onClick: (() -> Unit)? = null,
+    pressFeedbackType: PressFeedbackType = PressFeedbackType.None,
     content: @Composable () -> Unit,
 ) {
-    Card(
-        modifier =
-            if (applyHorizontalPadding) {
-                modifier.horizontalPadding()
-            } else {
-                modifier
-            },
-        cornerRadius = cornerRadius.dp,
-        insideMargin = insideMargin,
-        colors = colors,
-    ) {
-        content()
+    val resolvedModifier =
+        if (applyHorizontalPadding) modifier.horizontalPadding() else modifier
+    if (onClick == null) {
+        MiuixCard(
+            modifier = resolvedModifier,
+            cornerRadius = cornerRadius.dp,
+            insideMargin = insideMargin,
+            colors = colors,
+            content = { content() },
+        )
+    } else {
+        MiuixCard(
+            modifier = resolvedModifier,
+            cornerRadius = cornerRadius.dp,
+            insideMargin = insideMargin,
+            colors = colors,
+            onClick = onClick,
+            pressFeedbackType = pressFeedbackType,
+            content = { content() },
+        )
     }
 }

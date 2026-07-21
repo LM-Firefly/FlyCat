@@ -20,59 +20,172 @@
 
 package com.github.yumelira.yumebox.screen.log
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.core.model.LogMessage
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
-import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.data.store.LogStore
-import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
+import com.github.yumelira.yumebox.presentation.component.CenteredText
+import com.github.yumelira.yumebox.presentation.component.CollapsedSearchBar
+import com.github.yumelira.yumebox.presentation.component.Navigator
+import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
+import com.github.yumelira.yumebox.presentation.component.SearchBarPadding
+import com.github.yumelira.yumebox.presentation.component.SearchPager
+import com.github.yumelira.yumebox.presentation.component.SearchStatus
+import com.github.yumelira.yumebox.presentation.component.TopAppBarAnim
+import com.github.yumelira.yumebox.presentation.component.TopBar
+import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
+import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.Play
-import com.github.yumelira.yumebox.presentation.icon.yume.PowerOff
 import com.github.yumelira.yumebox.presentation.icon.yume.Share
-import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
-import top.yukonga.miuix.kmp.basic.FloatingActionButton
+import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Filter
+import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
+
+private val LevelFilters =
+    listOf(
+        LogLevelFilter.All,
+        LogLevelFilter.Debug,
+        LogLevelFilter.Info,
+        LogLevelFilter.Warning,
+        LogLevelFilter.Error,
+    )
+
+private fun LogLevelFilter.displayName(): String =
+    when (this) {
+        LogLevelFilter.All -> YumeTxt.Log.Level.All
+        LogLevelFilter.Debug -> YumeTxt.Log.Level.Debug
+        LogLevelFilter.Info -> YumeTxt.Log.Level.Info
+        LogLevelFilter.Warning -> YumeTxt.Log.Level.Warning
+        LogLevelFilter.Error -> YumeTxt.Log.Level.Error
+    }
 
 @Composable
 fun LogScreen(navigator: Navigator) {
+    val density = LocalDensity.current
     val viewModel = koinViewModel<LogViewModel>()
     val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val spacing = AppTheme.spacing
-    val componentSizes = AppTheme.sizes
 
-    val isRecording by viewModel.isRecording.collectAsState()
-    val logEntries by viewModel.tempLogEntries.collectAsState()
+    val filteredEntries by viewModel.filteredLogEntries.collectAsState()
+    val levelFilter by viewModel.levelFilter.collectAsState()
+    val connectionState by viewModel.connectionState.collectAsState()
+    val mainLikePadding = rememberStandalonePageMainPadding()
 
-    var fabHidden by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
+    val searchListState = rememberLazyListState()
+    var followLatest by remember { mutableStateOf(true) }
+    var followLatestInSearch by remember { mutableStateOf(true) }
+    var showLevelPopup by remember { mutableStateOf(false) }
+    val selectedLevelIndex =
+        remember(levelFilter) { LevelFilters.indexOf(levelFilter).coerceAtLeast(0) }
+    var searchStatus by remember { mutableStateOf(SearchStatus(label = YumeTxt.Log.SearchHint)) }
+    val dynamicTopPadding by remember {
+        derivedStateOf { spacing.space12 * (1f - scrollBehavior.state.collapsedFraction) }
+    }
+    val listStartPadding = spacing.screenHorizontal
+    val listEndPadding = spacing.screenHorizontal
+    val currentSearchStatus =
+        remember(searchStatus, filteredEntries) {
+            searchStatus.copy(
+                resultStatus =
+                    when {
+                        searchStatus.searchText.isBlank() -> SearchStatus.ResultStatus.DEFAULT
+                        filteredEntries.isEmpty() -> SearchStatus.ResultStatus.EMPTY
+                        else -> SearchStatus.ResultStatus.SHOW
+                    }
+            )
+        }
+
+    LaunchedEffect(listState) {
+        snapshotFlow {
+                Triple(
+                    listState.isScrollInProgress,
+                    listState.firstVisibleItemIndex,
+                    listState.firstVisibleItemScrollOffset,
+                )
+            }
+            .collectLatest { (scrolling, index, offset) ->
+                val atTop = index == 0 && offset == 0
+                if (scrolling || atTop) followLatest = atTop
+            }
+    }
+    LaunchedEffect(searchListState) {
+        snapshotFlow {
+                Triple(
+                    searchListState.isScrollInProgress,
+                    searchListState.firstVisibleItemIndex,
+                    searchListState.firstVisibleItemScrollOffset,
+                )
+            }
+            .collectLatest { (scrolling, index, offset) ->
+                val atTop = index == 0 && offset == 0
+                if (scrolling || atTop) followLatestInSearch = atTop
+            }
+    }
+    LaunchedEffect(filteredEntries.firstOrNull()?.id, currentSearchStatus.current) {
+        if (filteredEntries.isEmpty()) return@LaunchedEffect
+        if (currentSearchStatus.shouldCollapse() && followLatest) {
+            listState.requestScrollToItem(0)
+        } else if (currentSearchStatus.shouldExpand() && followLatestInSearch) {
+            searchListState.requestScrollToItem(0)
+        }
+    }
 
     val saveFileLauncher =
         rememberLauncherForActivityResult(
@@ -80,145 +193,216 @@ fun LogScreen(navigator: Navigator) {
         ) { uri ->
             uri ?: return@rememberLauncherForActivityResult
             scope.launch(Dispatchers.IO) {
-                val success = viewModel.saveTempLog(uri)
+                val success = viewModel.export(uri)
                 if (!success) {
                     launch(Dispatchers.Main) { context.toast(YumeTxt.Util.Error.UnknownError) }
                 }
             }
         }
 
-    LaunchedEffect(listState) {
-        var previousFirstVisibleItemIndex = 0
-        snapshotFlow { listState.firstVisibleItemIndex }
-            .distinctUntilChanged()
-            .collect { firstVisibleItemIndex ->
-                fabHidden = firstVisibleItemIndex > previousFirstVisibleItemIndex
-                previousFirstVisibleItemIndex = firstVisibleItemIndex
-            }
-    }
+    LaunchedEffect(Unit) { viewModel.connect() }
 
-    LaunchedEffect(isRecording) {
-        if (isRecording) {
-            PollingTimers.ticks(PollingTimerSpecs.LogScreenRefresh).collect {
-                viewModel.refreshTempLogEntries()
-            }
-        }
-    }
-
-    Scaffold(
-        topBar = {
-            TopBar(
-                title = YumeTxt.Log.Title,
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    if (logEntries.isNotEmpty()) {
-                        IconButton(
-                            onClick = {
-                                saveFileLauncher.launch("log_${System.currentTimeMillis()}.txt")
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                currentSearchStatus.TopAppBarAnim {
+                    TopBar(
+                        title = YumeTxt.Log.Title,
+                        scrollBehavior = scrollBehavior,
+                        actions = {
+                            Box {
+                                IconButton(
+                                    modifier = Modifier.padding(end = spacing.space12),
+                                    onClick = { showLevelPopup = true },
+                                ) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Filter,
+                                        contentDescription = YumeTxt.Log.Level.Filter,
+                                        tint = MiuixTheme.colorScheme.onSurface,
+                                    )
+                                }
+                                OverlayListPopup(
+                                    show = showLevelPopup,
+                                    alignment = PopupPositionProvider.Align.BottomEnd,
+                                    onDismissRequest = { showLevelPopup = false },
+                                ) {
+                                    ListPopupColumn {
+                                        LevelFilters.forEachIndexed { index, filter ->
+                                            DropdownImpl(
+                                                text = filter.displayName(),
+                                                optionSize = LevelFilters.size,
+                                                isSelected = selectedLevelIndex == index,
+                                                onSelectedIndexChange = {
+                                                    if (filter != levelFilter) {
+                                                        viewModel.setLevelFilter(filter)
+                                                    }
+                                                    showLevelPopup = false
+                                                },
+                                                index = index,
+                                            )
+                                        }
+                                    }
+                                }
                             }
-                        ) {
-                            Icon(imageVector = Yume.Share, contentDescription = "Save")
-                        }
-                    }
-                },
-            )
-        },
-        floatingActionButton = {
-            AnimatedVisibility(
-                visible = !fabHidden,
-                enter =
-                    scaleIn(
-                        animationSpec =
-                            tween(
-                                durationMillis = AnimationSpecs.Proxy.FabDuration,
-                                easing = AnimationSpecs.EmphasizedDecelerate,
-                            ),
-                        initialScale = AnimationSpecs.Proxy.VisibilityInitialScale,
-                    ) +
-                        fadeIn(
-                            animationSpec =
-                                tween(
-                                    durationMillis = AnimationSpecs.Proxy.FabFadeDuration,
-                                    easing = AnimationSpecs.EmphasizedDecelerate,
+                            if (filteredEntries.isNotEmpty()) {
+                                IconButton(
+                                    onClick = {
+                                        saveFileLauncher.launch(
+                                            "log_${System.currentTimeMillis()}.txt"
+                                        )
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Yume.Share,
+                                        contentDescription = YumeTxt.Log.Action.Export,
+                                    )
+                                }
+                            }
+                        },
+                        bottomContent = {
+                            Box(
+                                modifier =
+                                    Modifier.alpha(
+                                            if (currentSearchStatus.isCollapsed()) 1f else 0f
+                                        )
+                                        .onGloballyPositioned { coordinates ->
+                                            with(density) {
+                                                val offset = coordinates.positionInWindow().y.toDp()
+                                                if (currentSearchStatus.offsetY != offset) {
+                                                    searchStatus =
+                                                        currentSearchStatus.copy(offsetY = offset)
+                                                }
+                                            }
+                                        }
+                                        .then(
+                                            if (currentSearchStatus.isCollapsed()) {
+                                                Modifier.pointerInput(currentSearchStatus.current) {
+                                                    detectTapGestures {
+                                                        searchStatus =
+                                                            currentSearchStatus.copy(
+                                                                current =
+                                                                    SearchStatus.Status.EXPANDING
+                                                            )
+                                                    }
+                                                }
+                                            } else {
+                                                Modifier
+                                            }
+                                        )
+                            ) {
+                                CollapsedSearchBar(
+                                    label = currentSearchStatus.label,
+                                    topPadding = dynamicTopPadding,
+                                    startPadding = listStartPadding,
+                                    endPadding = listEndPadding,
                                 )
-                        ),
-                exit =
-                    scaleOut(
-                        animationSpec =
-                            tween(
-                                durationMillis = AnimationSpecs.Proxy.FabDuration,
-                                easing = AnimationSpecs.EmphasizedDecelerate,
-                            ),
-                        targetScale = AnimationSpecs.Proxy.VisibilityTargetScale,
-                    ) +
-                        fadeOut(
-                            animationSpec =
-                                tween(
-                                    durationMillis = AnimationSpecs.Proxy.FabFadeDuration,
-                                    easing = AnimationSpecs.EmphasizedDecelerate,
-                                )
-                        ),
-                label = "log_record_fab_visibility",
-            ) {
-                FloatingActionButton(
-                    modifier =
-                        Modifier.padding(
-                            end = spacing.space20,
-                            bottom = componentSizes.floatingActionButtonBottomInset,
-                        ),
-                    onClick = {
-                        if (isRecording) {
-                            viewModel.stopRecording()
-                        } else {
-                            viewModel.startRecording()
-                        }
-                    },
-                ) {
-                    Icon(
-                        imageVector = if (isRecording) Yume.PowerOff else Yume.Play,
-                        contentDescription =
-                            if (isRecording) "Stop recording" else "Start recording",
-                        tint = MiuixTheme.colorScheme.onPrimary,
+                            }
+                        },
                     )
                 }
+            },
+        ) { innerPadding ->
+            if (currentSearchStatus.shouldCollapse()) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    ScreenLazyColumn(
+                        scrollBehavior = scrollBehavior,
+                        innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
+                        lazyListState = listState,
+                    ) {
+                        itemsIndexed(
+                            items = filteredEntries,
+                            key = { _, item -> item.id },
+                            contentType = { _, _ -> "log" },
+                        ) { _, entry ->
+                            LogEntryRow(
+                                entry = entry,
+                                onClick = { copyLogEntry(context, entry) },
+                                modifier =
+                                    Modifier.animateItem(
+                                        fadeInSpec = tween(180),
+                                        placementSpec = tween(220),
+                                        fadeOutSpec = tween(100),
+                                    ),
+                            )
+                        }
+                    }
+
+                    if (filteredEntries.isEmpty()) {
+                        val (firstLine, secondLine) =
+                            when {
+                                connectionState == LogConnectionState.Connecting ->
+                                    YumeTxt.Log.Empty.Connecting to
+                                        YumeTxt.Log.Empty.ConnectingHint
+                                connectionState == LogConnectionState.Retrying ->
+                                    YumeTxt.Log.Empty.Retrying to YumeTxt.Log.Empty.RetryingHint
+                                levelFilter != LogLevelFilter.All ->
+                                    YumeTxt.Log.Empty.NoMatch to levelFilter.displayName()
+                                else -> YumeTxt.Log.Empty.NoLogs to YumeTxt.Log.Empty.LiveHint
+                            }
+                        CenteredText(firstLine = firstLine, secondLine = secondLine)
+                    }
+                }
             }
-        },
-    ) { innerPadding ->
-        if (logEntries.isEmpty() && isRecording.not()) {
-            CenteredText(
-                firstLine = YumeTxt.Log.Empty.NoLogs,
-                secondLine = YumeTxt.Log.Empty.StartRecordingHint,
-            )
-            return@Scaffold
         }
 
-        if (logEntries.isEmpty() && isRecording) {
-            CenteredText(
-                firstLine = YumeTxt.Log.Detail.WaitingLog,
-                secondLine = YumeTxt.Log.Detail.WillShowWhenGenerated,
-            )
-            return@Scaffold
-        }
-
-        val mainLikePadding = rememberStandalonePageMainPadding()
-        ScreenLazyColumn(
-            scrollBehavior = scrollBehavior,
-            innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
-            lazyListState = listState,
-        ) {
-            val reversed = logEntries.asReversed()
-            itemsIndexed(
-                items = reversed,
-                key = { index, item -> "${item.time}_${item.level}_${item.message}_$index" },
-            ) { _, entry ->
-                LogEntryRow(entry = entry)
+        if (!currentSearchStatus.isCollapsed()) {
+            currentSearchStatus.SearchPager(
+                onSearchStatusChange = {
+                    searchStatus = it
+                    viewModel.setSearchQuery(it.searchText)
+                },
+                padding =
+                    SearchBarPadding(
+                        top = dynamicTopPadding,
+                        start = listStartPadding,
+                        end = listEndPadding,
+                    ),
+                emptyResult = {
+                    CenteredText(
+                        firstLine = YumeTxt.Log.Empty.NoResults,
+                        secondLine = currentSearchStatus.searchText,
+                    )
+                },
+            ) {
+                LazyColumn(
+                    state = searchListState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding =
+                        PaddingValues(
+                            start = listStartPadding,
+                            end = listEndPadding,
+                            top = spacing.space6,
+                            bottom = mainLikePadding.calculateBottomPadding(),
+                        ),
+                ) {
+                    itemsIndexed(
+                        items = filteredEntries,
+                        key = { _, item -> item.id },
+                        contentType = { _, _ -> "log" },
+                    ) { _, entry ->
+                        LogEntryRow(
+                            entry = entry,
+                            onClick = { copyLogEntry(context, entry) },
+                            modifier =
+                                Modifier.animateItem(
+                                    fadeInSpec = tween(180),
+                                    placementSpec = tween(220),
+                                    fadeOutSpec = tween(100),
+                                ),
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun LogEntryRow(entry: LogStore.LogEntry) {
+private fun LogEntryRow(
+    entry: LiveLogEntry,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val spacing = AppTheme.spacing
     val semanticColors = AppTheme.colors
 
@@ -232,7 +416,11 @@ private fun LogEntryRow(entry: LogStore.LogEntry) {
             LogMessage.Level.Unknown -> semanticColors.logLevel.neutral
         }
 
-    Card(modifier = Modifier.padding(vertical = spacing.space4)) {
+    Card(
+        modifier = modifier.padding(vertical = spacing.space4),
+        onClick = onClick,
+        pressFeedbackType = PressFeedbackType.Sink,
+    ) {
         Column(
             modifier =
                 Modifier.fillMaxWidth()
@@ -274,4 +462,11 @@ private fun LogEntryRow(entry: LogStore.LogEntry) {
             )
         }
     }
+}
+
+private fun copyLogEntry(context: Context, entry: LiveLogEntry) {
+    val text = "[${entry.time}] [${entry.level.name}] ${entry.message}"
+    context.getSystemService(ClipboardManager::class.java)
+        ?.setPrimaryClip(ClipData.newPlainText("YumeBox log", text))
+    context.toast(YumeTxt.Log.Action.Copied)
 }

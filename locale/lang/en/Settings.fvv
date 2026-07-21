@@ -15,7 +15,7 @@ Settings = {
         Override = "Override"
         OverrideSummary = "YAML · JS · Rule Override"
         MetaFeatures = "Meta Features"
-        MetaFeaturesSummary = "Connections · Routing · GeoX · Keys"
+        MetaFeaturesSummary = "Connections · Logs · Rules · Statistics"
     }
 
     More = {

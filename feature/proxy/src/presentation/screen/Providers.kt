@@ -239,14 +239,30 @@ private fun ProviderCard(
 
             Spacer(modifier = Modifier.width(UiDp.dp8))
 
-            if (provider.path.isNotBlank()) {
+            // REST list payloads do not include path (website/api/openapi.json). Gate by
+            // vehicleType instead: HTTP always updates via PUT; File can upload only when
+            // path is known (local import path). Inline/Compatible have no actions.
+            val canUpdate =
+                provider.vehicleType == Provider.VehicleType.HTTP ||
+                    provider.vehicleType == Provider.VehicleType.File
+            val canUpload =
+                provider.vehicleType == Provider.VehicleType.File && provider.path.isNotBlank()
+
+            if (canUpdate || canUpload) {
                 Box {
                     IconButton(
                         backgroundColor = updateBg,
                         minHeight = UiDp.dp35,
                         minWidth = UiDp.dp35,
                         enabled = !isUpdating,
-                        onClick = { showPopup.value = true },
+                        onClick = {
+                            // Single action: fire it; mixed actions: open the menu.
+                            when {
+                                canUpdate && !canUpload -> onUpdate()
+                                !canUpdate && canUpload -> filePicker.launch("*/*")
+                                else -> showPopup.value = true
+                            }
+                        },
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = UiDp.dp10),
@@ -261,7 +277,12 @@ private fun ProviderCard(
                             )
                             Text(
                                 modifier = Modifier.padding(end = UiDp.dp3),
-                                text = YumeTxt.Providers.Action.Operation,
+                                text =
+                                    when {
+                                        canUpdate && canUpload -> YumeTxt.Providers.Action.Operation
+                                        canUpdate -> YumeTxt.Providers.Action.Update
+                                        else -> YumeTxt.Providers.Action.Upload
+                                    },
                                 color = updateTint,
                                 fontWeight = FontWeight.Medium,
                                 fontSize = 15.sp,
@@ -269,30 +290,32 @@ private fun ProviderCard(
                         }
                     }
 
-                    val popupItems =
-                        listOf(YumeTxt.Providers.Action.Update, YumeTxt.Providers.Action.Upload)
+                    if (canUpdate && canUpload) {
+                        val popupItems =
+                            listOf(YumeTxt.Providers.Action.Update, YumeTxt.Providers.Action.Upload)
 
-                    WindowListPopup(
-                        show = showPopup.value,
-                        popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
-                        alignment = PopupPositionProvider.Align.End,
-                        onDismissRequest = { showPopup.value = false },
-                    ) {
-                        ListPopupColumn {
-                            popupItems.forEachIndexed { index, item ->
-                                DropdownImpl(
-                                    text = item,
-                                    optionSize = popupItems.size,
-                                    isSelected = false,
-                                    onSelectedIndexChange = {
-                                        showPopup.value = false
-                                        when (index) {
-                                            0 -> onUpdate()
-                                            1 -> filePicker.launch("*/*")
-                                        }
-                                    },
-                                    index = index,
-                                )
+                        WindowListPopup(
+                            show = showPopup.value,
+                            popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
+                            alignment = PopupPositionProvider.Align.End,
+                            onDismissRequest = { showPopup.value = false },
+                        ) {
+                            ListPopupColumn {
+                                popupItems.forEachIndexed { index, item ->
+                                    DropdownImpl(
+                                        text = item,
+                                        optionSize = popupItems.size,
+                                        isSelected = false,
+                                        onSelectedIndexChange = {
+                                            showPopup.value = false
+                                            when (index) {
+                                                0 -> onUpdate()
+                                                1 -> filePicker.launch("*/*")
+                                            }
+                                        },
+                                        index = index,
+                                    )
+                                }
                             }
                         }
                     }

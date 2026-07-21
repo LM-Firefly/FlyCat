@@ -108,7 +108,9 @@
                   "GET /providers/proxies",
                   "GET /providers/proxies/{name}",
                   "PUT /providers/proxies/{name}",
-                  "GET /providers/proxies/{name}/healthcheck"
+                  "GET /providers/proxies/{name}/healthcheck",
+                  "GET /providers/proxies/{providerName}/{name}",
+                  "GET /providers/proxies/{providerName}/{name}/healthcheck"
                 ]
               },
               {
@@ -147,7 +149,7 @@
               {
                 "group": "DEBUG",
                 "openapi": "api/openapi.json",
-                "pages": ["PUT /debug/gc"]
+                "pages": ["PUT /debug/gc", "GET /debug/pprof"]
               }
             ]
           }

@@ -23,5 +23,13 @@ package com.github.yumelira.yumebox.runtime.api
 import com.github.yumelira.yumebox.core.model.LogMessage
 
 interface ILogObserver {
+    fun onConnected() = Unit
+
+    fun onError(error: Throwable) = Unit
+
     fun newItem(log: LogMessage)
+}
+
+fun interface ILogSubscription {
+    fun close()
 }

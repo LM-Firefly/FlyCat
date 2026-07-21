@@ -1,6 +1,6 @@
 <Traffic Statistics Page>
 TrafficStatistics = {
-    Title = "Traffic Statistics"
+    Title = "Statistics"
     EntrySummary = "View traffic usage"
 
     TimeRange = {

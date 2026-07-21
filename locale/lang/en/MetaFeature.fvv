@@ -3,7 +3,7 @@ MetaFeature = {
     Title = "Meta Features"
 
     Section = {
-        ConnectionAndTraffic = "Connections & Traffic"
+        ConnectionAndTraffic = "Connections · Logs · Rules"
         Routing = "Routing"
     }
 
@@ -21,6 +21,11 @@ MetaFeature = {
         GroupTypeFallback = "Fallback"
         UrlTestRegionGroupTitle = "UrlTest Region Groups"
         FallbackRegionGroupTitle = "Fallback Region Groups"
+    }
+
+    RuntimeRules = {
+        Title = "Rules"
+        Summary = "View and temporarily toggle runtime rules"
     }
 
     Download = {

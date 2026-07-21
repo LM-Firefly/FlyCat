@@ -261,14 +261,8 @@ Java_com_github_yumelira_yumebox_core_bridge_NativeProcess_nativeStart(
             _exit(126);
         }
 
-        // Route the core's stdout/stderr to <workdir>/core.log so its startup (especially TUN/DNS
-        // bring-up) is diagnosable; the process is otherwise silent. Fall back to /dev/null.
-        int log_fd = open("core.log", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
-        if (log_fd < 0) {
-            log_fd = null_fd;
-        }
-        dup2(log_fd, STDOUT_FILENO);
-        dup2(log_fd, STDERR_FILENO);
+        dup2(null_fd, STDOUT_FILENO);
+        dup2(null_fd, STDERR_FILENO);
 
         // Close every inherited descriptor except the child channel end (fds[1]) and the error
         // pipe write end (err[1]) so the core starts with a clean table. Skip the opendir fd itself.

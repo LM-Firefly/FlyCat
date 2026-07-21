@@ -80,20 +80,25 @@ fun MetaFeatureScreen(navigator: Navigator) {
                         onClick = { navigator.push(Route.Connection) },
                     )
                     ArrowPreference(
-                        title = YumeTxt.TrafficStatistics.Title,
-                        summary = YumeTxt.TrafficStatistics.EntrySummary,
-                        onClick = { navigator.push(Route.TrafficStatistics) },
+                        title = YumeTxt.Log.Title,
+                        summary = YumeTxt.Log.Summary,
+                        onClick = { navigator.push(Route.Log) },
                     )
                     ArrowPreference(
-                        title = YumeTxt.Settings.More.Logs,
-                        summary = YumeTxt.Settings.More.LogsSummary,
-                        onClick = { navigator.push(Route.Log) },
+                        title = YumeTxt.MetaFeature.RuntimeRules.Title,
+                        summary = YumeTxt.MetaFeature.RuntimeRules.Summary,
+                        onClick = { navigator.push(Route.Rules) },
                     )
                 }
             }
             item {
                 Title(YumeTxt.MetaFeature.Section.Routing)
                 Card {
+                    ArrowPreference(
+                        title = YumeTxt.TrafficStatistics.Title,
+                        summary = YumeTxt.TrafficStatistics.EntrySummary,
+                        onClick = { navigator.push(Route.TrafficStatistics) },
+                    )
                     ArrowPreference(
                         title = YumeTxt.MetaFeature.CustomRouting.Title,
                         summary = YumeTxt.MetaFeature.CustomRouting.Summary,

@@ -36,7 +36,6 @@ import com.github.yumelira.yumebox.data.controller.TrafficQueryGateway
 import com.github.yumelira.yumebox.data.gateway.NetworkInfoService
 import com.github.yumelira.yumebox.data.store.AppSettingsStore
 import com.github.yumelira.yumebox.data.store.FeatureStore
-import com.github.yumelira.yumebox.data.store.LogStore
 import com.github.yumelira.yumebox.data.store.MMKVProvider
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.OverrideConfigProvider
@@ -114,7 +113,6 @@ val appDataRuntimeModule = module {
             restartProxy = { mode -> proxyFacade.reloadProxy(mode) },
         )
     }
-    single { LogStore(androidApplication(), get()) }
     single { NetworkInfoService() }
     single {
         val profilesRepository = get<ProfilesRepository>()

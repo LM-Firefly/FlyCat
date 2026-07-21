@@ -55,8 +55,7 @@ object RootSessionLauncher {
             val config = CompiledConfigPipeline(appContext).compile(spec)
             CoreProcess(appContext).startRoot(mode.coreArg, config)
 
-            // The fork succeeding proves nothing: a rejected config kills the core moments later (only trace
-            // is core.log). Re-probe after a grace so a dead-on-arrival daemon surfaces as Failed, not idle.
+            // The fork succeeding proves nothing: a rejected config can kill the core moments later.
             PollingTimers.awaitTick(
                 PollingTimerSpecs.dynamic(
                     name = "root_core_startup_probe",
@@ -65,10 +64,8 @@ object RootSessionLauncher {
                 )
             )
             if (!CoreProcess.isRootDaemonAlive()) {
-                val reason =
-                    CoreProcess.rootCoreLogTail(appContext) ?: "root core exited during startup"
                 CoreProcess.stopRoot()
-                error(reason)
+                error("root core exited during startup")
             }
 
             StatusProvider.markRuntimeRunning(mode)

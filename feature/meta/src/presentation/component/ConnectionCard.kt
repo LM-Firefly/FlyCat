@@ -42,7 +42,6 @@ import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
-import top.yukonga.miuix.kmp.utils.pressable
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -106,13 +105,12 @@ fun ConnectionCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .pressable(interactionSource = interactionSource, indication = SinkFeedback())
                 .clip(shape)
                 .background(backgroundColor)
                 .border(sizes.nodeCardBorderWidth, MiuixTheme.colorScheme.surfaceVariant, shape)
                 .clickable(
                     interactionSource = interactionSource,
-                    indication = null,
+                    indication = SinkFeedback(),
                     onClick = onClick,
                 )
                 .padding(horizontal = spacing.space16, vertical = spacing.space12),

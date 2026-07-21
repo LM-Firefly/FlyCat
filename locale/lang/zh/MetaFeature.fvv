@@ -3,7 +3,7 @@ MetaFeature = {
     Title = "Meta 功能"
 
     Section = {
-        ConnectionAndTraffic = "连接与流量统计"
+        ConnectionAndTraffic = "连接 · 日志 · 规则"
         Routing = "分流相关"
     }
 
@@ -21,6 +21,11 @@ MetaFeature = {
         GroupTypeFallback = "Fallback"
         UrlTestRegionGroupTitle = "UrlTest 地区组"
         FallbackRegionGroupTitle = "Fallback 地区组"
+    }
+
+    RuntimeRules = {
+        Title = "规则"
+        Summary = "查看并临时开关运行时规则"
     }
 
     Download = {

@@ -20,6 +20,7 @@
 
 package com.github.yumelira.yumebox.feature.meta.presentation.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.yumelira.yumebox.core.domain.ConnectionHistoryManager
@@ -67,7 +68,7 @@ data class ConnectionState(
         get() = snapshot?.connections?.size ?: 0
 }
 
-class ConnectionViewModel : ViewModel() {
+class ConnectionViewModel(private val appContext: Context) : ViewModel() {
     private val _state = MutableStateFlow(ConnectionState())
     val state: StateFlow<ConnectionState> = _state.asStateFlow()
 
@@ -125,7 +126,10 @@ class ConnectionViewModel : ViewModel() {
 
     suspend fun closeConnection(id: String): Boolean =
         withContext(Dispatchers.IO) {
-                runCatching { ServiceClient.clash().closeConnection(id) }
+                runCatching {
+                        ServiceClient.connect(appContext)
+                        ServiceClient.clash().closeConnection(id)
+                    }
                     .onFailure { error ->
                         Timber.w(error, "Failed to close connection: %s", id)
                         _state.update { it.copy(error = error.message) }
@@ -141,6 +145,7 @@ class ConnectionViewModel : ViewModel() {
         }
         withContext(Dispatchers.IO) {
             try {
+                ServiceClient.connect(appContext)
                 val snapshot = ServiceClient.clash().queryConnections()
                 ConnectionHistoryManager.updateConnections(snapshot.connections)
                 _state.update {

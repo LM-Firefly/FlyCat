@@ -21,59 +21,223 @@
 package com.github.yumelira.yumebox.screen.log
 
 import android.net.Uri
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.data.store.LogStore
+import com.github.yumelira.yumebox.core.model.LogMessage
+import com.github.yumelira.yumebox.runtime.api.ILogObserver
+import com.github.yumelira.yumebox.runtime.api.ILogSubscription
+import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 
-class LogViewModel(private val repository: LogStore) : ViewModel() {
-    private val _isRecording = MutableStateFlow(repository.isRecording())
-    val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
+/**
+ * Minimum log level shown in the UI. [All] keeps every entry; other values keep that level and
+ * anything more severe (Debug < Info < Warning < Error).
+ */
+enum class LogLevelFilter {
+    All,
+    Debug,
+    Info,
+    Warning,
+    Error,
+}
 
-    private val _tempLogEntries = MutableStateFlow<List<LogStore.LogEntry>>(emptyList())
-    val tempLogEntries: StateFlow<List<LogStore.LogEntry>> = _tempLogEntries.asStateFlow()
+data class LiveLogEntry(
+    val id: Long,
+    val time: String,
+    val level: LogMessage.Level,
+    val message: String,
+)
 
-    fun startRecording() {
-        repository.startRecording()
-        _isRecording.value = true
-        _tempLogEntries.value = emptyList()
-    }
+enum class LogConnectionState {
+    Connecting,
+    Live,
+    Retrying,
+}
 
-    fun stopRecording() {
-        repository.stopRecording()
-        _isRecording.value = false
-    }
+class LogViewModel(private val appContext: Context) : ViewModel() {
+    private val timeFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
+    private val nextId = AtomicLong(0L)
+    private val pendingLock = Any()
+    private val pendingEntries = ArrayDeque<LiveLogEntry>()
 
-    fun refreshTempLogEntries() {
-        if (!_isRecording.value) return
-        viewModelScope.launch(Dispatchers.IO) {
-            _tempLogEntries.value = repository.readTempLogEntries()
+    private val _entries = MutableStateFlow<List<LiveLogEntry>>(emptyList())
+    private val _levelFilter = MutableStateFlow(LogLevelFilter.All)
+    private val _searchQuery = MutableStateFlow("")
+    private val _connectionState = MutableStateFlow(LogConnectionState.Connecting)
+    @Volatile private var logSubscription: ILogSubscription? = null
+    private var connectJob: Job? = null
+
+    val levelFilter: StateFlow<LogLevelFilter> = _levelFilter.asStateFlow()
+    val connectionState: StateFlow<LogConnectionState> = _connectionState.asStateFlow()
+    val filteredLogEntries: StateFlow<List<LiveLogEntry>> =
+        combine(_entries, _levelFilter, _searchQuery) { entries, filter, query ->
+                entries.filter { entry ->
+                    entry.level.passes(filter) &&
+                        (query.isBlank() ||
+                            entry.message.contains(query, ignoreCase = true) ||
+                            entry.level.name.contains(query, ignoreCase = true))
+                }
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyList(),
+            )
+
+    private val observer =
+        object : ILogObserver {
+            override fun onConnected() {
+                _connectionState.value = LogConnectionState.Live
+            }
+
+            override fun onError(error: Throwable) {
+                _connectionState.value = LogConnectionState.Retrying
+            }
+
+            override fun newItem(log: LogMessage) {
+                val entry =
+                    LiveLogEntry(
+                        id = nextId.incrementAndGet(),
+                        time = synchronized(timeFormat) { timeFormat.format(log.time) },
+                        level = log.level,
+                        message = log.message,
+                    )
+                synchronized(pendingLock) {
+                    if (pendingEntries.size == MAX_ENTRIES) pendingEntries.removeFirst()
+                    pendingEntries.addLast(entry)
+                }
+            }
+        }
+
+    init {
+        viewModelScope.launch(Dispatchers.Default) {
+            while (isActive) {
+                delay(LOG_BATCH_WINDOW_MS)
+                val batch =
+                    synchronized(pendingLock) {
+                        if (pendingEntries.isEmpty()) {
+                            emptyList()
+                        } else {
+                            pendingEntries.toList().also { pendingEntries.clear() }
+                        }
+                    }
+                if (batch.isNotEmpty()) {
+                    _entries.update { entries ->
+                        (batch.asReversed() + entries).take(MAX_ENTRIES)
+                    }
+                }
+            }
         }
     }
 
-    fun clearTempLog() {
-        _tempLogEntries.value = emptyList()
+    fun connect() {
+        if (logSubscription != null || connectJob?.isActive == true) return
+        connectJob =
+            viewModelScope.launch(Dispatchers.IO) {
+                var retryDelay = INITIAL_CONNECT_RETRY_MS
+                var firstAttempt = true
+                while (isActive && logSubscription == null) {
+                    _connectionState.value =
+                        if (firstAttempt) {
+                            LogConnectionState.Connecting
+                        } else {
+                            LogConnectionState.Retrying
+                        }
+                    try {
+                    ServiceClient.connect(appContext)
+                        logSubscription = ServiceClient.clash().subscribeLogs(observer)
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Throwable) {
+                        Timber.w(error, "Failed to subscribe to live logs; retrying")
+                        firstAttempt = false
+                        delay(retryDelay)
+                        retryDelay = (retryDelay * 2).coerceAtMost(MAX_CONNECT_RETRY_MS)
+                    }
+                }
+            }
     }
 
-    // Fault barrier: SAF export can fail with IO/security/provider errors; any failure maps
-    // to a false result for the caller (CE rethrown).
-    @Suppress("TooGenericExceptionCaught")
-    suspend fun saveTempLog(targetUri: Uri): Boolean =
+    fun setLevelFilter(filter: LogLevelFilter) {
+        _levelFilter.value = filter
+    }
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    suspend fun export(targetUri: Uri): Boolean =
         withContext(Dispatchers.IO) {
-            val entries = _tempLogEntries.value
+            val entries = filteredLogEntries.value
             if (entries.isEmpty()) return@withContext false
             try {
-                repository.writeLogEntries(targetUri, entries)
+                appContext.contentResolver.openOutputStream(targetUri)?.use { output ->
+                    entries.forEach { entry ->
+                        output.write(
+                            "[${entry.time}] [${entry.level.name}] ${entry.message}\n".toByteArray()
+                        )
+                    }
+                } ?: return@withContext false
                 true
-            } catch (error: Exception) {
-                if (error is CancellationException) throw error
+            } catch (_: IOException) {
+                false
+            } catch (_: SecurityException) {
                 false
             }
         }
+
+    override fun onCleared() {
+        connectJob?.cancel()
+        connectJob = null
+        logSubscription?.close()
+        logSubscription = null
+        super.onCleared()
+    }
+
+    private fun LogMessage.Level.passes(filter: LogLevelFilter): Boolean {
+        val rank =
+            when (this) {
+                LogMessage.Level.Debug -> 0
+                LogMessage.Level.Info -> 1
+                LogMessage.Level.Warning -> 2
+                LogMessage.Level.Error -> 3
+                LogMessage.Level.Silent,
+                LogMessage.Level.Unknown -> return filter == LogLevelFilter.All
+            }
+        val min =
+            when (filter) {
+                LogLevelFilter.All -> return true
+                LogLevelFilter.Debug -> 0
+                LogLevelFilter.Info -> 1
+                LogLevelFilter.Warning -> 2
+                LogLevelFilter.Error -> 3
+            }
+        return rank >= min
+    }
+
+    private companion object {
+        const val MAX_ENTRIES = 2_000
+        const val LOG_BATCH_WINDOW_MS = 32L
+        const val INITIAL_CONNECT_RETRY_MS = 500L
+        const val MAX_CONNECT_RETRY_MS = 5_000L
+    }
 }

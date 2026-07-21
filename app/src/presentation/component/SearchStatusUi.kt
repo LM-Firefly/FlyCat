@@ -51,6 +51,7 @@ import com.github.yumelira.yumebox.presentation.theme.Sizes
 import com.github.yumelira.yumebox.presentation.theme.Spacing
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Search
@@ -63,6 +64,40 @@ data class SearchBarPadding(
     val start: Dp = Dp.Unspecified,
     val end: Dp = Dp.Unspecified,
 )
+
+@Composable
+fun CollapsedSearchBar(
+    label: String,
+    topPadding: Dp,
+    startPadding: Dp,
+    endPadding: Dp,
+    modifier: Modifier = Modifier,
+) {
+    val spacing = AppTheme.spacing
+    InputField(
+        query = "",
+        onQueryChange = {},
+        label = label,
+        leadingIcon = {
+            Icon(
+                imageVector = MiuixIcons.Basic.Search,
+                contentDescription = label,
+                modifier =
+                    Modifier.size(AppTheme.sizes.searchIconTouchTarget)
+                        .padding(start = spacing.space16, end = spacing.space8),
+                tint = colorScheme.onSurfaceVariantSummary,
+            )
+        },
+        modifier =
+            modifier.fillMaxWidth()
+                .padding(start = startPadding, end = endPadding)
+                .padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding),
+        onSearch = {},
+        enabled = false,
+        expanded = false,
+        onExpandedChange = {},
+    )
+}
 
 @Composable
 fun SearchStatus.TopAppBarAnim(
@@ -104,7 +139,7 @@ fun SearchStatus.SearchPager(
         )
 
     val searchStatus = this
-    val isCollapsed = searchStatus.isCollapsed()
+    val isCollapsed = searchStatus.shouldCollapse()
     val isExpanded = searchStatus.isExpanded()
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
     val topPadding by
@@ -136,16 +171,19 @@ fun SearchStatus.SearchPager(
         )
     }
 
+    // When collapsed, do NOT fill the screen or install a hit target — a full-size transparent
+    // overlay sits above the page content and eats clicks (e.g. connection cards). Only expand
+    // into a full-screen layer while the search UI is active.
     Column(
         modifier =
-            Modifier.fillMaxSize()
-                .zIndex(5f)
-                .background(colorScheme.surface.copy(alpha = surfaceAlpha))
+            Modifier.zIndex(5f)
                 .then(
-                    if (!isCollapsed) {
-                        Modifier.pointerInput(searchStatus.current) {}
+                    if (isCollapsed) {
+                        Modifier.fillMaxWidth()
                     } else {
-                        Modifier
+                        Modifier.fillMaxSize()
+                            .background(colorScheme.surface.copy(alpha = surfaceAlpha))
+                            .pointerInput(searchStatus.current) {}
                     }
                 )
     ) {
@@ -172,7 +210,7 @@ private fun SearchPagerTopRow(
     topPadding: Dp,
     barPadding: SearchBarPadding,
 ) {
-    val isCollapsed = searchStatus.isCollapsed()
+    val isCollapsed = searchStatus.shouldCollapse()
     Row(
         modifier =
             Modifier.fillMaxWidth()

@@ -18,22 +18,22 @@
  *
  */
 
-package com.github.yumelira.yumebox.data.gateway
+package com.github.yumelira.yumebox.core.model
 
-import android.app.Application
-import com.github.yumelira.yumebox.core.util.PollingTimerSpec
-import java.io.File
+import kotlinx.serialization.Serializable
 
-interface LogRecordGateway {
-    val isRecording: Boolean
-    val currentLogFileName: String?
-    val logPrefix: String
-    val logSuffix: String
-    val stopWaitSpec: PollingTimerSpec
-
-    fun start(application: Application)
-
-    fun stop(application: Application)
-
-    fun getLogDir(application: Application): File
-}
+/**
+ * One entry from the mihomo `GET /rules` endpoint (runtime rule table).
+ * [disabled] is temporary and cleared when the core restarts.
+ */
+@Serializable
+data class RuntimeRule(
+    val index: Int,
+    val type: String,
+    val payload: String = "",
+    val proxy: String = "",
+    val size: Int = -1,
+    val disabled: Boolean = false,
+    val hitCount: Long = 0L,
+    val missCount: Long = 0L,
+)

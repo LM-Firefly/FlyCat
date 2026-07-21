@@ -25,6 +25,7 @@ import com.github.yumelira.yumebox.core.model.Provider
 import com.github.yumelira.yumebox.core.model.ProviderList
 import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.model.ProxySort
+import com.github.yumelira.yumebox.core.model.RuntimeRule
 import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.model.UiConfiguration
 
@@ -49,6 +50,12 @@ interface IClashManager {
 
     fun queryProviders(): ProviderList
 
+    /** Live rules from `GET /rules` (runtime rule list, not custom-routing editor). */
+    fun queryRules(): List<RuntimeRule>
+
+    /** Temporarily toggle [rule], then return the controller-confirmed runtime rule list. */
+    suspend fun setRuleDisabled(rule: RuntimeRule, disabled: Boolean): List<RuntimeRule>
+
     fun patchSelector(group: String, name: String): Boolean
 
     fun closeConnection(id: String): Boolean
@@ -63,5 +70,5 @@ interface IClashManager {
 
     fun requestStop()
 
-    fun setLogObserver(observer: ILogObserver?)
+    fun subscribeLogs(observer: ILogObserver): ILogSubscription
 }

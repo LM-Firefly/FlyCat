@@ -15,7 +15,7 @@ Settings = {
         Override = "覆写"
         OverrideSummary = "YAML · JS · 规则覆写"
         MetaFeatures = "Meta 功能"
-        MetaFeaturesSummary = "连接 · 路由 · GeoX · 密钥"
+        MetaFeaturesSummary = "连接 · 日志 · 规则 · 统计"
     }
 
     More = {

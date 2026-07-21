@@ -56,15 +56,6 @@
         </service>
 
         <service
-            android:name="com.github.yumelira.yumebox.runtime.service.LogRecordService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="log_record_service" />
-        </service>
-
-        <service
             android:name="com.github.yumelira.yumebox.runtime.service.AutoRestartService"
             android:exported="false"
             android:foregroundServiceType="specialUse">

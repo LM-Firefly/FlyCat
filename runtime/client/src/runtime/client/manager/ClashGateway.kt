@@ -26,14 +26,21 @@ import com.github.yumelira.yumebox.core.model.Provider
 import com.github.yumelira.yumebox.core.model.ProviderList
 import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.model.ProxySort
+import com.github.yumelira.yumebox.core.model.RuntimeRule
 import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.model.UiConfiguration
-import com.github.yumelira.yumebox.core.util.runtimeHomeDir
 import com.github.yumelira.yumebox.runtime.api.IClashManager
 import com.github.yumelira.yumebox.runtime.api.ILogObserver
+import com.github.yumelira.yumebox.runtime.api.ILogSubscription
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
-import com.github.yumelira.yumebox.runtime.service.manager.HttpClashManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 /**
  * Routing [IClashManager]: the remote External Controller wins when active, otherwise the local
@@ -47,6 +54,10 @@ class ClashGateway(
 ) : IClashManager {
     private val appContext = context.appContextOrSelf
     private val local: IClashManager = CoreProcess.rest(appContext)
+    private val logScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var logRoutingJob: Job? = null
+    private var activeLogToken: Any? = null
+    private var routedLogSubscription: ILogSubscription? = null
 
     private fun pick(): IClashManager = if (isRemoteControllerActive()) remote else local
 
@@ -64,6 +75,11 @@ class ClashGateway(
         pick().queryProxyGroup(name, proxySort)
     override fun queryConfiguration(): UiConfiguration = pick().queryConfiguration()
     override fun queryProviders(): ProviderList = pick().queryProviders()
+    override fun queryRules(): List<RuntimeRule> = pick().queryRules()
+    override suspend fun setRuleDisabled(rule: RuntimeRule, disabled: Boolean): List<RuntimeRule> {
+        val target = pick()
+        return target.setRuleDisabled(rule, disabled)
+    }
     override fun patchSelector(group: String, name: String): Boolean = pick().patchSelector(group, name)
     override fun closeConnection(id: String): Boolean = pick().closeConnection(id)
     override fun closeAllConnections() = pick().closeAllConnections()
@@ -73,5 +89,49 @@ class ClashGateway(
     override suspend fun updateProvider(type: Provider.Type, name: String) =
         pick().updateProvider(type, name)
     override fun requestStop() = pick().requestStop()
-    override fun setLogObserver(observer: ILogObserver?) = pick().setLogObserver(observer)
+
+    @Synchronized
+    override fun subscribeLogs(observer: ILogObserver): ILogSubscription {
+        clearActiveLogSubscription()
+        val token = Any()
+        activeLogToken = token
+
+        var target = pick()
+        routedLogSubscription = target.subscribeLogs(observer)
+        logRoutingJob =
+            logScope.launch {
+                while (isActive) {
+                    delay(LOG_ROUTE_POLL_MS)
+                    synchronized(this@ClashGateway) {
+                        if (activeLogToken !== token) return@launch
+                        val nextTarget = pick()
+                        if (nextTarget !== target) {
+                            runCatching { nextTarget.subscribeLogs(observer) }
+                                .onSuccess { nextSubscription ->
+                                    routedLogSubscription?.close()
+                                    routedLogSubscription = nextSubscription
+                                    target = nextTarget
+                                }
+                        }
+                    }
+                }
+            }
+        return ILogSubscription {
+            synchronized(this@ClashGateway) {
+                if (activeLogToken === token) clearActiveLogSubscription()
+            }
+        }
+    }
+
+    private fun clearActiveLogSubscription() {
+        activeLogToken = null
+        logRoutingJob?.cancel()
+        logRoutingJob = null
+        routedLogSubscription?.close()
+        routedLogSubscription = null
+    }
+
+    private companion object {
+        const val LOG_ROUTE_POLL_MS = 500L
+    }
 }

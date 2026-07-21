@@ -69,6 +69,10 @@ sealed interface Route : NavKey {
     @Serializable
     data object Log : Route
 
+    /** Runtime rules from GET /rules (not custom routing). */
+    @Serializable
+    data object Rules : Route
+
     @Serializable
     data object About : Route
 
