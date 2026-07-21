@@ -56,7 +56,7 @@ fun AppDialog(
     outsideMargin: DpSize = AppDialogDefaults.outsideMargin,
     insideMargin: DpSize = AppDialogDefaults.insideMargin,
     defaultWindowInsetsPadding: Boolean = true,
-    renderInRootScaffold: Boolean = false,
+    renderInRootScaffold: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     OverlayDialog(

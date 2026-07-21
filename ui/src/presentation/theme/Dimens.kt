@@ -91,7 +91,11 @@ object UiDp {
     val dp200: Dp = 200.dp
     val dp212: Dp = 212.dp
     val dp220: Dp = 220.dp
+    val dp260: Dp = 260.dp
     val dp280: Dp = 280.dp
+    val dp300: Dp = 300.dp
+    val dp340: Dp = 340.dp
+    val dp380: Dp = 380.dp
     val dp320: Dp = 320.dp
     val dp360: Dp = 360.dp
     val dp400: Dp = 400.dp

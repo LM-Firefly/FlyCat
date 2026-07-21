@@ -139,6 +139,9 @@ val LocalHandlePageChange =
     compositionLocalOf<(Int) -> Unit> { error("LocalHandlePageChange is not provided") }
 val LocalNavigator =
     compositionLocalOf<Navigator> { error("LocalNavigator is not provided") }
+/** Optional right-pane navigator for tablet dual-pane shell. Null on phone. */
+val LocalDetailNavigator = compositionLocalOf<Navigator?> { null }
+
 val LocalBottomBarHazeState = compositionLocalOf<HazeState?> { null }
 val LocalBottomBarHazeStyle = compositionLocalOf<HazeStyle?> { null }
 

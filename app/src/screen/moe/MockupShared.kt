@@ -24,14 +24,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -69,15 +73,28 @@ internal fun MockupPhoneFrame(
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    Box(
-        modifier =
-            modifier
-                .fillMaxWidth(0.64f)
-                .aspectRatio(0.46f)
-                .clip(RoundedCornerShape(22.dp))
-                .background(palette.surface)
-                .border(1.5.dp, palette.frameBorder, RoundedCornerShape(22.dp))
-                .padding(7.dp),
-        content = content,
-    )
+    // Cap height so the guide dialog never overflows on tablets / landscape.
+    // Portrait phone aspect (~0.46 w/h) is preserved within that cap.
+    val configuration = LocalConfiguration.current
+    val maxFrameHeight = minOf(240.dp, (configuration.screenHeightDp * 0.34f).dp)
+    BoxWithConstraints(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center,
+    ) {
+        val preferredWidth = maxWidth * 0.64f
+        val heightFromWidth = preferredWidth / 0.46f
+        val frameHeight = minOf(heightFromWidth, maxFrameHeight)
+        val frameWidth = frameHeight * 0.46f
+        Box(
+            modifier =
+                Modifier
+                    .width(frameWidth)
+                    .height(frameHeight)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(palette.surface)
+                    .border(1.5.dp, palette.frameBorder, RoundedCornerShape(22.dp))
+                    .padding(7.dp),
+            content = content,
+        )
+    }
 }

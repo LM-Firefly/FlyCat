@@ -73,6 +73,8 @@ fun MoeHomePage(
     isActive: Boolean,
     pageProgress: Float = 1f,
     sidebarProgress: Float = pageProgress,
+    windowLayoutMode: com.github.yumelira.yumebox.presentation.component.WindowLayoutMode =
+        com.github.yumelira.yumebox.presentation.component.WindowLayoutMode.Compact,
 ) {
     val homeViewModel = koinViewModel<HomeViewModel>()
     val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
@@ -251,10 +253,15 @@ fun MoeHomePage(
             controlState = visualControlState,
             canLaunch = profilesLoaded && profiles.isNotEmpty() && !isRemoteController,
             isRemoteController = isRemoteController,
+            usesTabletLayout = windowLayoutMode.usesNavigationRail,
         )
     val actions =
         MoeHomeActions(
-            toggleSidebar = { appSettingsViewModel.onMoeSidebarExpandedChange(!sidebarExpanded) },
+            toggleSidebar = {
+                if (!windowLayoutMode.usesNavigationRail) {
+                    appSettingsViewModel.onMoeSidebarExpandedChange(!sidebarExpanded)
+                }
+            },
             pickWallpaper = {
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                 launchWallpaperPicker()

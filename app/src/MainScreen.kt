@@ -38,9 +38,11 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
@@ -77,12 +79,19 @@ import com.github.yumelira.yumebox.presentation.component.LocalNavigator
 import com.github.yumelira.yumebox.presentation.component.LocalPagerState
 import com.github.yumelira.yumebox.presentation.component.MainPagerState
 import com.github.yumelira.yumebox.presentation.component.Navigator
+import com.github.yumelira.yumebox.presentation.component.DualPaneLayout
+import com.github.yumelira.yumebox.presentation.component.LocalDetailNavigator
+import com.github.yumelira.yumebox.presentation.component.WindowLayoutMode
 import com.github.yumelira.yumebox.presentation.component.rememberBottomBarReservedHeight
 import com.github.yumelira.yumebox.presentation.component.rememberBottomBarScrollBehavior
 import com.github.yumelira.yumebox.presentation.component.rememberMainPagerFlingBehavior
 import com.github.yumelira.yumebox.presentation.component.rememberMainPagerState
+import com.github.yumelira.yumebox.presentation.component.rememberWindowLayoutMode
 import com.github.yumelira.yumebox.presentation.navigation.Route
+import com.github.yumelira.yumebox.presentation.navigation.SecondaryDetailHost
+import androidx.navigation3.runtime.rememberNavBackStack
 import com.github.yumelira.yumebox.presentation.screen.ProxyPager
+import com.github.yumelira.yumebox.presentation.screen.ProxyShellNodeDetail
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
@@ -103,6 +112,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
+    val windowLayoutMode = rememberWindowLayoutMode()
     val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
     val homeViewModel = koinViewModel<HomeViewModel>()
     val runtimeSnapshot by homeViewModel.runtimeSnapshot.collectAsState()
@@ -173,6 +183,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         remember(classicHomeEnabled, settledDestination, selectedDestination) {
             derivedStateOf {
                 when {
+                    // Dual-pane shell: still float the left-pane bottom bar when not on Moe home.
                     classicHomeEnabled -> true
                     selectedDestination == BottomBarDestination.Home -> false
                     settledDestination != BottomBarDestination.Home -> true
@@ -256,6 +267,20 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
             }
         }
 
+    val usesSplitShell = windowLayoutMode.usesNavigationRail
+    val detailBackStack = rememberNavBackStack(Route.About)
+    val detailNavigator = remember(detailBackStack) { Navigator(detailBackStack) }
+
+    // Leaving the proxy tab should not leave Providers stuck on the right pane.
+    LaunchedEffect(settledDestination) {
+        if (
+            settledDestination != BottomBarDestination.Proxy &&
+                detailBackStack.lastOrNull() is Route.Providers
+        ) {
+            detailNavigator.replaceAll(listOf(Route.About))
+        }
+    }
+
     val pendingDeepLink by MainActivity.pendingDeepLink.collectAsState()
     LaunchedEffect(pendingDeepLink) {
         val uri = pendingDeepLink?.toUri() ?: return@LaunchedEffect
@@ -281,7 +306,13 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                         "providers" -> Route.Providers
                         else -> null
                     }
-                route?.let { navigator.push(it) }
+                route?.let { target ->
+                    if (usesSplitShell) {
+                        detailNavigator.replaceAll(listOf(target))
+                    } else {
+                        navigator.push(target)
+                    }
+                }
             }
         }
         MainActivity.clearPendingDeepLink()
@@ -291,6 +322,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
 
     CompositionLocalProvider(
         LocalNavigator provides navigator,
+        LocalDetailNavigator provides if (usesSplitShell) detailNavigator else null,
         LocalPagerState provides mainPagerState.pagerState,
         LocalMainPagerState provides mainPagerState,
         LocalHandlePageChange provides handlePageChange,
@@ -298,30 +330,25 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         LocalBottomBarHazeState provides if (topBarBlurEnabled) hazeState else null,
         LocalBottomBarHazeStyle provides if (topBarBlurEnabled) bottomBarHazeStyle else null,
     ) {
-        Scaffold { innerPadding ->
+        val layoutDirection = LocalLayoutDirection.current
+        val visibleBottomBarReservedHeight = rememberBottomBarReservedHeight()
+        val bottomBarReservedHeight by
+            animateDpAsState(
+                targetValue = if (bottomBarVisible) visibleBottomBarReservedHeight else UiDp.dp0,
+                animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                label = "main_bottom_bar_reserved_height",
+            )
+
+        // Left content always renders as phone compact so Moe home/sidebar are not stretched.
+        val leftLayoutMode = WindowLayoutMode.Compact
+
+        @Composable
+        fun MainPagerHost(
+            layoutMode: WindowLayoutMode,
+            enableUserScroll: Boolean,
+            mainInnerPadding: PaddingValues,
+        ) {
             Box(Modifier.fillMaxSize()) {
-                val layoutDirection = LocalLayoutDirection.current
-                val visibleBottomBarReservedHeight = rememberBottomBarReservedHeight()
-                val bottomBarReservedHeight by
-                    animateDpAsState(
-                        targetValue =
-                            if (bottomBarVisible) visibleBottomBarReservedHeight else UiDp.dp0,
-                        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-                        label = "main_bottom_bar_reserved_height",
-                    )
-                val mainInnerPadding =
-                    PaddingValues(
-                        top = innerPadding.calculateTopPadding(),
-                        bottom = innerPadding.calculateBottomPadding() + bottomBarReservedHeight,
-                        start =
-                            WindowInsets.systemBars
-                                .asPaddingValues()
-                                .calculateStartPadding(layoutDirection),
-                        end =
-                            WindowInsets.systemBars
-                                .asPaddingValues()
-                                .calculateEndPadding(layoutDirection),
-                    )
                 HorizontalPager(
                     modifier =
                         Modifier.fillMaxSize().let { modifier ->
@@ -334,7 +361,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                     state = mainPagerState.pagerState,
                     beyondViewportPageCount = 2,
                     flingBehavior = pagerFlingBehavior,
-                    userScrollEnabled = true,
+                    userScrollEnabled = enableUserScroll,
                     overscrollEffect = null,
                     pageNestedScrollConnection =
                         PagerDefaults.pageNestedScrollConnection(
@@ -364,6 +391,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                         navigator = navigator,
                         homePageProgress = homeVisibility,
                         selectedDestination = settledDestination,
+                        windowLayoutMode = layoutMode,
                     )
                 }
 
@@ -373,6 +401,8 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                     height = visibleBottomBarReservedHeight + UiDp.dp28,
                 )
 
+                // Bottom bar stays in content; sheet overlays attach to the pane Scaffold popup
+                // host above this Box so open sheets correctly cover the floating nav bar.
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -383,6 +413,76 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                         destinations = visibleDestinations,
                     )
                 }
+            }
+        }
+
+        @Composable
+        fun paneInnerPadding(scaffoldPadding: PaddingValues, reserveBottomBar: Boolean): PaddingValues {
+            val bottomExtra = if (reserveBottomBar) bottomBarReservedHeight else UiDp.dp0
+            return PaddingValues(
+                top = scaffoldPadding.calculateTopPadding(),
+                bottom = scaffoldPadding.calculateBottomPadding() + bottomExtra,
+                start =
+                    WindowInsets.systemBars
+                        .asPaddingValues()
+                        .calculateStartPadding(layoutDirection),
+                end =
+                    WindowInsets.systemBars
+                        .asPaddingValues()
+                        .calculateEndPadding(layoutDirection),
+            )
+        }
+
+        if (usesSplitShell) {
+            // Separate Scaffold roots per pane so sheets/dialogs stay inside their pane and
+            // the left-root popup host can cover the floating bottom bar.
+            DualPaneLayout(
+                left = {
+                    Scaffold { leftPadding ->
+                        MainPagerHost(
+                            layoutMode = leftLayoutMode,
+                            enableUserScroll = true,
+                            mainInnerPadding = paneInnerPadding(leftPadding, reserveBottomBar = true),
+                        )
+                    }
+                },
+                right = {
+                    Scaffold { rightPadding ->
+                        val rightInnerPadding =
+                            paneInnerPadding(rightPadding, reserveBottomBar = false)
+                        val showProxyNodes =
+                            settledDestination == BottomBarDestination.Proxy &&
+                                detailBackStack.lastOrNull() !is Route.Providers
+                        // Keep right-pane swaps local: never animate the whole shell / left pager.
+                        if (showProxyNodes) {
+                            ProxyShellNodeDetail(
+                                mainInnerPadding = rightInnerPadding,
+                                onNavigateToProviders = {
+                                    detailNavigator.replaceAll(listOf(Route.Providers))
+                                },
+                            )
+                        } else {
+                            SecondaryDetailHost(
+                                backStack = detailBackStack,
+                                navigator = detailNavigator,
+                            )
+                        }
+                    }
+                },
+                initialLeftFraction = 0.42f,
+                minLeftFraction = 0.34f,
+                maxLeftFraction = 0.50f,
+                showDivider = true,
+                dividerDraggable = true,
+                maxLeftWidth = UiDp.dp420,
+            )
+        } else {
+            Scaffold { innerPadding ->
+                MainPagerHost(
+                    layoutMode = windowLayoutMode,
+                    enableUserScroll = true,
+                    mainInnerPadding = paneInnerPadding(innerPadding, reserveBottomBar = true),
+                )
             }
         }
     }
@@ -443,7 +543,16 @@ private fun MainRootPageContent(
     navigator: Navigator,
     homePageProgress: Float,
     selectedDestination: BottomBarDestination,
+    windowLayoutMode: WindowLayoutMode,
 ) {
+    val detailNavigator = LocalDetailNavigator.current
+    val openSecondary: (Route) -> Unit = { route ->
+        if (detailNavigator != null) {
+            detailNavigator.replaceAll(listOf(route))
+        } else {
+            navigator.push(route)
+        }
+    }
     when (destination) {
         BottomBarDestination.Home -> {
             if (classicHomeEnabled) {
@@ -460,6 +569,7 @@ private fun MainRootPageContent(
                     wallpaperBiasY = moeWallpaperBiasY,
                     isActive = selectedDestination == BottomBarDestination.Home,
                     pageProgress = homePageProgress,
+                    windowLayoutMode = windowLayoutMode,
                 )
             }
         }
@@ -468,12 +578,13 @@ private fun MainRootPageContent(
             ProxyPager(
                 mainInnerPadding = mainInnerPadding,
                 onNavigateToProviders = {
-                    navigator.push(Route.Providers)
+                    openSecondary(Route.Providers)
                 },
                 isActive = selectedDestination == BottomBarDestination.Proxy,
+                windowLayoutMode = windowLayoutMode,
             )
 
-        BottomBarDestination.Config -> ProfilesPager(mainInnerPadding)
-        BottomBarDestination.Setting -> SettingPager(mainInnerPadding)
+        BottomBarDestination.Config -> ProfilesPager(mainInnerPadding, windowLayoutMode)
+        BottomBarDestination.Setting -> SettingPager(mainInnerPadding, windowLayoutMode)
     }
 }

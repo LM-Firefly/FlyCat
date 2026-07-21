@@ -65,6 +65,7 @@ internal fun LazyListScope.nodeGroupItems(
     groups: List<ProxyGroupInfo>,
     onGroupClick: (ProxyGroupInfo) -> Unit,
     testingGroupNames: Set<String> = emptySet(),
+    selectedGroupName: String? = null,
     itemVerticalPadding: Dp = UiDp.dp6,
 ) {
     items(
@@ -75,6 +76,7 @@ internal fun LazyListScope.nodeGroupItems(
         NodeGroupCard(
             group = group,
             isDelayTesting = testingGroupNames.contains(group.name),
+            isSelected = group.name == selectedGroupName,
             onClick = onGroupClick,
             modifier = Modifier.fillMaxWidth().padding(vertical = itemVerticalPadding),
         )
@@ -87,6 +89,7 @@ internal fun NodeGroupCard(
     isDelayTesting: Boolean,
     onClick: (ProxyGroupInfo) -> Unit,
     modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
 ) {
     val cardShape = RoundedCornerShape(AppTheme.radii.radius24)
     val interactionSource = remember { MutableInteractionSource() }
@@ -122,7 +125,13 @@ internal fun NodeGroupCard(
                     spotColor = Color.Black.copy(alpha = 0.05f),
                 )
                 .clip(cardShape)
-                .background(MiuixTheme.colorScheme.background)
+                .background(
+                    if (isSelected) {
+                        MiuixTheme.colorScheme.primary.copy(alpha = 0.10f)
+                    } else {
+                        MiuixTheme.colorScheme.background
+                    }
+                )
                 .pressable(interactionSource = interactionSource, indication = SinkFeedback())
                 .clickable(
                     interactionSource = interactionSource,

@@ -119,32 +119,7 @@ fun AppNavContainer() {
                             initialBiasY = route.initialBiasY,
                         )
                     }
-                    entry<Route.AppSettings> { AppSettingsScreen() }
-                    entry<Route.NetworkSettings> { NetworkSettingsScreen(navigator) }
-                    entry<Route.VpnServiceOptions> { VpnServiceOptionsScreen() }
-                    entry<Route.TunServiceOptions> { TunServiceOptionsScreen() }
-                    entry<Route.TproxyServiceOptions> { TproxyServiceOptionsScreen() }
-                    entry<Route.AccessControl> { AccessControlScreen(navigator) }
-                    entry<Route.MetaFeature> { MetaFeatureScreen(navigator) }
-                    entry<Route.Connection> { ConnectionScreen(navigator) }
-                    entry<Route.ConnectionDetail> { route ->
-                        ConnectionDetailScreen(
-                            navigator = navigator,
-                            connectionId = route.connectionId,
-                        )
-                    }
-                    entry<Route.TrafficStatistics> { TrafficStatisticsScreen() }
-                    entry<Route.Log> { LogScreen(navigator) }
-                    entry<Route.Rules> { RulesScreen(navigator) }
-                    entry<Route.About> { AboutScreen(navigator) }
-                    entry<Route.OpenSourceLicenses> { OpenSourceLicensesScreen(navigator) }
-                    entry<Route.Override> { OverrideScreen(navigator) }
-                    entry<Route.OverrideConfigPreview> { OverrideConfigPreviewRoute(navigator) }
-                    entry<Route.Providers> { ProvidersScreen(navigator) }
-                    entry<Route.Feature> { FeatureScreen(navigator) }
-                    entry<Route.CustomRouting> { CustomRoutingRoute(navigator) }
-                    entry<Route.StringListEditor> { StringListEditorScreen(navigator) }
-                    entry<Route.KeyValueEditor> { KeyValueEditorScreen(navigator) }
+                    yumeSecondaryEntries(navigator)
                 },
         )
 

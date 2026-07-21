@@ -30,6 +30,8 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Check
 import com.github.yumelira.yumebox.presentation.icon.yume.Close
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
@@ -135,7 +137,7 @@ fun AppActionBottomSheet(
     dragHandleColor: Color = Color.Unspecified,
     allowDismiss: Boolean = true,
     enableNestedScroll: Boolean = true,
-    renderInRootScaffold: Boolean = true,
+    renderInRootScaffold: Boolean? = null,
     content: @Composable () -> Unit,
 ) {
     val resolvedBackgroundColor =
@@ -150,6 +152,17 @@ fun AppActionBottomSheet(
         } else {
             dragHandleColor
         }
+    // Dual-pane shell: each pane has its own root Scaffold. Rendering in that root lets sheets
+    // cover the floating bottom bar while staying inside the left (or right) pane bounds.
+    val inSplitShell = LocalDetailNavigator.current != null
+    val resolvedRenderInRoot = renderInRootScaffold ?: true
+    val resolvedSheetMaxWidth =
+        if (inSplitShell && sheetMaxWidth == BottomSheetDefaults.maxWidth) {
+            // Fill the pane Scaffold width rather than a centered phone card.
+            androidx.compose.ui.unit.Dp.Infinity
+        } else {
+            sheetMaxWidth
+        }
 
     OverlayBottomSheet(
         show = show,
@@ -160,7 +173,7 @@ fun AppActionBottomSheet(
         backgroundColor = resolvedBackgroundColor,
         enableWindowDim = enableWindowDim,
         cornerRadius = cornerRadius,
-        sheetMaxWidth = sheetMaxWidth,
+        sheetMaxWidth = resolvedSheetMaxWidth,
         onDismissRequest = onDismissRequest,
         onDismissFinished = onDismissFinished,
         outsideMargin = outsideMargin,
@@ -169,7 +182,7 @@ fun AppActionBottomSheet(
         dragHandleColor = resolvedDragHandleColor,
         allowDismiss = allowDismiss,
         enableNestedScroll = enableNestedScroll,
-        renderInRootScaffold = renderInRootScaffold,
+        renderInRootScaffold = resolvedRenderInRoot,
         content = content,
     )
 }

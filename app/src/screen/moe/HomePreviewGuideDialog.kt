@@ -24,11 +24,14 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import tf.gal.yumebox.locale.YumeTxt
@@ -44,6 +47,9 @@ internal fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit)
     val opacity = AppTheme.opacity
 
     var page by remember { mutableIntStateOf(0) }
+    val configuration = LocalConfiguration.current
+    // Keep the dialog body within ~70% of screen height so title/buttons stay reachable.
+    val contentMaxHeight = (configuration.screenHeightDp * 0.70f).dp
 
     WindowDialog(
         show = show,
@@ -72,7 +78,11 @@ internal fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit)
         defaultWindowInsetsPadding = true,
         content = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = contentMaxHeight)
+                        .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(spacing.space18),
             ) {

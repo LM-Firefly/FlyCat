@@ -40,14 +40,35 @@ fun rememberProxyGroupSelectionState(
     proxyGroups: List<ProxyGroupInfo>,
     onRefreshGroup: (String) -> Unit,
     retainLastKnownGroup: Boolean,
+    /** When non-null, selection is controlled by the caller (e.g. shared ViewModel for dual-pane). */
+    controlledSelectedGroupName: String? = null,
+    onControlledSelectedGroupNameChange: ((String?) -> Unit)? = null,
 ): ProxyGroupSelectionState {
-    val selectedGroupNameState = rememberSaveable { mutableStateOf<String?>(null) }
+    val uncontrolledNameState = rememberSaveable { mutableStateOf<String?>(null) }
+    val controlled = onControlledSelectedGroupNameChange != null
+    val selectedGroupName =
+        if (controlled) controlledSelectedGroupName else uncontrolledNameState.value
     val selectedGroupSnapshotState = remember { mutableStateOf<ProxyGroupInfo?>(null) }
-    val selectGroup = remember {
-        { group: ProxyGroupInfo -> selectedGroupNameState.value = group.name }
+    val selectGroup = remember(controlled, onControlledSelectedGroupNameChange) {
+        { group: ProxyGroupInfo ->
+            if (controlled) {
+                onControlledSelectedGroupNameChange?.invoke(group.name)
+                Unit
+            } else {
+                uncontrolledNameState.value = group.name
+            }
+        }
     }
-    val clearSelection = remember { { selectedGroupNameState.value = null } }
-    val selectedGroupName = selectedGroupNameState.value
+    val clearSelection = remember(controlled, onControlledSelectedGroupNameChange) {
+        {
+            if (controlled) {
+                onControlledSelectedGroupNameChange?.invoke(null)
+                Unit
+            } else {
+                uncontrolledNameState.value = null
+            }
+        }
+    }
     val selectedGroup =
         remember(selectedGroupName, proxyGroups) {
             selectedGroupName?.let { groupName ->
@@ -65,9 +86,13 @@ fun rememberProxyGroupSelectionState(
         }
     }
 
-    LaunchedEffect(selectedGroupName, selectedGroup, retainLastKnownGroup) {
+    LaunchedEffect(selectedGroupName, selectedGroup, retainLastKnownGroup, controlled) {
         if (!retainLastKnownGroup && selectedGroupName != null && selectedGroup == null) {
-            selectedGroupNameState.value = null
+            if (controlled) {
+                onControlledSelectedGroupNameChange?.invoke(null)
+            } else {
+                uncontrolledNameState.value = null
+            }
         }
     }
 

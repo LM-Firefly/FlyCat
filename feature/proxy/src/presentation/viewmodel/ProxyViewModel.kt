@@ -52,6 +52,14 @@ class ProxyViewModel(
     private val _testingProxyNames = MutableStateFlow<Set<String>>(emptySet())
     val testingProxyNames: StateFlow<Set<String>> = _testingProxyNames.asStateFlow()
 
+    /** UI selection shared between the left group list and shell right-pane node list. */
+    private val _uiSelectedGroupName = MutableStateFlow<String?>(null)
+    val uiSelectedGroupName: StateFlow<String?> = _uiSelectedGroupName.asStateFlow()
+
+    fun selectUiGroup(name: String?) {
+        _uiSelectedGroupName.value = name
+    }
+
     private val groupSorter = ProxyGroupSorter()
 
     val sortMode: StateFlow<ProxySortMode> =

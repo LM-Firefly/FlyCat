@@ -28,13 +28,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import com.github.yumelira.yumebox.MainActivity
+import com.github.yumelira.yumebox.presentation.component.WindowLayoutMode
 import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @SuppressLint("UseKtx")
 @Composable
-fun ProfilesPager(mainInnerPadding: PaddingValues) {
+fun ProfilesPager(
+    mainInnerPadding: PaddingValues,
+    windowLayoutMode: WindowLayoutMode = WindowLayoutMode.Compact,
+) {
     val profilesViewModel = koinViewModel<ProfilesViewModel>()
     val homeViewModel = koinViewModel<HomeViewModel>()
     val profiles by profilesViewModel.profiles.collectAsState()
@@ -61,15 +65,17 @@ fun ProfilesPager(mainInnerPadding: PaddingValues) {
         profilesViewModel = profilesViewModel,
         homeViewModel = homeViewModel,
         isRunning = isRunning,
-    )
-
-    ProfilesDialogHost(
-        state = dialogs,
-        profilesViewModel = profilesViewModel,
-        homeViewModel = homeViewModel,
-        builtInConfigs = builtInConfigs,
-        userConfigs = userConfigs,
-        refreshOverrides = overrideConfigViewModel::refreshAndAwait,
-        isRunning = isRunning,
+        windowLayoutMode = windowLayoutMode,
+        sheetHost = {
+            ProfilesDialogHost(
+                state = dialogs,
+                profilesViewModel = profilesViewModel,
+                homeViewModel = homeViewModel,
+                builtInConfigs = builtInConfigs,
+                userConfigs = userConfigs,
+                refreshOverrides = overrideConfigViewModel::refreshAndAwait,
+                isRunning = isRunning,
+            )
+        },
     )
 }
