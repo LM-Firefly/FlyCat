@@ -64,7 +64,6 @@ jobs:
         env:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          MESSAGE_THREAD_ID: ${{ secrets.MESSAGE_THREAD_ID }}
           TITLE: ${{ inputs.telegram_title }}
           BRANCH: ${{ github.ref_name }}
           WORKFLOW_NAME: ${{ github.workflow }}

@@ -8,7 +8,6 @@ import html
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
-MESSAGE_THREAD_ID = os.environ.get("MESSAGE_THREAD_ID")
 TITLE = os.environ.get("TITLE")
 BRANCH = os.environ.get("BRANCH")
 WORKFLOW_NAME = os.environ.get("WORKFLOW_NAME", "")
@@ -191,25 +190,30 @@ def send_files_via_bot_api():
             'caption': caption,
             'parse_mode': 'HTML',
         }
-        if MESSAGE_THREAD_ID:
-            photo_data['message_thread_id'] = MESSAGE_THREAD_ID
-        photo_resp = requests.post(f"{bot_url}/sendPhoto", data=photo_data, timeout=60)
+
+        photo_resp = requests.post(
+            f"{bot_url}/sendPhoto",
+            data=photo_data,
+            timeout=60,
+        )
+
         print(f"[+] Photo+caption: {photo_resp.status_code}")
-        if photo_resp.status_code == 200:
-            reply_to_id = photo_resp.json().get("result", {}).get("message_id")
-        else:
+
+        if photo_resp.status_code != 200:
             print(f"[-] Photo send failed: {photo_resp.text}")
+
     except Exception as e:
         print(f"[-] Photo send failed: {e}")
 
-    with open(file_path, 'rb') as f:
-        data = {'chat_id': CHAT_ID}
-        if MESSAGE_THREAD_ID:
-            data['message_thread_id'] = MESSAGE_THREAD_ID
-        if reply_to_id:
-            data['reply_to_message_id'] = reply_to_id
 
-        files_data = {'document': f}
+    with open(file_path, 'rb') as f:
+        data = {
+            'chat_id': CHAT_ID,
+        }
+
+        files_data = {
+            'document': f
+        }
 
         response = requests.post(
             f"{bot_url}/sendDocument",
