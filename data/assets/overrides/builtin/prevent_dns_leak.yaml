@@ -1,0 +1,66 @@
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: true
+
+  cache-algorithm: arc
+  prefer-h3: false
+
+  use-hosts: true
+  use-system-hosts: true
+
+  enhanced-mode: fake-ip
+  fake-ip-range: 28.0.0.0/8
+  fake-ip-range6: fc00::/16
+  fake-ip-filter-mode: rule
+
+  # 用于解析 DoH 服务器本身的域名，必须使用纯 IP DNS
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+    - "2400:3200::1"
+    - "2402:4e00::"
+
+  # DNS 请求遵循 mihomo 路由规则。
+  # 这样 Cloudflare/Google DoH 可以按规则经代理访问。
+  respect-rules: true
+
+  # CN 域名固定交给阿里和腾讯
+  nameserver-policy:
+    "rule-set:cn":
+      - https://dns.alidns.com/dns-query
+      - https://doh.pub/dns-query
+
+  # 未命中 CN 规则，即 CN 之外的域名
+  nameserver:
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.google/dns-query
+
+  # 代理节点服务器域名仅使用阿里 DoH 解析，
+  # 避免解析节点域名时产生 DNS/ 代理循环
+  proxy-server-nameserver:
+    - https://dns.alidns.com/dns-query
+
+  # 最终走 DIRECT 的域名使用境内 DoH
+  direct-nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+
+  # 让直连域名仍然优先遵守 nameserver-policy
+  direct-nameserver-follow-policy: true
+  fake-ip-filter:
+    # fakeip 放前面，可以覆盖 realip 中的宽泛规则
+    - RULE-SET,fakeip,fake-ip
+    - RULE-SET,realip,real-ip
+
+    # 如果已有名为 cn 的 rule-provider，继续单独引用
+    - RULE-SET,cn,real-ip
+
+    # 没有命中的域名默认使用 Fake-IP
+    - MATCH,fake-ip
+use-system-hosts: true
+hosts:
+  "time.android.com": 203.107.6.88
+  "time.facebook.com": 203.107.6.88
+  "services.googleapis.cn": services.googleapis.com
+  "localhost": 127.0.0.1

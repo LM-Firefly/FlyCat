@@ -43,10 +43,10 @@ object BuiltInOverrideCatalog {
         listOf(
             BuiltInOverrideDefinition(
                 id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}prevent-dns-leak",
-                assetPath = "$ASSET_DIR/prevent_dns_leak.js",
-                contentType = OverrideContentType.JavaScript,
+                assetPath = "$ASSET_DIR/prevent_dns_leak.yaml",
+                contentType = OverrideContentType.Yaml,
                 name = "防止 DNS 泄露",
-                description = "JavaScript",
+                description = "YAML",
             ),
             BuiltInOverrideDefinition(
                 id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}add-direct-rules",
