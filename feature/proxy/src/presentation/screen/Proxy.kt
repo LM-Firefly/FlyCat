@@ -220,19 +220,12 @@ fun ProxyPager(
             }
         },
         topBar = {
-            val detailOpen = selectedGroupName != null
             ProxyTopBar(
-                title =
-                    if (!inSplitShell && detailOpen) {
-                        displayGroup?.name ?: YumeTxt.Proxy.Title
-                    } else {
-                        YumeTxt.Proxy.Title
-                    },
+                title = YumeTxt.Proxy.Title,
                 scrollBehavior = groupScrollBehavior,
-                showBack = !inSplitShell && detailOpen,
-                onBack = groupSelection.clearSelection,
-                onNavigateToProviders =
-                    onNavigateToProviders.takeIf { inSplitShell || !detailOpen },
+                showBack = false,
+                onBack = {},
+                onNavigateToProviders = onNavigateToProviders,
                 onLocateCurrentProxy = locateCurrentProxy,
                 showSortPopup = showSortPopup,
                 onShowSortPopupChange = { showSortPopup = it },
@@ -261,7 +254,6 @@ fun ProxyPager(
                         innerPadding = scaffoldPadding,
                         mainInnerPadding = mainInnerPadding,
                         testingGroupNames = testingGroupNames,
-                        selectedGroupName = selectedGroupName,
                         onGroupClick = groupSelection.selectGroup,
                     )
                 }
@@ -309,7 +301,6 @@ fun ProxyPager(
                                 innerPadding = scaffoldPadding,
                                 mainInnerPadding = mainInnerPadding,
                                 testingGroupNames = testingGroupNames,
-                                selectedGroupName = selectedGroupName,
                                 onGroupClick = groupSelection.selectGroup,
                             )
                         }
@@ -373,11 +364,21 @@ fun ProxyShellNodeDetail(
         )
     val selectedGroupName = groupSelection.selectedGroupName
     val displayGroup = groupSelection.displayGroup
-    val currentGroup = groupSelection.selectedGroup ?: displayGroup
+    val currentGroup = groupSelection.selectedGroup ?: displayGroup ?: proxyGroups.firstOrNull()
     val nodeListState =
         rememberSaveable(selectedGroupName, saver = LazyListState.Saver) { LazyListState() }
     var showSortPopup by rememberSaveable { mutableStateOf(false) }
     var fabHidden by rememberSaveable { mutableStateOf(false) }
+
+    // The tablet detail pane can outlive the left pager during a destination transition. Keep a
+    // dedicated sync owner so a cold local core is queried even when the left page is not resumed.
+    LaunchedEffect(proxyViewModel) {
+        proxyViewModel.ensureCoreLoaded(true, source = "proxy_detail")
+    }
+
+    DisposableEffect(proxyViewModel) {
+        onDispose { proxyViewModel.ensureCoreLoaded(false, source = "proxy_detail") }
+    }
 
     LaunchedEffect(proxyGroups, selectedGroupName) {
         if (proxyGroups.isEmpty()) return@LaunchedEffect
@@ -736,7 +737,6 @@ private fun ProxyContent(
     mainInnerPadding: PaddingValues,
     onGroupClick: (ProxyGroupInfo) -> Unit,
     testingGroupNames: Set<String>,
-    selectedGroupName: String? = null,
 ) {
     val spacing = LocalSpacing.current
     ScreenLazyColumn(
@@ -757,7 +757,6 @@ private fun ProxyContent(
             groups = proxyGroups,
             onGroupClick = onGroupClick,
             testingGroupNames = testingGroupNames,
-            selectedGroupName = selectedGroupName,
             itemVerticalPadding = UiDp.dp6,
         )
     }

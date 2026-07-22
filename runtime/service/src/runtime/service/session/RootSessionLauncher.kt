@@ -68,6 +68,20 @@ object RootSessionLauncher {
                 error("root core exited during startup")
             }
 
+            // A live PID is not enough: libclash can stay around while its controller socket failed
+            // to bind or the config handoff was rejected. Probe the same REST endpoint used by the
+            // node page before publishing Running, otherwise the UI reports an active tunnel with
+            // no groups and hides the actual startup failure.
+            runCatching { CoreProcess.rest(appContext).queryTunnelState() }
+                .onFailure { error ->
+                    CoreProcess.stopRoot()
+                    throw IllegalStateException(
+                        "root core controller unavailable: ${error.message ?: error::class.simpleName}",
+                        error,
+                    )
+                }
+            log.append("${logScope.tag} root launcher: controller ready")
+
             StatusProvider.markRuntimeRunning(mode)
             broadcast(appContext, Intents.actionClashStarted(appContext.packageName))
             log.append("${logScope.tag} root launcher: done")

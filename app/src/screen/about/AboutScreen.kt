@@ -20,9 +20,14 @@
 
 package com.github.yumelira.yumebox.screen.about
 
+import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,11 +44,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.BuildConfig
+import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.common.util.openUrl
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import tf.gal.yumebox.locale.YumeTxt
+import com.github.yumelira.yumebox.runtime.service.session.RuntimeStartupLogStore
+import java.io.IOException
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -68,7 +81,23 @@ private fun loadCoreVersionOrFallback(): String =
 @Composable
 fun AboutScreen(navigator: Navigator) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val scrollBehavior = MiuixScrollBehavior()
+    val exportLogsLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/zip")
+        ) { uri ->
+            uri ?: return@rememberLauncherForActivityResult
+            scope.launch(Dispatchers.IO) {
+                val success = exportStartupLogs(context, uri)
+                withContext(Dispatchers.Main) {
+                    context.toast(
+                        if (success) YumeTxt.About.Support.ExportSuccess
+                        else YumeTxt.About.Support.ExportFailed
+                    )
+                }
+            }
+        }
     val coreVersion by
         produceState(initialValue = YumeTxt.About.App.VersionLoading) {
             value = loadCoreVersionOrFallback()
@@ -204,6 +233,24 @@ fun AboutScreen(navigator: Navigator) {
                     )
                 }
 
+                Title(YumeTxt.About.Section.Support)
+                Card {
+                    ArrowPreference(
+                        title = YumeTxt.About.Support.ExportLogs,
+                        summary = YumeTxt.About.Support.ExportLogsSummary,
+                        onClick = {
+                            exportLogsLauncher.launch("yumebox_startup_logs_${System.currentTimeMillis()}.zip")
+                        },
+                    )
+                    ArrowPreference(
+                        title = YumeTxt.About.Support.ReportIssue,
+                        summary = YumeTxt.About.Support.ReportIssueSummary,
+                        onClick = {
+                            openUrl(context, "https://github.com/YumeYucca/YumeBox/issues/new/choose")
+                        },
+                    )
+                }
+
                 Title(YumeTxt.About.Section.License)
                 Card {
                     ArrowPreference(
@@ -228,6 +275,32 @@ fun AboutScreen(navigator: Navigator) {
                 Spacer(modifier = Modifier.height(UiDp.dp32))
             }
         }
+    }
+}
+
+private fun exportStartupLogs(context: Context, targetUri: Uri): Boolean {
+    val logs =
+        listOf(
+            RuntimeStartupLogStore.Scope.ROOT_TUN to
+                RuntimeStartupLogStore(context, RuntimeStartupLogStore.Scope.ROOT_TUN).snapshot(),
+            RuntimeStartupLogStore.Scope.LOCAL_TUN to
+                RuntimeStartupLogStore(context, RuntimeStartupLogStore.Scope.LOCAL_TUN).snapshot(),
+        )
+    return try {
+        context.contentResolver.openOutputStream(targetUri)?.use { output ->
+            ZipOutputStream(output).use { zip ->
+                logs.forEach { (scope, content) ->
+                    zip.putNextEntry(ZipEntry(scope.fileName))
+                    zip.write(content.toByteArray(Charsets.UTF_8))
+                    zip.closeEntry()
+                }
+            }
+        } ?: return false
+        true
+    } catch (_: IOException) {
+        false
+    } catch (_: SecurityException) {
+        false
     }
 }
 
