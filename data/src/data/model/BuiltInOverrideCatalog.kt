@@ -21,20 +21,23 @@
 package com.github.yumelira.yumebox.data.model
 
 import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
+import tf.gal.yumebox.locale.YumeTxt
 
 /**
  * APK-bundled override templates (from override-hub). Content lives under
  * `assets/overrides/builtin/` and is materialized into the configs dir on demand so the
  * runtime override chain can resolve a real file path.
  */
-data class BuiltInOverrideDefinition(
+class BuiltInOverrideDefinition(
     val id: String,
     val assetPath: String,
     val contentType: OverrideContentType,
-    /** Display name (zh primary; UI may overlay locale later). */
-    val name: String,
+    private val nameProvider: () -> String,
     val description: String? = null,
-)
+) {
+    val name: String
+        get() = nameProvider()
+}
 
 object BuiltInOverrideCatalog {
     private const val ASSET_DIR = "overrides/builtin"
@@ -45,28 +48,28 @@ object BuiltInOverrideCatalog {
                 id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}prevent-dns-leak",
                 assetPath = "$ASSET_DIR/prevent_dns_leak.yaml",
                 contentType = OverrideContentType.Yaml,
-                name = "防止 DNS 泄露",
+                nameProvider = { YumeTxt.Override.BuiltIn.PreventDnsLeak },
                 description = "YAML",
             ),
             BuiltInOverrideDefinition(
                 id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}add-direct-rules",
                 assetPath = "$ASSET_DIR/add_direct_rules.yaml",
                 contentType = OverrideContentType.Yaml,
-                name = "添加直连规则",
+                nameProvider = { YumeTxt.Override.BuiltIn.AddDirectRules },
                 description = "YAML",
             ),
             BuiltInOverrideDefinition(
                 id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}pudding-dog",
                 assetPath = "$ASSET_DIR/pudding_dog.yaml",
                 contentType = OverrideContentType.Yaml,
-                name = "布丁狗的订阅转换",
+                nameProvider = { YumeTxt.Override.BuiltIn.PuddingDog },
                 description = "YAML",
             ),
             BuiltInOverrideDefinition(
                 id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}acl4ssr-online-full",
                 assetPath = "$ASSET_DIR/acl4ssr_online_full.yaml",
                 contentType = OverrideContentType.Yaml,
-                name = "ACL4SSR Online Full",
+                nameProvider = { YumeTxt.Override.BuiltIn.Acl4ssrOnlineFull },
                 description = "YAML",
             ),
         )

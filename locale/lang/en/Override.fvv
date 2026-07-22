@@ -8,6 +8,14 @@ Override = {
         NetworkImport = "Import from Link"
     }
 
+    BuiltIn = {
+        PreventDnsLeak = "Prevent DNS Leaks"
+        AddDirectRules = "Add Direct Rules"
+        PuddingDog = "Pudding Dog Subscription Conversion"
+        Acl4ssrOnlineFull = "ACL4SSR Online Full"
+        CopyName = "%s (Copy)"
+    }
+
     Empty = {
         Title = "No override configs"
         Hint = "Click the button below to create a new config, or import a config file"

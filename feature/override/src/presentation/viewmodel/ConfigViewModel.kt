@@ -190,7 +190,7 @@ class OverrideConfigViewModel(
                             val now = System.currentTimeMillis()
                             OverrideConfig(
                                     id = OverrideMetadata.generateId(),
-                                    name = "${source.name} (副本)",
+                                    name = YumeTxt.Override.BuiltIn.CopyName.format(source.name),
                                     description = source.description,
                                     contentType = source.contentType,
                                     content = source.content,

@@ -8,6 +8,14 @@ Override = {
         NetworkImport = "链接导入"
     }
 
+    BuiltIn = {
+        PreventDnsLeak = "防止 DNS 泄露"
+        AddDirectRules = "添加直连规则"
+        PuddingDog = "布丁狗的订阅转换"
+        Acl4ssrOnlineFull = "ACL4SSR Online Full"
+        CopyName = "%s (副本)"
+    }
+
     Empty = {
         Title = "暂无覆写配置"
         Hint = "点击下方按钮创建新配置，或导入配置文件"
