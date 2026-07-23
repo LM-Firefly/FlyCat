@@ -55,13 +55,12 @@ import com.github.yumelira.yumebox.presentation.component.LocalTopBarHazeStyle
 import com.github.yumelira.yumebox.presentation.component.ToastDialogHost
 import com.github.yumelira.yumebox.presentation.navigation.AppNavContainer
 import com.github.yumelira.yumebox.presentation.theme.ProvideAndroidPlatformTheme
+import com.github.yumelira.yumebox.presentation.theme.YumeHaze
 import com.github.yumelira.yumebox.presentation.theme.YumeTheme
 import com.github.yumelira.yumebox.screen.moe.HomePreviewGuideDialog
 import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
 import com.tencent.mmkv.MMKV
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -165,13 +164,7 @@ class MainActivity : FragmentActivity() {
                     ) {
                         val topBarHazeState = remember { HazeState() }
                         val topBarBackground = MiuixTheme.colorScheme.surface
-                        val topBarHazeStyle =
-                            remember(topBarBackground) {
-                                HazeStyle(
-                                    backgroundColor = topBarBackground,
-                                    tint = HazeTint(topBarBackground.copy(0.8f)),
-                                )
-                            }
+                        val topBarHazeStyle = YumeHaze.topBarStyle(topBarBackground)
                         CompositionLocalProvider(
                             LocalTopBarHazeState provides
                                 if (topBarBlurEnabled) topBarHazeState else null,

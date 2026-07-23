@@ -58,7 +58,7 @@ import com.github.yumelira.yumebox.presentation.component.rememberWindowLayoutMo
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.github.yumelira.yumebox.presentation.screen.ProxyPager
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import com.github.yumelira.yumebox.presentation.theme.YumeHaze
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.screen.home.HomePager
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
@@ -68,8 +68,6 @@ import com.github.yumelira.yumebox.screen.profiles.ProfilesPager
 import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
 import com.github.yumelira.yumebox.screen.settings.SettingPager
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -165,14 +163,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         } else {
             Color.White
         }
-    val opacity = AppTheme.opacity
-    val bottomBarHazeStyle =
-        remember(bottomBarBackground) {
-            HazeStyle(
-                backgroundColor = bottomBarBackground.copy(alpha = opacity.subtle),
-                tint = HazeTint(bottomBarBackground.copy(alpha = opacity.softOverlay)),
-            )
-        }
+    val bottomBarHazeStyle = YumeHaze.bottomBarStyle(bottomBarBackground)
 
     LaunchedEffect(visibleDestinations) {
         // Runtime transitions insert/remove the proxy page and move Config/Setting between physical

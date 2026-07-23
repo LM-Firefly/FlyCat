@@ -14,7 +14,7 @@ koin = "4.2.2"
 timber = "5.0.1"
 ktor = "3.5.1"
 miuix = "0.9.3"
-haze = "1.7.2"
+haze = "2.0.0-alpha03"
 sketch4 = "4.6.0"
 mlkitBarcodeScanning = "17.3.0"
 reorderable = "3.1.0"
@@ -65,8 +65,9 @@ androidx-camera-video = { module = "androidx.camera:camera-video", version.ref =
 miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui", version.ref = "miuix" }
 miuix-preference = { module = "top.yukonga.miuix.kmp:miuix-preference", version.ref = "miuix" }
 miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons", version.ref = "miuix" }
-miuix-blur-android = { module = "top.yukonga.miuix.kmp:miuix-blur-android", version.ref = "miuix" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
+haze-blur-materials = { module = "dev.chrisbanes.haze:haze-blur-materials", version.ref = "haze" }
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin" }

@@ -44,10 +44,12 @@ import com.github.yumelira.yumebox.domain.model.isSelectable
 import com.github.yumelira.yumebox.presentation.component.LocalTopBarHazeState
 import com.github.yumelira.yumebox.presentation.component.LocalTopBarHazeStyle
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.chrisbanes.haze.HazeProgressive
+import com.github.yumelira.yumebox.presentation.theme.YumeHaze
+import com.github.yumelira.yumebox.presentation.theme.YumeHaze.chromeEffect
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.HazeProgressive
+import dev.chrisbanes.haze.blur.blurEffect
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
@@ -61,20 +63,18 @@ val NodeSheetContentPadding =
 private fun LazyListState.isScrolledFromTop(): Boolean =
     firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
 
-private fun Modifier.nodeTabHaze(state: HazeState?, style: HazeStyle?): Modifier {
-    if (state == null || style == null) return this
-    return hazeEffect(state) {
-        this.style = style
-        blurRadius = UiDp.dp30
-        noiseFactor = 0f
+private fun Modifier.nodeTabHaze(state: HazeState?, style: HazeBlurStyle?): Modifier =
+    chromeEffect(
+        state = state,
+        style = style,
+        blurRadius = UiDp.dp30,
         progressive =
             HazeProgressive.verticalGradient(
                 startIntensity = 1f,
                 endIntensity = 0f,
                 preferPerformance = true,
-            )
-    }
-}
+            ),
+    )
 
 @Composable
 internal fun NodeTabs(groups: List<ProxyGroupInfo>, selectedIndex: Int, onSelect: (Int) -> Unit) {

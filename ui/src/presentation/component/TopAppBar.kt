@@ -27,11 +27,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import dev.chrisbanes.haze.ExperimentalHazeApi
-import dev.chrisbanes.haze.HazeInputScale
+import com.github.yumelira.yumebox.presentation.theme.YumeHaze
+import com.github.yumelira.yumebox.presentation.theme.YumeHaze.chromeEffect
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.blur.HazeBlurStyle
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -39,20 +38,15 @@ import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 val LocalTopBarHazeState = compositionLocalOf<HazeState?> { null }
-val LocalTopBarHazeStyle = compositionLocalOf<HazeStyle?> { null }
+val LocalTopBarHazeStyle = compositionLocalOf<HazeBlurStyle?> { null }
 
-@OptIn(ExperimentalHazeApi::class)
-private fun Modifier.topBarHazeEffect(state: HazeState?, style: HazeStyle?): Modifier {
-    if (state == null || style == null) return this
-
-    return hazeEffect(state) {
-        this.style = style
-        blurRadius = UiDp.dp20
-        inputScale = HazeInputScale.Fixed(0.35f)
-        noiseFactor = 0f
-        forceInvalidateOnPreDraw = false
-    }
-}
+private fun Modifier.topBarHazeEffect(state: HazeState?, style: HazeBlurStyle?): Modifier =
+    chromeEffect(
+        state = state,
+        style = style,
+        blurRadius = UiDp.dp20,
+        noiseFactor = YumeHaze.ChromeNoiseFactor,
+    )
 
 @Composable
 fun TopBar(

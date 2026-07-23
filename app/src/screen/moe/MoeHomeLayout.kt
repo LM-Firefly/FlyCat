@@ -11,7 +11,6 @@
 
 package com.github.yumelira.yumebox.screen.moe
 
-import android.os.Build
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.background
@@ -38,10 +37,10 @@ import com.github.yumelira.yumebox.domain.model.TrafficData
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.screen.home.HomeProxyControlState
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.getRoundedCorner
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 
 internal data class MoeHomeLayoutState(
     val wallpaperUri: String,
@@ -79,7 +78,8 @@ internal class MoeHomeActions(
 context(actions: MoeHomeActions)
 internal fun MoeHomeLayout(state: MoeHomeLayoutState) {
     val density = LocalDensity.current
-    val backdrop = rememberLayerBackdrop()
+    // Dedicated haze state so the sidebar blurs only the wallpaper layer, not the content panel.
+    val sidebarHazeState = rememberHazeState()
     BoxWithConstraints(Modifier.fillMaxSize()) {
         if (state.usesTabletLayout) {
             MoeTabletHomeLayout(state = state, maxWidth = maxWidth, maxHeight = maxHeight)
@@ -96,12 +96,10 @@ internal fun MoeHomeLayout(state: MoeHomeLayoutState) {
         val sidebar = state.sidebarProgress.coerceIn(0f, 1f) * state.sidebarToggleProgress
         val sidebarWidthVisible = lerpDp(MoeUi.Sidebar.collapsedVisibleWidth, contentStart, sidebar)
         val heroHeight = (maxHeight - state.statusBarTop).coerceAtLeast(UiDp.dp0) * MoeUi.Hero.heightFraction
-        // miuix-blur is gated on RuntimeShader, which only exists from API 33 (Tiramisu).
+        // Haze blur works from API 31; skip the effect while the rail is fully collapsed.
         val blurReady by
         remember(sidebar) {
-            derivedStateOf {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && sidebar > 0.03f
-            }
+            derivedStateOf { sidebar > 0.03f }
         }
         MoeWallpaperBackground(
             wallpaperUri = state.wallpaperUri,
@@ -111,10 +109,10 @@ internal fun MoeHomeLayout(state: MoeHomeLayoutState) {
             qualityMode = MoeWallpaperQualityMode.BackgroundBlur,
             modifier = Modifier
                 .matchParentSize()
-                .layerBackdrop(backdrop),
+                .hazeSource(state = sidebarHazeState),
         )
         MoeSidebarDecoration(
-            backdrop = backdrop,
+            hazeState = sidebarHazeState,
             blurEnabled = blurReady,
             blurProgress = sidebar,
             modifier = Modifier

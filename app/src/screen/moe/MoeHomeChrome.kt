@@ -20,7 +20,6 @@
 
 package com.github.yumelira.yumebox.screen.moe
 
-import android.os.Build
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -51,17 +50,23 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Repeat
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import com.github.yumelira.yumebox.presentation.theme.YumeHaze
 import com.github.yumelira.yumebox.screen.home.HomeProxyControlState
 import kotlinx.coroutines.delay
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.blur.*
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import dev.chrisbanes.haze.ExperimentalHazeApi
+import dev.chrisbanes.haze.HazeInputScale
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.blur.blurEffect
 
+@OptIn(ExperimentalHazeApi::class)
 @Composable
 internal fun MoeSidebarDecoration(
-    backdrop: LayerBackdrop,
+    hazeState: HazeState,
     blurEnabled: Boolean,
     blurProgress: Float,
     modifier: Modifier = Modifier,
@@ -70,13 +75,6 @@ internal fun MoeSidebarDecoration(
     val spacing = AppTheme.spacing
     val surface = MiuixTheme.colorScheme.surface
     val isDarkSurface = surface.luminance() < 0.5f
-    val glassBase =
-        if (isDarkSurface) {
-            Color.Black.copy(alpha = 0.24f)
-        } else {
-            surface.copy(alpha = 0.13f)
-        }
-    val glassTint = Color.Black.copy(alpha = 0.10f)
     val glassGradientStart =
         if (isDarkSurface) {
             Color.Black.copy(alpha = 0.36f)
@@ -90,28 +88,19 @@ internal fun MoeSidebarDecoration(
             surface.copy(alpha = 0.16f)
         }
     val clampedBlurProgress = blurProgress.coerceIn(0f, 1f)
-    val blurRadiusPx = lerpFloat(30f, 52f, clampedBlurProgress)
-    val blurColors =
-        BlurDefaults.blurColors(
-            blendColors =
-                listOf(
-                    BlendColorEntry(color = glassBase, mode = BlurBlendMode.SrcOver),
-                    BlendColorEntry(color = glassTint, mode = BlurBlendMode.SrcOver),
-                ),
-            saturation = if (isDarkSurface) 1.06f else 1.02f,
-            contrast = if (isDarkSurface) 1.08f else 1.10f,
-            brightness = if (isDarkSurface) 0.00f else -0.05f,
-        )
+    val blurRadius = lerpDp(30.dp, 52.dp, clampedBlurProgress)
     val blurModifier =
         if (blurEnabled) {
-            Modifier.textureBlur(
-                backdrop = backdrop,
-                shape = RectangleShape,
-                blurRadius = blurRadiusPx,
-                noiseCoefficient = 0f,
-                colors = blurColors,
-                enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
-            )
+            Modifier.hazeEffect(state = hazeState) {
+                inputScale = HazeInputScale.Auto
+                blurEffect {
+                    this.blurRadius = blurRadius
+                    noiseFactor = YumeHaze.ChromeNoiseFactor
+                    backgroundColor = YumeHaze.glassBackgroundColor(surface, isDarkSurface)
+                    colorEffects = YumeHaze.glassColorEffects(surface, isDarkSurface)
+                    fallbackTint = YumeHaze.sidebarFallbackTint(surface, isDarkSurface)
+                }
+            }
         } else {
             Modifier
         }

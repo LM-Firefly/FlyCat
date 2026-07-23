@@ -60,7 +60,6 @@ import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -162,7 +161,6 @@ fun MoeHomePage(
             ThemeMode.Light -> false
             ThemeMode.Auto -> systemDark
         }
-    val wallpaperBackdrop = rememberLayerBackdrop()
     val contentSurface = if (isDarkHomeSurface) MiuixTheme.colorScheme.surface else Color.White
     val handlePageChange = LocalHandlePageChange.current
     val sidebarIcons = remember {

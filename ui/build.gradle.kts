@@ -53,6 +53,8 @@ dependencies {
     implementation(libs.sketch.animated.webp)
     implementation(libs.sketch.compose.resources)
     implementation(libs.haze)
+    implementation(libs.haze.blur)
+    implementation(libs.haze.blur.materials)
     implementation(libs.shapes)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)

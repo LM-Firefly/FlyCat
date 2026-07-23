@@ -61,8 +61,11 @@ import com.github.yumelira.yumebox.presentation.icon.yume.`Package-check`
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumelira.yumebox.presentation.theme.YumeHaze
+import com.github.yumelira.yumebox.presentation.theme.YumeHaze.chromeEffect
 import com.kyant.shapes.Capsule
-import dev.chrisbanes.haze.*
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.blur.HazeBlurStyle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
@@ -153,7 +156,7 @@ inline val Navigator?.isSplitShell: Boolean
     get() = this != null
 
 val LocalBottomBarHazeState = compositionLocalOf<HazeState?> { null }
-val LocalBottomBarHazeStyle = compositionLocalOf<HazeStyle?> { null }
+val LocalBottomBarHazeStyle = compositionLocalOf<HazeBlurStyle?> { null }
 
 object MainBottomBarDefaults {
     val HorizontalPadding = UiDp.dp48
@@ -191,18 +194,13 @@ fun rememberBottomBarReservedHeight(): Dp {
     }
 }
 
-@OptIn(ExperimentalHazeApi::class)
-private fun Modifier.bottomBarHazeEffect(state: HazeState?, style: HazeStyle?): Modifier {
-    if (state == null || style == null) return this
-
-    return hazeEffect(state) {
-        this.style = style
-        blurRadius = UiDp.dp26
-        inputScale = HazeInputScale.Fixed(0.24f)
-        noiseFactor = 0f
-        forceInvalidateOnPreDraw = false
-    }
-}
+private fun Modifier.bottomBarHazeEffect(state: HazeState?, style: HazeBlurStyle?): Modifier =
+    chromeEffect(
+        state = state,
+        style = style,
+        blurRadius = UiDp.dp26,
+        noiseFactor = YumeHaze.ChromeNoiseFactor,
+    )
 
 @Composable
 fun BottomBarContent(

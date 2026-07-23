@@ -53,6 +53,8 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.timber)
     implementation(libs.haze)
+    implementation(libs.haze.blur)
+    implementation(libs.haze.blur.materials)
     implementation(libs.sketch.compose)
     implementation(libs.sketch.http)
     implementation(libs.miuix.ui)
