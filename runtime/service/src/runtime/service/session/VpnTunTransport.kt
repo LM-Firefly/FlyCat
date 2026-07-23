@@ -27,6 +27,7 @@ import android.net.IpPrefix
 import android.net.ProxyInfo
 import android.net.VpnService
 import android.os.Build
+import com.github.yumelira.yumebox.core.util.StartupTaskCoordinator
 import com.github.yumelira.yumebox.core.util.parseInetSocketAddress
 import com.github.yumelira.yumebox.runtime.api.Components
 import com.github.yumelira.yumebox.runtime.service.R
@@ -53,7 +54,11 @@ class VpnTunTransport(
     override fun start(spec: RuntimeSpec) {
         startupLogStore.append("LOCAL_TUN transport start: begin")
         // Compile the config (in memory) before establishing the TUN; it is streamed to the core.
-        val config = runBlocking { pipeline.compile(spec) }
+        val config =
+            runBlocking {
+                StartupTaskCoordinator.awaitWarmup()
+                pipeline.compile(spec)
+            }
         val device =
             with(vpnService.Builder()) {
                 val explicitRouteExcludes =

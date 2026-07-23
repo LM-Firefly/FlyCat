@@ -24,6 +24,7 @@ import android.content.Context
 import android.content.Intent
 import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
+import com.github.yumelira.yumebox.core.util.StartupTaskCoordinator
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
@@ -51,6 +52,7 @@ object RootSessionLauncher {
         RootForegroundService.start(appContext)
         try {
             StatusProvider.markRuntimeStarting(mode)
+            StartupTaskCoordinator.awaitWarmup()
             val spec = SessionRuntimeSpecFactory(appContext).createRootSpec(mode)
             val config = CompiledConfigPipeline(appContext).compile(spec)
             CoreProcess(appContext).startRoot(mode.coreArg, config)

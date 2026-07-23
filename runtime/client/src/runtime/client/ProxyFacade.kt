@@ -223,8 +223,10 @@ class ProxyFacade(
     init {
         registerServiceEventReceiver()
         observeProxyGroupSyncPriority()
-        initializeRuntimeSnapshot()
-        observeRemoteController()
+        scope.launch(Dispatchers.IO) {
+            operationMutex.withLock { initializeRuntimeSnapshot() }
+            observeRemoteController()
+        }
     }
 
     private fun observeRemoteController() {

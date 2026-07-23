@@ -41,6 +41,7 @@ import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
@@ -81,7 +82,6 @@ class App : Application() {
         val appSettingsStorage: AppSettingsStore = koinApp.koin.get()
         AppLanguageManager.apply(appSettingsStorage.appLanguage.value)
 
-        extractGeoFiles()
         val featureStore: FeatureStore = koinApp.koin.get()
         featureStore.syncAppVersion(BuildConfig.VERSION_CODE)
         scheduleDeferredStartupTasks(koinApp.koin, featureStore, appSettingsStorage)
@@ -159,6 +159,10 @@ class App : Application() {
         appSettings: AppSettingsStore,
     ) {
         StartupTaskCoordinator.startWarmup(startupScope) {
+            // Assets may be several megabytes compressed; never decompress them during Application.onCreate.
+            withContext(Dispatchers.IO) { extractGeoFiles() }
+        }
+        startupScope.launch {
             runCatching { koin.get<CustomRoutingBootstrapper>().ensureDefaultContent() }
                 .onFailure { Timber.e(it, "Failed to bootstrap custom routing default content") }
             runCatching { ensureMoeWallpaperLocalCopy(appSettings) }

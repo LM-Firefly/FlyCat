@@ -70,9 +70,9 @@ class ProxyTileService : TileService() {
         updateJob = scope.launch {
             // Refresh once up front: requestListeningState() (fired on every start/stop) only opens a
             // brief listening window, so we must update immediately rather than wait for the first tick.
-            updateTileState(currentSnapshot().phase.isActiveOrStopping)
+            updateTileStateFromRuntime()
             PollingTimers.ticks(PollingTimerSpecs.ProxyTileRefresh).collect {
-                updateTileState(currentSnapshot().phase.isActiveOrStopping)
+                updateTileStateFromRuntime()
             }
         }
     }
@@ -92,7 +92,7 @@ class ProxyTileService : TileService() {
                 updateTileState(true)
                 return@launch
             }
-            val snapshot = currentSnapshot()
+            val snapshot = withContext(Dispatchers.IO) { currentSnapshot() }
             val isActive = snapshot.phase.isActiveOrStopping
             val currentMode = effectiveMode(snapshot)
 
@@ -144,7 +144,9 @@ class ProxyTileService : TileService() {
                         }
                         RunMode.Tun,
                         RunMode.Tproxy -> {
-                            RootSessionLauncher.start(this@ProxyTileService, currentMode)
+                            withContext(Dispatchers.IO) {
+                                RootSessionLauncher.start(this@ProxyTileService, currentMode)
+                            }
                         }
                     }
                 }
@@ -160,11 +162,14 @@ class ProxyTileService : TileService() {
                         initialDelayMillis = 300L,
                     )
                 )
-                updateTileState(currentSnapshot().phase.isActiveOrStopping)
+                updateTileStateFromRuntime()
             }
         }
     }
 
+    private suspend fun updateTileStateFromRuntime() {
+        updateTileState(withContext(Dispatchers.IO) { currentSnapshot() }.phase.isActiveOrStopping)
+    }
     private fun currentSnapshot(): RuntimeSnapshot {
         val configuredMode = networkSettingsStorage.runMode.value
         val vpnPhase = StatusProvider.queryRuntimePhase(RunMode.VpnService)
