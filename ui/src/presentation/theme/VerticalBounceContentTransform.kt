@@ -37,16 +37,16 @@ import androidx.compose.ui.unit.IntOffset
 fun verticalBounceContentTransform(forward: Boolean): ContentTransform {
     val enterSpring =
         spring<IntOffset>(
-            dampingRatio = 0.72f,
-            stiffness = Spring.StiffnessMediumLow,
+            dampingRatio = 0.78f,
+            stiffness = Spring.StiffnessLow,
         )
     val exitSpring =
         spring<IntOffset>(
-            dampingRatio = 0.9f,
-            stiffness = Spring.StiffnessMedium,
+            dampingRatio = 0.92f,
+            stiffness = 280f,
         )
-    val fadeInSpec = tween<Float>(durationMillis = 220, easing = FastOutSlowInEasing)
-    val fadeOutSpec = tween<Float>(durationMillis = 160, easing = FastOutSlowInEasing)
+    val fadeInSpec = tween<Float>(durationMillis = 340, easing = FastOutSlowInEasing)
+    val fadeOutSpec = tween<Float>(durationMillis = 260, easing = FastOutSlowInEasing)
     val transform =
         if (forward) {
             (slideInVertically(animationSpec = enterSpring) { fullHeight ->
