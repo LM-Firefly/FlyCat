@@ -16,9 +16,7 @@ About = {
 
     Support = {
         ExportLogs = "Export Logs"
-        ExportLogsSummary = "Export Root Tun and Local Tun startup logs"
         ReportIssue = "Report a Problem"
-        ReportIssueSummary = "Open a GitHub issue"
         ExportSuccess = "Logs exported"
         ExportFailed = "Failed to export logs"
     }

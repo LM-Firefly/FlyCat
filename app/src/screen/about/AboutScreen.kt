@@ -227,7 +227,7 @@ fun AboutScreen(navigator: Navigator) {
                     )
                     AboutLinkItem(
                         title = YumeTxt.About.Link.TelegramChannel,
-                        url = "https://t.me/YumeLira",
+                        url = "https://t.me/YumeYucca",
                         onOpenUrl = { url -> openUrl(context, url) },
                         showArrow = true,
                     )
@@ -237,14 +237,12 @@ fun AboutScreen(navigator: Navigator) {
                 Card {
                     ArrowPreference(
                         title = YumeTxt.About.Support.ExportLogs,
-                        summary = YumeTxt.About.Support.ExportLogsSummary,
                         onClick = {
                             exportLogsLauncher.launch("yumebox_startup_logs_${System.currentTimeMillis()}.zip")
                         },
                     )
                     ArrowPreference(
                         title = YumeTxt.About.Support.ReportIssue,
-                        summary = YumeTxt.About.Support.ReportIssueSummary,
                         onClick = {
                             openUrl(context, "https://github.com/YumeYucca/YumeBox/issues/new/choose")
                         },

@@ -16,9 +16,7 @@ About = {
 
     Support = {
         ExportLogs = "导出日志"
-        ExportLogsSummary = "导出 Root Tun 和 Local Tun 的启动日志"
         ReportIssue = "报告问题"
-        ReportIssueSummary = "在 GitHub 上提交 issue"
         ExportSuccess = "日志已导出"
         ExportFailed = "日志导出失败"
     }
