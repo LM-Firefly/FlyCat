@@ -110,7 +110,7 @@ internal fun MoeSidebarDecoration(
                 blurRadius = blurRadiusPx,
                 noiseCoefficient = 0f,
                 colors = blurColors,
-                enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
+                enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
             )
         } else {
             Modifier

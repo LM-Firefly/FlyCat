@@ -87,16 +87,20 @@ internal fun MoeHomeLayout(state: MoeHomeLayoutState) {
         }
         val sidebarWidth = maxWidth * MoeUi.Sidebar.fraction
         val contentStart = (sidebarWidth - MoeUi.Sidebar.contentOverlap).coerceAtLeast(UiDp.dp0)
-        val screenCorner = getRoundedCorner()
+        // Devices with tiny/no system corners still need a readable panel radius; keep real
+        // screen corners only when they already clear the 16dp threshold.
+        val systemCorner = getRoundedCorner()
+        val screenCorner = if (systemCorner < UiDp.dp16) UiDp.dp24 else systemCorner
         val sidebarDecorationWidth = maxOf(sidebarWidth, contentStart + screenCorner)
         val page = state.pageProgress.coerceIn(0f, 1f)
         val sidebar = state.sidebarProgress.coerceIn(0f, 1f) * state.sidebarToggleProgress
         val sidebarWidthVisible = lerpDp(MoeUi.Sidebar.collapsedVisibleWidth, contentStart, sidebar)
         val heroHeight = (maxHeight - state.statusBarTop).coerceAtLeast(UiDp.dp0) * MoeUi.Hero.heightFraction
+        // miuix-blur is gated on RuntimeShader, which only exists from API 33 (Tiramisu).
         val blurReady by
         remember(sidebar) {
             derivedStateOf {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && sidebar > 0.03f
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && sidebar > 0.03f
             }
         }
         MoeWallpaperBackground(
