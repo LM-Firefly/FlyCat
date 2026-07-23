@@ -108,7 +108,7 @@ data class NetworkSettingsBackup(
     val tunAutoRoute: Boolean = true,
     val tunStrictRoute: Boolean = false,
     val tunAutoRedirect: Boolean = true,
-    val tunIncludeAndroidUser: List<Int> = listOf(0, 10),
+    val tunIncludeAndroidUser: List<Int> = emptyList(),
     val tunDnsMode: TunDnsMode = TunDnsMode.RedirHost,
     val tunFakeIpRange: String = "198.18.0.1/16",
     val tunFakeIpRange6: String = "fc00::/18",

@@ -50,7 +50,8 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     // strict-route off (can black-hole traffic); auto-redirect on — it carries the app TCP egress.
     val tunStrictRoute by boolFlow(false)
     val tunAutoRedirect by boolFlow(true)
-    val tunIncludeAndroidUser by intListFlow(listOf(0, 10))
+    // Empty: omit include-android-user so the core includes every Android user automatically.
+    val tunIncludeAndroidUser by intListFlow(emptyList())
     // redir-host is the reliable default (real IPs, no fake-ip pool/filter to get wrong); fake-ip stays selectable.
     val tunDnsMode by enumFlow(TunDnsMode.RedirHost)
     val tunFakeIpRange by strFlow("198.18.0.1/16")

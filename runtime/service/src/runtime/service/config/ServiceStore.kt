@@ -252,7 +252,7 @@ class ServiceStore {
         }
 
     var tunIncludeAndroidUser: List<Int>
-        get() = readIntList("tunIncludeAndroidUser", listOf(0, 10))
+        get() = readIntList("tunIncludeAndroidUser", emptyList())
         set(value) {
             networkSettings.encode("tunIncludeAndroidUser", json.encodeToString(value))
         }

@@ -42,7 +42,9 @@ data class TunConfig(
     // Exclude system uids (0–9999, incl. the root core's own uid 0) or the core's egress loops back into
     // the tun it created and no traffic passes. Grammar is mihomo's "start:end" (colon, NOT a hyphen).
     val excludeUidRange: List<String> = listOf("0:9999"),
-    val includeAndroidUser: List<Int> = listOf(0, 10),
+    // Empty = do not emit include-android-user; sing-tun then covers every Android user.
+    // A non-empty list is a hard allowlist and excludes every other user via ExcludeUID.
+    val includeAndroidUser: List<Int> = emptyList(),
     val routeAddress: List<String> = emptyList(),
     val routeExcludeAddress: List<String> = emptyList(),
     val dnsMode: TunDnsMode = TunDnsMode.RedirHost,

@@ -155,7 +155,7 @@ class SessionRuntimeSpecFactory(
                 .filter { it != self }
                 .distinct()
                 .sorted()
-        val allUsers = networkSettings.tunIncludeAndroidUser.value
+        val allUsers = resolveIncludeAndroidUsers()
         return when (store.accessControlMode) {
             AccessControlMode.AcceptAll -> TunAccessControl(includeAndroidUser = allUsers)
             AccessControlMode.AcceptSelected -> TunAccessControl(includeUid = selectedUid)
@@ -166,6 +166,20 @@ class SessionRuntimeSpecFactory(
         }
     }
 
+    /**
+     * Empty list means "all Android users": TunOverride omits include-android-user and sing-tun does
+     * not install per-user ExcludeUID ranges. The old hard-coded default [0, 10] only kept owner +
+     * work-profile traffic and silently dropped every other multi-user profile.
+     */
+    private fun resolveIncludeAndroidUsers(): List<Int> {
+        val users = networkSettings.tunIncludeAndroidUser.value
+        if (users == LEGACY_INCLUDE_ANDROID_USERS) {
+            networkSettings.tunIncludeAndroidUser.set(emptyList())
+            return emptyList()
+        }
+        return users
+    }
+
     private fun resolvePackageUid(pkg: String): Int? =
         runCatching { context.packageManager.getPackageInfo(pkg, 0).applicationInfo?.uid }.getOrNull()
 
@@ -174,6 +188,11 @@ class SessionRuntimeSpecFactory(
         val excludeUid: List<Int> = emptyList(),
         val includeAndroidUser: List<Int> = emptyList(),
     )
+
+    private companion object {
+        // Pre-fix default that only covered owner + common work-profile id.
+        private val LEGACY_INCLUDE_ANDROID_USERS = listOf(0, 10)
+    }
 
     private fun requireActiveProfile():
         com.github.yumelira.yumebox.runtime.service.profile.Imported {
