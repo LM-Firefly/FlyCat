@@ -9,11 +9,6 @@
 
 package com.github.yumelira.yumebox.presentation.navigation
 
-import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -31,9 +26,6 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.github.yumelira.yumebox.presentation.component.LocalNavigator
 import com.github.yumelira.yumebox.presentation.component.Navigator
-
-// Right-pane only: keep transitions short and local (fade). No horizontal slides that feel global.
-private const val SECONDARY_FADE = 160
 
 /** Right-pane Navigation3 host used by the tablet dual-pane shell. */
 @Composable
@@ -88,25 +80,13 @@ fun SecondaryDetailHost(
         contentAlignment = Alignment.TopStart,
         sizeTransform = null,
         transitionSpec = {
-            ContentTransform(
-                fadeIn(animationSpec = tween(SECONDARY_FADE, easing = LinearEasing)),
-                fadeOut(animationSpec = tween(SECONDARY_FADE, easing = LinearEasing)),
-                sizeTransform = null,
-            )
+            splitShellRightPaneTransform(forward = true)
         },
         popTransitionSpec = {
-            ContentTransform(
-                fadeIn(animationSpec = tween(SECONDARY_FADE, easing = LinearEasing)),
-                fadeOut(animationSpec = tween(SECONDARY_FADE, easing = LinearEasing)),
-                sizeTransform = null,
-            )
+            splitShellRightPaneTransform(forward = false)
         },
         predictivePopTransitionSpec = { _ ->
-            ContentTransform(
-                fadeIn(animationSpec = tween(SECONDARY_FADE, easing = LinearEasing)),
-                fadeOut(animationSpec = tween(SECONDARY_FADE, easing = LinearEasing)),
-                sizeTransform = null,
-            )
+            splitShellRightPaneTransform(forward = false)
         },
     )
 }

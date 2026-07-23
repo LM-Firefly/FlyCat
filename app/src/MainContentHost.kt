@@ -9,10 +9,19 @@
 
 package com.github.yumelira.yumebox
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.TargetedFlingBehavior
@@ -40,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.navigation3.runtime.NavKey
 import com.github.yumelira.yumebox.presentation.component.BottomBarContent
 import com.github.yumelira.yumebox.presentation.component.BottomBarDestination
@@ -52,6 +62,7 @@ import com.github.yumelira.yumebox.presentation.component.rememberBottomBarReser
 import com.github.yumelira.yumebox.presentation.component.rememberMainPagerFlingBehavior
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.navigation.SecondaryDetailHost
+import com.github.yumelira.yumebox.presentation.navigation.splitShellRightPaneTransform
 import com.github.yumelira.yumebox.presentation.screen.ProxyShellNodeDetail
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import dev.chrisbanes.haze.HazeState
@@ -143,18 +154,27 @@ internal fun MainContentHost(
                     val showProxyNodes =
                         settledDestination == BottomBarDestination.Proxy &&
                             detailBackStack.lastOrNull() !is Route.Providers
-                    if (showProxyNodes) {
-                        ProxyShellNodeDetail(
-                            mainInnerPadding = rightInnerPadding,
-                            onNavigateToProviders = {
-                                detailNavigator.replaceAll(listOf(Route.Providers))
-                            },
-                        )
-                    } else {
-                        SecondaryDetailHost(
-                            backStack = detailBackStack,
-                            navigator = detailNavigator,
-                        )
+                    AnimatedContent(
+                        targetState = showProxyNodes,
+                        modifier = Modifier.fillMaxSize(),
+                        transitionSpec = {
+                            splitShellRightPaneTransform(forward = targetState)
+                        },
+                        label = "split_shell_right_pane",
+                    ) { nodesVisible ->
+                        if (nodesVisible) {
+                            ProxyShellNodeDetail(
+                                mainInnerPadding = rightInnerPadding,
+                                onNavigateToProviders = {
+                                    detailNavigator.replaceAll(listOf(Route.Providers))
+                                },
+                            )
+                        } else {
+                            SecondaryDetailHost(
+                                backStack = detailBackStack,
+                                navigator = detailNavigator,
+                            )
+                        }
                     }
                 }
             },
