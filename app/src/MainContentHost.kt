@@ -179,11 +179,11 @@ internal fun MainContentHost(
                 }
             },
             initialLeftFraction = 0.42f,
-            minLeftFraction = 0.34f,
-            maxLeftFraction = 0.50f,
+            minLeftWidth = UiDp.dp280,
+            maxLeftWidth = UiDp.dp560,
+            minRightWidth = UiDp.dp320,
             showDivider = true,
             dividerDraggable = true,
-            maxLeftWidth = UiDp.dp420,
         )
     } else {
         Scaffold { innerPadding ->

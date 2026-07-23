@@ -36,8 +36,14 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 /**
  * NetEase / YumeFuwa style dual-pane shell.
  *
- * Left pane holds the main pager at a phone-like width fraction so Moe home is not stretched.
+ * Left pane holds the main pager at a phone-like width so Moe home is not stretched.
  * Right pane hosts detail destinations. The center divider may be shown and optionally dragged.
+ *
+ * Width policy:
+ * - Keep [leftRatio] of free width (container minus divider) so window resize scales both panes.
+ * - Clamp the live left width into absolute [minLeftWidth, maxLeftWidth] while reserving
+ *   [minRightWidth]. Absolute bounds are the source of truth; the old fraction-only clamp could
+ *   collapse drag range to zero when `minFraction * width > maxLeftWidth` on wide windows.
  */
 @Composable
 fun DualPaneLayout(
@@ -45,37 +51,58 @@ fun DualPaneLayout(
     right: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     initialLeftFraction: Float = 0.42f,
-    minLeftFraction: Float = 0.32f,
-    maxLeftFraction: Float = 0.52f,
+    minLeftWidth: Dp = 280.dp,
+    maxLeftWidth: Dp = 520.dp,
+    minRightWidth: Dp = 320.dp,
     showDivider: Boolean = true,
     dividerDraggable: Boolean = true,
-    dividerHitWidth: Dp = 12.dp,
-    maxLeftWidth: Dp = 440.dp,
+    dividerHitWidth: Dp = 16.dp,
 ) {
-    var leftFraction by remember { mutableFloatStateOf(initialLeftFraction.coerceIn(minLeftFraction, maxLeftFraction)) }
+    // Ratio of free width. Survives window resize so both panes scale together.
+    var leftRatio by remember {
+        mutableFloatStateOf(initialLeftFraction.coerceIn(0.2f, 0.8f))
+    }
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val containerWidthPx = with(density) { maxWidth.toPx().coerceAtLeast(1f) }
-        val maxLeftWidthPx = with(density) { maxLeftWidth.toPx() }
-        val fractionCap = (maxLeftWidthPx / containerWidthPx).coerceIn(minLeftFraction, maxLeftFraction)
-        val effectiveMaxFraction = minOf(maxLeftFraction, fractionCap)
-        val clampedFraction = leftFraction.coerceIn(minLeftFraction, effectiveMaxFraction)
+        val dividerPx = with(density) { if (showDivider) dividerHitWidth.toPx() else 0f }
+        val freeWidthPx = (containerWidthPx - dividerPx).coerceAtLeast(1f)
+
+        val rawMinLeftPx = with(density) { minLeftWidth.toPx() }
+        val rawMaxLeftPx = with(density) { maxLeftWidth.toPx() }
+        val rawMinRightPx = with(density) { minRightWidth.toPx() }
+
+        // Soft-shrink preferred floors when the window cannot host both.
+        val minsTotal = rawMinLeftPx + rawMinRightPx
+        val minScale =
+            if (minsTotal > freeWidthPx && minsTotal > 0f) freeWidthPx / minsTotal else 1f
+        val minLeftPx = rawMinLeftPx * minScale
+        val minRightPx = rawMinRightPx * minScale
+
+        val minBoundPx = minLeftPx.coerceIn(0f, freeWidthPx)
+        val maxFromRight = (freeWidthPx - minRightPx).coerceAtLeast(0f)
+        val maxBoundPx = maxOf(minBoundPx, minOf(rawMaxLeftPx, maxFromRight, freeWidthPx))
+
+        val desiredLeftPx = (leftRatio * freeWidthPx).coerceIn(minBoundPx, maxBoundPx)
+        val leftWidthDp = with(density) { desiredLeftPx.toDp() }
+        val canDrag = dividerDraggable && maxBoundPx > minBoundPx + 0.5f
 
         val dragState =
             rememberDraggableState { deltaPx ->
-                if (!dividerDraggable) return@rememberDraggableState
+                if (!canDrag) return@rememberDraggableState
                 val signed =
                     if (layoutDirection == LayoutDirection.Rtl) -deltaPx else deltaPx
-                leftFraction =
-                    (leftFraction + signed / containerWidthPx).coerceIn(minLeftFraction, effectiveMaxFraction)
+                val nextLeft =
+                    (leftRatio * freeWidthPx + signed).coerceIn(minBoundPx, maxBoundPx)
+                leftRatio = (nextLeft / freeWidthPx).coerceIn(0.05f, 0.95f)
             }
 
         Row(modifier = Modifier.fillMaxSize()) {
             Box(
                 Modifier
-                    .weight(clampedFraction)
+                    .width(leftWidthDp)
                     .fillMaxHeight()
             ) {
                 left()
@@ -88,8 +115,11 @@ fun DualPaneLayout(
                             .fillMaxHeight()
                             .width(dividerHitWidth)
                             .then(
-                                if (dividerDraggable) {
-                                    Modifier.draggable(state = dragState, orientation = Orientation.Horizontal)
+                                if (canDrag) {
+                                    Modifier.draggable(
+                                        state = dragState,
+                                        orientation = Orientation.Horizontal,
+                                    )
                                 } else {
                                     Modifier
                                 }
@@ -107,7 +137,7 @@ fun DualPaneLayout(
 
             Box(
                 Modifier
-                    .weight((1f - clampedFraction).coerceAtLeast(0.01f))
+                    .weight(1f)
                     .fillMaxHeight()
             ) {
                 right()

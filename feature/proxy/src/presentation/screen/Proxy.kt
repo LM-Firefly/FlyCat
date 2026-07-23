@@ -28,6 +28,7 @@ import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -35,6 +36,12 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.Velocity
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import com.github.yumelira.yumebox.data.model.ProxySortMode
 import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
@@ -69,6 +76,9 @@ import kotlin.math.abs
 private fun LazyListState.isScrolledFromTop(): Boolean =
     firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
 
+private fun LazyGridState.isScrolledFromTop(): Boolean =
+    firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
+
 // animateScrollToItem races across arbitrary distances at full speed, so locating a far-away
 // node reads as a blink. Cap the animated stretch at roughly one viewport: snap silently to
 // just outside it, then glide the remainder in with a fixed-duration decelerating tween.
@@ -98,6 +108,38 @@ private suspend fun LazyListState.animateLocateToItem(targetIndex: Int) {
     )
     // Node cards are uniform so the estimate lands exactly; settle any residual drift quietly.
     val residual = layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset
+    when {
+        residual == null -> scrollToItem(targetIndex)
+        residual != 0 -> scrollBy(residual.toFloat())
+    }
+}
+
+private suspend fun LazyGridState.animateLocateToItem(targetIndex: Int) {
+    if (layoutInfo.visibleItemsInfo.isEmpty()) {
+        scrollToItem(targetIndex)
+        return
+    }
+    val viewport = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
+    val visible = layoutInfo.visibleItemsInfo
+    val avgItemSize =
+        (visible.sumOf { it.size.height } / visible.size + layoutInfo.mainAxisItemSpacing)
+            .coerceAtLeast(1)
+    val approachItems = viewport / avgItemSize + 1
+    val distanceItems = targetIndex - firstVisibleItemIndex
+    if (abs(distanceItems) > approachItems) {
+        val preIndex =
+            if (distanceItems > 0) targetIndex - approachItems else targetIndex + approachItems
+        scrollToItem(preIndex.coerceAtLeast(0))
+    }
+    val remaining =
+        layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset?.y?.toFloat()
+            ?: ((targetIndex - firstVisibleItemIndex) * avgItemSize.toFloat() -
+                firstVisibleItemScrollOffset)
+    animateScrollBy(
+        value = remaining,
+        animationSpec = tween(durationMillis = 650, easing = AnimationSpecs.EmphasizedDecelerate),
+    )
+    val residual = layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset?.y
     when {
         residual == null -> scrollToItem(targetIndex)
         residual != 0 -> scrollBy(residual.toFloat())
@@ -159,7 +201,7 @@ fun ProxyPager(
                 val groupName = selectedGroupName ?: return@remember
                 coroutineScope.launch {
                     if (nodeListState.isScrolledFromTop()) {
-                        nodeListState.scrollToItem(0)
+                        nodeListState.animateScrollToItem(0)
                     }
                     proxyViewModel.testDelay(groupName)
                 }
@@ -402,22 +444,23 @@ fun ProxyShellNodeDetail(
     ) { groupName ->
         val pageGroup =
             groupName?.let { name -> proxyGroups.firstOrNull { it.name == name } } ?: currentGroup
-        val nodeListState =
-            rememberSaveable(groupName, saver = LazyListState.Saver) { LazyListState() }
+        // Adaptive grid owns the real scroll surface on the shell right pane.
+        val nodeGridState =
+            rememberSaveable(groupName, saver = LazyGridState.Saver) { LazyGridState() }
         val requestSelectedGroupDelayTest =
-            remember(coroutineScope, nodeListState, groupName, proxyViewModel) {
+            remember(coroutineScope, nodeGridState, groupName, proxyViewModel) {
                 {
                     val targetGroupName = groupName ?: return@remember
                     coroutineScope.launch {
-                        if (nodeListState.isScrolledFromTop()) {
-                            nodeListState.scrollToItem(0)
+                        if (nodeGridState.isScrolledFromTop()) {
+                            nodeGridState.animateScrollToItem(0)
                         }
                         proxyViewModel.testDelay(targetGroupName)
                     }
                 }
             }
         val locateCurrentProxy =
-            remember(coroutineScope, pageGroup, nodeListState, groupName) {
+            remember(coroutineScope, pageGroup, nodeGridState, groupName) {
                 if (groupName == null || pageGroup == null) {
                     null
                 } else {
@@ -426,8 +469,9 @@ fun ProxyShellNodeDetail(
                             val proxyIndex =
                                 group.proxies.indexOfFirst { proxy -> proxy.name == group.now }
                             if (proxyIndex < 0) return
+                            // Grid keeps a reserved refresh row at index 0 (collapsed when idle).
                             coroutineScope.launch {
-                                nodeListState.animateLocateToItem(proxyIndex + 1)
+                                nodeGridState.animateLocateToItem(proxyIndex + 1)
                             }
                         }
                     }
@@ -492,7 +536,8 @@ fun ProxyShellNodeDetail(
                     mainInnerPadding = mainInnerPadding,
                     outerInnerPadding = scaffoldPadding,
                     scrollBehavior = scrollBehavior,
-                    listState = nodeListState,
+                    listState = remember { LazyListState() },
+                    gridState = nodeGridState,
                     onSelectProxy = { selectedGroup, proxyName ->
                         proxyViewModel.selectProxy(selectedGroup, proxyName)
                     },
@@ -588,6 +633,7 @@ private fun NodeListPage(
     onScrollDirectionChanged: (Boolean) -> Unit,
     singleNodeTestEnabled: Boolean = true,
     useAdaptiveGrid: Boolean = false,
+    gridState: LazyGridState? = null,
 ) {
     if (group == null) {
         CenteredText(
@@ -608,8 +654,14 @@ private fun NodeListPage(
         scrollToTopOnEnabled = true,
     )
 
-    LaunchedEffect(isTesting) {
-        if (isTesting && listState.isScrolledFromTop()) {
+    LaunchedEffect(isTesting, useAdaptiveGrid, gridState) {
+        if (!isTesting) return@LaunchedEffect
+        if (useAdaptiveGrid) {
+            val state = gridState ?: return@LaunchedEffect
+            if (state.isScrolledFromTop()) {
+                state.animateScrollToItem(0)
+            }
+        } else if (listState.isScrolledFromTop()) {
             listState.animateScrollToItem(0)
         }
     }
@@ -623,18 +675,91 @@ private fun NodeListPage(
         )
 
     if (useAdaptiveGrid) {
-        val gridState = rememberLazyGridState()
-        Box(Modifier.fillMaxSize()) {
+        val resolvedGridState = gridState ?: rememberLazyGridState()
+        val latestScrollDirectionCallback by rememberUpdatedState(onScrollDirectionChanged)
+        var lastHiddenState by remember(resolvedGridState) { mutableStateOf(false) }
+        val fabScrollObserver =
+            remember(resolvedGridState) {
+                object : NestedScrollConnection {
+                    override fun onPreScroll(
+                        available: Offset,
+                        source: NestedScrollSource,
+                    ): Offset {
+                        val hiddenState =
+                            when {
+                                available.y < -1f -> true
+                                available.y > 1f -> false
+                                else -> return Offset.Zero
+                            }
+                        if (hiddenState != lastHiddenState) {
+                            lastHiddenState = hiddenState
+                            latestScrollDirectionCallback(hiddenState)
+                        }
+                        return Offset.Zero
+                    }
+
+                    override suspend fun onPostFling(
+                        consumed: Velocity,
+                        available: Velocity,
+                    ): Velocity {
+                        if (consumed.y > 1f || available.y > 1f) {
+                            latestScrollDirectionCallback(false)
+                            lastHiddenState = false
+                        }
+                        return Velocity.Zero
+                    }
+                }
+            }
+        LaunchedEffect(resolvedGridState) {
+            latestScrollDirectionCallback(false)
+            lastHiddenState = false
+        }
+        Box(Modifier.fillMaxSize().nestedScroll(fabScrollObserver)) {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = PaneWidths.NodeGridAdaptiveMin),
-                state = gridState,
+                state = resolvedGridState,
                 contentPadding = contentPadding,
                 horizontalArrangement = Arrangement.spacedBy(UiDp.dp12),
                 verticalArrangement = Arrangement.spacedBy(UiDp.dp6),
                 modifier = Modifier.fillMaxSize(),
             ) {
-                if (isTesting) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
+                // Always reserve index 0 so locate can use proxyIndex + 1, matching the list path.
+                item(key = "__refresh_indicator__", span = { GridItemSpan(maxLineSpan) }) {
+                    AnimatedVisibility(
+                        visible = isTesting,
+                        enter =
+                            expandVertically(
+                                animationSpec =
+                                    tween(
+                                        durationMillis =
+                                            AnimationSpecs.Proxy.RefreshIndicatorDuration
+                                    ),
+                                expandFrom = Alignment.Top,
+                            ) +
+                                fadeIn(
+                                    animationSpec =
+                                        tween(
+                                            durationMillis =
+                                                AnimationSpecs.Proxy.RefreshIndicatorFadeDuration
+                                        )
+                                ),
+                        exit =
+                            shrinkVertically(
+                                animationSpec =
+                                    tween(
+                                        durationMillis =
+                                            AnimationSpecs.Proxy.RefreshIndicatorDuration
+                                    ),
+                                shrinkTowards = Alignment.Top,
+                            ) +
+                                fadeOut(
+                                    animationSpec =
+                                        tween(
+                                            durationMillis =
+                                                AnimationSpecs.Proxy.RefreshIndicatorFadeDuration
+                                        )
+                                ),
+                    ) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(vertical = UiDp.dp12),
                             horizontalAlignment = Alignment.CenterHorizontally,
