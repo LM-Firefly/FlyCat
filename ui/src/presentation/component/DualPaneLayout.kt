@@ -52,7 +52,7 @@ fun DualPaneLayout(
     modifier: Modifier = Modifier,
     initialLeftFraction: Float = 0.42f,
     minLeftWidth: Dp = 280.dp,
-    maxLeftWidth: Dp = 520.dp,
+    maxLeftWidth: Dp = 420.dp,
     minRightWidth: Dp = 320.dp,
     showDivider: Boolean = true,
     dividerDraggable: Boolean = true,

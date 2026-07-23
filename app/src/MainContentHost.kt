@@ -180,7 +180,7 @@ internal fun MainContentHost(
             },
             initialLeftFraction = 0.42f,
             minLeftWidth = UiDp.dp280,
-            maxLeftWidth = UiDp.dp560,
+            maxLeftWidth = UiDp.dp420,
             minRightWidth = UiDp.dp320,
             showDivider = true,
             dividerDraggable = true,
