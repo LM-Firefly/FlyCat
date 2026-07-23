@@ -25,6 +25,7 @@ import com.android.build.api.artifact.SingleArtifact
 import dev.yume.packer.BuildLoaderDexTask
 import dev.yume.packer.PackApkTask
 import java.util.*
+import java.text.SimpleDateFormat
 
 plugins {
     id("com.android.application")
@@ -121,6 +122,116 @@ val apkChannelSegment = providers.gradleProperty("apk.output.channel").orNull
     ?.trim()?.takeIf { it.isNotEmpty() }
 val apkGeoSegment = if (geoBundle) "builtin" else "external"
 
+
+// Resolve the tracked mihomo tree at configure time so About / BuildConfig can show branch + hash
+// without a runtime JNI probe (the core is out-of-process now). Prefer kernel.properties for the
+// channel label (Alpha/Meta + optional -Smart suffix); fall back to the git checkout under
+// external.mihomo.dir for the short commit.
+data class MihomoBuildInfo(
+    val branch: String,
+    val commit: String,
+    val displayVersion: String,
+    val gitVersionArg: String,
+)
+
+fun escapeBuildConfigString(value: String): String =
+    value.replace("\\", "\\\\").replace("\"", "\\\"")
+
+// File-only git lookup: configuration cache forbids starting external processes during
+// configuration (ProcessBuilder/git rev-parse). Reading .git/HEAD + refs is enough for
+// branch + short hash and stays cache-compatible.
+fun resolveGitDir(repoDir: File): File? {
+    val git = File(repoDir, ".git")
+    when {
+        git.isDirectory -> return git
+        git.isFile -> {
+            val content = git.readText().trim()
+            if (!content.startsWith("gitdir:")) return null
+            val path = content.removePrefix("gitdir:").trim()
+            val resolved = File(path)
+            return if (resolved.isAbsolute) resolved else File(repoDir, path)
+        }
+        else -> return null
+    }
+}
+
+fun readGitRef(gitDir: File, ref: String): String? {
+    val refFile = File(gitDir, ref)
+    if (refFile.isFile) {
+        return refFile.readText().trim().takeIf { it.isNotEmpty() }
+    }
+    val packed = File(gitDir, "packed-refs")
+    if (!packed.isFile) return null
+    packed.useLines { lines ->
+        for (line in lines) {
+            if (line.isEmpty() || line.startsWith("#") || line.startsWith("^")) continue
+            val parts = line.split(Regex("\\s+"))
+            if (parts.size >= 2 && parts[1] == ref) {
+                return parts[0].trim().takeIf { it.isNotEmpty() }
+            }
+        }
+    }
+    return null
+}
+
+/** @return shortCommit to optional branch name (null when detached). */
+fun readGitHead(repoDir: File): Pair<String, String?> {
+    val gitDir = resolveGitDir(repoDir) ?: return "unknown" to null
+    val headFile = File(gitDir, "HEAD")
+    if (!headFile.isFile) return "unknown" to null
+    val head = headFile.readText().trim()
+    if (head.startsWith("ref:")) {
+        val ref = head.removePrefix("ref:").trim()
+        val branch =
+            ref.removePrefix("refs/heads/").takeIf { ref.startsWith("refs/heads/") && it.isNotEmpty() }
+        val full = readGitRef(gitDir, ref) ?: return "unknown" to branch
+        return full.take(8) to branch
+    }
+    // Detached HEAD stores the raw commit object name.
+    return head.take(8).ifEmpty { "unknown" } to null
+}
+
+fun resolveMihomoBuildInfo(rootDir: File): MihomoBuildInfo {
+    val props = Properties()
+    val kernelFile = rootDir.resolve("kernel.properties")
+    if (kernelFile.isFile) {
+        kernelFile.inputStream().use { props.load(it) }
+    }
+    val configuredBranch =
+        props.getProperty("external.mihomo.branch", "Alpha").trim().ifEmpty { "Alpha" }
+    val suffix = props.getProperty("external.mihomo.suffix", "").trim()
+    val includeTimestamp =
+        props.getProperty("external.mihomo.includeTimestamp", "false")
+            .toBooleanStrictOrNull() ?: false
+    val mihomoRel = props.getProperty("external.mihomo.dir", "lib/mihomo/mihomo").trim()
+    val mihomoDir = rootDir.resolve(mihomoRel)
+
+    val (commit, gitBranch) = readGitHead(mihomoDir)
+    // Channel from kernel.properties is the product label; git branch is only a fallback.
+    val branchBase = configuredBranch.ifBlank { gitBranch ?: "mihomo" }
+    val branchLabel = branchBase + suffix
+    val stamp =
+        if (includeTimestamp) {
+            // Avoid java.* package paths: in Gradle Kotlin DSL `java` is the project extension.
+            SimpleDateFormat("yyyyMMddHHmm", Locale.US).format(Date())
+        } else {
+            "local"
+        }
+    // Historical version.h style: Alpha-Smart-06249f84
+    val display = "$branchLabel-$commit"
+    // Go --git-version flag shape: BRANCH_HASH_TIME (see native/delegate/init.go).
+    val gitVersionArg = "${branchLabel.replace('_', '-')}_${commit}_$stamp"
+    return MihomoBuildInfo(
+        branch = branchLabel,
+        commit = commit,
+        displayVersion = display,
+        gitVersionArg = gitVersionArg,
+    )
+}
+
+val mihomoBuildInfo = resolveMihomoBuildInfo(rootProject.projectDir)
+
+
 android {
     namespace = gropify.project.namespace.base
 
@@ -130,6 +241,19 @@ android {
         versionCode = appVersionCode
         versionName = appVersionName
         buildConfigField("String", "BASE_VERSION", "\"${gropify.project.version.name}\"")
+        // Mihomo core identity (branch + short hash) from kernel.properties / lib/mihomo checkout.
+        buildConfigField("String", "CORE_BRANCH", "\"${escapeBuildConfigString(mihomoBuildInfo.branch)}\"")
+        buildConfigField("String", "CORE_COMMIT", "\"${escapeBuildConfigString(mihomoBuildInfo.commit)}\"")
+        buildConfigField(
+            "String",
+            "CORE_VERSION",
+            "\"${escapeBuildConfigString(mihomoBuildInfo.displayVersion)}\"",
+        )
+        buildConfigField(
+            "String",
+            "CORE_GIT_VERSION",
+            "\"${escapeBuildConfigString(mihomoBuildInfo.gitVersionArg)}\"",
+        )
         manifestPlaceholders["appName"] = gropify.project.name
         manifestPlaceholders["applicationClass"] = ".App"
         manifestPlaceholders["componentFactory"] = "androidx.core.app.CoreComponentFactory"

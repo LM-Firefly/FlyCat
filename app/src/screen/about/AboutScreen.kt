@@ -26,22 +26,16 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.BuildConfig
 import com.github.yumelira.yumebox.common.util.toast
@@ -71,13 +65,6 @@ private val AppNameGradient =
         Color(0xFFC0D5F5),
     )
 
-// Fault barrier at the JNI bridge: any native failure degrades to a fallback version label.
-@Suppress("TooGenericExceptionCaught")
-private fun loadCoreVersionOrFallback(): String =
-    // The core runs out-of-process; its exact version is available at runtime via the REST /version
-    // endpoint. The static About screen shows the tracked core name.
-    "mihomo"
-
 @Composable
 fun AboutScreen(navigator: Navigator) {
     val context = LocalContext.current
@@ -98,10 +85,8 @@ fun AboutScreen(navigator: Navigator) {
                 }
             }
         }
-    val coreVersion by
-        produceState(initialValue = YumeTxt.About.App.VersionLoading) {
-            value = loadCoreVersionOrFallback()
-        }
+    // Core branch/hash are stamped into BuildConfig at configure time (see app/build.gradle.kts).
+    val coreVersion = BuildConfig.CORE_VERSION
 
     Scaffold(topBar = { TopBar(title = YumeTxt.About.Title, scrollBehavior = scrollBehavior) }) {
         innerPadding ->
@@ -113,7 +98,6 @@ fun AboutScreen(navigator: Navigator) {
             item {
                 Spacer(modifier = Modifier.height(UiDp.dp24))
 
-                val ringColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.10f)
                 Card {
                     Box(
                         modifier =
@@ -141,27 +125,6 @@ fun AboutScreen(navigator: Navigator) {
                                             center = Offset(size.width * 0.92f, size.height * 0.95f),
                                             radius = size.width * 0.5f,
                                         ),
-                                )
-                                val ringStroke =
-                                    Stroke(
-                                        width = 1.dp.toPx(),
-                                        pathEffect =
-                                            PathEffect.dashPathEffect(
-                                                floatArrayOf(2.dp.toPx(), 7.dp.toPx()),
-                                            ),
-                                        cap = StrokeCap.Round,
-                                    )
-                                drawCircle(
-                                    color = ringColor,
-                                    radius = size.width * 0.55f,
-                                    center = Offset(size.width * 0.2f, -size.height * 0.7f),
-                                    style = ringStroke,
-                                )
-                                drawCircle(
-                                    color = ringColor,
-                                    radius = size.width * 0.6f,
-                                    center = Offset(size.width * 0.85f, size.height * 1.8f),
-                                    style = ringStroke,
                                 )
                             },
                         contentAlignment = Alignment.Center,

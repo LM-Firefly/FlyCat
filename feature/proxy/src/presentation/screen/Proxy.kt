@@ -22,6 +22,9 @@ package com.github.yumelira.yumebox.presentation.screen
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
@@ -79,71 +82,112 @@ private fun LazyListState.isScrolledFromTop(): Boolean =
 private fun LazyGridState.isScrolledFromTop(): Boolean =
     firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
 
-// animateScrollToItem races across arbitrary distances at full speed, so locating a far-away
-// node reads as a blink. Cap the animated stretch at roughly one viewport: snap silently to
-// just outside it, then glide the remainder in with a fixed-duration decelerating tween.
-private suspend fun LazyListState.animateLocateToItem(targetIndex: Int) {
-    if (layoutInfo.visibleItemsInfo.isEmpty()) {
-        scrollToItem(targetIndex)
+/**
+ * Shared locate motion:
+ * 1) If far, snap onto the target then pull back ~¾ viewport so the glide is always short.
+ * 2) Glide past the resting line (content-padding aware) with a decelerate tween.
+ * 3) Spring back over the overshoot for a light rubber-band bounce.
+ * 4) [scrollToItem] settles any residual pixel drift so cards never land half-offset.
+ *
+ * Resting offset is [beforeContentPadding], not 0 - aiming at 0 was the source of the
+ * post-locate misalignment under large top bar + content padding.
+ */
+private suspend fun animateLocateScroll(
+    targetIndex: Int,
+    isEmpty: Boolean,
+    viewportSize: Int,
+    beforeContentPadding: Int,
+    firstVisibleIndex: Int,
+    targetMainAxisOffset: () -> Int?,
+    scrollTo: suspend (index: Int) -> Unit,
+    scrollByDelta: suspend (delta: Float) -> Float,
+    animateBy: suspend (delta: Float, anim: AnimationSpec<Float>) -> Float,
+) {
+    if (isEmpty) {
+        scrollTo(targetIndex)
         return
     }
-    val viewport = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
-    val visible = layoutInfo.visibleItemsInfo
-    val avgItemSize =
-        (visible.sumOf { it.size } / visible.size + layoutInfo.mainAxisItemSpacing).coerceAtLeast(1)
-    val approachItems = viewport / avgItemSize + 1
-    val distanceItems = targetIndex - firstVisibleItemIndex
-    if (abs(distanceItems) > approachItems) {
-        val preIndex =
-            if (distanceItems > 0) targetIndex - approachItems else targetIndex + approachItems
-        scrollToItem(preIndex.coerceAtLeast(0))
+
+    val viewport = viewportSize.coerceAtLeast(1).toFloat()
+    val pad = beforeContentPadding.toFloat()
+    val goingDown = targetIndex > firstVisibleIndex
+    val alreadyOnScreen = targetMainAxisOffset() != null
+
+    if (!alreadyOnScreen) {
+        // Land on the target first (padding-correct), then pull back so the glide has room.
+        scrollTo(targetIndex)
+        val pull = viewport * 0.72f * if (goingDown) -1f else 1f
+        scrollByDelta(pull)
     }
-    val remaining =
-        layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset?.toFloat()
-            ?: ((targetIndex - firstVisibleItemIndex) * avgItemSize.toFloat() -
-                firstVisibleItemScrollOffset)
-    animateScrollBy(
-        value = remaining,
-        animationSpec = tween(durationMillis = 650, easing = AnimationSpecs.EmphasizedDecelerate),
+
+    val current = targetMainAxisOffset()?.toFloat()
+    if (current == null) {
+        scrollTo(targetIndex)
+        return
+    }
+
+    // Delta that places the item on its natural resting line under content padding.
+    val remaining = current - pad
+    if (abs(remaining) < 0.5f) {
+        // Already parked - tiny bounce so the eye action still feels alive.
+        val tick = 28f
+        animateBy(tick, tween(durationMillis = 110, easing = AnimationSpecs.EmphasizedAccelerate))
+        animateBy(
+            -tick,
+            spring(dampingRatio = 0.48f, stiffness = Spring.StiffnessMedium),
+        )
+        scrollTo(targetIndex)
+        return
+    }
+
+    val direction = if (remaining > 0f) 1f else -1f
+    val overshoot = (abs(remaining) * 0.14f).coerceIn(28f, 88f) * direction
+
+    animateBy(
+        remaining + overshoot,
+        tween(durationMillis = 520, easing = AnimationSpecs.EmphasizedDecelerate),
     )
-    // Node cards are uniform so the estimate lands exactly; settle any residual drift quietly.
-    val residual = layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset
-    when {
-        residual == null -> scrollToItem(targetIndex)
-        residual != 0 -> scrollBy(residual.toFloat())
-    }
+    animateBy(
+        -overshoot,
+        spring(dampingRatio = 0.52f, stiffness = 360f),
+    )
+    // Exact settle - removes multi-column estimate drift and padding misalignment.
+    scrollTo(targetIndex)
+}
+
+// animateScrollToItem races across arbitrary distances at full speed, so locating a far-away
+// node reads as a blink. Cap the animated stretch at roughly one viewport: snap silently near
+// it, then glide + bounce the remainder.
+private suspend fun LazyListState.animateLocateToItem(targetIndex: Int) {
+    animateLocateScroll(
+        targetIndex = targetIndex,
+        isEmpty = layoutInfo.visibleItemsInfo.isEmpty(),
+        viewportSize = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset,
+        beforeContentPadding = layoutInfo.beforeContentPadding,
+        firstVisibleIndex = firstVisibleItemIndex,
+        targetMainAxisOffset = {
+            layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset
+        },
+        scrollTo = { index -> scrollToItem(index) },
+        scrollByDelta = { delta -> scrollBy(delta) },
+        animateBy = { delta, anim -> animateScrollBy(delta, anim) },
+    )
 }
 
 private suspend fun LazyGridState.animateLocateToItem(targetIndex: Int) {
-    if (layoutInfo.visibleItemsInfo.isEmpty()) {
-        scrollToItem(targetIndex)
-        return
-    }
-    val viewport = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
-    val visible = layoutInfo.visibleItemsInfo
-    val avgItemSize =
-        (visible.sumOf { it.size.height } / visible.size + layoutInfo.mainAxisItemSpacing)
-            .coerceAtLeast(1)
-    val approachItems = viewport / avgItemSize + 1
-    val distanceItems = targetIndex - firstVisibleItemIndex
-    if (abs(distanceItems) > approachItems) {
-        val preIndex =
-            if (distanceItems > 0) targetIndex - approachItems else targetIndex + approachItems
-        scrollToItem(preIndex.coerceAtLeast(0))
-    }
-    val remaining =
-        layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset?.y?.toFloat()
-            ?: ((targetIndex - firstVisibleItemIndex) * avgItemSize.toFloat() -
-                firstVisibleItemScrollOffset)
-    animateScrollBy(
-        value = remaining,
-        animationSpec = tween(durationMillis = 650, easing = AnimationSpecs.EmphasizedDecelerate),
+    animateLocateScroll(
+        targetIndex = targetIndex,
+        isEmpty = layoutInfo.visibleItemsInfo.isEmpty(),
+        viewportSize = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset,
+        beforeContentPadding = layoutInfo.beforeContentPadding,
+        firstVisibleIndex = firstVisibleItemIndex,
+        targetMainAxisOffset = {
+            layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset?.y
+        },
+        scrollTo = { index -> scrollToItem(index) },
+        scrollByDelta = { delta -> scrollBy(delta) },
+        animateBy = { delta, anim -> animateScrollBy(delta, anim) },
     )
-    val residual = layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset?.y
-    when {
-        residual == null -> scrollToItem(targetIndex)
-        residual != 0 -> scrollBy(residual.toFloat())
-    }
 }
 
 @Composable
