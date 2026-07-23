@@ -209,8 +209,15 @@ private suspend fun saveProfileOverrides(
             }
     }
 
-    if (isRunning && homeViewModel.isCurrentProfile(profile.uuid)) {
-        overrideService.applyOverride(profileId)
+    val shouldApplyRuntime =
+        (isRunning || profile.active) &&
+            (profile.active || homeViewModel.isCurrentProfile(profile.uuid))
+    if (shouldApplyRuntime) {
+        val applied = overrideService.applyOverride(profileId)
+        if (!applied) {
+            Timber.w("Override apply reported failure for profile %s", profileId)
+            context.toast(YumeTxt.Util.Error.UnknownError)
+        }
     }
     return refreshedBinding
 }

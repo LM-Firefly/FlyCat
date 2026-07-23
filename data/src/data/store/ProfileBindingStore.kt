@@ -181,13 +181,27 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
         }
     }
 
-    private fun sanitizeMetadataIndex(index: MetadataIndex): MetadataIndex =
-        index.copy(
+    private fun sanitizeMetadataIndex(index: MetadataIndex): MetadataIndex {
+        val normalizedConfigs =
+            index.configs.mapValues { (id, metadata) ->
+                if (metadata.id.isBlank()) metadata.copy(id = id) else metadata
+            }
+        val normalizedIndex = index.copy(configs = normalizedConfigs)
+        return normalizedIndex.copy(
             profileChains =
-                index.profileChains.mapValues { (_, binding) ->
-                    sanitizeBinding(binding, index)
+                normalizedIndex.profileChains.mapValues { (profileId, binding) ->
+                    sanitizeBinding(
+                        binding =
+                            if (binding.profileId.isBlank()) {
+                                binding.copy(profileId = profileId)
+                            } else {
+                                binding
+                            },
+                        index = normalizedIndex,
+                    )
                 }
         )
+    }
 
     private fun sanitizeBinding(binding: ProfileBinding, index: MetadataIndex): ProfileBinding =
         binding.copy(

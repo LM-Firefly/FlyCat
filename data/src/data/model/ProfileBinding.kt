@@ -24,7 +24,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ProfileBinding(
-    val profileId: String,
+    val profileId: String = "",
     val overrideIds: List<String> = emptyList(),
 ) {
     companion object {

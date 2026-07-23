@@ -50,6 +50,7 @@ import com.github.yumelira.yumebox.presentation.screen.node.NodeCard
 import com.github.yumelira.yumebox.presentation.screen.node.nodeGridItems
 import com.github.yumelira.yumebox.presentation.screen.node.nodeGroupItems
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
+import com.github.yumelira.yumebox.presentation.theme.verticalBounceContentTransform
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.LocalSpacing
 import com.github.yumelira.yumebox.presentation.theme.UiDp
@@ -365,8 +366,6 @@ fun ProxyShellNodeDetail(
     val selectedGroupName = groupSelection.selectedGroupName
     val displayGroup = groupSelection.displayGroup
     val currentGroup = groupSelection.selectedGroup ?: displayGroup ?: proxyGroups.firstOrNull()
-    val nodeListState =
-        rememberSaveable(selectedGroupName, saver = LazyListState.Saver) { LazyListState() }
     var showSortPopup by rememberSaveable { mutableStateOf(false) }
     var fabHidden by rememberSaveable { mutableStateOf(false) }
 
@@ -387,112 +386,130 @@ fun ProxyShellNodeDetail(
         }
     }
 
-    val requestSelectedGroupDelayTest =
-        remember(coroutineScope, nodeListState, selectedGroupName, proxyViewModel) {
-            {
-                val groupName = selectedGroupName ?: return@remember
-                coroutineScope.launch {
-                    if (nodeListState.isScrolledFromTop()) {
-                        nodeListState.scrollToItem(0)
+    val activeGroupName = selectedGroupName ?: currentGroup?.name
+
+    AnimatedContent(
+        targetState = activeGroupName,
+        modifier = Modifier.fillMaxSize(),
+        transitionSpec = {
+            val fromIndex =
+                initialState?.let { name -> proxyGroups.indexOfFirst { it.name == name } } ?: -1
+            val toIndex =
+                targetState?.let { name -> proxyGroups.indexOfFirst { it.name == name } } ?: -1
+            verticalBounceContentTransform(forward = toIndex >= fromIndex)
+        },
+        label = "proxy_shell_group_switch",
+    ) { groupName ->
+        val pageGroup =
+            groupName?.let { name -> proxyGroups.firstOrNull { it.name == name } } ?: currentGroup
+        val nodeListState =
+            rememberSaveable(groupName, saver = LazyListState.Saver) { LazyListState() }
+        val requestSelectedGroupDelayTest =
+            remember(coroutineScope, nodeListState, groupName, proxyViewModel) {
+                {
+                    val targetGroupName = groupName ?: return@remember
+                    coroutineScope.launch {
+                        if (nodeListState.isScrolledFromTop()) {
+                            nodeListState.scrollToItem(0)
+                        }
+                        proxyViewModel.testDelay(targetGroupName)
                     }
-                    proxyViewModel.testDelay(groupName)
                 }
             }
-        }
-    val locateCurrentProxy =
-        remember(coroutineScope, displayGroup, nodeListState, selectedGroupName) {
-            if (selectedGroupName == null) {
-                null
-            } else {
-                displayGroup?.takeIf { group -> group.name == selectedGroupName }?.let { group ->
-                    fun() {
-                        val proxyIndex =
-                            group.proxies.indexOfFirst { proxy -> proxy.name == group.now }
-                        if (proxyIndex < 0) return
-                        coroutineScope.launch {
-                            nodeListState.animateLocateToItem(proxyIndex + 1)
+        val locateCurrentProxy =
+            remember(coroutineScope, pageGroup, nodeListState, groupName) {
+                if (groupName == null || pageGroup == null) {
+                    null
+                } else {
+                    pageGroup.takeIf { group -> group.name == groupName }?.let { group ->
+                        fun() {
+                            val proxyIndex =
+                                group.proxies.indexOfFirst { proxy -> proxy.name == group.now }
+                            if (proxyIndex < 0) return
+                            coroutineScope.launch {
+                                nodeListState.animateLocateToItem(proxyIndex + 1)
+                            }
                         }
                     }
                 }
             }
-        }
+        val isFabTesting = pageGroup?.name?.let(testingGroupNames::contains) == true
 
-    val fabGroup = displayGroup
-    val isFabTesting = fabGroup?.name?.let(testingGroupNames::contains) == true
-
-    Scaffold(
-        floatingActionButton = {
-            AnimatedVisibility(
-                visible =
-                    selectedGroupName != null &&
-                        fabGroup != null &&
-                        !fabHidden &&
-                        !isFabTesting,
-                enter = scaleIn(),
-                exit = scaleOut(),
-                label = "proxy_shell_test_fab_visibility",
-            ) {
-                FloatingActionButton(
-                    modifier = Modifier.padding(end = UiDp.dp20, bottom = UiDp.dp24),
-                    onClick = {
-                        if (fabGroup == null) return@FloatingActionButton
-                        requestSelectedGroupDelayTest()
-                    },
+        Scaffold(
+            floatingActionButton = {
+                AnimatedVisibility(
+                    visible =
+                        groupName != null &&
+                            pageGroup != null &&
+                            !fabHidden &&
+                            !isFabTesting,
+                    enter = scaleIn(),
+                    exit = scaleOut(),
+                    label = "proxy_shell_test_fab_visibility",
                 ) {
-                    Icon(
-                        imageVector = Yume.Speed,
-                        contentDescription = YumeTxt.Proxy.Action.Test,
-                        tint = MiuixTheme.colorScheme.onPrimary,
-                    )
-                }
-            }
-        },
-        topBar = {
-            ProxyTopBar(
-                title = currentGroup?.name ?: YumeTxt.Proxy.Title,
-                scrollBehavior = scrollBehavior,
-                showBack = false,
-                onBack = {},
-                onNavigateToProviders = onNavigateToProviders,
-                onLocateCurrentProxy = locateCurrentProxy,
-                showSortPopup = showSortPopup,
-                onShowSortPopupChange = { showSortPopup = it },
-                sortMode = sortMode,
-                onSortSelected = proxyViewModel::setSortMode,
-            )
-        },
-    ) { scaffoldPadding ->
-        if (currentGroup == null) {
-            CenteredText(
-                firstLine = YumeTxt.Proxy.Empty.NoNodes,
-                secondLine = YumeTxt.Proxy.Empty.Hint,
-                showEmptyResourceIllustration = true,
-            )
-        } else {
-            NodeListPage(
-                group = currentGroup,
-                sortMode = sortMode,
-                testingGroupNames = testingGroupNames,
-                testingProxyNames = testingProxyNames,
-                mainInnerPadding = mainInnerPadding,
-                outerInnerPadding = scaffoldPadding,
-                scrollBehavior = scrollBehavior,
-                listState = nodeListState,
-                onSelectProxy = { groupName, proxyName ->
-                    proxyViewModel.selectProxy(groupName, proxyName)
-                },
-                onTestDelay = requestSelectedGroupDelayTest,
-                onTestProxyDelay = { proxyName ->
-                    currentGroup.name.let { groupName ->
-                        proxyViewModel.testProxyDelay(groupName, proxyName)
+                    FloatingActionButton(
+                        modifier = Modifier.padding(end = UiDp.dp20, bottom = UiDp.dp24),
+                        onClick = {
+                            if (pageGroup == null) return@FloatingActionButton
+                            requestSelectedGroupDelayTest()
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Yume.Speed,
+                            contentDescription = YumeTxt.Proxy.Action.Test,
+                            tint = MiuixTheme.colorScheme.onPrimary,
+                        )
                     }
-                },
-                onScrollDirectionChanged = { hidden -> fabHidden = hidden },
-                singleNodeTestEnabled = singleNodeTest,
-                useAdaptiveGrid = true,
-            )
+                }
+            },
+            topBar = {
+                ProxyTopBar(
+                    title = pageGroup?.name ?: YumeTxt.Proxy.Title,
+                    scrollBehavior = scrollBehavior,
+                    showBack = false,
+                    onBack = {},
+                    onNavigateToProviders = onNavigateToProviders,
+                    onLocateCurrentProxy = locateCurrentProxy,
+                    showSortPopup = showSortPopup,
+                    onShowSortPopupChange = { showSortPopup = it },
+                    sortMode = sortMode,
+                    onSortSelected = proxyViewModel::setSortMode,
+                )
+            },
+        ) { scaffoldPadding ->
+            if (pageGroup == null) {
+                CenteredText(
+                    firstLine = YumeTxt.Proxy.Empty.NoNodes,
+                    secondLine = YumeTxt.Proxy.Empty.Hint,
+                    showEmptyResourceIllustration = true,
+                )
+            } else {
+                NodeListPage(
+                    group = pageGroup,
+                    sortMode = sortMode,
+                    testingGroupNames = testingGroupNames,
+                    testingProxyNames = testingProxyNames,
+                    mainInnerPadding = mainInnerPadding,
+                    outerInnerPadding = scaffoldPadding,
+                    scrollBehavior = scrollBehavior,
+                    listState = nodeListState,
+                    onSelectProxy = { selectedGroup, proxyName ->
+                        proxyViewModel.selectProxy(selectedGroup, proxyName)
+                    },
+                    onTestDelay = requestSelectedGroupDelayTest,
+                    onTestProxyDelay = { proxyName ->
+                        pageGroup.name.let { selectedGroup ->
+                            proxyViewModel.testProxyDelay(selectedGroup, proxyName)
+                        }
+                    },
+                    onScrollDirectionChanged = { hidden -> fabHidden = hidden },
+                    singleNodeTestEnabled = singleNodeTest,
+                    useAdaptiveGrid = true,
+                )
+            }
         }
     }
+
 }
 
 @Composable

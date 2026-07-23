@@ -21,50 +21,7 @@
 package com.github.yumelira.yumebox.presentation.navigation
 
 import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
-import androidx.compose.ui.unit.IntOffset
+import com.github.yumelira.yumebox.presentation.theme.verticalBounceContentTransform
 
-internal fun splitShellRightPaneTransform(forward: Boolean): ContentTransform {
-    val enterSpring =
-        spring<IntOffset>(
-            dampingRatio = 0.72f,
-            stiffness = Spring.StiffnessMediumLow,
-        )
-    val exitSpring =
-        spring<IntOffset>(
-            dampingRatio = 0.9f,
-            stiffness = Spring.StiffnessMedium,
-        )
-    val fadeInSpec = tween<Float>(durationMillis = 220, easing = FastOutSlowInEasing)
-    val fadeOutSpec = tween<Float>(durationMillis = 160, easing = FastOutSlowInEasing)
-    val transform =
-        if (forward) {
-            (slideInVertically(animationSpec = enterSpring) { fullHeight ->
-                    fullHeight / 10
-                } + fadeIn(animationSpec = fadeInSpec)) togetherWith
-                (slideOutVertically(animationSpec = exitSpring) { fullHeight ->
-                    -fullHeight / 14
-                } + fadeOut(animationSpec = fadeOutSpec))
-        } else {
-            (slideInVertically(animationSpec = enterSpring) { fullHeight ->
-                    -fullHeight / 10
-                } + fadeIn(animationSpec = fadeInSpec)) togetherWith
-                (slideOutVertically(animationSpec = exitSpring) { fullHeight ->
-                    fullHeight / 14
-                } + fadeOut(animationSpec = fadeOutSpec))
-        }
-    return ContentTransform(
-        targetContentEnter = transform.targetContentEnter,
-        initialContentExit = transform.initialContentExit,
-        sizeTransform = SizeTransform(clip = false),
-    )
-}
+internal fun splitShellRightPaneTransform(forward: Boolean): ContentTransform =
+    verticalBounceContentTransform(forward)

@@ -24,12 +24,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class OverrideMetadata(
-    val id: String,
-    val name: String,
+    val id: String = "",
+    val name: String = "",
     val description: String? = null,
     val contentType: OverrideContentType = OverrideContentType.Yaml,
-    val createdAt: Long,
-    val updatedAt: Long,
+    val createdAt: Long = 0L,
+    val updatedAt: Long = 0L,
     val sortOrder: Long = 0L,
 ) {
     companion object {

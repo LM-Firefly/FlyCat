@@ -26,11 +26,11 @@ import com.github.yumelira.yumebox.core.bridge.Compiler
 import com.github.yumelira.yumebox.core.model.CompileRawSummary
 import com.github.yumelira.yumebox.core.model.CompileRequest
 import com.github.yumelira.yumebox.core.model.CompileResult
-import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
 import com.github.yumelira.yumebox.core.model.OverrideSpec
 import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.util.YamlCodec
 import com.github.yumelira.yumebox.core.util.runtimeHomeDir
+import com.github.yumelira.yumebox.data.model.BuiltInOverrideCatalog
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -54,7 +54,7 @@ class CompiledConfigPipeline(private val context: Context) {
     ): ResolvedOverrideBundle {
         val overridesDir = context.filesDir.resolve("overrides")
         val metadataFile = overridesDir.resolve("metadata.yaml")
-        val metadata = loadMetadataIndex(overridesDir, metadataFile, logger)
+        val metadata = loadMetadataIndex(metadataFile, logger)
 
         val binding = metadata.profileChains[profileUuid]
         logger?.invoke(
@@ -63,16 +63,19 @@ class CompiledConfigPipeline(private val context: Context) {
 
         val userOverrides = mutableListOf<OverrideSpec>()
         val overrides = mutableListOf<OverrideSpec>()
-        binding?.overrideIds.orEmpty().filterNot(::isReservedOverrideId).distinct().forEach {
-            overrideId ->
-            val file =
-                resolveUserOverrideFile(overridesDir, overrideId, metadata)
-                    ?: error("Override config not found for profile=$profileUuid id=$overrideId")
-            val spec = file.toOverrideSpec()
-            logger?.invoke(describeOverrideFile(file, overrideId))
-            userOverrides += spec
-            overrides += spec
-        }
+        binding?.overrideIds.orEmpty()
+            .filterNot(::isLegacyPresetId)
+            .filterNot(::isInternalRuntimeId)
+            .distinct()
+            .forEach { overrideId ->
+                val file =
+                    resolveUserOverrideFile(overridesDir, overrideId, metadata)
+                        ?: error("Override config not found for profile=$profileUuid id=$overrideId")
+                val spec = file.toOverrideSpec()
+                logger?.invoke(describeOverrideFile(file, overrideId))
+                userOverrides += spec
+                overrides += spec
+            }
 
         val runtimeInternalOverride =
             resolveRuntimeInternalOverrideFile(overridesDir, profileUuid)
@@ -270,52 +273,21 @@ class CompiledConfigPipeline(private val context: Context) {
     }
 
     private fun loadMetadataIndex(
-        overridesDir: File,
         metadataFile: File,
         logger: ((String) -> Unit)?,
     ): MetadataIndexPayload {
-        val metadataRaw = metadataFile.takeIf(File::exists)?.readText().orEmpty()
-        val metadata =
-            if (metadataFile.exists()) {
-                runCatching { YamlCodec.decode(MetadataIndexPayload.serializer(), metadataRaw) }
-                    .getOrElse {
-                        logger?.invoke(
-                            "override resolve: metadata decode failed file=${metadataFile.safeLogHash()} " +
-                                "size=${metadataRaw.length} sha=${metadataRaw.sha256Short()}"
-                        )
-                        MetadataIndexPayload()
-                    }
-            } else {
+        if (!metadataFile.exists()) {
+            return MetadataIndexPayload()
+        }
+        val metadataRaw = metadataFile.readText()
+        return runCatching { YamlCodec.decode(MetadataIndexPayload.serializer(), metadataRaw) }
+            .getOrElse {
+                logger?.invoke(
+                    "override resolve: metadata decode failed file=${metadataFile.safeLogHash()} " +
+                        "size=${metadataRaw.length} sha=${metadataRaw.sha256Short()}"
+                )
                 MetadataIndexPayload()
             }
-        val sanitized = sanitizeMetadataIndex(metadata)
-        if (sanitized != metadata) {
-            overridesDir.mkdirs()
-            metadataFile.writeText(YamlCodec.encode(MetadataIndexPayload.serializer(), sanitized))
-            logger?.invoke(
-                "override resolve: metadata normalized file=${metadataFile.safeLogHash()}"
-            )
-        }
-        return sanitized
-    }
-
-    private fun sanitizeMetadataIndex(metadata: MetadataIndexPayload): MetadataIndexPayload {
-        val sanitizedConfigs = metadata.configs.filterKeys(::isUserOverrideId)
-        return metadata.copy(
-            configs = sanitizedConfigs,
-            profileChains =
-                metadata.profileChains.mapValues { (_, binding) ->
-                    binding.copy(
-                        overrideIds =
-                            binding.overrideIds.filter { overrideId ->
-                                !isLegacyPresetId(overrideId) &&
-                                    (isReservedOverrideId(overrideId) ||
-                                        isCustomRoutingOverrideId(overrideId) ||
-                                        sanitizedConfigs.containsKey(overrideId))
-                            }
-                    )
-                },
-        )
     }
 
     private fun resolveUserOverrideFile(
@@ -323,6 +295,8 @@ class CompiledConfigPipeline(private val context: Context) {
         overrideId: String,
         metadataIndex: MetadataIndexPayload,
     ): File? {
+        materializeBuiltInOverride(overridesDir, overrideId)?.let { return it }
+
         val expectedExtension =
             metadataIndex.configs[overrideId]?.contentType?.toOverrideExtension()
         if (expectedExtension != null) {
@@ -335,6 +309,26 @@ class CompiledConfigPipeline(private val context: Context) {
         return userOverrideExtensions.asSequence()
             .map { extension -> overridesDir.resolve("configs/$overrideId.$extension") }
             .firstOrNull(File::exists)
+    }
+
+    private fun materializeBuiltInOverride(overridesDir: File, overrideId: String): File? {
+        val def = BuiltInOverrideCatalog.find(overrideId) ?: return null
+        val configsDir = overridesDir.resolve("configs")
+        val target = configsDir.resolve("$overrideId.${def.contentType.extension}")
+        if (target.exists()) {
+            return target
+        }
+        return runCatching {
+                configsDir.mkdirs()
+                context.assets.open(def.assetPath).use { input ->
+                    target.outputStream().use { output -> input.copyTo(output) }
+                }
+                target
+            }
+            .onFailure { error ->
+                Log.w(TAG, "Failed to materialize built-in override id=$overrideId", error)
+            }
+            .getOrNull()
     }
 
     private fun resolveRuntimeInternalOverrideFile(overridesDir: File, profileUuid: String): File? {
@@ -360,15 +354,6 @@ class CompiledConfigPipeline(private val context: Context) {
 
     private fun isLegacyPresetId(overrideId: String): Boolean =
         overrideId.startsWith(LEGACY_PRESET_PREFIX)
-
-    private fun isCustomRoutingOverrideId(overrideId: String): Boolean =
-        overrideId == OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID
-
-    private fun isReservedOverrideId(overrideId: String): Boolean =
-        isInternalRuntimeId(overrideId) || isLegacyPresetId(overrideId)
-
-    private fun isUserOverrideId(overrideId: String): Boolean =
-        !isInternalRuntimeId(overrideId) && !isLegacyPresetId(overrideId)
 
     private fun describeOverrideFile(file: File, overrideId: String): String {
         val content = file.takeIf(File::exists)?.readText().orEmpty()
