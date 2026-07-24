@@ -23,6 +23,7 @@ package com.github.yumelira.yumebox.runtime.service.util
 import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
+import androidx.annotation.RequiresApi
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 
@@ -46,6 +47,7 @@ class SocketOwnerResolver(context: Context) {
 
     private fun encode(uid: Int, packageName: String): String = "$uid\t$packageName"
 
+    @RequiresApi(29)
     private fun resolveUid(
         protocol: Int,
         source: InetSocketAddress,

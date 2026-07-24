@@ -192,9 +192,9 @@ class ProxyTileService : TileService() {
                 phase =
                     when (owner) {
                         RuntimeOwner.VpnService -> vpnPhase
-                        RuntimeOwner.RootDaemon -> RuntimePhase.Running
+                        RuntimeOwner.RootDaemon,
                         RuntimeOwner.RemoteController -> RuntimePhase.Running
-                        RuntimeOwner.None -> RuntimePhase.Idle
+                        RuntimeOwner.None -> error("unreachable: None handled above")
                     },
                 // VpnService owner is always the VPN mode. A root daemon can outlive a settings
                 // change, so use its persisted mode instead of the current selection.

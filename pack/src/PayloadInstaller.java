@@ -116,7 +116,7 @@ final class PayloadInstaller {
     ) {
         StringBuilder dexPath = new StringBuilder();
         for (File file : dexFiles) {
-            if (dexPath.length() > 0) {
+            if (!dexPath.isEmpty()) {
                 dexPath.append(File.pathSeparatorChar);
             }
             dexPath.append(file.getAbsolutePath());

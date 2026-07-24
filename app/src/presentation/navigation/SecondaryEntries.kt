@@ -9,7 +9,6 @@
 
 package com.github.yumelira.yumebox.presentation.navigation
 
-import androidx.compose.runtime.Composable
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.github.yumelira.yumebox.presentation.component.Navigator

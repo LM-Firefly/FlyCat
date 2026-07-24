@@ -22,7 +22,7 @@ package com.github.yumelira.yumebox.runtime.service.profile
 
 import java.util.UUID
 
-suspend fun generateProfileUUID(): UUID {
+fun generateProfileUUID(): UUID {
     var result = UUID.randomUUID()
 
     while (ImportedDao.exists(result)) {

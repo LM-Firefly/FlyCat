@@ -8,9 +8,14 @@ import android.content.BroadcastReceiver;
 import android.content.ContentProvider;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
+import android.os.Build;
 
 import java.lang.reflect.InvocationTargetException;
 
+@TargetApi(Build.VERSION_CODES.P)
+@SuppressLint("NewApi")
 public final class LoaderComponentFactory extends AppComponentFactory {
     private volatile AppComponentFactory delegate;
     private volatile ClassLoader payloadLoader;

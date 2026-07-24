@@ -90,12 +90,10 @@ object ProfileProcessor {
         onStatus: (FetchStatus) -> Unit,
     ) {
         onStatus(FetchStatus(FetchStatus.Action.FetchConfiguration, listOf(url), 0, 1))
-        val client =
-            HttpClient(OkHttp) {
-                install(HttpTimeout) { requestTimeoutMillis = 60_000 }
-                followRedirects = true
-            }
-        try {
+        HttpClient(OkHttp) {
+            install(HttpTimeout) { requestTimeoutMillis = 60_000 }
+            followRedirects = true
+        }.use { client ->
             // Airports gate the real config on a recognized Clash-client User-Agent; "YumeBox" gets a
             // crippled response, so send the user's custom UA or the Sub-Store client's default.
             val response =
@@ -142,8 +140,6 @@ object ProfileProcessor {
                     subFilename = filename,
                 )
             )
-        } finally {
-            client.close()
         }
     }
 
@@ -173,15 +169,13 @@ object ProfileProcessor {
                 .getOrDefault(emptyList())
         if (providers.isEmpty()) return
 
-        val client =
-            HttpClient(OkHttp) {
-                install(HttpTimeout) {
-                    connectTimeoutMillis = 15_000
-                    requestTimeoutMillis = 60_000
-                }
-                followRedirects = true
+        HttpClient(OkHttp) {
+            install(HttpTimeout) {
+                connectTimeoutMillis = 15_000
+                requestTimeoutMillis = 60_000
             }
-        try {
+            followRedirects = true
+        }.use { client ->
             providers.forEachIndexed { index, provider ->
                 onStatus(
                     FetchStatus(
@@ -196,8 +190,6 @@ object ProfileProcessor {
                         Timber.w(error, "Skip external provider download: %s", provider.url)
                     }
             }
-        } finally {
-            client.close()
         }
     }
 
@@ -269,11 +261,11 @@ object ProfileProcessor {
         segments.forEach { segment ->
             when (segment) {
                 "", "." -> Unit
-                ".." -> if (cleaned.isNotEmpty()) cleaned.removeLast()
+                ".." -> if (cleaned.isNotEmpty()) cleaned.removeAt(cleaned.lastIndex)
                 else -> cleaned += segment
             }
         }
-        while (cleaned.firstOrNull() in providerPathPrefixes) cleaned.removeFirst()
+        while (cleaned.firstOrNull() in providerPathPrefixes) cleaned.removeAt(0)
         val relative = cleaned.joinToString("/")
         val withExtension =
             when {

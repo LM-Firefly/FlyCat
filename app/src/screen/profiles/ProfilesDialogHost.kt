@@ -48,7 +48,6 @@ internal fun ProfilesDialogHost(
     refreshOverrides: suspend () -> Unit,
     isRunning: Boolean,
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val bindingProvider: ProfileBindingProvider = koinInject()
     val overrideService: OverrideService = koinInject()

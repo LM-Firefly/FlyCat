@@ -20,7 +20,6 @@
 
 package com.github.yumelira.yumebox.runtime.service.session
 
-import android.annotation.TargetApi
 import android.app.PendingIntent
 import android.content.Intent
 import android.net.IpPrefix
@@ -28,14 +27,12 @@ import android.net.ProxyInfo
 import android.net.VpnService
 import android.os.Build
 import com.github.yumelira.yumebox.core.util.StartupTaskCoordinator
-import com.github.yumelira.yumebox.core.util.parseInetSocketAddress
 import com.github.yumelira.yumebox.runtime.api.Components
 import com.github.yumelira.yumebox.runtime.service.R
 import com.github.yumelira.yumebox.runtime.service.config.AccessControlMode
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import kotlinx.coroutines.runBlocking
-import com.github.yumelira.yumebox.runtime.service.util.SocketOwnerResolver
 import com.github.yumelira.yumebox.runtime.service.util.buildIncludedRoutesFromExcludedCidrs
 import com.github.yumelira.yumebox.runtime.service.util.parseCIDR
 import java.net.InetAddress
@@ -244,7 +241,8 @@ class VpnTunTransport(
 
     override fun onNetworkChanged() {
         if (Build.VERSION.SDK_INT in 22..28) {
-            @Suppress("DEPRECATION") @TargetApi(22) vpnService.setUnderlyingNetworks(null)
+            @Suppress("DEPRECATION")
+            vpnService.setUnderlyingNetworks(null)
         }
     }
 

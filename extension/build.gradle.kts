@@ -86,9 +86,9 @@ android {
             reset()
             val abiList = (gropify.abi.extension.list ?: "arm64-v8a,x86_64")
                 .split(',').map { it.trim() }.filter { it.isNotEmpty() }
-            // AGP Split.include only accepts vararg; copying this tiny ABI list is negligible.
+            // Qualify receiver so Kotlin does not resolve include() against Iterable from the chain.
             @Suppress("SpreadOperator")
-            include(*abiList.toTypedArray())
+            this@abi.include(*abiList.toTypedArray())
             isUniversalApk = false
         }
     }

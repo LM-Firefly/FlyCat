@@ -45,7 +45,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import timber.log.Timber
-import java.util.TimeZone
 import kotlin.math.min
 
 // Established runtime session seam (owner-token lifecycle + snapshot + core control); splitting
@@ -470,6 +469,14 @@ class SessionRuntime(
                         lastControllerError = error.message ?: error::class.simpleName
                     }
                     .getOrDefault(false)
+            // Controller answered: if the profile exposes no groups to verify, startup is ready.
+            if (tunnelOk && expectedGroups.isEmpty()) {
+                startupLog(
+                    spec,
+                    "runtime verify: controller ok with 0 expected groups; treating as ready",
+                )
+                return
+            }
             // Only log the first miss and the final attempt — intermediate retries are noise.
             if (attempt == 0 || attempt == PROXY_GROUP_READY_RETRY_COUNT - 1) {
                 startupLog(

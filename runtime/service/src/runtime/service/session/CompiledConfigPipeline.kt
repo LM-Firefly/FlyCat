@@ -31,7 +31,6 @@ import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.util.YamlCodec
 import com.github.yumelira.yumebox.core.util.runtimeHomeDir
 import com.github.yumelira.yumebox.data.model.BuiltInOverrideCatalog
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -144,7 +143,7 @@ class CompiledConfigPipeline(private val context: Context) {
      * in-memory compile (`compileAndInspectGroups`) for every profile — encrypted and non-encrypted
      * alike — so no plaintext finalYaml is ever returned to Kotlin and no runtime.yaml is written.
      */
-    suspend fun previewGroups(spec: RuntimeSpec, excludeNotSelectable: Boolean): List<ProxyGroup> =
+    fun previewGroups(spec: RuntimeSpec, excludeNotSelectable: Boolean): List<ProxyGroup> =
         // TODO: parse proxy-groups out of the compiled finalYaml for pre-start preview. Until then
         // the group list is populated from the running core over REST once it is up.
         emptyList()

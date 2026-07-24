@@ -53,7 +53,6 @@ fun ConnectionCard(
     val spacing = AppTheme.spacing
     val radii = AppTheme.radii
     val sizes = AppTheme.sizes
-    val opacity = AppTheme.opacity
     val shape = RoundedCornerShape(radii.radius24)
     val backgroundColor = MiuixTheme.colorScheme.background
     val interactionSource = remember { MutableInteractionSource() }

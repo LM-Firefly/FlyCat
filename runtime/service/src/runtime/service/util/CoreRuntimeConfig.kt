@@ -21,7 +21,6 @@
 package com.github.yumelira.yumebox.runtime.service.util
 
 import android.content.Context
-import com.tencent.mmkv.MMKV
 
 object CoreRuntimeConfig {
     private const val SETTINGS_STORE_ID = "settings"

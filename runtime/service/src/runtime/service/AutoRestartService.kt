@@ -237,7 +237,7 @@ class AutoRestartService : Service() {
             )
         }
 
-    private suspend fun cleanupIncompleteRuntime(mode: RunMode) {
+    private fun cleanupIncompleteRuntime(mode: RunMode) {
         RuntimeServiceLauncher.stop(this, mode)
     }
 

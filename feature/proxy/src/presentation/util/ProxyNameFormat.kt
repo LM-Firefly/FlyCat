@@ -52,7 +52,6 @@ private val countryNameToCode =
         "德国" to "DE",
         "日本" to "JP",
         "韩国" to "KR",
-        "韩国" to "KR",
         "新加坡" to "SG",
         "澳大利亚" to "AU",
         "澳洲" to "AU",
@@ -304,7 +303,7 @@ private val countryNameToCode =
 private val countryNameRegex: Regex = run {
     val sortedNames = countryNameToCode.keys.sortedByDescending { it.length }
     val pattern = sortedNames.joinToString("|") { Regex.escape(it) }
-    Regex("(?:$pattern)", RegexOption.IGNORE_CASE)
+    Regex(pattern, RegexOption.IGNORE_CASE)
 }
 
 private val countryCodes = countryNameToCode.values.toSet()

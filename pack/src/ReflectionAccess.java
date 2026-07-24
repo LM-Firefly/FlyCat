@@ -38,12 +38,10 @@ final class ReflectionAccess {
         field.set(target, value);
     }
 
-    static void setIfPresent(Object target, String name, Object value) throws IllegalAccessException {
+    static void setIfPresent(Object target, String name, Object value) {
         try {
-            Field field = findField(target.getClass(), name);
-            field.setAccessible(true);
-            field.set(target, value);
-        } catch (NoSuchFieldException ignored) {
+            set(target, name, value);
+        } catch (ReflectiveOperationException ignored) {
             // Field is not present on every supported Android version.
         }
     }

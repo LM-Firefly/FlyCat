@@ -164,9 +164,10 @@ internal suspend fun Context.getStableCameraProvider(): ProcessCameraProvider =
         ProcessCameraProvider.getInstance(this).also { future ->
             future.addListener(
                 {
-                    if (continuation.isActive) {
-                        continuation.resume(future.get())
-                    }
+                    if (!continuation.isActive) return@addListener
+                    // Callback only fires after completion, so get() does not block.
+                    @Suppress("BlockingMethodInNonBlockingContext")
+                    continuation.resume(future.get())
                 },
                 ContextCompat.getMainExecutor(this),
             )

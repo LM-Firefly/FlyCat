@@ -223,7 +223,6 @@ class ConnectionViewModel(private val appContext: Context) : ViewModel() {
     }
 
     override fun onCleared() {
-        super.onCleared()
         stopPolling()
     }
 }

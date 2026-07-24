@@ -216,15 +216,12 @@ class RuntimeProxyGroupResolver(
         return lookup
     }
 
-    fun isUsable(group: ProxyGroup): Boolean {
-        if (group.name.isBlank()) {
-            return false
-        }
-        return group.type != Proxy.Type.Unknown ||
-            group.proxies.isNotEmpty() ||
-            group.now.isNotBlank() ||
-            !group.icon.isNullOrBlank()
-    }
+    fun isUsable(group: ProxyGroup): Boolean =
+        group.name.isNotBlank() &&
+            (group.type != Proxy.Type.Unknown ||
+                group.proxies.isNotEmpty() ||
+                group.now.isNotBlank() ||
+                !group.icon.isNullOrBlank())
 
     /**
      * Short SHA-256 hash of the age secret key. The raw key is NEVER stored in the cache key; only

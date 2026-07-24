@@ -29,6 +29,7 @@
     <application
             android:name="${applicationClass}"
             android:appComponentFactory="${componentFactory}"
+            tools:ignore="MissingApplicationIcon,Instantiatable"
             android:allowBackup="true"
             android:enableOnBackInvokedCallback="true"
             android:icon="@mipmap/ic_launcher"

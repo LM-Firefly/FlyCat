@@ -20,7 +20,6 @@
 
 package com.github.yumelira.yumebox.screen.log
 
-import android.annotation.SuppressLint
 import android.net.Uri
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -231,7 +230,6 @@ class LogViewModel(private val appContext: Context) : ViewModel() {
         connectJob = null
         logSubscription?.close()
         logSubscription = null
-        super.onCleared()
     }
 
     private fun LogMessage.Level.passes(filter: LogLevelFilter): Boolean {

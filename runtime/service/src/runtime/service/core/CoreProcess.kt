@@ -33,6 +33,7 @@ import com.topjohnwu.superuser.Shell
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -66,11 +67,12 @@ class CoreProcess(private val context: Context) {
         val home = context.runtimeHomeDir.apply { mkdirs() }
         // Fresh core.log for this launch (libcompat redirects stdout/stderr there after chdir).
         File(home, CORE_LOG).delete()
+        // Drop any leftover controller node so readiness probes cannot hit a dead socket.
+        File(home, SOCK).delete()
         val sock = File(home, SOCK).absolutePath
-        // The core keeps the controller secret parsed from the in-memory config. Do not pass it as
-        // a process argument: command lines are visible to other processes (and, for root modes,
-        // to the root shell implementation).
-        val secret = secretFromConfig(config).orEmpty()
+        // Keep the controller secret out of argv (visible to other processes / root shell).
+        // Profiles often omit `secret:`; mint one so REST auth and readiness stay consistent.
+        val (runtimeConfig, secret) = ensureControllerSecret(config)
 
         val args = arrayOf(
             "--home", home.absolutePath,
@@ -88,7 +90,7 @@ class CoreProcess(private val context: Context) {
         // message. The core dups the fd; the app closes its own copy.
         runCatching {
             val channel = Channel(proc.channelFd)
-            val bytes = config.toByteArray(Charsets.UTF_8)
+            val bytes = runtimeConfig.toByteArray(Charsets.UTF_8)
             var offset = 0
             while (offset < bytes.size) {
                 val len = minOf(CHUNK, bytes.size - offset)
@@ -110,8 +112,9 @@ class CoreProcess(private val context: Context) {
      */
     fun startRoot(mode: String, config: String): CoreEndpoint {
         val home = context.runtimeHomeDir.apply { mkdirs() }
+        File(home, SOCK).delete()
         val sock = File(home, SOCK).absolutePath
-        val secret = secretFromConfig(config).orEmpty()
+        val (runtimeConfig, secret) = ensureControllerSecret(config)
 
         // A detached `su` daemon can't inherit the config socketpair the VPN core streams over, so
         // hand the compiled config (proxy secrets) through a named pipe instead of a file: the core
@@ -141,7 +144,7 @@ class CoreProcess(private val context: Context) {
         // daemon thread with a timeout so a core that died on launch (no reader) can't block the
         // caller forever; then unlink the pipe node (it holds nothing at rest either way).
         val writer = Thread {
-            runCatching { FileOutputStream(fifo).use { it.write(config.toByteArray(Charsets.UTF_8)) } }
+            runCatching { FileOutputStream(fifo).use { it.write(runtimeConfig.toByteArray(Charsets.UTF_8)) } }
                 .onFailure { Timber.tag(TAG).w(it, "root config pipe write failed") }
         }.apply { isDaemon = true; start() }
         writer.join(FIFO_WRITE_TIMEOUT_MS)
@@ -165,10 +168,28 @@ class CoreProcess(private val context: Context) {
         current = null
     }
 
+    /**
+     * Guarantee a non-empty controller bearer for local REST.
+     * Reuses the profile secret when present; otherwise mints one and patches the runtime config.
+     */
+    private fun ensureControllerSecret(config: String): Pair<String, String> {
+        secretFromConfig(config)?.let { return config to it }
+        val secret = UUID.randomUUID().toString().replace("-", "")
+        val line = "secret: \"$secret\""
+        val lines = config.lineSequence().toMutableList()
+        val idx = lines.indexOfFirst { it.trimStart().startsWith("secret:") }
+        if (idx >= 0) {
+            lines[idx] = line
+        } else {
+            lines.add(0, line)
+        }
+        return lines.joinToString("\n") to secret
+    }
+
     /** The top-level `secret:` from the compiled config, or null if the profile sets none. */
     private fun secretFromConfig(config: String): String? {
         val raw = config.lineSequence()
-            .firstOrNull { it.startsWith("secret:") }
+            .firstOrNull { it.trimStart().startsWith("secret:") }
             ?.substringAfter("secret:")
             ?.trim()
             ?: return null

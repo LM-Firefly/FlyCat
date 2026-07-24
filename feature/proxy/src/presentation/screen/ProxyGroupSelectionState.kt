@@ -45,25 +45,23 @@ fun rememberProxyGroupSelectionState(
     onControlledSelectedGroupNameChange: ((String?) -> Unit)? = null,
 ): ProxyGroupSelectionState {
     val uncontrolledNameState = rememberSaveable { mutableStateOf<String?>(null) }
-    val controlled = onControlledSelectedGroupNameChange != null
+    val controlledSetter = onControlledSelectedGroupNameChange
     val selectedGroupName =
-        if (controlled) controlledSelectedGroupName else uncontrolledNameState.value
+        if (controlledSetter != null) controlledSelectedGroupName else uncontrolledNameState.value
     val selectedGroupSnapshotState = remember { mutableStateOf<ProxyGroupInfo?>(null) }
-    val selectGroup = remember(controlled, onControlledSelectedGroupNameChange) {
+    val selectGroup = remember(controlledSetter) {
         { group: ProxyGroupInfo ->
-            if (controlled) {
-                onControlledSelectedGroupNameChange?.invoke(group.name)
-                Unit
+            if (controlledSetter != null) {
+                controlledSetter(group.name)
             } else {
                 uncontrolledNameState.value = group.name
             }
         }
     }
-    val clearSelection = remember(controlled, onControlledSelectedGroupNameChange) {
+    val clearSelection = remember(controlledSetter) {
         {
-            if (controlled) {
-                onControlledSelectedGroupNameChange?.invoke(null)
-                Unit
+            if (controlledSetter != null) {
+                controlledSetter(null)
             } else {
                 uncontrolledNameState.value = null
             }
@@ -86,10 +84,10 @@ fun rememberProxyGroupSelectionState(
         }
     }
 
-    LaunchedEffect(selectedGroupName, selectedGroup, retainLastKnownGroup, controlled) {
+    LaunchedEffect(selectedGroupName, selectedGroup, retainLastKnownGroup, controlledSetter) {
         if (!retainLastKnownGroup && selectedGroupName != null && selectedGroup == null) {
-            if (controlled) {
-                onControlledSelectedGroupNameChange?.invoke(null)
+            if (controlledSetter != null) {
+                controlledSetter(null)
             } else {
                 uncontrolledNameState.value = null
             }

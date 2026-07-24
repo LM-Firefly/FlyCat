@@ -30,8 +30,8 @@ object RootPackageShell {
         fun isFresh(now: Long): Boolean = now - cachedAt <= CACHE_TTL_MS
     }
 
-    private val packageUidRegex = Regex("""^package:([^\s]+).*(?:uid|userId):(\d+)\b""")
-    private val packageNameRegex = Regex("""^package:([^\s]+)""")
+    private val packageUidRegex = Regex("""^package:(\S+).*(?:uid|userId):(\d+)\b""")
+    private val packageNameRegex = Regex("""^package:(\S+)""")
 
     @Volatile private var packageUidCache: CacheEntry<Map<String, Int>>? = null
 

@@ -39,7 +39,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -80,7 +79,6 @@ fun MoeHomePage(
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val screen by homeViewModel.screenState.collectAsState()
@@ -190,7 +188,7 @@ fun MoeHomePage(
 
     val handleProxyAction: () -> Unit = {
         if (isRemoteController) {
-            Unit
+            // Remote controller mode has no local start/stop action here.
         } else if (!hasEnabledProfile || recommendedProfile == null) {
             context.toast(YumeTxt.ProfilesVM.Error.ProfileNotExist, Toast.LENGTH_SHORT)
         } else if (visualControlState == HomeProxyControlState.Idle) {

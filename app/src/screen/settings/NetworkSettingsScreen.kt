@@ -47,7 +47,6 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 fun NetworkSettingsScreen(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
     val viewModel = koinViewModel<NetworkSettingsViewModel>()
-    val uiState by viewModel.uiState.collectAsState()
     val screen by viewModel.networkScreenState.collectAsState()
     val disableAllOverride = screen.disableAllOverride
     val accessControlMode = screen.accessControlMode

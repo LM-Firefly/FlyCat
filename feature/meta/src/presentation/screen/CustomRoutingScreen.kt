@@ -45,7 +45,6 @@ fun CustomRoutingScreen(
     val viewModel: CustomRoutingViewModel = koinViewModel()
     val presetSelection by viewModel.presetSelection.collectAsState()
     val customRoutingContent by viewModel.customRoutingContent.collectAsState()
-    val templateRoundTripSafe by viewModel.templateRoundTripSafe.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val selectedUrlTestRegions = remember { mutableStateListOf<OverridePresetRegion>() }
