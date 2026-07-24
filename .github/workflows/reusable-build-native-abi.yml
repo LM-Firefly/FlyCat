@@ -141,6 +141,7 @@ jobs:
           test -f "jniLibs/${{ inputs.abi }}/liboverride.so"
           test -f "jniLibs/${{ inputs.abi }}/libcompat.so"
           test -f "jniLibs/${{ inputs.abi }}/libloader.so"
+          test -f "jniLibs/${{ inputs.abi }}/core-version.properties"
 
       - name: Upload ABI artifact
         uses: actions/upload-artifact@v7
@@ -151,4 +152,5 @@ jobs:
             jniLibs/${{ inputs.abi }}/liboverride.so
             jniLibs/${{ inputs.abi }}/libcompat.so
             jniLibs/${{ inputs.abi }}/libloader.so
+            jniLibs/${{ inputs.abi }}/core-version.properties
           if-no-files-found: error

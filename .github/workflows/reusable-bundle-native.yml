@@ -55,7 +55,11 @@ jobs:
             test -f "jniLibs/${abi}/liboverride.so"
             test -f "jniLibs/${abi}/libcompat.so"
             test -f "jniLibs/${abi}/libloader.so"
+            test -f "jniLibs/${abi}/core-version.properties"
           done
+          # Promote one ABI stamp to the path Gradle prefers when present.
+          mkdir -p build/generated
+          cp -f jniLibs/arm64-v8a/core-version.properties build/generated/core-version.properties
           test -f "build/generated/assets/geo/geoip.metadb.xz"
           test -f "build/generated/assets/geo/geosite.dat.xz"
           test -f "build/generated/assets/geo/ASN.mmdb.xz"
@@ -68,4 +72,5 @@ jobs:
           path: |
             jniLibs
             build/generated/assets/geo
+            build/generated/core-version.properties
           if-no-files-found: error

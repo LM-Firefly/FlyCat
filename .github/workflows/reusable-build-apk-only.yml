@@ -112,6 +112,8 @@ jobs:
             test -f "jniLibs/${abi}/libcompat.so"
             test -f "jniLibs/${abi}/libloader.so"
           done
+          # Core branch/hash stamp from the native job (About / BuildConfig.CORE_*).
+          test -f "jniLibs/arm64-v8a/core-version.properties" || test -f "build/generated/core-version.properties"
           test -f "build/generated/assets/geo/geoip.metadb.xz"
           test -f "build/generated/assets/geo/geosite.dat.xz"
           test -f "build/generated/assets/geo/ASN.mmdb.xz"

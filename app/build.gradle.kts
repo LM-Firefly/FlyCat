@@ -127,6 +127,8 @@ val apkGeoSegment = if (geoBundle) "builtin" else "external"
 // without a runtime JNI probe (the core is out-of-process now). Prefer kernel.properties for the
 // channel label (Alpha/Meta + optional -Smart suffix); fall back to the git checkout under
 // external.mihomo.dir for the short commit.
+// CI APK jobs never have the mihomo tree — they only download jniLibs — so prefer the
+// core-version.properties stamp written by scripts/native-build.main.kts during --go.
 data class MihomoBuildInfo(
     val branch: String,
     val commit: String,
@@ -155,19 +157,33 @@ fun resolveGitDir(repoDir: File): File? {
     }
 }
 
+/** Resolve the effective object store for a (worktree) git dir via commondir when present. */
+fun resolveGitCommonDir(gitDir: File): File {
+    val commonFile = File(gitDir, "commondir")
+    if (!commonFile.isFile) return gitDir
+    val raw = commonFile.readText().trim()
+    if (raw.isEmpty()) return gitDir
+    val resolved = File(raw)
+    val common = if (resolved.isAbsolute) resolved else File(gitDir, raw)
+    return if (common.isDirectory) common else gitDir
+}
+
 fun readGitRef(gitDir: File, ref: String): String? {
-    val refFile = File(gitDir, ref)
-    if (refFile.isFile) {
-        return refFile.readText().trim().takeIf { it.isNotEmpty() }
-    }
-    val packed = File(gitDir, "packed-refs")
-    if (!packed.isFile) return null
-    packed.useLines { lines ->
-        for (line in lines) {
-            if (line.isEmpty() || line.startsWith("#") || line.startsWith("^")) continue
-            val parts = line.split(Regex("\\s+"))
-            if (parts.size >= 2 && parts[1] == ref) {
-                return parts[0].trim().takeIf { it.isNotEmpty() }
+    val candidates = listOf(gitDir, resolveGitCommonDir(gitDir)).distinctBy { it.canonicalPath }
+    for (dir in candidates) {
+        val refFile = File(dir, ref)
+        if (refFile.isFile) {
+            return refFile.readText().trim().takeIf { it.isNotEmpty() }
+        }
+        val packed = File(dir, "packed-refs")
+        if (!packed.isFile) continue
+        packed.useLines { lines ->
+            for (line in lines) {
+                if (line.isEmpty() || line.startsWith("#") || line.startsWith("^")) continue
+                val parts = line.split(Regex("\\s+"))
+                if (parts.size >= 2 && parts[1] == ref) {
+                    return parts[0].trim().takeIf { it.isNotEmpty() }
+                }
             }
         }
     }
@@ -184,11 +200,38 @@ fun readGitHead(repoDir: File): Pair<String, String?> {
         val ref = head.removePrefix("ref:").trim()
         val branch =
             ref.removePrefix("refs/heads/").takeIf { ref.startsWith("refs/heads/") && it.isNotEmpty() }
-        val full = readGitRef(gitDir, ref) ?: return "unknown" to branch
+        // Prefer the local branch ref; some shallow/single-branch checkouts only pack the remote.
+        val full =
+            readGitRef(gitDir, ref)
+                ?: branch?.let { readGitRef(gitDir, "refs/remotes/origin/$it") }
+                ?: return "unknown" to branch
         return full.take(8) to branch
     }
     // Detached HEAD stores the raw commit object name.
     return head.take(8).ifEmpty { "unknown" } to null
+}
+
+fun loadCoreVersionStamp(rootDir: File): Properties? {
+    val candidates = buildList {
+        add(rootDir.resolve("build/generated/core-version.properties"))
+        val jniRoot = rootDir.resolve("jniLibs")
+        if (jniRoot.isDirectory) {
+            jniRoot.listFiles()
+                ?.filter { it.isDirectory }
+                ?.sortedBy { it.name }
+                ?.forEach { abiDir -> add(File(abiDir, "core-version.properties")) }
+        }
+    }
+    for (file in candidates) {
+        if (!file.isFile) continue
+        val loaded = Properties()
+        file.inputStream().use { loaded.load(it) }
+        val commit = loaded.getProperty("core.commit")?.trim().orEmpty()
+        if (commit.isNotEmpty() && commit != "unknown") {
+            return loaded
+        }
+    }
+    return null
 }
 
 fun resolveMihomoBuildInfo(rootDir: File): MihomoBuildInfo {
@@ -206,11 +249,34 @@ fun resolveMihomoBuildInfo(rootDir: File): MihomoBuildInfo {
     val mihomoRel = props.getProperty("external.mihomo.dir", "lib/mihomo/mihomo").trim()
     val mihomoDir = rootDir.resolve(mihomoRel)
 
-    val (commit, gitBranch) = readGitHead(mihomoDir)
-    // Channel from kernel.properties is the product label; git branch is only a fallback.
+    // Resolution order:
+    // 1) -Pcore.branch / -Pcore.commit overrides
+    // 2) live git checkout under external.mihomo.dir (local dev — freshest)
+    // 3) core-version.properties stamped by native-build (CI APK job has no mihomo tree)
+    val propBranch = providers.gradleProperty("core.branch").orNull?.trim()?.takeIf { it.isNotEmpty() }
+    val propCommit = providers.gradleProperty("core.commit").orNull?.trim()?.takeIf { it.isNotEmpty() }
+    val versionStamp = loadCoreVersionStamp(rootDir)
+    val (gitCommit, gitBranch) = readGitHead(mihomoDir)
+    val liveGitCommit = gitCommit.takeIf { it != "unknown" }
+    val stampCommit = versionStamp?.getProperty("core.commit")?.trim()?.takeIf { it.isNotEmpty() }
+    val usingStampCommit = propCommit == null && liveGitCommit == null && stampCommit != null
+
+    val commit =
+        propCommit
+            ?: liveGitCommit
+            ?: stampCommit
+            ?: "unknown"
+    // Channel from kernel.properties is the product label; stamp / git branch are fallbacks.
     val branchBase = configuredBranch.ifBlank { gitBranch ?: "mihomo" }
-    val branchLabel = branchBase + suffix
-    val stamp =
+    val branchLabel =
+        propBranch
+            ?: if (usingStampCommit) {
+                versionStamp?.getProperty("core.branch")?.trim()?.takeIf { it.isNotEmpty() }
+                    ?: (branchBase + suffix)
+            } else {
+                branchBase + suffix
+            }
+    val timeStamp =
         if (includeTimestamp) {
             // Avoid java.* package paths: in Gradle Kotlin DSL `java` is the project extension.
             SimpleDateFormat("yyyyMMddHHmm", Locale.US).format(Date())
@@ -218,9 +284,22 @@ fun resolveMihomoBuildInfo(rootDir: File): MihomoBuildInfo {
             "local"
         }
     // Historical version.h style: Alpha-Smart-06249f84
-    val display = "$branchLabel-$commit"
+    // Only reuse stamp display/gitVersion when the commit itself came from the stamp (CI path).
+    val display =
+        if (usingStampCommit) {
+            versionStamp?.getProperty("core.displayVersion")?.trim()?.takeIf { it.isNotEmpty() }
+                ?: "$branchLabel-$commit"
+        } else {
+            "$branchLabel-$commit"
+        }
     // Go --git-version flag shape: BRANCH_HASH_TIME (see native/delegate/init.go).
-    val gitVersionArg = "${branchLabel.replace('_', '-')}_${commit}_$stamp"
+    val gitVersionArg =
+        if (usingStampCommit) {
+            versionStamp?.getProperty("core.gitVersion")?.trim()?.takeIf { it.isNotEmpty() }
+                ?: "${branchLabel.replace('_', '-')}_${commit}_$timeStamp"
+        } else {
+            "${branchLabel.replace('_', '-')}_${commit}_$timeStamp"
+        }
     return MihomoBuildInfo(
         branch = branchLabel,
         commit = commit,

@@ -34,6 +34,8 @@ cmake-build-*/
 *.a
 *.o
 *.obj
+# Stamped by scripts/native-build.main.kts next to the native libs (not source).
+jniLibs/**/core-version.properties
 
 # Signing & secrets
 *.jks
