@@ -39,6 +39,12 @@ If you want to make YumeBox better, please refer to [CONTRIBUTING](../CONTRIBUTI
 If you want to translate YumeBox into more languages, or improve the existing translations, fork this project and create
 or update the corresponding translation file in the `locale/lang` directory.
 
+> [!TIP]
+> YumeBox uses [FYTxt](https://shirosu.gal.tf/fyl) for localization,
+> with [FVV](https://fvvlang.sbs/) used underneath to store multilingual text
+>
+> Please familiarize yourself with its syntax before contributing
+
 ### Notices
 
 > ~~The author knows nothing about the code in this project. The code is either available or unavailable, there is no
@@ -48,9 +54,12 @@ See [ThirdParty](ThirdParty.md) for the third-party libraries used in this proje
 
 1. **Icon copyright**: The copyright of the YumeBox application icon and brand assets belongs to the project owners.
 2. **Fork release restrictions**:
-    - Releases must not use the YumeBox project name.
-    - Releases must not use the original YumeBox icon.
-    - Releases must not include YumeBox's official issue feedback channels.
+    - Releases must not use the YumeBox **project name**.
+    - Releases must not use the original YumeBox **icon**.
+    - First-party content in releases must not include content related to the [OOM WG](https://oom-wg.dev/),
+      including **domains** (such as `*.oom-wg.dev`, `*.gal.tf`), **channels**, or **groups**.
+
+Forked releases must not use this content unless it is solely used to reasonably identify the source YumeBox project.
 
 ## Build
 
