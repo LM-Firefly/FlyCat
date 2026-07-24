@@ -30,7 +30,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
@@ -48,6 +47,8 @@ import kotlinx.coroutines.launch
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.preference.CheckboxPreference
+import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
 
 private enum class ProfileSettingsSection {
@@ -97,7 +98,7 @@ internal fun ProfileSettingsDialog(
 
     // Reset per dialog-open identity only (NOT on every binding change), so re-firing when the
     // async binding loads cannot wipe edits already in progress.
-    LaunchedEffect(show, profile.uuid, profile.name, profile.source, profile.hasAgeSecretKey) {
+    LaunchedEffect(show, profile.uuid) {
         if (show) {
             selectedSection = ProfileSettingsSection.Subscription
             editName = TextFieldValue(profile.name, TextRange(profile.name.length))
@@ -123,10 +124,14 @@ internal fun ProfileSettingsDialog(
         }
     }
 
-    val toggleUserOverrideSelection: (String, Boolean) -> Unit = { overrideId, isSelected ->
+    val setUserOverrideSelection: (String, Boolean) -> Unit = { overrideId, checked ->
         overrideSelectionInitialized = true
         pendingSelectedOverrideIds =
-            toggleOverrideIdSelection(pendingSelectedOverrideIds, overrideId, isSelected)
+            if (checked) {
+                (pendingSelectedOverrideIds + overrideId).distinct()
+            } else {
+                pendingSelectedOverrideIds - overrideId
+            }
     }
     val saveSettings = {
         if (!isSaving) {
@@ -306,24 +311,12 @@ internal fun ProfileSettingsDialog(
                                         ) { config ->
                                             val isSelected =
                                                 config.id in pendingSelectedOverrideIds
-                                            BasicComponent(
+                                            CheckboxPreference(
                                                 title = config.name,
-                                                endActions = {
-                                                    Checkbox(
-                                                        state = ToggleableState(isSelected),
-                                                        onClick = {
-                                                            toggleUserOverrideSelection(
-                                                                config.id,
-                                                                isSelected,
-                                                            )
-                                                        },
-                                                    )
-                                                },
-                                                onClick = {
-                                                    toggleUserOverrideSelection(
-                                                        config.id,
-                                                        isSelected,
-                                                    )
+                                                checked = isSelected,
+                                                checkboxLocation = CheckboxLocation.End,
+                                                onCheckedChange = { checked ->
+                                                    setUserOverrideSelection(config.id, checked)
                                                 },
                                             )
                                         }
@@ -337,17 +330,6 @@ internal fun ProfileSettingsDialog(
         }
     }
 }
-
-private fun toggleOverrideIdSelection(
-    selectedOverrideIds: List<String>,
-    overrideId: String,
-    isSelected: Boolean,
-): List<String> =
-    if (isSelected) {
-        selectedOverrideIds - overrideId
-    } else {
-        (selectedOverrideIds + overrideId).distinct()
-    }
 
 private fun buildFinalOverrideIds(
     selectedOverrideIds: List<String>,

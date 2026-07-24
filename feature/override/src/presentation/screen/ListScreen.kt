@@ -24,7 +24,8 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
@@ -34,9 +35,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
@@ -75,8 +74,8 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
-import androidx.compose.ui.state.ToggleableState
-import top.yukonga.miuix.kmp.basic.Checkbox
+import top.yukonga.miuix.kmp.preference.CheckboxPreference
+import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 private val overrideConfigItemGap = Spacing().space12
@@ -357,7 +356,10 @@ private fun OverrideApplyToProfilesSheet(
     var isSaving by remember { mutableStateOf(false) }
 
     LaunchedEffect(isShown, config?.id) {
-        if (!isShown || config == null) {
+        // Capture first so the null check smart-casts; checking `config == null` after
+        // `isShown` would be always-false (isShown already implies config != null).
+        val target = config
+        if (target == null || !isShown) {
             profiles = emptyList()
             selectedProfileIds = emptySet()
             selectionSeeded = false
@@ -368,7 +370,7 @@ private fun OverrideApplyToProfilesSheet(
         isLoading = true
         selectionSeeded = false
         viewModel
-            .loadApplySnapshot(config.id)
+            .loadApplySnapshot(target.id)
             .onSuccess { snapshot ->
                 profiles = snapshot.profiles
                 selectedProfileIds = snapshot.selectedProfileIds
@@ -388,6 +390,7 @@ private fun OverrideApplyToProfilesSheet(
     }
 
     val allProfileIds = remember(profiles) { profiles.map { it.uuid.toString() }.toSet() }
+    val selectionReady = selectionSeeded && !isLoading
     val applyGlobally =
         allProfileIds.isNotEmpty() && selectedProfileIds.containsAll(allProfileIds)
 
@@ -446,13 +449,16 @@ private fun OverrideApplyToProfilesSheet(
                     title = YumeTxt.Override.ApplySheet.Global,
                     summary = YumeTxt.Override.ApplySheet.GlobalSummary,
                     checked = applyGlobally,
+                    enabled = selectionReady && allProfileIds.isNotEmpty(),
                     onCheckedChange = { enabled ->
-                        selectedProfileIds =
-                            if (enabled) {
-                                allProfileIds
-                            } else {
-                                emptySet()
-                            }
+                        if (selectionReady && allProfileIds.isNotEmpty()) {
+                            selectedProfileIds =
+                                if (enabled) {
+                                    allProfileIds
+                                } else {
+                                    emptySet()
+                                }
+                        }
                     },
                 )
             }
@@ -482,27 +488,16 @@ private fun OverrideApplyToProfilesSheet(
                             ) { profile ->
                                 val profileId = profile.uuid.toString()
                                 val isSelected = profileId in selectedProfileIds
-                                BasicComponent(
+                                CheckboxPreference(
                                     title = profile.name,
-                                    endActions = {
-                                        Checkbox(
-                                            state = ToggleableState(isSelected),
-                                            onClick = {
-                                                selectedProfileIds =
-                                                    if (isSelected) {
-                                                        selectedProfileIds - profileId
-                                                    } else {
-                                                        selectedProfileIds + profileId
-                                                    }
-                                            },
-                                        )
-                                    },
-                                    onClick = {
+                                    checked = isSelected,
+                                    checkboxLocation = CheckboxLocation.End,
+                                    onCheckedChange = { checked ->
                                         selectedProfileIds =
-                                            if (isSelected) {
-                                                selectedProfileIds - profileId
-                                            } else {
+                                            if (checked) {
                                                 selectedProfileIds + profileId
+                                            } else {
+                                                selectedProfileIds - profileId
                                             }
                                     },
                                 )
@@ -784,7 +779,6 @@ private fun CreateConfigDialog(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
-    val density = LocalDensity.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val scope = rememberCoroutineScope()
     var inputMode by remember(show.value, initialMode) { mutableStateOf(initialMode) }
@@ -794,21 +788,12 @@ private fun CreateConfigDialog(
     var selectedImportFileName by remember(show.value) { mutableStateOf("") }
     var networkImportUrl by remember(show.value) { mutableStateOf("") }
     var isImporting by remember(show.value) { mutableStateOf(false) }
-    var stableContentHeightPx by remember(show.value) { mutableStateOf(0) }
     val canConfirm =
         when (inputMode) {
             OverrideConfigInputMode.CreateNew -> nameTextFieldValueState.value.text.isNotBlank()
             OverrideConfigInputMode.LocalFile ->
                 selectedImportUri != null && selectedImportFileName.isNotBlank()
             OverrideConfigInputMode.NetworkUrl -> networkImportUrl.isNotBlank() && !isImporting
-        }
-    val stableContentHeight =
-        remember(stableContentHeightPx, density) {
-            if (stableContentHeightPx <= 0) {
-                UiDp.dp0
-            } else {
-                with(density) { stableContentHeightPx.toDp() }
-            }
         }
     val importConfigLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri ->
@@ -912,7 +897,11 @@ private fun CreateConfigDialog(
         onDismissRequest = onDismiss,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(bottom = UiDp.dp16),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .wrapContentHeight()
+                    .animateContentSize(animationSpec = tween(200, easing = FastOutSlowInEasing))
+                    .padding(bottom = UiDp.dp16),
             verticalArrangement = Arrangement.spacedBy(UiDp.dp16),
         ) {
             OverrideInputModeSelector(
@@ -925,58 +914,33 @@ private fun CreateConfigDialog(
                     onSelectedTypeChange = { contentType = it },
                 )
             }
-            Box(modifier = Modifier.fillMaxWidth().heightIn(min = stableContentHeight)) {
-                Crossfade(
-                    targetState = inputMode,
-                    animationSpec = tween(200),
-                    label = "OverrideInputModeContent",
-                ) { currentInputMode ->
-                    when (currentInputMode) {
-                        OverrideConfigInputMode.CreateNew -> {
-                            Column(
-                                modifier =
-                                    Modifier.fillMaxWidth().onSizeChanged {
-                                        stableContentHeightPx =
-                                            maxOf(stableContentHeightPx, it.height)
-                                    },
-                                verticalArrangement = Arrangement.spacedBy(UiDp.dp16),
-                            ) {
-                                TextField(
-                                    value = nameTextFieldValueState.value,
-                                    onValueChange = { updatedTextFieldValue ->
-                                        nameTextFieldValueState.value = updatedTextFieldValue
-                                    },
-                                    label = YumeTxt.Override.Dialog.Create.Name,
-                                    useLabelAsPlaceholder = true,
-                                )
-                            }
-                        }
+            when (inputMode) {
+                OverrideConfigInputMode.CreateNew -> {
+                    TextField(
+                        value = nameTextFieldValueState.value,
+                        onValueChange = { updatedTextFieldValue ->
+                            nameTextFieldValueState.value = updatedTextFieldValue
+                        },
+                        label = YumeTxt.Override.Dialog.Create.Name,
+                        useLabelAsPlaceholder = true,
+                    )
+                }
 
-                        OverrideConfigInputMode.LocalFile -> {
-                            ImportOverrideFileContent(
-                                modifier =
-                                    Modifier.fillMaxWidth().onSizeChanged {
-                                        stableContentHeightPx =
-                                            maxOf(stableContentHeightPx, it.height)
-                                    },
-                                fileName = selectedImportFileName,
-                                onPickFile = { importConfigLauncher.launch("*/*") },
-                            )
-                        }
+                OverrideConfigInputMode.LocalFile -> {
+                    ImportOverrideFileContent(
+                        modifier = Modifier.fillMaxWidth(),
+                        fileName = selectedImportFileName,
+                        onPickFile = { importConfigLauncher.launch("*/*") },
+                    )
+                }
 
-                        OverrideConfigInputMode.NetworkUrl -> {
-                            ImportOverrideNetworkContent(
-                                modifier =
-                                    Modifier.fillMaxWidth().onSizeChanged {
-                                        stableContentHeightPx =
-                                            maxOf(stableContentHeightPx, it.height)
-                                    },
-                                url = networkImportUrl,
-                                enabled = !isImporting,
-                                onUrlChange = { networkImportUrl = it },
-                            )
-                        }
-                    }
+                OverrideConfigInputMode.NetworkUrl -> {
+                    ImportOverrideNetworkContent(
+                        modifier = Modifier.fillMaxWidth(),
+                        url = networkImportUrl,
+                        enabled = !isImporting,
+                        onUrlChange = { networkImportUrl = it },
+                    )
                 }
             }
         }
