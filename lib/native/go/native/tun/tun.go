@@ -9,7 +9,6 @@ import (
 	C "github.com/metacubex/mihomo/constant"
 	LC "github.com/metacubex/mihomo/listener/config"
 	"github.com/metacubex/mihomo/listener/sing_tun"
-	"github.com/metacubex/mihomo/log"
 )
 
 func splitGatewayPrefixes(gateway string) ([]netip.Prefix, []netip.Prefix, error) {
@@ -46,19 +45,10 @@ func splitDNSHijack(dns string) []string {
 	return dnsHijack
 }
 
-// Configure injects the VpnService TUN fd and Android options into the parsed config's tun section,
-// so hub.ApplyConfig starts the TUN through mihomo's own updateTun -> ReCreateTun path. That path
-// registers the global tun listener the dialer's interface finder and DNS/fake-ip integration depend
-// on, sorts the config, and runs as part of config application (before the blocking provider load).
-// A separate post-ApplyConfig sing_tun.New would skip that registration (traffic never really routes)
-// and only run after every provider finished initializing. This mirrors CFA / mihomo-android.
+// Configure injects the VpnService TUN fd into the parsed config before ApplyConfig.
 func Configure(cfg *config.Config, fd int, gateway, portal, dns string) error {
 	_ = portal // reserved; the portal address is carried by the VpnService side, not the core tun
 
-	// Always the userspace gVisor stack: its egress bypasses the tunnel via the app's uid exclusion so
-	// it needs no per-socket protect, and it has no destination-NAT table (unlike the system/mixed
-	// stacks, which drop some apps — e.g. Telegram's many direct-IP connections — once that table
-	// wraps). This matches CFA, which exposes no stack choice and is always userspace.
 	prefix4, prefix6, err := splitGatewayPrefixes(gateway)
 	if err != nil {
 		return err
@@ -77,6 +67,5 @@ func Configure(cfg *config.Config, fd int, gateway, portal, dns string) error {
 		FileDescriptor:      fd,
 	}
 
-	log.Infoln("[core] tun configured: fd=%d stack=gvisor inet4=%v dnsHijack=%v", fd, prefix4, cfg.General.Tun.DNSHijack)
 	return nil
 }

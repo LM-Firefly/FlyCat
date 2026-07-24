@@ -46,10 +46,10 @@ object BuiltInOverrideCatalog {
         listOf(
             BuiltInOverrideDefinition(
                 id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}prevent-dns-leak",
-                assetPath = "$ASSET_DIR/prevent_dns_leak.yaml",
-                contentType = OverrideContentType.Yaml,
+                assetPath = "$ASSET_DIR/prevent_dns_leak.js",
+                contentType = OverrideContentType.JavaScript,
                 nameProvider = { YumeTxt.Override.BuiltIn.PreventDnsLeak },
-                description = "YAML",
+                description = "JavaScript",
             ),
             BuiltInOverrideDefinition(
                 id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}add-direct-rules",

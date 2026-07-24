@@ -261,8 +261,23 @@ Java_com_github_yumelira_yumebox_core_bridge_NativeProcess_nativeStart(
             _exit(126);
         }
 
-        dup2(null_fd, STDOUT_FILENO);
-        dup2(null_fd, STDERR_FILENO);
+        int log_fd = -1;
+        if (workdir != NULL) {
+            log_fd = open("core.log", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
+        }
+        if (log_fd >= 0) {
+            dup2(log_fd, STDOUT_FILENO);
+            dup2(log_fd, STDERR_FILENO);
+            if (log_fd > STDERR_FILENO) {
+                close(log_fd);
+            }
+        } else {
+            dup2(null_fd, STDOUT_FILENO);
+            dup2(null_fd, STDERR_FILENO);
+        }
+        if (null_fd > STDERR_FILENO) {
+            close(null_fd);
+        }
 
         // Close every inherited descriptor except the child channel end (fds[1]) and the error
         // pipe write end (err[1]) so the core starts with a clean table. Skip the opendir fd itself.

@@ -45,6 +45,7 @@ import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import tf.gal.yumebox.locale.YumeTxt
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeStartupLogStore
+import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import java.io.IOException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -247,6 +248,11 @@ private fun exportStartupLogs(context: Context, targetUri: Uri): Boolean {
             RuntimeStartupLogStore.Scope.LOCAL_TUN to
                 RuntimeStartupLogStore(context, RuntimeStartupLogStore.Scope.LOCAL_TUN).snapshot(),
         )
+    val coreDiagnostics =
+        runCatching {
+                CoreProcess.coreDiagnosticLog(context)
+            }
+            .getOrDefault("")
     return try {
         context.contentResolver.openOutputStream(targetUri)?.use { output ->
             ZipOutputStream(output).use { zip ->
@@ -255,6 +261,9 @@ private fun exportStartupLogs(context: Context, targetUri: Uri): Boolean {
                     zip.write(content.toByteArray(Charsets.UTF_8))
                     zip.closeEntry()
                 }
+                zip.putNextEntry(ZipEntry(CORE_DIAGNOSTICS_EXPORT_NAME))
+                zip.write(coreDiagnostics.toByteArray(Charsets.UTF_8))
+                zip.closeEntry()
             }
         } ?: return false
         true
@@ -264,6 +273,8 @@ private fun exportStartupLogs(context: Context, targetUri: Uri): Boolean {
         false
     }
 }
+
+private const val CORE_DIAGNOSTICS_EXPORT_NAME = "core_diagnostics.log"
 
 @Composable
 private fun AboutLinkItem(

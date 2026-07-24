@@ -315,6 +315,13 @@ class CompiledConfigPipeline(private val context: Context) {
         val def = BuiltInOverrideCatalog.find(overrideId) ?: return null
         val configsDir = overridesDir.resolve("configs")
         val target = configsDir.resolve("$overrideId.${def.contentType.extension}")
+        // Drop leftover files from a previous content-type switch (yaml → js). Never overwrite the
+        // kept extension — that file is the user's copy of the template once it exists.
+        listOf("yaml", "yml", "js")
+            .filterNot { extension -> extension == def.contentType.extension }
+            .forEach { extension ->
+                runCatching { configsDir.resolve("$overrideId.$extension").delete() }
+            }
         if (target.exists()) {
             return target
         }

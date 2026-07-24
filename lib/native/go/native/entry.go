@@ -15,6 +15,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"cfa/native/app"
 	"cfa/native/delegate"
@@ -26,9 +27,6 @@ import (
 	"github.com/metacubex/mihomo/log"
 )
 
-// main is the standalone core executable (out-of-process architecture). VPN streams the compiled
-// config + TUN fd in-memory over the CHANNEL socketpair (never on disk); root modes read --config.
-// The same package also builds as the legacy c-shared lib, where main is never called.
 func main() {
 	var (
 		home        = flag.String("home", "", "core home directory")
@@ -48,16 +46,14 @@ func main() {
 		fatal("missing required --home")
 	}
 
-	// mihomo's logrus already prints to stdout (launcher redirects to <home>/core.log) and ApplyConfig
-	// applies the config's log-level; no extra subscriber/forced level, else every line duplicates.
+	// Pin error+ so core.log stays small; boot() writes milestones outside logrus.
+	log.SetLevel(log.ERROR)
 
 	delegate.Init(*home, *versionName, *gitVersion, *sdkVersion)
-	// Egress never loops back (VPN uid-exclude / tun auto-detect-interface / tproxy iptables bypass),
-	// so no per-socket protect; owner lookups fall back to procfs.
+	boot("Init core, home=%s versionName=%s gitVersion=%s platformVersion=%d",
+		*home, *versionName, *gitVersion, *sdkVersion)
 	app.ApplyTunContext(nil, nil)
 
-	// Acquire config (+ TUN fd for VPN). VPN streams both over the inherited socketpair; detached-su
-	// root modes can't inherit it, so they read --config and open their own device (no fd).
 	var (
 		rawConfig []byte
 		tunFd     = -1
@@ -83,24 +79,19 @@ func main() {
 		}
 		rawConfig, tunFd = data, fd
 	}
-	log.Infoln("[core] setup received: mode=%s config=%d bytes tunFd=%d", *mode, len(rawConfig), tunFd)
+	boot("[core] setup received: mode=%s config=%d bytes tunFd=%d", *mode, len(rawConfig), tunFd)
 
-	// The config is already the COMPLETE final mihomo config — the Rust patch/override layer is the
-	// single source of config truth (fake-ip DNS, store-selected, interface-clear, tun block, …).
-	// The core only parses and applies it; there is no Go-side config processing.
 	cfg, err := config.Parse(rawConfig)
 	if err != nil {
 		fatal("parse compiled config: %v", err)
 	}
+	// Profile log-level must not reopen the floodgates after ApplyConfig.
+	cfg.General.LogLevel = log.ERROR
+	log.SetLevel(log.ERROR)
 	if *controller != "" {
-		// Add the app's unix socket but KEEP the secret parsed from the config. Passing it via
-		// command line would expose it through the process list and root shell command history.
 		cfg.Controller.ExternalControllerUnix = *controller
 	}
 
-	// TUN setup is mode-specific: vpn injects the VpnService fd before ApplyConfig (gVisor stack);
-	// tun keeps the compiled `tun:` block authoritative (core opens its own kernel device); tproxy has
-	// no TUN (tproxy-port + iptables in the config).
 	if *mode == "vpn" && tunFd >= 0 {
 		if err := tun.Configure(cfg, tunFd, *gateway, *portal, *dns); err != nil {
 			fatal("configure tun: %v", err)
@@ -108,21 +99,19 @@ func main() {
 	}
 
 	hub.ApplyConfig(cfg)
-	log.Infoln("[core] config applied; mode=%s controller=%q tun.enable=%v", *mode, *controller, cfg.General.Tun.Enable)
+	log.SetLevel(log.ERROR)
+	boot("[core] config applied; mode=%s controller=%q tun.enable=%v", *mode, *controller, cfg.General.Tun.Enable)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-signals
-	log.Infoln("[core] received %v, shutting down", sig)
+	boot("[core] received %v, shutting down", sig)
 
-	// TPROXY's iptables/route rules outlive the process; tear them down on exit so a stopped daemon
-	// doesn't leave the device's networking hijacked.
 	if *mode == "tproxy" {
 		tproxy.CleanupTProxyIPTables()
 	}
 }
 
-// channelFromEnv reads the inherited socketpair fd from CHANNEL (set by libcompat.nativeStart).
 func channelFromEnv() int {
 	value := os.Getenv("CHANNEL")
 	if value == "" {
@@ -130,15 +119,12 @@ func channelFromEnv() int {
 	}
 	fd, err := strconv.Atoi(value)
 	if err != nil {
-		log.Warnln("[core] ignoring malformed CHANNEL=%q: %v", value, err)
+		log.Errorln("[core] ignoring malformed CHANNEL=%q: %v", value, err)
 		return -1
 	}
 	return fd
 }
 
-// readSetup streams the compiled config from the parent over the SEQPACKET channel with the TUN fd.
-// Config arrives as data messages; the SCM_RIGHTS message terminates config (its data ignored), or a
-// plain EOF terminates a no-fd launch. Nothing touches the filesystem.
 func readSetup(channelFd int) ([]byte, int, error) {
 	config := make([]byte, 0, 64*1024)
 	buf := make([]byte, 64*1024)
@@ -149,16 +135,15 @@ func readSetup(channelFd int) ([]byte, int, error) {
 			return nil, -1, err
 		}
 		if fd := parseRightsFd(oob[:oobn]); fd >= 0 {
-			return config, fd, nil // fd message terminates config; its data is ignored
+			return config, fd, nil
 		}
 		if n == 0 {
-			return config, -1, nil // EOF without an fd
+			return config, -1, nil
 		}
 		config = append(config, buf[:n]...)
 	}
 }
 
-// parseRightsFd extracts a single SCM_RIGHTS fd from control data, or -1 if none.
 func parseRightsFd(oob []byte) int {
 	if len(oob) == 0 {
 		return -1
@@ -173,6 +158,17 @@ func parseRightsFd(oob []byte) int {
 		}
 	}
 	return -1
+}
+
+// boot writes a lifecycle line to stdout (core.log), bypassing logrus level.
+func boot(format string, args ...any) {
+	msg := fmt.Sprintf(format, args...)
+	fmt.Fprintf(
+		os.Stdout,
+		"time=\"%s\" level=info msg=%q\n",
+		time.Now().UTC().Format(time.RFC3339Nano),
+		msg,
+	)
 }
 
 func fatal(format string, args ...any) {

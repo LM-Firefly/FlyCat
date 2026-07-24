@@ -351,8 +351,8 @@ class OverrideConfigStore(
 
     private fun loadBuiltInConfig(id: String): OverrideConfig? {
         val def = BuiltInOverrideCatalog.find(id) ?: return null
-        // Prefer the materialized file (may include local edits); fall back to reading the APK asset
-        // so the list never goes empty when file materialization fails.
+        // Prefer the materialized file (may include local edits); fall back to the APK asset so the
+        // list never goes empty when materialization fails.
         val file = materializeBuiltInFile(def)
         val content =
             file?.let { runCatching { it.readText() }.getOrNull() }
@@ -380,8 +380,8 @@ class OverrideConfigStore(
             .getOrNull()
 
     /**
-     * Copy the asset into `configsDir` if missing so fork/exec override resolution can open a real
-     * path. Existing files (including user edits) are preserved.
+     * Copy the asset into `configsDir` if missing so override resolution can open a real path.
+     * Existing files (including user edits of a built-in template) are preserved.
      */
     private fun materializeBuiltInFile(id: String): File? {
         val def = BuiltInOverrideCatalog.find(id) ?: return null
@@ -390,7 +390,12 @@ class OverrideConfigStore(
 
     private fun materializeBuiltInFile(def: BuiltInOverrideDefinition): File? {
         val target = resolveConfigFile(def.id, def.contentType)
-        if (target.exists()) return target
+        // Drop leftover files from a previous content-type (e.g. yaml → js). Never overwrite the
+        // kept extension — that file may include local edits once it exists.
+        cleanupStaleConfigFiles(def.id, keepExtension = def.contentType.extension)
+        if (target.exists()) {
+            return target
+        }
         return runCatching {
                 configsDir.mkdirs()
                 context.assets.open(def.assetPath).use { input ->

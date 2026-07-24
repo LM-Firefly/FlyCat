@@ -19,7 +19,6 @@ import (
 var errBlocked = errors.New("blocked")
 
 func Init(home, versionName, gitVersion string, platformVersion int) {
-	log.Infoln("Init core, home: %s, versionName: %s, gitVersion: %s, platformVersion: %d", home, versionName, gitVersion, platformVersion)
 	constant.SetHomeDir(home)
 	// gitVersion = ${CURRENT_BRANCH}_${COMMIT_HASH}_${COMPILE_TIME}
 	// Keep ldflags-embedded Version/BuildTime when the launcher omits --git-version.

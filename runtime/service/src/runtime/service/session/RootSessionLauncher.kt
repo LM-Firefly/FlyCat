@@ -54,10 +54,14 @@ object RootSessionLauncher {
             StatusProvider.markRuntimeStarting(mode)
             StartupTaskCoordinator.awaitWarmup()
             val spec = SessionRuntimeSpecFactory(appContext).createRootSpec(mode)
+            log.append(
+                "${logScope.tag} root launcher: profile=${spec.profileName} overrides=${spec.overrideSpecs.size}"
+            )
             val config = CompiledConfigPipeline(appContext).compile(spec)
             CoreProcess(appContext).startRoot(mode.coreArg, config)
 
-            // The fork succeeding proves nothing: a rejected config can kill the core moments later.
+            // The fork succeeding proves nothing: a rejected config kills the core moments later (only
+            // trace is core.log). Re-probe after a grace so a dead-on-arrival daemon surfaces as Failed.
             PollingTimers.awaitTick(
                 PollingTimerSpecs.dynamic(
                     name = "root_core_startup_probe",
@@ -66,8 +70,10 @@ object RootSessionLauncher {
                 )
             )
             if (!CoreProcess.isRootDaemonAlive()) {
+                val reason =
+                    CoreProcess.coreLogTail(appContext) ?: "root core exited during startup"
                 CoreProcess.stopRoot()
-                error("root core exited during startup")
+                error(reason)
             }
 
             // A live PID is not enough: libclash can stay around while its controller socket failed
@@ -77,8 +83,10 @@ object RootSessionLauncher {
             runCatching { CoreProcess.rest(appContext).queryTunnelState() }
                 .onFailure { error ->
                     CoreProcess.stopRoot()
+                    val tail = CoreProcess.coreLogTail(appContext)
                     throw IllegalStateException(
-                        "root core controller unavailable: ${error.message ?: error::class.simpleName}",
+                        "root core controller unavailable: ${error.message ?: error::class.simpleName}" +
+                            (tail?.let { " ($it)" } ?: ""),
                         error,
                     )
                 }
@@ -92,6 +100,18 @@ object RootSessionLauncher {
             StatusProvider.markRuntimeFailed(mode, error.message)
             RootForegroundService.stop(appContext)
             log.append("${logScope.tag} root launcher: failed=${error.message}")
+            val diagnostics = CoreProcess.coreDiagnosticLog(appContext)
+            if (diagnostics.isBlank()) {
+                log.append(
+                    "${logScope.tag} core diagnostics: (empty — core may have died before boot)"
+                )
+            } else {
+                log.append("${logScope.tag} core diagnostics begin")
+                diagnostics.lineSequence().forEach { line ->
+                    log.append("${logScope.tag} core| $line")
+                }
+                log.append("${logScope.tag} core diagnostics end")
+            }
             throw error
         }
     }

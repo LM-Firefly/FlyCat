@@ -64,7 +64,8 @@ class CoreProcess(private val context: Context) {
         config: String,
     ): CoreEndpoint {
         val home = context.runtimeHomeDir.apply { mkdirs() }
-        File(home, LEGACY_CORE_LOG).delete()
+        // Fresh core.log for this launch (libcompat redirects stdout/stderr there after chdir).
+        File(home, CORE_LOG).delete()
         val sock = File(home, SOCK).absolutePath
         // The core keeps the controller secret parsed from the in-memory config. Do not pass it as
         // a process argument: command lines are visible to other processes (and, for root modes,
@@ -117,18 +118,16 @@ class CoreProcess(private val context: Context) {
         // reads it once via --config and nothing is ever written to disk — the same no-plaintext-at-
         // rest posture as VPN. Drop any legacy plaintext run.yaml an older build left behind.
         File(home, LEGACY_ROOT_CONFIG).delete()
-        val legacyCoreLog = File(home, LEGACY_CORE_LOG)
-        legacyCoreLog.delete()
         val fifo = File(home, ROOT_CONFIG_PIPE).apply { delete() }
         Os.mkfifo(fifo.absolutePath, ROOT_PIPE_MODE)
 
         val lib = File(context.applicationInfo.nativeLibraryDir, LIB).absolutePath
+        val logFile = File(home, CORE_LOG).absolutePath
         val command =
-            "rm -f ${quote(legacyCoreLog.absolutePath)}; " +
-                "exec ${quote(lib)} --mode $mode --home ${quote(home.absolutePath)} " +
+            "exec ${quote(lib)} --mode $mode --home ${quote(home.absolutePath)} " +
                 "--controller ${quote(sock)} " +
                 "--config ${quote(fifo.absolutePath)} " +
-                "</dev/null >/dev/null 2>&1 & echo \$!"
+                "</dev/null >${quote(logFile)} 2>&1 & echo \$!"
 
         Timber.tag(TAG).i("launch root core, mode=%s", mode)
         val result = Shell.cmd(command).exec()
@@ -147,7 +146,8 @@ class CoreProcess(private val context: Context) {
         }.apply { isDaemon = true; start() }
         writer.join(FIFO_WRITE_TIMEOUT_MS)
         if (writer.isAlive) {
-            // No reader turned up: open one ourselves to release the blocked writer thread.
+            // No reader turned up: open one ourselves to release the blocked writer thread. The dead
+            // daemon then surfaces via the launcher's startup probe (core.log shows the read failure).
             Timber.tag(TAG).w("root config handoff timed out; core likely died on launch")
             runCatching { FileInputStream(fifo).use { it.readBytes() } }
         }
@@ -234,6 +234,21 @@ class CoreProcess(private val context: Context) {
         /** The run mode of the persisted root daemon ("tun"/"tproxy" → [RunMode]), or null when none. */
         fun rootDaemonMode(): RunMode? = RunMode.fromCoreArg(RootDaemonState.load()?.mode)
 
+        /** Last non-blank line of `<runtimeHome>/core.log`. */
+        fun coreLogTail(context: Context): String? = runCatching {
+            context.runtimeHomeDir.resolve(CORE_LOG).takeIf { it.exists() }
+                ?.readLines()?.lastOrNull { it.isNotBlank() }?.trim()?.take(300)
+        }.getOrNull()
+
+        /** Full `core.log` (Go already pins log-level=error + boot markers). */
+        fun coreDiagnosticLog(context: Context): String =
+            runCatching {
+                    val file = context.runtimeHomeDir.resolve(CORE_LOG)
+                    if (!file.exists()) return@runCatching ""
+                    file.readText().trimEnd()
+                }
+                .getOrDefault("")
+
         /**
          * Reattach to a live root daemon after an app restart: probe liveness and republish [current]
          * from the persisted secret without relaunching. Returns the mode, or null (clearing stale state).
@@ -272,7 +287,8 @@ class CoreProcess(private val context: Context) {
         private const val LEGACY_ROOT_CONFIG = "run.yaml"
         private const val ROOT_PIPE_MODE = 384
         private const val FIFO_WRITE_TIMEOUT_MS = 5000L
-        private const val LEGACY_CORE_LOG = "core.log"
+        /** Core stdout/stderr log under [runtimeHomeDir]; launcher redirects both modes here. */
+        const val CORE_LOG = "core.log"
 
         private fun quote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 

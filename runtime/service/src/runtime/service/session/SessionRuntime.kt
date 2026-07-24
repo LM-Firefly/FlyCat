@@ -301,12 +301,14 @@ class SessionRuntime(
 
         transport.prepare(spec)
         transport.start(spec)
+        startupLog(
+            spec,
+            "core launched profile=${spec.profileName} overrides=${spec.overrideSpecs.size}",
+        )
         awaitProxyGroupsReady(spec)
         ensureNotInterrupted(spec)
         startLogStream()
-        startupLog(spec, "snapshot refresh: begin")
         refreshRuntimeSnapshot()
-        startupLog(spec, "snapshot refresh: done")
 
         updateSnapshot {
             it.copy(
@@ -346,9 +348,7 @@ class SessionRuntime(
         awaitProxyGroupsReady(spec)
         ensureNotInterrupted(spec)
         currentSpec = spec
-        startupLog(spec, "snapshot refresh: begin")
         refreshRuntimeSnapshot()
-        startupLog(spec, "snapshot refresh: done")
         updateSnapshot {
             it.copy(
                 phase = RuntimePhase.Running,
@@ -429,6 +429,7 @@ class SessionRuntime(
             )
         )
         startupLog(spec, "failed=$reason")
+        appendCoreDiagnostics(spec)
         host.reportFailure(reason)
     }
 
@@ -443,13 +444,16 @@ class SessionRuntime(
                     ?.let { " sample=${it.take(5)}" }
                     .orEmpty(),
         )
-        if (expectedGroups.isEmpty()) {
-            return
-        }
 
+        var lastControllerError: String? = null
         repeat(PROXY_GROUP_READY_RETRY_COUNT) { attempt ->
             ensureNotInterrupted(spec)
-            val names = runCatching { rest.queryProxyGroupNames(false) }.getOrDefault(emptyList())
+            val names =
+                runCatching { rest.queryProxyGroupNames(false) }
+                    .onFailure { error ->
+                        lastControllerError = error.message ?: error::class.simpleName
+                    }
+                    .getOrDefault(emptyList())
             if (names.isNotEmpty()) {
                 startupLog(
                     spec,
@@ -457,8 +461,25 @@ class SessionRuntime(
                 )
                 return
             }
+            val tunnelOk =
+                runCatching {
+                        rest.queryTunnelState()
+                        true
+                    }
+                    .onFailure { error ->
+                        lastControllerError = error.message ?: error::class.simpleName
+                    }
+                    .getOrDefault(false)
+            // Only log the first miss and the final attempt — intermediate retries are noise.
+            if (attempt == 0 || attempt == PROXY_GROUP_READY_RETRY_COUNT - 1) {
+                startupLog(
+                    spec,
+                    "runtime verify: actualGroups=0 controller=${if (tunnelOk) "ok" else "down"}" +
+                        (lastControllerError?.let { " err=$it" } ?: "") +
+                        " attempt=${attempt + 1}/$PROXY_GROUP_READY_RETRY_COUNT",
+                )
+            }
             if (attempt < PROXY_GROUP_READY_RETRY_COUNT - 1) {
-                startupLog(spec, "runtime verify: actualGroups=0 retry=${attempt + 1}")
                 runBlocking {
                     PollingTimers.awaitTick(
                         PollingTimerSpecs.dynamic(
@@ -472,10 +493,47 @@ class SessionRuntime(
         }
 
         ensureNotInterrupted(spec)
+        val coreTail =
+            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.coreLogTail(
+                host.context.appContextOrSelf
+            )
+        if (expectedGroups.isNotEmpty()) {
+            error(
+                "runtime loaded but exposed 0 proxy groups; expected=${expectedGroups.size} " +
+                    "sample=${expectedGroups.take(min(5, expectedGroups.size))}" +
+                    (coreTail?.let { " core=$it" } ?: "")
+            )
+        }
         error(
-            "runtime loaded but exposed 0 proxy groups; expected=${expectedGroups.size} " +
-                "sample=${expectedGroups.take(min(5, expectedGroups.size))}"
+            "core controller unavailable or exposed 0 proxy groups during startup" +
+                (lastControllerError?.let { ": $it" } ?: "") +
+                (coreTail?.let { " ($it)" } ?: "")
         )
+    }
+
+    private fun appendCoreDiagnostics(spec: RuntimeSpec) {
+        val scope =
+            when (spec.owner) {
+                RuntimeOwner.VpnService -> RuntimeStartupLogStore.Scope.LOCAL_TUN
+                RuntimeOwner.RootDaemon -> RuntimeStartupLogStore.Scope.ROOT_TUN
+                RuntimeOwner.RemoteController,
+                RuntimeOwner.None -> return
+            }
+        val diagnostics =
+            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.coreDiagnosticLog(
+                host.context.appContextOrSelf
+            )
+        if (diagnostics.isBlank()) {
+            RuntimeStartupLogStore(host.context.appContextOrSelf, scope)
+                .append("${scope.tag} core diagnostics: (empty — core may have died before boot)")
+            return
+        }
+        val store = RuntimeStartupLogStore(host.context.appContextOrSelf, scope)
+        store.append("${scope.tag} core diagnostics begin")
+        diagnostics.lineSequence().forEach { line ->
+            store.append("${scope.tag} core| $line")
+        }
+        store.append("${scope.tag} core diagnostics end")
     }
 
     private fun readExpectedGroupNames(spec: RuntimeSpec): List<String> =
