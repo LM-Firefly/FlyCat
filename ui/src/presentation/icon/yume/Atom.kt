@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("DuplicatedCode", "UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathFillType.Companion.NonZero
@@ -33,10 +36,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Atom: ImageVector
     get() {
-        if (_atom != null) {
-            return _atom!!
+        if (atomVector != null) {
+            return atomVector!!
         }
-        _atom =
+        atomVector =
             Builder(
                     name = "Atom",
                     defaultWidth = 24.0.dp,
@@ -56,8 +59,8 @@ val Yume.Atom: ImageVector
                     ) {
                         moveTo(12.0f, 12.0f)
                         moveToRelative(-1.0f, 0.0f)
-                        arcToRelative(1.0f, 1.0f, 0.0f, true, true, 2.0f, 0.0f)
-                        arcToRelative(1.0f, 1.0f, 0.0f, true, true, -2.0f, 0.0f)
+                        arcToRelative(1.0f, 1.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, 2.0f, 0.0f)
+                        arcToRelative(1.0f, 1.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, -2.0f, 0.0f)
                     }
                     path(
                         fill = SolidColor(Color(0x00000000)),
@@ -93,7 +96,7 @@ val Yume.Atom: ImageVector
                     }
                 }
                 .build()
-        return _atom!!
+        return atomVector!!
     }
 
-private var _atom: ImageVector? = null
+private var atomVector: ImageVector? = null

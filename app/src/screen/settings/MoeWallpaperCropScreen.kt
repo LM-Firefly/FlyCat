@@ -18,7 +18,12 @@
  *
  */
 
+@file:Suppress("DuplicatedCode", "FunctionName")
+
 package com.github.yumelira.yumebox.screen.settings
+
+import androidx.core.net.toUri
+
 
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -88,7 +93,7 @@ fun MoeWallpaperCropScreen(
             value =
                 withContext(Dispatchers.IO) {
                     runCatching {
-                        context.contentResolver.openInputStream(Uri.parse(wallpaperUri))?.use {
+                        context.contentResolver.openInputStream(wallpaperUri.toUri())?.use {
                             input ->
                             val options =
                                 BitmapFactory.Options().apply { inJustDecodeBounds = true }

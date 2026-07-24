@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "ConstPropertyName")
+
 package com.github.yumelira.yumebox.presentation.theme
+
 
 import androidx.compose.animation.core.*
 

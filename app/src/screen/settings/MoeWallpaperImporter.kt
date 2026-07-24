@@ -20,6 +20,8 @@
 
 package com.github.yumelira.yumebox.screen.settings
 
+import androidx.core.net.toUri
+
 import android.content.Context
 import android.net.Uri
 import com.github.yumelira.yumebox.core.util.moeWallpaperFile
@@ -28,7 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Copies the Moe wallpaper from an external [sourceUri] (typically a `content://` URI from the
+ * Copies the Moe wallpaper from an external `sourceUri` (typically a `content://` URI from the
  * photo picker) into the app-private files dir, so rendering survives deletion/permission loss of
  * the original source.
  *
@@ -44,7 +46,7 @@ object MoeWallpaperImporter {
             runCatching {
                 val target = context.moeWallpaperFile()
                 val tmp = File(target.parentFile, "wallpaper.tmp")
-                context.contentResolver.openInputStream(Uri.parse(sourceUri)).use { input ->
+                context.contentResolver.openInputStream(sourceUri.toUri()).use { input ->
                     requireNotNull(input) { "Unable to open Moe wallpaper source: $sourceUri" }
                     tmp.outputStream().use { input.copyTo(it) }
                 }

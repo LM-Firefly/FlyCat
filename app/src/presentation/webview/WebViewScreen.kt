@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.presentation.webview
+
 
 import android.app.Activity
 import androidx.activity.compose.BackHandler

@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "IfThenToElvis")
+
 package com.github.yumelira.yumebox.data.store
 
 import android.content.Context

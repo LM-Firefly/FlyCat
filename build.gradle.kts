@@ -24,17 +24,15 @@ import com.android.build.api.dsl.LibraryExtension
 buildscript {
     configurations.classpath {
         resolutionStrategy.eachDependency {
-            when {
-                requested.group == "com.google.protobuf" -> useVersion("3.25.9")
-                requested.group == "org.bouncycastle" -> useVersion("1.84")
-                requested.group == "org.jdom" && requested.name == "jdom2" -> useVersion("2.0.6.1")
-                requested.group == "org.bitbucket.b_c" && requested.name == "jose4j" ->
-                    useVersion("0.9.6")
-                requested.group == "com.fasterxml.jackson.core" &&
-                    requested.name == "jackson-core" -> useVersion("2.22.0")
-                requested.group == "org.apache.commons" && requested.name == "commons-lang3" ->
-                    useVersion("3.20.0")
-                requested.group == "io.netty" -> useVersion("4.1.135.Final")
+            when (requested.group) {
+                "com.google.protobuf" -> useVersion("3.25.9")
+                "org.bouncycastle" -> useVersion("1.84")
+                "org.jdom" -> if (requested.name == "jdom2") useVersion("2.0.6.1")
+                "org.bitbucket.b_c" -> if (requested.name == "jose4j") useVersion("0.9.6")
+                "com.fasterxml.jackson.core" ->
+                    if (requested.name == "jackson-core") useVersion("2.22.0")
+                "org.apache.commons" -> if (requested.name == "commons-lang3") useVersion("3.20.0")
+                "io.netty" -> useVersion("4.1.135.Final")
             }
         }
     }
@@ -48,7 +46,7 @@ plugins {
     kotlin("plugin.compose") version "2.3.10" apply false
     id("com.google.devtools.ksp") version "2.3.2" apply false
     id("androidx.room") version "2.8.4" apply false
-    id("com.mikepenz.aboutlibraries.plugin.android") version "15.0.3" apply false
+    id("com.mikepenz.aboutlibraries.plugin.android") version "15.0.4" apply false
     id("com.diffplug.spotless") version "8.8.0" apply false
 }
 
@@ -58,13 +56,11 @@ plugins {
 allprojects {
     configurations.configureEach {
         resolutionStrategy.eachDependency {
-            when {
-                requested.group == "org.bouncycastle" -> useVersion("1.84")
-                requested.group == "io.netty" -> useVersion("4.1.135.Final")
-                requested.group == "org.apache.httpcomponents" && requested.name == "httpclient" ->
-                    useVersion("4.5.14")
-                requested.group == "org.apache.commons" && requested.name == "commons-lang3" ->
-                    useVersion("3.20.0")
+            when (requested.group) {
+                "org.bouncycastle" -> useVersion("1.84")
+                "io.netty" -> useVersion("4.1.135.Final")
+                "org.apache.httpcomponents" -> if (requested.name == "httpclient") useVersion("4.5.14")
+                "org.apache.commons" -> if (requested.name == "commons-lang3") useVersion("3.20.0")
             }
         }
     }

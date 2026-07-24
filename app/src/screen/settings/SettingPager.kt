@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.screen.settings
+
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
@@ -178,19 +181,19 @@ private fun SettingsMasterList(
                         title = YumeTxt.Settings.UiSettings.App,
                         summary = YumeTxt.Settings.UiSettings.AppSummary,
                         onClick = { onOpen(Route.AppSettings) },
-                        icon = Yume.`Settings-2`,
+                        icon = Yume.Settings2,
                     )
                     SettingsRootPreference(
                         title = YumeTxt.Settings.UiSettings.Network,
                         summary = YumeTxt.Settings.UiSettings.NetworkSummary,
                         onClick = { onOpen(Route.NetworkSettings) },
-                        icon = Yume.`Wifi-cog`,
+                        icon = Yume.WifiCog,
                     )
                     SettingsRootPreference(
                         title = YumeTxt.Settings.UiSettings.Override,
                         summary = YumeTxt.Settings.UiSettings.OverrideSummary,
                         onClick = { onOpen(Route.Override) },
-                        icon = Yume.`Git-merge`,
+                        icon = Yume.GitMerge,
                     )
                     SettingsRootPreference(
                         title = YumeTxt.Settings.UiSettings.MetaFeatures,

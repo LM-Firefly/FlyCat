@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("JavaDefaultMethodsNotOverriddenByDelegation", "UnusedSymbol", "RedundantIf")
+
 package com.github.yumelira.yumebox.core.model
 
 import android.os.Parcel

@@ -32,12 +32,13 @@
         android:appComponentFactory="${componentFactory}"
         android:allowBackup="true"
         android:enableOnBackInvokedCallback="true"
+        tools:targetApi="33"
         android:icon="@mipmap/ic_launcher"
         android:label="${appName}"
         android:supportsRtl="true"
         android:theme="@style/Theme.YumeBox"
         android:usesCleartextTraffic="true"
-        tools:ignore="MissingApplicationIcon,Instantiatable"
+        tools:ignore="MissingApplicationIcon,Instantiatable,MissingClass"
         tools:replace="android:appComponentFactory">
         <activity
             android:name=".MainActivity"

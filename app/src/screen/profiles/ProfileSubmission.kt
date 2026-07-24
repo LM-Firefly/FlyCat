@@ -19,6 +19,8 @@
 
 package com.github.yumelira.yumebox.screen.profiles
 
+import androidx.core.net.toUri
+
 import android.net.Uri
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_FILE
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
@@ -84,7 +86,7 @@ internal fun submitProfile(draft: ProfileDraft) {
             draft.filePath,
             Profile.Type.File,
             0L,
-            Uri.parse(draft.filePath),
+            draft.filePath.toUri(),
             draft.ageSecretKey.trim(),
         )
     }

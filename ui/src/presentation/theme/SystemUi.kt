@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.presentation.theme
+
 
 import android.app.Activity
 import android.content.res.Configuration

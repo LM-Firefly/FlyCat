@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,10 +34,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Message: ImageVector
     get() {
-        if (_MessageCircleQuestionMark != null) {
-            return _MessageCircleQuestionMark!!
+        if (messageVector != null) {
+            return messageVector!!
         }
-        _MessageCircleQuestionMark =
+        messageVector =
             ImageVector.Builder(
                     name = "MessageCircleQuestionMark",
                     defaultWidth = 24.dp,
@@ -119,7 +122,7 @@ val Yume.Message: ImageVector
                 }
                 .build()
 
-        return _MessageCircleQuestionMark!!
+        return messageVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _MessageCircleQuestionMark: ImageVector? = null
+@Suppress("ObjectPropertyName") private var messageVector: ImageVector? = null

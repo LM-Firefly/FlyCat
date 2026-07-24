@@ -9,7 +9,10 @@
  * Copyright (c) YumeYucca 2025 - Present
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.screen.moe
+
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth

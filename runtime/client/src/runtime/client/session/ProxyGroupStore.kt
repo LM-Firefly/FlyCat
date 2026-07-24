@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Proxy-group view state extracted from [ProxyFacade]: caches the last published group list,
+ * Proxy-group view state extracted from `ProxyFacade`: caches the last published group list,
  * dedupes republishes by content summary, and resolves the primary end node by walking the
  * selection chain. Publishing also reports readiness back so the runtime snapshot can track it.
  */

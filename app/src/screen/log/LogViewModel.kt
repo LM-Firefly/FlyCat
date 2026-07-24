@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("ConvertLongToDuration")
+
 package com.github.yumelira.yumebox.screen.log
 
 import android.content.Context

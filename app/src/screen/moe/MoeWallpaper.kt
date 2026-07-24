@@ -9,7 +9,12 @@
  * Copyright (c) YumeYucca 2025 - Present
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.screen.moe
+
+import androidx.core.net.toUri
+
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -121,7 +126,7 @@ private fun rememberWallpaperPainter(
 private suspend fun readImageBounds(context: Context, model: String): Pair<Int, Int>? =
     withContext(Dispatchers.IO) {
         runCatching {
-            context.contentResolver.openInputStream(Uri.parse(model))?.use { input ->
+            context.contentResolver.openInputStream(model.toUri())?.use { input ->
                 BitmapFactory.Options()
                     .apply { inJustDecodeBounds = true }
                     .also { options ->
@@ -142,7 +147,7 @@ private fun resolveWallpaperModel(context: Context, uri: String): String {
         return if (File(path).exists()) uri else bundledWallpaper
     }
     val readable = runCatching {
-        context.contentResolver.openInputStream(Uri.parse(uri))?.use { true } ?: false
+        context.contentResolver.openInputStream(uri.toUri())?.use { true } ?: false
     }
         .getOrDefault(false)
     return if (readable) uri else bundledWallpaper

@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.presentation.screen.node
+
 
 import androidx.compose.runtime.Composable
 import com.github.yumelira.yumebox.data.model.ProxySortMode

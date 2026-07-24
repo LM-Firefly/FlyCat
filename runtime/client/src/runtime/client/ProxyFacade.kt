@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.runtime.client
+
 
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.*

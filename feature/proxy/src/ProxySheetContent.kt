@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("DuplicatedCode", "FunctionName")
+
 package com.github.yumelira.yumebox
+
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -32,7 +35,7 @@ import com.github.yumelira.yumebox.domain.model.isSelectable
 import com.github.yumelira.yumebox.presentation.component.AppBottomSheetAction
 import com.github.yumelira.yumebox.presentation.component.AppBottomSheetIconAction
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.`List-chevrons-up-down`
+import com.github.yumelira.yumebox.presentation.icon.yume.ListChevronsUpDown
 import com.github.yumelira.yumebox.presentation.icon.yume.Speed
 import com.github.yumelira.yumebox.presentation.screen.node.NodeGroupSheetContent
 import com.github.yumelira.yumebox.presentation.screen.node.NodeSheetContent
@@ -188,7 +191,7 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
                         AppBottomSheetIconAction(
                             action =
                                 AppBottomSheetAction(
-                                    icon = Yume.`List-chevrons-up-down`,
+                                    icon = Yume.ListChevronsUpDown,
                                     contentDescription = YumeTxt.Proxy.Action.Sort,
                                     onClick = { showSortPopup.value = true },
                                 )

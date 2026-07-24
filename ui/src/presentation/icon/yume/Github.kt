@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathFillType.Companion.NonZero
@@ -33,10 +36,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Github: ImageVector
     get() {
-        if (_github != null) {
-            return _github!!
+        if (githubVector != null) {
+            return githubVector!!
         }
-        _github =
+        githubVector =
             Builder(
                     name = "Github",
                     defaultWidth = 24.0.dp,
@@ -56,7 +59,7 @@ val Yume.Github: ImageVector
                     ) {
                         moveTo(15.0f, 22.0f)
                         verticalLineToRelative(-4.0f)
-                        arcToRelative(4.8f, 4.8f, 0.0f, false, false, -1.0f, -3.5f)
+                        arcToRelative(4.8f, 4.8f, 0.0f, isMoreThanHalf = false, isPositiveArc = false, -1.0f, -3.5f)
                         curveToRelative(3.0f, 0.0f, 6.0f, -2.0f, 6.0f, -5.5f)
                         curveToRelative(0.08f, -1.25f, -0.27f, -2.48f, -1.0f, -3.5f)
                         curveToRelative(0.28f, -1.15f, 0.28f, -2.35f, 0.0f, -3.5f)
@@ -64,7 +67,7 @@ val Yume.Github: ImageVector
                         curveToRelative(-2.64f, -0.5f, -5.36f, -0.5f, -8.0f, 0.0f)
                         curveTo(6.0f, 2.0f, 5.0f, 2.0f, 5.0f, 2.0f)
                         curveToRelative(-0.3f, 1.15f, -0.3f, 2.35f, 0.0f, 3.5f)
-                        arcTo(5.403f, 5.403f, 0.0f, false, false, 4.0f, 9.0f)
+                        arcTo(5.403f, 5.403f, 0.0f, isMoreThanHalf = false, isPositiveArc = false, 4.0f, 9.0f)
                         curveToRelative(0.0f, 3.5f, 3.0f, 5.5f, 6.0f, 5.5f)
                         curveToRelative(-0.39f, 0.49f, -0.68f, 1.05f, -0.85f, 1.65f)
                         curveToRelative(-0.17f, 0.6f, -0.22f, 1.23f, -0.15f, 1.85f)
@@ -84,7 +87,7 @@ val Yume.Github: ImageVector
                     }
                 }
                 .build()
-        return _github!!
+        return githubVector!!
     }
 
-private var _github: ImageVector? = null
+private var githubVector: ImageVector? = null

@@ -21,14 +21,14 @@
 package com.github.yumelira.yumebox.presentation.icon
 
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.github.yumelira.yumebox.presentation.icon.yume.`Arrow-down-up`
-import com.github.yumelira.yumebox.presentation.icon.yume.`Badge-plus`
+import com.github.yumelira.yumebox.presentation.icon.yume.ArrowDownUp
+import com.github.yumelira.yumebox.presentation.icon.yume.BadgePlus
 import com.github.yumelira.yumebox.presentation.icon.yume.Bolt
-import com.github.yumelira.yumebox.presentation.icon.yume.`Package-check`
+import com.github.yumelira.yumebox.presentation.icon.yume.PackageCheck
 
 object ShellIcons {
-    val AddProfile: ImageVector = Yume.`Badge-plus`
-    val OpenProxy: ImageVector = Yume.`Arrow-down-up`
-    val OpenProfiles: ImageVector = Yume.`Package-check`
+    val AddProfile: ImageVector = Yume.BadgePlus
+    val OpenProxy: ImageVector = Yume.ArrowDownUp
+    val OpenProfiles: ImageVector = Yume.PackageCheck
     val OpenSettings: ImageVector = Yume.Bolt
 }

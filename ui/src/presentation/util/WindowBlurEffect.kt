@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "FunctionName")
+
 package com.github.yumelira.yumebox.presentation.util
+
 
 import android.app.Activity
 import android.content.Context

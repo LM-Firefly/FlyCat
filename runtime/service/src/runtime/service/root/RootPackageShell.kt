@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "CanConvertToMultiDollarString")
+
 package com.github.yumelira.yumebox.runtime.service.root
 
 import com.topjohnwu.superuser.Shell

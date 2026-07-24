@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("CanBeParameter")
+
 package com.github.yumelira.yumebox.runtime.service.session
 
 import android.content.Context

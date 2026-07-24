@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.core.util
+
 
 import java.net.InetAddress
 import java.net.InetSocketAddress

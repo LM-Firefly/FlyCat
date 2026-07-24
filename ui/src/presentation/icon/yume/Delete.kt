@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,10 +34,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Delete: ImageVector
     get() {
-        if (_Trash != null) {
-            return _Trash!!
+        if (deleteVector != null) {
+            return deleteVector!!
         }
-        _Trash =
+        deleteVector =
             ImageVector.Builder(
                     name = "Trash",
                     defaultWidth = 24.dp,
@@ -113,7 +116,7 @@ val Yume.Delete: ImageVector
                 }
                 .build()
 
-        return _Trash!!
+        return deleteVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _Trash: ImageVector? = null
+@Suppress("ObjectPropertyName") private var deleteVector: ImageVector? = null

@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("FunctionName", "SortModifiers")
+
 package com.github.yumelira.yumebox.screen.profiles
 
 import androidx.compose.animation.*

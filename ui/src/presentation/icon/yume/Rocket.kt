@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,10 +34,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Rocket: ImageVector
     get() {
-        if (_Rocket != null) {
-            return _Rocket!!
+        if (rocketVector != null) {
+            return rocketVector!!
         }
-        _Rocket =
+        rocketVector =
             ImageVector.Builder(
                     name = "Rocket",
                     defaultWidth = 24.dp,
@@ -127,7 +130,7 @@ val Yume.Rocket: ImageVector
                 }
                 .build()
 
-        return _Rocket!!
+        return rocketVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _Rocket: ImageVector? = null
+@Suppress("ObjectPropertyName") private var rocketVector: ImageVector? = null

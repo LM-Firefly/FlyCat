@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "CanBeParameter")
+
 package com.github.yumelira.yumebox.screen.settings
 
 import android.app.Application

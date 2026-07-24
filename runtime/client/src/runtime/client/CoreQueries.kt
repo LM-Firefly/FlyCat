@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.runtime.client
+
 
 import com.github.yumelira.yumebox.core.model.*
 import com.github.yumelira.yumebox.runtime.api.CoreApi

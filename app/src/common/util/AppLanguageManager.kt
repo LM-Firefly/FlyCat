@@ -18,18 +18,22 @@
  *
  */
 
+@file:Suppress("AndroidLintObsoleteSdkInt")
+
 package com.github.yumelira.yumebox.common.util
+
+import android.annotation.SuppressLint
 
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
-import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import com.github.yumelira.yumebox.data.model.AppLanguage
 import java.util.*
 import tf.gal.shirosu.fyl.fytxt.FYTxtConfig
 
+@SuppressLint("AppBundleLocaleChanges")
 object AppLanguageManager {
     @Volatile private var activeLanguage: AppLanguage = AppLanguage.System
 
@@ -78,12 +82,7 @@ object AppLanguageManager {
 
     private fun systemLocale(): Locale {
         val resources = Resources.getSystem()
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            resources.configuration.locales[0] ?: Locale.getDefault()
-        } else {
-            @Suppress("DEPRECATION")
-            resources.configuration.locale ?: Locale.getDefault()
-        }
+        return resources.configuration.locales[0] ?: Locale.getDefault()
     }
 
     private fun applyLocale(configuration: Configuration, locale: Locale) {

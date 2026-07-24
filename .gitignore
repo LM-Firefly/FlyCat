@@ -90,3 +90,6 @@ Thumbs.db
 # Python bytecode
 __pycache__/
 *.pyc
+
+.qodana_work/
+

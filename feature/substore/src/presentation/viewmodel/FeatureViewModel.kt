@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "RedundantIf")
+
 package com.github.yumelira.yumebox.presentation.viewmodel
 
 import android.app.Application
@@ -230,11 +232,8 @@ class FeatureViewModel(
         }
         NativeLibraryManager.initialize(application)
         _isJavetLoaded.value =
-            if (!NativeLibraryManager.isLibraryAvailable(JAVET_LIB_NAME)) {
+            NativeLibraryManager.isLibraryAvailable(JAVET_LIB_NAME) ||
                 NativeLibraryManager.extractAllLibraries()[JAVET_LIB_NAME] == true
-            } else {
-                true
-            }
     }
 
     fun refreshExtensionStatus() {

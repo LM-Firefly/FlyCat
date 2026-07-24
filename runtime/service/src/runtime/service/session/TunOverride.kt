@@ -27,13 +27,13 @@ import com.github.yumelira.yumebox.core.util.YamlCodec
 import java.io.File
 
 /**
- * Builds the built-in `tun:` fragment for Tun mode from the app-side [TunConfig]. The core opens
+ * Builds the built-in `tun:` fragment for Tun mode from the app-side `TunConfig`. The core opens
  * its OWN kernel TUN from this block (liboverride keeps it authoritative via the Rust `RunMode`
  * flag), so all geometry — interface, MTU, stack, auto-route/redirect, uid scoping — is chosen here
  * in the app.
  *
  * A partial `dns:` block flips `dns.enable` on and SUPPRESSES the compiler's full fake-ip injection
- * ([patch_static_runtime]); the compiler backfills the nameserver whenever this leaves DNS empty,
+ * (`patch_static_runtime`); the compiler backfills the nameserver whenever this leaves DNS empty,
  * so Tun and VpnService resolve identically and the resolver is never left crippled.
  *
  * Delivered as an ordinary override, NOT a reserved one: "disable all overrides" empties the whole
@@ -95,7 +95,7 @@ object TunOverride {
         return YamlCodec.dumpMap(linkedMapOf<String, Any?>("tun" to tun, "dns" to dns))
     }
 
-    /** Writes the override YAML into [dir] and returns its [OverrideSpec] for the compile chain. */
+    /** Writes the override YAML into `dir` and returns its `OverrideSpec` for the compile chain. */
     fun materialize(config: TunConfig, dir: File): OverrideSpec {
         dir.mkdirs()
         val file = File(dir, FILE_NAME)

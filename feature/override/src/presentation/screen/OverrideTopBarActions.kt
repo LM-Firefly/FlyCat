@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "FunctionName", "UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.screen
 
 import androidx.compose.foundation.layout.RowScope

@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.data.model
+
 
 import tf.gal.yumebox.locale.YumeTxt
 

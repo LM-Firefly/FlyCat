@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.data.store
+
 
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.OverrideInternalConstants

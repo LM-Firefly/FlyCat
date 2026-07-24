@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.runtime.service.config
+
 
 import com.github.yumelira.yumebox.core.model.TunDnsMode
 import com.tencent.mmkv.MMKV

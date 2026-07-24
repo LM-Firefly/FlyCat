@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.screen.profiles
+
 
 import android.Manifest
 import android.content.pm.PackageManager

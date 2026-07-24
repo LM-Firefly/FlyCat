@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,10 +34,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.ShieldMinus: ImageVector
     get() {
-        if (_ShieldMinus != null) {
-            return _ShieldMinus!!
+        if (shieldMinusVector != null) {
+            return shieldMinusVector!!
         }
-        _ShieldMinus =
+        shieldMinusVector =
             ImageVector.Builder(
                     name = "ShieldMinus",
                     defaultWidth = 24.dp,
@@ -105,7 +108,7 @@ val Yume.ShieldMinus: ImageVector
                 }
                 .build()
 
-        return _ShieldMinus!!
+        return shieldMinusVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _ShieldMinus: ImageVector? = null
+@Suppress("ObjectPropertyName") private var shieldMinusVector: ImageVector? = null

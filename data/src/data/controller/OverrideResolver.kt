@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "RedundantSuspendModifier")
+
 package com.github.yumelira.yumebox.data.controller
 
 import com.github.yumelira.yumebox.core.model.OverrideSpec
@@ -72,7 +74,7 @@ class OverrideResolver(
         bindingProvider.removeBinding(profileId)
     }
 
-    private suspend fun resolveBindingIds(binding: ProfileBinding?): List<String> {
+    private fun resolveBindingIds(binding: ProfileBinding?): List<String> {
         if (binding == null) {
             return emptyList()
         }

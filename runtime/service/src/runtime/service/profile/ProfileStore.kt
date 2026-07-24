@@ -20,7 +20,10 @@
 
 @file:UseSerializers(UUIDSerializer::class)
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.runtime.service.profile
+
 
 import com.github.yumelira.yumebox.runtime.api.UUIDSerializer
 import com.tencent.mmkv.MMKV

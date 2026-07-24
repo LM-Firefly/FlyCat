@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "FunctionName", "IntroduceWhenSubject")
+
 package com.github.yumelira.yumebox.screen.home
 
 import androidx.compose.foundation.clickable

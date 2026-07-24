@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.screen.profiles
+
 
 import android.annotation.SuppressLint
 import android.content.Context

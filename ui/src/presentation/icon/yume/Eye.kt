@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,10 +34,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Eye: ImageVector
     get() {
-        if (_IconName != null) {
-            return _IconName!!
+        if (eyeVector != null) {
+            return eyeVector!!
         }
-        _IconName =
+        eyeVector =
             ImageVector.Builder(
                     name = "IconName",
                     defaultWidth = 24.dp,
@@ -117,7 +120,7 @@ val Yume.Eye: ImageVector
                 }
                 .build()
 
-        return _IconName!!
+        return eyeVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _IconName: ImageVector? = null
+@Suppress("ObjectPropertyName") private var eyeVector: ImageVector? = null

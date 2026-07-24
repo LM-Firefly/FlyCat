@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.presentation.theme
+
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -28,11 +31,9 @@ import androidx.compose.ui.unit.dp
 object UiDp {
     val dp0: Dp = 0.dp
     val dp0_2: Dp = 0.2.dp
-    val dp0_26: Dp = 0.26.dp
     val dp0_3: Dp = 0.3.dp
     val dp0_5: Dp = 0.5.dp
     val dp1: Dp = 1.dp
-    val dp1_2: Dp = 1.2.dp
     val dp2: Dp = 2.dp
     val dp2_5: Dp = 2.5.dp
     val dp3: Dp = 3.dp
@@ -47,7 +48,6 @@ object UiDp {
     val dp12: Dp = 12.dp
     val dp13: Dp = 13.dp
     val dp14: Dp = 14.dp
-    val dp15: Dp = 15.dp
     val dp16: Dp = 16.dp
     val dp18: Dp = 18.dp
     val dp20: Dp = 20.dp
@@ -57,7 +57,6 @@ object UiDp {
     val dp28: Dp = 28.dp
     val dp30: Dp = 30.dp
     val dp32: Dp = 32.dp
-    val dp34: Dp = 34.dp
     val dp35: Dp = 35.dp
     val dp36: Dp = 36.dp
     val dp40: Dp = 40.dp
@@ -71,25 +70,16 @@ object UiDp {
     val dp60: Dp = 60.dp
     val dp64: Dp = 64.dp
     val dp68: Dp = 68.dp
-    val dp70: Dp = 70.dp
     val dp72: Dp = 72.dp
-    val dp80: Dp = 80.dp
     val dp84: Dp = 84.dp
     val dp85: Dp = 85.dp
-    val dp88: Dp = 88.dp
     val dp100: Dp = 100.dp
-    val dp108: Dp = 108.dp
-    val dp116: Dp = 116.dp
-    val dp120: Dp = 120.dp
     val dp122: Dp = 122.dp
-    val dp126: Dp = 126.dp
     val dp130: Dp = 130.dp
-    val dp140: Dp = 140.dp
     val dp168: Dp = 168.dp
     val dp180: Dp = 180.dp
     val dp188: Dp = 188.dp
     val dp200: Dp = 200.dp
-    val dp212: Dp = 212.dp
     val dp220: Dp = 220.dp
     val dp260: Dp = 260.dp
     val dp280: Dp = 280.dp

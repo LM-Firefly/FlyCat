@@ -9,7 +9,10 @@
  * Copyright (c) YumeYucca 2025 - Present
  */
 
+@file:Suppress("DuplicatedCode", "FunctionName")
+
 package com.github.yumelira.yumebox.screen.moe
+
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing

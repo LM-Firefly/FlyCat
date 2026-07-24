@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.core.model
+
 
 import android.os.Parcel
 import android.os.Parcelable

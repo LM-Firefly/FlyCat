@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.screen.profiles
+
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize

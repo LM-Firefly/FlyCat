@@ -7,7 +7,10 @@
  * License.
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.presentation.navigation
+
 
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey

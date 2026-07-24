@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.presentation.component
+
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size

@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.screen.profiles
+
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.PaddingValues

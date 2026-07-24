@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("FunctionName", "UsePropertyAccessSyntax")
+
 package com.github.yumelira.yumebox.screen.settings
 
 import android.content.ClipData
@@ -50,7 +52,7 @@ import androidx.core.graphics.drawable.toBitmap
 import com.github.yumelira.yumebox.data.model.AccessControlSortMode
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.`Settings-2`
+import com.github.yumelira.yumebox.presentation.icon.yume.Settings2
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.AppTheme.spacing
 import kotlinx.coroutines.Dispatchers
@@ -165,7 +167,7 @@ fun AccessControlScreen(navigator: Navigator) {
                             Box {
                                 IconButton(onClick = { showOpsMenu = true }) {
                                     Icon(
-                                        imageVector = Yume.`Settings-2`,
+                                        imageVector = Yume.Settings2,
                                         contentDescription = YumeTxt.AccessControl.Settings.Title,
                                         tint = MiuixTheme.colorScheme.onSurface,
                                     )

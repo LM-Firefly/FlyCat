@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("FunctionName", "UnusedVariable")
+
 package com.github.yumelira.yumebox.screen.moe
 
 import androidx.compose.animation.core.*

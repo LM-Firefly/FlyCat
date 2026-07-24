@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("RedundantSuspendModifier")
+
 package com.github.yumelira.yumebox.runtime.service.session
 
 import com.github.yumelira.yumebox.core.model.Proxy
@@ -61,7 +63,7 @@ class RuntimeProxyGroupResolver(
      * An empty result is NOT cached: a transient empty compile during the start window must not
      * poison the cache for the rest of the session.
      */
-    suspend fun canonicalGroups(
+    fun canonicalGroups(
         spec: RuntimeSpec,
         excludeNotSelectable: Boolean,
     ): List<ProxyGroup> {

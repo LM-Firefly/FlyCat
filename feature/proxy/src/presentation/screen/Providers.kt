@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("FunctionName", "KotlinConstantConditions")
+
 package com.github.yumelira.yumebox.presentation.screen
 
 import android.net.Uri
@@ -38,7 +40,7 @@ import com.github.yumelira.yumebox.core.model.Provider
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.`Circle-fading-arrow-up`
+import com.github.yumelira.yumebox.presentation.icon.yume.CircleFadingArrowUp
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.viewmodel.ProvidersViewModel
 import java.text.SimpleDateFormat
@@ -72,6 +74,7 @@ private data class ProviderSection(
     val providers: List<Provider>,
 )
 
+@Suppress("KotlinConstantConditions")
 @Composable
 fun ProvidersContent(navigator: Navigator) {
     val viewModel = koinViewModel<ProvidersViewModel>()
@@ -138,7 +141,7 @@ fun ProvidersContent(navigator: Navigator) {
                     if (isRunning && updatableProviders.isNotEmpty()) {
                         IconButton(onClick = { viewModel.updateAllProviders() }) {
                             Icon(
-                                imageVector = Yume.`Circle-fading-arrow-up`,
+                                imageVector = Yume.CircleFadingArrowUp,
                                 contentDescription = YumeTxt.Providers.Action.UpdateAll,
                             )
                         }
@@ -182,6 +185,7 @@ fun ProvidersContent(navigator: Navigator) {
     }
 }
 
+@Suppress("KotlinConstantConditions")
 @Composable
 private fun ProviderCard(
     provider: Provider,

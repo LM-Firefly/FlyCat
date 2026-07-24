@@ -614,6 +614,7 @@ dependencies {
     val injectedAbi = findProperty("android.injected.build.abi") as? String
     val mmkvVersion = if (injectedAbi in listOf("arm64-v8a", "x86_64")) mmkv64 else mmkv32
     //noinspection NewerVersionAvailable
+    //noinspection AndroidLintUseTomlInstead,AndroidLintNewerVersionAvailable
     implementation("com.tencent:mmkv:$mmkvVersion")
 
     implementation(libs.koin.core)

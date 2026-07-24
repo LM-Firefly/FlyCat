@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,10 +34,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.ArrowRight: ImageVector
     get() {
-        if (_ArrowRight != null) {
-            return _ArrowRight!!
+        if (arrowRightVector != null) {
+            return arrowRightVector!!
         }
-        _ArrowRight =
+        arrowRightVector =
             ImageVector.Builder(
                     name = "ArrowRight",
                     defaultWidth = 24.dp,
@@ -65,7 +68,7 @@ val Yume.ArrowRight: ImageVector
                 }
                 .build()
 
-        return _ArrowRight!!
+        return arrowRightVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _ArrowRight: ImageVector? = null
+@Suppress("ObjectPropertyName") private var arrowRightVector: ImageVector? = null

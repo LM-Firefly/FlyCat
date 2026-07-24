@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.core.util
+
 
 import android.annotation.SuppressLint
 import com.github.yumelira.yumebox.core.model.Traffic

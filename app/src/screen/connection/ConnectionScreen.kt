@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("DuplicatedCode", "FunctionName")
+
 package com.github.yumelira.yumebox.screen.connection
+
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*

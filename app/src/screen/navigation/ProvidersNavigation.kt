@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.screen.navigation
+
 
 import androidx.compose.runtime.Composable
 import com.github.yumelira.yumebox.presentation.component.Navigator

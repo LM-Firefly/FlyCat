@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("SortModifiers")
+
 package com.github.yumelira.yumebox.common.util
 
 import android.content.Context

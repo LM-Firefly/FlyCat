@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("UnnecessaryVariable")
+
 package com.github.yumelira.yumebox.presentation.screen
 
 import androidx.compose.runtime.Composable

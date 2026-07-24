@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "FunctionName")
+
 package com.github.yumelira.yumebox.screen.home
+
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable

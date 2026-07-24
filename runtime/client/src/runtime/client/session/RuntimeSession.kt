@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("DuplicatedCode", "UnusedSymbol", "RedundantSuspendModifier")
+
 package com.github.yumelira.yumebox.runtime.client.session
 
 import android.net.VpnService

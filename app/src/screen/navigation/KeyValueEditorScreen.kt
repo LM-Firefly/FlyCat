@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "FunctionName")
+
 package com.github.yumelira.yumebox.screen.navigation
+
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,7 +35,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.`Badge-plus`
+import com.github.yumelira.yumebox.presentation.icon.yume.BadgePlus
 import dev.chrisbanes.haze.hazeSource
 import java.util.*
 import tf.gal.yumebox.locale.YumeTxt
@@ -175,7 +178,7 @@ fun StringListEditorScreen(navigator: Navigator) {
                     onClick = { dialogState = StringListDialogState.Reset },
                 ),
                 EditorAction(
-                    icon = Yume.`Badge-plus`,
+                    icon = Yume.BadgePlus,
                     contentDescription = "Add",
                     onClick = {
                         dialogState =

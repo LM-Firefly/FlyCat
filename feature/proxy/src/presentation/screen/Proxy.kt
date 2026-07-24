@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("DuplicatedCode", "FunctionName", "UnnecessaryVariable")
+
 package com.github.yumelira.yumebox.presentation.screen
 
 import androidx.activity.compose.BackHandler
@@ -47,7 +49,7 @@ import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Eye
 import com.github.yumelira.yumebox.presentation.icon.yume.Folders
-import com.github.yumelira.yumebox.presentation.icon.yume.`List-chevrons-up-down`
+import com.github.yumelira.yumebox.presentation.icon.yume.ListChevronsUpDown
 import com.github.yumelira.yumebox.presentation.icon.yume.Speed
 import com.github.yumelira.yumebox.presentation.screen.node.NodeCard
 import com.github.yumelira.yumebox.presentation.screen.node.NodeSortPopup
@@ -77,9 +79,9 @@ private fun LazyGridState.isScrolledFromTop(): Boolean =
  * 1) If far, snap onto the target then pull back ~¾ viewport so the glide is always short.
  * 2) Glide past the resting line (content-padding aware) with a decelerate tween.
  * 3) Spring back over the overshoot for a light rubber-band bounce.
- * 4) [scrollToItem] settles any residual pixel drift so cards never land half-offset.
+ * 4) `scrollToItem` settles any residual pixel drift so cards never land half-offset.
  *
- * Resting offset is [beforeContentPadding], not 0 - aiming at 0 was the source of the post-locate
+ * Resting offset is `beforeContentPadding`, not 0 - aiming at 0 was the source of the post-locate
  * misalignment under large top bar + content padding.
  */
 private suspend fun animateLocateScroll(
@@ -453,8 +455,8 @@ fun ProxyPager(
 }
 
 /**
- * Right-pane node list for the tablet dual-pane shell. Selection is shared with [ProxyPager] via
- * [ProxyViewModel.uiSelectedGroupName].
+ * Right-pane node list for the tablet dual-pane shell. Selection is shared with `ProxyPager` via
+ * `ProxyViewModel.uiSelectedGroupName`.
  */
 @Composable
 fun ProxyShellNodeDetail(
@@ -679,7 +681,7 @@ private fun ProxyTopBar(
             Box {
                 IconButton(onClick = { onShowSortPopupChange(true) }) {
                     Icon(
-                        Yume.`List-chevrons-up-down`,
+                        Yume.ListChevronsUpDown,
                         contentDescription = YumeTxt.Proxy.Action.Sort,
                     )
                 }

@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.presentation.component
+
 
 import androidx.compose.runtime.Composable
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference

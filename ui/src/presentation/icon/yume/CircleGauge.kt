@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,10 +34,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.CircleGauge: ImageVector
     get() {
-        if (_CircleGauge != null) {
-            return _CircleGauge!!
+        if (circleGaugeVector != null) {
+            return circleGaugeVector!!
         }
-        _CircleGauge =
+        circleGaugeVector =
             ImageVector.Builder(
                     name = "CircleGauge",
                     defaultWidth = 24.dp,
@@ -99,7 +102,7 @@ val Yume.CircleGauge: ImageVector
                 }
                 .build()
 
-        return _CircleGauge!!
+        return circleGaugeVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _CircleGauge: ImageVector? = null
+@Suppress("ObjectPropertyName") private var circleGaugeVector: ImageVector? = null

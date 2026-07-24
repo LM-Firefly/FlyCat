@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.screen.connection
+
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -152,8 +155,8 @@ fun ConnectionDetailScreen(navigator: Navigator, connectionId: String) {
 }
 
 /**
- * Stages the selected [ConnectionInfo] across the navigation boundary. Route only carries the id
- * (serializable); the full snapshot lives here, same pattern as [EditorDataHolder].
+ * Stages the selected `ConnectionInfo` across the navigation boundary. Route only carries the id
+ * (serializable); the full snapshot lives here, same pattern as `EditorDataHolder`.
  */
 object ConnectionDetailHolder {
     var connection: ConnectionInfo? = null

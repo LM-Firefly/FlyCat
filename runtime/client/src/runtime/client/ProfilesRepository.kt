@@ -33,7 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
-/** Profile CRUD via [RuntimeAccess] / [ProfileApi]. */
+/** Profile CRUD via `RuntimeAccess` / `ProfileApi`. */
 class ProfilesRepository(private val context: Context) {
     private val appContext = context.appContextOrSelf
 

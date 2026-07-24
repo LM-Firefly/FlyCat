@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("KotlinConstantConditions")
+
 package com.github.yumelira.yumebox.runtime.service
 
 import android.annotation.SuppressLint
@@ -196,10 +198,9 @@ class ProxyTileService : TileService() {
                 phase =
                     when (owner) {
                         RuntimeOwner.VpnService -> vpnPhase
-                        RuntimeOwner.RootDaemon,
-                        RuntimeOwner.RemoteController -> RuntimePhase.Running
-
+                        RuntimeOwner.RootDaemon -> RuntimePhase.Running
                         RuntimeOwner.None -> error("unreachable: None handled above")
+                        else -> RuntimePhase.Running
                     },
                 // VpnService owner is always the VPN mode. A root daemon can outlive a settings
                 // change, so use its persisted mode instead of the current selection.
@@ -284,6 +285,8 @@ class ProxyTileService : TileService() {
             return
         }
 
-        @Suppress("DEPRECATION") startActivityAndCollapse(intent)
+        @Suppress("DEPRECATION")
+        @android.annotation.SuppressLint("StartActivityAndCollapseDeprecated")
+        startActivityAndCollapse(intent)
     }
 }

@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "RedundantSuspendModifier")
+
 package com.github.yumelira.yumebox.runtime.client.access
 
 import android.content.Context
@@ -95,7 +97,7 @@ object RuntimeAccess {
         }
     }
 
-    suspend fun core(): CoreApi =
+    fun core(): CoreApi =
         coreApi ?: throw IllegalStateException("RuntimeAccess not connected")
 
     suspend fun profile(): ProfileApi =

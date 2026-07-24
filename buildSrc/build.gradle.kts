@@ -9,5 +9,6 @@ repositories {
 }
 
 dependencies {
+    //noinspection AndroidLintUseTomlInstead
     implementation("org.tukaani:xz:1.12")
 }

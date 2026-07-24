@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.screen.settings
+
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel

@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.runtime.api
+
 
 object Intents {
     private fun intentAction(packageName: String, actionName: String): String =

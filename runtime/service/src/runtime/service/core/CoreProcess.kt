@@ -18,7 +18,11 @@
  *
  */
 
+@file:Suppress("SimplifiableCallChain", "CanConvertToMultiDollarString", "CanUnescapeDollarLiteral")
+
 package com.github.yumelira.yumebox.runtime.service.core
+
+import android.annotation.SuppressLint
 
 import android.content.Context
 import android.os.ParcelFileDescriptor
@@ -238,6 +242,7 @@ class CoreProcess(private val context: Context) {
     }
 
     /** Copy the core out of nativeLibraryDir into app storage and chmod it executable. */
+    @SuppressLint("SetWorldReadable")
     private fun extractBin(): File {
         val src = File(context.applicationInfo.nativeLibraryDir, LIB)
         val dst = File(context.filesDir, "bin/clash")

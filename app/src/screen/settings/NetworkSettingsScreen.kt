@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("DuplicatedCode", "FunctionName")
+
 package com.github.yumelira.yumebox.screen.settings
+
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,7 +42,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 
 /**
  * Network settings entry point. Top: a "run mode" radio picker — one card per mode.
- * [RunMode.VpnService] is always available; the root-only Tun / TPROXY cards are greyed out unless
+ * `RunMode.VpnService` is always available; the root-only Tun / TPROXY cards are greyed out unless
  * root is granted. Below: advanced options (service config + disable-overrides) and access control.
  * The former parallel HTTP "system proxy" run mode is gone.
  */

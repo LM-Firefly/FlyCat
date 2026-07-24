@@ -7,7 +7,10 @@
  * License.
  */
 
+@file:Suppress("UnusedSymbol", "FunctionName")
+
 package com.github.yumelira.yumebox.presentation.component
+
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight

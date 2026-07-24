@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("ConstPropertyName")
+
 package com.github.yumelira.yumebox.presentation.theme
+
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -65,7 +68,6 @@ object YumeHaze {
         return HazeColorEffect.tint(surface.copy(alpha = alpha))
     }
 
-    @OptIn(ExperimentalHazeApi::class)
     fun Modifier.chromeEffect(
         state: HazeState?,
         style: HazeBlurStyle?,

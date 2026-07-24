@@ -18,7 +18,11 @@
  *
  */
 
+@file:Suppress("ConvertLongToDuration")
+
 package com.github.yumelira.yumebox.runtime.service.session
+
+import kotlin.time.Duration.Companion.milliseconds
 
 import android.content.Context
 import android.content.Intent
@@ -81,7 +85,7 @@ class AndroidRuntimeLauncher(
         val deadline = SystemClock.elapsedRealtime() + STOP_HANDOVER_TIMEOUT_MS
         while (SystemClock.elapsedRealtime() < deadline) {
             if (!StatusProvider.isLocalRuntimeServiceAlive(RunMode.VpnService)) return
-            delay(STOP_HANDOVER_POLL_MS)
+            delay(STOP_HANDOVER_POLL_MS.milliseconds)
         }
     }
 

@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("ReplaceRangeToWithRangeUntil")
+
 package com.github.yumelira.yumebox.presentation.util
 
 data class FlaggedName(

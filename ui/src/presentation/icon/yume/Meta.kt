@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathFillType.Companion.NonZero
@@ -33,10 +36,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Meta: ImageVector
     get() {
-        if (_meta != null) {
-            return _meta!!
+        if (metaVector != null) {
+            return metaVector!!
         }
-        _meta =
+        metaVector =
             Builder(
                     name = "Meta",
                     defaultWidth = 24.0.dp,
@@ -170,7 +173,7 @@ val Yume.Meta: ImageVector
                     }
                 }
                 .build()
-        return _meta!!
+        return metaVector!!
     }
 
-private var _meta: ImageVector? = null
+private var metaVector: ImageVector? = null

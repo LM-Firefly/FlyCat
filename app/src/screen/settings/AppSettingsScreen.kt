@@ -18,7 +18,13 @@
  *
  */
 
+@file:Suppress("FunctionName", "ConvertLongToDuration")
+
 package com.github.yumelira.yumebox.screen.settings
+
+import android.annotation.SuppressLint
+
+import kotlin.time.Duration.Companion.milliseconds
 
 import android.content.ComponentName
 import android.content.Intent
@@ -222,7 +228,7 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
             batteryOptimizationIgnored = isBatteryOptimizationIgnored(context)
             scope.launch {
                 // The PowerManager whitelist state can lag slightly behind the dialog result.
-                delay(500)
+                delay(500.milliseconds)
                 batteryOptimizationIgnored = isBatteryOptimizationIgnored(context)
             }
         }
@@ -327,11 +333,13 @@ private fun HideAppIconPreferenceItem(
     )
 }
 
+@SuppressLint("BatteryLife")
 private fun isBatteryOptimizationIgnored(context: android.content.Context): Boolean {
     val powerManager = context.getSystemService(PowerManager::class.java) ?: return false
     return powerManager.isIgnoringBatteryOptimizations(context.packageName)
 }
 
+@SuppressLint("BatteryLife")
 private fun batteryOptimizationIntents(
     context: android.content.Context,
     alreadyIgnored: Boolean,

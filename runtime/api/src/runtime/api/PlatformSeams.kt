@@ -18,13 +18,16 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.runtime.api
+
 
 import com.github.yumelira.yumebox.core.model.RunMode
 
 /**
  * Platform-neutral core process control. Android wires
- * [com.github.yumelira.yumebox.runtime.service.core.CoreProcess]; desktop can implement the same
+ * `com.github.yumelira.yumebox.runtime.service.core.CoreProcess`; desktop can implement the same
  * contract without VpnService/libsu.
  */
 interface ProcessController {

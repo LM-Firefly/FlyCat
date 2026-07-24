@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("DuplicatedCode", "RedundantIf")
+
 package com.github.yumelira.yumebox.substore.util
 
 import java.io.File
@@ -30,7 +32,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 
 object ArchiveUtil {
     fun unzipZip(zipFile: File, destination: File): Boolean {
-        if (!zipFile.exists() || !zipFile.isFile) return false
+        if (!zipFile.isFile) return false
 
         return runCatching {
                 prepareDestination(destination)
@@ -53,7 +55,7 @@ object ArchiveUtil {
     }
 
     fun untar(tarFile: File, destination: File): Boolean {
-        if (!tarFile.exists() || !tarFile.isFile) return false
+        if (!tarFile.isFile) return false
 
         return runCatching {
                 prepareDestination(destination)
@@ -78,7 +80,7 @@ object ArchiveUtil {
     }
 
     fun untarGz(tarGzFile: File, destination: File): Boolean {
-        if (!tarGzFile.exists() || !tarGzFile.isFile) return false
+        if (!tarGzFile.isFile) return false
 
         return runCatching {
                 prepareDestination(destination)

@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("FunctionName", "DeprecatedCallableAddReplaceWith")
+
 package com.github.yumelira.yumebox.presentation.webview
 
 import android.annotation.SuppressLint

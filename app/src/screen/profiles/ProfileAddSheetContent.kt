@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.screen.profiles
+
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -42,7 +45,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import com.github.yumelira.yumebox.presentation.component.AgeSecretKeyField
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.`Package-check`
+import com.github.yumelira.yumebox.presentation.icon.yume.PackageCheck
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_URL
@@ -86,7 +89,7 @@ internal fun DownloadProgressContent(
         ) { complete ->
             if (complete) {
                 Icon(
-                    imageVector = Yume.`Package-check`,
+                    imageVector = Yume.PackageCheck,
                     contentDescription = "Complete",
                     tint = MiuixTheme.colorScheme.onPrimary,
                     modifier =

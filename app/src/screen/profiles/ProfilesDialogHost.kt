@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.screen.profiles
+
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope

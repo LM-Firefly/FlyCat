@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.runtime.service.util
+
 
 import android.content.Context
 import android.net.ConnectivityManager

@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.screen.about
+
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -47,7 +50,6 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun OpenSourceLicensesScreen(navigator: Navigator) {
     val context = LocalContext.current
@@ -97,7 +99,6 @@ fun OpenSourceLicensesScreen(navigator: Navigator) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LibraryItem(library: Library, onClick: () -> Unit) {
     val spacing = AppTheme.spacing

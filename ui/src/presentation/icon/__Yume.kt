@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.presentation.icon
+
 
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.github.yumelira.yumebox.presentation.icon.yume.Github

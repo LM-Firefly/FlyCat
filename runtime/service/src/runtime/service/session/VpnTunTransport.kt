@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "UnusedVariable")
+
 package com.github.yumelira.yumebox.runtime.service.session
 
 import android.app.PendingIntent

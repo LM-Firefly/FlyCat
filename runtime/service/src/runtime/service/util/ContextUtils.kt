@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "SimplifiableCallChain")
+
 package com.github.yumelira.yumebox.runtime.service.util
 
 import android.content.Context

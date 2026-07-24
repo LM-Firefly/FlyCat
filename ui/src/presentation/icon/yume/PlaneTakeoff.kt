@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,10 +34,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.PlaneTakeoff: ImageVector
     get() {
-        if (_PlaneTakeoff != null) {
-            return _PlaneTakeoff!!
+        if (planeTakeoffVector != null) {
+            return planeTakeoffVector!!
         }
-        _PlaneTakeoff =
+        planeTakeoffVector =
             ImageVector.Builder(
                     name = "PlaneTakeoff",
                     defaultWidth = 24.dp,
@@ -140,7 +143,7 @@ val Yume.PlaneTakeoff: ImageVector
                 }
                 .build()
 
-        return _PlaneTakeoff!!
+        return planeTakeoffVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _PlaneTakeoff: ImageVector? = null
+@Suppress("ObjectPropertyName") private var planeTakeoffVector: ImageVector? = null

@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("DuplicatedCode", "FunctionName", "UsePropertyAccessSyntax")
+
 package com.github.yumelira.yumebox.screen.log
 
 import android.content.ClipData

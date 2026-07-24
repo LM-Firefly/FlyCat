@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("FunctionName", "ConvertLongToDuration", "KotlinConstantConditions")
+
 package com.github.yumelira.yumebox.screen.moe
 
 import androidx.compose.animation.AnimatedContent
@@ -63,7 +65,6 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@OptIn(ExperimentalHazeApi::class)
 @Composable
 internal fun MoeSidebarDecoration(
     hazeState: HazeState,

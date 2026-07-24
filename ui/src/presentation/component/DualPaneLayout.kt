@@ -7,7 +7,10 @@
  * License.
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.presentation.component
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
@@ -31,9 +34,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * hosts detail destinations. The center divider may be shown and optionally dragged.
  *
  * Width policy:
- * - Keep [leftRatio] of free width (container minus divider) so window resize scales both panes.
- * - Clamp the live left width into absolute [minLeftWidth, maxLeftWidth] while reserving
- *   [minRightWidth]. Absolute bounds are the source of truth; the old fraction-only clamp could
+ * - Keep `leftRatio` of free width (container minus divider) so window resize scales both panes.
+ * - Clamp the live left width into absolute `minLeftWidth, maxLeftWidth` while reserving
+ *   `minRightWidth`. Absolute bounds are the source of truth; the old fraction-only clamp could
  *   collapse drag range to zero when `minFraction * width > maxLeftWidth` on wide windows.
  */
 @Composable

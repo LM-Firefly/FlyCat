@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("ConvertLongToDuration")
+
 package com.github.yumelira.yumebox.runtime.client.access
 
 import com.github.yumelira.yumebox.core.model.*

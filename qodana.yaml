@@ -24,3 +24,9 @@ exclude:
       - scripts
       - website
       - .trellis
+  - name: AndroidLintNewerVersionAvailable
+  - name: AndroidLintGradleDependency
+  - name: AndroidLintUseTomlInstead
+  - name: AndroidLintIconDuplicates
+  - name: AndroidLintUnusedAttribute
+  - name: AndroidDomInspection

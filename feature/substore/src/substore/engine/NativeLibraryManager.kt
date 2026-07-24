@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("DuplicatedCode")
+
 package com.github.yumelira.yumebox.substore.engine
+
 
 import android.annotation.SuppressLint
 import android.content.Context

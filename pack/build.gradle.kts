@@ -17,4 +17,5 @@ android {
 
 dependencies {
     implementation(libs.hiddenapibypass)
+    implementation(libs.androidx.annotation.jvm)
 }

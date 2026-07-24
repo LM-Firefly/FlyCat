@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("RemoveExplicitTypeArguments")
+
 package com.github.yumelira.yumebox.data.store
 
 import com.github.yumelira.yumebox.data.model.RemoteBackend

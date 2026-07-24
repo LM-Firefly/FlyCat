@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.runtime.api
+
 
 import com.github.yumelira.yumebox.core.model.RunMode
 import kotlinx.serialization.Serializable

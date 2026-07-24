@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.presentation.screen.node
+
 
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.*
@@ -209,7 +212,6 @@ internal fun NodeSelectableCard(
     )
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun NodeCard(
     proxy: Proxy,

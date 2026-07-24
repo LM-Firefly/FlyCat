@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,10 +34,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Edit: ImageVector
     get() {
-        if (_SquarePen != null) {
-            return _SquarePen!!
+        if (editVector != null) {
+            return editVector!!
         }
-        _SquarePen =
+        editVector =
             ImageVector.Builder(
                     name = "SquarePen",
                     defaultWidth = 24.dp,
@@ -133,7 +136,7 @@ val Yume.Edit: ImageVector
                 }
                 .build()
 
-        return _SquarePen!!
+        return editVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _SquarePen: ImageVector? = null
+@Suppress("ObjectPropertyName") private var editVector: ImageVector? = null

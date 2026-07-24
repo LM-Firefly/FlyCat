@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "ConstPropertyName", "FunctionName")
+
 package com.github.yumelira.yumebox.screen.moe
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

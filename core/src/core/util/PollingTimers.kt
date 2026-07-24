@@ -18,7 +18,11 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "ConvertLongToDuration")
+
 package com.github.yumelira.yumebox.core.util
+
+import kotlin.time.Duration.Companion.milliseconds
 
 import android.os.SystemClock
 import kotlinx.coroutines.*
@@ -79,17 +83,17 @@ object PollingTimers {
         tickerCache.getOrPut(spec) {
             flow {
                 if (spec.initialDelayMillis > 0L) {
-                    delay(spec.initialDelayMillis)
+                    delay(spec.initialDelayMillis.milliseconds)
                 }
                 while (currentCoroutineContext().isActive) {
                     emit(SystemClock.elapsedRealtime())
-                    delay(spec.intervalMillis)
+                    delay(spec.intervalMillis.milliseconds)
                 }
             }
                 .shareIn(
                     scope = schedulerScope,
                     started =
-                        SharingStarted.WhileSubscribed(stopTimeoutMillis = STOP_TIMEOUT_MILLIS),
+                        SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS.milliseconds),
                     replay = 0,
                 )
         }

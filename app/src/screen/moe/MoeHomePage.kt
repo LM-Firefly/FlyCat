@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("FunctionName", "UnnecessaryVariable", "KotlinDeprecation")
+
 package com.github.yumelira.yumebox.screen.moe
 
 import android.content.Context
@@ -192,10 +194,9 @@ fun MoeHomePage(
         } else if (!hasEnabledProfile || recommendedProfile == null) {
             context.toast(YumeTxt.ProfilesVM.Error.ProfileNotExist, Toast.LENGTH_SHORT)
         } else if (visualControlState == HomeProxyControlState.Idle) {
-            recommendedProfile?.let { profile ->
-                hapticFeedback.performHapticFeedback(HapticFeedbackType.VirtualKey)
-                homeViewModel.startProxy(profileId = profile.uuid.toString(), mode = null)
-            }
+            val profile = recommendedProfile
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.VirtualKey)
+            homeViewModel.startProxy(profileId = profile.uuid.toString(), mode = null)
         } else if (visualControlState == HomeProxyControlState.Running) {
             hapticFeedback.performHapticFeedback(HapticFeedbackType.VirtualKey)
             scope.launch { homeViewModel.stopProxy() }

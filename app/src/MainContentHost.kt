@@ -7,7 +7,10 @@
  * License.
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox
+
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing

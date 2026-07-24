@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,10 +34,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Diff: ImageVector
     get() {
-        if (_Diff != null) {
-            return _Diff!!
+        if (diffVector != null) {
+            return diffVector!!
         }
-        _Diff =
+        diffVector =
             ImageVector.Builder(
                     name = "Diff",
                     defaultWidth = 24.dp,
@@ -73,7 +76,7 @@ val Yume.Diff: ImageVector
                 }
                 .build()
 
-        return _Diff!!
+        return diffVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _Diff: ImageVector? = null
+@Suppress("ObjectPropertyName") private var diffVector: ImageVector? = null

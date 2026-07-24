@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("DuplicatedCode", "FunctionName")
+
 package com.github.yumelira.yumebox.presentation.navigation
+
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.CubicBezierEasing

@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.core.data
+
 
 import kotlinx.coroutines.CancellationException
 import timber.log.Timber

@@ -21,7 +21,3 @@
 }
 # Keep the whole interface: member signatures vary across coroutines versions (R8 unmatched-member noise).
 -keep,allowoptimization interface kotlinx.coroutines.CompletableDeferred { *; }
--keepclassmembers class * implements kotlinx.coroutines.CompletableDeferred {
-    public boolean complete(java.lang.Object);
-    public boolean completeExceptionally(java.lang.Throwable);
-}

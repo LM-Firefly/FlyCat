@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.presentation.component
+
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.LinearEasing

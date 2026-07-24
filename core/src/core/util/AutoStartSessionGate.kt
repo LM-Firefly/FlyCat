@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("RedundantIf")
+
 package com.github.yumelira.yumebox.core.util
 
 import java.util.concurrent.atomic.AtomicBoolean
@@ -44,8 +46,7 @@ object AutoStartSessionGate {
     fun shouldSkipAutoStart(): Boolean = paused.get()
 
     fun tryBeginAutoActions(): Boolean {
-        if (autoHandled.get()) return false
-        return autoInFlight.compareAndSet(false, true)
+        return !autoHandled.get() && autoInFlight.compareAndSet(false, true)
     }
 
     fun finishAutoActions(markHandled: Boolean) {

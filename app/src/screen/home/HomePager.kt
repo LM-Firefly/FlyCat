@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("DuplicatedCode", "FunctionName", "RedundantIf")
+
 package com.github.yumelira.yumebox.screen.home
 
 import android.widget.Toast

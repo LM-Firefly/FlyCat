@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("JavaCollectionWithNullableTypeArgument")
+
 package com.github.yumelira.yumebox.data.controller
 
 import android.content.Context

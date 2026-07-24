@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.runtime.service.root
+
 
 import android.content.Context
 import com.topjohnwu.superuser.Shell

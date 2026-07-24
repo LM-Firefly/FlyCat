@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,10 +34,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Speed: ImageVector
     get() {
-        if (_Gauge != null) {
-            return _Gauge!!
+        if (speedVector != null) {
+            return speedVector!!
         }
-        _Gauge =
+        speedVector =
             ImageVector.Builder(
                     name = "Gauge",
                     defaultWidth = 24.dp,
@@ -72,7 +75,7 @@ val Yume.Speed: ImageVector
                 }
                 .build()
 
-        return _Gauge!!
+        return speedVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _Gauge: ImageVector? = null
+@Suppress("ObjectPropertyName") private var speedVector: ImageVector? = null

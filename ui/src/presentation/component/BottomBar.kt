@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "FunctionName")
+
 package com.github.yumelira.yumebox.presentation.component
+
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateBounds
@@ -54,10 +57,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.`Arrow-down-up`
+import com.github.yumelira.yumebox.presentation.icon.yume.ArrowDownUp
 import com.github.yumelira.yumebox.presentation.icon.yume.Bolt
 import com.github.yumelira.yumebox.presentation.icon.yume.House
-import com.github.yumelira.yumebox.presentation.icon.yume.`Package-check`
+import com.github.yumelira.yumebox.presentation.icon.yume.PackageCheck
 import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
@@ -390,7 +393,6 @@ private fun BottomBarTab(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun LegacyBottomNavigationBar(
     indicatorProgress: Float,
@@ -548,8 +550,8 @@ private fun LegacyBottomNavigationTabItem(
 
 enum class BottomBarDestination(val icon: ImageVector) {
     Home(Yume.House),
-    Proxy(Yume.`Arrow-down-up`),
-    Config(Yume.`Package-check`),
+    Proxy(Yume.ArrowDownUp),
+    Config(Yume.PackageCheck),
     Setting(Yume.Bolt);
 
     val label: String

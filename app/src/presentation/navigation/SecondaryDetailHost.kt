@@ -7,7 +7,10 @@
  * License.
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.presentation.navigation
+
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider

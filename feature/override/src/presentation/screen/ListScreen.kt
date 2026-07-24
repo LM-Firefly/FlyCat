@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("FunctionName", "RedundantIf", "UnnecessaryVariable")
+
 package com.github.yumelira.yumebox.presentation.screen
 
 import android.net.Uri
@@ -238,7 +240,7 @@ fun OverrideListScreen(
             OverrideAnimatedFab(
                 controller = createFabController,
                 visible = !showCreateDialog.value,
-                imageVector = Yume.`Badge-plus`,
+                imageVector = Yume.BadgePlus,
                 contentDescription = YumeTxt.Override.Action.Create,
                 onClick = {
                     createDialogMode = OverrideConfigInputMode.CreateNew
@@ -1071,7 +1073,7 @@ private fun DeleteConfirmDialog(
     var isInUse by remember { mutableStateOf(false) }
 
     LaunchedEffect(show.value, config?.id) {
-        isInUse = if (show.value && config != null) viewModel.isConfigInUse(config.id) else false
+        isInUse = show.value && config != null && viewModel.isConfigInUse(config.id)
     }
 
     val summary =

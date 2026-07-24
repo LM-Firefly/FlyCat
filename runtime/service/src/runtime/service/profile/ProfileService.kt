@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("RedundantSuspendModifier")
+
 package com.github.yumelira.yumebox.runtime.service.profile
 
 import android.content.Context
@@ -193,7 +195,7 @@ class ProfileService(private val context: Context) :
         ProfileStore.saveProfileOrder(normalized)
     }
 
-    private suspend fun resolveProfile(uuid: UUID): Profile? {
+    private fun resolveProfile(uuid: UUID): Profile? {
         val imported = ImportedDao.queryByUUID(uuid) ?: return null
 
         val active = store.activeProfile

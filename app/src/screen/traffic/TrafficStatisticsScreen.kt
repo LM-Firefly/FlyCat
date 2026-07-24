@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("FunctionName", "UnusedVariable")
+
 package com.github.yumelira.yumebox.screen.traffic
 
 import android.content.Context

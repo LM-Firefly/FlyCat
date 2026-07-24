@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -31,10 +34,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Repeat: ImageVector
     get() {
-        if (_Repeat != null) {
-            return _Repeat!!
+        if (repeatVector != null) {
+            return repeatVector!!
         }
-        _Repeat =
+        repeatVector =
             ImageVector.Builder(
                     name = "Repeat",
                     defaultWidth = 24.dp,
@@ -104,7 +107,7 @@ val Yume.Repeat: ImageVector
                 }
                 .build()
 
-        return _Repeat!!
+        return repeatVector!!
     }
 
-@Suppress("ObjectPropertyName") private var _Repeat: ImageVector? = null
+@Suppress("ObjectPropertyName") private var repeatVector: ImageVector? = null

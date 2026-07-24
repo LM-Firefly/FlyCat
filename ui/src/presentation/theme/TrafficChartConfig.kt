@@ -18,16 +18,18 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "MayBeConstant")
+
 package com.github.yumelira.yumebox.presentation.theme
 
 object TrafficChartConfig {
-    private val firstSpeedBound = 0.5 * 1024 * 1024
-    private val secondSpeedBound = 5.0 * 1024 * 1024
-    private val thirdSpeedBound = 40.0 * 1024 * 1024
+    private const val firstSpeedBound = 0.5 * 1024 * 1024
+    private const val secondSpeedBound = 5.0 * 1024 * 1024
+    private const val thirdSpeedBound = 40.0 * 1024 * 1024
 
-    val minimumVisibleFraction = 0.02f
+    const val minimumVisibleFraction = 0.02f
 
-    val defaultSampleLimit = 24
+    const val defaultSampleLimit = 24
 
     fun calculateBarFraction(speedBytes: Long): Float =
         when {

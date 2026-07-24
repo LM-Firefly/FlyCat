@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("RedundantIf", "RemoveExplicitTypeArguments")
+
 package com.github.yumelira.yumebox.presentation.viewmodel
 
 import com.github.yumelira.yumebox.core.model.Proxy

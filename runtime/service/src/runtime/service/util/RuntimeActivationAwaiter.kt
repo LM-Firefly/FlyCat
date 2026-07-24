@@ -18,7 +18,11 @@
  *
  */
 
+@file:Suppress("ConvertLongToDuration")
+
 package com.github.yumelira.yumebox.runtime.service.util
+
+import kotlin.time.Duration.Companion.milliseconds
 
 import android.os.SystemClock
 import com.github.yumelira.yumebox.data.model.RunMode
@@ -49,7 +53,7 @@ sealed interface RuntimeActivationResult {
 
 class RuntimeActivationAwaiter(
     private val elapsedRealtimeMillis: () -> Long = SystemClock::elapsedRealtime,
-    private val delayMillis: suspend (Long) -> Unit = { delay(it) },
+    private val delayMillis: suspend (Long) -> Unit = { delay(it.milliseconds) },
 ) {
     suspend fun await(
         mode: RunMode,

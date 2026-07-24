@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol")
+
 package com.github.yumelira.yumebox.data.store.room
+
 
 import androidx.room.Dao
 import androidx.room.Insert

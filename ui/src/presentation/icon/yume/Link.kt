@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "UnusedReceiverParameter")
+
 package com.github.yumelira.yumebox.presentation.icon.yume
+
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathFillType.Companion.NonZero
@@ -33,10 +36,10 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 
 val Yume.Link: ImageVector
     get() {
-        if (_link != null) {
-            return _link!!
+        if (linkVector != null) {
+            return linkVector!!
         }
-        _link =
+        linkVector =
             Builder(
                     name = "Link",
                     defaultWidth = 24.0.dp,
@@ -55,9 +58,9 @@ val Yume.Link: ImageVector
                         pathFillType = NonZero,
                     ) {
                         moveTo(10.0f, 13.0f)
-                        arcToRelative(5.0f, 5.0f, 0.0f, false, false, 7.54f, 0.54f)
+                        arcToRelative(5.0f, 5.0f, 0.0f, isMoreThanHalf = false, isPositiveArc = false, 7.54f, 0.54f)
                         lineToRelative(3.0f, -3.0f)
-                        arcToRelative(5.0f, 5.0f, 0.0f, false, false, -7.07f, -7.07f)
+                        arcToRelative(5.0f, 5.0f, 0.0f, isMoreThanHalf = false, isPositiveArc = false, -7.07f, -7.07f)
                         lineToRelative(-1.72f, 1.71f)
                     }
                     path(
@@ -70,14 +73,14 @@ val Yume.Link: ImageVector
                         pathFillType = NonZero,
                     ) {
                         moveTo(14.0f, 11.0f)
-                        arcToRelative(5.0f, 5.0f, 0.0f, false, false, -7.54f, -0.54f)
+                        arcToRelative(5.0f, 5.0f, 0.0f, isMoreThanHalf = false, isPositiveArc = false, -7.54f, -0.54f)
                         lineToRelative(-3.0f, 3.0f)
-                        arcToRelative(5.0f, 5.0f, 0.0f, false, false, 7.07f, 7.07f)
+                        arcToRelative(5.0f, 5.0f, 0.0f, isMoreThanHalf = false, isPositiveArc = false, 7.07f, 7.07f)
                         lineToRelative(1.71f, -1.71f)
                     }
                 }
                 .build()
-        return _link!!
+        return linkVector!!
     }
 
-private var _link: ImageVector? = null
+private var linkVector: ImageVector? = null

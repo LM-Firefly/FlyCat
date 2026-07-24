@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("FunctionName", "UsePropertyAccessSyntax")
+
 package com.github.yumelira.yumebox.presentation.component
 
 import android.content.ClipData

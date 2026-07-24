@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.presentation.component
+
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -129,12 +132,12 @@ fun SearchStatus.TopAppBarAnim(
  * Expandable search overlay. Callers must keep this composed always (do not `if (!isCollapsed)`) so
  * expand/collapse animations stay continuous.
  *
- * When settled [SearchStatus.Status.COLLAPSED]: zero-size, no zIndex, no pointer — does not cover
+ * When settled `SearchStatus.Status.COLLAPSED`: zero-size, no zIndex, no pointer — does not cover
  * the page. While expanding / expanded / collapsing: full-screen dim + bar.
  *
  * Must be placed as a **full-window sibling** of the page Scaffold (see AccessControl /
- * Connection), not inside Scaffold content — [topPadding] animates relative to the window top
- * (status bars), matching the collapsed bar's [SearchStatus.offsetY].
+ * Connection), not inside Scaffold content — `topPadding` animates relative to the window top
+ * (status bars), matching the collapsed bar's `SearchStatus.offsetY`.
  */
 @Composable
 fun SearchStatus.SearchPager(

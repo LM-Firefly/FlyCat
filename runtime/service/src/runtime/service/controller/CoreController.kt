@@ -18,6 +18,8 @@
  *
  */
 
+@file:Suppress("ConvertLongToDuration")
+
 package com.github.yumelira.yumebox.runtime.service.controller
 
 import com.github.yumelira.yumebox.core.bridge.UnixSocketFactory

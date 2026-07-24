@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("FunctionName")
+
 package com.github.yumelira.yumebox.presentation.screen.node
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

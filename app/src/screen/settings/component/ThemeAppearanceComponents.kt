@@ -18,7 +18,10 @@
  *
  */
 
+@file:Suppress("UnusedSymbol", "FunctionName")
+
 package com.github.yumelira.yumebox.screen.settings.component
+
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
