@@ -38,6 +38,8 @@ dependencies {
     implementation(project(":locale"))
     implementation(project(":ui"))
     implementation(project(":data"))
+    implementation(project(":runtime:api"))
+    implementation(project(":runtime:client"))
     implementation(project(":feature:editor"))
 
     val composeBom = platform(libs.androidx.compose.bom)
@@ -58,4 +60,3 @@ dependencies {
     implementation(libs.miuix.icons)
     implementation(libs.reorderable)
 }
-

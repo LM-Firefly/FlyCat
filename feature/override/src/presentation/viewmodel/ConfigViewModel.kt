@@ -30,6 +30,8 @@ import com.github.yumelira.yumebox.data.model.OverrideContentType
 import com.github.yumelira.yumebox.data.model.OverrideMetadata
 import com.github.yumelira.yumebox.data.store.OverrideConfigStore
 import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
+import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,6 +53,7 @@ class OverrideConfigViewModel(
     private val resolver: OverrideResolver,
     private val bindingProvider: ProfileBindingProvider,
     private val activeProfileOverrideReloader: ActiveProfileOverrideReloader,
+    private val profilesRepository: ProfilesRepository,
 ) : ViewModel() {
     companion object {
         private const val TAG = "OverrideConfigViewModel"
@@ -76,6 +79,16 @@ class OverrideConfigViewModel(
     private val _pendingRevealConfigId = MutableStateFlow<String?>(null)
     val pendingRevealConfigId: StateFlow<String?> = _pendingRevealConfigId.asStateFlow()
     private val refreshMutex = Mutex()
+
+    /**
+     * Snapshot of which subscriptions currently bind [overrideId]. Used by the apply sheet so
+     * checkboxes can seed without racing the async profile list load.
+     */
+    data class OverrideApplySnapshot(
+        val overrideId: String,
+        val profiles: List<Profile>,
+        val selectedProfileIds: Set<String>,
+    )
 
     init {
         refresh()
@@ -328,6 +341,84 @@ class OverrideConfigViewModel(
                     onSuccess = { Result.success(it) },
                     onFailure = { Result.failure(it) },
                 )
+        }
+
+    /**
+     * Load every subscription + which of them currently include [overrideId] in their chain.
+     * Profiles without a binding are treated as unbound (unchecked).
+     */
+    suspend fun loadApplySnapshot(overrideId: String): Result<OverrideApplySnapshot> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val profiles = profilesRepository.queryAllProfiles()
+                val selectedProfileIds = mutableSetOf<String>()
+                for (profile in profiles) {
+                    val profileId = profile.uuid.toString()
+                    val isBound =
+                        bindingProvider
+                            .getBinding(profileId)
+                            ?.overrideIds
+                            ?.contains(overrideId) == true
+                    if (isBound) {
+                        selectedProfileIds += profileId
+                    }
+                }
+                OverrideApplySnapshot(
+                    overrideId = overrideId,
+                    profiles = profiles,
+                    selectedProfileIds = selectedProfileIds,
+                )
+            }
+                .onFailure { error ->
+                    Timber.tag(TAG).e(error, "Failed to load apply snapshot for %s", overrideId)
+                }
+        }
+
+    /**
+     * Rewrite every subscription binding so [overrideId] is present exactly for
+     * [selectedProfileIds]. Order of existing chain entries is preserved; newly added ids are
+     * appended (chain order = application order).
+     */
+    suspend fun applyOverrideToProfiles(
+        overrideId: String,
+        selectedProfileIds: Set<String>,
+    ): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val profiles = profilesRepository.queryAllProfiles()
+                val activeProfileId = profilesRepository.queryActiveProfile()?.uuid?.toString()
+                val activeBefore =
+                    activeProfileId
+                        ?.let { bindingProvider.getBinding(it)?.overrideIds.orEmpty() }
+                        .orEmpty()
+
+                profiles.forEach { profile ->
+                    val profileId = profile.uuid.toString()
+                    val shouldBind = profileId in selectedProfileIds
+                    val currentIds =
+                        bindingProvider.getBinding(profileId)?.overrideIds.orEmpty()
+                    val isBound = overrideId in currentIds
+                    when {
+                        shouldBind && !isBound ->
+                            bindingProvider.addOverride(profileId, overrideId)
+                        !shouldBind && isBound ->
+                            bindingProvider.removeOverride(profileId, overrideId)
+                    }
+                }
+
+                val activeAfter =
+                    activeProfileId
+                        ?.let { bindingProvider.getBinding(it)?.overrideIds.orEmpty() }
+                        .orEmpty()
+                if (activeProfileId != null && activeBefore != activeAfter) {
+                    activeProfileOverrideReloader.reapplyActiveProfileOverride()
+                }
+                loadUsageCounts()
+            }
+                .onFailure { error ->
+                    Timber.tag(TAG)
+                        .e(error, "Failed to apply override %s to selected profiles", overrideId)
+                }
         }
 
     suspend fun isConfigInUse(id: String): Boolean = resolver.isOverrideInUse(id)

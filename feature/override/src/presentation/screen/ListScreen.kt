@@ -28,6 +28,7 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,12 +48,14 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.data.model.OverrideConfig
 import com.github.yumelira.yumebox.data.model.OverrideContentType
+import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.*
 import com.github.yumelira.yumebox.presentation.theme.Spacing
 import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -71,6 +74,9 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
+import top.yukonga.miuix.kmp.preference.SwitchPreference
+import androidx.compose.ui.state.ToggleableState
+import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 private val overrideConfigItemGap = Spacing().space12
@@ -94,6 +100,8 @@ fun OverrideListScreen(
     val showDeleteDialog = remember { mutableStateOf(false) }
     val deleteTargetConfig = remember { mutableStateOf<OverrideConfig?>(null) }
     val exportTargetConfig = remember { mutableStateOf<OverrideConfig?>(null) }
+    val applyTargetConfig = remember { mutableStateOf<OverrideConfig?>(null) }
+    val showApplySheet = remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
     val createFabController = rememberOverrideFabController()
@@ -225,6 +233,7 @@ fun OverrideListScreen(
                         isDragging = false,
                         isInUse = item.isInUse,
                         isBuiltIn = true,
+                        onApply = { openApplySheet(config, applyTargetConfig, showApplySheet) },
                         onCopy = { viewModel.duplicateConfig(config.id) },
                         onExport = {
                             exportTargetConfig.value = config
@@ -256,6 +265,7 @@ fun OverrideListScreen(
                             isDragging = isDragging,
                             isInUse = item.isInUse,
                             isBuiltIn = false,
+                            onApply = { openApplySheet(config, applyTargetConfig, showApplySheet) },
                             onCopy = { viewModel.duplicateConfig(config.id) },
                             onExport = {
                                 exportTargetConfig.value = config
@@ -301,6 +311,207 @@ fun OverrideListScreen(
                 showDeleteDialog.value = false
             },
         )
+
+        OverrideApplyToProfilesSheet(
+            show = showApplySheet,
+            config = applyTargetConfig.value,
+            viewModel = viewModel,
+            onDismiss = { showApplySheet.value = false },
+            onDismissFinished = { applyTargetConfig.value = null },
+        )
+    }
+}
+
+private fun openApplySheet(
+    config: OverrideConfig,
+    applyTargetConfig: MutableState<OverrideConfig?>,
+    showApplySheet: MutableState<Boolean>,
+) {
+    applyTargetConfig.value = config
+    showApplySheet.value = true
+}
+
+/**
+ * Inverse of the per-subscription override picker: pick which subscriptions should bind
+ * this one override. Global switch = all selected; individual rows stay free of dividers to
+ * match the cleaned-up subscription settings sheet.
+ */
+@Composable
+private fun OverrideApplyToProfilesSheet(
+    show: MutableState<Boolean>,
+    config: OverrideConfig?,
+    viewModel: OverrideConfigViewModel,
+    onDismiss: () -> Unit,
+    onDismissFinished: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val spacing = AppTheme.spacing
+    val componentSizes = AppTheme.sizes
+    val isShown = show.value && config != null
+
+    var profiles by remember { mutableStateOf(emptyList<Profile>()) }
+    var selectedProfileIds by remember { mutableStateOf(emptySet<String>()) }
+    var selectionSeeded by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isShown, config?.id) {
+        if (!isShown || config == null) {
+            profiles = emptyList()
+            selectedProfileIds = emptySet()
+            selectionSeeded = false
+            isLoading = false
+            isSaving = false
+            return@LaunchedEffect
+        }
+        isLoading = true
+        selectionSeeded = false
+        viewModel
+            .loadApplySnapshot(config.id)
+            .onSuccess { snapshot ->
+                profiles = snapshot.profiles
+                selectedProfileIds = snapshot.selectedProfileIds
+                selectionSeeded = true
+            }
+            .onFailure { error ->
+                context.toast(
+                    YumeTxt.Override.ApplySheet.Failed.format(
+                        error.message ?: YumeTxt.Util.Error.UnknownError
+                    )
+                )
+                profiles = emptyList()
+                selectedProfileIds = emptySet()
+                selectionSeeded = true
+            }
+        isLoading = false
+    }
+
+    val allProfileIds = remember(profiles) { profiles.map { it.uuid.toString() }.toSet() }
+    val applyGlobally =
+        allProfileIds.isNotEmpty() && selectedProfileIds.containsAll(allProfileIds)
+
+    val saveSelection = {
+        val target = config
+        if (!isSaving && target != null && selectionSeeded) {
+            scope.launch {
+                isSaving = true
+                viewModel
+                    .applyOverrideToProfiles(target.id, selectedProfileIds)
+                    .onSuccess {
+                        context.toast(YumeTxt.Override.ApplySheet.Success)
+                        onDismiss()
+                    }
+                    .onFailure { error ->
+                        context.toast(
+                            YumeTxt.Override.ApplySheet.Failed.format(
+                                error.message ?: YumeTxt.Util.Error.UnknownError
+                            )
+                        )
+                    }
+                isSaving = false
+            }
+        }
+    }
+
+    AppActionBottomSheet(
+        show = isShown,
+        title = YumeTxt.Override.ApplySheet.Title,
+        startAction = {
+            AppBottomSheetCloseAction(
+                onClick = onDismiss,
+                contentDescription = YumeTxt.Override.ApplySheet.Button.Cancel,
+            )
+        },
+        endAction = {
+            AppBottomSheetConfirmAction(
+                enabled = !isSaving && !isLoading && selectionSeeded,
+                onClick = saveSelection,
+                contentDescription = YumeTxt.Override.ApplySheet.Button.Confirm,
+            )
+        },
+        onDismissRequest = onDismiss,
+        onDismissFinished = onDismissFinished,
+        enableNestedScroll = true,
+    ) {
+        Column(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .wrapContentHeight()
+                    .padding(bottom = UiDp.dp16),
+            verticalArrangement = Arrangement.spacedBy(spacing.space16),
+        ) {
+            Card {
+                SwitchPreference(
+                    title = YumeTxt.Override.ApplySheet.Global,
+                    summary = YumeTxt.Override.ApplySheet.GlobalSummary,
+                    checked = applyGlobally,
+                    onCheckedChange = { enabled ->
+                        selectedProfileIds =
+                            if (enabled) {
+                                allProfileIds
+                            } else {
+                                emptySet()
+                            }
+                    },
+                )
+            }
+
+            when {
+                isLoading || !selectionSeeded -> {
+                    // Keep sheet height stable while the profile list loads.
+                    Spacer(modifier = Modifier.height(UiDp.dp24))
+                }
+                profiles.isEmpty() -> {
+                    Text(
+                        text = YumeTxt.Override.ApplySheet.Empty,
+                        color = colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier.padding(horizontal = spacing.space16),
+                    )
+                }
+                else -> {
+                    Card {
+                        LazyColumn(
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .heightIn(max = componentSizes.profileSettingsListMaxHeight)
+                        ) {
+                            items(
+                                items = profiles,
+                                key = { profile -> profile.uuid.toString() },
+                            ) { profile ->
+                                val profileId = profile.uuid.toString()
+                                val isSelected = profileId in selectedProfileIds
+                                BasicComponent(
+                                    title = profile.name,
+                                    endActions = {
+                                        Checkbox(
+                                            state = ToggleableState(isSelected),
+                                            onClick = {
+                                                selectedProfileIds =
+                                                    if (isSelected) {
+                                                        selectedProfileIds - profileId
+                                                    } else {
+                                                        selectedProfileIds + profileId
+                                                    }
+                                            },
+                                        )
+                                    },
+                                    onClick = {
+                                        selectedProfileIds =
+                                            if (isSelected) {
+                                                selectedProfileIds - profileId
+                                            } else {
+                                                selectedProfileIds + profileId
+                                            }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -310,6 +521,7 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
     isDragging: Boolean,
     isInUse: Boolean,
     isBuiltIn: Boolean,
+    onApply: () -> Unit,
     onCopy: () -> Unit,
     onExport: () -> Unit,
     onEdit: () -> Unit,
@@ -321,6 +533,7 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
         isDragging = isDragging,
         isInUse = isInUse,
         isBuiltIn = isBuiltIn,
+        onApply = onApply,
         onCopy = onCopy,
         onExport = onExport,
         onEdit = onEdit,
@@ -340,6 +553,7 @@ private fun OverrideConfigCard(
     isDragging: Boolean,
     isInUse: Boolean,
     isBuiltIn: Boolean,
+    onApply: () -> Unit,
     onCopy: () -> Unit,
     onExport: () -> Unit,
     onEdit: () -> Unit,
@@ -352,6 +566,7 @@ private fun OverrideConfigCard(
         isDragging = isDragging,
         isInUse = isInUse,
         isBuiltIn = isBuiltIn,
+        onApply = onApply,
         onCopy = onCopy,
         onExport = onExport,
         onEdit = onEdit,
@@ -369,6 +584,7 @@ private fun OverrideConfigCardContent(
     isDragging: Boolean,
     isInUse: Boolean,
     isBuiltIn: Boolean,
+    onApply: () -> Unit,
     onCopy: () -> Unit,
     onExport: () -> Unit,
     onEdit: () -> Unit,
@@ -441,6 +657,35 @@ private fun OverrideConfigCardContent(
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
+
+                // Right cluster mirrors ProfileCard: labeled actions (Apply + Edit [+ Delete]).
+                IconButton(
+                    modifier = Modifier.padding(end = UiDp.dp8),
+                    backgroundColor = colorScheme.secondaryContainer.copy(alpha = 0.78f),
+                    minHeight = UiDp.dp35,
+                    minWidth = UiDp.dp35,
+                    onClick = onApply,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = UiDp.dp10),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(UiDp.dp2),
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(UiDp.dp20),
+                            imageVector = Yume.Diff,
+                            tint = colorScheme.onSurface.copy(alpha = 0.85f),
+                            contentDescription = YumeTxt.Override.Card.Apply,
+                        )
+                        Text(
+                            modifier = Modifier.padding(end = UiDp.dp3),
+                            text = YumeTxt.Override.Card.ApplyButton,
+                            color = colorScheme.onSurface.copy(alpha = 0.85f),
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 15.sp,
+                        )
+                    }
+                }
 
                 IconButton(
                     modifier = Modifier.padding(end = if (onDelete != null) UiDp.dp8 else UiDp.dp0),

@@ -26,7 +26,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -49,7 +49,6 @@ import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private enum class ProfileSettingsSection {
     Subscription,
@@ -71,7 +70,6 @@ internal fun ProfileSettingsDialog(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val spacing = AppTheme.spacing
-    val opacity = AppTheme.opacity
     val componentSizes = AppTheme.sizes
     val selectableConfigs = remember(builtInConfigs, userConfigs) { builtInConfigs + userConfigs }
     val sectionOptions =
@@ -302,10 +300,10 @@ internal fun ProfileSettingsDialog(
                                                         componentSizes.profileSettingsListMaxHeight
                                                 )
                                     ) {
-                                        itemsIndexed(
+                                        items(
                                             selectableConfigs,
-                                            key = { _, config -> config.id },
-                                        ) { index, config ->
+                                            key = { config -> config.id },
+                                        ) { config ->
                                             val isSelected =
                                                 config.id in pendingSelectedOverrideIds
                                             BasicComponent(
@@ -328,20 +326,6 @@ internal fun ProfileSettingsDialog(
                                                     )
                                                 },
                                             )
-                                            if (index < selectableConfigs.lastIndex) {
-                                                HorizontalDivider(
-                                                    modifier =
-                                                        Modifier.padding(
-                                                            horizontal = spacing.space16
-                                                        ),
-                                                    thickness =
-                                                        componentSizes.thinDividerThickness,
-                                                    color =
-                                                        MiuixTheme.colorScheme.outline.copy(
-                                                            alpha = opacity.outline
-                                                        ),
-                                                )
-                                            }
                                         }
                                     }
                                 }

@@ -41,6 +41,21 @@ Override = {
         Delete = "删除配置"
         EditButton = "编辑"
         DeleteButton = "删除"
+        Apply = "应用配置"
+        ApplyButton = "应用"
+    }
+
+    ApplySheet = {
+        Title = "应用到订阅"
+        Global = "全局应用"
+        GlobalSummary = "将此覆写应用到全部订阅"
+        Empty = "暂无订阅"
+        Success = "已更新应用范围"
+        Failed = "更新应用范围失败：%s"
+        Button = {
+            Cancel = "取消"
+            Confirm = "确定"
+        }
     }
 
     Import = {
