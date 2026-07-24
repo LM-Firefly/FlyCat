@@ -23,22 +23,17 @@ package com.github.yumelira.yumebox.runtime.client
 import android.content.Context
 import android.content.Intent
 import com.github.yumelira.yumebox.core.data.RepositoryUtils.safeApiCall
-import com.github.yumelira.yumebox.runtime.api.IFetchObserver
+import com.github.yumelira.yumebox.runtime.api.FetchObserver
 import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
+import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.UUID
 
-/**
- * Repository for managing Profile CRUD operations.
- *
- * Communicates with ServiceClient (IPC to VPN service) to perform profile operations. All methods
- * return Result<T> for consistent error handling.
- */
+/** Profile CRUD via [RuntimeAccess] / [ProfileApi]. */
 class ProfilesRepository(private val context: Context) {
     private val appContext = context.appContextOrSelf
 
@@ -50,24 +45,24 @@ class ProfilesRepository(private val context: Context) {
     ): UUID =
         safeApiCall(TAG, "createProfile") {
                 Timber.d("Creating profile: type=$type, name=$name")
-                ServiceClient.connect(context)
-                ServiceClient.profile().create(type, name, source, ageSecretKey)
+                RuntimeAccess.connect(context)
+                RuntimeAccess.profile().create(type, name, source, ageSecretKey)
             }
             .getOrThrow()
 
     suspend fun cloneProfile(uuid: UUID): UUID =
         safeApiCall(TAG, "cloneProfile") {
                 Timber.d("Cloning profile: uuid=$uuid")
-                ServiceClient.connect(context)
-                ServiceClient.profile().clone(uuid)
+                RuntimeAccess.connect(context)
+                RuntimeAccess.profile().clone(uuid)
             }
             .getOrThrow()
 
     suspend fun deleteProfile(uuid: UUID) {
         safeApiCall(TAG, "deleteProfile") {
                 Timber.d("Deleting profile: uuid=$uuid")
-                ServiceClient.connect(context)
-                ServiceClient.profile().delete(uuid)
+                RuntimeAccess.connect(context)
+                RuntimeAccess.profile().delete(uuid)
             }
             .getOrThrow()
     }
@@ -75,8 +70,8 @@ class ProfilesRepository(private val context: Context) {
     suspend fun queryAllProfiles(): List<Profile> =
         withContext(Dispatchers.IO) {
             safeApiCall(TAG, "queryAllProfiles") {
-                    ServiceClient.connect(context)
-                    ServiceClient.profile().queryAll()
+                    RuntimeAccess.connect(context)
+                    RuntimeAccess.profile().queryAll()
                 }
                 .getOrThrow()
         }
@@ -84,8 +79,8 @@ class ProfilesRepository(private val context: Context) {
     suspend fun queryActiveProfile(): Profile? =
         withContext(Dispatchers.IO) {
             safeApiCall(TAG, "queryActiveProfile") {
-                    ServiceClient.connect(context)
-                    ServiceClient.profile().queryActive()
+                    RuntimeAccess.connect(context)
+                    RuntimeAccess.profile().queryActive()
                 }
                 .getOrThrow()
         }
@@ -93,8 +88,8 @@ class ProfilesRepository(private val context: Context) {
     suspend fun queryProfileByUUID(uuid: UUID): Profile? =
         withContext(Dispatchers.IO) {
             safeApiCall(TAG, "queryProfileByUUID") {
-                    ServiceClient.connect(context)
-                    ServiceClient.profile().queryByUUID(uuid)
+                    RuntimeAccess.connect(context)
+                    RuntimeAccess.profile().queryByUUID(uuid)
                 }
                 .getOrThrow()
         }
@@ -104,13 +99,13 @@ class ProfilesRepository(private val context: Context) {
             safeApiCall(TAG, "setActiveProfile") {
                     val startedAt = System.currentTimeMillis()
                     Timber.d("Setting active profile: uuid=$uuid")
-                    ServiceClient.connect(context)
+                    RuntimeAccess.connect(context)
 
                     val profile =
-                        ServiceClient.profile().queryByUUID(uuid)
+                        RuntimeAccess.profile().queryByUUID(uuid)
                             ?: throw IllegalArgumentException("Profile not found: $uuid")
 
-                    ServiceClient.profile().setActive(profile)
+                    RuntimeAccess.profile().setActive(profile)
 
                     notifyRuntimeOverrideChanged()
 
@@ -125,8 +120,8 @@ class ProfilesRepository(private val context: Context) {
     suspend fun clearActiveProfile(profile: Profile) {
         safeApiCall(TAG, "clearActiveProfile") {
                 Timber.d("Clearing active profile: uuid=${profile.uuid}")
-                ServiceClient.connect(context)
-                ServiceClient.profile().clearActive(profile)
+                RuntimeAccess.connect(context)
+                RuntimeAccess.profile().clearActive(profile)
                 notifyRuntimeOverrideChanged()
             }
             .getOrThrow()
@@ -135,17 +130,17 @@ class ProfilesRepository(private val context: Context) {
     suspend fun reorderProfiles(uuids: List<UUID>) {
         safeApiCall(TAG, "reorderProfiles") {
                 Timber.d("Reordering profiles: count=${uuids.size}")
-                ServiceClient.connect(context)
-                ServiceClient.profile().reorder(uuids)
+                RuntimeAccess.connect(context)
+                RuntimeAccess.profile().reorder(uuids)
             }
             .getOrThrow()
     }
 
-    suspend fun updateProfile(uuid: UUID, callback: IFetchObserver? = null) {
+    suspend fun updateProfile(uuid: UUID, callback: FetchObserver? = null) {
         safeApiCall(TAG, "updateProfile") {
                 Timber.d("Updating profile: uuid=$uuid")
-                ServiceClient.connect(context)
-                ServiceClient.profile().update(uuid, callback)
+                RuntimeAccess.connect(context)
+                RuntimeAccess.profile().update(uuid, callback)
             }
             .getOrThrow()
     }
@@ -153,8 +148,8 @@ class ProfilesRepository(private val context: Context) {
     suspend fun patchProfile(uuid: UUID, patch: ProfilePatch) {
         safeApiCall(TAG, "patchProfile") {
                 Timber.d("Patching profile: uuid=$uuid")
-                ServiceClient.connect(context)
-                ServiceClient.profile()
+                RuntimeAccess.connect(context)
+                RuntimeAccess.profile()
                     .patch(
                         uuid = uuid,
                         name = patch.name,

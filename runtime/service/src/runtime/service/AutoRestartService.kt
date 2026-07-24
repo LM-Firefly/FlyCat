@@ -40,7 +40,7 @@ import com.github.yumelira.yumebox.data.store.MMKVProvider
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
 import com.github.yumelira.yumebox.runtime.api.Profile
-import com.github.yumelira.yumebox.runtime.service.profile.ProfileManager
+import com.github.yumelira.yumebox.runtime.service.profile.ProfileService
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeStartupLogStore
 import com.github.yumelira.yumebox.runtime.service.util.AutoStartExecutionGate
@@ -75,7 +75,7 @@ class AutoRestartService : Service() {
         NetworkSettingsStore(mmkvProvider.getMMKV("network_settings"))
     }
     private val serviceCache by lazy { mmkvProvider.getMMKV("service_cache") }
-    private val profileManager by lazy { ProfileManager(applicationContext) }
+    private val profileManager by lazy { ProfileService(applicationContext) }
     private val foregroundStarted = AtomicBoolean(false)
     private val activationAwaiter = RuntimeActivationAwaiter()
     private var autoStartJob: Job? = null

@@ -123,9 +123,10 @@ fun LogScreen(navigator: Navigator) {
     val scope = rememberCoroutineScope()
     val spacing = AppTheme.spacing
 
-    val filteredEntries by viewModel.filteredLogEntries.collectAsState()
-    val levelFilter by viewModel.levelFilter.collectAsState()
-    val connectionState by viewModel.connectionState.collectAsState()
+    val screen by viewModel.screenState.collectAsState()
+    val filteredEntries = screen.filteredEntries
+    val levelFilter = screen.levelFilter
+    val connectionState = screen.connectionState
     val mainLikePadding = rememberStandalonePageMainPadding()
 
     val listState = rememberLazyListState()

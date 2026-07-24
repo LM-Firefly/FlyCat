@@ -24,18 +24,18 @@ object Intents {
     private fun intentAction(packageName: String, actionName: String): String =
         "$packageName.intent.action.$actionName"
 
-    fun actionStartClash(packageName: String): String = "$packageName.action.START_CLASH"
+    fun actionStartRuntime(packageName: String): String = "$packageName.action.START_CLASH"
 
-    fun actionStopClash(packageName: String): String = "$packageName.action.STOP_CLASH"
+    fun actionStopRuntime(packageName: String): String = "$packageName.action.STOP_CLASH"
 
     fun actionServiceRecreated(packageName: String): String =
         intentAction(packageName, "CLASH_RECREATED")
 
-    fun actionClashStarted(packageName: String): String = intentAction(packageName, "CLASH_STARTED")
+    fun actionRuntimeStarted(packageName: String): String = intentAction(packageName, "CLASH_STARTED")
 
-    fun actionClashStopped(packageName: String): String = intentAction(packageName, "CLASH_STOPPED")
+    fun actionRuntimeStopped(packageName: String): String = intentAction(packageName, "CLASH_STOPPED")
 
-    fun actionClashRequestStop(packageName: String): String =
+    fun actionRuntimeRequestStop(packageName: String): String =
         intentAction(packageName, "CLASH_REQUEST_STOP")
 
     fun actionProfileChanged(packageName: String): String =
@@ -53,14 +53,14 @@ object Intents {
     val ACTION_SERVICE_RECREATED: String
         get() = actionServiceRecreated(packageName)
 
-    val ACTION_CLASH_STARTED: String
-        get() = actionClashStarted(packageName)
+    val ACTION_RUNTIME_STARTED: String
+        get() = actionRuntimeStarted(packageName)
 
-    val ACTION_CLASH_STOPPED: String
-        get() = actionClashStopped(packageName)
+    val ACTION_RUNTIME_STOPPED: String
+        get() = actionRuntimeStopped(packageName)
 
-    val ACTION_CLASH_REQUEST_STOP: String
-        get() = actionClashRequestStop(packageName)
+    val ACTION_RUNTIME_REQUEST_STOP: String
+        get() = actionRuntimeRequestStop(packageName)
 
     val ACTION_PROFILE_CHANGED: String
         get() = actionProfileChanged(packageName)

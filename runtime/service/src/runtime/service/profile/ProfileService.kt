@@ -21,8 +21,8 @@
 package com.github.yumelira.yumebox.runtime.service.profile
 
 import android.content.Context
-import com.github.yumelira.yumebox.runtime.api.IFetchObserver
-import com.github.yumelira.yumebox.runtime.api.IProfileManager
+import com.github.yumelira.yumebox.runtime.api.FetchObserver
+import com.github.yumelira.yumebox.runtime.api.ProfileApi
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
@@ -36,8 +36,8 @@ import kotlinx.coroutines.withContext
 import java.io.FileNotFoundException
 import java.util.UUID
 
-class ProfileManager(private val context: Context) :
-    IProfileManager, CoroutineScope by CoroutineScope(Dispatchers.IO) {
+class ProfileService(private val context: Context) :
+    ProfileApi, CoroutineScope by CoroutineScope(Dispatchers.IO) {
     private val store = ServiceStore()
 
     init {
@@ -137,7 +137,7 @@ class ProfileManager(private val context: Context) :
         context.sendProfileChanged(uuid, affectsRuntime = store.activeProfile == uuid)
     }
 
-    override suspend fun update(uuid: UUID, callback: IFetchObserver?) {
+    override suspend fun update(uuid: UUID, callback: FetchObserver?) {
         ProfileProcessor.update(context, uuid, callback)
     }
 

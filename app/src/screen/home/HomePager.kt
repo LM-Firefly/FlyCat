@@ -21,8 +21,19 @@
 package com.github.yumelira.yumebox.screen.home
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -32,6 +43,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.github.yumelira.yumebox.common.util.toast
+import com.github.yumelira.yumebox.data.network.IpMonitoringState
 import com.github.yumelira.yumebox.domain.model.TrafficData
 import com.github.yumelira.yumebox.presentation.component.LocalNavigator
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
@@ -39,6 +51,7 @@ import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumelira.yumebox.runtime.api.Profile
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
@@ -49,34 +62,15 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
     val homeViewModel = koinViewModel<HomeViewModel>()
     val navigator = LocalNavigator.current
-
-    val controlState by homeViewModel.controlState.collectAsState()
-    val uiState by homeViewModel.uiState.collectAsState()
-    val trafficNow by homeViewModel.trafficNow.collectAsState()
-    val profiles by homeViewModel.profiles.collectAsState()
-    val profilesLoaded by homeViewModel.profilesLoaded.collectAsState()
-    val ipMonitoringState by homeViewModel.ipMonitoringState.collectAsState()
-    val recommendedProfile by homeViewModel.recommendedProfile.collectAsState()
-    val hasEnabledProfile by homeViewModel.hasEnabledProfile.collectAsState(initial = false)
-    val currentProfile by homeViewModel.currentProfile.collectAsState()
-    val selectedServerName by homeViewModel.selectedServerName.collectAsState()
-    val selectedServerPing by homeViewModel.selectedServerPing.collectAsState()
-    val speedHistory by homeViewModel.speedHistory.collectAsState()
-    val proxyMode by homeViewModel.proxyMode.collectAsState()
-    val isRemoteController by homeViewModel.isRemoteController.collectAsState()
-    val controllerBackendName by homeViewModel.controllerBackendName.collectAsState()
+    val screen by homeViewModel.screenState.collectAsState()
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
     val lifecycleOwner = LocalLifecycleOwner.current
-
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) { homeViewModel.refreshProxyMode() }
-
     LaunchedEffect(isActive) { homeViewModel.setHomeScreenActive(isActive) }
-
     DisposableEffect(homeViewModel) { onDispose { homeViewModel.setHomeScreenActive(false) } }
-
     DisposableEffect(lifecycleOwner, homeViewModel) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -87,24 +81,21 @@ fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let {
+    LaunchedEffect(screen.uiError) {
+        screen.uiError?.let {
             context.toast(it, Toast.LENGTH_LONG)
             homeViewModel.consumeError()
         }
     }
-
-    LaunchedEffect(uiState.message) { uiState.message?.let { homeViewModel.consumeMessage() } }
+    LaunchedEffect(screen.uiMessage) { screen.uiMessage?.let { homeViewModel.consumeMessage() } }
 
     val scrollBehavior = MiuixScrollBehavior()
-
-    val isRunning = controlState == HomeProxyControlState.Running
+    val isRunning = screen.controlState == HomeProxyControlState.Running
     val isProxyEnabled =
-        if (isRemoteController) {
+        if (screen.isRemoteController) {
             false
         } else {
-            profilesLoaded && profiles.isNotEmpty() && controlState.canInteract
+            screen.profilesLoaded && screen.profiles.isNotEmpty() && screen.controlState.canInteract
         }
 
     Scaffold(topBar = { TopBar(title = YumeTxt.Home.Title, scrollBehavior = scrollBehavior) }) {
@@ -115,44 +106,40 @@ fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
         ) {
             item {
                 Column(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .padding(horizontal = UiDp.dp24),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = UiDp.dp24),
                     horizontalAlignment = Alignment.Start,
-                    verticalArrangement =
-                        Arrangement.spacedBy(UiDp.dp24),
+                    verticalArrangement = Arrangement.spacedBy(UiDp.dp24),
                 ) {
                     TrafficDisplay(
                         trafficNow =
                             if (isRunning) {
-                                TrafficData.from(trafficNow)
+                                TrafficData.from(screen.trafficNow)
                             } else {
                                 TrafficData.zero
                             },
-                        // TODO(i18n M7): localize the "控制器" backend label.
                         profileName =
-                            if (isRemoteController) {
-                                controllerBackendName
+                            if (screen.isRemoteController) {
+                                screen.controllerBackendName
                             } else {
-                                currentProfile?.name?.takeIf { isRunning }
+                                screen.currentProfile?.name?.takeIf { isRunning }
                             },
                         tunnelMode = null,
-                        controlState = controlState,
-                        proxyMode = proxyMode,
-                        isRemoteController = isRemoteController,
+                        controlState = screen.controlState,
+                        proxyMode = screen.proxyMode,
+                        isRemoteController = screen.isRemoteController,
                         isEnabled = isProxyEnabled,
                         onClick = {
-                            if (isRemoteController) {
+                            if (screen.isRemoteController) {
                                 return@TrafficDisplay
                             }
-                            if (!hasEnabledProfile || recommendedProfile == null) {
+                            if (!screen.hasEnabledProfile || screen.recommendedProfile == null) {
                                 context.toast(YumeTxt.ProfilesVM.Error.ProfileNotExist)
                                 return@TrafficDisplay
                             }
                             hapticFeedback.performHapticFeedback(HapticFeedbackType.VirtualKey)
                             handleProxyToggle(
                                 isRunning = isRunning,
-                                recommendedProfile = recommendedProfile,
+                                recommendedProfile = screen.recommendedProfile,
                                 onStart = { profile ->
                                     homeViewModel.startProxy(
                                         profileId = profile.uuid.toString(),
@@ -166,22 +153,21 @@ fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
 
                     Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp16)) {
                         NodeInfoDisplay(
-                            serverName = selectedServerName.takeIf { isRunning },
-                            serverPing = selectedServerPing.takeIf { isRunning },
+                            serverName = screen.selectedServerName.takeIf { isRunning },
+                            serverPing = screen.selectedServerPing.takeIf { isRunning },
                         )
                         IpInfoDisplay(
                             state =
                                 if (isRunning) {
-                                    ipMonitoringState
+                                    screen.ipMonitoringState
                                 } else {
-                                    com.github.yumelira.yumebox.data.gateway.IpMonitoringState
-                                        .Loading
+                                    IpMonitoringState.Loading
                                 }
                         )
                     }
 
                     SpeedChart(
-                        speedHistory = speedHistory,
+                        speedHistory = screen.speedHistory,
                         isRunning = isRunning,
                         onClick = { navigator.push(Route.TrafficStatistics) },
                     )
@@ -195,8 +181,8 @@ fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
 
 private fun handleProxyToggle(
     isRunning: Boolean,
-    recommendedProfile: com.github.yumelira.yumebox.runtime.api.Profile?,
-    onStart: (com.github.yumelira.yumebox.runtime.api.Profile) -> Unit,
+    recommendedProfile: Profile?,
+    onStart: (Profile) -> Unit,
     onStop: () -> Unit,
 ) {
     if (!isRunning) {

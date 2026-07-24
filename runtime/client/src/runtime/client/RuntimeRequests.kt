@@ -18,24 +18,23 @@
  *
  */
 
-package com.github.yumelira.yumebox.data.controller
+package com.github.yumelira.yumebox.runtime.client
 
-import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
-import com.github.yumelira.yumebox.domain.model.TrafficData
-import kotlinx.coroutines.flow.Flow
+import com.github.yumelira.yumebox.core.model.RunMode
+import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 
-/**
- * The runtime queries the traffic collector needs, expressed as one seam so the collector takes a
- * single dependency instead of four lambdas wired from the same facade.
- */
-interface TrafficQueryGateway {
-    val isRunning: Flow<Boolean>
+/** Start request carried as one object instead of long argument lists. */
+data class RuntimeStartRequest(
+    val owner: RuntimeOwner,
+    val mode: RunMode,
+    val profile: Profile? = null,
+)
 
-    fun currentProfileId(): String?
-
-    suspend fun queryTrafficTotal(): TrafficData
-
-    suspend fun queryConnections(): ConnectionSnapshot
-
-    suspend fun queryActiveProfileId(): String?
-}
+/** Stop request carried as one object instead of long argument lists. */
+data class RuntimeStopRequest(
+    val owner: RuntimeOwner = RuntimeOwner.None,
+    val targetMode: RunMode,
+    val completeImmediately: Boolean = false,
+    val reason: String? = null,
+)

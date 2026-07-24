@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.client
+package com.github.yumelira.yumebox.runtime.client.session
 
 import com.github.yumelira.yumebox.core.model.Proxy
 import com.github.yumelira.yumebox.core.model.ProxyGroup

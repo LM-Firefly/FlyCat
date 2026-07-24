@@ -41,7 +41,7 @@ object RuntimeServiceLauncher {
     const val SOURCE_UNKNOWN = "unknown"
 
     // Only [RunMode.VpnService] is service-hosted; the root Tun/Tproxy daemons launch via
-    // CoreProcess.startRoot (through ProxyRuntimeControl), not this launcher.
+    // CoreProcess.startRoot (through RuntimeLauncher), not this launcher.
     @Synchronized
     fun start(context: Context, mode: RunMode = RunMode.VpnService, source: String = SOURCE_UNKNOWN) {
         val appContext = context.appContextOrSelf
@@ -78,7 +78,7 @@ object RuntimeServiceLauncher {
         ) {
             startupLogStore.append("${logScope.tag} launcher: stopping stale ${mode.name} runtime")
             appContext.sendBroadcast(
-                Intent(Intents.ACTION_CLASH_REQUEST_STOP)
+                Intent(Intents.ACTION_RUNTIME_REQUEST_STOP)
                     .setPackage(appContext.packageName)
                     .putExtra(Intents.EXTRA_RESTART, true)
                     .putExtra(Intents.EXTRA_RUNTIME_MODE, mode.name)

@@ -30,12 +30,7 @@ import java.io.InputStream
 import java.io.OutputStream
 
 /**
- * A client connection to the core's mihomo external controller, which is exposed on a UNIX-domain
- * socket rather than a TCP port. Supports the abstract namespace via a leading `@` in the path.
- *
- * This is the query/control transport: the Kotlin REST layer (`HttpClashManager` adapted to a UNIX
- * base URL) drives traffic/proxies/connections/logs over these streams. YumeBox's equivalent of
- * CFA's `UnixSocket`.
+/** UNIX-domain connection to the local core controller (`@` path => abstract namespace). */
  */
 @Keep
 class UnixSocket private constructor(private val descriptor: ParcelFileDescriptor) : Closeable {

@@ -34,6 +34,33 @@ import com.github.yumelira.yumebox.screen.home.HomeViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @SuppressLint("UseKtx")
+private data class ProfilesPagerUi(
+    val profiles: List<com.github.yumelira.yumebox.runtime.api.Profile>,
+    val isRunning: Boolean,
+    val builtInConfigs: List<com.github.yumelira.yumebox.data.model.OverrideConfig>,
+    val userConfigs: List<com.github.yumelira.yumebox.data.model.OverrideConfig>,
+)
+
+@Composable
+private fun rememberProfilesPagerUi(
+    profilesViewModel: ProfilesViewModel,
+    homeViewModel: HomeViewModel,
+    overrideConfigViewModel: OverrideConfigViewModel,
+): ProfilesPagerUi {
+    val profiles by profilesViewModel.profiles.collectAsState()
+    val isRunning by homeViewModel.isRunning.collectAsState()
+    val builtInConfigs by overrideConfigViewModel.builtInConfigs.collectAsState()
+    val userConfigs by overrideConfigViewModel.userConfigs.collectAsState()
+    return remember(profiles, isRunning, builtInConfigs, userConfigs) {
+        ProfilesPagerUi(
+            profiles = profiles,
+            isRunning = isRunning,
+            builtInConfigs = builtInConfigs,
+            userConfigs = userConfigs,
+        )
+    }
+}
+
 @Composable
 fun ProfilesPager(
     mainInnerPadding: PaddingValues,
@@ -41,12 +68,8 @@ fun ProfilesPager(
 ) {
     val profilesViewModel = koinViewModel<ProfilesViewModel>()
     val homeViewModel = koinViewModel<HomeViewModel>()
-    val profiles by profilesViewModel.profiles.collectAsState()
-    val isRunning by homeViewModel.isRunning.collectAsState()
-
     val overrideConfigViewModel = koinViewModel<OverrideConfigViewModel>()
-    val builtInConfigs by overrideConfigViewModel.builtInConfigs.collectAsState()
-    val userConfigs by overrideConfigViewModel.userConfigs.collectAsState()
+    val screen = rememberProfilesPagerUi(profilesViewModel, homeViewModel, overrideConfigViewModel)
     val dialogs = rememberProfilesDialogState()
     val pendingImportUrl by MainActivity.pendingImportUrl.collectAsState()
     LaunchedEffect(pendingImportUrl) {
@@ -60,21 +83,21 @@ fun ProfilesPager(
 
     ProfilesPageHost(
         mainInnerPadding = mainInnerPadding,
-        profiles = profiles,
+        profiles = screen.profiles,
         state = dialogs,
         profilesViewModel = profilesViewModel,
         homeViewModel = homeViewModel,
-        isRunning = isRunning,
+        isRunning = screen.isRunning,
         windowLayoutMode = windowLayoutMode,
         sheetHost = {
             ProfilesDialogHost(
                 state = dialogs,
                 profilesViewModel = profilesViewModel,
                 homeViewModel = homeViewModel,
-                builtInConfigs = builtInConfigs,
-                userConfigs = userConfigs,
+                builtInConfigs = screen.builtInConfigs,
+                userConfigs = screen.userConfigs,
                 refreshOverrides = overrideConfigViewModel::refreshAndAwait,
-                isRunning = isRunning,
+                isRunning = screen.isRunning,
             )
         },
     )

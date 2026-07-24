@@ -80,7 +80,7 @@ object RootSessionLauncher {
             // to bind or the config handoff was rejected. Probe the same REST endpoint used by the
             // node page before publishing Running, otherwise the UI reports an active tunnel with
             // no groups and hides the actual startup failure.
-            runCatching { CoreProcess.rest(appContext).queryTunnelState() }
+            runCatching { CoreProcess.controller(appContext).queryTunnelState() }
                 .onFailure { error ->
                     CoreProcess.stopRoot()
                     val tail = CoreProcess.coreLogTail(appContext)
@@ -93,7 +93,7 @@ object RootSessionLauncher {
             log.append("${logScope.tag} root launcher: controller ready")
 
             StatusProvider.markRuntimeRunning(mode)
-            broadcast(appContext, Intents.actionClashStarted(appContext.packageName))
+            broadcast(appContext, Intents.actionRuntimeStarted(appContext.packageName))
             log.append("${logScope.tag} root launcher: done")
         } catch (error: Throwable) {
             runCatching { CoreProcess.stopRoot() }
@@ -123,7 +123,7 @@ object RootSessionLauncher {
         runCatching { CoreProcess.stopRoot() }
         mode?.let { StatusProvider.markRuntimeIdle(it) }
         RootForegroundService.stop(appContext)
-        broadcast(appContext, Intents.actionClashStopped(appContext.packageName))
+        broadcast(appContext, Intents.actionRuntimeStopped(appContext.packageName))
     }
 
     private fun broadcast(context: Context, action: String) {

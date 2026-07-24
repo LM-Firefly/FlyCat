@@ -24,7 +24,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.yumelira.yumebox.core.model.RuntimeRule
-import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
+import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -73,8 +73,8 @@ class RulesViewModel(private val appContext: Context) : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isLoading = true, error = null) }
             runCatching {
-                    ServiceClient.connect(appContext)
-                    ServiceClient.clash().queryRules()
+                    RuntimeAccess.connect(appContext)
+                    RuntimeAccess.core().queryRules()
                 }
                 .onSuccess { rules ->
                     _uiState.update {
@@ -120,8 +120,8 @@ class RulesViewModel(private val appContext: Context) : ViewModel() {
                     )
                 }
                 runCatching {
-                        ServiceClient.connect(appContext)
-                        ServiceClient.clash().setRuleDisabled(originalRule, disabled)
+                        RuntimeAccess.connect(appContext)
+                        RuntimeAccess.core().setRuleDisabled(originalRule, disabled)
                     }
                     .onSuccess { confirmedRules ->
                         _uiState.update {

@@ -121,7 +121,7 @@ class ServiceNotificationManager(
             )
         }
 
-        val core = com.github.yumelira.yumebox.runtime.service.core.CoreProcess.rest(service)
+        val core = com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(service)
         val now = runCatching { core.queryTrafficNow() }.getOrDefault(0L)
         val total = runCatching { core.queryTrafficTotal() }.getOrDefault(0L)
         return buildNotification(

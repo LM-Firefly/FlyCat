@@ -25,9 +25,6 @@ plugins {
 
 android {
     namespace = "com.github.yumelira.yumebox.runtime.service"
-    buildFeatures {
-        aidl = true
-    }
 }
 
 dependencies {

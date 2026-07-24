@@ -20,8 +20,16 @@
 
 package com.github.yumelira.yumebox.runtime.api
 
-import com.github.yumelira.yumebox.core.model.FetchStatus
+import com.github.yumelira.yumebox.core.model.LogMessage
 
-fun interface IFetchObserver {
-    fun updateStatus(status: FetchStatus)
+interface LogObserver {
+    fun onConnected() = Unit
+
+    fun onError(error: Throwable) = Unit
+
+    fun newItem(log: LogMessage)
+}
+
+fun interface LogSubscription {
+    fun close()
 }

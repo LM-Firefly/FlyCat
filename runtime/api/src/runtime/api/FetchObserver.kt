@@ -18,13 +18,10 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.client.manager
+package com.github.yumelira.yumebox.runtime.api
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import com.github.yumelira.yumebox.core.model.FetchStatus
 
-/** Extracts the `delay` field from a core health-check JSON payload; -1 when the field is absent. */
-internal fun parseDelayMillis(json: String): Int =
-    Json.parseToJsonElement(json).jsonObject["delay"]?.jsonPrimitive?.int ?: -1
+fun interface FetchObserver {
+    fun updateStatus(status: FetchStatus)
+}

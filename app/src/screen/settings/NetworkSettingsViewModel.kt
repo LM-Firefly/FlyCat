@@ -75,6 +75,84 @@ class NetworkSettingsViewModel(
     private val _rootAvailable = MutableStateFlow(false)
     val rootAvailable: StateFlow<Boolean> = _rootAvailable.asStateFlow()
 
+    data class NetworkSettingsScreenState(
+        val runMode: RunMode = RunMode.VpnService,
+        val disableAllOverride: Boolean = false,
+        val accessControlMode: AccessControlMode = AccessControlMode.ALLOW_ALL,
+        val rootAvailable: Boolean = false,
+    )
+
+    val networkScreenState: StateFlow<NetworkSettingsScreenState> =
+        combine(
+            runMode.state,
+            disableAllOverride.state,
+            accessControlMode.state,
+            rootAvailable,
+        ) { mode, disableOverride, accessMode, root ->
+            NetworkSettingsScreenState(
+                runMode = mode,
+                disableAllOverride = disableOverride,
+                accessControlMode = accessMode,
+                rootAvailable = root,
+            )
+        }
+            .stateInWhileSubscribed(
+                viewModelScope,
+                NetworkSettingsScreenState(
+                    runMode = runMode.value,
+                    disableAllOverride = disableAllOverride.value,
+                    accessControlMode = accessControlMode.value,
+                    rootAvailable = false,
+                ),
+            )
+
+    data class TunOptionsScreenState(
+        val ifName: String = "",
+        val mtu: Int = 0,
+        val stack: TunStack = TunStack.System,
+        val autoRoute: Boolean = false,
+        val strictRoute: Boolean = false,
+        val autoRedirect: Boolean = false,
+        val dnsMode: TunDnsMode = TunDnsMode.FakeIp,
+        val enableIPv6: Boolean = false,
+    )
+
+    val tunOptionsScreenState: StateFlow<TunOptionsScreenState> =
+        combine(
+            combine(tunIfName.state, tunMtu.state, tunStack.state, tunAutoRoute.state, tunStrictRoute.state) {
+                ifName, mtu, stack, autoRoute, strictRoute ->
+                TunOptionsScreenState(
+                    ifName = ifName,
+                    mtu = mtu,
+                    stack = stack,
+                    autoRoute = autoRoute,
+                    strictRoute = strictRoute,
+                )
+            },
+            combine(tunAutoRedirect.state, tunDnsMode.state, enableIPv6.state) { autoRedirect, dnsMode, ipv6 ->
+                Triple(autoRedirect, dnsMode, ipv6)
+            },
+        ) { base, extra ->
+            base.copy(
+                autoRedirect = extra.first,
+                dnsMode = extra.second,
+                enableIPv6 = extra.third,
+            )
+        }
+            .stateInWhileSubscribed(
+                viewModelScope,
+                TunOptionsScreenState(
+                    ifName = tunIfName.value,
+                    mtu = tunMtu.value,
+                    stack = tunStack.value,
+                    autoRoute = tunAutoRoute.value,
+                    strictRoute = tunStrictRoute.value,
+                    autoRedirect = tunAutoRedirect.value,
+                    dnsMode = tunDnsMode.value,
+                    enableIPv6 = enableIPv6.value,
+                ),
+            )
+
     init {
         viewModelScope.launch {
             _rootAvailable.value = RootAccessSupport.evaluateAsync(getApplication()).canStartRoot
@@ -128,6 +206,26 @@ class NetworkSettingsViewModel(
     fun onRunModeChange(mode: RunMode) {
         controller.setRunMode(mode)
     }
+
+
+    data class TproxyOptionsScreenState(
+        val port: Int = 0,
+        val dnsMode: TunDnsMode = TunDnsMode.FakeIp,
+        val enableIPv6: Boolean = false,
+    )
+
+    val tproxyOptionsScreenState: StateFlow<TproxyOptionsScreenState> =
+        combine(tproxyPort.state, tunDnsMode.state, enableIPv6.state) { port, dns, ipv6 ->
+            TproxyOptionsScreenState(port = port, dnsMode = dns, enableIPv6 = ipv6)
+        }
+            .stateInWhileSubscribed(
+                viewModelScope,
+                TproxyOptionsScreenState(
+                    port = tproxyPort.value,
+                    dnsMode = tunDnsMode.value,
+                    enableIPv6 = enableIPv6.value,
+                ),
+            )
 
     fun onBypassPrivateNetworkChange(enabled: Boolean) {
         controller.setAndRestartIfNeeded(bypassPrivateNetwork, enabled)

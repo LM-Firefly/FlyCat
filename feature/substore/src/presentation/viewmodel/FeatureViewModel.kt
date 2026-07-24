@@ -88,6 +88,66 @@ class FeatureViewModel(
     private val _isJavetLoaded = MutableStateFlow(false)
     val isJavetLoaded: StateFlow<Boolean> = _isJavetLoaded.asStateFlow()
 
+    data class FeatureScreenState(
+        val isServiceRunning: Boolean = false,
+        val allowLanAccess: Boolean = false,
+        val frontendPort: Int = 0,
+        val backendPort: Int = 0,
+        val autoCloseMode: AutoCloseMode = AutoCloseMode.ALWAYS_ON,
+        val isDownloadingSubStoreFrontend: Boolean = false,
+        val isDownloadingSubStoreBackend: Boolean = false,
+        val isExtensionInstalled: Boolean = false,
+        val isJavetLoaded: Boolean = false,
+        val selectedPanelType: Int = 0,
+    )
+
+    val screenState: StateFlow<FeatureScreenState> =
+        combine(
+            combine(
+                serviceRunningState,
+                allowLanAccess.state,
+                frontendPort.state,
+                backendPort.state,
+                autoCloseMode,
+            ) { running, lan, front, back, autoClose ->
+                FeatureScreenState(
+                    isServiceRunning = running,
+                    allowLanAccess = lan,
+                    frontendPort = front,
+                    backendPort = back,
+                    autoCloseMode = autoClose,
+                )
+            },
+            combine(
+                isDownloadingSubStoreFrontend,
+                isDownloadingSubStoreBackend,
+                isExtensionInstalled,
+                isJavetLoaded,
+                selectedPanelType.state,
+            ) { dlFront, dlBack, ext, javet, panel ->
+                FeatureScreenState(
+                    isDownloadingSubStoreFrontend = dlFront,
+                    isDownloadingSubStoreBackend = dlBack,
+                    isExtensionInstalled = ext,
+                    isJavetLoaded = javet,
+                    selectedPanelType = panel,
+                )
+            },
+        ) { base, extra ->
+            base.copy(
+                isDownloadingSubStoreFrontend = extra.isDownloadingSubStoreFrontend,
+                isDownloadingSubStoreBackend = extra.isDownloadingSubStoreBackend,
+                isExtensionInstalled = extra.isExtensionInstalled,
+                isJavetLoaded = extra.isJavetLoaded,
+                selectedPanelType = extra.selectedPanelType,
+            )
+        }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = FeatureScreenState(),
+            )
+
     companion object {
         private const val EXTENSION_PACKAGE_NAME = "com.github.yumelira.yumebox.extension"
         private const val JAVET_LIB_NAME = "libjavet-node-android"

@@ -18,17 +18,17 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.client.manager
+package com.github.yumelira.yumebox.runtime.client.access
 
 import android.content.Context
 import com.github.yumelira.yumebox.data.store.MMKVProvider
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
-import com.github.yumelira.yumebox.runtime.api.IClashManager
-import com.github.yumelira.yumebox.runtime.api.IProfileManager
+import com.github.yumelira.yumebox.runtime.api.CoreApi
+import com.github.yumelira.yumebox.runtime.api.ProfileApi
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.api.initializeServiceGlobal
-import com.github.yumelira.yumebox.runtime.service.manager.HttpClashManager
-import com.github.yumelira.yumebox.runtime.service.profile.ProfileManager
+import com.github.yumelira.yumebox.runtime.service.controller.CoreController
+import com.github.yumelira.yumebox.runtime.service.profile.ProfileService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -36,51 +36,49 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
-object ServiceClient {
+object RuntimeAccess {
     private val mutex = Mutex()
     private var initialized = false
-    private var clashManager: IClashManager? = null
-    private var profileManager: IProfileManager? = null
+    private var coreApi: CoreApi? = null
+    private var profileApi: ProfileApi? = null
 
     @Suppress("TooGenericExceptionCaught")
     suspend fun connect(ctx: Context) {
         withContext(Dispatchers.IO) {
             mutex.withLock {
                 val appContext = ctx.appContextOrSelf
-                if (initialized && clashManager != null && profileManager != null) {
+                if (initialized && coreApi != null && profileApi != null) {
                     return@withLock
                 }
 
                 val startedAt = System.currentTimeMillis()
-
                 try {
                     initializeServiceGlobal(appContext)
                     val remoteStore =
                         RemoteControllerStore(MMKVProvider().getMMKV("remote_controller"))
-                    val httpManager =
-                        HttpClashManager(backendProvider = { remoteStore.activeBackend() })
-                    clashManager =
-                        ClashGateway(
-                            appContext,
-                            remote = httpManager,
+                    val remote = CoreController(backendProvider = { remoteStore.activeBackend() })
+                    coreApi =
+                        CoreRouter(
+                            local =
+                                com.github.yumelira.yumebox.runtime.service.core.CoreProcess
+                                    .controller(appContext),
+                            remote = remote,
                             isRemoteControllerActive = {
                                 remoteStore.controllerEnabled.value &&
                                     remoteStore.activeBackend() != null
                             },
                         )
-                    profileManager = ProfileManager(appContext)
+                    profileApi = ProfileService(appContext)
                     initialized = true
                     Timber.d(
-                        "ServiceClient gateway initialized in pid=${android.os.Process.myPid()}, process=${android.app.Application.getProcessName()}, cost=${System.currentTimeMillis() - startedAt}ms"
+                        "RuntimeAccess ready pid=${android.os.Process.myPid()} cost=${System.currentTimeMillis() - startedAt}ms",
                     )
                 } catch (error: Exception) {
-                    // fault barrier: gateway init spans MMKV/native/service wiring; reset state,
-                    // log, and rethrow so the caller sees the original failure.
                     if (error is CancellationException) throw error
                     initialized = false
-                    clashManager = null
-                    profileManager = null
-                    Timber.e(error, "Failed to initialize local service gateway")
+                    coreApi = null
+                    profileApi = null
+                    Timber.e(error, "RuntimeAccess init failed")
                     throw error
                 }
             }
@@ -88,16 +86,26 @@ object ServiceClient {
     }
 
     suspend fun disconnect() {
-        clashManager = null
-        profileManager = null
-        initialized = false
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                coreApi = null
+                profileApi = null
+                initialized = false
+            }
+        }
     }
 
-    suspend fun clash(): IClashManager =
-        clashManager ?: throw IllegalStateException("ServiceClient not connected")
+    suspend fun core(): CoreApi =
+        coreApi ?: throw IllegalStateException("RuntimeAccess not connected")
 
-    suspend fun profile(): IProfileManager =
-        profileManager ?: throw IllegalStateException("ServiceClient not connected")
+    suspend fun profile(): ProfileApi =
+        profileApi ?: throw IllegalStateException("RuntimeAccess not connected")
 
-    fun isConnected(): Boolean = initialized && clashManager != null && profileManager != null
+    fun isConnected(): Boolean = initialized && coreApi != null && profileApi != null
+
+    /** Drop cached controller bindings and reconnect (remote backend / process endpoint changes). */
+    suspend fun reconnect(ctx: Context) {
+        disconnect()
+        connect(ctx)
+    }
 }

@@ -22,7 +22,7 @@ package com.github.yumelira.yumebox.runtime.api
 
 import java.util.UUID
 
-interface IProfileManager {
+interface ProfileApi {
     suspend fun create(
         type: Profile.Type,
         name: String,
@@ -43,7 +43,7 @@ interface IProfileManager {
         ageSecretKey: String? = null,
     )
 
-    suspend fun update(uuid: UUID, callback: IFetchObserver? = null)
+    suspend fun update(uuid: UUID, callback: FetchObserver? = null)
 
     suspend fun queryByUUID(uuid: UUID): Profile?
 

@@ -83,9 +83,9 @@ fun AppSettingsScreen() {
 
 @Composable
 private fun AppBehaviorSettingsSection(viewModel: AppSettingsViewModel) {
-    val automaticRestart by viewModel.automaticRestart.state.collectAsState()
-    val autoUpdateCurrentProfileOnStart by
-        viewModel.autoUpdateCurrentProfileOnStart.state.collectAsState()
+    val section by viewModel.behaviorSectionState.collectAsState()
+    val automaticRestart = section.automaticRestart
+    val autoUpdateCurrentProfileOnStart = section.autoUpdateCurrentProfileOnStart
     val isChineseLocale = remember { LocaleUtil.isChineseLocale() }
 
     Title(YumeTxt.AppSettings.Section.Behavior)
@@ -113,14 +113,15 @@ private fun AppBehaviorSettingsSection(viewModel: AppSettingsViewModel) {
 
 @Composable
 private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
-    val themeMode by viewModel.themeMode.state.collectAsState()
-    val appLanguage by viewModel.appLanguage.state.collectAsState()
-    val themeSeedColorArgb by viewModel.themeSeedColorArgb.state.collectAsState()
-    val invertOnPrimaryColors by viewModel.invertOnPrimaryColors.state.collectAsState()
-    val bottomBarAutoHide by viewModel.bottomBarAutoHide.state.collectAsState()
-    val topBarBlurEnabled by viewModel.topBarBlurEnabled.state.collectAsState()
-    val pageScale by viewModel.pageScale.state.collectAsState()
-    val classicHomeEnabled by viewModel.classicHomeEnabled.state.collectAsState()
+    val section by viewModel.interfaceSectionState.collectAsState()
+    val themeMode = section.themeMode
+    val appLanguage = section.appLanguage
+    val themeSeedColorArgb = section.themeSeedColorArgb
+    val invertOnPrimaryColors = section.invertOnPrimaryColors
+    val bottomBarAutoHide = section.bottomBarAutoHide
+    val topBarBlurEnabled = section.topBarBlurEnabled
+    val pageScale = section.pageScale
+    val classicHomeEnabled = section.classicHomeEnabled
 
     Title(YumeTxt.AppSettings.Interface.ColorThemeTitle)
     Card {
@@ -185,18 +186,18 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
 @Composable
 private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
     val context = LocalContext.current
-    val excludeFromRecents by viewModel.excludeFromRecents.state.collectAsState()
+    val section by viewModel.privacySectionState.collectAsState()
 
     Title(YumeTxt.AppSettings.Section.Privacy)
     Card {
         HideAppIconPreferenceItem(
-            hideAppIconFlow = viewModel.hideAppIcon.state,
+            hideAppIcon = section.hideAppIcon,
             onHideAppIconChange = viewModel::onHideAppIconChange,
             context = context,
         )
         PreferenceSwitchItem(
             title = YumeTxt.AppSettings.Privacy.HideFromRecentsTitle,
-            checked = excludeFromRecents,
+            checked = section.excludeFromRecents,
             onCheckedChange = viewModel::onExcludeFromRecentsChange,
         )
     }
@@ -206,9 +207,10 @@ private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
 private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val showTrafficNotification by viewModel.showTrafficNotification.state.collectAsState()
-    val singleNodeTest by viewModel.singleNodeTest.state.collectAsState()
-    val exitUiWhenBackground by viewModel.exitUiWhenBackground.state.collectAsState()
+    val section by viewModel.serviceSectionState.collectAsState()
+    val showTrafficNotification = section.showTrafficNotification
+    val singleNodeTest = section.singleNodeTest
+    val exitUiWhenBackground = section.exitUiWhenBackground
     var batteryOptimizationIgnored by remember {
         mutableStateOf(isBatteryOptimizationIgnored(context))
     }
@@ -278,12 +280,12 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
 
 @Composable
 private fun AppNetworkSettingsSection(viewModel: AppSettingsViewModel) {
-    val customUserAgent by viewModel.customUserAgent.state.collectAsState()
+    val section by viewModel.networkSectionState.collectAsState()
 
     Title(YumeTxt.AppSettings.Section.Network)
     Card {
         CustomUserAgentPreferenceItem(
-            customUserAgent = customUserAgent,
+            customUserAgent = section.customUserAgent,
             onConfirm = viewModel::applyCustomUserAgent,
         )
     }
@@ -291,11 +293,10 @@ private fun AppNetworkSettingsSection(viewModel: AppSettingsViewModel) {
 
 @Composable
 private fun HideAppIconPreferenceItem(
-    hideAppIconFlow: kotlinx.coroutines.flow.StateFlow<Boolean>,
+    hideAppIcon: Boolean,
     onHideAppIconChange: (Boolean) -> Unit,
     context: android.content.Context,
 ) {
-    val hideAppIcon by hideAppIconFlow.collectAsState()
     val showHideIconDialogState = remember { mutableStateOf(false) }
 
     PreferenceSwitchItem(

@@ -43,14 +43,15 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 fun TunServiceOptionsScreen() {
     val scrollBehavior = MiuixScrollBehavior()
     val viewModel = koinViewModel<NetworkSettingsViewModel>()
-    val ifName by viewModel.tunIfName.state.collectAsState()
-    val mtu by viewModel.tunMtu.state.collectAsState()
-    val stack by viewModel.tunStack.state.collectAsState()
-    val autoRoute by viewModel.tunAutoRoute.state.collectAsState()
-    val strictRoute by viewModel.tunStrictRoute.state.collectAsState()
-    val autoRedirect by viewModel.tunAutoRedirect.state.collectAsState()
-    val dnsMode by viewModel.tunDnsMode.state.collectAsState()
-    val enableIPv6 by viewModel.enableIPv6.state.collectAsState()
+    val screen by viewModel.tunOptionsScreenState.collectAsState()
+    val ifName = screen.ifName
+    val mtu = screen.mtu
+    val stack = screen.stack
+    val autoRoute = screen.autoRoute
+    val strictRoute = screen.strictRoute
+    val autoRedirect = screen.autoRedirect
+    val dnsMode = screen.dnsMode
+    val enableIPv6 = screen.enableIPv6
 
     Scaffold(
         topBar = {

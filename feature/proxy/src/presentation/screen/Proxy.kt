@@ -190,6 +190,43 @@ private suspend fun LazyGridState.animateLocateToItem(targetIndex: Int) {
     )
 }
 
+
+private data class ProxyScreenVmState(
+    val proxyGroups: List<ProxyGroupInfo>,
+    val testingGroupNames: Set<String>,
+    val testingProxyNames: Set<String>,
+    val sortMode: ProxySortMode,
+    val singleNodeTest: Boolean,
+    val uiSelectedGroupName: String?,
+)
+
+@Composable
+private fun rememberProxyScreenVmState(proxyViewModel: ProxyViewModel): ProxyScreenVmState {
+    val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsState()
+    val testingGroupNames by proxyViewModel.testingGroupNames.collectAsState()
+    val testingProxyNames by proxyViewModel.testingProxyNames.collectAsState()
+    val sortMode by proxyViewModel.sortMode.collectAsState()
+    val singleNodeTest by proxyViewModel.singleNodeTest.collectAsState()
+    val uiSelectedGroupName by proxyViewModel.uiSelectedGroupName.collectAsState()
+    return remember(
+        proxyGroups,
+        testingGroupNames,
+        testingProxyNames,
+        sortMode,
+        singleNodeTest,
+        uiSelectedGroupName,
+    ) {
+        ProxyScreenVmState(
+            proxyGroups = proxyGroups,
+            testingGroupNames = testingGroupNames,
+            testingProxyNames = testingProxyNames,
+            sortMode = sortMode,
+            singleNodeTest = singleNodeTest,
+            uiSelectedGroupName = uiSelectedGroupName,
+        )
+    }
+}
+
 @Composable
 fun ProxyPager(
     mainInnerPadding: PaddingValues,
@@ -198,12 +235,13 @@ fun ProxyPager(
     @Suppress("UNUSED_PARAMETER") windowLayoutMode: WindowLayoutMode = WindowLayoutMode.Compact,
 ) {
     val proxyViewModel = koinViewModel<ProxyViewModel>()
-
-    val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsState()
-    val testingGroupNames by proxyViewModel.testingGroupNames.collectAsState()
-    val testingProxyNames by proxyViewModel.testingProxyNames.collectAsState()
-    val sortMode by proxyViewModel.sortMode.collectAsState()
-    val singleNodeTest by proxyViewModel.singleNodeTest.collectAsState()
+    val screen = rememberProxyScreenVmState(proxyViewModel)
+    val proxyGroups = screen.proxyGroups
+    val testingGroupNames = screen.testingGroupNames
+    val testingProxyNames = screen.testingProxyNames
+    val sortMode = screen.sortMode
+    val singleNodeTest = screen.singleNodeTest
+    val uiSelectedGroupName = screen.uiSelectedGroupName
     val groupScrollBehavior = MiuixScrollBehavior(snapAnimationSpec = null)
     val pagerState = LocalPagerState.current
     val topBarHazeState = LocalTopBarHazeState.current
@@ -211,7 +249,6 @@ fun ProxyPager(
     var showSortPopup by rememberSaveable { mutableStateOf(false) }
     // Dual-pane shell: left list + right nodes share selection via ViewModel.
     val inSplitShell = LocalDetailNavigator.current.isSplitShell
-    val uiSelectedGroupName by proxyViewModel.uiSelectedGroupName.collectAsState()
     val groupSelection =
         rememberProxyGroupSelectionState(
             proxyGroups = proxyGroups,
@@ -433,12 +470,13 @@ fun ProxyShellNodeDetail(
     onNavigateToProviders: (() -> Unit)? = null,
 ) {
     val proxyViewModel = koinViewModel<ProxyViewModel>()
-    val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsState()
-    val testingGroupNames by proxyViewModel.testingGroupNames.collectAsState()
-    val testingProxyNames by proxyViewModel.testingProxyNames.collectAsState()
-    val sortMode by proxyViewModel.sortMode.collectAsState()
-    val singleNodeTest by proxyViewModel.singleNodeTest.collectAsState()
-    val uiSelectedGroupName by proxyViewModel.uiSelectedGroupName.collectAsState()
+    val screen = rememberProxyScreenVmState(proxyViewModel)
+    val proxyGroups = screen.proxyGroups
+    val testingGroupNames = screen.testingGroupNames
+    val testingProxyNames = screen.testingProxyNames
+    val sortMode = screen.sortMode
+    val singleNodeTest = screen.singleNodeTest
+    val uiSelectedGroupName = screen.uiSelectedGroupName
     val scrollBehavior = MiuixScrollBehavior(snapAnimationSpec = null)
     val coroutineScope = rememberCoroutineScope()
     val groupSelection =

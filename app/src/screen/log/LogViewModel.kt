@@ -26,9 +26,9 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.yumelira.yumebox.core.model.LogMessage
-import com.github.yumelira.yumebox.runtime.api.ILogObserver
-import com.github.yumelira.yumebox.runtime.api.ILogSubscription
-import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
+import com.github.yumelira.yumebox.runtime.api.LogObserver
+import com.github.yumelira.yumebox.runtime.api.LogSubscription
+import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -84,7 +84,7 @@ class LogViewModel(private val appContext: Context) : ViewModel() {
     private val _levelFilter = MutableStateFlow(LogLevelFilter.All)
     private val _searchQuery = MutableStateFlow("")
     private val _connectionState = MutableStateFlow(LogConnectionState.Connecting)
-    @Volatile private var logSubscription: ILogSubscription? = null
+    @Volatile private var logSubscription: LogSubscription? = null
     private var connectJob: Job? = null
 
     val levelFilter: StateFlow<LogLevelFilter> = _levelFilter.asStateFlow()
@@ -105,7 +105,7 @@ class LogViewModel(private val appContext: Context) : ViewModel() {
             )
 
     private val observer =
-        object : ILogObserver {
+        object : LogObserver {
             override fun onConnected() {
                 _connectionState.value = LogConnectionState.Live
             }
@@ -150,6 +150,26 @@ class LogViewModel(private val appContext: Context) : ViewModel() {
         }
     }
 
+    data class LogScreenState(
+        val filteredEntries: List<LiveLogEntry> = emptyList(),
+        val levelFilter: LogLevelFilter = LogLevelFilter.All,
+        val connectionState: LogConnectionState = LogConnectionState.Connecting,
+    )
+
+    val screenState: StateFlow<LogScreenState> =
+        combine(filteredLogEntries, levelFilter, connectionState) { entries, filter, connection ->
+            LogScreenState(
+                filteredEntries = entries,
+                levelFilter = filter,
+                connectionState = connection,
+            )
+        }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5_000),
+                LogScreenState(),
+            )
+
     fun connect() {
         if (logSubscription != null || connectJob?.isActive == true) return
         connectJob =
@@ -164,8 +184,8 @@ class LogViewModel(private val appContext: Context) : ViewModel() {
                             LogConnectionState.Retrying
                         }
                     try {
-                    ServiceClient.connect(appContext)
-                        logSubscription = ServiceClient.clash().subscribeLogs(observer)
+                    RuntimeAccess.connect(appContext)
+                        logSubscription = RuntimeAccess.core().subscribeLogs(observer)
                     } catch (error: CancellationException) {
                         throw error
                     } catch (error: Throwable) {

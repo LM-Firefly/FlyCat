@@ -27,8 +27,8 @@ import com.github.yumelira.yumebox.core.bridge.Channel
 import com.github.yumelira.yumebox.core.bridge.NativeProcess
 import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.core.util.runtimeHomeDir
-import com.github.yumelira.yumebox.runtime.api.IClashManager
-import com.github.yumelira.yumebox.runtime.service.manager.HttpClashManager
+import com.github.yumelira.yumebox.runtime.api.CoreApi
+import com.github.yumelira.yumebox.runtime.service.controller.CoreController
 import com.topjohnwu.superuser.Shell
 import java.io.File
 import java.io.FileInputStream
@@ -206,7 +206,7 @@ class CoreProcess(private val context: Context) {
     }
 
     companion object {
-        /** The endpoint of the core currently running (null when stopped). Read by the REST client. */
+        /** The endpoint of the core currently running (null when stopped). Read by the controller client. */
         @Volatile
         var current: CoreEndpoint? = null
             private set
@@ -292,22 +292,23 @@ class CoreProcess(private val context: Context) {
 
         private fun quote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 
-        /** Controller socket filename under the runtime home dir. Read by the client's REST manager. */
+        /** Controller socket filename under the runtime home dir. Read by the client controller. */
         const val SOCK = "clash.sock"
 
         @Volatile
-        private var rest: IClashManager? = null
+        private var controller: CoreApi? = null
 
-        /**
-         * Shared [IClashManager] over the local core (REST-over-unix). Socket path is fixed per install,
-         * secret read fresh from [current] per request, so one instance serves every session.
-         */
-        fun rest(context: Context): IClashManager = rest ?: HttpClashManager(
-            local = HttpClashManager.Local(
-                socketPath = context.runtimeHomeDir.resolve(SOCK).absolutePath,
-                secret = { current?.secret.orEmpty() },
-            ),
-        ).also { rest = it }
+        /** Shared local-core controller client (unix socket path fixed, secret from [current]). */
+        fun controller(context: Context): CoreApi =
+            controller
+                ?: CoreController(
+                        local =
+                            CoreController.Local(
+                                socketPath = context.runtimeHomeDir.resolve(SOCK).absolutePath,
+                                secret = { current?.secret.orEmpty() },
+                            ),
+                    )
+                    .also { controller = it }
 
         private const val TAG = "CoreProcess"
         private const val LIB = "libclash.so"

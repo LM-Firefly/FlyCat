@@ -61,7 +61,7 @@ class SessionRuntime(
     /** Drives the running local core over REST-over-unix (traffic/groups/connections/…). */
     private val rest
         get() =
-            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.rest(host.context.appContextOrSelf)
+            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(host.context.appContextOrSelf)
     private val proxyGroupResolver =
         RuntimeProxyGroupResolver(compiledConfigPipeline, host.context.appContextOrSelf)
     private val lock = Any()

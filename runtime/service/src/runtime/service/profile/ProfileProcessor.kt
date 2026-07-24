@@ -26,7 +26,7 @@ import com.github.yumelira.yumebox.core.util.PROXY_PROVIDER_SCOPE
 import com.github.yumelira.yumebox.core.util.RULE_PROVIDER_SCOPE
 import com.github.yumelira.yumebox.core.util.YamlCodec
 import com.github.yumelira.yumebox.core.util.profileProviderScopeDir
-import com.github.yumelira.yumebox.runtime.api.IFetchObserver
+import com.github.yumelira.yumebox.runtime.api.FetchObserver
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.util.importedDir
@@ -438,7 +438,7 @@ object ProfileProcessor {
     }
 
     @Suppress("TooGenericExceptionCaught")
-    suspend fun update(context: Context, uuid: UUID, callback: IFetchObserver?) {
+    suspend fun update(context: Context, uuid: UUID, callback: FetchObserver?) {
         withContext(Dispatchers.IO + NonCancellable) {
             processLock.withLock {
                 val targetDir = context.importedDir.resolve(uuid.toString())

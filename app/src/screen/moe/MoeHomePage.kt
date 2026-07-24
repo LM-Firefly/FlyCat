@@ -83,20 +83,21 @@ fun MoeHomePage(
     val density = LocalDensity.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val controlState by homeViewModel.controlState.collectAsState()
-    val profiles by homeViewModel.profiles.collectAsState()
-    val profilesLoaded by homeViewModel.profilesLoaded.collectAsState()
-    val recommendedProfile by homeViewModel.recommendedProfile.collectAsState()
-    val hasEnabledProfile by homeViewModel.hasEnabledProfile.collectAsState(initial = false)
-    val selectedServerName by homeViewModel.selectedServerName.collectAsState()
-    val selectedServerPing by homeViewModel.selectedServerPing.collectAsState()
-    val trafficNow by homeViewModel.trafficNow.collectAsState()
-    val runtimeSnapshot by homeViewModel.runtimeSnapshot.collectAsState()
-    val isRemoteController by homeViewModel.isRemoteController.collectAsState()
-    val themeMode by appSettingsViewModel.themeMode.state.collectAsState()
-    val classicHomeEnabled by appSettingsViewModel.classicHomeEnabled.state.collectAsState()
-    val moeHomeQuote by appSettingsViewModel.moeHomeQuote.state.collectAsState()
-    val sidebarExpanded by appSettingsViewModel.moeSidebarExpanded.state.collectAsState()
+    val screen by homeViewModel.screenState.collectAsState()
+    val moe by appSettingsViewModel.moeHomeSectionState.collectAsState()
+    val controlState = screen.controlState
+    val profiles = screen.profiles
+    val profilesLoaded = screen.profilesLoaded
+    val recommendedProfile = screen.recommendedProfile
+    val hasEnabledProfile = screen.hasEnabledProfile
+    val selectedServerName = screen.selectedServerName
+    val selectedServerPing = screen.selectedServerPing
+    val trafficNow = screen.trafficNow
+    val isRemoteController = screen.isRemoteController
+    val themeMode = moe.themeMode
+    val classicHomeEnabled = moe.classicHomeEnabled
+    val moeHomeQuote = moe.moeHomeQuote
+    val sidebarExpanded = moe.sidebarExpanded
 
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val batteryPercent = rememberMoeBatteryPercent(context)
@@ -134,7 +135,7 @@ fun MoeHomePage(
                 value = System.currentTimeMillis()
             }
         }
-    val startedAt = runtimeSnapshot.startedAt
+    val startedAt = screen.runtimeStartedAt
     val isRunning = visualControlState == HomeProxyControlState.Running
     val elapsedMillis =
         if (isRunning && startedAt != null && !isRemoteController) {

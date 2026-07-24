@@ -45,7 +45,7 @@ import com.github.yumelira.yumebox.presentation.component.TopBar
 import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
 import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
+import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -83,8 +83,8 @@ fun ConnectionDetailScreen(navigator: Navigator, connectionId: String) {
             val latest =
                 withContext(Dispatchers.IO) {
                     runCatching {
-                            ServiceClient.connect(context)
-                            ServiceClient.clash().queryConnections().connections
+                            RuntimeAccess.connect(context)
+                            RuntimeAccess.core().queryConnections().connections
                         }
                         .getOrNull()
                 }
@@ -151,8 +151,8 @@ fun ConnectionDetailScreen(navigator: Navigator, connectionId: String) {
                                 val closed =
                                     withContext(Dispatchers.IO) {
                                         runCatching {
-                                                ServiceClient.connect(context)
-                                                ServiceClient.clash().closeConnection(info.id)
+                                                RuntimeAccess.connect(context)
+                                                RuntimeAccess.core().closeConnection(info.id)
                                             }
                                             .getOrDefault(false)
                                     }

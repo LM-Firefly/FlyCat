@@ -44,14 +44,14 @@ class IntentController(private val scope: CoroutineScope) : KoinComponent {
     fun handleIntent(intent: Intent?) {
         intent?.let { safeIntent ->
             when (safeIntent.action) {
-                ACTION_START_CLASH -> handleStartClash()
-                ACTION_STOP_CLASH -> handleStopClash()
+                ACTION_START_CLASH -> handleStartRuntime()
+                ACTION_STOP_CLASH -> handleStopRuntime()
                 else -> {}
             }
         }
     }
 
-    private fun handleStartClash() {
+    private fun handleStartRuntime() {
         scope.launch {
             runCatching {
                     val activeProfile = profilesRepository.queryActiveProfile()
@@ -74,7 +74,7 @@ class IntentController(private val scope: CoroutineScope) : KoinComponent {
 
     // Fault barrier: external intents must never crash the app; any failure is logged only.
     @Suppress("TooGenericExceptionCaught")
-    private fun handleStopClash() {
+    private fun handleStopRuntime() {
         scope.launch {
             Timber.i("External stop")
             try {

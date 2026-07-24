@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class AppTrafficStatisticsCollector(
-    private val gateway: TrafficQueryGateway,
+    private val querySource: TrafficQuerySource,
     private val trafficStatisticsStore: TrafficStatisticsStore,
     private val appIdentityResolver: AppIdentityResolver,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
@@ -57,7 +57,7 @@ class AppTrafficStatisticsCollector(
     private fun startCollection() {
         collectionJob?.cancel()
         collectionJob = scope.launch {
-            gateway.isRunning.collectLatest { isRunning ->
+            querySource.isRunning.collectLatest { isRunning ->
                 monitoringJob?.cancel()
                 if (isRunning) {
                     monitoringJob = startTrafficMonitoring(this)
@@ -83,11 +83,11 @@ class AppTrafficStatisticsCollector(
     }
 
     private suspend fun collectTrafficData() {
-        val totalTraffic = gateway.queryTrafficTotal()
-        val snapshot = gateway.queryConnections()
+        val totalTraffic = querySource.queryTrafficTotal()
+        val snapshot = querySource.queryConnections()
         val timestamp = System.currentTimeMillis()
         val currentProfileId =
-            gateway.currentProfileId() ?: runCatching { gateway.queryActiveProfileId() }.getOrNull()
+            querySource.currentProfileId() ?: runCatching { querySource.queryActiveProfileId() }.getOrNull()
 
         if (lastTotalUpload < 0L || lastTotalDownload < 0L) {
             initializeTotals(

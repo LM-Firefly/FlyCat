@@ -39,9 +39,10 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 fun TproxyServiceOptionsScreen() {
     val scrollBehavior = MiuixScrollBehavior()
     val viewModel = koinViewModel<NetworkSettingsViewModel>()
-    val port by viewModel.tproxyPort.state.collectAsState()
-    val dnsMode by viewModel.tunDnsMode.state.collectAsState()
-    val enableIPv6 by viewModel.enableIPv6.state.collectAsState()
+    val screen by viewModel.tproxyOptionsScreenState.collectAsState()
+    val port = screen.port
+    val dnsMode = screen.dnsMode
+    val enableIPv6 = screen.enableIPv6
 
     Scaffold(
         topBar = {

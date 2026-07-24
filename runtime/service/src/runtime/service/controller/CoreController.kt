@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.manager
+package com.github.yumelira.yumebox.runtime.service.controller
 
 import com.github.yumelira.yumebox.core.bridge.UnixSocketFactory
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
@@ -33,9 +33,10 @@ import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.model.UiConfiguration
 import com.github.yumelira.yumebox.core.util.encodeTrafficValue
 import com.github.yumelira.yumebox.data.model.RemoteBackend
-import com.github.yumelira.yumebox.runtime.api.IClashManager
-import com.github.yumelira.yumebox.runtime.api.ILogObserver
-import com.github.yumelira.yumebox.runtime.api.ILogSubscription
+import com.github.yumelira.yumebox.runtime.api.CoreApi
+import com.github.yumelira.yumebox.runtime.api.CoreAsyncQueries
+import com.github.yumelira.yumebox.runtime.api.LogObserver
+import com.github.yumelira.yumebox.runtime.api.LogSubscription
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
@@ -80,25 +81,13 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 
-/**
- * [IClashManager] over a mihomo REST controller (https://wiki.metacubex.one/api/). Serves BOTH:
- *  - a **remote** backend over TCP (External Controller mode), keyed off [backendProvider];
- *  - the **local** out-of-process core over its `external-controller-unix` socket, when [local]
- *    is set (OkHttp with a [UnixSocketFactory]). This is the single data plane for every local run
- *    mode (VPN / root) — the mode only differs in how the core process was launched, not how it is
- *    queried.
- *
- * Blocking interface methods bridge to suspend Ktor calls via [runBlocking] on the IO dispatcher.
- */
-class HttpClashManager(
+/** [CoreApi] over mihomo REST: local unix socket and/or remote TCP backend. */
+class CoreController(
     private val local: Local? = null,
     private val backendProvider: () -> RemoteBackend? = { null },
-) : IClashManager {
+) : CoreApi, CoreAsyncQueries {
 
-    /**
-     * The local core's UNIX controller: a fixed socket path plus a secret read fresh each request
-     * (the path is stable per install; the bearer secret is minted per core start).
-     */
+    /** Local controller endpoint: fixed socket path, secret read per request. */
     class Local(val socketPath: String, val secret: () -> String)
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -111,33 +100,41 @@ class HttpClashManager(
         HttpClient(OkHttp) {
             expectSuccess = true
             install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
-            // Without timeouts a runBlocking REST call against an unreachable backend blocks its
-            // IO thread until the OS TCP timeout (tens of seconds). The traffic poller and proxy
-            // group sync loop fire these continuously, so a dead backend saturates Dispatchers.IO
-            // and starves the local start path — the home start button appears frozen. Bound every
-            // call so a lost backend fails fast instead of hanging. socketTimeout intentionally
-            // covers the streaming /traffic read (one JSON line per second) without killing it.
+            // Bound requests so a dead backend fails fast instead of saturating Dispatchers.IO.
             install(HttpTimeout) {
                 connectTimeoutMillis = CONNECT_TIMEOUT_MS
                 socketTimeoutMillis = REQUEST_TIMEOUT_MS
                 requestTimeoutMillis = REQUEST_TIMEOUT_MS
             }
-            // Local mode: route every connection over the core's UNIX controller socket regardless
-            // of the (dummy) request host. Remote mode uses OkHttp's default TCP socket factory.
+            // Local mode routes all traffic over the fixed UNIX controller socket.
             local?.let { target ->
                 engine { config { socketFactory(UnixSocketFactory(target.socketPath)) } }
             }
         }
     }
 
-    /** Bearer secret for the active target (local core token, or remote backend secret). */
+    /** Active target secret (local token or remote backend). */
     private fun activeSecret(): String =
         local?.secret?.invoke() ?: (backendProvider()?.secret.orEmpty())
+
+    private fun ensureEndpointReady() {
+        val localTarget = local
+        if (localTarget != null) {
+            val secret = runCatching { localTarget.secret.invoke() }.getOrNull()
+            if (secret.isNullOrBlank()) {
+                error("local core controller not ready (missing secret)")
+            }
+            return
+        }
+        if (backendProvider() == null) {
+            error("No active remote controller backend")
+        }
+    }
 
     private fun requireBackend(): RemoteBackend =
         backendProvider() ?: error("No active remote controller backend")
 
-    /** Builds an absolute URL to [pathSegments] under the active endpoint's base URL. */
+    /** Absolute URL under the active endpoint base. */
     private fun buildUrl(vararg pathSegments: String, query: Map<String, String> = emptyMap()): String {
         val base = if (local != null) LOCAL_BASE_URL else requireBackend().normalizedBaseUrl
         return URLBuilder(base).apply {
@@ -152,6 +149,7 @@ class HttpClashManager(
         query: Map<String, String> = emptyMap(),
         body: Any? = null,
     ): HttpResponse {
+        ensureEndpointReady()
         val url = buildUrl(*pathSegments, query = query)
         return when (method) {
             HttpMethod.Get ->
@@ -185,40 +183,39 @@ class HttpClashManager(
         }
     }
 
-    /**
-     * Encode [value] with the same [json] used for responses, then wrap as application/json.
-     * Prefer this for free-form maps (OpenAPI additionalProperties) so ContentNegotiation never
-     * has to invent a serializer for an erased `Any`/`Map` type parameter.
-     * Fixed DTOs like [SelectBody] still go through [setBody] + ContentNegotiation.
-     */
+    /** Encode free-form JSON body without relying on erased Map serializers. */
     private inline fun <reified T> jsonBody(value: T): TextContent =
         TextContent(json.encodeToString(value), ContentType.Application.Json)
 
     // ---- Tunnel / traffic ------------------------------------------------
+    // Async implementations are the source of truth; CoreApi sync methods are legacy bridges.
+
+    override suspend fun queryTunnelStateAsync(): TunnelState {
+        val raw = request(HttpMethod.Get, "configs").bodyAsText()
+        val configs = json.decodeFromString<RawConfigs>(raw)
+        return TunnelState(configs.mode)
+    }
 
     override fun queryTunnelState(): TunnelState =
-        runBlocking(Dispatchers.IO) {
-            val raw = request(HttpMethod.Get, "configs").bodyAsText()
-            val configs = json.decodeFromString<RawConfigs>(raw)
-            TunnelState(configs.mode)
-        }
+        runBlocking(Dispatchers.IO) { queryTunnelStateAsync() }
+
+    override suspend fun queryTrafficNowAsync(): Long {
+        val sample = readTrafficSample() ?: return 0L
+        return (encodeTrafficValue(sample.up) shl 32) or encodeTrafficValue(sample.down)
+    }
 
     override fun queryTrafficNow(): Long =
-        runBlocking(Dispatchers.IO) {
-            val sample = readTrafficSample() ?: return@runBlocking 0L
-            (encodeTrafficValue(sample.up) shl 32) or encodeTrafficValue(sample.down)
-        }
+        runBlocking(Dispatchers.IO) { queryTrafficNowAsync() }
+
+    override suspend fun queryTrafficTotalAsync(): Long {
+        val sample = readTrafficSample() ?: return 0L
+        return (encodeTrafficValue(sample.upTotal) shl 32) or encodeTrafficValue(sample.downTotal)
+    }
 
     override fun queryTrafficTotal(): Long =
-        runBlocking(Dispatchers.IO) {
-            val sample = readTrafficSample() ?: return@runBlocking 0L
-            (encodeTrafficValue(sample.upTotal) shl 32) or encodeTrafficValue(sample.downTotal)
-        }
+        runBlocking(Dispatchers.IO) { queryTrafficTotalAsync() }
 
-    /**
-     * Reads the FIRST line of the streaming `/traffic` endpoint (one JSON line per second) and
-     * closes the stream. `up`/`down` are realtime bytes/second; `upTotal`/`downTotal` cumulative.
-     */
+    /** First line of streaming `/traffic`, then close. */
     private suspend fun readTrafficSample(): RawTraffic? = runCatching {
         client.prepareGet(buildUrl("traffic")) { applyAuth() }.execute { response ->
             val line = response.bodyAsChannel().readUTF8Line()
@@ -226,8 +223,10 @@ class HttpClashManager(
         }
     }.getOrNull()
 
+    override suspend fun queryConnectionsAsync(): ConnectionSnapshot = fetchConnections()
+
     override fun queryConnections(): ConnectionSnapshot =
-        runBlocking(Dispatchers.IO) { fetchConnections() }
+        runBlocking(Dispatchers.IO) { queryConnectionsAsync() }
 
     private suspend fun fetchConnections(): ConnectionSnapshot =
         client.prepareGet(buildUrl("connections", query = CONNECTIONS_QUERY)) {
@@ -238,30 +237,37 @@ class HttpClashManager(
             json.decodeFromString<ConnectionSnapshot>(line)
         }
 
-    // ---- Local-profile-only (irrelevant in pure-remote mode) -------------
+    // Profile-local preview is not available over pure REST.
+
+    override suspend fun queryProfileProxyGroupsAsync(excludeNotSelectable: Boolean): List<ProxyGroup> =
+        emptyList()
 
     override fun queryProfileProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> = emptyList()
 
     // ---- Proxy groups ----------------------------------------------------
 
+    override suspend fun queryAllProxyGroupsAsync(excludeNotSelectable: Boolean): List<ProxyGroup> {
+        val nodes = fetchProxies()
+        val groups = orderGroups(fetchGroups(), nodes)
+        return groups
+            .filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }
+            .map { buildGroup(it, nodes, ProxySort.Default) }
+    }
+
     override fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
-        runBlocking(Dispatchers.IO) {
-            val nodes = fetchProxies()
-            val groups = orderGroups(fetchGroups(), nodes)
-            groups
-                .filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }
-                .map { buildGroup(it, nodes, ProxySort.Default) }
-        }
+        runBlocking(Dispatchers.IO) { queryAllProxyGroupsAsync(excludeNotSelectable) }
+
+    override suspend fun queryProxyGroupNamesAsync(excludeNotSelectable: Boolean): List<String> {
+        val nodes = fetchProxies()
+        return orderGroups(fetchGroups(), nodes)
+            .filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }
+            .map { it.name }
+    }
 
     override fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> =
-        runBlocking(Dispatchers.IO) {
-            val nodes = fetchProxies()
-            orderGroups(fetchGroups(), nodes)
-                .filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }
-                .map { it.name }
-        }
+        runBlocking(Dispatchers.IO) { queryProxyGroupNamesAsync(excludeNotSelectable) }
 
-    /** Stable group order: index in GLOBAL.all (config order); groups absent from it sort last by name. */
+    /** Prefer GLOBAL.all order, then name. */
     private fun orderGroups(groups: List<RawProxy>, nodes: Map<String, RawProxy>): List<RawProxy> {
         val canonical = nodes["GLOBAL"]?.all ?: emptyList()
         val indexOf = canonical.withIndex().associate { (i, name) -> name to i }
@@ -270,18 +276,21 @@ class HttpClashManager(
         )
     }
 
-    override fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup =
-        runBlocking(Dispatchers.IO) {
-            val nodes = fetchProxies()
-            val group = nodes[name]
-                ?: return@runBlocking ProxyGroup(
+    override suspend fun queryProxyGroupAsync(name: String, proxySort: ProxySort): ProxyGroup {
+        val nodes = fetchProxies()
+        val group =
+            nodes[name]
+                ?: return ProxyGroup(
                     name = name,
                     type = Proxy.Type.Unknown,
                     proxies = emptyList(),
                     now = "",
                 )
-            buildGroup(group, nodes, proxySort)
-        }
+        return buildGroup(group, nodes, proxySort)
+    }
+
+    override fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup =
+        runBlocking(Dispatchers.IO) { queryProxyGroupAsync(name, proxySort) }
 
     private suspend fun fetchProxies(): Map<String, RawProxy> {
         val raw = request(HttpMethod.Get, "proxies").bodyAsText()
@@ -296,41 +305,45 @@ class HttpClashManager(
     // ---- Selection / connections mutation --------------------------------
 
     @Suppress("TooGenericExceptionCaught")
-    override fun patchSelector(group: String, name: String): Boolean =
-        runBlocking(Dispatchers.IO) {
-            try {
-                val response = request(
+    override suspend fun patchSelectorAsync(group: String, name: String): Boolean =
+        try {
+            val response =
+                request(
                     HttpMethod.Put,
                     "proxies",
                     group,
                     body = SelectBody(name),
                 )
-                response.status.isSuccess()
-            } catch (_: Throwable) { // fault barrier: remote REST call must degrade to "not selected"
-                false
-            }
+            response.status.isSuccess()
+        } catch (_: Throwable) { // fault barrier: remote REST call must degrade to "not selected"
+            false
         }
+
+    override fun patchSelector(group: String, name: String): Boolean =
+        runBlocking(Dispatchers.IO) { patchSelectorAsync(group, name) }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun closeConnection(id: String): Boolean =
-        runBlocking(Dispatchers.IO) {
-            try {
-                request(HttpMethod.Delete, "connections", id).status.isSuccess()
-            } catch (error: Throwable) { // fault barrier: remote REST call must degrade to "not closed"
-                false
-            }
+    override suspend fun closeConnectionAsync(id: String): Boolean =
+        try {
+            request(HttpMethod.Delete, "connections", id).status.isSuccess()
+        } catch (_: Throwable) { // fault barrier: remote REST call must degrade to "not closed"
+            false
         }
 
+    override fun closeConnection(id: String): Boolean =
+        runBlocking(Dispatchers.IO) { closeConnectionAsync(id) }
+
+    override suspend fun closeAllConnectionsAsync() {
+        runCatching { request(HttpMethod.Delete, "connections") }
+    }
+
     override fun closeAllConnections() {
-        runBlocking(Dispatchers.IO) {
-            runCatching { request(HttpMethod.Delete, "connections") }
-        }
+        runBlocking(Dispatchers.IO) { closeAllConnectionsAsync() }
     }
 
     // ---- Health checks ---------------------------------------------------
 
     override suspend fun healthCheck(group: String) {
-        // Triggers a group delay test on the backend; the result body is ignored.
         runCatching {
             request(
                 HttpMethod.Get,
@@ -363,26 +376,24 @@ class HttpClashManager(
 
     // ---- Providers -------------------------------------------------------
 
-    /**
-     * Lists proxy + rule providers from the mihomo REST controller
-     * (`GET /providers/proxies` + `GET /providers/rules`, see website/api/openapi.json).
-     * Built-in Compatible providers are omitted — they are not user external resources.
-     */
-    override fun queryProviders(): ProviderList =
-        runBlocking(Dispatchers.IO) {
-            val proxies = runCatching {
-                fetchProviders(category = "proxies", type = Provider.Type.Proxy)
-            }
-            val rules = runCatching {
-                fetchProviders(category = "rules", type = Provider.Type.Rule)
-            }
-            if (proxies.isFailure && rules.isFailure) {
-                throw requireNotNull(proxies.exceptionOrNull()).also { proxyError ->
-                    rules.exceptionOrNull()?.let(proxyError::addSuppressed)
-                }
-            }
-            ProviderList(proxies.getOrDefault(emptyList()) + rules.getOrDefault(emptyList()))
+    /** Proxy + rule providers; built-in Compatible entries are omitted. */
+    override suspend fun queryProvidersAsync(): ProviderList {
+        val proxies = runCatching {
+            fetchProviders(category = "proxies", type = Provider.Type.Proxy)
         }
+        val rules = runCatching {
+            fetchProviders(category = "rules", type = Provider.Type.Rule)
+        }
+        if (proxies.isFailure && rules.isFailure) {
+            throw requireNotNull(proxies.exceptionOrNull()).also { proxyError ->
+                rules.exceptionOrNull()?.let(proxyError::addSuppressed)
+            }
+        }
+        return ProviderList(proxies.getOrDefault(emptyList()) + rules.getOrDefault(emptyList()))
+    }
+
+    override fun queryProviders(): ProviderList =
+        runBlocking(Dispatchers.IO) { queryProvidersAsync() }
 
     private suspend fun fetchProviders(
         category: String,
@@ -392,7 +403,6 @@ class HttpClashManager(
         val response = json.decodeFromString<RawProvidersResponse>(raw)
         return response.providers.mapNotNull { (key, entry) ->
             val vehicle = parseVehicleType(entry.vehicleType) ?: return@mapNotNull null
-            // Compatible is mihomo's built-in "default" bucket, not a user external resource.
             if (vehicle == Provider.VehicleType.Compatible) return@mapNotNull null
             val name = entry.name.ifBlank { key }.ifBlank { return@mapNotNull null }
             Provider(
@@ -400,7 +410,6 @@ class HttpClashManager(
                 type = type,
                 vehicleType = vehicle,
                 updatedAt = parseUpdatedAtMillis(entry.updatedAt),
-                // REST payload has no path; file-upload UI stays gated on a non-blank path elsewhere.
                 path = "",
             )
         }
@@ -427,23 +436,22 @@ class HttpClashManager(
 
     // ---- Configuration ---------------------------------------------------
 
+    override suspend fun queryConfigurationAsync(): UiConfiguration = UiConfiguration()
+
     override fun queryConfiguration(): UiConfiguration = UiConfiguration()
 
     // ---- Rules -----------------------------------------------------------
 
-    override fun queryRules(): List<RuntimeRule> = runBlocking(Dispatchers.IO) { fetchRules() }
+    override suspend fun queryRulesAsync(): List<RuntimeRule> = fetchRules()
 
-    /**
-     * `PATCH /rules/disable` — OpenAPI body is a free-form object
-     * `{ "<index>": <disabled bool>, ... }` (example: `{ "0": false, "1": true }`).
-     * Same request helper as [patchSelector]; body encoded like other JSON payloads.
-     * Response is 204 No Content; re-GET /rules for the confirmed table.
-     */
+    override fun queryRules(): List<RuntimeRule> =
+        runBlocking(Dispatchers.IO) { queryRulesAsync() }
+
+    /** Toggle a rule, then re-fetch `/rules`. */
     override suspend fun setRuleDisabled(
         rule: RuntimeRule,
         disabled: Boolean,
     ): List<RuntimeRule> {
-        // Matches website/api/openapi.json + mihomo hub/route/rules.go (map[int]bool).
         request(
             HttpMethod.Patch,
             "rules",
@@ -458,14 +466,13 @@ class HttpClashManager(
         return json.decodeFromString<RawRulesResponse>(raw).rules.map { it.toRuntimeRule() }
     }
 
-    // ---- Lifecycle (no-ops in pure-remote mode) --------------------------
 
     override fun requestStop() {
         // No-op: we don't own the remote core, so there is nothing to stop.
     }
 
     @Synchronized
-    override fun subscribeLogs(observer: ILogObserver): ILogSubscription {
+    override fun subscribeLogs(observer: LogObserver): LogSubscription {
         val sink = LogSink(observer = observer)
         logSink.set(sink)
         logJob?.cancel()
@@ -486,8 +493,8 @@ class HttpClashManager(
                     delay(LOG_STREAM_RETRY_MS)
                 }
             }
-        return ILogSubscription {
-            synchronized(this@HttpClashManager) {
+        return LogSubscription {
+            synchronized(this@CoreController) {
                 if (logSink.compareAndSet(sink, null)) {
                     logJob?.cancel()
                     logJob = null
@@ -496,10 +503,7 @@ class HttpClashManager(
         }
     }
 
-    /**
-     * Opens `GET /logs` as a line-delimited stream and forwards each JSON line to the active
-     * [ILogObserver]. Returns when the stream ends or the observer is cleared.
-     */
+    /** Stream `GET /logs` until closed or the observer is cleared. */
     private suspend fun streamLogsOnce(sink: LogSink) {
         client.prepareGet(buildUrl("logs", query = LOG_QUERY)) {
             applyAuth()
@@ -597,12 +601,6 @@ class HttpClashManager(
 
     @Serializable
     private data class RawProvidersResponse(val providers: Map<String, RawProvider> = emptyMap())
-
-    /**
-     * Shared shape of entries under GET /providers/proxies and /providers/rules
-     * (website/api/openapi.json). Extra fields (proxies, subscriptionInfo, behavior, …)
-     * are ignored via [json]'s ignoreUnknownKeys.
-     */
     @Serializable
     private data class RawProvider(
         val name: String = "",
@@ -675,7 +673,7 @@ class HttpClashManager(
     )
 
     private data class LogSink(
-        val observer: ILogObserver,
+        val observer: LogObserver,
     )
 
     private companion object {
@@ -683,8 +681,7 @@ class HttpClashManager(
         const val REQUEST_TIMEOUT_MS = 10_000L
         const val LOG_STREAM_RETRY_MS = 1_500L
 
-        // Dummy authority for local mode: the UnixSocketFactory ignores host/port and always
-        // connects to the core's controller socket, so only the path/scheme matter here.
+        // Dummy host; UnixSocketFactory ignores host/port.
         const val LOCAL_BASE_URL = "http://localhost"
 
         val delayQuery = mapOf(

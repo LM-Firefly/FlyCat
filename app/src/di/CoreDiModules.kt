@@ -32,8 +32,8 @@ import com.github.yumelira.yumebox.data.controller.OverrideResolver
 import com.github.yumelira.yumebox.data.controller.OverrideService
 import com.github.yumelira.yumebox.data.controller.ProvidersController
 import com.github.yumelira.yumebox.data.controller.RuntimeOverrideController
-import com.github.yumelira.yumebox.data.controller.TrafficQueryGateway
-import com.github.yumelira.yumebox.data.gateway.NetworkInfoService
+import com.github.yumelira.yumebox.data.controller.TrafficQuerySource
+import com.github.yumelira.yumebox.data.network.NetworkInfoService
 import com.github.yumelira.yumebox.data.store.AppSettingsStore
 import com.github.yumelira.yumebox.data.store.FeatureStore
 import com.github.yumelira.yumebox.data.store.MMKVProvider
@@ -126,12 +126,12 @@ val appDataRuntimeModule = module {
         ProvidersController(
             context = appContext,
             queryProvidersAction = {
-                com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.connect(appContext)
-                com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.clash().queryProviders()
+                com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess.connect(appContext)
+                com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess.core().queryProviders()
             },
             updateProviderAction = { type, name ->
-                com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.connect(appContext)
-                com.github.yumelira.yumebox.runtime.client.manager.ServiceClient.clash()
+                com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess.connect(appContext)
+                com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess.core()
                     .updateProvider(type, name)
             },
         )
@@ -165,8 +165,8 @@ val appDataRuntimeModule = module {
     single {
         val proxyFacade = get<ProxyFacade>()
         AppTrafficStatisticsCollector(
-            gateway =
-                object : TrafficQueryGateway {
+            querySource =
+                object : TrafficQuerySource {
                     override val isRunning: Flow<Boolean> = proxyFacade.isRunning
 
                     override fun currentProfileId(): String? =

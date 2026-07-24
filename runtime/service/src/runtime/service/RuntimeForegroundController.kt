@@ -38,8 +38,8 @@ import com.github.yumelira.yumebox.runtime.service.session.RuntimeStartupLogStor
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeTransport
 import com.github.yumelira.yumebox.runtime.service.session.SessionRuntime
 import com.github.yumelira.yumebox.runtime.service.util.CoreRuntimeConfig
-import com.github.yumelira.yumebox.runtime.service.util.sendClashStarted
-import com.github.yumelira.yumebox.runtime.service.util.sendClashStopped
+import com.github.yumelira.yumebox.runtime.service.util.sendRuntimeStarted
+import com.github.yumelira.yumebox.runtime.service.util.sendRuntimeStopped
 import com.github.yumelira.yumebox.runtime.service.util.sendProfileLoaded
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -49,7 +49,7 @@ import java.util.UUID
 import kotlin.concurrent.thread
 
 /**
- * Shared lifecycle logic for the foreground runtime services ([ClashService] and [TunService]).
+ * Shared lifecycle logic for the foreground runtime services ([TunService] and root host).
  *
  * The two services cannot share a superclass — the TUN path is mandated by Android to extend
  * [android.net.VpnService] while the HTTP path extends a plain [Service] — so the identical
@@ -108,7 +108,7 @@ class RuntimeForegroundController(
 
                     Intents.ACTION_OVERRIDE_CHANGED -> scheduleReload()
 
-                    Intents.ACTION_CLASH_REQUEST_STOP -> {
+                    Intents.ACTION_RUNTIME_REQUEST_STOP -> {
                         val targetMode = intent.getStringExtra(Intents.EXTRA_RUNTIME_MODE)
                         if (targetMode == null || targetMode == mode.name) {
                             requestStop(
@@ -153,7 +153,7 @@ class RuntimeForegroundController(
                                         this@RuntimeForegroundController.mode,
                                         sessionToken,
                                     )
-                                    service.sendClashStarted()
+                                    service.sendRuntimeStarted()
                                 }
 
                                 override fun onStopped(reason: String?) {
@@ -162,7 +162,7 @@ class RuntimeForegroundController(
                                         this@RuntimeForegroundController.mode,
                                         sessionToken,
                                     )
-                                    service.sendClashStopped(reason)
+                                    service.sendRuntimeStopped(reason)
                                 }
 
                                 override fun onProfileLoaded(profileUuid: String) {
@@ -179,7 +179,7 @@ class RuntimeForegroundController(
                                     reason = error
                                     startupLogStore.append("$tag failed=$error")
                                     markFailed(error)
-                                    service.sendClashStopped(error)
+                                    service.sendRuntimeStopped(error)
                                     Timber.e("$label runtime failed: $error")
                                     service.stopSelf()
                                 }
@@ -214,7 +214,7 @@ class RuntimeForegroundController(
         reason = message
         startupLogStore.append("$tag failed=$message")
         markFailed(message)
-        service.sendClashStopped(message)
+        service.sendRuntimeStopped(message)
         service.stopSelf()
     }
 
@@ -272,7 +272,7 @@ class RuntimeForegroundController(
         // replacement session, and when this session recorded a Failed phase (the failure
         // must stay readable after the service is gone).
         StatusProvider.markRuntimeIdle(mode, sessionToken)
-        service.sendClashStopped(reason)
+        service.sendRuntimeStopped(reason)
         startupLogStore.append("$tag destroy")
         Timber.i("${service.javaClass.simpleName} destroyed: ${reason ?: "successfully"}")
 
@@ -315,7 +315,7 @@ class RuntimeForegroundController(
                 val error = stopResult.error ?: "${label.lowercase()} runtime stop failed"
                 this@RuntimeForegroundController.reason = error
                 markFailed(error)
-                service.sendClashStopped(error)
+                service.sendRuntimeStopped(error)
                 Timber.e("$label runtime stop failed: $error")
             }
             // Once destroyed, stopSelf/stopForeground resolve through the service token and
@@ -341,7 +341,7 @@ class RuntimeForegroundController(
             IntentFilter().apply {
                 addAction(Intents.ACTION_PROFILE_CHANGED)
                 addAction(Intents.ACTION_OVERRIDE_CHANGED)
-                addAction(Intents.ACTION_CLASH_REQUEST_STOP)
+                addAction(Intents.ACTION_RUNTIME_REQUEST_STOP)
             }
         ContextCompat.registerReceiver(
             service,

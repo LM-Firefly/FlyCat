@@ -102,7 +102,7 @@ internal class SessionRuntimeTelemetry(
                 PollingTimers.ticks(PollingTimerSpecs.SessionConnectionTracking).collect {
                     runCatching {
                         val core =
-                            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.rest(host.context)
+                            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(host.context)
                         val snapshot = core.queryConnections()
                         ConnectionHistoryManager.updateConnections(snapshot.connections)
                     }

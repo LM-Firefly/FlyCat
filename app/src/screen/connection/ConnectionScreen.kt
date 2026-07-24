@@ -97,8 +97,9 @@ private fun ConnectionSort.getDisplayName(): String =
 fun ConnectionScreen(navigator: Navigator) {
     val density = LocalDensity.current
     val viewModel = koinViewModel<ConnectionViewModel>()
-    val state by viewModel.state.collectAsState()
-    val filteredConnections by viewModel.filteredConnections.collectAsState()
+    val screen by viewModel.screenState.collectAsState()
+    val state = screen.state
+    val filteredConnections = screen.filteredConnections
     val spacing = AppTheme.spacing
     val mainLikePadding = rememberStandalonePageMainPadding()
 

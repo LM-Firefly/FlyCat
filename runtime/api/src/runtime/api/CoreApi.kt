@@ -29,7 +29,7 @@ import com.github.yumelira.yumebox.core.model.RuntimeRule
 import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.model.UiConfiguration
 
-interface IClashManager {
+interface CoreApi {
     fun queryTunnelState(): TunnelState
 
     fun queryTrafficNow(): Long
@@ -70,5 +70,5 @@ interface IClashManager {
 
     fun requestStop()
 
-    fun subscribeLogs(observer: ILogObserver): ILogSubscription
+    fun subscribeLogs(observer: LogObserver): LogSubscription
 }

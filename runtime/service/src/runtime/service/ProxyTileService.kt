@@ -37,7 +37,7 @@ import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
 import com.github.yumelira.yumebox.runtime.api.*
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
-import com.github.yumelira.yumebox.runtime.service.profile.ProfileManager
+import com.github.yumelira.yumebox.runtime.service.profile.ProfileService
 import com.github.yumelira.yumebox.runtime.service.session.RootSessionLauncher
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
 import com.github.yumelira.yumebox.runtime.service.util.sendBroadcastSelf
@@ -47,7 +47,7 @@ import timber.log.Timber
 
 @SuppressLint("NewApi")
 class ProxyTileService : TileService() {
-    private val profileManager by lazy { ProfileManager(applicationContext) }
+    private val profileManager by lazy { ProfileService(applicationContext) }
     private val networkSettingsStorage by lazy {
         NetworkSettingsStore(MMKVProvider().getMMKV("network_settings"))
     }
@@ -208,7 +208,7 @@ class ProxyTileService : TileService() {
     // Mirrors the home-screen stop path: broadcast a stop, tear down the VPN service, and — since the
     // root daemon isn't a service — explicitly stop it (this is a deliberate user stop).
     private fun stopLocalRuntime() {
-        runCatching { sendBroadcastSelf(Intent(Intents.ACTION_CLASH_REQUEST_STOP)) }
+        runCatching { sendBroadcastSelf(Intent(Intents.ACTION_RUNTIME_REQUEST_STOP)) }
         runCatching {
             applicationContext.stopService(Intent(applicationContext, TunService::class.java))
         }

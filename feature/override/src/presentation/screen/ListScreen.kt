@@ -80,27 +80,66 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 private val overrideConfigItemGap = Spacing().space12
 
+private data class OverrideListVmState(
+    val builtInConfigs: List<OverrideConfig>,
+    val userConfigs: List<OverrideConfig>,
+    val usageCountMap: Map<String, Int>,
+    val pendingRevealConfigId: String?,
+)
+
+@Composable
+private fun rememberOverrideListVmState(viewModel: OverrideConfigViewModel): OverrideListVmState {
+    val builtInConfigs by viewModel.builtInConfigs.collectAsState()
+    val userConfigs by viewModel.userConfigs.collectAsState()
+    val usageCountMap by viewModel.usageCountMap.collectAsState()
+    val pendingRevealConfigId by viewModel.pendingRevealConfigId.collectAsState()
+    return remember(builtInConfigs, userConfigs, usageCountMap, pendingRevealConfigId) {
+        OverrideListVmState(
+            builtInConfigs = builtInConfigs,
+            userConfigs = userConfigs,
+            usageCountMap = usageCountMap,
+            pendingRevealConfigId = pendingRevealConfigId,
+        )
+    }
+}
+
+private class OverrideListDialogState {
+    val showCreateDialog = mutableStateOf(false)
+    var createDialogMode by mutableStateOf(OverrideConfigInputMode.CreateNew)
+    val showDeleteDialog = mutableStateOf(false)
+    val deleteTargetConfig = mutableStateOf<OverrideConfig?>(null)
+    val exportTargetConfig = mutableStateOf<OverrideConfig?>(null)
+    val applyTargetConfig = mutableStateOf<OverrideConfig?>(null)
+    val showApplySheet = mutableStateOf(false)
+}
+
+@Composable
+private fun rememberOverrideListDialogState(): OverrideListDialogState =
+    remember { OverrideListDialogState() }
+
 @Composable
 fun OverrideListScreen(
     onOpenCodeEditor: (OverrideConfig) -> Unit,
     viewModel: OverrideConfigViewModel = koinViewModel(),
 ) {
-    val builtInConfigs by viewModel.builtInConfigs.collectAsState()
-    val userConfigs by viewModel.userConfigs.collectAsState()
-    val usageCountMap by viewModel.usageCountMap.collectAsState()
-    val pendingRevealConfigId by viewModel.pendingRevealConfigId.collectAsState()
+    val vmState = rememberOverrideListVmState(viewModel)
+    val builtInConfigs = vmState.builtInConfigs
+    val userConfigs = vmState.userConfigs
+    val usageCountMap = vmState.usageCountMap
+    val pendingRevealConfigId = vmState.pendingRevealConfigId
 
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scrollBehavior = MiuixScrollBehavior()
 
-    val showCreateDialog = remember { mutableStateOf(false) }
-    var createDialogMode by remember { mutableStateOf(OverrideConfigInputMode.CreateNew) }
-    val showDeleteDialog = remember { mutableStateOf(false) }
-    val deleteTargetConfig = remember { mutableStateOf<OverrideConfig?>(null) }
-    val exportTargetConfig = remember { mutableStateOf<OverrideConfig?>(null) }
-    val applyTargetConfig = remember { mutableStateOf<OverrideConfig?>(null) }
-    val showApplySheet = remember { mutableStateOf(false) }
+    val dialogs = rememberOverrideListDialogState()
+    val showCreateDialog = dialogs.showCreateDialog
+    var createDialogMode by dialogs::createDialogMode
+    val showDeleteDialog = dialogs.showDeleteDialog
+    val deleteTargetConfig = dialogs.deleteTargetConfig
+    val exportTargetConfig = dialogs.exportTargetConfig
+    val applyTargetConfig = dialogs.applyTargetConfig
+    val showApplySheet = dialogs.showApplySheet
 
     val listState = rememberLazyListState()
     val createFabController = rememberOverrideFabController()

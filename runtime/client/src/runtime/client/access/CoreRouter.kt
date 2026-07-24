@@ -18,9 +18,8 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.client.manager
+package com.github.yumelira.yumebox.runtime.client.access
 
-import android.content.Context
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
 import com.github.yumelira.yumebox.core.model.Provider
 import com.github.yumelira.yumebox.core.model.ProviderList
@@ -29,11 +28,10 @@ import com.github.yumelira.yumebox.core.model.ProxySort
 import com.github.yumelira.yumebox.core.model.RuntimeRule
 import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.model.UiConfiguration
-import com.github.yumelira.yumebox.runtime.api.IClashManager
-import com.github.yumelira.yumebox.runtime.api.ILogObserver
-import com.github.yumelira.yumebox.runtime.api.ILogSubscription
-import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
+import com.github.yumelira.yumebox.runtime.api.CoreApi
+import com.github.yumelira.yumebox.runtime.api.CoreAsyncQueries
+import com.github.yumelira.yumebox.runtime.api.LogObserver
+import com.github.yumelira.yumebox.runtime.api.LogSubscription
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -42,24 +40,75 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-/**
- * Routing [IClashManager]: the remote External Controller wins when active, otherwise the local
- * out-of-process core over its `external-controller-unix` socket. Both are [HttpClashManager] — the
- * run mode only affects how the core was launched, not how it is queried.
- */
-class ClashGateway(
-    context: Context,
-    private val remote: IClashManager,
+/** Routes [CoreApi] to remote controller when active, otherwise the local controller. */
+class CoreRouter(
+    private val local: CoreApi,
+    private val remote: CoreApi,
     private val isRemoteControllerActive: () -> Boolean,
-) : IClashManager {
-    private val appContext = context.appContextOrSelf
-    private val local: IClashManager = CoreProcess.rest(appContext)
+) : CoreApi, CoreAsyncQueries {
     private val logScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var logRoutingJob: Job? = null
     private var activeLogToken: Any? = null
-    private var routedLogSubscription: ILogSubscription? = null
+    private var routedLogSubscription: LogSubscription? = null
 
-    private fun pick(): IClashManager = if (isRemoteControllerActive()) remote else local
+    private fun pick(): CoreApi = if (isRemoteControllerActive()) remote else local
+
+    private suspend fun <T> routeAsync(block: suspend CoreAsyncQueries.() -> T, sync: CoreApi.() -> T): T {
+        val target = pick()
+        val async = target as? CoreAsyncQueries
+        return if (async != null) async.block() else sync(target)
+    }
+
+    override suspend fun queryTunnelStateAsync(): TunnelState =
+        routeAsync({ queryTunnelStateAsync() }, { queryTunnelState() })
+
+    override suspend fun queryTrafficNowAsync(): Long =
+        routeAsync({ queryTrafficNowAsync() }, { queryTrafficNow() })
+
+    override suspend fun queryTrafficTotalAsync(): Long =
+        routeAsync({ queryTrafficTotalAsync() }, { queryTrafficTotal() })
+
+    override suspend fun queryConnectionsAsync(): ConnectionSnapshot =
+        routeAsync({ queryConnectionsAsync() }, { queryConnections() })
+
+    override suspend fun queryProfileProxyGroupsAsync(excludeNotSelectable: Boolean): List<ProxyGroup> =
+        routeAsync(
+            { queryProfileProxyGroupsAsync(excludeNotSelectable) },
+            { queryProfileProxyGroups(excludeNotSelectable) },
+        )
+
+    override suspend fun queryAllProxyGroupsAsync(excludeNotSelectable: Boolean): List<ProxyGroup> =
+        routeAsync(
+            { queryAllProxyGroupsAsync(excludeNotSelectable) },
+            { queryAllProxyGroups(excludeNotSelectable) },
+        )
+
+    override suspend fun queryProxyGroupNamesAsync(excludeNotSelectable: Boolean): List<String> =
+        routeAsync(
+            { queryProxyGroupNamesAsync(excludeNotSelectable) },
+            { queryProxyGroupNames(excludeNotSelectable) },
+        )
+
+    override suspend fun queryProxyGroupAsync(name: String, proxySort: ProxySort): ProxyGroup =
+        routeAsync({ queryProxyGroupAsync(name, proxySort) }, { queryProxyGroup(name, proxySort) })
+
+    override suspend fun queryConfigurationAsync(): UiConfiguration =
+        routeAsync({ queryConfigurationAsync() }, { queryConfiguration() })
+
+    override suspend fun queryProvidersAsync(): ProviderList =
+        routeAsync({ queryProvidersAsync() }, { queryProviders() })
+
+    override suspend fun queryRulesAsync(): List<RuntimeRule> =
+        routeAsync({ queryRulesAsync() }, { queryRules() })
+
+    override suspend fun patchSelectorAsync(group: String, name: String): Boolean =
+        routeAsync({ patchSelectorAsync(group, name) }, { patchSelector(group, name) })
+
+    override suspend fun closeConnectionAsync(id: String): Boolean =
+        routeAsync({ closeConnectionAsync(id) }, { closeConnection(id) })
+
+    override suspend fun closeAllConnectionsAsync() =
+        routeAsync({ closeAllConnectionsAsync() }, { closeAllConnections() })
 
     override fun queryTunnelState(): TunnelState = pick().queryTunnelState()
     override fun queryTrafficNow(): Long = pick().queryTrafficNow()
@@ -91,7 +140,7 @@ class ClashGateway(
     override fun requestStop() = pick().requestStop()
 
     @Synchronized
-    override fun subscribeLogs(observer: ILogObserver): ILogSubscription {
+    override fun subscribeLogs(observer: LogObserver): LogSubscription {
         clearActiveLogSubscription()
         val token = Any()
         activeLogToken = token
@@ -102,7 +151,7 @@ class ClashGateway(
             logScope.launch {
                 while (isActive) {
                     delay(LOG_ROUTE_POLL_MS)
-                    synchronized(this@ClashGateway) {
+                    synchronized(this@CoreRouter) {
                         if (activeLogToken !== token) return@launch
                         val nextTarget = pick()
                         if (nextTarget !== target) {
@@ -116,8 +165,8 @@ class ClashGateway(
                     }
                 }
             }
-        return ILogSubscription {
-            synchronized(this@ClashGateway) {
+        return LogSubscription {
+            synchronized(this@CoreRouter) {
                 if (activeLogToken === token) clearActiveLogSubscription()
             }
         }

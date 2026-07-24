@@ -61,14 +61,14 @@ fun Context.sendServiceRecreated() {
     sendBroadcastSelf(Intent(Intents.ACTION_SERVICE_RECREATED))
 }
 
-fun Context.sendClashStarted() {
-    sendBroadcastSelf(Intent(Intents.ACTION_CLASH_STARTED))
+fun Context.sendRuntimeStarted() {
+    sendBroadcastSelf(Intent(Intents.ACTION_RUNTIME_STARTED))
     requestTileRefresh()
 }
 
-fun Context.sendClashStopped(reason: String?) {
+fun Context.sendRuntimeStopped(reason: String?) {
     sendBroadcastSelf(
-        Intent(Intents.ACTION_CLASH_STOPPED).putExtra(Intents.EXTRA_STOP_REASON, reason)
+        Intent(Intents.ACTION_RUNTIME_STOPPED).putExtra(Intents.EXTRA_STOP_REASON, reason)
     )
     requestTileRefresh()
 }

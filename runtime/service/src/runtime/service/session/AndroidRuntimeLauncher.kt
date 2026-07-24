@@ -18,52 +18,50 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.client
+package com.github.yumelira.yumebox.runtime.service.session
 
 import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
 import com.github.yumelira.yumebox.core.model.RunMode
+import com.github.yumelira.yumebox.runtime.api.RuntimeLauncher
 import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.TunService
-import com.github.yumelira.yumebox.runtime.service.session.RootSessionLauncher
-import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
-internal class ProxyRuntimeControl(
+/**
+ * Android [RuntimeLauncher]: VpnService foreground host + root daemon host.
+ * Desktop can ship a different [RuntimeLauncher] without Android Service APIs.
+ */
+class AndroidRuntimeLauncher(
     context: Context,
-    private val clashRequestStopAction: () -> String,
-) {
+    private val stopAction: () -> String,
+) : RuntimeLauncher {
     private val appContext = context.appContextOrSelf
 
-    suspend fun start(owner: RuntimeOwner, mode: RunMode) {
+    override suspend fun start(owner: RuntimeOwner, mode: RunMode) {
         when (owner) {
-            // VpnService is the in-process foreground service; the root daemon launches out-of-process.
             RuntimeOwner.VpnService ->
                 RuntimeServiceLauncher.start(
                     context = appContext,
                     mode = mode,
                     source = RuntimeServiceLauncher.SOURCE_UI,
                 )
-
             RuntimeOwner.RootDaemon -> RootSessionLauncher.start(appContext, mode)
-
             RuntimeOwner.RemoteController,
             RuntimeOwner.None -> Unit
         }
     }
 
-    suspend fun stop(owner: RuntimeOwner) {
+    override suspend fun stop(owner: RuntimeOwner) {
         when (owner) {
             RuntimeOwner.VpnService -> stopVpnRuntime()
-
-            // Explicit stop of the decoupled daemon: `su kill` + release its status slot.
-            RuntimeOwner.RootDaemon -> withContext(Dispatchers.IO) { RootSessionLauncher.stop(appContext) }
-
+            RuntimeOwner.RootDaemon ->
+                withContext(Dispatchers.IO) { RootSessionLauncher.stop(appContext) }
             RuntimeOwner.RemoteController,
             RuntimeOwner.None -> Unit
         }
@@ -71,14 +69,10 @@ internal class ProxyRuntimeControl(
 
     private suspend fun stopVpnRuntime() {
         withContext(Dispatchers.IO) {
-            // Broadcast the graceful-teardown request unconditionally (like the QS tile): the handler
-            // kills the core child before stopSelf. REST requestStop() is a no-op for the core we own.
             appContext.sendBroadcast(
-                Intent(clashRequestStopAction()).setPackage(appContext.packageName)
+                Intent(stopAction()).setPackage(appContext.packageName)
             )
             appContext.stopService(Intent(appContext, TunService::class.java))
-            // stopService is async: a start issued while the old instance is still dying is swallowed
-            // (and its late stopSelf can kill the replacement). Serialize by waiting until it's gone.
             awaitVpnServiceStopped()
         }
     }

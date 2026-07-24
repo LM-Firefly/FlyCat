@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.data.gateway
+package com.github.yumelira.yumebox.data.network
 
 import com.github.yumelira.yumebox.core.util.NetworkInterfaces
 import io.ktor.client.HttpClient

@@ -46,22 +46,23 @@ fun FeatureContent(
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val viewModel = koinViewModel<FeatureViewModel>()
-    val isServiceRunning by viewModel.serviceRunningState.collectAsState()
-    val allowLanAccess by viewModel.allowLanAccess.state.collectAsState()
-    val frontendPort by viewModel.frontendPort.state.collectAsState()
-    val backendPort by viewModel.backendPort.state.collectAsState()
-    val autoCloseMode by viewModel.autoCloseMode.collectAsState()
+    val screen by viewModel.screenState.collectAsState()
+    val isServiceRunning = screen.isServiceRunning
+    val allowLanAccess = screen.allowLanAccess
+    val frontendPort = screen.frontendPort
+    val backendPort = screen.backendPort
+    val autoCloseMode = screen.autoCloseMode
 
     val host = "127.0.0.1"
     val frontendUrl = "http://$host:$frontendPort"
     val backendUrl = "http://$host:$backendPort"
     val subStoreUrl = "$frontendUrl/subs?api=$backendUrl"
 
-    val isDownloadingSubStoreFrontend by viewModel.isDownloadingSubStoreFrontend.collectAsState()
-    val isDownloadingSubStoreBackend by viewModel.isDownloadingSubStoreBackend.collectAsState()
-    val isExtensionInstalled by viewModel.isExtensionInstalled.collectAsState()
-    val isJavetLoaded by viewModel.isJavetLoaded.collectAsState()
-    val selectedPanelType by viewModel.selectedPanelType.state.collectAsState()
+    val isDownloadingSubStoreFrontend = screen.isDownloadingSubStoreFrontend
+    val isDownloadingSubStoreBackend = screen.isDownloadingSubStoreBackend
+    val isExtensionInstalled = screen.isExtensionInstalled
+    val isJavetLoaded = screen.isJavetLoaded
+    val selectedPanelType = screen.selectedPanelType
 
     val panelDisplayNames = listOf("Zashboard", "MetaCubeXD", "Yacd")
 

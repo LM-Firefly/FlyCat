@@ -28,13 +28,14 @@ import com.github.yumelira.yumebox.core.model.ConnectionInfo
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.runtime.client.manager.ServiceClient
+import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -79,6 +80,22 @@ class ConnectionViewModel(private val appContext: Context) : ViewModel() {
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = emptyList(),
+            )
+
+    
+    data class ConnectionScreenState(
+        val state: ConnectionState = ConnectionState(),
+        val filteredConnections: List<ConnectionInfo> = emptyList(),
+    )
+
+    val screenState: StateFlow<ConnectionScreenState> =
+        combine(state, filteredConnections) { s, filtered ->
+            ConnectionScreenState(state = s, filteredConnections = filtered)
+        }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = ConnectionScreenState(),
             )
 
     private var pollingJob: Job? = null
@@ -127,8 +144,8 @@ class ConnectionViewModel(private val appContext: Context) : ViewModel() {
     suspend fun closeConnection(id: String): Boolean =
         withContext(Dispatchers.IO) {
                 runCatching {
-                        ServiceClient.connect(appContext)
-                        ServiceClient.clash().closeConnection(id)
+                        RuntimeAccess.connect(appContext)
+                        RuntimeAccess.core().closeConnection(id)
                     }
                     .onFailure { error ->
                         Timber.w(error, "Failed to close connection: %s", id)
@@ -145,8 +162,8 @@ class ConnectionViewModel(private val appContext: Context) : ViewModel() {
         }
         withContext(Dispatchers.IO) {
             try {
-                ServiceClient.connect(appContext)
-                val snapshot = ServiceClient.clash().queryConnections()
+                RuntimeAccess.connect(appContext)
+                val snapshot = RuntimeAccess.core().queryConnections()
                 ConnectionHistoryManager.updateConnections(snapshot.connections)
                 _state.update {
                     it.copy(

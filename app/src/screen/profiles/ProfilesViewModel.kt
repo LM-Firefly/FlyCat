@@ -28,7 +28,7 @@ import com.github.yumelira.yumebox.data.store.LinkOpenMode
 import com.github.yumelira.yumebox.data.store.Preference
 import com.github.yumelira.yumebox.data.store.ProfileLink
 import com.github.yumelira.yumebox.data.store.ProfileLinksStore
-import com.github.yumelira.yumebox.runtime.api.IFetchObserver
+import com.github.yumelira.yumebox.runtime.api.FetchObserver
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.client.ProfilePatch
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
@@ -111,7 +111,7 @@ class ProfilesViewModel(
                 _downloadProgress.value =
                     DownloadProgress(percent = 0, message = YumeTxt.ProfilesVM.Progress.Preparing)
 
-                val observer = IFetchObserver { status ->
+                val observer = FetchObserver { status ->
                     _downloadProgress.value = status.toDownloadProgress()
                 }
 
@@ -217,7 +217,7 @@ class ProfilesViewModel(
                 _downloadProgress.value =
                     DownloadProgress(percent = 0, message = YumeTxt.ProfilesVM.Progress.Preparing)
 
-                val observer = IFetchObserver { status ->
+                val observer = FetchObserver { status ->
                     _downloadProgress.value = status.toDownloadProgress()
                 }
 

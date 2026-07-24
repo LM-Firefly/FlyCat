@@ -48,11 +48,12 @@ fun NetworkSettingsScreen(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
     val viewModel = koinViewModel<NetworkSettingsViewModel>()
     val uiState by viewModel.uiState.collectAsState()
-    val disableAllOverride by viewModel.disableAllOverride.state.collectAsState()
-    val accessControlMode by viewModel.accessControlMode.state.collectAsState()
-    val runMode by viewModel.runMode.state.collectAsState()
+    val screen by viewModel.networkScreenState.collectAsState()
+    val disableAllOverride = screen.disableAllOverride
+    val accessControlMode = screen.accessControlMode
+    val runMode = screen.runMode
     // Root Tun / TPROXY are only selectable when root is granted; otherwise their cards are greyed out.
-    val rootAvailable by viewModel.rootAvailable.collectAsState()
+    val rootAvailable = screen.rootAvailable
 
     Scaffold(
         topBar = { TopBar(title = YumeTxt.NetworkSettings.Title, scrollBehavior = scrollBehavior) }

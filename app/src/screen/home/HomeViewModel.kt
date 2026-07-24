@@ -30,8 +30,8 @@ import com.github.yumelira.yumebox.core.presentation.LoadableState
 import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.data.gateway.IpMonitoringState
-import com.github.yumelira.yumebox.data.gateway.NetworkInfoService
+import com.github.yumelira.yumebox.data.network.IpMonitoringState
+import com.github.yumelira.yumebox.data.network.NetworkInfoService
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.domain.model.TrafficData
 import com.github.yumelira.yumebox.runtime.api.Profile
@@ -86,7 +86,10 @@ class HomeViewModel(
     private val _profilesLoaded = MutableStateFlow(false)
     val profilesLoaded: StateFlow<Boolean> = _profilesLoaded.asStateFlow()
 
-    val hasEnabledProfile: Flow<Boolean> = profiles.map { list -> list.any { it.active } }
+    val hasEnabledProfile: StateFlow<Boolean> =
+        profiles
+            .map { list -> list.any { it.active } }
+            .stateInWhileSubscribed(viewModelScope, false)
 
     val runtimeSnapshot = proxyFacade.runtimeSnapshot
     val isRunning =
@@ -182,6 +185,85 @@ class HomeViewModel(
                 }
             }
             .stateInWhileSubscribed(viewModelScope, IpMonitoringState.Loading)
+
+    val screenState: StateFlow<HomeScreenState> =
+        combine(
+                combine(controlState, trafficNow, profiles, profilesLoaded, hasEnabledProfile) {
+                    control,
+                    traffic,
+                    profileList,
+                    loaded,
+                    hasEnabled ->
+                    HomeScreenState(
+                        controlState = control,
+                        trafficNow = traffic,
+                        profiles = profileList,
+                        profilesLoaded = loaded,
+                        hasEnabledProfile = hasEnabled,
+                    )
+                },
+                combine(recommendedProfile, currentProfile, selectedServerName, selectedServerPing, speedHistory) {
+                    recommended,
+                    current,
+                    serverName,
+                    serverPing,
+                    history ->
+                    Array(5) { i ->
+                        when (i) {
+                            0 -> recommended
+                            1 -> current
+                            2 -> serverName
+                            3 -> serverPing
+                            else -> history
+                        }
+                    }
+                },
+                combine(proxyMode, isRemoteController, controllerBackendName, ipMonitoringState, uiState) {
+                    mode,
+                    remote,
+                    backendName,
+                    ipState,
+                    ui ->
+                    Array(5) { i ->
+                        when (i) {
+                            0 -> mode
+                            1 -> remote
+                            2 -> backendName
+                            3 -> ipState
+                            else -> ui
+                        }
+                    }
+                },
+            ) { base, mid, tail ->
+                val recommended = mid[0] as Profile?
+                val current = mid[1] as Profile?
+                val serverName = mid[2] as String?
+                val serverPing = mid[3] as Int?
+                @Suppress("UNCHECKED_CAST")
+                val history = mid[4] as List<Long>
+                val mode = tail[0] as RunMode
+                val remote = tail[1] as Boolean
+                val backendName = tail[2] as String?
+                val ipState = tail[3] as IpMonitoringState
+                val ui = tail[4] as HomeUiState
+                base.copy(
+                    recommendedProfile = recommended,
+                    currentProfile = current,
+                    selectedServerName = serverName,
+                    selectedServerPing = serverPing,
+                    speedHistory = history,
+                    proxyMode = mode,
+                    isRemoteController = remote,
+                    controllerBackendName = backendName,
+                    ipMonitoringState = ipState,
+                    uiMessage = ui.message,
+                    uiError = ui.error,
+                )
+            }
+            .combine(runtimeSnapshot) { screen, snapshot ->
+                screen.copy(runtimeStartedAt = snapshot.startedAt)
+            }
+            .stateInWhileSubscribed(viewModelScope, HomeScreenState())
 
     init {
         refreshProfiles()
@@ -546,6 +628,27 @@ class HomeViewModel(
     private data class PendingStartRequest(
         val profileId: String,
         val mode: RunMode,
+    )
+
+    /** Aggregated home page snapshot — Screen should collect this once. */
+    data class HomeScreenState(
+        val controlState: HomeProxyControlState = HomeProxyControlState.Idle,
+        val trafficNow: com.github.yumelira.yumebox.core.model.Traffic = 0L,
+        val profiles: List<Profile> = emptyList(),
+        val profilesLoaded: Boolean = false,
+        val hasEnabledProfile: Boolean = false,
+        val recommendedProfile: Profile? = null,
+        val currentProfile: Profile? = null,
+        val selectedServerName: String? = null,
+        val selectedServerPing: Int? = null,
+        val speedHistory: List<Long> = emptyList(),
+        val proxyMode: RunMode = RunMode.VpnService,
+        val isRemoteController: Boolean = false,
+        val controllerBackendName: String? = null,
+        val ipMonitoringState: IpMonitoringState = IpMonitoringState.Loading,
+        val uiMessage: String? = null,
+        val uiError: String? = null,
+        val runtimeStartedAt: Long? = null,
     )
 
     data class HomeUiState(

@@ -47,9 +47,10 @@ fun RemoteControllerSection(
 ) {
     val context = LocalContext.current
 
-    val controllerEnabled by viewModel.controllerEnabled.collectAsState()
-    val backends by viewModel.backends.collectAsState()
-    val activeBackendId by viewModel.activeBackendId.collectAsState()
+    val section by viewModel.sectionState.collectAsState()
+    val controllerEnabled = section.controllerEnabled
+    val backends = section.backends
+    val activeBackendId = section.activeBackendId
 
     var sheetState by remember { mutableStateOf<BackendSheetState?>(null) }
     var sheetVisible by remember { mutableStateOf(false) }

@@ -30,9 +30,10 @@ import com.github.yumelira.yumebox.data.store.add
 import com.github.yumelira.yumebox.data.store.remove
 import com.github.yumelira.yumebox.data.store.update
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
-import com.github.yumelira.yumebox.runtime.service.manager.HttpClashManager
+import com.github.yumelira.yumebox.runtime.service.controller.CoreController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -53,6 +54,30 @@ class RemoteControllerViewModel(
 
     val activeBackendId: StateFlow<String> =
         store.activeBackendId.state.stateInWhileSubscribed(viewModelScope, store.activeBackendId.value)
+
+    
+    data class SectionState(
+        val controllerEnabled: Boolean = false,
+        val backends: List<RemoteBackend> = emptyList(),
+        val activeBackendId: String = "",
+    )
+
+    val sectionState: StateFlow<SectionState> =
+        combine(controllerEnabled, backends, activeBackendId) { enabled, list, activeId ->
+            SectionState(
+                controllerEnabled = enabled,
+                backends = list,
+                activeBackendId = activeId,
+            )
+        }
+            .stateInWhileSubscribed(
+                viewModelScope,
+                SectionState(
+                    controllerEnabled = store.controllerEnabled.value,
+                    backends = store.backends.value,
+                    activeBackendId = store.activeBackendId.value,
+                ),
+            )
 
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val messages: SharedFlow<String> = _messages.asSharedFlow()
@@ -105,7 +130,7 @@ class RemoteControllerViewModel(
             val result =
                 withContext(Dispatchers.IO) {
                     runCatching {
-                        val manager = HttpClashManager(backendProvider = { backend })
+                        val manager = CoreController(backendProvider = { backend })
                         manager.queryTunnelState()
                     }
                 }

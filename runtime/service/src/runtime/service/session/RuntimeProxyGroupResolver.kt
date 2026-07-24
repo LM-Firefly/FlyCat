@@ -43,7 +43,7 @@ class RuntimeProxyGroupResolver(
     private val context: android.content.Context,
 ) {
     private val rest
-        get() = com.github.yumelira.yumebox.runtime.service.core.CoreProcess.rest(context)
+        get() = com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(context)
     private val expectedNameCacheLock = Any()
     private var expectedNameCache: ExpectedGroupCache? = null
 

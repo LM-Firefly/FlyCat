@@ -18,18 +18,24 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.api
+package com.github.yumelira.yumebox.data.controller
 
-import com.github.yumelira.yumebox.core.model.LogMessage
+import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
+import com.github.yumelira.yumebox.domain.model.TrafficData
+import kotlinx.coroutines.flow.Flow
 
-interface ILogObserver {
-    fun onConnected() = Unit
+/**
+ * The runtime queries the traffic collector needs, expressed as query source so the collector takes a
+ * single dependency instead of four lambdas wired from the same facade.
+ */
+interface TrafficQuerySource {
+    val isRunning: Flow<Boolean>
 
-    fun onError(error: Throwable) = Unit
+    fun currentProfileId(): String?
 
-    fun newItem(log: LogMessage)
-}
+    suspend fun queryTrafficTotal(): TrafficData
 
-fun interface ILogSubscription {
-    fun close()
+    suspend fun queryConnections(): ConnectionSnapshot
+
+    suspend fun queryActiveProfileId(): String?
 }
