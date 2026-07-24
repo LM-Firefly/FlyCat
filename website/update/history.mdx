@@ -12,8 +12,8 @@ icon: clock
 
   - 新增应用数据导出与恢复备份功能，设置页新增入口
   - 新增远程 mihomo 控制器，支持快捷对话框
-  - 新整访问控制面板快捷方式支持(需要app开启权限支持) `实验室 -> 面板相关`
-  - 新整支持通过网络 `URL` 导入覆写配置
+  - 新增访问控制面板快捷方式支持（需要 app 开启权限）`实验室 -> 面板相关`
+  - 新增支持通过网络 URL 导入覆写配置
   - 更新访问控制页的地区应用智能检测
   - 将 `include/exclude-package` 配置应用至 VPN builder
   - 支持 `Age` 密钥对生成
@@ -21,7 +21,7 @@ icon: clock
   - 新增代理、Provider 及覆写列表新增统一的空状态缺省图标
   - 优化自动化构建现会注入唯一版本号
   - 优化应用电池优化页面直达及状态更新
-  - 优化访问控制页面,卡片及按钮组件更加合理,并优化排序逻辑
+  - 优化访问控制页面卡片与按钮布局，并优化排序逻辑
   - 优化代理底部弹窗与编辑器动画更平滑，壁纸演示改为长按触发
   - 优化设置项摘要描述，YAML 高亮切换为紧凑版 tmLanguage
   - 优化重新设计 moe 首页启动控件与关于页头部卡片
@@ -53,9 +53,9 @@ icon: clock
 
   - **签名已更换，无法覆盖安装，请卸载后重新安装**
   - 重构了 override 覆写
-  - 增加` js yaml` 覆写支持
+  - 增加 JS / YAML 覆写支持
   - 增加了桌面创建 web 面板快捷方式
-  - 增加 `age ` 支持
+  - 增加 Age 支持
   - 修复桌面控制图标
   - 修复了磁铁图标
   - 修复订阅排序方案
@@ -68,7 +68,6 @@ icon: clock
   - 修复持久记忆节点失效
   - 移除废弃override方案
   - 移除 native 签名校验
-  - _~~等等，时间尺度太长忘记了~~_
 
   **Full Changelog**: [https://github.com/YumeYucca/YumeBox/compare/v0.5.1...v0.5.2](https://github.com/YumeYucca/YumeBox/compare/v0.5.1...v0.5.2)
 
@@ -126,7 +125,7 @@ icon: clock
   ## 更改
 
   - **全新的覆写系统，允许多配置切换 应用 叠加可视化编辑等覆写预设分流模板，支持快速添加，编辑分流等**
-  - **完全自定义的覆写配置使用后缀修饰符（`start end merge force`）不同的覆写操作** 详细见 [override document](/override/override)
+  - **完全自定义的覆写配置使用后缀修饰符（`start end merge force`）不同的覆写操作** 详细见 [override document](/override/yaml)
   - **Root Tun 支持，无需 vpn 需要 Root 权限**
   - 更好的初始化引导页面
   - 更好的 Toast 弹窗

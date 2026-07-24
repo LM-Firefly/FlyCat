@@ -1,50 +1,54 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "luma",
   "name": "YumeBox",
   "colors": {
-    "primary": "#16A34A",
+    "primary": "#cfcfff",
     "light": "#07C983",
-    "dark": "#15803D"
+    "dark": "#b3b7fa"
   },
   "icons": {
     "library": "lucide"
   },
-  "favicon": "/images/logo.webp",
-  "banner": {
-    "content": "v0.5.3 已发布 / available · [更新日志 / changelog](/update/history)",
-    "dismissible": true
-  },
+  "favicon": "/images/favicon.",
   "navigation": {
     "languages": [
       {
         "language": "zh-Hans",
         "default": true,
-        "groups": [
+        "tabs": [
           {
-            "group": "开始",
-            "pages": [
-              "/index",
-              "/update/history"
+            "tab": "文档",
+            "icon": "book-open",
+            "groups": [
+              {
+                "group": "开始",
+                "pages": [
+                  "/index",
+                  "/update/history"
+                ]
+              },
+              {
+                "group": "覆写",
+                "icon": "file-code",
+                "pages": [
+                  "/override/yaml",
+                  "/override/js-override"
+                ]
+              },
+              {
+                "group": "构建",
+                "pages": [
+                  "/guide/build",
+                  "/guide/faq"
+                ]
+              }
             ]
           },
           {
-            "group": "指南",
-            "pages": [
-              "/guide/app"
-            ]
-          },
-          {
-            "group": "开发",
-            "pages": [
-              "/override/override",
-              "/override/fields",
-              "/guide/build"
-            ]
-          },
-          {
-            "group": "API",
-            "pages": [
+            "tab": "API 参考",
+            "icon": "square-terminal",
+            "groups": [
               {
                 "group": "日志",
                 "openapi": "api/openapi.json",
@@ -188,26 +192,176 @@
       },
       {
         "language": "en",
-        "groups": [
+        "tabs": [
           {
-            "group": "Start here",
-            "pages": [
-              "/en/index",
-              "/en/update/history"
+            "tab": "Documentation",
+            "icon": "book-open",
+            "groups": [
+              {
+                "group": "Start here",
+                "pages": [
+                  "/en/index",
+                  "/en/update/history"
+                ]
+              },
+              {
+                "group": "Overrides",
+                "icon": "file-code",
+                "pages": [
+                  "/en/override/yaml",
+                  "/en/override/js-override"
+                ]
+              },
+              {
+                "group": "Build",
+                "pages": [
+                  "/en/guide/build",
+                  "/en/guide/faq"
+                ]
+              }
             ]
           },
           {
-            "group": "App guide",
-            "pages": [
-              "/en/guide/app"
-            ]
-          },
-          {
-            "group": "Development",
-            "pages": [
-              "/en/override/override",
-              "/en/override/fields",
-              "/en/guide/build"
+            "tab": "API reference",
+            "icon": "square-terminal",
+            "groups": [
+              {
+                "group": "Logs",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /logs"
+                ]
+              },
+              {
+                "group": "Traffic",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /traffic"
+                ]
+              },
+              {
+                "group": "Memory",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /memory"
+                ]
+              },
+              {
+                "group": "Version",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /version"
+                ]
+              },
+              {
+                "group": "Cache",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "POST /cache/fakeip/flush",
+                  "POST /cache/dns/flush"
+                ]
+              },
+              {
+                "group": "Runtime config",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /configs",
+                  "PUT /configs",
+                  "PATCH /configs",
+                  "POST /configs/geo",
+                  "POST /restart"
+                ]
+              },
+              {
+                "group": "Upgrade",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "POST /upgrade",
+                  "POST /upgrade/ui",
+                  "POST /upgrade/geo"
+                ]
+              },
+              {
+                "group": "Proxy groups",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /group",
+                  "GET /group/{name}",
+                  "GET /group/{name}/delay"
+                ]
+              },
+              {
+                "group": "Proxies",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /proxies",
+                  "GET /proxies/{name}",
+                  "PUT /proxies/{name}",
+                  "DELETE /proxies/{name}",
+                  "GET /proxies/{name}/delay"
+                ]
+              },
+              {
+                "group": "Proxy providers",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /providers/proxies",
+                  "GET /providers/proxies/{name}",
+                  "PUT /providers/proxies/{name}",
+                  "GET /providers/proxies/{name}/healthcheck",
+                  "GET /providers/proxies/{providerName}/{name}",
+                  "GET /providers/proxies/{providerName}/{name}/healthcheck"
+                ]
+              },
+              {
+                "group": "Rules",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /rules",
+                  "PATCH /rules/disable"
+                ]
+              },
+              {
+                "group": "Rule providers",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /providers/rules",
+                  "PUT /providers/rules/{name}"
+                ]
+              },
+              {
+                "group": "Connections",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /connections",
+                  "DELETE /connections",
+                  "DELETE /connections/{id}"
+                ]
+              },
+              {
+                "group": "DNS",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /dns/query"
+                ]
+              },
+              {
+                "group": "Storage",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "GET /storage/{key}",
+                  "PUT /storage/{key}",
+                  "DELETE /storage/{key}"
+                ]
+              },
+              {
+                "group": "Debug",
+                "openapi": "api/openapi.json",
+                "pages": [
+                  "PUT /debug/gc",
+                  "GET /debug/pprof"
+                ]
+              }
             ]
           }
         ]
@@ -277,5 +431,63 @@
     "heading": {
       "family": "Ubuntu Sans"
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/guide/app",
+      "destination": "/guide/faq"
+    },
+    {
+      "source": "/guide/quickstart",
+      "destination": "/guide/faq"
+    },
+    {
+      "source": "/override/fields",
+      "destination": "/override/yaml"
+    },
+    {
+      "source": "/en/guide/app",
+      "destination": "/en/guide/faq"
+    },
+    {
+      "source": "/en/guide/quickstart",
+      "destination": "/en/guide/faq"
+    },
+    {
+      "source": "/en/override/fields",
+      "destination": "/en/override/yaml"
+    },
+    {
+      "source": "/override/override",
+      "destination": "/override/yaml"
+    },
+    {
+      "source": "/en/override/override",
+      "destination": "/en/override/yaml"
+    },
+    {
+      "source": "/override/js",
+      "destination": "/override/js-override"
+    },
+    {
+      "source": "/en/override/js",
+      "destination": "/en/override/js-override"
+    },
+    {
+      "source": "/override/javascript",
+      "destination": "/override/js-override"
+    },
+    {
+      "source": "/en/override/javascript",
+      "destination": "/en/override/js-override"
+    },
+    {
+      "source": "/override/intro",
+      "destination": "/override/yaml"
+    },
+    {
+      "source": "/en/override/intro",
+      "destination": "/en/override/yaml"
+    }
+  ]
 }

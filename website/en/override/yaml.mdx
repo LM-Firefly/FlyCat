@@ -1,0 +1,87 @@
+---
+title: YAML API
+sidebarTitle: YAML
+icon: file-code
+---
+
+Extensions: `.yaml` / `.yml`. The top-level value must be an object. Empty files are skipped with a warning; an unknown extension causes compilation to fail.
+
+## Field modifiers
+
+A key suffix determines how the field is written. The parser removes the suffix first to obtain the base field name.
+
+<ParamField body="key" type="scalar | object | array">
+  Default behavior.
+
+  - Scalars: overwrite
+  - Objects: merge recursively
+  - Arrays: replace the entire list
+</ParamField>
+
+<ParamField body="key-start" type="array">
+  Insert at the beginning of the target list.
+</ParamField>
+
+<ParamField body="key-end" type="array">
+  Append to the end of the target list.
+</ParamField>
+
+<ParamField body="key-merge" type="object">
+  Recursively merge the map while preserving existing target keys.
+</ParamField>
+
+<ParamField body="key-force" type="any">
+  Replace the entire field without merging.
+</ParamField>
+
+<ParamField body="angle-wrapped key" type="any">
+  Literal field name. Wrapping a key in angle brackets disables modifier-suffix parsing.
+</ParamField>
+
+List fields such as `rules`, `proxies`, and `proxy-groups` support `-start` / `-end`. Object lists whose entries have a `name` are deduplicated by `name`; **the last entry with the same name is kept**.
+
+## Order when one field has multiple modifiers
+
+1. `force` (stop processing this field if present)
+2. `start`
+3. Replace with the plain `key`, or keep the original list
+4. `end`
+5. `merge`
+
+## Examples
+
+```yaml append-rules.yaml icon="file-code" lines
+rules-end:
+  - DOMAIN-SUFFIX,example.com,DIRECT
+  - DOMAIN-SUFFIX,lan,DIRECT
+```
+
+```yaml patch-dns.yaml icon="file-code" lines
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+    - https://dns.alidns.com/dns-query
+```
+
+```yaml rules-head-tail.yaml icon="file-code" lines
+rules-start:
+  - DOMAIN-SUFFIX,router.local,DIRECT
+
+rules-end:
+  - MATCH,PROXY
+```
+
+```yaml hosts-and-dns.yaml icon="file-code" lines
+hosts-merge:
+  router.local: 192.168.1.1
+
+dns-force:
+  enable: true
+  nameserver:
+    - 1.1.1.1
+```
+
+```yaml literal-key.yaml icon="file-code" lines
+"<rules-end>": keep-this-key-name
+```
