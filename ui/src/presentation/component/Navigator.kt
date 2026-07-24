@@ -27,8 +27,9 @@ import androidx.navigation3.runtime.NavKey
  * Thin wrapper over the navigation3 back stack ([MutableList] of [NavKey]).
  *
  * Replaces compose-destinations' DestinationsNavigator. The [push]/[pop]/[replaceAll]/[popUntil]
- * methods cover every navigation pattern previously used in YumeBox. The [navigateUp]/[popBackStack]
- * aliases keep call sites that came from the compose-destinations API churn-free.
+ * methods cover every navigation pattern previously used in YumeBox. The
+ * [navigateUp]/[popBackStack] aliases keep call sites that came from the compose-destinations API
+ * churn-free.
  */
 @Stable
 class Navigator(val backStack: MutableList<NavKey>) {
@@ -60,7 +61,9 @@ class Navigator(val backStack: MutableList<NavKey>) {
         backStack.add(key)
     }
 
-    /** Pops entries until [predicate] is satisfied for the top entry (inclusive of matched stays). */
+    /**
+     * Pops entries until [predicate] is satisfied for the top entry (inclusive of matched stays).
+     */
     fun popUntil(predicate: (NavKey) -> Boolean) {
         while (backStack.size > 1 && !predicate(backStack.last())) {
             backStack.removeAt(backStack.lastIndex)

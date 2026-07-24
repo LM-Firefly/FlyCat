@@ -58,32 +58,32 @@ object DashboardShortcutHelper {
 
     private fun loadIconFromUri(context: Context, uri: Uri): IconCompat? {
         return runCatching {
-                context.contentResolver.openInputStream(uri)?.use { input ->
-                    val bmp = android.graphics.BitmapFactory.decodeStream(input) ?: return null
-                    IconCompat.createWithBitmap(bmp)
-                }
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                val bmp = android.graphics.BitmapFactory.decodeStream(input) ?: return null
+                IconCompat.createWithBitmap(bmp)
             }
+        }
             .getOrNull()
     }
 
     private fun fetchFavicon(context: Context, url: String): IconCompat {
         return runCatching {
-                val u = java.net.URL(url)
-                val faviconUrl = java.net.URL("${u.protocol}://${u.host}/favicon.ico")
-                val conn =
-                    (faviconUrl.openConnection() as java.net.HttpURLConnection).apply {
-                        connectTimeout = 5000
-                        readTimeout = 5000
-                        instanceFollowRedirects = true
-                    }
-                conn.inputStream.use { input ->
-                    val bytes = input.readBytes()
-                    val bmp =
-                        android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                            ?: return@runCatching null
-                    IconCompat.createWithBitmap(bmp)
+            val u = java.net.URL(url)
+            val faviconUrl = java.net.URL("${u.protocol}://${u.host}/favicon.ico")
+            val conn =
+                (faviconUrl.openConnection() as java.net.HttpURLConnection).apply {
+                    connectTimeout = 5000
+                    readTimeout = 5000
+                    instanceFollowRedirects = true
                 }
+            conn.inputStream.use { input ->
+                val bytes = input.readBytes()
+                val bmp =
+                    android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        ?: return@runCatching null
+                IconCompat.createWithBitmap(bmp)
             }
+        }
             .getOrNull() ?: IconCompat.createWithResource(context, R.mipmap.ic_launcher)
     }
 }

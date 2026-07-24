@@ -88,18 +88,18 @@ fun MoeWallpaperCropScreen(
             value =
                 withContext(Dispatchers.IO) {
                     runCatching {
-                            context.contentResolver.openInputStream(Uri.parse(wallpaperUri))?.use {
-                                input ->
-                                val options =
-                                    BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                                BitmapFactory.decodeStream(input, null, options)
-                                if (options.outWidth > 0 && options.outHeight > 0) {
-                                    options.outWidth to options.outHeight
-                                } else {
-                                    null
-                                }
+                        context.contentResolver.openInputStream(Uri.parse(wallpaperUri))?.use {
+                            input ->
+                            val options =
+                                BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                            BitmapFactory.decodeStream(input, null, options)
+                            if (options.outWidth > 0 && options.outHeight > 0) {
+                                options.outWidth to options.outHeight
+                            } else {
+                                null
                             }
                         }
+                    }
                         .getOrNull()
                 }
         }

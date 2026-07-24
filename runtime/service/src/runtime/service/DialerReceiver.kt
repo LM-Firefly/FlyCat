@@ -22,11 +22,11 @@ package com.github.yumelira.yumebox.runtime.service
 
 import android.Manifest
 import android.app.PendingIntent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -49,47 +49,47 @@ class DialerReceiver : BroadcastReceiver() {
 
     private fun postOpenNotification(context: Context) {
         runCatching {
-                val manager = NotificationManagerCompat.from(context)
-                if (!manager.areNotificationsEnabled()) return
+            val manager = NotificationManagerCompat.from(context)
+            if (!manager.areNotificationsEnabled()) return
 
-                manager.createNotificationChannel(
-                    NotificationChannelCompat.Builder(
-                            CHANNEL_ID,
-                            NotificationManagerCompat.IMPORTANCE_HIGH,
-                        )
-                        .setName(YumeTxt.Service.Tile.ClickToOpen)
-                        .build()
+            manager.createNotificationChannel(
+                NotificationChannelCompat.Builder(
+                        CHANNEL_ID,
+                        NotificationManagerCompat.IMPORTANCE_HIGH,
+                    )
+                    .setName(YumeTxt.Service.Tile.ClickToOpen)
+                    .build()
+            )
+
+            val launchIntent =
+                Intent(Intent.ACTION_MAIN).apply {
+                    component = Components.MAIN_ACTIVITY
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                }
+            val pendingIntent =
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    launchIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
 
-                val launchIntent =
-                    Intent(Intent.ACTION_MAIN).apply {
-                        component = Components.MAIN_ACTIVITY
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    }
-                val pendingIntent =
-                    PendingIntent.getActivity(
-                        context,
-                        0,
-                        launchIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                    )
-
-                val notification =
-                    NotificationCompat.Builder(context, CHANNEL_ID)
-                        .setSmallIcon(R.drawable.ic_logo_service)
-                        .setContentTitle(YumeTxt.Service.Tile.ClickToOpen)
-                        .setContentIntent(pendingIntent)
-                        .setAutoCancel(true)
-                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        .build()
-                if (
-                    Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                        context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
-                            PackageManager.PERMISSION_GRANTED
-                ) {
-                    manager.notify(NOTIFICATION_ID, notification)
-                }
+            val notification =
+                NotificationCompat.Builder(context, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_logo_service)
+                    .setContentTitle(YumeTxt.Service.Tile.ClickToOpen)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .build()
+            if (
+                Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                    context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+                        PackageManager.PERMISSION_GRANTED
+            ) {
+                manager.notify(NOTIFICATION_ID, notification)
             }
+        }
             .onFailure { error -> Timber.e(error, "Secret code notification failed") }
     }
 }

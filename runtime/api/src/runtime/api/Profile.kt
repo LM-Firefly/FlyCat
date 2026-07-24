@@ -26,9 +26,9 @@ import android.annotation.SuppressLint
 import android.os.Parcel
 import android.os.Parcelable
 import com.github.yumelira.yumebox.core.util.Parcelizer
+import java.util.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import java.util.UUID
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable

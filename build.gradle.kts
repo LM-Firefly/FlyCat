@@ -61,8 +61,8 @@ allprojects {
             when {
                 requested.group == "org.bouncycastle" -> useVersion("1.84")
                 requested.group == "io.netty" -> useVersion("4.1.135.Final")
-                requested.group == "org.apache.httpcomponents" &&
-                    requested.name == "httpclient" -> useVersion("4.5.14")
+                requested.group == "org.apache.httpcomponents" && requested.name == "httpclient" ->
+                    useVersion("4.5.14")
                 requested.group == "org.apache.commons" && requested.name == "commons-lang3" ->
                     useVersion("3.20.0")
             }

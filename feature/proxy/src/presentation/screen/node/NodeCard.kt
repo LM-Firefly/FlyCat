@@ -63,10 +63,13 @@ internal fun nodeLatencyLabel(delay: Int?): Pair<String, Color>? =
         delay == 0 -> null
         delay in 1..300 ->
             YumeTxt.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.fast
+
         delay in 301..1000 ->
             YumeTxt.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.moderate
+
         delay in 1001..3000 ->
             YumeTxt.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.slow
+
         else -> null
     }
 

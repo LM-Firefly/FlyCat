@@ -22,12 +22,12 @@ package com.github.yumelira.yumebox.data.store
 
 import com.github.yumelira.yumebox.core.util.enumByNameOrNull
 import com.tencent.mmkv.MMKV
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
-import kotlin.properties.ReadOnlyProperty
-import kotlin.reflect.KProperty
 
 /**
  * Base class for MMKV-based preference storage with process-local reactive StateFlow support.

@@ -34,41 +34,90 @@ val Yume.Eye: ImageVector
         if (_IconName != null) {
             return _IconName!!
         }
-        _IconName = ImageVector.Builder(
-            name = "IconName",
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f
-        ).apply {
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(2.062f, 12.348f)
-                arcToRelative(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 0f, -0.696f)
-                arcToRelative(10.75f, 10.75f, 0f, isMoreThanHalf = false, isPositiveArc = true, 19.876f, 0f)
-                arcToRelative(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 0f, 0.696f)
-                arcToRelative(10.75f, 10.75f, 0f, isMoreThanHalf = false, isPositiveArc = true, -19.876f, 0f)
-            }
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(12f, 12f)
-                moveToRelative(-3f, 0f)
-                arcToRelative(3f, 3f, 0f, isMoreThanHalf = true, isPositiveArc = true, 6f, 0f)
-                arcToRelative(3f, 3f, 0f, isMoreThanHalf = true, isPositiveArc = true, -6f, 0f)
-            }
-        }.build()
+        _IconName =
+            ImageVector.Builder(
+                    name = "IconName",
+                    defaultWidth = 24.dp,
+                    defaultHeight = 24.dp,
+                    viewportWidth = 24f,
+                    viewportHeight = 24f,
+                )
+                .apply {
+                    path(
+                        stroke = SolidColor(Color.Black),
+                        strokeLineWidth = 2f,
+                        strokeLineCap = StrokeCap.Round,
+                        strokeLineJoin = StrokeJoin.Round,
+                    ) {
+                        moveTo(2.062f, 12.348f)
+                        arcToRelative(
+                            1f,
+                            1f,
+                            0f,
+                            isMoreThanHalf = false,
+                            isPositiveArc = true,
+                            0f,
+                            -0.696f,
+                        )
+                        arcToRelative(
+                            10.75f,
+                            10.75f,
+                            0f,
+                            isMoreThanHalf = false,
+                            isPositiveArc = true,
+                            19.876f,
+                            0f,
+                        )
+                        arcToRelative(
+                            1f,
+                            1f,
+                            0f,
+                            isMoreThanHalf = false,
+                            isPositiveArc = true,
+                            0f,
+                            0.696f,
+                        )
+                        arcToRelative(
+                            10.75f,
+                            10.75f,
+                            0f,
+                            isMoreThanHalf = false,
+                            isPositiveArc = true,
+                            -19.876f,
+                            0f,
+                        )
+                    }
+                    path(
+                        stroke = SolidColor(Color.Black),
+                        strokeLineWidth = 2f,
+                        strokeLineCap = StrokeCap.Round,
+                        strokeLineJoin = StrokeJoin.Round,
+                    ) {
+                        moveTo(12f, 12f)
+                        moveToRelative(-3f, 0f)
+                        arcToRelative(
+                            3f,
+                            3f,
+                            0f,
+                            isMoreThanHalf = true,
+                            isPositiveArc = true,
+                            6f,
+                            0f,
+                        )
+                        arcToRelative(
+                            3f,
+                            3f,
+                            0f,
+                            isMoreThanHalf = true,
+                            isPositiveArc = true,
+                            -6f,
+                            0f,
+                        )
+                    }
+                }
+                .build()
 
         return _IconName!!
     }
 
-@Suppress("ObjectPropertyName")
-private var _IconName: ImageVector? = null
-
+@Suppress("ObjectPropertyName") private var _IconName: ImageVector? = null

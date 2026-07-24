@@ -26,13 +26,7 @@ import androidx.lifecycle.viewModelScope
 import com.github.yumelira.yumebox.core.model.RuntimeRule
 import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -73,9 +67,9 @@ class RulesViewModel(private val appContext: Context) : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isLoading = true, error = null) }
             runCatching {
-                    RuntimeAccess.connect(appContext)
-                    RuntimeAccess.core().queryRules()
-                }
+                RuntimeAccess.connect(appContext)
+                RuntimeAccess.core().queryRules()
+            }
                 .onSuccess { rules ->
                     _uiState.update {
                         it.copy(rules = rules, isLoading = false, isRunning = true, error = null)
@@ -100,8 +94,8 @@ class RulesViewModel(private val appContext: Context) : ViewModel() {
     }
 
     /**
-     * Toggle a single rule. Switch ON means the rule is **enabled** (disabled=false).
-     * PATCH /rules/disable uses { index: disabled }.
+     * Toggle a single rule. Switch ON means the rule is **enabled** (disabled=false). PATCH
+     * /rules/disable uses { index: disabled }.
      */
     fun setRuleEnabled(index: Int, enabled: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -120,9 +114,9 @@ class RulesViewModel(private val appContext: Context) : ViewModel() {
                     )
                 }
                 runCatching {
-                        RuntimeAccess.connect(appContext)
-                        RuntimeAccess.core().setRuleDisabled(originalRule, disabled)
-                    }
+                    RuntimeAccess.connect(appContext)
+                    RuntimeAccess.core().setRuleDisabled(originalRule, disabled)
+                }
                     .onSuccess { confirmedRules ->
                         _uiState.update {
                             it.copy(

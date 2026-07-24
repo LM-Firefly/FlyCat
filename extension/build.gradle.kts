@@ -76,7 +76,10 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             vcsInfo.include = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 
@@ -84,13 +87,15 @@ android {
         abi {
             isEnable = true
             reset()
-            val abiList = (gropify.abi.extension.list ?: "arm64-v8a,x86_64")
-                .split(',').map { it.trim() }.filter { it.isNotEmpty() }
-            // Qualify receiver so Kotlin does not resolve include() against Iterable from the chain.
-            @Suppress("SpreadOperator")
-            this@abi.include(*abiList.toTypedArray())
+            val abiList =
+                (gropify.abi.extension.list ?: "arm64-v8a,x86_64")
+                    .split(',')
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+            // Qualify receiver so Kotlin does not resolve include() against Iterable from the
+            // chain.
+            @Suppress("SpreadOperator") this@abi.include(*abiList.toTypedArray())
             isUniversalApk = false
         }
     }
 }
-

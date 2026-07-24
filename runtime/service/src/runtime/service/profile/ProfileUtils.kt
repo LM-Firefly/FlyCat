@@ -20,7 +20,7 @@
 
 package com.github.yumelira.yumebox.runtime.service.profile
 
-import java.util.UUID
+import java.util.*
 
 fun generateProfileUUID(): UUID {
     var result = UUID.randomUUID()

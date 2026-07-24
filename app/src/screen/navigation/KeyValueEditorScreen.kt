@@ -34,6 +34,7 @@ import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.`Badge-plus`
 import dev.chrisbanes.haze.hazeSource
+import java.util.*
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -44,7 +45,6 @@ import top.yukonga.miuix.kmp.icon.extended.AddCircle
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Reset
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
-import java.util.*
 
 object EditorDataHolder {
     var listEditorTitle: String = ""
@@ -477,8 +477,7 @@ private val ruleTypePresets =
         "MATCH",
     )
 
-private val ruleExtraSupportedTypes =
-    setOf("IP-CIDR", "IP-CIDR6", "IP-SUFFIX", "IP-ASN", "GEOIP")
+private val ruleExtraSupportedTypes = setOf("IP-CIDR", "IP-CIDR6", "IP-SUFFIX", "IP-ASN", "GEOIP")
 
 private fun supportsRuleExtra(ruleType: String): Boolean =
     ruleType.uppercase() in ruleExtraSupportedTypes
@@ -553,6 +552,7 @@ private fun KeyValueFormDialog(
                     normalizedKey.isBlank() -> YumeTxt.Component.Editor.Error.KeyEmpty
                     normalizedKey != currentEditingKey && normalizedKey in existingKeys ->
                         YumeTxt.Component.Editor.Error.KeyExists
+
                     else -> null
                 }
             if (error == null) {
@@ -599,8 +599,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
     }
     val selectedRuleTypeIndex =
         remember(ruleType) {
-            ruleTypePresets.indexOfFirst { it.equals(ruleType, ignoreCase = true) }
-                .coerceAtLeast(0)
+            ruleTypePresets.indexOfFirst { it.equals(ruleType, ignoreCase = true) }.coerceAtLeast(0)
         }
     val selectedTargetIndex = remember(target) { targetItems.indexOf(target).coerceAtLeast(0) }
 
@@ -612,7 +611,9 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
             val normalizedType = ruleType.trim().uppercase()
             val normalizedPayload = payloadTextFieldValue.text.trim()
 
-            if (target != YumeTxt.Component.Editor.Rule.TargetMatch && normalizedPayload.isBlank()) {
+            if (
+                target != YumeTxt.Component.Editor.Rule.TargetMatch && normalizedPayload.isBlank()
+            ) {
                 error = YumeTxt.Component.Editor.Rule.ErrorContentRequired
                 return@AppFormDialog
             }

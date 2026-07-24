@@ -20,11 +20,7 @@
 
 package com.github.yumelira.yumebox.screen.profiles
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_FILE
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_URL
@@ -66,5 +62,4 @@ internal class ProfileAddFormState {
 }
 
 @Composable
-internal fun rememberProfileAddFormState(): ProfileAddFormState =
-    remember { ProfileAddFormState() }
+internal fun rememberProfileAddFormState(): ProfileAddFormState = remember { ProfileAddFormState() }

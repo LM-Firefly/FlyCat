@@ -2,7 +2,7 @@ name: Deploy Website
 
 on:
   push:
-    branches: [Moe]
+    branches: [ Moe ]
     paths:
       - 'website/**'
       - '.github/workflows/deploy-website.yml'

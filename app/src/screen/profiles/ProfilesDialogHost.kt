@@ -61,7 +61,10 @@ internal fun ProfilesDialogHost(
             profilesViewModel.createProfile(type, name, source, interval, fileUri, ageSecretKey)
         },
         onUpdateProfile = { uuid, name, source, interval ->
-            profilesViewModel.patchProfile(uuid, ProfilePatch(name = name, source = source, interval = interval))
+            profilesViewModel.patchProfile(
+                uuid,
+                ProfilePatch(name = name, source = source, interval = interval),
+            )
         },
         onDownloadComplete = {
             state.isDownloading = false
@@ -203,7 +206,11 @@ private suspend fun saveProfileOverrides(
     if (OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID in overrideIds) {
         runCatching { routingBootstrapper.ensureDefaultContent() }
             .onFailure { error ->
-                Timber.e(error, "Failed to generate custom routing content for profile %s", profileId)
+                Timber.e(
+                    error,
+                    "Failed to generate custom routing content for profile %s",
+                    profileId,
+                )
                 context.toast(error.message ?: YumeTxt.ProfilesPage.SettingsDialog.CustomRouting)
             }
     }

@@ -43,7 +43,11 @@ object RuntimeServiceLauncher {
     // Only [RunMode.VpnService] is service-hosted; the root Tun/Tproxy daemons launch via
     // CoreProcess.startRoot (through RuntimeLauncher), not this launcher.
     @Synchronized
-    fun start(context: Context, mode: RunMode = RunMode.VpnService, source: String = SOURCE_UNKNOWN) {
+    fun start(
+        context: Context,
+        mode: RunMode = RunMode.VpnService,
+        source: String = SOURCE_UNKNOWN,
+    ) {
         val appContext = context.appContextOrSelf
         val logScope = RuntimeStartupLogStore.scopeForMode(mode)
         val startupLogStore = RuntimeStartupLogStore(appContext, logScope)
@@ -70,8 +74,10 @@ object RuntimeServiceLauncher {
             return
         }
 
-        // A Starting phase past the grace window with a live-but-stuck instance would swallow a new command
-        // (onCreate never re-runs). Ask it to recreate itself after releasing its old session, don't re-token.
+        // A Starting phase past the grace window with a live-but-stuck instance would swallow a new
+        // command
+        // (onCreate never re-runs). Ask it to recreate itself after releasing its old session,
+        // don't re-token.
         if (
             StatusProvider.queryRuntimePhase(mode) == RuntimePhase.Starting &&
                 StatusProvider.isLocalRuntimeServiceAlive(mode)

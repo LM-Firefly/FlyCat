@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
+import com.github.panpf.sketch.AsyncImage as SketchAsyncImage
 import com.github.panpf.sketch.request.ImageRequest
 import com.github.panpf.sketch.state.IntColorDrawableStateImage
 import com.github.yumelira.yumebox.core.model.Proxy
@@ -55,7 +56,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
-import com.github.panpf.sketch.AsyncImage as SketchAsyncImage
 
 private data class GroupBadge(val label: String)
 
@@ -102,7 +102,9 @@ internal fun NodeGroupCard(
         }
     val currentNodeName =
         remember(currentNode.displayName, group.now) {
-            currentNode.displayName.ifBlank { group.now.trim() }.ifBlank { YumeTxt.Proxy.Mode.Direct }
+            currentNode.displayName
+                .ifBlank { group.now.trim() }
+                .ifBlank { YumeTxt.Proxy.Mode.Direct }
         }
     val iconUri =
         remember(group.icon) {

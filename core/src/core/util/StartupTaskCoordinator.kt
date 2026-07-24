@@ -20,11 +20,7 @@
 
 package com.github.yumelira.yumebox.core.util
 
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import timber.log.Timber
 
 object StartupTaskCoordinator {
@@ -40,7 +36,8 @@ object StartupTaskCoordinator {
             warmup = scope.async {
                 try {
                     block()
-                } catch (error: Throwable) { // fault barrier: log any warmup failure before rethrowing
+                } catch (
+                    error: Throwable) { // fault barrier: log any warmup failure before rethrowing
                     if (error is CancellationException) throw error
                     Timber.e(error, "Runtime warmup failed")
                     throw error

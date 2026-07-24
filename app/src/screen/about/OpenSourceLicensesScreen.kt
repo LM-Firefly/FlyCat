@@ -26,7 +26,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,7 +61,9 @@ fun OpenSourceLicensesScreen(navigator: Navigator) {
     val libraryItems = remember(libraries) { libraries?.libraries.orEmpty() }
 
     Scaffold(
-        topBar = { TopBar(title = YumeTxt.OpenSourceLicenses.Title, scrollBehavior = scrollBehavior) }
+        topBar = {
+            TopBar(title = YumeTxt.OpenSourceLicenses.Title, scrollBehavior = scrollBehavior)
+        }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
@@ -181,6 +185,4 @@ private fun LicenseChip(licenseName: String) {
 
 /** Prefer website, then SCM url — both come from the artifact pom. */
 private val Library.projectUrl: String?
-    get() =
-        website?.takeIf { it.isNotBlank() }
-            ?: scm?.url?.takeIf { it.isNotBlank() }
+    get() = website?.takeIf { it.isNotBlank() } ?: scm?.url?.takeIf { it.isNotBlank() }

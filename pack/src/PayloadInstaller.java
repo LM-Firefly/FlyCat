@@ -3,11 +3,7 @@ package dev.yume.loader;
 import android.content.pm.ApplicationInfo;
 import android.os.Build;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,10 +14,11 @@ import java.util.zip.ZipFile;
 import dalvik.system.DexClassLoader;
 
 final class PayloadInstaller {
-    private static volatile Installation installedPayload;
     private static final String CACHE_MARKER = ".complete";
+    private static volatile Installation installedPayload;
 
-    private PayloadInstaller() {}
+    private PayloadInstaller() {
+    }
 
     static Installation install(ApplicationInfo appInfo, ClassLoader parentLoader, Object loadedApk) {
         Installation current = installedPayload;

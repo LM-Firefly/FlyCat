@@ -24,12 +24,7 @@ import com.github.yumelira.yumebox.core.model.Proxy
 import com.github.yumelira.yumebox.data.model.ProxySortMode
 import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 
 internal class ProxyGroupSorter {
     private data class SortedGroupCacheEntry(
@@ -79,6 +74,7 @@ internal class ProxyGroupSorter {
                     )
                     .takeUnless { it.hasSameProxyOrderAs(proxies) } ?: proxies
             }
+
             ProxySortMode.BY_LATENCY -> {
                 val originalIndex =
                     originalOrder.withIndex().associate { (index, name) -> name to index }
@@ -134,9 +130,12 @@ internal class ProxyGroupSorter {
         val nextCache = HashMap<String, SortedGroupCacheEntry>(groups.size)
         val results = groups.map { group ->
             val originalOrder = originalOrderCache[group.name].orEmpty()
-            val cached = previousCache[group.name]?.takeIf { entry ->
-                entry.sourceGroup == group && entry.sortMode == mode && entry.originalOrder == originalOrder
-            }
+            val cached =
+                previousCache[group.name]?.takeIf { entry ->
+                    entry.sourceGroup == group &&
+                        entry.sortMode == mode &&
+                        entry.originalOrder == originalOrder
+                }
             if (cached != null) {
                 nextCache[group.name] = cached
                 cached.result

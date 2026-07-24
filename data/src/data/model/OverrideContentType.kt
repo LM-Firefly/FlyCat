@@ -33,6 +33,7 @@ enum class OverrideContentType(val extension: String) {
             when (extension?.lowercase()?.removePrefix(".")) {
                 "yaml",
                 "yml" -> Yaml
+
                 "js" -> JavaScript
                 else -> null
             }

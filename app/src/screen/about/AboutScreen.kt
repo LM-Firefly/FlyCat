@@ -38,20 +38,20 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.BuildConfig
-import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.common.util.openUrl
+import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import tf.gal.yumebox.locale.YumeTxt
-import com.github.yumelira.yumebox.runtime.service.session.RuntimeStartupLogStore
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
+import com.github.yumelira.yumebox.runtime.service.session.RuntimeStartupLogStore
 import java.io.IOException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -113,7 +113,7 @@ fun AboutScreen(navigator: Navigator) {
                                                 ),
                                             center = Offset(size.width * 0.08f, size.height * 0.1f),
                                             radius = size.width * 0.45f,
-                                        ),
+                                        )
                                 )
                                 drawRect(
                                     brush =
@@ -123,9 +123,10 @@ fun AboutScreen(navigator: Navigator) {
                                                     AppNameGradient.last().copy(alpha = 0.06f),
                                                     Color.Transparent,
                                                 ),
-                                            center = Offset(size.width * 0.92f, size.height * 0.95f),
+                                            center =
+                                                Offset(size.width * 0.92f, size.height * 0.95f),
                                             radius = size.width * 0.5f,
-                                        ),
+                                        )
                                 )
                             },
                         contentAlignment = Alignment.Center,
@@ -202,13 +203,18 @@ fun AboutScreen(navigator: Navigator) {
                     ArrowPreference(
                         title = YumeTxt.About.Support.ExportLogs,
                         onClick = {
-                            exportLogsLauncher.launch("yumebox_startup_logs_${System.currentTimeMillis()}.zip")
+                            exportLogsLauncher.launch(
+                                "yumebox_startup_logs_${System.currentTimeMillis()}.zip"
+                            )
                         },
                     )
                     ArrowPreference(
                         title = YumeTxt.About.Support.ReportIssue,
                         onClick = {
-                            openUrl(context, "https://github.com/YumeYucca/YumeBox/issues/new/choose")
+                            openUrl(
+                                context,
+                                "https://github.com/YumeYucca/YumeBox/issues/new/choose",
+                            )
                         },
                     )
                 }
@@ -248,11 +254,10 @@ private fun exportStartupLogs(context: Context, targetUri: Uri): Boolean {
             RuntimeStartupLogStore.Scope.LOCAL_TUN to
                 RuntimeStartupLogStore(context, RuntimeStartupLogStore.Scope.LOCAL_TUN).snapshot(),
         )
-    val coreDiagnostics =
-        runCatching {
-                CoreProcess.coreDiagnosticLog(context)
-            }
-            .getOrDefault("")
+    val coreDiagnostics = runCatching {
+        CoreProcess.coreDiagnosticLog(context)
+    }
+        .getOrDefault("")
     return try {
         context.contentResolver.openOutputStream(targetUri)?.use { output ->
             ZipOutputStream(output).use { zip ->

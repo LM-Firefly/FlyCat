@@ -79,8 +79,7 @@ internal fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit)
         content = {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
+                    Modifier.fillMaxWidth()
                         .heightIn(max = contentMaxHeight)
                         .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -93,7 +92,8 @@ internal fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit)
                         (slideInHorizontally(tween(320)) { w -> if (forward) w else -w } +
                             fadeIn(tween(220))) togetherWith
                             (slideOutHorizontally(tween(320)) { w -> if (forward) -w else w } +
-                                fadeOut(tween(180))) using SizeTransform(clip = false)
+                                fadeOut(tween(180))) using
+                            SizeTransform(clip = false)
                     },
                     label = "guide_page",
                 ) { p ->

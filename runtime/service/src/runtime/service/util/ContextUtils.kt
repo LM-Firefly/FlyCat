@@ -24,7 +24,7 @@ import android.content.Context
 import android.content.Intent
 import com.github.yumelira.yumebox.runtime.api.Intents
 import java.io.File
-import java.util.UUID
+import java.util.*
 
 val Context.importedDir: File
     get() = filesDir.resolve("imported")
@@ -75,8 +75,8 @@ fun Context.sendRuntimeStopped(reason: String?) {
 
 /**
  * Nudge the QS tile to re-read the runtime state. The tile only self-refreshes while its panel is
- * open (onStartListening); without this, starting/stopping from the app UI leaves it stale. This asks
- * the system to call onStartListening even when the panel is closed.
+ * open (onStartListening); without this, starting/stopping from the app UI leaves it stale. This
+ * asks the system to call onStartListening even when the panel is closed.
  */
 private fun Context.requestTileRefresh() {
     runCatching {

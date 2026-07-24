@@ -50,7 +50,10 @@ object CodeFormatter {
     private fun formatYaml(content: String): String? =
         try {
             content.lines().map { it.trimEnd() }.joinToString("\n").replace(Regex("\n{3,}"), "\n\n")
-        } catch (_: Exception) { // fault barrier: formatter must return null instead of crashing the editor
+        } catch (
+            _:
+                Exception) { // fault barrier: formatter must return null instead of crashing the
+                             // editor
             null
         }
 }

@@ -51,10 +51,10 @@ object RootAccessSupport {
             }
 
             runCatching {
-                    Shell.getShell(Shell.EXECUTOR) { shell ->
-                        resume(runCatching { shell.isRoot }.getOrDefault(false))
-                    }
+                Shell.getShell(Shell.EXECUTOR) { shell ->
+                    resume(runCatching { shell.isRoot }.getOrDefault(false))
                 }
+            }
                 .onFailure { resume(false) }
         }
 

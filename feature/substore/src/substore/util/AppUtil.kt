@@ -34,58 +34,58 @@ object AppUtil {
 
     private fun createRootJson() {
         runCatching {
-                val rootJsonFile = File(SubStorePaths.dataDir, "root.json")
-                rootJsonFile.parentFile?.mkdirs()
-                if (!rootJsonFile.exists()) rootJsonFile.writeText("{}")
-            }
+            val rootJsonFile = File(SubStorePaths.dataDir, "root.json")
+            rootJsonFile.parentFile?.mkdirs()
+            if (!rootJsonFile.exists()) rootJsonFile.writeText("{}")
+        }
             .onFailure { error -> timber.log.Timber.e(error, "Create root.json failed") }
     }
 
     private fun extractBackendFile() {
         runCatching {
-                val assetManager = Global.application.assets
-                SubStorePaths.backendDir.mkdirs()
-                assetManager.open("backend/sub-store.bundle.js").use { inputStream ->
-                    SubStorePaths.backendBundle.outputStream().use { outputStream ->
-                        inputStream.copyTo(outputStream)
-                    }
+            val assetManager = Global.application.assets
+            SubStorePaths.backendDir.mkdirs()
+            assetManager.open("backend/sub-store.bundle.js").use { inputStream ->
+                SubStorePaths.backendBundle.outputStream().use { outputStream ->
+                    inputStream.copyTo(outputStream)
                 }
             }
+        }
             .onFailure { error -> timber.log.Timber.e(error, "Extract backend bundle failed") }
     }
 
     private fun extractFrontendDist() {
         runCatching {
-                val assetManager = Global.application.assets
-                val cacheDir = Global.application.cacheDir
+            val assetManager = Global.application.assets
+            val cacheDir = Global.application.cacheDir
 
-                val zipPath = File(cacheDir, "substore_frontend.zip")
-                assetManager.open("frontend/dist.zip").use { inputStream ->
-                    zipPath.outputStream().use { outputStream -> inputStream.copyTo(outputStream) }
-                }
-
-                val stagingDir =
-                    File(cacheDir, "substore_frontend_stage").apply {
-                        if (exists()) deleteRecursively()
-                        mkdirs()
-                    }
-
-                val unzipSuccess = ArchiveUtil.unzipZip(zipPath, stagingDir)
-                if (!unzipSuccess) {
-                    throw IllegalStateException("Sub-Store 前端资源解压失败")
-                }
-
-                val extractedRoot = File(stagingDir, "dist").takeIf { it.exists() } ?: stagingDir
-                val targetDir = SubStorePaths.frontendDir
-                targetDir.parentFile?.mkdirs()
-                if (targetDir.exists()) {
-                    targetDir.deleteRecursively()
-                }
-                extractedRoot.copyRecursively(targetDir, overwrite = true)
-
-                stagingDir.deleteRecursively()
-                zipPath.delete()
+            val zipPath = File(cacheDir, "substore_frontend.zip")
+            assetManager.open("frontend/dist.zip").use { inputStream ->
+                zipPath.outputStream().use { outputStream -> inputStream.copyTo(outputStream) }
             }
+
+            val stagingDir =
+                File(cacheDir, "substore_frontend_stage").apply {
+                    if (exists()) deleteRecursively()
+                    mkdirs()
+                }
+
+            val unzipSuccess = ArchiveUtil.unzipZip(zipPath, stagingDir)
+            if (!unzipSuccess) {
+                throw IllegalStateException("Sub-Store 前端资源解压失败")
+            }
+
+            val extractedRoot = File(stagingDir, "dist").takeIf { it.exists() } ?: stagingDir
+            val targetDir = SubStorePaths.frontendDir
+            targetDir.parentFile?.mkdirs()
+            if (targetDir.exists()) {
+                targetDir.deleteRecursively()
+            }
+            extractedRoot.copyRecursively(targetDir, overwrite = true)
+
+            stagingDir.deleteRecursively()
+            zipPath.delete()
+        }
             .onFailure { error -> timber.log.Timber.e(error, "Extract frontend assets failed") }
     }
 }

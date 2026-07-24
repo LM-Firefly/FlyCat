@@ -1015,11 +1015,10 @@ fun analyzePresetTemplateContent(content: String?): OverridePresetTemplateConten
                 matchesTemplateExactly = false,
             )
 
-    val generatedDocument =
-        runCatching {
-                buildPresetTemplateYaml(selection).let(YamlCodec::loadValue).asStringKeyedMap()
-            }
-            .getOrNull()
+    val generatedDocument = runCatching {
+        buildPresetTemplateYaml(selection).let(YamlCodec::loadValue).asStringKeyedMap()
+    }
+        .getOrNull()
 
     return OverridePresetTemplateContentAnalysis(
         selection = selection,
@@ -1108,9 +1107,9 @@ fun buildPresetTemplateYaml(selection: OverridePresetTemplateSelection): String 
 
     val yamlContent = YamlCodec.dumpMap(document)
     runCatching {
-            YamlCodec.validate(yamlContent)
-            YamlCodec.loadMap(yamlContent)
-        }
+        YamlCodec.validate(yamlContent)
+        YamlCodec.loadMap(yamlContent)
+    }
         .getOrElse { error ->
             throw IllegalStateException(
                 "Custom routing YAML self-check failed: ${error.message}",
@@ -1252,6 +1251,7 @@ private fun buildHealthCheckGroup(
         when (type) {
             OfficialMrsHealthCheckGroupType.UrlTest ->
                 officialMrsCatalogIconUrl("Urltest").orEmpty()
+
             OfficialMrsHealthCheckGroupType.Fallback ->
                 officialMrsCatalogIconUrl("Available").orEmpty()
         },
@@ -1299,16 +1299,16 @@ private fun buildServiceSelectGroup(
         put(
             "proxies",
             buildList {
-                    add("Proxy")
-                    add("DIRECT")
-                    if (enableUrlTestGroup) {
-                        add(OFFICIAL_MRS_AUTO_GROUP_NAME)
-                    }
-                    if (enableFallbackGroup) {
-                        add(OFFICIAL_MRS_FALLBACK_GROUP_NAME)
-                    }
-                    addAll(regionNames)
+                add("Proxy")
+                add("DIRECT")
+                if (enableUrlTestGroup) {
+                    add(OFFICIAL_MRS_AUTO_GROUP_NAME)
                 }
+                if (enableFallbackGroup) {
+                    add(OFFICIAL_MRS_FALLBACK_GROUP_NAME)
+                }
+                addAll(regionNames)
+            }
                 .distinct(),
         )
     }
@@ -1318,17 +1318,16 @@ private fun buildSelectableGroupNames(
     regionNames: List<String>,
     enableUrlTestGroup: Boolean,
     enableFallbackGroup: Boolean,
-): List<String> =
-    buildList {
-            if (enableUrlTestGroup) {
-                add(OFFICIAL_MRS_AUTO_GROUP_NAME)
-            }
-            if (enableFallbackGroup) {
-                add(OFFICIAL_MRS_FALLBACK_GROUP_NAME)
-            }
-            addAll(regionNames)
-        }
-        .distinct()
+): List<String> = buildList {
+    if (enableUrlTestGroup) {
+        add(OFFICIAL_MRS_AUTO_GROUP_NAME)
+    }
+    if (enableFallbackGroup) {
+        add(OFFICIAL_MRS_FALLBACK_GROUP_NAME)
+    }
+    addAll(regionNames)
+}
+    .distinct()
 
 private fun combineOfficialMrsExcludeFilters(extraExcludeFilter: String?): String =
     listOf(OFFICIAL_MRS_EXCLUDE_FILTER, extraExcludeFilter).filterNotNull().joinToString("|")

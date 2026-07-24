@@ -103,45 +103,45 @@ class FeatureViewModel(
 
     val screenState: StateFlow<FeatureScreenState> =
         combine(
-            combine(
-                serviceRunningState,
-                allowLanAccess.state,
-                frontendPort.state,
-                backendPort.state,
-                autoCloseMode,
-            ) { running, lan, front, back, autoClose ->
-                FeatureScreenState(
-                    isServiceRunning = running,
-                    allowLanAccess = lan,
-                    frontendPort = front,
-                    backendPort = back,
-                    autoCloseMode = autoClose,
+                combine(
+                    serviceRunningState,
+                    allowLanAccess.state,
+                    frontendPort.state,
+                    backendPort.state,
+                    autoCloseMode,
+                ) { running, lan, front, back, autoClose ->
+                    FeatureScreenState(
+                        isServiceRunning = running,
+                        allowLanAccess = lan,
+                        frontendPort = front,
+                        backendPort = back,
+                        autoCloseMode = autoClose,
+                    )
+                },
+                combine(
+                    isDownloadingSubStoreFrontend,
+                    isDownloadingSubStoreBackend,
+                    isExtensionInstalled,
+                    isJavetLoaded,
+                    selectedPanelType.state,
+                ) { dlFront, dlBack, ext, javet, panel ->
+                    FeatureScreenState(
+                        isDownloadingSubStoreFrontend = dlFront,
+                        isDownloadingSubStoreBackend = dlBack,
+                        isExtensionInstalled = ext,
+                        isJavetLoaded = javet,
+                        selectedPanelType = panel,
+                    )
+                },
+            ) { base, extra ->
+                base.copy(
+                    isDownloadingSubStoreFrontend = extra.isDownloadingSubStoreFrontend,
+                    isDownloadingSubStoreBackend = extra.isDownloadingSubStoreBackend,
+                    isExtensionInstalled = extra.isExtensionInstalled,
+                    isJavetLoaded = extra.isJavetLoaded,
+                    selectedPanelType = extra.selectedPanelType,
                 )
-            },
-            combine(
-                isDownloadingSubStoreFrontend,
-                isDownloadingSubStoreBackend,
-                isExtensionInstalled,
-                isJavetLoaded,
-                selectedPanelType.state,
-            ) { dlFront, dlBack, ext, javet, panel ->
-                FeatureScreenState(
-                    isDownloadingSubStoreFrontend = dlFront,
-                    isDownloadingSubStoreBackend = dlBack,
-                    isExtensionInstalled = ext,
-                    isJavetLoaded = javet,
-                    selectedPanelType = panel,
-                )
-            },
-        ) { base, extra ->
-            base.copy(
-                isDownloadingSubStoreFrontend = extra.isDownloadingSubStoreFrontend,
-                isDownloadingSubStoreBackend = extra.isDownloadingSubStoreBackend,
-                isExtensionInstalled = extra.isExtensionInstalled,
-                isJavetLoaded = extra.isJavetLoaded,
-                selectedPanelType = extra.selectedPanelType,
-            )
-        }
+            }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -161,16 +161,16 @@ class FeatureViewModel(
         if (!checkSubStoreReadiness()) return
         viewModelScope.launch {
             runCatching {
-                    SubStoreServiceController.startService(
-                        context = application,
-                        request =
-                            SubStoreServiceRequest(
-                                backendPort = backendPort.value,
-                                frontendPort = frontendPort.value,
-                                allowLan = allowLanAccess.value,
-                            ),
-                    )
-                }
+                SubStoreServiceController.startService(
+                    context = application,
+                    request =
+                        SubStoreServiceRequest(
+                            backendPort = backendPort.value,
+                            frontendPort = frontendPort.value,
+                            allowLan = allowLanAccess.value,
+                        ),
+                )
+            }
                 .onSuccess { setupAutoCloseTimer() }
                 .onFailure { error -> showToast(error.message ?: YumeTxt.Util.Error.UnknownError) }
         }
@@ -217,12 +217,11 @@ class FeatureViewModel(
         viewModelScope.launch(Dispatchers.IO) { refreshSubStoreStatus() }
     }
 
-    private fun checkExtensionInstalled(): Boolean =
-        runCatching {
-                application.packageManager.getApplicationInfo(EXTENSION_PACKAGE_NAME, 0)
-                true
-            }
-            .getOrDefault(false)
+    private fun checkExtensionInstalled(): Boolean = runCatching {
+        application.packageManager.getApplicationInfo(EXTENSION_PACKAGE_NAME, 0)
+        true
+    }
+        .getOrDefault(false)
 
     private fun initializeJavetStatus() {
         if (!_isExtensionInstalled.value) {
@@ -321,12 +320,12 @@ class FeatureViewModel(
         viewModelScope.launch {
             loadingState.value = true
             runCatching {
-                    val success = action()
-                    showToast(if (success) successMessage else failureMessage)
-                    if (success) {
-                        _isSubStoreInitialized.value = SubStorePaths.isResourcesReady()
-                    }
+                val success = action()
+                showToast(if (success) successMessage else failureMessage)
+                if (success) {
+                    _isSubStoreInitialized.value = SubStorePaths.isResourcesReady()
                 }
+            }
                 .onFailure { error ->
                     showToast(
                         YumeTxt.Feature.SubStore.DownloadError.format(

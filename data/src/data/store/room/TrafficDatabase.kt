@@ -24,11 +24,12 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [
-        AppTrafficDailyEntity::class,
-        RouteTrafficDailyEntity::class,
-        TrafficHourlyEntity::class,
-    ],
+    entities =
+        [
+            AppTrafficDailyEntity::class,
+            RouteTrafficDailyEntity::class,
+            TrafficHourlyEntity::class,
+        ],
     version = 2,
     exportSchema = true,
 )

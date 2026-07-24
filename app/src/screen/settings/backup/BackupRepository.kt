@@ -24,14 +24,7 @@ import android.app.Application
 import android.content.Intent
 import com.github.yumelira.yumebox.BuildConfig
 import com.github.yumelira.yumebox.core.util.moeWallpaperFile
-import com.github.yumelira.yumebox.data.store.AppSettingsStore
-import com.github.yumelira.yumebox.data.store.FeatureStore
-import com.github.yumelira.yumebox.data.store.MMKVProvider
-import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
-import com.github.yumelira.yumebox.data.store.Preference
-import com.github.yumelira.yumebox.data.store.ProfileLinksStore
-import com.github.yumelira.yumebox.data.store.ProxyDisplaySettingsStore
-import com.github.yumelira.yumebox.data.store.RemoteControllerStore
+import com.github.yumelira.yumebox.data.store.*
 import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
@@ -39,15 +32,13 @@ import com.github.yumelira.yumebox.runtime.service.profile.ProfileStore
 import com.github.yumelira.yumebox.runtime.service.util.importedDir
 import com.github.yumelira.yumebox.substore.SubStorePaths
 import com.github.yumelira.yumebox.substore.SubStoreServiceController
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
+import java.util.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class BackupRepository(
     private val application: Application,
@@ -250,7 +241,8 @@ class BackupRepository(
         applyProfileLinks(extracted.payload.profileLinks)
         applyRemoteController(extracted.payload.remoteController)
         applyProfiles(extracted.payload.profiles)
-        ServiceStore().activeProfile = extracted.payload.service.activeProfile?.let(UUID::fromString)
+        ServiceStore().activeProfile =
+            extracted.payload.service.activeProfile?.let(UUID::fromString)
 
         replaceBackupDirectory(extracted.importedDir, application.importedDir)
         replaceBackupDirectory(extracted.overridesDir, application.filesDir.resolve("overrides"))
@@ -272,14 +264,12 @@ class BackupRepository(
 
     private suspend fun notifyRestored() {
         application.sendBroadcast(
-            Intent(Intents.actionProfileChanged(application.packageName)).setPackage(
-                application.packageName
-            )
+            Intent(Intents.actionProfileChanged(application.packageName))
+                .setPackage(application.packageName)
         )
         application.sendBroadcast(
-            Intent(Intents.actionOverrideChanged(application.packageName)).setPackage(
-                application.packageName
-            )
+            Intent(Intents.actionOverrideChanged(application.packageName))
+                .setPackage(application.packageName)
         )
         runCatching { proxyFacade.reconcileRuntimeState() }
     }
@@ -481,7 +471,6 @@ class BackupRepository(
             deleteRecursively()
             mkdirs()
         }
-
 }
 
 internal fun replaceBackupDirectory(source: File, target: File) {

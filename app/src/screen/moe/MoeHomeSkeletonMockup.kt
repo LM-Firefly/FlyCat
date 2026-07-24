@@ -164,7 +164,11 @@ internal fun MoeHomeSkeletonMockup(
                     verticalArrangement = Arrangement.spacedBy(11.dp),
                 ) {
                     repeat(3) {
-                        Box(Modifier.size(13.dp).clip(RoundedCornerShape(4.dp)).background(palette.mask))
+                        Box(
+                            Modifier.size(13.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(palette.mask)
+                        )
                     }
                 }
 
@@ -216,7 +220,11 @@ internal fun MoeHomeSkeletonMockup(
                                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Box(Modifier.size(10.dp).clip(CircleShape).background(palette.onHero))
+                                Box(
+                                    Modifier.size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(palette.onHero)
+                                )
                                 Box(
                                     Modifier.width(46.dp)
                                         .height(7.dp)
@@ -567,7 +575,9 @@ private fun PhotoPickerSheet(sheetProgress: Float, modifier: Modifier = Modifier
                                     Modifier.weight(1f)
                                         .fillMaxHeight()
                                         .clip(RoundedCornerShape(5.dp))
-                                        .background(if (isCamera) palette.mask else palette.maskStrong),
+                                        .background(
+                                            if (isCamera) palette.mask else palette.maskStrong
+                                        ),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 if (isCamera) {

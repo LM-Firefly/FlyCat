@@ -35,8 +35,8 @@ class Channel(private val fd: Int) {
     private val fdHolder = IntArray(1)
 
     /**
-     * Read one datagram into [buffer] at [offset]/[length]. Returns the number of bytes read
-     * (0 means the peer closed the channel). If the peer attached a descriptor, it is returned;
+     * Read one datagram into [buffer] at [offset]/[length]. Returns the number of bytes read (0
+     * means the peer closed the channel). If the peer attached a descriptor, it is returned;
      * otherwise the returned fd is -1.
      */
     fun readMessage(buffer: ByteArray, offset: Int, length: Int): ReadResult {

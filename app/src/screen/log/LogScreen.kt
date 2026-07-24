@@ -28,29 +28,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.pointer.pointerInput
@@ -62,18 +44,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.core.model.LogMessage
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.CenteredText
-import com.github.yumelira.yumebox.presentation.component.CollapsedSearchBar
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.SearchBarPadding
-import com.github.yumelira.yumebox.presentation.component.SearchPager
-import com.github.yumelira.yumebox.presentation.component.SearchStatus
-import com.github.yumelira.yumebox.presentation.component.TopAppBarAnim
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Share
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
@@ -156,12 +128,12 @@ fun LogScreen(navigator: Navigator) {
 
     LaunchedEffect(listState) {
         snapshotFlow {
-                Triple(
-                    listState.isScrollInProgress,
-                    listState.firstVisibleItemIndex,
-                    listState.firstVisibleItemScrollOffset,
-                )
-            }
+            Triple(
+                listState.isScrollInProgress,
+                listState.firstVisibleItemIndex,
+                listState.firstVisibleItemScrollOffset,
+            )
+        }
             .collectLatest { (scrolling, index, offset) ->
                 val atTop = index == 0 && offset == 0
                 if (scrolling || atTop) followLatest = atTop
@@ -169,12 +141,12 @@ fun LogScreen(navigator: Navigator) {
     }
     LaunchedEffect(searchListState) {
         snapshotFlow {
-                Triple(
-                    searchListState.isScrollInProgress,
-                    searchListState.firstVisibleItemIndex,
-                    searchListState.firstVisibleItemScrollOffset,
-                )
-            }
+            Triple(
+                searchListState.isScrollInProgress,
+                searchListState.firstVisibleItemIndex,
+                searchListState.firstVisibleItemScrollOffset,
+            )
+        }
             .collectLatest { (scrolling, index, offset) ->
                 val atTop = index == 0 && offset == 0
                 if (scrolling || atTop) followLatestInSearch = atTop
@@ -305,7 +277,7 @@ fun LogScreen(navigator: Navigator) {
                         },
                     )
                 }
-            },
+            }
         ) { innerPadding ->
             if (currentSearchStatus.shouldCollapse()) {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -327,8 +299,7 @@ fun LogScreen(navigator: Navigator) {
                                         // New head fades in; existing rows keep placement
                                         // so they slide down as newer logs push from top.
                                         fadeInSpec = tween(160, easing = FastOutSlowInEasing),
-                                        placementSpec =
-                                            tween(260, easing = FastOutSlowInEasing),
+                                        placementSpec = tween(260, easing = FastOutSlowInEasing),
                                         fadeOutSpec = tween(100),
                                     ),
                             )
@@ -339,12 +310,14 @@ fun LogScreen(navigator: Navigator) {
                         val (firstLine, secondLine) =
                             when {
                                 connectionState == LogConnectionState.Connecting ->
-                                    YumeTxt.Log.Empty.Connecting to
-                                        YumeTxt.Log.Empty.ConnectingHint
+                                    YumeTxt.Log.Empty.Connecting to YumeTxt.Log.Empty.ConnectingHint
+
                                 connectionState == LogConnectionState.Retrying ->
                                     YumeTxt.Log.Empty.Retrying to YumeTxt.Log.Empty.RetryingHint
+
                                 levelFilter != LogLevelFilter.All ->
                                     YumeTxt.Log.Empty.NoMatch to levelFilter.displayName()
+
                                 else -> YumeTxt.Log.Empty.NoLogs to YumeTxt.Log.Empty.LiveHint
                             }
                         CenteredText(firstLine = firstLine, secondLine = secondLine)
@@ -472,7 +445,8 @@ private fun LogEntryRow(
 
 private fun copyLogEntry(context: Context, entry: LiveLogEntry) {
     val text = "[${entry.time}] [${entry.level.name}] ${entry.message}"
-    context.getSystemService(ClipboardManager::class.java)
+    context
+        .getSystemService(ClipboardManager::class.java)
         ?.setPrimaryClip(ClipData.newPlainText("YumeBox log", text))
     context.toast(YumeTxt.Log.Action.Copied)
 }

@@ -25,6 +25,7 @@ import android.content.pm.ComponentInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import com.android.tools.smali.dexlib2.dexbacked.DexBackedDexFile
+import com.github.yumelira.yumebox.screen.settings.ChinaAppDetector.Companion.MAX_SCANNABLE_DEX_BYTES
 import com.tencent.mmkv.MMKV
 import java.io.File
 import java.util.zip.ZipFile
@@ -36,21 +37,19 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 
 /**
- * Heuristic detector for apps of Chinese origin, used by the access-control
- * region quick select. Detection escalates through four tiers:
+ * Heuristic detector for apps of Chinese origin, used by the access-control region quick select.
+ * Detection escalates through four tiers:
  *
  * 1. skip allowlist (well-known overseas vendors) -> not China;
  * 2. package-name heuristics (`cn.` segments + vendor/SDK prefix regex) -> China;
- * 3. manifest component class names matched against the same prefix regex
- *    (catches apps embedding Tencent/Umeng/Bugly/... SDK components);
- * 4. APK deep scan: a `firebase-*` zip entry short-circuits to NOT China,
- *    otherwise dex class names are prefix-matched against the China vendor/SDK
- *    package prefixes; oversized (>100 MB) or unparsable dex entries are
- *    skipped as inconclusive.
+ * 3. manifest component class names matched against the same prefix regex (catches apps embedding
+ *    Tencent/Umeng/Bugly/... SDK components);
+ * 4. APK deep scan: a `firebase-*` zip entry short-circuits to NOT China, otherwise dex class names
+ *    are prefix-matched against the China vendor/SDK package prefixes; oversized (>100 MB) or
+ *    unparsable dex entries are skipped as inconclusive.
  *
- * Tier 3/4 verdicts are cached in a dedicated MMKV keyed by package name and
- * invalidated via the app's lastUpdateTime, so only the first scan after an
- * (un)install is expensive.
+ * Tier 3/4 verdicts are cached in a dedicated MMKV keyed by package name and invalidated via the
+ * app's lastUpdateTime, so only the first scan after an (un)install is expensive.
  */
 class ChinaAppDetector(context: Context) {
     data class Candidate(val packageName: String, val lastUpdateTime: Long)
@@ -60,9 +59,9 @@ class ChinaAppDetector(context: Context) {
     private val cache by lazy { MMKV.mmkvWithID(CACHE_ID) }
 
     /**
-     * Deep scans buffer whole dex entries in memory (up to [MAX_SCANNABLE_DEX_BYTES] each),
-     * so unbounded parallelism could transiently hold hundreds of MB. Fast-path prefix
-     * checks stay fully parallel; only the expensive scan path is throttled.
+     * Deep scans buffer whole dex entries in memory (up to [MAX_SCANNABLE_DEX_BYTES] each), so
+     * unbounded parallelism could transiently hold hundreds of MB. Fast-path prefix checks stay
+     * fully parallel; only the expensive scan path is throttled.
      */
     private val deepScanPermits = Semaphore(MAX_CONCURRENT_DEEP_SCANS)
 
@@ -98,8 +97,8 @@ class ChinaAppDetector(context: Context) {
 
     private fun cachedDeepScan(candidate: Candidate): Boolean {
         cache.decodeString(candidate.packageName)?.let { cached ->
-            val (stamp, verdict) = cached.split('|', limit = 2).takeIf { it.size == 2 }
-                ?: return@let
+            val (stamp, verdict) =
+                cached.split('|', limit = 2).takeIf { it.size == 2 } ?: return@let
             if (stamp == candidate.lastUpdateTime.toString()) {
                 return verdict.toBoolean()
             }

@@ -25,27 +25,16 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
-import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
-import com.github.yumelira.yumebox.core.model.LogMessage
-import com.github.yumelira.yumebox.core.model.Provider
-import com.github.yumelira.yumebox.core.model.ProxyGroup
-import com.github.yumelira.yumebox.core.model.ProxySort
-import com.github.yumelira.yumebox.core.model.TunnelState
-import com.github.yumelira.yumebox.core.model.UiConfiguration
+import com.github.yumelira.yumebox.core.model.*
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.runBlocking
-import timber.log.Timber
 import kotlin.math.min
+import kotlinx.coroutines.*
+import timber.log.Timber
 
 // Established runtime session seam (owner-token lifecycle + snapshot + core control); splitting
 // is tracked separately.
@@ -60,7 +49,10 @@ class SessionRuntime(
     /** Drives the running local core over REST-over-unix (traffic/groups/connections/…). */
     private val rest
         get() =
-            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(host.context.appContextOrSelf)
+            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(
+                host.context.appContextOrSelf
+            )
+
     private val proxyGroupResolver =
         RuntimeProxyGroupResolver(compiledConfigPipeline, host.context.appContextOrSelf)
     private val lock = Any()
@@ -108,9 +100,9 @@ class SessionRuntime(
         synchronized(lock) {
             clearInterruptRequest()
             runCatching {
-                    body()
-                    RuntimeOperationResult(success = true)
-                }
+                body()
+                RuntimeOperationResult(success = true)
+            }
                 .getOrElse { error ->
                     if (error is RuntimeInterruptedException) {
                         startupLog(spec, "session: $name interrupted reason=${error.message}")
@@ -127,9 +119,9 @@ class SessionRuntime(
         requestStop(reason)
         return synchronized(lock) {
             runCatching {
-                    stopInternal(reason = reason, notifyHost = true)
-                    RuntimeOperationResult(success = true)
-                }
+                stopInternal(reason = reason, notifyHost = true)
+                RuntimeOperationResult(success = true)
+            }
                 .getOrElse { error ->
                     RuntimeOperationResult(
                         success = false,
@@ -172,20 +164,22 @@ class SessionRuntime(
     private inline fun <T> ifRunning(fallback: T, block: () -> T): T =
         if (currentSnapshot.phase == RuntimePhase.Running) block() else fallback
 
-    fun queryConnections(): ConnectionSnapshot = ifRunning(ConnectionSnapshot()) { rest.queryConnections() }
+    fun queryConnections(): ConnectionSnapshot =
+        ifRunning(ConnectionSnapshot()) { rest.queryConnections() }
 
     fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> {
         if (currentSnapshot.phase != RuntimePhase.Running) return emptyList()
-        val groups =
-            runCatching { resolveRuntimeProxyGroups(excludeNotSelectable) }
-                .getOrElse {
-                    if (excludeNotSelectable) {
-                        val selectable = rest.queryProxyGroupNames(true).toSet()
-                        ensureRuntimeSnapshot().proxyGroups.filter { selectable.contains(it.name) }
-                    } else {
-                        ensureRuntimeSnapshot().proxyGroups
-                    }
+        val groups = runCatching {
+            resolveRuntimeProxyGroups(excludeNotSelectable)
+        }
+            .getOrElse {
+                if (excludeNotSelectable) {
+                    val selectable = rest.queryProxyGroupNames(true).toSet()
+                    ensureRuntimeSnapshot().proxyGroups.filter { selectable.contains(it.name) }
+                } else {
+                    ensureRuntimeSnapshot().proxyGroups
                 }
+            }
         queryCache.replaceProxyGroups(groups)
         updateSnapshot { it.copy(groupsReady = groups.isNotEmpty()) }
         return groups
@@ -211,7 +205,8 @@ class SessionRuntime(
     fun queryConfiguration(): UiConfiguration =
         ifRunning(UiConfiguration()) { ensureRuntimeSnapshot().configuration }
 
-    fun queryProviders(): List<Provider> = ifRunning(emptyList()) { ensureRuntimeSnapshot().providers }
+    fun queryProviders(): List<Provider> =
+        ifRunning(emptyList()) { ensureRuntimeSnapshot().providers }
 
     fun patchSelector(group: String, name: String): Boolean = rest.patchSelector(group, name)
 
@@ -227,10 +222,10 @@ class SessionRuntime(
             currentSnapshot.owner,
         )
         return runCatching {
-                rest.healthCheck(group)
-                refreshRuntimeProxyGroup(group)
-                null
-            }
+            rest.healthCheck(group)
+            refreshRuntimeProxyGroup(group)
+            null
+        }
             .getOrElse { it.message ?: "health check failed" }
     }
 
@@ -243,26 +238,31 @@ class SessionRuntime(
             currentSnapshot.owner,
         )
         return runCatching {
-                val delay = rest.healthCheckProxy(group, proxyName).also { refreshRuntimeProxyGroup(group) }
-                """{"delay":$delay}"""
-            }
+            val delay =
+                rest.healthCheckProxy(group, proxyName).also { refreshRuntimeProxyGroup(group) }
+            """{"delay":$delay}"""
+        }
             .getOrElse {
-                val msg = kotlinx.serialization.json.JsonPrimitive(it.message ?: "health check proxy failed")
+                val msg =
+                    kotlinx.serialization.json.JsonPrimitive(
+                        it.message ?: "health check proxy failed"
+                    )
                 """{"delay":-1,"error":$msg}"""
             }
     }
 
     suspend fun updateProvider(type: String, name: String): String? {
-        val providerType =
-            runCatching { Provider.Type.valueOf(type) }
-                .getOrElse {
-                    return "invalid provider type: $type"
-                }
-        return runCatching {
-                rest.updateProvider(providerType, name)
-                refreshRuntimeSnapshot()
-                null
+        val providerType = runCatching {
+            Provider.Type.valueOf(type)
+        }
+            .getOrElse {
+                return "invalid provider type: $type"
             }
+        return runCatching {
+            rest.updateProvider(providerType, name)
+            refreshRuntimeSnapshot()
+            null
+        }
             .getOrElse { it.message ?: "update provider failed" }
     }
 
@@ -340,7 +340,8 @@ class SessionRuntime(
             )
         }
 
-        // Config reload for the out-of-process core is applied by restarting the transport (the core
+        // Config reload for the out-of-process core is applied by restarting the transport (the
+        // core
         // reads its config at launch); re-verify groups afterwards.
         runCatching { transport.stop() }
         transport.start(spec)
@@ -447,12 +448,13 @@ class SessionRuntime(
         var lastControllerError: String? = null
         repeat(PROXY_GROUP_READY_RETRY_COUNT) { attempt ->
             ensureNotInterrupted(spec)
-            val names =
-                runCatching { rest.queryProxyGroupNames(false) }
-                    .onFailure { error ->
-                        lastControllerError = error.message ?: error::class.simpleName
-                    }
-                    .getOrDefault(emptyList())
+            val names = runCatching {
+                rest.queryProxyGroupNames(false)
+            }
+                .onFailure { error ->
+                    lastControllerError = error.message ?: error::class.simpleName
+                }
+                .getOrDefault(emptyList())
             if (names.isNotEmpty()) {
                 startupLog(
                     spec,
@@ -460,15 +462,14 @@ class SessionRuntime(
                 )
                 return
             }
-            val tunnelOk =
-                runCatching {
-                        rest.queryTunnelState()
-                        true
-                    }
-                    .onFailure { error ->
-                        lastControllerError = error.message ?: error::class.simpleName
-                    }
-                    .getOrDefault(false)
+            val tunnelOk = runCatching {
+                rest.queryTunnelState()
+                true
+            }
+                .onFailure { error ->
+                    lastControllerError = error.message ?: error::class.simpleName
+                }
+                .getOrDefault(false)
             // Controller answered: if the profile exposes no groups to verify, startup is ready.
             if (tunnelOk && expectedGroups.isEmpty()) {
                 startupLog(
@@ -543,14 +544,13 @@ class SessionRuntime(
         store.append("${scope.tag} core diagnostics end")
     }
 
-    private fun readExpectedGroupNames(spec: RuntimeSpec): List<String> =
-        runCatching {
-                runBlocking { proxyGroupResolver.expectedGroupNames(spec, false) }
-            }
-            .getOrElse { error ->
-                startupLog(spec, "runtime verify: expected group inspect failed=${error.message}")
-                emptyList()
-            }
+    private fun readExpectedGroupNames(spec: RuntimeSpec): List<String> = runCatching {
+        runBlocking { proxyGroupResolver.expectedGroupNames(spec, false) }
+    }
+        .getOrElse { error ->
+            startupLog(spec, "runtime verify: expected group inspect failed=${error.message}")
+            emptyList()
+        }
 
     private fun startObservers() {
         val appContext = host.context.appContextOrSelf
@@ -626,12 +626,13 @@ class SessionRuntime(
             return
         }
 
-        val configuration =
-            runCatching { rest.queryConfiguration() }.getOrDefault(UiConfiguration())
+        val configuration = runCatching {
+            rest.queryConfiguration()
+        }.getOrDefault(UiConfiguration())
         val providers = runCatching { rest.queryProviders() }.getOrDefault(emptyList())
-        val proxyGroups =
-            runCatching { resolveRuntimeProxyGroups(excludeNotSelectable = false) }
-                .getOrDefault(emptyList())
+        val proxyGroups = runCatching {
+            resolveRuntimeProxyGroups(excludeNotSelectable = false)
+        }.getOrDefault(emptyList())
         val trafficNow = runCatching { rest.queryTrafficNow() }.getOrDefault(0L)
         val trafficTotal = runCatching { rest.queryTrafficTotal() }.getOrDefault(0L)
         queryCache.replace(

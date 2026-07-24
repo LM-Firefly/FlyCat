@@ -188,10 +188,7 @@ private fun SpeedValue(speed: Long) {
         )
         Text(
             text = unit,
-            style =
-                MiuixTheme.textStyles.title2.copy(
-                    fontSize = trafficUnitFontSize
-                ),
+            style = MiuixTheme.textStyles.title2.copy(fontSize = trafficUnitFontSize),
             color = MiuixTheme.colorScheme.primary.copy(alpha = opacity.medium),
             modifier = Modifier.padding(bottom = spacing.space14, start = spacing.space8),
         )
@@ -390,6 +387,7 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState, isRemoteCont
                             HomeProxyControlState.Idle -> Yume.Rocket
                             HomeProxyControlState.Connecting,
                             HomeProxyControlState.Disconnecting -> Yume.Waiting
+
                             HomeProxyControlState.Lost,
                             HomeProxyControlState.Running -> Yume.Activity
                         },
@@ -408,6 +406,7 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState, isRemoteCont
                                 } else {
                                     YumeTxt.Home.Status.Running
                                 }
+
                             HomeProxyControlState.Lost -> "失联"
                             HomeProxyControlState.Disconnecting -> YumeTxt.Home.Status.Disconnecting
                         },

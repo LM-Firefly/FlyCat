@@ -28,7 +28,8 @@ import com.github.yumelira.yumebox.data.model.TunStack
 import com.tencent.mmkv.MMKV
 
 class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
-    // Run mode selected in the UI. Only VpnService ships today; the root modes gate options like disable-all-overrides.
+    // Run mode selected in the UI. Only VpnService ships today; the root modes gate options like
+    // disable-all-overrides.
     val runMode by enumFlow(RunMode.VpnService)
 
     val bypassPrivateNetwork by boolFlow(true)
@@ -37,22 +38,28 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     val enableIPv6 by boolFlow(false)
     val systemProxy by boolFlow(true)
 
-    // When on, the override chain is skipped entirely and the raw subscription config is used as-is.
+    // When on, the override chain is skipped entirely and the raw subscription config is used
+    // as-is.
     val disableAllOverride by boolFlow(false)
 
-    // gVisor is the reliable VpnService default (userspace, no per-socket protect); system/mixed work too
+    // gVisor is the reliable VpnService default (userspace, no per-socket protect); system/mixed
+    // work too
     // but route egress through cross-process protect.
     val tunStack by enumFlow(TunStack.GVisor)
     val tunRouteExcludeAddress by stringListFlow(emptyList())
     val tunIfName by strFlow("Yume")
     val tunMtu by intFlow(1500)
     val tunAutoRoute by boolFlow(true)
+
     // strict-route off (can black-hole traffic); auto-redirect on — it carries the app TCP egress.
     val tunStrictRoute by boolFlow(false)
     val tunAutoRedirect by boolFlow(true)
+
     // Empty: omit include-android-user so the core includes every Android user automatically.
     val tunIncludeAndroidUser by intListFlow(emptyList())
-    // redir-host is the reliable default (real IPs, no fake-ip pool/filter to get wrong); fake-ip stays selectable.
+
+    // redir-host is the reliable default (real IPs, no fake-ip pool/filter to get wrong); fake-ip
+    // stays selectable.
     val tunDnsMode by enumFlow(TunDnsMode.RedirHost)
     val tunFakeIpRange by strFlow("198.18.0.1/16")
     val tunFakeIpRange6 by strFlow("fc00::/18")

@@ -212,7 +212,10 @@ private fun formatRelativeTime(start: String): String {
                 YumeTxt.Connection.RelativeTime.Date.format(date.monthValue, date.dayOfMonth)
             }
         }
-    } catch (_: Exception) { // fault barrier: date parse or a malformed locale format string must not crash UI
+    } catch (
+        _:
+            Exception) { // fault barrier: date parse or a malformed locale format string must not
+                         // crash UI
         ""
     }
 }

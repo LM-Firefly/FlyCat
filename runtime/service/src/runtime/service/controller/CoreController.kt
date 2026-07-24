@@ -21,65 +21,32 @@
 package com.github.yumelira.yumebox.runtime.service.controller
 
 import com.github.yumelira.yumebox.core.bridge.UnixSocketFactory
-import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
-import com.github.yumelira.yumebox.core.model.LogMessage
-import com.github.yumelira.yumebox.core.model.Provider
-import com.github.yumelira.yumebox.core.model.ProviderList
-import com.github.yumelira.yumebox.core.model.Proxy
-import com.github.yumelira.yumebox.core.model.ProxyGroup
-import com.github.yumelira.yumebox.core.model.ProxySort
-import com.github.yumelira.yumebox.core.model.RuntimeRule
-import com.github.yumelira.yumebox.core.model.TunnelState
-import com.github.yumelira.yumebox.core.model.UiConfiguration
+import com.github.yumelira.yumebox.core.model.*
 import com.github.yumelira.yumebox.core.util.encodeTrafficValue
 import com.github.yumelira.yumebox.data.model.RemoteBackend
 import com.github.yumelira.yumebox.runtime.api.CoreApi
 import com.github.yumelira.yumebox.runtime.api.CoreAsyncQueries
 import com.github.yumelira.yumebox.runtime.api.LogObserver
 import com.github.yumelira.yumebox.runtime.api.LogSubscription
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.HttpTimeoutConfig
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.timeout
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.request.patch
-import io.ktor.client.request.prepareGet
-import io.ktor.client.request.put
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsChannel
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.URLBuilder
-import io.ktor.http.appendPathSegments
-import io.ktor.http.content.TextContent
-import io.ktor.http.contentType
-import io.ktor.http.isSuccess
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.utils.io.readUTF8Line
-import java.time.Instant
-import java.util.Date
-import java.io.IOException
-import java.util.concurrent.atomic.AtomicReference
+import io.ktor.client.*
+import io.ktor.client.engine.okhttp.*
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.http.content.*
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.utils.io.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import timber.log.Timber
+import java.io.IOException
+import java.time.Instant
+import java.util.*
+import java.util.concurrent.atomic.AtomicReference
 
 /** [CoreApi] over mihomo REST: local unix socket and/or remote TCP backend. */
 class CoreController(
@@ -131,12 +98,17 @@ class CoreController(
         backendProvider() ?: error("No active remote controller backend")
 
     /** Absolute URL under the active endpoint base. */
-    private fun buildUrl(vararg pathSegments: String, query: Map<String, String> = emptyMap()): String {
+    private fun buildUrl(
+        vararg pathSegments: String,
+        query: Map<String, String> = emptyMap(),
+    ): String {
         val base = if (local != null) LOCAL_BASE_URL else requireBackend().normalizedBaseUrl
-        return URLBuilder(base).apply {
-            appendPathSegments(*pathSegments)
-            query.forEach { (key, value) -> parameters.append(key, value) }
-        }.buildString()
+        return URLBuilder(base)
+            .apply {
+                appendPathSegments(*pathSegments)
+                query.forEach { (key, value) -> parameters.append(key, value) }
+            }
+            .buildString()
     }
 
     private suspend fun request(
@@ -148,10 +120,10 @@ class CoreController(
         ensureEndpointReady()
         val url = buildUrl(*pathSegments, query = query)
         return when (method) {
-            HttpMethod.Get ->
-                client.get(url) { applyAuth() }
-            HttpMethod.Delete ->
-                client.delete(url) { applyAuth() }
+            HttpMethod.Get -> client.get(url) { applyAuth() }
+
+            HttpMethod.Delete -> client.delete(url) { applyAuth() }
+
             HttpMethod.Put ->
                 client.put(url) {
                     applyAuth()
@@ -160,6 +132,7 @@ class CoreController(
                         setBody(body)
                     }
                 }
+
             HttpMethod.Patch ->
                 client.patch(url) {
                     applyAuth()
@@ -168,6 +141,7 @@ class CoreController(
                         setBody(body)
                     }
                 }
+
             else -> error("Unsupported HTTP method: $method")
         }
     }
@@ -200,8 +174,7 @@ class CoreController(
         return (encodeTrafficValue(sample.up) shl 32) or encodeTrafficValue(sample.down)
     }
 
-    override fun queryTrafficNow(): Long =
-        runBlocking(Dispatchers.IO) { queryTrafficNowAsync() }
+    override fun queryTrafficNow(): Long = runBlocking(Dispatchers.IO) { queryTrafficNowAsync() }
 
     override suspend fun queryTrafficTotalAsync(): Long {
         val sample = readTrafficSample() ?: return 0L
@@ -213,11 +186,14 @@ class CoreController(
 
     /** First line of streaming `/traffic`, then close. */
     private suspend fun readTrafficSample(): RawTraffic? = runCatching {
-        client.prepareGet(buildUrl("traffic")) { applyAuth() }.execute { response ->
-            val line = response.bodyAsChannel().readUTF8Line()
-            line?.let { json.decodeFromString<RawTraffic>(it) }
-        }
-    }.getOrNull()
+        client
+            .prepareGet(buildUrl("traffic")) { applyAuth() }
+            .execute { response ->
+                val line = response.bodyAsChannel().readUTF8Line()
+                line?.let { json.decodeFromString<RawTraffic>(it) }
+            }
+    }
+        .getOrNull()
 
     override suspend fun queryConnectionsAsync(): ConnectionSnapshot = fetchConnections()
 
@@ -225,20 +201,25 @@ class CoreController(
         runBlocking(Dispatchers.IO) { queryConnectionsAsync() }
 
     private suspend fun fetchConnections(): ConnectionSnapshot =
-        client.prepareGet(buildUrl("connections", query = CONNECTIONS_QUERY)) {
-            applyAuth()
-        }.execute { response ->
-            val line = response.bodyAsChannel().readUTF8Line()
-                ?: error("connections stream ended before the first snapshot")
-            json.decodeFromString<ConnectionSnapshot>(line)
-        }
+        client
+            .prepareGet(buildUrl("connections", query = CONNECTIONS_QUERY)) {
+                applyAuth()
+            }
+            .execute { response ->
+                val line =
+                    response.bodyAsChannel().readUTF8Line()
+                        ?: error("connections stream ended before the first snapshot")
+                json.decodeFromString<ConnectionSnapshot>(line)
+            }
 
     // Profile-local preview is not available over pure REST.
 
-    override suspend fun queryProfileProxyGroupsAsync(excludeNotSelectable: Boolean): List<ProxyGroup> =
-        emptyList()
+    override suspend fun queryProfileProxyGroupsAsync(
+        excludeNotSelectable: Boolean
+    ): List<ProxyGroup> = emptyList()
 
-    override fun queryProfileProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> = emptyList()
+    override fun queryProfileProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
+        emptyList()
 
     // ---- Proxy groups ----------------------------------------------------
 
@@ -267,9 +248,7 @@ class CoreController(
     private fun orderGroups(groups: List<RawProxy>, nodes: Map<String, RawProxy>): List<RawProxy> {
         val canonical = nodes["GLOBAL"]?.all ?: emptyList()
         val indexOf = canonical.withIndex().associate { (i, name) -> name to i }
-        return groups.sortedWith(
-            compareBy({ indexOf[it.name] ?: Int.MAX_VALUE }, { it.name })
-        )
+        return groups.sortedWith(compareBy({ indexOf[it.name] ?: Int.MAX_VALUE }, { it.name }))
     }
 
     override suspend fun queryProxyGroupAsync(name: String, proxySort: ProxySort): ProxyGroup {
@@ -354,19 +333,22 @@ class CoreController(
     @Suppress("TooGenericExceptionCaught")
     override suspend fun healthCheckProxy(group: String, proxyName: String): Int =
         try {
-            val response = request(
-                HttpMethod.Get,
-                "proxies",
-                proxyName,
-                "delay",
-                query = delayQuery,
-            )
+            val response =
+                request(
+                    HttpMethod.Get,
+                    "proxies",
+                    proxyName,
+                    "delay",
+                    query = delayQuery,
+                )
             if (response.status.isSuccess()) {
                 json.decodeFromString<RawDelayResult>(response.bodyAsText()).delay
             } else {
                 -1
             }
-        } catch (error: Throwable) { // fault barrier: remote REST delay test must degrade to timeout (-1)
+        } catch (
+            error:
+                Throwable) { // fault barrier: remote REST delay test must degrade to timeout (-1)
             -1
         }
 
@@ -400,7 +382,12 @@ class CoreController(
         return response.providers.mapNotNull { (key, entry) ->
             val vehicle = parseVehicleType(entry.vehicleType) ?: return@mapNotNull null
             if (vehicle == Provider.VehicleType.Compatible) return@mapNotNull null
-            val name = entry.name.ifBlank { key }.ifBlank { return@mapNotNull null }
+            val name =
+                entry.name
+                    .ifBlank { key }
+                    .ifBlank {
+                        return@mapNotNull null
+                    }
             Provider(
                 name = name,
                 type = type,
@@ -440,8 +427,7 @@ class CoreController(
 
     override suspend fun queryRulesAsync(): List<RuntimeRule> = fetchRules()
 
-    override fun queryRules(): List<RuntimeRule> =
-        runBlocking(Dispatchers.IO) { queryRulesAsync() }
+    override fun queryRules(): List<RuntimeRule> = runBlocking(Dispatchers.IO) { queryRulesAsync() }
 
     /** Toggle a rule, then re-fetch `/rules`. */
     override suspend fun setRuleDisabled(
@@ -462,7 +448,6 @@ class CoreController(
         return json.decodeFromString<RawRulesResponse>(raw).rules.map { it.toRuntimeRule() }
     }
 
-
     override fun requestStop() {
         // No-op: we don't own the remote core, so there is nothing to stop.
     }
@@ -472,23 +457,22 @@ class CoreController(
         val sink = LogSink(observer = observer)
         logSink.set(sink)
         logJob?.cancel()
-        logJob =
-            logScope.launch {
-                while (isActive && logSink.get() === sink) {
-                    try {
-                        streamLogsOnce(sink)
-                        if (logSink.get() === sink) {
-                            sink.observer.onError(IOException("log stream ended"))
-                        }
-                    } catch (error: CancellationException) {
-                        throw error
-                    } catch (error: Throwable) {
-                        if (logSink.get() === sink) sink.observer.onError(error)
-                        Timber.w(error, "log stream failed; retrying")
+        logJob = logScope.launch {
+            while (isActive && logSink.get() === sink) {
+                try {
+                    streamLogsOnce(sink)
+                    if (logSink.get() === sink) {
+                        sink.observer.onError(IOException("log stream ended"))
                     }
-                    delay(LOG_STREAM_RETRY_MS)
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Throwable) {
+                    if (logSink.get() === sink) sink.observer.onError(error)
+                    Timber.w(error, "log stream failed; retrying")
                 }
+                delay(LOG_STREAM_RETRY_MS)
             }
+        }
         return LogSubscription {
             synchronized(this@CoreController) {
                 if (logSink.compareAndSet(sink, null)) {
@@ -501,38 +485,41 @@ class CoreController(
 
     /** Stream `GET /logs` until closed or the observer is cleared. */
     private suspend fun streamLogsOnce(sink: LogSink) {
-        client.prepareGet(buildUrl("logs", query = LOG_QUERY)) {
-            applyAuth()
-            timeout {
-                requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
-                socketTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+        client
+            .prepareGet(buildUrl("logs", query = LOG_QUERY)) {
+                applyAuth()
+                timeout {
+                    requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+                    socketTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+                }
             }
-        }.execute { response ->
-            if (logSink.get() !== sink) return@execute
-            sink.observer.onConnected()
-            val channel = response.bodyAsChannel()
-            while (logSink.get() === sink && !channel.isClosedForRead) {
-                val line = channel.readUTF8Line() ?: break
-                if (line.isBlank()) continue
-                val entry =
-                    runCatching { json.decodeFromString<RawLogLine>(line) }.getOrNull()
-                        ?: continue
-                val message =
-                    LogMessage(
-                        level = parseLogLevel(entry.type),
-                        message = entry.payload,
-                        time = Date(),
-                    )
-                sink.observer.newItem(message)
+            .execute { response ->
+                if (logSink.get() !== sink) return@execute
+                sink.observer.onConnected()
+                val channel = response.bodyAsChannel()
+                while (logSink.get() === sink && !channel.isClosedForRead) {
+                    val line = channel.readUTF8Line() ?: break
+                    if (line.isBlank()) continue
+                    val entry =
+                        runCatching { json.decodeFromString<RawLogLine>(line) }.getOrNull()
+                            ?: continue
+                    val message =
+                        LogMessage(
+                            level = parseLogLevel(entry.type),
+                            message = entry.payload,
+                            time = Date(),
+                        )
+                    sink.observer.newItem(message)
+                }
             }
-        }
     }
 
     private fun parseLogLevel(raw: String): LogMessage.Level =
         when (raw.trim().lowercase()) {
             "debug" -> LogMessage.Level.Debug
             "info" -> LogMessage.Level.Info
-            "warning", "warn" -> LogMessage.Level.Warning
+            "warning",
+            "warn" -> LogMessage.Level.Warning
             "error" -> LogMessage.Level.Error
             "silent" -> LogMessage.Level.Silent
             else -> LogMessage.Level.Unknown
@@ -561,28 +548,34 @@ class CoreController(
             delay = history.lastOrNull()?.delay ?: 0,
         )
 
-    private fun buildGroup(group: RawProxy, nodes: Map<String, RawProxy>, sort: ProxySort): ProxyGroup {
-        val members = group.all.map { memberName ->
-            nodes[memberName]?.toProxy()
-                ?: Proxy(
-                    name = memberName,
-                    title = memberName,
-                    subtitle = "",
-                    type = Proxy.Type.Unknown,
-                    delay = 0,
-                )
-        }
-        val sorted = when (sort) {
-            ProxySort.Default -> members
-            ProxySort.Title -> members.sortedBy { it.name }
-            ProxySort.Delay ->
-                members.sortedWith(
-                    compareBy(
-                        { if (it.delay > 0) 0 else 1 },
-                        { if (it.delay > 0) it.delay else Int.MAX_VALUE },
+    private fun buildGroup(
+        group: RawProxy,
+        nodes: Map<String, RawProxy>,
+        sort: ProxySort,
+    ): ProxyGroup {
+        val members =
+            group.all.map { memberName ->
+                nodes[memberName]?.toProxy()
+                    ?: Proxy(
+                        name = memberName,
+                        title = memberName,
+                        subtitle = "",
+                        type = Proxy.Type.Unknown,
+                        delay = 0,
                     )
-                )
-        }
+            }
+        val sorted =
+            when (sort) {
+                ProxySort.Default -> members
+                ProxySort.Title -> members.sortedBy { it.name }
+                ProxySort.Delay ->
+                    members.sortedWith(
+                        compareBy(
+                            { if (it.delay > 0) 0 else 1 },
+                            { if (it.delay > 0) it.delay else Int.MAX_VALUE },
+                        )
+                    )
+            }
         return ProxyGroup(
             name = group.name,
             type = group.type,
@@ -597,6 +590,7 @@ class CoreController(
 
     @Serializable
     private data class RawProvidersResponse(val providers: Map<String, RawProvider> = emptyMap())
+
     @Serializable
     private data class RawProvider(
         val name: String = "",
@@ -607,8 +601,7 @@ class CoreController(
     @Serializable
     private data class RawProxiesResponse(val proxies: Map<String, RawProxy> = emptyMap())
 
-    @Serializable
-    private data class RawGroupResponse(val proxies: List<RawProxy> = emptyList())
+    @Serializable private data class RawGroupResponse(val proxies: List<RawProxy> = emptyList())
 
     @Serializable
     private data class RawProxy(
@@ -622,14 +615,11 @@ class CoreController(
         val udp: Boolean = false,
     )
 
-    @Serializable
-    private data class RawDelay(val delay: Int = 0)
+    @Serializable private data class RawDelay(val delay: Int = 0)
 
-    @Serializable
-    private data class RawDelayResult(val delay: Int = 0)
+    @Serializable private data class RawDelayResult(val delay: Int = 0)
 
-    @Serializable
-    private data class RawConfigs(val mode: TunnelState.Mode = TunnelState.Mode.Rule)
+    @Serializable private data class RawConfigs(val mode: TunnelState.Mode = TunnelState.Mode.Rule)
 
     @Serializable
     private data class RawTraffic(
@@ -639,11 +629,9 @@ class CoreController(
         val downTotal: Long = 0,
     )
 
-    @Serializable
-    private data class SelectBody(val name: String)
+    @Serializable private data class SelectBody(val name: String)
 
-    @Serializable
-    private data class RawRulesResponse(val rules: List<RawRule> = emptyList())
+    @Serializable private data class RawRulesResponse(val rules: List<RawRule> = emptyList())
 
     @Serializable
     private data class RawRule(
@@ -668,9 +656,7 @@ class CoreController(
         val payload: String = "",
     )
 
-    private data class LogSink(
-        val observer: LogObserver,
-    )
+    private data class LogSink(val observer: LogObserver)
 
     private companion object {
         const val CONNECT_TIMEOUT_MS = 5_000L
@@ -680,10 +666,11 @@ class CoreController(
         // Dummy host; UnixSocketFactory ignores host/port.
         const val LOCAL_BASE_URL = "http://localhost"
 
-        val delayQuery = mapOf(
-            "url" to "https://www.gstatic.com/generate_204",
-            "timeout" to "5000",
-        )
+        val delayQuery =
+            mapOf(
+                "url" to "https://www.gstatic.com/generate_204",
+                "timeout" to "5000",
+            )
         val LOG_QUERY = mapOf("level" to "debug")
         val CONNECTIONS_QUERY = mapOf("interval" to "1000")
     }

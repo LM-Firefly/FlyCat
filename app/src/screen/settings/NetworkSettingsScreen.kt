@@ -38,10 +38,10 @@ import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 
 /**
- * Network settings entry point. Top: a "run mode" radio picker — one card per mode. [RunMode.VpnService]
- * is always available; the root-only Tun / TPROXY cards are greyed out unless root is granted. Below:
- * advanced options (service config + disable-overrides) and access control. The former parallel HTTP
- * "system proxy" run mode is gone.
+ * Network settings entry point. Top: a "run mode" radio picker — one card per mode.
+ * [RunMode.VpnService] is always available; the root-only Tun / TPROXY cards are greyed out unless
+ * root is granted. Below: advanced options (service config + disable-overrides) and access control.
+ * The former parallel HTTP "system proxy" run mode is gone.
  */
 @Composable
 fun NetworkSettingsScreen(navigator: Navigator) {
@@ -51,7 +51,8 @@ fun NetworkSettingsScreen(navigator: Navigator) {
     val disableAllOverride = screen.disableAllOverride
     val accessControlMode = screen.accessControlMode
     val runMode = screen.runMode
-    // Root Tun / TPROXY are only selectable when root is granted; otherwise their cards are greyed out.
+    // Root Tun / TPROXY are only selectable when root is granted; otherwise their cards are greyed
+    // out.
     val rootAvailable = screen.rootAvailable
 
     Scaffold(
@@ -94,7 +95,8 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                     PreferenceArrowItem(
                         title = YumeTxt.NetworkSettings.Section.VpnOptions,
                         // Each mode's service config lives behind its own page; open the one that
-                        // matches the selected run mode (Tproxy reuses the Tun geometry page for now).
+                        // matches the selected run mode (Tproxy reuses the Tun geometry page for
+                        // now).
                         onClick = {
                             when (runMode) {
                                 RunMode.VpnService -> navigator.push(Route.VpnServiceOptions)
@@ -139,8 +141,8 @@ fun NetworkSettingsScreen(navigator: Navigator) {
 }
 
 /**
- * A run-mode option: its own card with a leading radio and a title/summary. A disabled mode greys its
- * text and radio and can't be selected (the root Tun/TPROXY cards when root isn't granted).
+ * A run-mode option: its own card with a leading radio and a title/summary. A disabled mode greys
+ * its text and radio and can't be selected (the root Tun/TPROXY cards when root isn't granted).
  */
 @Composable
 private fun ModeCard(

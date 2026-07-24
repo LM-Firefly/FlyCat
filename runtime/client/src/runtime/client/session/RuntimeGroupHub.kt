@@ -20,7 +20,6 @@
 
 package com.github.yumelira.yumebox.runtime.client.session
 
-import com.github.yumelira.yumebox.core.model.Proxy
 import com.github.yumelira.yumebox.core.model.ProxySort
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
@@ -36,9 +35,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
-/**
- * Proxy-group cache + refresh/select/health operations owned by the runtime session surface.
- */
+/** Proxy-group cache + refresh/select/health operations owned by the runtime session surface. */
 internal class RuntimeGroupHub(
     private val scope: CoroutineScope,
     private val session: RuntimeSession,
@@ -56,8 +53,11 @@ internal class RuntimeGroupHub(
         )
     private val refreshMutex = Mutex()
 
-    val groups get() = groupStore.groups
-    val resolvedPrimaryNode get() = groupStore.resolvedPrimaryNode
+    val groups
+        get() = groupStore.groups
+
+    val resolvedPrimaryNode
+        get() = groupStore.resolvedPrimaryNode
 
     fun clear(resetGroups: Boolean) = groupStore.clear(resetGroups)
 
@@ -127,12 +127,13 @@ internal class RuntimeGroupHub(
             val groups =
                 withContext(Dispatchers.IO) {
                     runCatching {
-                            if (!snapshot.running) {
-                                return@runCatching queryPreviewProxyGroups()
-                            }
-                            coreOps.queryAllProxyGroups(excludeNotSelectable = false)
-                                .map(groupStore::toInfo)
+                        if (!snapshot.running) {
+                            return@runCatching queryPreviewProxyGroups()
                         }
+                        coreOps
+                            .queryAllProxyGroups(excludeNotSelectable = false)
+                            .map(groupStore::toInfo)
+                    }
                         .getOrElse { error ->
                             Timber.e(error, "Failed to refresh proxy groups")
                             missingLocalRuntime = session.isMissingLocalRuntime(snapshot)
@@ -150,7 +151,10 @@ internal class RuntimeGroupHub(
                 runCatching { queryPreviewProxyGroups() }
                     .onSuccess { preview -> groupStore.publish(preview) }
                     .onFailure { error ->
-                        Timber.d(error, "Fallback preview refresh skipped after stale runtime reset")
+                        Timber.d(
+                            error,
+                            "Fallback preview refresh skipped after stale runtime reset",
+                        )
                     }
             } else if (snapshot.owner == RuntimeOwner.RemoteController) {
                 session.markRemoteLost(IllegalStateException("remote backend unavailable"))
@@ -180,7 +184,10 @@ internal class RuntimeGroupHub(
 
     suspend fun refreshSafely() {
         val snapshot = session.snapshotValue()
-        if (snapshot.phase != RuntimePhase.Running && snapshot.owner != RuntimeOwner.RemoteController) {
+        if (
+            snapshot.phase != RuntimePhase.Running &&
+                snapshot.owner != RuntimeOwner.RemoteController
+        ) {
             return
         }
         runCatching { refreshProxyGroups() }
@@ -223,8 +230,7 @@ internal class RuntimeGroupHub(
 
     private suspend fun queryPreviewProxyGroups(): List<ProxyGroupInfo> {
         if (isRemoteControllerActive()) {
-            return coreOps.queryAllProxyGroups(excludeNotSelectable = false)
-                .map(groupStore::toInfo)
+            return coreOps.queryAllProxyGroups(excludeNotSelectable = false).map(groupStore::toInfo)
         }
         session.connectBackend()
         val activeProfile =

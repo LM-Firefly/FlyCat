@@ -2,9 +2,9 @@ name: Issue Preview
 
 on:
   issues:
-    types: [opened, edited, closed, reopened]
+    types: [ opened, edited, closed, reopened ]
   pull_request:
-    types: [opened, edited, closed, reopened]
+    types: [ opened, edited, closed, reopened ]
   workflow_dispatch:
     inputs:
       issue_number:

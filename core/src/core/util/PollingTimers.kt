@@ -21,18 +21,8 @@
 package com.github.yumelira.yumebox.core.util
 
 import android.os.SystemClock
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.shareIn
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import java.util.concurrent.ConcurrentHashMap
 
 data class PollingTimerSpec(
@@ -88,14 +78,14 @@ object PollingTimers {
     fun ticks(spec: PollingTimerSpec): Flow<Long> =
         tickerCache.getOrPut(spec) {
             flow {
-                    if (spec.initialDelayMillis > 0L) {
-                        delay(spec.initialDelayMillis)
-                    }
-                    while (currentCoroutineContext().isActive) {
-                        emit(SystemClock.elapsedRealtime())
-                        delay(spec.intervalMillis)
-                    }
+                if (spec.initialDelayMillis > 0L) {
+                    delay(spec.initialDelayMillis)
                 }
+                while (currentCoroutineContext().isActive) {
+                    emit(SystemClock.elapsedRealtime())
+                    delay(spec.intervalMillis)
+                }
+            }
                 .shareIn(
                     scope = schedulerScope,
                     started =

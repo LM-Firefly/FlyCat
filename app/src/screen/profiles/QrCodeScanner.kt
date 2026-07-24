@@ -31,12 +31,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.viewinterop.AndroidView
@@ -46,11 +41,11 @@ import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import java.util.concurrent.Executors
+import kotlin.coroutines.resume
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
-import java.util.concurrent.Executors
-import kotlin.coroutines.resume
 
 @Composable
 internal fun StableQrScanner(onScanned: (String) -> Unit) {
@@ -208,5 +203,6 @@ internal suspend fun readQrFromImage(context: Context, uri: Uri): String? =
         }
     }
 
-private fun createBarcodeScannerOrNull(): BarcodeScanner? =
-    runCatching { BarcodeScanning.getClient() }.getOrNull()
+private fun createBarcodeScannerOrNull(): BarcodeScanner? = runCatching {
+    BarcodeScanning.getClient()
+}.getOrNull()

@@ -23,24 +23,9 @@ package com.github.yumelira.yumebox.screen.traffic
 import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,14 +43,11 @@ import com.github.yumelira.yumebox.data.model.StatisticsTimeRange
 import com.github.yumelira.yumebox.data.model.TrafficStatisticsBuckets
 import com.github.yumelira.yumebox.feature.meta.presentation.component.TabRowWithContour
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.TrafficStatisticsViewModel
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.TrafficBarChart
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
+import java.text.Collator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
@@ -80,7 +62,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.text.Collator
 
 /**
  * Screen-time-style traffic statistics with day/week charts and one app-usage list. Large TopBar
@@ -104,6 +85,7 @@ fun TrafficStatisticsScreen() {
                     uiState.topApps.sortedWith { left, right ->
                         appNameCollator.compare(left.appName, right.appName)
                     }
+
                 AppTrafficSortMode.USAGE ->
                     uiState.topApps.sortedByDescending(AppTrafficUsage::totalBytes)
             }
@@ -181,7 +163,11 @@ fun TrafficStatisticsScreen() {
                                 )
                                 Text(
                                     text =
-                                        "$summaryCaption · ${YumeTxt.TrafficStatistics.Metric.Download} ${formatBytes(activeSummary.totalDownload)} · ${YumeTxt.TrafficStatistics.Metric.Upload} ${formatBytes(activeSummary.totalUpload)}",
+                                        "$summaryCaption · ${YumeTxt.TrafficStatistics.Metric.Download} ${
+                                            formatBytes(
+                                                activeSummary.totalDownload
+                                            )
+                                        } · ${YumeTxt.TrafficStatistics.Metric.Upload} ${formatBytes(activeSummary.totalUpload)}",
                                     style = MiuixTheme.textStyles.footnote1,
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
@@ -230,9 +216,7 @@ fun TrafficStatisticsScreen() {
                         title = appsSectionTitle,
                         maxHeight = UiDp.dp200,
                         onSelectedIndexChange = { index ->
-                            AppTrafficSortMode.entries
-                                .getOrNull(index)
-                                ?.let { appSortMode = it }
+                            AppTrafficSortMode.entries.getOrNull(index)?.let { appSortMode = it }
                         },
                     )
 
@@ -266,8 +250,10 @@ fun TrafficStatisticsScreen() {
                                 context = context,
                                 usage = usage,
                                 progress =
-                                    (usage.totalBytes.toFloat() / maxBytes.toFloat())
-                                        .coerceIn(0f, 1f),
+                                    (usage.totalBytes.toFloat() / maxBytes.toFloat()).coerceIn(
+                                        0f,
+                                        1f,
+                                    ),
                             )
                             if (index < displayedApps.lastIndex) {
                                 HorizontalDivider(
@@ -347,9 +333,7 @@ private fun AppTrafficProgressRow(
                     Modifier.fillMaxWidth()
                         .height(UiDp.dp6)
                         .clip(RoundedCornerShape(radii.full))
-                        .background(
-                            MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
-                        )
+                        .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
             ) {
                 Box(
                     modifier =
@@ -377,11 +361,11 @@ private fun AppIconBadge(context: Context, packageName: String?, appName: String
                         ?.takeIf { it.isNotBlank() }
                         ?.let { target ->
                             runCatching {
-                                    context.packageManager
-                                        .getApplicationIcon(target)
-                                        .toBitmap(width = 84, height = 84)
-                                        .asImageBitmap()
-                                }
+                                context.packageManager
+                                    .getApplicationIcon(target)
+                                    .toBitmap(width = 84, height = 84)
+                                    .asImageBitmap()
+                            }
                                 .getOrNull()
                         }
                 }

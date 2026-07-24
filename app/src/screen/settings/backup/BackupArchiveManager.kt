@@ -29,12 +29,11 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 class BackupArchiveManager(
-    private val json: Json =
-        Json {
-            ignoreUnknownKeys = true
-            encodeDefaults = true
-            prettyPrint = true
-        }
+    private val json: Json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        prettyPrint = true
+    }
 ) {
     data class BackupFiles(
         val importedDir: File,
@@ -91,7 +90,10 @@ class BackupArchiveManager(
             while (true) {
                 val entry = zip.nextEntry ?: break
                 val target = canonicalRoot.resolve(entry.name).canonicalFile
-                require(target.path == canonicalRoot.path || target.path.startsWith(canonicalRoot.path + File.separator)) {
+                require(
+                    target.path == canonicalRoot.path ||
+                        target.path.startsWith(canonicalRoot.path + File.separator)
+                ) {
                     "Backup contains an unsafe path: ${entry.name}"
                 }
 
@@ -110,8 +112,7 @@ class BackupArchiveManager(
         require(manifestFile.isFile) { "Backup manifest is missing" }
         require(payloadFile.isFile) { "Backup payload is missing" }
 
-        val manifest =
-            json.decodeFromString(BackupManifest.serializer(), manifestFile.readText())
+        val manifest = json.decodeFromString(BackupManifest.serializer(), manifestFile.readText())
         require(manifest.formatVersion <= BACKUP_FORMAT_VERSION) {
             "Backup format ${manifest.formatVersion} is newer than this app supports"
         }

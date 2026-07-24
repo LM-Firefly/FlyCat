@@ -37,35 +37,35 @@ class SubStoreService : Service() {
 
         val request = SubStoreServiceController.requestFrom(intent)
         return runCatching {
-                if (
-                    NetworkUtil.isPortInUse(request.frontendPort) ||
-                        NetworkUtil.isPortInUse(request.backendPort)
-                ) {
-                    error("端口 ${request.frontendPort} 或 ${request.backendPort} 已被占用")
-                }
-
-                if (!ensureJavetLibraryLoaded()) {
-                    error("Javet native 库加载失败")
-                }
-
-                val engine =
-                    CaseEngine(
-                        backendPort = request.backendPort,
-                        frontendPort = request.frontendPort,
-                        allowLan = request.allowLan,
-                    )
-                caseEngine = engine
-
-                if (!engine.isInitialized()) {
-                    error("CaseEngine 初始化失败")
-                }
-
-                engine.startServer()
-                isRunning = true
-                SubStoreServiceController.markRunning()
-
-                START_STICKY
+            if (
+                NetworkUtil.isPortInUse(request.frontendPort) ||
+                    NetworkUtil.isPortInUse(request.backendPort)
+            ) {
+                error("端口 ${request.frontendPort} 或 ${request.backendPort} 已被占用")
             }
+
+            if (!ensureJavetLibraryLoaded()) {
+                error("Javet native 库加载失败")
+            }
+
+            val engine =
+                CaseEngine(
+                    backendPort = request.backendPort,
+                    frontendPort = request.frontendPort,
+                    allowLan = request.allowLan,
+                )
+            caseEngine = engine
+
+            if (!engine.isInitialized()) {
+                error("CaseEngine 初始化失败")
+            }
+
+            engine.startServer()
+            isRunning = true
+            SubStoreServiceController.markRunning()
+
+            START_STICKY
+        }
             .getOrElse { error ->
                 Timber.e(error, "Sub-Store service start failed")
                 cleanupService()
@@ -79,31 +79,30 @@ class SubStoreService : Service() {
         cleanupService()
     }
 
-    private fun ensureJavetLibraryLoaded(): Boolean =
-        runCatching {
-                NativeLibraryManager.initialize(applicationContext)
-                val javetLibBaseName = "libjavet-node-android"
+    private fun ensureJavetLibraryLoaded(): Boolean = runCatching {
+        NativeLibraryManager.initialize(applicationContext)
+        val javetLibBaseName = "libjavet-node-android"
 
-                if (!NativeLibraryManager.isLibraryAvailable(javetLibBaseName)) {
-                    val results = NativeLibraryManager.extractAllLibraries()
-                    if (results[javetLibBaseName] != true) {
-                        Timber.e("Javet extract failed")
-                        return false
-                    }
-                }
+        if (!NativeLibraryManager.isLibraryAvailable(javetLibBaseName)) {
+            val results = NativeLibraryManager.extractAllLibraries()
+            if (results[javetLibBaseName] != true) {
+                Timber.e("Javet extract failed")
+                return false
+            }
+        }
 
-                val loaded = NativeLibraryManager.loadJniLibrary(javetLibBaseName)
-                if (!loaded) {
-                    Timber.e(
-                        "Javet load failed: ${NativeLibraryManager.getLibraryStatus(javetLibBaseName)}"
-                    )
-                }
-                loaded
-            }
-            .getOrElse { error ->
-                Timber.e(error, "Javet load error")
-                false
-            }
+        val loaded = NativeLibraryManager.loadJniLibrary(javetLibBaseName)
+        if (!loaded) {
+            Timber.e(
+                "Javet load failed: ${NativeLibraryManager.getLibraryStatus(javetLibBaseName)}"
+            )
+        }
+        loaded
+    }
+        .getOrElse { error ->
+            Timber.e(error, "Javet load error")
+            false
+        }
 
     private fun cleanupService() {
         runCatching { caseEngine?.stopServer() }

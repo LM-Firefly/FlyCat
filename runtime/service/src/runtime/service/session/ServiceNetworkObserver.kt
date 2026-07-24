@@ -21,11 +21,7 @@
 package com.github.yumelira.yumebox.runtime.service.session
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.LinkProperties
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.net.NetworkRequest
+import android.net.*
 import android.os.Build
 import com.github.yumelira.yumebox.runtime.service.util.asSocketAddressText
 import java.net.InetAddress
@@ -122,10 +118,12 @@ class ServiceNetworkObserver(
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> 1
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_USB) -> 2
+
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) -> 3
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> 4
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_SATELLITE) -> 5
+
             else -> 20
         } + if (entry.value.isAvailable()) 0 else 10
     }

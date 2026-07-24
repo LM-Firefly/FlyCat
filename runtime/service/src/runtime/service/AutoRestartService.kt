@@ -34,28 +34,15 @@ import androidx.core.app.ServiceCompat
 import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
 import com.github.yumelira.yumebox.core.util.StartupTaskCoordinator
 import com.github.yumelira.yumebox.data.model.RunMode
-import com.github.yumelira.yumebox.data.store.AppSettingsStore
-import com.github.yumelira.yumebox.data.store.FeatureStore
-import com.github.yumelira.yumebox.data.store.MMKVProvider
-import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
-import com.github.yumelira.yumebox.data.store.RemoteControllerStore
+import com.github.yumelira.yumebox.data.store.*
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.service.profile.ProfileService
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeStartupLogStore
-import com.github.yumelira.yumebox.runtime.service.util.AutoStartExecutionGate
-import com.github.yumelira.yumebox.runtime.service.util.AutoStartUpdatePolicy
-import com.github.yumelira.yumebox.runtime.service.util.RuntimeActivationAwaiter
-import com.github.yumelira.yumebox.runtime.service.util.RuntimeActivationResult
-import com.github.yumelira.yumebox.runtime.service.util.RuntimeActivationState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import timber.log.Timber
+import com.github.yumelira.yumebox.runtime.service.util.*
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.*
+import timber.log.Timber
 
 class AutoRestartService : Service() {
     companion object {
@@ -128,6 +115,7 @@ class AutoRestartService : Service() {
             when {
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE ->
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+
                 else -> 0
             }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -189,12 +177,13 @@ class AutoRestartService : Service() {
             return
         }
 
-        val activationResult =
-            runCatching { awaitRuntimeActivation(runMode) }
-                .getOrElse { error ->
-                    cleanupIncompleteRuntime(runMode)
-                    throw error
-                }
+        val activationResult = runCatching {
+            awaitRuntimeActivation(runMode)
+        }
+            .getOrElse { error ->
+                cleanupIncompleteRuntime(runMode)
+                throw error
+            }
         val logScope = RuntimeStartupLogStore.scopeForMode(runMode)
         val startupLogStore = RuntimeStartupLogStore(this, logScope)
         when (activationResult) {
@@ -206,6 +195,7 @@ class AutoRestartService : Service() {
                             "mode=$runMode"
                     )
             }
+
             is RuntimeActivationResult.Failed -> {
                 cleanupIncompleteRuntime(runMode)
                 val message = activationResult.error ?: "runtime entered Failed"
@@ -214,6 +204,7 @@ class AutoRestartService : Service() {
                 )
                 error(message)
             }
+
             is RuntimeActivationResult.TimedOut -> {
                 cleanupIncompleteRuntime(runMode)
                 val message =
@@ -262,15 +253,18 @@ class AutoRestartService : Service() {
                 Timber.tag(TAG).d("Skip auto update: post-update cold-start marker consumed")
                 return
             }
+
             AutoStartUpdatePolicy.Decision.SkipColdStartReason -> {
                 Timber.tag(TAG).d("Skip auto update on cold-start reason=$reason")
                 return
             }
+
             AutoStartUpdatePolicy.Decision.UnsupportedProfileType -> {
                 Timber.tag(TAG)
                     .d("Skip boot update: unsupported profile type=${activeProfile.type}")
                 return
             }
+
             AutoStartUpdatePolicy.Decision.NoActiveProfile -> return
         }
 

@@ -71,7 +71,7 @@ object RuntimeAccess {
                     profileApi = ProfileService(appContext)
                     initialized = true
                     Timber.d(
-                        "RuntimeAccess ready pid=${android.os.Process.myPid()} cost=${System.currentTimeMillis() - startedAt}ms",
+                        "RuntimeAccess ready pid=${android.os.Process.myPid()} cost=${System.currentTimeMillis() - startedAt}ms"
                     )
                 } catch (error: Exception) {
                     if (error is CancellationException) throw error
@@ -103,7 +103,9 @@ object RuntimeAccess {
 
     fun isConnected(): Boolean = initialized && coreApi != null && profileApi != null
 
-    /** Drop cached controller bindings and reconnect (remote backend / process endpoint changes). */
+    /**
+     * Drop cached controller bindings and reconnect (remote backend / process endpoint changes).
+     */
     suspend fun reconnect(ctx: Context) {
         disconnect()
         connect(ctx)

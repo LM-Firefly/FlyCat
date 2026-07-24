@@ -95,11 +95,17 @@ class HomeViewModel(
     val isRunning =
         runtimeSnapshot
             .map(RuntimeStateMapper::isActuallyRunning)
-            .stateInWhileSubscribed(viewModelScope, RuntimeStateMapper.isActuallyRunning(runtimeSnapshot.value))
+            .stateInWhileSubscribed(
+                viewModelScope,
+                RuntimeStateMapper.isActuallyRunning(runtimeSnapshot.value),
+            )
     val isRemoteController: StateFlow<Boolean> =
         runtimeSnapshot
             .map { it.owner == RuntimeOwner.RemoteController }
-            .stateInWhileSubscribed(viewModelScope, runtimeSnapshot.value.owner == RuntimeOwner.RemoteController)
+            .stateInWhileSubscribed(
+                viewModelScope,
+                runtimeSnapshot.value.owner == RuntimeOwner.RemoteController,
+            )
     val isRemoteControllerMode: StateFlow<Boolean> =
         combine(
                 remoteControllerStore.controllerEnabled.state,
@@ -119,7 +125,9 @@ class HomeViewModel(
                 remoteControllerStore.activeBackendId.state,
                 remoteControllerStore.backends.state,
             ) { id, list ->
-                list.firstOrNull { it.id == id }?.let { it.name.ifBlank { "${it.host}:${it.port}" } }
+                list
+                    .firstOrNull { it.id == id }
+                    ?.let { it.name.ifBlank { "${it.host}:${it.port}" } }
             }
             .stateInWhileSubscribed(viewModelScope, null)
     val currentProfile = proxyFacade.currentProfile
@@ -161,9 +169,7 @@ class HomeViewModel(
         proxyFacade.resolvedPrimaryNode
 
     val selectedServerName: StateFlow<String?> =
-        mainProxyNode
-            .map { it?.name }
-            .stateInWhileSubscribed(viewModelScope, null)
+        mainProxyNode.map { it?.name }.stateInWhileSubscribed(viewModelScope, null)
 
     val selectedServerPing: StateFlow<Int?> =
         mainProxyNode
@@ -202,12 +208,13 @@ class HomeViewModel(
                         hasEnabledProfile = hasEnabled,
                     )
                 },
-                combine(recommendedProfile, currentProfile, selectedServerName, selectedServerPing, speedHistory) {
-                    recommended,
-                    current,
-                    serverName,
-                    serverPing,
-                    history ->
+                combine(
+                    recommendedProfile,
+                    currentProfile,
+                    selectedServerName,
+                    selectedServerPing,
+                    speedHistory,
+                ) { recommended, current, serverName, serverPing, history ->
                     Array(5) { i ->
                         when (i) {
                             0 -> recommended
@@ -218,12 +225,13 @@ class HomeViewModel(
                         }
                     }
                 },
-                combine(proxyMode, isRemoteController, controllerBackendName, ipMonitoringState, uiState) {
-                    mode,
-                    remote,
-                    backendName,
-                    ipState,
-                    ui ->
+                combine(
+                    proxyMode,
+                    isRemoteController,
+                    controllerBackendName,
+                    ipMonitoringState,
+                    uiState,
+                ) { mode, remote, backendName, ipState, ui ->
                     Array(5) { i ->
                         when (i) {
                             0 -> mode
@@ -239,8 +247,8 @@ class HomeViewModel(
                 val current = mid[1] as Profile?
                 val serverName = mid[2] as String?
                 val serverPing = mid[3] as Int?
-                @Suppress("UNCHECKED_CAST")
-                val history = mid[4] as List<Long>
+
+                @Suppress("UNCHECKED_CAST") val history = mid[4] as List<Long>
                 val mode = tail[0] as RunMode
                 val remote = tail[1] as Boolean
                 val backendName = tail[2] as String?
@@ -410,17 +418,18 @@ class HomeViewModel(
         if (reconcileJob?.isActive == true) return
         // Off-main: reconcile touches the persisted runtime state (MMKV) and the active-profile
         // query; keeping it off the main thread avoids hitching navigation.
-        reconcileJob = viewModelScope.launch(Dispatchers.IO) {
-            runCatching {
+        reconcileJob =
+            viewModelScope.launch(Dispatchers.IO) {
+                runCatching {
                     proxyFacade.reconcileRuntimeState()
                     refreshProfiles()
                     refreshProxyMode()
                 }
-                .onFailure { error ->
-                    if (error is CancellationException) throw error
-                    Timber.w(error, "Failed to reconcile runtime state for home")
-                }
-        }
+                    .onFailure { error ->
+                        if (error is CancellationException) throw error
+                        Timber.w(error, "Failed to reconcile runtime state for home")
+                    }
+            }
     }
 
     // Fault barrier: any reload failure is surfaced as UI error state (CE rethrown).
@@ -518,6 +527,7 @@ class HomeViewModel(
                     when {
                         snapshot.phase == RuntimePhase.Idle ||
                             snapshot.phase == RuntimePhase.Failed -> 0L
+
                         snapshot.phase.running -> {
                             val t = proxyFacade.trafficNow.value
                             val d = TrafficData.from(t)
@@ -571,8 +581,10 @@ class HomeViewModel(
                 "Home startProxy completed in ${System.currentTimeMillis() - startedAt}ms, mode=${request.mode}"
             )
 
-            // If the remote controller is active, ProxyFacade.startProxy() is a no-op and no runtime
-            // phase change will arrive to reset the pending transition — clear it so the home button
+            // If the remote controller is active, ProxyFacade.startProxy() is a no-op and no
+            // runtime
+            // phase change will arrive to reset the pending transition — clear it so the home
+            // button
             // doesn't stick on "Connecting" forever.
             if (proxyFacade.isRemoteControllerActive()) {
                 clearPendingStart()
@@ -619,6 +631,7 @@ class HomeViewModel(
                 when (pendingTransition) {
                     PendingTransition.AwaitingPermission,
                     PendingTransition.Starting -> HomeProxyControlState.Connecting
+
                     PendingTransition.Stopping -> HomeProxyControlState.Idle
                     PendingTransition.None -> HomeProxyControlState.Idle
                 }

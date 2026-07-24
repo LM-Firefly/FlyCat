@@ -25,6 +25,7 @@ import com.github.yumelira.yumebox.core.util.YamlCodec
 import com.github.yumelira.yumebox.data.model.MetadataIndex
 import com.github.yumelira.yumebox.data.model.OverrideMetadata
 import com.github.yumelira.yumebox.data.model.ProfileBinding
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +33,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
 
 class ProfileBindingStore(context: Context) : ProfileBindingProvider {
     private val metadataFile = File(context.filesDir, "overrides/metadata.yaml")
@@ -153,7 +153,8 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
     private fun loadBindings(): Map<String, ProfileBinding> =
         try {
             loadMetadataIndex().profileChains
-        } catch (error: Exception) { // fault barrier: any metadata read/decode failure degrades to empty
+        } catch (
+            error: Exception) { // fault barrier: any metadata read/decode failure degrades to empty
             Timber.w(error, "Failed to load bindings from metadata.yaml, returning empty map")
             emptyMap()
         }
@@ -161,12 +162,13 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
     private fun loadMetadataIndex(): MetadataIndex =
         synchronized(OverrideMetadataFileLock.monitor) {
             if (!metadataFile.exists()) return@synchronized MetadataIndex()
-            val index =
-                runCatching { YamlCodec.decode(MetadataIndex.serializer(), metadataFile.readText()) }
-                    .getOrElse { error ->
-                        Timber.w(error, "Failed to decode override metadata index")
-                        MetadataIndex()
-                    }
+            val index = runCatching {
+                YamlCodec.decode(MetadataIndex.serializer(), metadataFile.readText())
+            }
+                .getOrElse { error ->
+                    Timber.w(error, "Failed to decode override metadata index")
+                    MetadataIndex()
+                }
             val sanitized = sanitizeMetadataIndex(index)
             if (sanitized != index) {
                 saveMetadataIndex(sanitized)

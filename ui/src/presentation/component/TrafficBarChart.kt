@@ -27,27 +27,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -160,10 +142,7 @@ fun TrafficBarChart(
             }
 
             Box(
-                modifier =
-                    Modifier.width(plotWidth)
-                        .height(plotHeight)
-                        .align(Alignment.BottomStart)
+                modifier = Modifier.width(plotWidth).height(plotHeight).align(Alignment.BottomStart)
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val thinStroke = 0.5.dp.toPx()
@@ -218,17 +197,14 @@ fun TrafficBarChart(
                         val heightFraction = targetFraction * growth.value
                         Box(
                             modifier =
-                                Modifier.weight(1f)
-                                    .fillMaxHeight()
-                                    .clickable(
-                                        enabled = showSelectionTip,
-                                        indication = null,
-                                        interactionSource =
-                                            remember { MutableInteractionSource() },
-                                    ) {
-                                        internalSelectedIndex = index
-                                        onItemClick?.invoke(index)
-                                    },
+                                Modifier.weight(1f).fillMaxHeight().clickable(
+                                    enabled = showSelectionTip,
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() },
+                                ) {
+                                    internalSelectedIndex = index
+                                    onItemClick?.invoke(index)
+                                },
                             contentAlignment = Alignment.BottomCenter,
                         ) {
                             if (heightFraction > 0f) {
@@ -270,8 +246,10 @@ fun TrafficBarChart(
                 if (averageFraction != null && !averageLabel.isNullOrBlank()) {
                     val labelHeight = 16.dp
                     val top =
-                        (plotHeight * (1f - averageFraction) - labelHeight / 2f)
-                            .coerceIn(0.dp, plotHeight - labelHeight)
+                        (plotHeight * (1f - averageFraction) - labelHeight / 2f).coerceIn(
+                            0.dp,
+                            plotHeight - labelHeight,
+                        )
                     Text(
                         text = averageLabel,
                         modifier = Modifier.offset(y = top),
@@ -288,8 +266,10 @@ fun TrafficBarChart(
                 val selectedCenter = slotWidth * (activeIndex + 0.5f)
                 val bubbleWidth = 136.dp.coerceAtMost(maxWidth)
                 val bubbleLeft =
-                    (selectedCenter - bubbleWidth / 2f)
-                        .coerceIn(0.dp, (maxWidth - bubbleWidth).coerceAtLeast(0.dp))
+                    (selectedCenter - bubbleWidth / 2f).coerceIn(
+                        0.dp,
+                        (maxWidth - bubbleWidth).coerceAtLeast(0.dp),
+                    )
                 Box(
                     modifier =
                         Modifier.offset(x = bubbleLeft)
@@ -320,9 +300,7 @@ fun TrafficBarChart(
 
         Spacer(modifier = Modifier.height(spacing.space8))
 
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth().height(sizes.trafficBarLabelHeight)
-        ) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(sizes.trafficBarLabelHeight)) {
             val plotWidth = (maxWidth - scaleWidth).coerceAtLeast(1.dp)
             val slotWidth = plotWidth / slotCount
             val labelWidth = if (slotCount == 24) 44.dp else slotWidth
@@ -330,8 +308,10 @@ fun TrafficBarChart(
                 if (item.label.isEmpty()) return@forEachIndexed
                 val center = slotWidth * (index + 0.5f)
                 val left =
-                    (center - labelWidth / 2f)
-                        .coerceIn(0.dp, (plotWidth - labelWidth).coerceAtLeast(0.dp))
+                    (center - labelWidth / 2f).coerceIn(
+                        0.dp,
+                        (plotWidth - labelWidth).coerceAtLeast(0.dp),
+                    )
                 Text(
                     text = item.label,
                     modifier = Modifier.offset(x = left).width(labelWidth),

@@ -66,6 +66,8 @@ import com.github.yumelira.yumebox.presentation.theme.YumeHaze.chromeEffect
 import com.kyant.shapes.Capsule
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
+import kotlin.math.max
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
@@ -73,8 +75,6 @@ import kotlinx.coroutines.launch
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.math.max
-import kotlin.math.roundToInt
 
 private const val BottomBarLayoutAnimationDurationMillis = 380
 private const val ProxyDestinationRevealDurationMillis = 300
@@ -140,8 +140,7 @@ val LocalMainPagerState =
     compositionLocalOf<MainPagerState> { error("LocalMainPagerState is not provided") }
 val LocalHandlePageChange =
     compositionLocalOf<(Int) -> Unit> { error("LocalHandlePageChange is not provided") }
-val LocalNavigator =
-    compositionLocalOf<Navigator> { error("LocalNavigator is not provided") }
+val LocalNavigator = compositionLocalOf<Navigator> { error("LocalNavigator is not provided") }
 
 /**
  * Right-pane navigator for the tablet dual-pane shell.
@@ -313,7 +312,8 @@ private fun FloatingBottomBarContent(
             val proxyItemAlpha by
                 animateFloatAsState(
                     targetValue =
-                        if (destination != BottomBarDestination.Proxy || revealProxyDestination) 1f else 0f,
+                        if (destination != BottomBarDestination.Proxy || revealProxyDestination) 1f
+                        else 0f,
                     animationSpec =
                         tween(
                             durationMillis = ProxyDestinationRevealDurationMillis,
@@ -329,19 +329,27 @@ private fun FloatingBottomBarContent(
                 unselectedColor = unselectedColor,
                 onClick = { onItemClick(destination) },
                 modifier =
-                    Modifier.weight(1f).graphicsLayer {
-                        alpha = proxyItemAlpha
-                        scaleX = if (destination == BottomBarDestination.Proxy) 0.82f + proxyItemAlpha * 0.18f else 1f
-                        scaleY = if (destination == BottomBarDestination.Proxy) 0.82f + proxyItemAlpha * 0.18f else 1f
-                    }.animateBounds(
-                        lookaheadScope = lookaheadScope,
-                        boundsTransform = { _, _ ->
-                            tween(
-                                durationMillis = BottomBarLayoutAnimationDurationMillis,
-                                easing = AnimationSpecs.EmphasizedDecelerate,
-                            )
-                        },
-                    ),
+                    Modifier.weight(1f)
+                        .graphicsLayer {
+                            alpha = proxyItemAlpha
+                            scaleX =
+                                if (destination == BottomBarDestination.Proxy)
+                                    0.82f + proxyItemAlpha * 0.18f
+                                else 1f
+                            scaleY =
+                                if (destination == BottomBarDestination.Proxy)
+                                    0.82f + proxyItemAlpha * 0.18f
+                                else 1f
+                        }
+                        .animateBounds(
+                            lookaheadScope = lookaheadScope,
+                            boundsTransform = { _, _ ->
+                                tween(
+                                    durationMillis = BottomBarLayoutAnimationDurationMillis,
+                                    easing = AnimationSpecs.EmphasizedDecelerate,
+                                )
+                            },
+                        ),
             )
         }
     }

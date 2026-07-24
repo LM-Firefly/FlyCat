@@ -17,26 +17,14 @@ import com.github.yumelira.yumebox.screen.about.OpenSourceLicensesScreen
 import com.github.yumelira.yumebox.screen.connection.ConnectionDetailScreen
 import com.github.yumelira.yumebox.screen.connection.ConnectionScreen
 import com.github.yumelira.yumebox.screen.log.LogScreen
-import com.github.yumelira.yumebox.screen.navigation.CustomRoutingRoute
-import com.github.yumelira.yumebox.screen.navigation.FeatureScreen
-import com.github.yumelira.yumebox.screen.navigation.KeyValueEditorScreen
-import com.github.yumelira.yumebox.screen.navigation.OverrideConfigPreviewRoute
-import com.github.yumelira.yumebox.screen.navigation.OverrideScreen
-import com.github.yumelira.yumebox.screen.navigation.ProvidersScreen
-import com.github.yumelira.yumebox.screen.navigation.StringListEditorScreen
+import com.github.yumelira.yumebox.screen.navigation.*
 import com.github.yumelira.yumebox.screen.rules.RulesScreen
-import com.github.yumelira.yumebox.screen.settings.AccessControlScreen
-import com.github.yumelira.yumebox.screen.settings.AppSettingsScreen
-import com.github.yumelira.yumebox.screen.settings.MetaFeatureScreen
-import com.github.yumelira.yumebox.screen.settings.NetworkSettingsScreen
-import com.github.yumelira.yumebox.screen.settings.TproxyServiceOptionsScreen
-import com.github.yumelira.yumebox.screen.settings.TunServiceOptionsScreen
-import com.github.yumelira.yumebox.screen.settings.VpnServiceOptionsScreen
+import com.github.yumelira.yumebox.screen.settings.*
 import com.github.yumelira.yumebox.screen.traffic.TrafficStatisticsScreen
 
 /**
- * Secondary destinations shared by the full-screen [AppNavContainer] stack and the tablet
- * settings detail pane.
+ * Secondary destinations shared by the full-screen [AppNavContainer] stack and the tablet settings
+ * detail pane.
  *
  * Immersive flows such as [Route.MoeWallpaperCrop] stay full-screen only.
  */

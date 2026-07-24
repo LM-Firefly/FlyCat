@@ -23,22 +23,13 @@ package com.github.yumelira.yumebox.screen.settings.backup
 import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.core.model.TunDnsMode
 import com.github.yumelira.yumebox.core.model.TunnelState
-import com.github.yumelira.yumebox.data.model.AccessControlMode
-import com.github.yumelira.yumebox.data.model.AccessControlSortMode
-import com.github.yumelira.yumebox.data.model.AppColorTheme
-import com.github.yumelira.yumebox.data.model.AppLanguage
-import com.github.yumelira.yumebox.data.model.PROXY_SHEET_HEIGHT_FRACTION_DEFAULT
-import com.github.yumelira.yumebox.data.model.ProxyDisplayMode
-import com.github.yumelira.yumebox.data.model.ProxySortMode
-import com.github.yumelira.yumebox.data.model.RemoteBackend
-import com.github.yumelira.yumebox.data.model.ThemeMode
-import com.github.yumelira.yumebox.data.model.TunStack
+import com.github.yumelira.yumebox.data.model.*
 import com.github.yumelira.yumebox.data.store.LinkOpenMode
 import com.github.yumelira.yumebox.data.store.ProfileLink
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.service.profile.Imported
+import java.util.*
 import kotlinx.serialization.Serializable
-import java.util.UUID
 
 const val BACKUP_FORMAT_VERSION = 1
 
@@ -206,7 +197,4 @@ data class ImportedBackup(
     }
 }
 
-@Serializable
-data class ServiceBackup(
-    val activeProfile: String? = null,
-)
+@Serializable data class ServiceBackup(val activeProfile: String? = null)

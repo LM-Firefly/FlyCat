@@ -23,7 +23,6 @@ plugins {
     kotlin("plugin.serialization")
 }
 
-
 android {
     namespace = gropify.project.namespace.core
 

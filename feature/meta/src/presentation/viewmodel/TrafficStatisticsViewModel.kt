@@ -23,24 +23,14 @@ package com.github.yumelira.yumebox.feature.meta.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.yumelira.yumebox.data.controller.AppIdentityResolver
-import com.github.yumelira.yumebox.data.model.AppTrafficUsage
-import com.github.yumelira.yumebox.data.model.DailyTrafficSummary
-import com.github.yumelira.yumebox.data.model.HourlyTrafficSummary
-import com.github.yumelira.yumebox.data.model.StatisticsTimeRange
-import com.github.yumelira.yumebox.data.model.TrafficStatisticsBuckets
+import com.github.yumelira.yumebox.data.model.*
 import com.github.yumelira.yumebox.data.store.TrafficStatisticsStore
 import com.github.yumelira.yumebox.presentation.component.BarChartItem
+import java.util.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import tf.gal.yumebox.locale.YumeTxt
-import java.util.Calendar
 
 class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStatisticsStore) :
     ViewModel() {
@@ -109,18 +99,16 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
     }
 
     private fun mergeSystemTraffic(apps: List<AppTrafficUsage>): List<AppTrafficUsage> {
-        val systemApps =
-            apps.filter {
-                it.appKey == AppIdentityResolver.UNKNOWN_APP_KEY ||
-                    it.appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY
-            }
+        val systemApps = apps.filter {
+            it.appKey == AppIdentityResolver.UNKNOWN_APP_KEY ||
+                it.appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY
+        }
         if (systemApps.isEmpty()) return apps
 
-        val regularApps =
-            apps.filterNot {
-                it.appKey == AppIdentityResolver.UNKNOWN_APP_KEY ||
-                    it.appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY
-            }
+        val regularApps = apps.filterNot {
+            it.appKey == AppIdentityResolver.UNKNOWN_APP_KEY ||
+                it.appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY
+        }
         val systemTraffic =
             AppTrafficUsage(
                 appKey = TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY,
@@ -149,7 +137,8 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
     /** Always emit 7 day slots ending today, filling missing days with 0. */
     private fun buildWeekBars(dailyTotals: List<DailyTrafficSummary>): List<BarChartItem> {
         val byDay = dailyTotals.associateBy { it.dateMillis }
-        val today = Calendar.getInstance().apply { timeInMillis = startOfDay(System.currentTimeMillis()) }
+        val today =
+            Calendar.getInstance().apply { timeInMillis = startOfDay(System.currentTimeMillis()) }
         return (6 downTo 0).map { daysAgo ->
             val day = (today.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -daysAgo) }
             val dayStart = day.timeInMillis

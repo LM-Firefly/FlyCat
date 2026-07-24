@@ -34,6 +34,7 @@ enum class LanguageScope(
             when (extension.lowercase()) {
                 "yaml",
                 "yml" -> Yaml
+
                 "js" -> JavaScript
                 "json" -> Json
                 else -> Text

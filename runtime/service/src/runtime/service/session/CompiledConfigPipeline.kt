@@ -23,19 +23,15 @@ package com.github.yumelira.yumebox.runtime.service.session
 import android.content.Context
 import android.util.Log
 import com.github.yumelira.yumebox.core.bridge.Compiler
-import com.github.yumelira.yumebox.core.model.CompileRawSummary
-import com.github.yumelira.yumebox.core.model.CompileRequest
-import com.github.yumelira.yumebox.core.model.CompileResult
-import com.github.yumelira.yumebox.core.model.OverrideSpec
-import com.github.yumelira.yumebox.core.model.ProxyGroup
+import com.github.yumelira.yumebox.core.model.*
 import com.github.yumelira.yumebox.core.util.YamlCodec
 import com.github.yumelira.yumebox.core.util.runtimeHomeDir
 import com.github.yumelira.yumebox.data.model.BuiltInOverrideCatalog
+import java.io.File
+import java.security.MessageDigest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import java.io.File
-import java.security.MessageDigest
 
 class CompiledConfigPipeline(private val context: Context) {
     fun resolveOverrideSpecs(profileUuid: String): List<OverrideSpec> =
@@ -62,14 +58,18 @@ class CompiledConfigPipeline(private val context: Context) {
 
         val userOverrides = mutableListOf<OverrideSpec>()
         val overrides = mutableListOf<OverrideSpec>()
-        binding?.overrideIds.orEmpty()
+        binding
+            ?.overrideIds
+            .orEmpty()
             .filterNot(::isLegacyPresetId)
             .filterNot(::isInternalRuntimeId)
             .distinct()
             .forEach { overrideId ->
                 val file =
                     resolveUserOverrideFile(overridesDir, overrideId, metadata)
-                        ?: error("Override config not found for profile=$profileUuid id=$overrideId")
+                        ?: error(
+                            "Override config not found for profile=$profileUuid id=$overrideId"
+                        )
                 val spec = file.toOverrideSpec()
                 logger?.invoke(describeOverrideFile(file, overrideId))
                 userOverrides += spec
@@ -101,9 +101,9 @@ class CompiledConfigPipeline(private val context: Context) {
     }
 
     /**
-     * Compiles the profile + override chain to the final mihomo config (liboverride) and returns it.
-     * Used by the out-of-process path: the caller streams this to the core over the socketpair, so it
-     * is never written to disk. The core reads and applies it itself.
+     * Compiles the profile + override chain to the final mihomo config (liboverride) and returns
+     * it. Used by the out-of-process path: the caller streams this to the core over the socketpair,
+     * so it is never written to disk. The core reads and applies it itself.
      */
     suspend fun compile(spec: RuntimeSpec): String =
         withContext(Dispatchers.Default) {
@@ -207,8 +207,12 @@ class CompiledConfigPipeline(private val context: Context) {
      * reload, so a mid-session change only takes effect on the next VPN (re)start — log it so the
      * limitation is diagnosable.
      */
-    private fun publishCompiledTunPackages(summary: CompileRawSummary, logger: ((String) -> Unit)?) {
-        val changed = CompiledTunPackages.update(summary.tunIncludePackage, summary.tunExcludePackage)
+    private fun publishCompiledTunPackages(
+        summary: CompileRawSummary,
+        logger: ((String) -> Unit)?,
+    ) {
+        val changed =
+            CompiledTunPackages.update(summary.tunIncludePackage, summary.tunExcludePackage)
         if (changed) {
             logger?.invoke(
                 "runtime native: tun package lists changed include=${summary.tunIncludePackage.size}" +
@@ -294,7 +298,9 @@ class CompiledConfigPipeline(private val context: Context) {
         overrideId: String,
         metadataIndex: MetadataIndexPayload,
     ): File? {
-        materializeBuiltInOverride(overridesDir, overrideId)?.let { return it }
+        materializeBuiltInOverride(overridesDir, overrideId)?.let {
+            return it
+        }
 
         val expectedExtension =
             metadataIndex.configs[overrideId]?.contentType?.toOverrideExtension()
@@ -305,7 +311,8 @@ class CompiledConfigPipeline(private val context: Context) {
             }
         }
 
-        return userOverrideExtensions.asSequence()
+        return userOverrideExtensions
+            .asSequence()
             .map { extension -> overridesDir.resolve("configs/$overrideId.$extension") }
             .firstOrNull(File::exists)
     }
@@ -325,12 +332,12 @@ class CompiledConfigPipeline(private val context: Context) {
             return target
         }
         return runCatching {
-                configsDir.mkdirs()
-                context.assets.open(def.assetPath).use { input ->
-                    target.outputStream().use { output -> input.copyTo(output) }
-                }
-                target
+            configsDir.mkdirs()
+            context.assets.open(def.assetPath).use { input ->
+                target.outputStream().use { output -> input.copyTo(output) }
             }
+            target
+        }
             .onFailure { error ->
                 Log.w(TAG, "Failed to materialize built-in override id=$overrideId", error)
             }
@@ -341,13 +348,14 @@ class CompiledConfigPipeline(private val context: Context) {
         val file =
             overridesDir.resolve("configs/${INTERNAL_RUNTIME_PREFIX}-profile-$profileUuid.yaml")
         if (!file.exists()) return null
-        val content =
-            runCatching { file.readText() }
-                .getOrElse {
-                    error(
-                        "Runtime override file unreadable id=${profileUuid.safeLogHash()} reason=${it.message.safeNativeDiagnostic()}"
-                    )
-                }
+        val content = runCatching {
+            file.readText()
+        }
+            .getOrElse {
+                error(
+                    "Runtime override file unreadable id=${profileUuid.safeLogHash()} reason=${it.message.safeNativeDiagnostic()}"
+                )
+            }
         if (content.isBlank()) {
             runCatching { file.delete() }
             return null
@@ -423,11 +431,12 @@ class CompiledConfigPipeline(private val context: Context) {
 
     private companion object {
         private const val TAG = "CompiledConfigPipeline"
-        private val compilerJson = kotlinx.serialization.json.Json {
-            ignoreUnknownKeys = true
-            encodeDefaults = true
-            coerceInputValues = true
-        }
+        private val compilerJson =
+            kotlinx.serialization.json.Json {
+                ignoreUnknownKeys = true
+                encodeDefaults = true
+                coerceInputValues = true
+            }
         private val pathPattern = Regex("""(?m)path:\s*["']?([^"'\n]+)["']?""")
         private val userOverrideExtensions = listOf("yaml", "yml", "js")
         const val INTERNAL_RUNTIME_PREFIX = "__runtime__"
@@ -439,7 +448,9 @@ private fun String.toOverrideExtension(): String? =
     when (lowercase()) {
         "yaml",
         "yml" -> "yaml"
+
         "js",
         "javascript" -> "js"
+
         else -> null
     }

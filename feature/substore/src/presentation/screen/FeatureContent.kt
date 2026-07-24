@@ -157,6 +157,7 @@ fun FeatureContent(
                             when {
                                 isExtensionInstalled && isJavetLoaded ->
                                     YumeTxt.Feature.SubStore.JavetAvailable
+
                                 isExtensionInstalled -> YumeTxt.Feature.SubStore.JavetPending
                                 else -> YumeTxt.Feature.SubStore.DownloadHint
                             },

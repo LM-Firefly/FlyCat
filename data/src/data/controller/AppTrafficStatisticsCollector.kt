@@ -28,13 +28,8 @@ import com.github.yumelira.yumebox.data.model.ConnectionTrafficBaseline
 import com.github.yumelira.yumebox.data.model.TrafficStatisticsBuckets
 import com.github.yumelira.yumebox.data.store.TrafficStatisticsStore
 import com.github.yumelira.yumebox.domain.model.TrafficData
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class AppTrafficStatisticsCollector(
@@ -87,7 +82,8 @@ class AppTrafficStatisticsCollector(
         val snapshot = querySource.queryConnections()
         val timestamp = System.currentTimeMillis()
         val currentProfileId =
-            querySource.currentProfileId() ?: runCatching { querySource.queryActiveProfileId() }.getOrNull()
+            querySource.currentProfileId()
+                ?: runCatching { querySource.queryActiveProfileId() }.getOrNull()
 
         if (lastTotalUpload < 0L || lastTotalDownload < 0L) {
             initializeTotals(

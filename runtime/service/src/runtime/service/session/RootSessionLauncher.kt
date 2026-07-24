@@ -24,8 +24,8 @@ import android.content.Context
 import android.content.Intent
 import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
-import com.github.yumelira.yumebox.core.util.StartupTaskCoordinator
 import com.github.yumelira.yumebox.core.util.PollingTimers
+import com.github.yumelira.yumebox.core.util.StartupTaskCoordinator
 import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.service.RootForegroundService
@@ -33,8 +33,8 @@ import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 
 /**
- * Launches the root [RunMode.Tun] / [RunMode.Tproxy] daemon. A foreground notification host tracks the
- * detached `su` daemon, which remains independently driven over the REST socket
+ * Launches the root [RunMode.Tun] / [RunMode.Tproxy] daemon. A foreground notification host tracks
+ * the detached `su` daemon, which remains independently driven over the REST socket
  * ([CoreProcess.reconnectRoot]). Only an explicit [CoreProcess.stopRoot] kills the core.
  */
 object RootSessionLauncher {
@@ -60,8 +60,10 @@ object RootSessionLauncher {
             val config = CompiledConfigPipeline(appContext).compile(spec)
             CoreProcess(appContext).startRoot(mode.coreArg, config)
 
-            // The fork succeeding proves nothing: a rejected config kills the core moments later (only
-            // trace is core.log). Re-probe after a grace so a dead-on-arrival daemon surfaces as Failed.
+            // The fork succeeding proves nothing: a rejected config kills the core moments later
+            // (only
+            // trace is core.log). Re-probe after a grace so a dead-on-arrival daemon surfaces as
+            // Failed.
             PollingTimers.awaitTick(
                 PollingTimerSpecs.dynamic(
                     name = "root_core_startup_probe",

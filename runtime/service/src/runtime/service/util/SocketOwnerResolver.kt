@@ -52,18 +52,18 @@ class SocketOwnerResolver(context: Context) {
         protocol: Int,
         source: InetSocketAddress,
         target: InetSocketAddress,
-    ): Int =
-        runCatching { connectivity?.getConnectionOwnerUid(protocol, source, target) ?: -1 }
-            .getOrDefault(-1)
+    ): Int = runCatching {
+        connectivity?.getConnectionOwnerUid(protocol, source, target) ?: -1
+    }.getOrDefault(-1)
 
     private fun resolvePackageName(uid: Int): String {
         packageCache[uid]?.let {
             return it
         }
 
-        val packageName =
-            runCatching { packageManager.getPackagesForUid(uid)?.firstOrNull().orEmpty() }
-                .getOrElse { "" }
+        val packageName = runCatching {
+            packageManager.getPackagesForUid(uid)?.firstOrNull().orEmpty()
+        }.getOrElse { "" }
 
         if (packageName.isNotEmpty()) {
             packageCache[uid] = packageName

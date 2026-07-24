@@ -32,11 +32,11 @@ import com.github.yumelira.yumebox.runtime.service.R
 import com.github.yumelira.yumebox.runtime.service.config.AccessControlMode
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
-import kotlinx.coroutines.runBlocking
 import com.github.yumelira.yumebox.runtime.service.util.buildIncludedRoutesFromExcludedCidrs
 import com.github.yumelira.yumebox.runtime.service.util.parseCIDR
 import java.net.InetAddress
 import java.security.SecureRandom
+import kotlinx.coroutines.runBlocking
 
 class VpnTunTransport(
     private val vpnService: VpnService,
@@ -51,11 +51,10 @@ class VpnTunTransport(
     override fun start(spec: RuntimeSpec) {
         startupLogStore.append("LOCAL_TUN transport start: begin")
         // Compile the config (in memory) before establishing the TUN; it is streamed to the core.
-        val config =
-            runBlocking {
-                StartupTaskCoordinator.awaitWarmup()
-                pipeline.compile(spec)
-            }
+        val config = runBlocking {
+            StartupTaskCoordinator.awaitWarmup()
+            pipeline.compile(spec)
+        }
         val device =
             with(vpnService.Builder()) {
                 val explicitRouteExcludes =
@@ -100,11 +99,15 @@ class VpnTunTransport(
                     allowBypass()
                 }
 
-                // VPN system HTTP proxy: point apps at the core's mixed/http port so apps that honour
-                // the system proxy (rather than only the TUN) still route through the core. API 29+.
+                // VPN system HTTP proxy: point apps at the core's mixed/http port so apps that
+                // honour
+                // the system proxy (rather than only the TUN) still route through the core. API
+                // 29+.
                 if (Build.VERSION.SDK_INT >= 29 && store.systemProxy) {
                     httpProxyPort(config)?.let { port ->
-                        setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", port, httpProxyLocalList))
+                        setHttpProxy(
+                            ProxyInfo.buildDirectProxy("127.0.0.1", port, httpProxyLocalList)
+                        )
                     }
                 }
 
@@ -197,14 +200,16 @@ class VpnTunTransport(
     }
 
     /**
-     * Per-app routing. The out-of-process core runs under the app's own uid, so the app's package is
-     * always EXCLUDED from the tunnel — that keeps the core's egress off the TUN (no loop) and
-     * replaces the old per-socket VpnService.protect entirely. Only UI access control drives the rest
-     * (compiled tun.include/exclude-package parsing is a later refinement).
+     * Per-app routing. The out-of-process core runs under the app's own uid, so the app's package
+     * is always EXCLUDED from the tunnel — that keeps the core's egress off the TUN (no loop) and
+     * replaces the old per-socket VpnService.protect entirely. Only UI access control drives the
+     * rest (compiled tun.include/exclude-package parsing is a later refinement).
      */
     private fun VpnService.Builder.configurePerAppRouting() {
         val self = vpnService.packageName
-        startupLogStore.append("LOCAL_TUN per-app routing: ui mode=${store.accessControlMode} (self excluded)")
+        startupLogStore.append(
+            "LOCAL_TUN per-app routing: ui mode=${store.accessControlMode} (self excluded)"
+        )
         when (store.accessControlMode) {
             // Route everything except ourselves.
             AccessControlMode.AcceptAll -> runCatching { addDisallowedApplication(self) }
@@ -223,12 +228,15 @@ class VpnTunTransport(
         }
     }
 
-    /** The core's HTTP proxy port from the compiled config (mixed-port preferred, else http port). */
+    /**
+     * The core's HTTP proxy port from the compiled config (mixed-port preferred, else http port).
+     */
     private fun httpProxyPort(config: String): Int? =
         portFromConfig(config, "mixed-port") ?: portFromConfig(config, "port")
 
     private fun portFromConfig(config: String, key: String): Int? =
-        config.lineSequence()
+        config
+            .lineSequence()
             .firstOrNull { it.startsWith("$key:") }
             ?.substringAfter("$key:")
             ?.trim()
@@ -241,8 +249,7 @@ class VpnTunTransport(
 
     override fun onNetworkChanged() {
         if (Build.VERSION.SDK_INT in 22..28) {
-            @Suppress("DEPRECATION")
-            vpnService.setUnderlyingNetworks(null)
+            @Suppress("DEPRECATION") vpnService.setUnderlyingNetworks(null)
         }
     }
 

@@ -44,15 +44,16 @@ YumeBox 目前仅支持 **Android 8.0（API 26）及以上系统**。
 
 1. **图标版权**：YumeBox 应用图标及品牌标识的版权归项目所有者所有
 2. **Fork 发行版限制**：
-   - 发行版不得使用 YumeBox 项目名称
-   - 发行版不得沿用 YumeBox 原始图标
-   - 发行版不得包含 YumeBox Issue 反馈渠道
+    - 发行版不得使用 YumeBox 项目名称
+    - 发行版不得沿用 YumeBox 原始图标
+    - 发行版不得包含 YumeBox Issue 反馈渠道
 
 ## 构建
 
 YumeBox 不使用 Git submodule。从干净检出开始构建前，需要先准备 Mihomo 源码和生成资源。
 
-1. 安装 **OpenJDK 24**、**Android SDK 37**、**NDK 30.0.14904198**、**CMake 3.22.1**、**Kotlin CLI**、**Go 1.26**、**Rust nightly**、Git 和 `patch`。
+1. 安装 **OpenJDK 24**、 **Android SDK 37**、 **NDK 30.0.14904198**、 **CMake 3.22.1**、 **Kotlin CLI**、 **Go 1.26**、 **Rust
+   nightly**、Git 和 `patch`。
 
    ```bash
    sdkmanager "platforms;android-37" "ndk;30.0.14904198" "cmake;3.22.1"
@@ -113,4 +114,5 @@ YumeBox 不使用 Git submodule。从干净检出开始构建前，需要先准�
    ./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
    ```
 
-   APK 输出到 `app/build/outputs/apk/<build-type>/`。外置版本不包含 Geo 资源和 `BundleMRS.7z`，Mihomo 会按需下载。Windows 请使用 `gradlew.bat`。
+   APK 输出到 `app/build/outputs/apk/<build-type>/`。外置版本不包含 Geo 资源和 `BundleMRS.7z`，Mihomo 会按需下载。Windows
+   请使用 `gradlew.bat`。

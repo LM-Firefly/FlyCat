@@ -24,22 +24,26 @@ import com.github.yumelira.yumebox.data.model.RemoteBackend
 import com.tencent.mmkv.MMKV
 
 /**
- * Persists external-controller mode state: whether the app should act as a pure
- * remote controller, the list of saved backends, and which backend is active.
+ * Persists external-controller mode state: whether the app should act as a pure remote controller,
+ * the list of saved backends, and which backend is active.
  *
- * Stored in its own MMKV file (`remote_controller`) using [MMKV.MULTI_PROCESS_MODE]
- * so both the UI and service processes observe the same configuration.
+ * Stored in its own MMKV file (`remote_controller`) using [MMKV.MULTI_PROCESS_MODE] so both the UI
+ * and service processes observe the same configuration.
  */
 class RemoteControllerStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
-    /** Master switch — when on (and an active backend exists) the app runs in remote-controller mode. */
+    /**
+     * Master switch — when on (and an active backend exists) the app runs in remote-controller
+     * mode.
+     */
     val controllerEnabled by boolFlow(false)
 
     /** All saved backends. */
-    val backends by jsonListFlow(
-        default = emptyList<RemoteBackend>(),
-        decode = { str -> decodeFromString<List<RemoteBackend>>(str) },
-        encode = { value -> encodeToString(value) },
-    )
+    val backends by
+        jsonListFlow(
+            default = emptyList<RemoteBackend>(),
+            decode = { str -> decodeFromString<List<RemoteBackend>>(str) },
+            encode = { value -> encodeToString(value) },
+        )
 
     /** Id of the currently active backend, or blank if none selected. */
     val activeBackendId by strFlow("")

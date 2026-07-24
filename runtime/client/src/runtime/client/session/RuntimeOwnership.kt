@@ -21,17 +21,12 @@
 package com.github.yumelira.yumebox.runtime.client.session
 
 import com.github.yumelira.yumebox.core.model.RunMode
-import com.github.yumelira.yumebox.runtime.api.ProcessController
-import com.github.yumelira.yumebox.runtime.api.Profile
-import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
-import com.github.yumelira.yumebox.runtime.api.RuntimePhase
-import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
-import com.github.yumelira.yumebox.runtime.api.RuntimeStatusStore
+import com.github.yumelira.yumebox.runtime.api.*
 import com.github.yumelira.yumebox.runtime.client.RuntimeStateMapper
 
 /**
- * Ownership / liveness / snapshot transitions for the cohesive runtime session.
- * Uses platform seams ([RuntimeStatusStore], [ProcessController]) so desktop can swap bindings.
+ * Ownership / liveness / snapshot transitions for the cohesive runtime session. Uses platform seams
+ * ([RuntimeStatusStore], [ProcessController]) so desktop can swap bindings.
  */
 internal class RuntimeOwnership(
     private val statusStore: RuntimeStatusStore,
@@ -50,8 +45,7 @@ internal class RuntimeOwnership(
         return detectOwner()
     }
 
-    fun isVpnSessionActive(): Boolean =
-        statusStore.isRuntimeActive(RunMode.VpnService.name)
+    fun isVpnSessionActive(): Boolean = statusStore.isRuntimeActive(RunMode.VpnService.name)
 
     fun isRootDaemonActive(): Boolean = processController.isRootDaemonAlive()
 
@@ -60,6 +54,7 @@ internal class RuntimeOwnership(
             RuntimeOwner.VpnService -> statusStore.queryRuntimePhase(RunMode.VpnService.name)
             RuntimeOwner.RootDaemon ->
                 if (isRootDaemonActive()) RuntimePhase.Running else RuntimePhase.Idle
+
             RuntimeOwner.RemoteController,
             RuntimeOwner.None -> RuntimePhase.Idle
         }
@@ -70,8 +65,9 @@ internal class RuntimeOwnership(
             RuntimeOwner.VpnService ->
                 statusStore.queryRuntimeStartedAt(RunMode.VpnService.name)
                     ?: snapshot.startedAt?.takeIf { snapshot.owner == owner }
-            RuntimeOwner.RootDaemon ->
-                snapshot.startedAt?.takeIf { snapshot.owner == owner }
+
+            RuntimeOwner.RootDaemon -> snapshot.startedAt?.takeIf { snapshot.owner == owner }
+
             RuntimeOwner.RemoteController,
             RuntimeOwner.None -> null
         }
@@ -82,7 +78,8 @@ internal class RuntimeOwnership(
     fun ownerForMode(mode: RunMode): RuntimeOwner =
         when (mode) {
             RunMode.VpnService -> RuntimeOwner.VpnService
-            RunMode.Tun, RunMode.Tproxy -> RuntimeOwner.RootDaemon
+            RunMode.Tun,
+            RunMode.Tproxy -> RuntimeOwner.RootDaemon
         }
 
     fun startingSnapshot(
@@ -114,6 +111,7 @@ internal class RuntimeOwnership(
                 when (owner) {
                     RuntimeOwner.VpnService,
                     RuntimeOwner.RootDaemon -> localPhase
+
                     RuntimeOwner.RemoteController -> RuntimePhase.Running
                     RuntimeOwner.None -> RuntimePhase.Idle
                 },
@@ -122,6 +120,7 @@ internal class RuntimeOwnership(
                 when (owner) {
                     RuntimeOwner.VpnService,
                     RuntimeOwner.RootDaemon -> localStartedAt
+
                     RuntimeOwner.RemoteController,
                     RuntimeOwner.None -> null
                 },
@@ -165,7 +164,10 @@ internal class RuntimeOwnership(
         )
 
     fun markRemoteOnline(snapshot: RuntimeSnapshot, generation: Long): RuntimeSnapshot? {
-        if (snapshot.owner != RuntimeOwner.RemoteController || snapshot.phase == RuntimePhase.Running) {
+        if (
+            snapshot.owner != RuntimeOwner.RemoteController ||
+                snapshot.phase == RuntimePhase.Running
+        ) {
             return null
         }
         return snapshot.copy(

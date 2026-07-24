@@ -33,7 +33,7 @@ import com.topjohnwu.superuser.Shell
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.util.UUID
+import java.util.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -45,12 +45,12 @@ data class CoreEndpoint(val sock: String, val secret: String)
 
 /**
  * Launches and owns the out-of-process mihomo core (the `native` PIE, packaged as `libclash.so`):
- * fork+exec it from nativeLibraryDir (the non-root exec path; falls back to an extracted, chmod'd copy
- * if refused), stream the compiled config over the socketpair (in memory, never on disk) plus the
- * VpnService TUN fd via SCM_RIGHTS, and publish the controller endpoint via [current].
+ * fork+exec it from nativeLibraryDir (the non-root exec path; falls back to an extracted, chmod'd
+ * copy if refused), stream the compiled config over the socketpair (in memory, never on disk) plus
+ * the VpnService TUN fd via SCM_RIGHTS, and publish the controller endpoint via [current].
  *
- * Egress: the tun uses the userspace gVisor stack, so excluding the app's own uid from the VpnService
- * tunnel keeps the core's egress off it — no per-socket protect needed.
+ * Egress: the tun uses the userspace gVisor stack, so excluding the app's own uid from the
+ * VpnService tunnel keeps the core's egress off it — no per-socket protect needed.
  */
 class CoreProcess(private val context: Context) {
 
@@ -74,19 +74,26 @@ class CoreProcess(private val context: Context) {
         // Profiles often omit `secret:`; mint one so REST auth and readiness stay consistent.
         val (runtimeConfig, secret) = ensureControllerSecret(config)
 
-        val args = arrayOf(
-            "--home", home.absolutePath,
-            "--controller", sock,
-            "--gateway", gateway,
-            "--portal", portal,
-            "--dns", dns,
-        )
+        val args =
+            arrayOf(
+                "--home",
+                home.absolutePath,
+                "--controller",
+                sock,
+                "--gateway",
+                gateway,
+                "--portal",
+                portal,
+                "--dns",
+                dns,
+            )
         Timber.tag(TAG).i("launch core, tunFd=%d", tunFd)
         val proc = spawn(home, args)
         process = proc
         running = proc
 
-        // Stream config over the socketpair (in memory), then the TUN fd as a terminating SCM_RIGHTS
+        // Stream config over the socketpair (in memory), then the TUN fd as a terminating
+        // SCM_RIGHTS
         // message. The core dups the fd; the app closes its own copy.
         runCatching {
             val channel = Channel(proc.channelFd)
@@ -99,16 +106,18 @@ class CoreProcess(private val context: Context) {
             }
             channel.writeMessage(END, 0, END.size, attachFd = tunFd)
             channel.close()
-        }.onFailure { Timber.tag(TAG).w(it, "config/fd handoff failed") }
+        }
+            .onFailure { Timber.tag(TAG).w(it, "config/fd handoff failed") }
         runCatching { ParcelFileDescriptor.adoptFd(tunFd).close() }
 
         return CoreEndpoint(sock, secret).also { current = it }
     }
 
     /**
-     * Launch the core as a detached ROOT daemon (tun / tproxy) via `su`: it runs in the root SELinux
-     * domain (free to open a kernel TUN, program routes, iptables) and, unlike the VPN child core,
-     * outlives the app process — reattached over the REST socket ([reconnectRoot]). [mode] = "tun"/"tproxy".
+     * Launch the core as a detached ROOT daemon (tun / tproxy) via `su`: it runs in the root
+     * SELinux domain (free to open a kernel TUN, program routes, iptables) and, unlike the VPN
+     * child core, outlives the app process — reattached over the REST socket ([reconnectRoot]).
+     * [mode] = "tun"/"tproxy".
      */
     fun startRoot(mode: String, config: String): CoreEndpoint {
         val home = context.runtimeHomeDir.apply { mkdirs() }
@@ -118,7 +127,8 @@ class CoreProcess(private val context: Context) {
 
         // A detached `su` daemon can't inherit the config socketpair the VPN core streams over, so
         // hand the compiled config (proxy secrets) through a named pipe instead of a file: the core
-        // reads it once via --config and nothing is ever written to disk — the same no-plaintext-at-
+        // reads it once via --config and nothing is ever written to disk — the same
+        // no-plaintext-at-
         // rest posture as VPN. Drop any legacy plaintext run.yaml an older build left behind.
         File(home, LEGACY_ROOT_CONFIG).delete()
         val fifo = File(home, ROOT_CONFIG_PIPE).apply { delete() }
@@ -140,17 +150,28 @@ class CoreProcess(private val context: Context) {
             error("root core launch failed (success=${result.isSuccess} out=${result.out})")
         }
 
-        // Feed the config into the pipe; the core's ReadFile blocks until we open+write. Run it on a
+        // Feed the config into the pipe; the core's ReadFile blocks until we open+write. Run it on
+        // a
         // daemon thread with a timeout so a core that died on launch (no reader) can't block the
         // caller forever; then unlink the pipe node (it holds nothing at rest either way).
         val writer = Thread {
-            runCatching { FileOutputStream(fifo).use { it.write(runtimeConfig.toByteArray(Charsets.UTF_8)) } }
+            runCatching {
+                    FileOutputStream(fifo).use {
+                        it.write(runtimeConfig.toByteArray(Charsets.UTF_8))
+                    }
+                }
                 .onFailure { Timber.tag(TAG).w(it, "root config pipe write failed") }
-        }.apply { isDaemon = true; start() }
+        }
+            .apply {
+                isDaemon = true
+                start()
+            }
         writer.join(FIFO_WRITE_TIMEOUT_MS)
         if (writer.isAlive) {
-            // No reader turned up: open one ourselves to release the blocked writer thread. The dead
-            // daemon then surfaces via the launcher's startup probe (core.log shows the read failure).
+            // No reader turned up: open one ourselves to release the blocked writer thread. The
+            // dead
+            // daemon then surfaces via the launcher's startup probe (core.log shows the read
+            // failure).
             Timber.tag(TAG).w("root config handoff timed out; core likely died on launch")
             runCatching { FileInputStream(fifo).use { it.readBytes() } }
         }
@@ -169,11 +190,13 @@ class CoreProcess(private val context: Context) {
     }
 
     /**
-     * Guarantee a non-empty controller bearer for local REST.
-     * Reuses the profile secret when present; otherwise mints one and patches the runtime config.
+     * Guarantee a non-empty controller bearer for local REST. Reuses the profile secret when
+     * present; otherwise mints one and patches the runtime config.
      */
     private fun ensureControllerSecret(config: String): Pair<String, String> {
-        secretFromConfig(config)?.let { return config to it }
+        secretFromConfig(config)?.let {
+            return config to it
+        }
         val secret = UUID.randomUUID().toString().replace("-", "")
         val line = "secret: \"$secret\""
         val lines = config.lineSequence().toMutableList()
@@ -188,11 +211,12 @@ class CoreProcess(private val context: Context) {
 
     /** The top-level `secret:` from the compiled config, or null if the profile sets none. */
     private fun secretFromConfig(config: String): String? {
-        val raw = config.lineSequence()
-            .firstOrNull { it.trimStart().startsWith("secret:") }
-            ?.substringAfter("secret:")
-            ?.trim()
-            ?: return null
+        val raw =
+            config
+                .lineSequence()
+                .firstOrNull { it.trimStart().startsWith("secret:") }
+                ?.substringAfter("secret:")
+                ?.trim() ?: return null
         return raw.trim('"', '\'').trim().takeIf { it.isNotEmpty() }
     }
 
@@ -227,18 +251,24 @@ class CoreProcess(private val context: Context) {
     }
 
     companion object {
-        /** The endpoint of the core currently running (null when stopped). Read by the controller client. */
+        /**
+         * The endpoint of the core currently running (null when stopped). Read by the controller
+         * client.
+         */
         @Volatile
         var current: CoreEndpoint? = null
             private set
 
-        /** The running core child, tracked statically so it can be killed lock-free (see [killRunning]). */
-        @Volatile
-        private var running: NativeProcess? = null
+        /**
+         * The running core child, tracked statically so it can be killed lock-free (see
+         * [killRunning]).
+         */
+        @Volatile private var running: NativeProcess? = null
 
         /**
-         * Lock-free SIGKILL of the running core child; closing the tun fd it holds drops the VpnService
-         * interface. Called from `TunService.onDestroy` so teardown happens even if the scoped stop blocks.
+         * Lock-free SIGKILL of the running core child; closing the tun fd it holds drops the
+         * VpnService interface. Called from `TunService.onDestroy` so teardown happens even if the
+         * scoped stop blocks.
          */
         fun killRunning() {
             running?.let { runCatching { it.kill() } }
@@ -252,33 +282,42 @@ class CoreProcess(private val context: Context) {
                 .getOrDefault(false)
         }
 
-        /** The run mode of the persisted root daemon ("tun"/"tproxy" → [RunMode]), or null when none. */
+        /**
+         * The run mode of the persisted root daemon ("tun"/"tproxy" → [RunMode]), or null when
+         * none.
+         */
         fun rootDaemonMode(): RunMode? = RunMode.fromCoreArg(RootDaemonState.load()?.mode)
 
         /** Last non-blank line of `<runtimeHome>/core.log`. */
         fun coreLogTail(context: Context): String? = runCatching {
-            context.runtimeHomeDir.resolve(CORE_LOG).takeIf { it.exists() }
-                ?.readLines()?.lastOrNull { it.isNotBlank() }?.trim()?.take(300)
-        }.getOrNull()
+            context.runtimeHomeDir
+                .resolve(CORE_LOG)
+                .takeIf { it.exists() }
+                ?.readLines()
+                ?.lastOrNull { it.isNotBlank() }
+                ?.trim()
+                ?.take(300)
+        }
+            .getOrNull()
 
         /** Full `core.log` (Go already pins log-level=error + boot markers). */
-        fun coreDiagnosticLog(context: Context): String =
-            runCatching {
-                    val file = context.runtimeHomeDir.resolve(CORE_LOG)
-                    if (!file.exists()) return@runCatching ""
-                    file.readText().trimEnd()
-                }
-                .getOrDefault("")
+        fun coreDiagnosticLog(context: Context): String = runCatching {
+            val file = context.runtimeHomeDir.resolve(CORE_LOG)
+            if (!file.exists()) return@runCatching ""
+            file.readText().trimEnd()
+        }
+            .getOrDefault("")
 
         /**
-         * Reattach to a live root daemon after an app restart: probe liveness and republish [current]
-         * from the persisted secret without relaunching. Returns the mode, or null (clearing stale state).
+         * Reattach to a live root daemon after an app restart: probe liveness and republish
+         * [current] from the persisted secret without relaunching. Returns the mode, or null
+         * (clearing stale state).
          */
         fun reconnectRoot(context: Context): String? {
             val record = RootDaemonState.load() ?: return null
-            val alive =
-                runCatching { Shell.cmd("kill -0 ${record.pid}").exec().isSuccess }
-                    .getOrDefault(false)
+            val alive = runCatching {
+                Shell.cmd("kill -0 ${record.pid}").exec().isSuccess
+            }.getOrDefault(false)
             if (!alive) {
                 RootDaemonState.clear()
                 return null
@@ -287,15 +326,21 @@ class CoreProcess(private val context: Context) {
             return record.mode
         }
 
-        // The su kill returns fast, but libsu's shell round-trip + mihomo's SIGTERM teardown (tproxy's
-        // dozens of iptables execs, tun route/rule cleanup) add latency the stop path must not block on.
+        // The su kill returns fast, but libsu's shell round-trip + mihomo's SIGTERM teardown
+        // (tproxy's
+        // dozens of iptables execs, tun route/rule cleanup) add latency the stop path must not
+        // block on.
         private val stopScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-        /** Explicitly stop the root daemon (`su kill`, SIGTERM so mihomo tears down tun/iptables). */
+        /**
+         * Explicitly stop the root daemon (`su kill`, SIGTERM so mihomo tears down tun/iptables).
+         */
         fun stopRoot() {
             val record = RootDaemonState.load()
-            // Clear state FIRST so isRootDaemonAlive() reports "stopped" immediately; the UI must never
-            // wait on the kill. mihomo tears its iptables/tun down on the SIGTERM sent off-thread below.
+            // Clear state FIRST so isRootDaemonAlive() reports "stopped" immediately; the UI must
+            // never
+            // wait on the kill. mihomo tears its iptables/tun down on the SIGTERM sent off-thread
+            // below.
             RootDaemonState.clear()
             current = null
             record ?: return
@@ -308,6 +353,7 @@ class CoreProcess(private val context: Context) {
         private const val LEGACY_ROOT_CONFIG = "run.yaml"
         private const val ROOT_PIPE_MODE = 384
         private const val FIFO_WRITE_TIMEOUT_MS = 5000L
+
         /** Core stdout/stderr log under [runtimeHomeDir]; launcher redirects both modes here. */
         const val CORE_LOG = "core.log"
 
@@ -316,8 +362,7 @@ class CoreProcess(private val context: Context) {
         /** Controller socket filename under the runtime home dir. Read by the client controller. */
         const val SOCK = "clash.sock"
 
-        @Volatile
-        private var controller: CoreApi? = null
+        @Volatile private var controller: CoreApi? = null
 
         /** Shared local-core controller client (unix socket path fixed, secret from [current]). */
         fun controller(context: Context): CoreApi =
@@ -327,7 +372,7 @@ class CoreProcess(private val context: Context) {
                             CoreController.Local(
                                 socketPath = context.runtimeHomeDir.resolve(SOCK).absolutePath,
                                 secret = { current?.secret.orEmpty() },
-                            ),
+                            )
                     )
                     .also { controller = it }
 

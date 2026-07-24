@@ -22,22 +22,19 @@ package com.github.yumelira.yumebox.data.controller
 
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 /**
- * Shared debounce engine for the settings controllers that restart the proxy after a change:
- * every [schedule] cancels the pending run, waits out the debounce tick, and only invokes the
- * action while the proxy is still running.
+ * Shared debounce engine for the settings controllers that restart the proxy after a change: every
+ * [schedule] cancels the pending run, waits out the debounce tick, and only invokes the action
+ * while the proxy is still running.
  */
 class DebouncedProxyRestarter(
     private val timerName: String,
     private val debounceMillis: Long,
     private val isRunning: () -> Boolean,
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+    private val scope: CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
 ) {
     private var job: Job? = null
 

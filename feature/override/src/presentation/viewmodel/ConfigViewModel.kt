@@ -22,9 +22,9 @@ package com.github.yumelira.yumebox.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
 import com.github.yumelira.yumebox.data.controller.ActiveProfileOverrideReloader
 import com.github.yumelira.yumebox.data.controller.OverrideResolver
-import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
 import com.github.yumelira.yumebox.data.model.OverrideConfig
 import com.github.yumelira.yumebox.data.model.OverrideContentType
 import com.github.yumelira.yumebox.data.model.OverrideMetadata
@@ -32,6 +32,10 @@ import com.github.yumelira.yumebox.data.store.OverrideConfigStore
 import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLDecoder
+import java.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,10 +47,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLDecoder
-import java.util.*
 
 class OverrideConfigViewModel(
     private val configRepo: OverrideConfigStore,
@@ -113,23 +113,28 @@ class OverrideConfigViewModel(
             try {
                 // Load independently: a built-in asset hiccup must not wipe imported overrides
                 // (and vice versa). First open used to fail the whole try when materialize threw.
-                val builtIns =
-                    runCatching { configRepo.getBuiltInConfigs() }
-                        .onFailure { error ->
-                            Timber.tag(TAG).e(error, "Failed to load built-in overrides")
-                        }
-                        .getOrDefault(_builtInConfigs.value)
-                val users =
-                    runCatching { configRepo.getUserConfigs() }
-                        .onFailure { error ->
-                            Timber.tag(TAG).e(error, "Failed to load imported overrides")
-                        }
-                        .getOrDefault(_userConfigs.value)
+                val builtIns = runCatching {
+                    configRepo.getBuiltInConfigs()
+                }
+                    .onFailure { error ->
+                        Timber.tag(TAG).e(error, "Failed to load built-in overrides")
+                    }
+                    .getOrDefault(_builtInConfigs.value)
+                val users = runCatching {
+                    configRepo.getUserConfigs()
+                }
+                    .onFailure { error ->
+                        Timber.tag(TAG).e(error, "Failed to load imported overrides")
+                    }
+                    .getOrDefault(_userConfigs.value)
                 _builtInConfigs.value = builtIns
                 _userConfigs.value = users
                 _configs.value = builtIns + users
                 loadUsageCounts()
-            } catch (error: Exception) { // fault barrier: top-level ViewModel load handler, log and reset loading
+            } catch (
+                error:
+                    Exception) { // fault barrier: top-level ViewModel load handler, log and reset
+                                 // loading
                 Timber.tag(TAG).e(error, "Failed to load overrides")
             } finally {
                 _isLoading.value = false
@@ -157,21 +162,21 @@ class OverrideConfigViewModel(
     fun createConfig(name: String, description: String? = null, contentType: OverrideContentType) {
         viewModelScope.launch {
             runCatching {
-                    val now = System.currentTimeMillis()
-                    val config =
-                        OverrideConfig(
-                            id = OverrideMetadata.generateId(),
-                            name = name,
-                            description = description,
-                            contentType = contentType,
-                            content = "",
-                            createdAt = now,
-                            updatedAt = now,
-                        )
-                    configRepo.save(config)
-                    _pendingRevealConfigId.value = config.id
-                    refreshNow()
-                }
+                val now = System.currentTimeMillis()
+                val config =
+                    OverrideConfig(
+                        id = OverrideMetadata.generateId(),
+                        name = name,
+                        description = description,
+                        contentType = contentType,
+                        content = "",
+                        createdAt = now,
+                        updatedAt = now,
+                    )
+                configRepo.save(config)
+                _pendingRevealConfigId.value = config.id
+                refreshNow()
+            }
                 .onFailure { error -> Timber.tag(TAG).e(error, "Failed to create override") }
         }
     }
@@ -180,14 +185,14 @@ class OverrideConfigViewModel(
         if (isBuiltInConfig(id)) return
         viewModelScope.launch {
             runCatching {
-                    val shouldResyncRuntime =
-                        activeProfileOverrideReloader.isActiveProfileUsingOverride(id)
-                    val deleted = configRepo.delete(id)
-                    if (deleted && shouldResyncRuntime) {
-                        activeProfileOverrideReloader.reapplyActiveProfileOverride()
-                    }
-                    refreshNow()
+                val shouldResyncRuntime =
+                    activeProfileOverrideReloader.isActiveProfileUsingOverride(id)
+                val deleted = configRepo.delete(id)
+                if (deleted && shouldResyncRuntime) {
+                    activeProfileOverrideReloader.reapplyActiveProfileOverride()
                 }
+                refreshNow()
+            }
                 .onFailure { error -> Timber.tag(TAG).e(error, "Failed to delete override") }
         }
     }
@@ -195,30 +200,30 @@ class OverrideConfigViewModel(
     fun duplicateConfig(id: String) {
         viewModelScope.launch {
             runCatching {
-                    val source =
-                        getConfigById(id) ?: configRepo.getById(id) ?: return@runCatching
-                    // Built-ins have no metadata row — materialize a user copy instead of store.duplicate.
-                    val duplicated =
-                        if (isBuiltInConfig(id)) {
-                            val now = System.currentTimeMillis()
-                            OverrideConfig(
-                                    id = OverrideMetadata.generateId(),
-                                    name = YumeTxt.Override.BuiltIn.CopyName.format(source.name),
-                                    description = source.description,
-                                    contentType = source.contentType,
-                                    content = source.content,
-                                    createdAt = now,
-                                    updatedAt = now,
-                                )
-                                .also { configRepo.save(it) }
-                        } else {
-                            configRepo.duplicate(id)
-                        }
-                    if (duplicated != null) {
-                        _pendingRevealConfigId.value = duplicated.id
+                val source = getConfigById(id) ?: configRepo.getById(id) ?: return@runCatching
+                // Built-ins have no metadata row — materialize a user copy instead of
+                // store.duplicate.
+                val duplicated =
+                    if (isBuiltInConfig(id)) {
+                        val now = System.currentTimeMillis()
+                        OverrideConfig(
+                                id = OverrideMetadata.generateId(),
+                                name = YumeTxt.Override.BuiltIn.CopyName.format(source.name),
+                                description = source.description,
+                                contentType = source.contentType,
+                                content = source.content,
+                                createdAt = now,
+                                updatedAt = now,
+                            )
+                            .also { configRepo.save(it) }
+                    } else {
+                        configRepo.duplicate(id)
                     }
-                    refreshNow()
+                if (duplicated != null) {
+                    _pendingRevealConfigId.value = duplicated.id
                 }
+                refreshNow()
+            }
                 .onFailure { error -> Timber.tag(TAG).e(error, "Failed to duplicate override") }
         }
     }
@@ -256,10 +261,13 @@ class OverrideConfigViewModel(
         fallbackContentType: OverrideContentType?,
     ): Result<OverrideConfig> {
         val contentType =
-            OverrideContentType.fromFileName(sourceName) ?: fallbackContentType
+            OverrideContentType.fromFileName(sourceName)
+                ?: fallbackContentType
                 ?: return Result.failure(
                     IllegalArgumentException(
-                        YumeTxt.Override.Import.Failed.format(YumeTxt.Override.Import.UnsupportedType)
+                        YumeTxt.Override.Import.Failed.format(
+                            YumeTxt.Override.Import.UnsupportedType
+                        )
                     )
                 )
         if (contentType == OverrideContentType.JavaScript && content.isBlank()) {
@@ -284,11 +292,11 @@ class OverrideConfigViewModel(
             )
 
         return runCatching {
-                configRepo.save(config)
-                _pendingRevealConfigId.value = config.id
-                refreshNow()
-                config
-            }
+            configRepo.save(config)
+            _pendingRevealConfigId.value = config.id
+            refreshNow()
+            config
+        }
             .onFailure { error -> Timber.tag(TAG).e(error, "Failed to import override") }
     }
 
@@ -296,17 +304,20 @@ class OverrideConfigViewModel(
         withContext(Dispatchers.IO) {
             runCatching {
                     val url = URL(rawUrl.trim())
-                    require(url.protocol.equals("http", ignoreCase = true) ||
-                        url.protocol.equals("https", ignoreCase = true)) {
+                    require(
+                        url.protocol.equals("http", ignoreCase = true) ||
+                            url.protocol.equals("https", ignoreCase = true)
+                    ) {
                         YumeTxt.Override.Import.InvalidUrl
                     }
 
-                    val connection = (url.openConnection() as HttpURLConnection).apply {
-                        connectTimeout = NETWORK_IMPORT_CONNECT_TIMEOUT_MS
-                        readTimeout = NETWORK_IMPORT_READ_TIMEOUT_MS
-                        instanceFollowRedirects = true
-                        requestMethod = "GET"
-                    }
+                    val connection =
+                        (url.openConnection() as HttpURLConnection).apply {
+                            connectTimeout = NETWORK_IMPORT_CONNECT_TIMEOUT_MS
+                            readTimeout = NETWORK_IMPORT_READ_TIMEOUT_MS
+                            instanceFollowRedirects = true
+                            requestMethod = "GET"
+                        }
 
                     try {
                         val responseCode = connection.responseCode
@@ -318,7 +329,8 @@ class OverrideConfigViewModel(
                         val sourceName =
                             resolveNetworkImportSourceName(
                                 url = url,
-                                contentDisposition = connection.getHeaderField("Content-Disposition"),
+                                contentDisposition =
+                                    connection.getHeaderField("Content-Disposition"),
                                 contentType = contentTypeHeader,
                             )
                         val content = connection.inputStream.bufferedReader().use { it.readText() }
@@ -329,10 +341,11 @@ class OverrideConfigViewModel(
                         val normalizedSourceName =
                             ensureSourceNameExtension(sourceName, inferredContentType)
                         importConfig(
-                            content = content,
-                            sourceName = normalizedSourceName,
-                            fallbackContentType = inferredContentType,
-                        ).getOrThrow()
+                                content = content,
+                                sourceName = normalizedSourceName,
+                                fallbackContentType = inferredContentType,
+                            )
+                            .getOrThrow()
                     } finally {
                         connection.disconnect()
                     }
@@ -355,10 +368,8 @@ class OverrideConfigViewModel(
                 for (profile in profiles) {
                     val profileId = profile.uuid.toString()
                     val isBound =
-                        bindingProvider
-                            .getBinding(profileId)
-                            ?.overrideIds
-                            ?.contains(overrideId) == true
+                        bindingProvider.getBinding(profileId)?.overrideIds?.contains(overrideId) ==
+                            true
                     if (isBound) {
                         selectedProfileIds += profileId
                     }
@@ -395,12 +406,11 @@ class OverrideConfigViewModel(
                 profiles.forEach { profile ->
                     val profileId = profile.uuid.toString()
                     val shouldBind = profileId in selectedProfileIds
-                    val currentIds =
-                        bindingProvider.getBinding(profileId)?.overrideIds.orEmpty()
+                    val currentIds = bindingProvider.getBinding(profileId)?.overrideIds.orEmpty()
                     val isBound = overrideId in currentIds
                     when {
-                        shouldBind && !isBound ->
-                            bindingProvider.addOverride(profileId, overrideId)
+                        shouldBind && !isBound -> bindingProvider.addOverride(profileId, overrideId)
+
                         !shouldBind && isBound ->
                             bindingProvider.removeOverride(profileId, overrideId)
                     }
@@ -443,7 +453,9 @@ private fun resolveNetworkImportSourceName(
     contentDisposition: String?,
     contentType: String,
 ): String {
-    parseFilenameFromContentDisposition(contentDisposition)?.let { return it }
+    parseFilenameFromContentDisposition(contentDisposition)?.let {
+        return it
+    }
 
     val pathName =
         url.path

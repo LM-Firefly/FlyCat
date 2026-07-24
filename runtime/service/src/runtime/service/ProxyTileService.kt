@@ -68,8 +68,10 @@ class ProxyTileService : TileService() {
         super.onStartListening()
         updateJob?.cancel()
         updateJob = scope.launch {
-            // Refresh once up front: requestListeningState() (fired on every start/stop) only opens a
-            // brief listening window, so we must update immediately rather than wait for the first tick.
+            // Refresh once up front: requestListeningState() (fired on every start/stop) only opens
+            // a
+            // brief listening window, so we must update immediately rather than wait for the first
+            // tick.
             updateTileStateFromRuntime()
             PollingTimers.ticks(PollingTimerSpecs.ProxyTileRefresh).collect {
                 updateTileStateFromRuntime()
@@ -142,6 +144,7 @@ class ProxyTileService : TileService() {
                                 RuntimeServiceLauncher.SOURCE_TILE,
                             )
                         }
+
                         RunMode.Tun,
                         RunMode.Tproxy -> {
                             withContext(Dispatchers.IO) {
@@ -170,6 +173,7 @@ class ProxyTileService : TileService() {
     private suspend fun updateTileStateFromRuntime() {
         updateTileState(withContext(Dispatchers.IO) { currentSnapshot() }.phase.isActiveOrStopping)
     }
+
     private fun currentSnapshot(): RuntimeSnapshot {
         val configuredMode = networkSettingsStorage.runMode.value
         val vpnPhase = StatusProvider.queryRuntimePhase(RunMode.VpnService)
@@ -194,6 +198,7 @@ class ProxyTileService : TileService() {
                         RuntimeOwner.VpnService -> vpnPhase
                         RuntimeOwner.RootDaemon,
                         RuntimeOwner.RemoteController -> RuntimePhase.Running
+
                         RuntimeOwner.None -> error("unreachable: None handled above")
                     },
                 // VpnService owner is always the VPN mode. A root daemon can outlive a settings
@@ -205,7 +210,8 @@ class ProxyTileService : TileService() {
         }
     }
 
-    // Mirrors the home-screen stop path: broadcast a stop, tear down the VPN service, and — since the
+    // Mirrors the home-screen stop path: broadcast a stop, tear down the VPN service, and — since
+    // the
     // root daemon isn't a service — explicitly stop it (this is a deliberate user stop).
     private fun stopLocalRuntime() {
         runCatching { sendBroadcastSelf(Intent(Intents.ACTION_RUNTIME_REQUEST_STOP)) }

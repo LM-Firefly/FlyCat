@@ -20,33 +20,22 @@
 
 package com.github.yumelira.yumebox.screen.log
 
-import android.net.Uri
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.yumelira.yumebox.core.model.LogMessage
 import com.github.yumelira.yumebox.runtime.api.LogObserver
 import com.github.yumelira.yumebox.runtime.api.LogSubscription
 import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import timber.log.Timber
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicLong
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import timber.log.Timber
+import kotlin.collections.ArrayDeque
 
 /**
  * Minimum log level shown in the UI. [All] keeps every entry; other values keep that level and
@@ -157,12 +146,12 @@ class LogViewModel(private val appContext: Context) : ViewModel() {
 
     val screenState: StateFlow<LogScreenState> =
         combine(filteredLogEntries, levelFilter, connectionState) { entries, filter, connection ->
-            LogScreenState(
-                filteredEntries = entries,
-                levelFilter = filter,
-                connectionState = connection,
-            )
-        }
+                LogScreenState(
+                    filteredEntries = entries,
+                    levelFilter = filter,
+                    connectionState = connection,
+                )
+            }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5_000),
@@ -183,7 +172,7 @@ class LogViewModel(private val appContext: Context) : ViewModel() {
                             LogConnectionState.Retrying
                         }
                     try {
-                    RuntimeAccess.connect(appContext)
+                        RuntimeAccess.connect(appContext)
                         logSubscription = RuntimeAccess.core().subscribeLogs(observer)
                     } catch (error: CancellationException) {
                         throw error

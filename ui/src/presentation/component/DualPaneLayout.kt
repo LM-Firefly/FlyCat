@@ -13,17 +13,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -36,8 +27,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 /**
  * NetEase / YumeFuwa style dual-pane shell.
  *
- * Left pane holds the main pager at a phone-like width so Moe home is not stretched.
- * Right pane hosts detail destinations. The center divider may be shown and optionally dragged.
+ * Left pane holds the main pager at a phone-like width so Moe home is not stretched. Right pane
+ * hosts detail destinations. The center divider may be shown and optionally dragged.
  *
  * Width policy:
  * - Keep [leftRatio] of free width (container minus divider) so window resize scales both panes.
@@ -89,30 +80,22 @@ fun DualPaneLayout(
         val leftWidthDp = with(density) { desiredLeftPx.toDp() }
         val canDrag = dividerDraggable && maxBoundPx > minBoundPx + 0.5f
 
-        val dragState =
-            rememberDraggableState { deltaPx ->
-                if (!canDrag) return@rememberDraggableState
-                val signed =
-                    if (layoutDirection == LayoutDirection.Rtl) -deltaPx else deltaPx
-                val nextLeft =
-                    (leftRatio * freeWidthPx + signed).coerceIn(minBoundPx, maxBoundPx)
-                leftRatio = (nextLeft / freeWidthPx).coerceIn(0.05f, 0.95f)
-            }
+        val dragState = rememberDraggableState { deltaPx ->
+            if (!canDrag) return@rememberDraggableState
+            val signed = if (layoutDirection == LayoutDirection.Rtl) -deltaPx else deltaPx
+            val nextLeft = (leftRatio * freeWidthPx + signed).coerceIn(minBoundPx, maxBoundPx)
+            leftRatio = (nextLeft / freeWidthPx).coerceIn(0.05f, 0.95f)
+        }
 
         Row(modifier = Modifier.fillMaxSize()) {
-            Box(
-                Modifier
-                    .width(leftWidthDp)
-                    .fillMaxHeight()
-            ) {
+            Box(Modifier.width(leftWidthDp).fillMaxHeight()) {
                 left()
             }
 
             if (showDivider) {
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxHeight()
+                        Modifier.fillMaxHeight()
                             .width(dividerHitWidth)
                             .then(
                                 if (canDrag) {
@@ -127,19 +110,14 @@ fun DualPaneLayout(
                     contentAlignment = Alignment.Center,
                 ) {
                     Box(
-                        Modifier
-                            .fillMaxHeight()
+                        Modifier.fillMaxHeight()
                             .width(1.dp)
                             .background(MiuixTheme.colorScheme.outline.copy(alpha = 0.55f))
                     )
                 }
             }
 
-            Box(
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-            ) {
+            Box(Modifier.weight(1f).fillMaxHeight()) {
                 right()
             }
         }

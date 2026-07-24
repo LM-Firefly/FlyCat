@@ -36,7 +36,10 @@ object EditorFontManager {
                     cachedFont = it
                     Timber.d("JetBrainsMono font loaded successfully")
                 }
-            } catch (error: Exception) { // fault barrier: createFromAsset throws undocumented RuntimeException
+            } catch (
+                error:
+                    Exception) { // fault barrier: createFromAsset throws undocumented
+                                 // RuntimeException
                 Timber.w(error, "Failed to load JetBrainsMono font, falling back to MONOSPACE")
                 Typeface.MONOSPACE
             }

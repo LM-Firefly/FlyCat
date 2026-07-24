@@ -32,21 +32,17 @@ import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 import com.github.yumelira.yumebox.runtime.service.notification.ServiceNotificationManager
-import com.github.yumelira.yumebox.runtime.service.session.RuntimeHost
-import com.github.yumelira.yumebox.runtime.service.session.RuntimeSpec
-import com.github.yumelira.yumebox.runtime.service.session.RuntimeStartupLogStore
-import com.github.yumelira.yumebox.runtime.service.session.RuntimeTransport
-import com.github.yumelira.yumebox.runtime.service.session.SessionRuntime
+import com.github.yumelira.yumebox.runtime.service.session.*
 import com.github.yumelira.yumebox.runtime.service.util.CoreRuntimeConfig
+import com.github.yumelira.yumebox.runtime.service.util.sendProfileLoaded
 import com.github.yumelira.yumebox.runtime.service.util.sendRuntimeStarted
 import com.github.yumelira.yumebox.runtime.service.util.sendRuntimeStopped
-import com.github.yumelira.yumebox.runtime.service.util.sendProfileLoaded
+import java.util.*
+import kotlin.concurrent.thread
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import kotlin.concurrent.thread
 
 /**
  * Shared lifecycle logic for the foreground runtime services ([TunService] and root host).
@@ -126,85 +122,87 @@ class RuntimeForegroundController(
         // services share this process). Set first so it holds even if the start below fails.
         StatusProvider.setServiceAlive(mode, true)
         runCatching {
-                startupLogStore.append("$tag service: onCreate begin")
+            startupLogStore.append("$tag service: onCreate begin")
 
-                notificationManager.createChannel()
-                service.startForeground(
-                    notificationConfig.notificationId,
-                    notificationManager.createInitialNotification(),
+            notificationManager.createChannel()
+            service.startForeground(
+                notificationConfig.notificationId,
+                notificationManager.createInitialNotification(),
+            )
+            startupLogStore.append("$tag service: startForeground done")
+
+            StatusProvider.clearLegacyStateFiles()
+            sessionToken = StatusProvider.adoptOrBeginRuntimeSession(mode)
+            CoreRuntimeConfig.applyCustomUserAgentIfPresent(service)
+
+            runtime =
+                SessionRuntime(
+                    host =
+                        object : RuntimeHost {
+                            override val context = service
+                            override val mode: RunMode = this@RuntimeForegroundController.mode
+
+                            override fun onStarting(spec: RuntimeSpec) = Unit
+
+                            override fun onStarted(spec: RuntimeSpec) {
+                                StatusProvider.markRuntimeRunning(
+                                    this@RuntimeForegroundController.mode,
+                                    sessionToken,
+                                )
+                                service.sendRuntimeStarted()
+                            }
+
+                            override fun onStopped(reason: String?) {
+                                this@RuntimeForegroundController.reason = reason
+                                StatusProvider.markRuntimeIdle(
+                                    this@RuntimeForegroundController.mode,
+                                    sessionToken,
+                                )
+                                service.sendRuntimeStopped(reason)
+                            }
+
+                            override fun onProfileLoaded(profileUuid: String) {
+                                service.sendProfileLoaded(UUID.fromString(profileUuid))
+                            }
+
+                            override fun onSnapshotChanged(snapshot: RuntimeSnapshot) = Unit
+
+                            override fun onLogReady(ready: Boolean) = Unit
+
+                            override fun onLogItem(log: LogMessage) = Unit
+
+                            override fun reportFailure(error: String) {
+                                reason = error
+                                startupLogStore.append("$tag failed=$error")
+                                markFailed(error)
+                                service.sendRuntimeStopped(error)
+                                Timber.e("$label runtime failed: $error")
+                                service.stopSelf()
+                            }
+                        },
+                    transport = createTransport(),
+                    scope = scope,
                 )
-                startupLogStore.append("$tag service: startForeground done")
 
-                StatusProvider.clearLegacyStateFiles()
-                sessionToken = StatusProvider.adoptOrBeginRuntimeSession(mode)
-                CoreRuntimeConfig.applyCustomUserAgentIfPresent(service)
-
-                runtime =
-                    SessionRuntime(
-                        host =
-                            object : RuntimeHost {
-                                override val context = service
-                                override val mode: RunMode = this@RuntimeForegroundController.mode
-
-                                override fun onStarting(spec: RuntimeSpec) = Unit
-
-                                override fun onStarted(spec: RuntimeSpec) {
-                                    StatusProvider.markRuntimeRunning(
-                                        this@RuntimeForegroundController.mode,
-                                        sessionToken,
-                                    )
-                                    service.sendRuntimeStarted()
-                                }
-
-                                override fun onStopped(reason: String?) {
-                                    this@RuntimeForegroundController.reason = reason
-                                    StatusProvider.markRuntimeIdle(
-                                        this@RuntimeForegroundController.mode,
-                                        sessionToken,
-                                    )
-                                    service.sendRuntimeStopped(reason)
-                                }
-
-                                override fun onProfileLoaded(profileUuid: String) {
-                                    service.sendProfileLoaded(UUID.fromString(profileUuid))
-                                }
-
-                                override fun onSnapshotChanged(snapshot: RuntimeSnapshot) = Unit
-
-                                override fun onLogReady(ready: Boolean) = Unit
-
-                                override fun onLogItem(log: LogMessage) = Unit
-
-                                override fun reportFailure(error: String) {
-                                    reason = error
-                                    startupLogStore.append("$tag failed=$error")
-                                    markFailed(error)
-                                    service.sendRuntimeStopped(error)
-                                    Timber.e("$label runtime failed: $error")
-                                    service.stopSelf()
-                                }
-                            },
-                        transport = createTransport(),
-                        scope = scope,
+            registerRuntimeReceiver()
+            startupLogStore.append("$tag service: receiver registered")
+            scope.launch {
+                runCatching {
+                    startupLogStore.append("$tag spec: create begin")
+                    val spec = createSpec()
+                    startupLogStore.append(
+                        "$tag spec: create done profile=${spec.profileUuid} overrides=${spec.overrideSpecs.size}"
                     )
-
-                registerRuntimeReceiver()
-                startupLogStore.append("$tag service: receiver registered")
-                scope.launch {
-                    runCatching {
-                            startupLogStore.append("$tag spec: create begin")
-                            val spec = createSpec()
-                            startupLogStore.append(
-                                "$tag spec: create done profile=${spec.profileUuid} overrides=${spec.overrideSpecs.size}"
-                            )
-                            val result = runtime!!.start(spec)
-                            check(result.success) { result.error ?: "${label.lowercase()} runtime start failed" }
-                        }
-                        .onFailure { error ->
-                            failStartup(error.message ?: "${label.lowercase()} runtime start failed")
-                        }
+                    val result = runtime!!.start(spec)
+                    check(result.success) {
+                        result.error ?: "${label.lowercase()} runtime start failed"
+                    }
                 }
+                    .onFailure { error ->
+                        failStartup(error.message ?: "${label.lowercase()} runtime start failed")
+                    }
             }
+        }
             .onFailure { error ->
                 failStartup(error.message ?: "${label.lowercase()} runtime start failed")
             }
@@ -288,7 +286,8 @@ class RuntimeForegroundController(
     }
 
     private fun stopForegroundService() {
-        // Silence the traffic updater first so a late notify() can't re-post the ongoing notification
+        // Silence the traffic updater first so a late notify() can't re-post the ongoing
+        // notification
         // after we remove it, then drop the foreground notification.
         notificationManager.release()
         ServiceCompat.stopForeground(service, ServiceCompat.STOP_FOREGROUND_REMOVE)
@@ -355,16 +354,17 @@ class RuntimeForegroundController(
         reloadJob?.cancel()
         reloadJob = scope.launch {
             startupLogStore.append("$tag spec: reload create begin")
-            val spec =
-                runCatching { createSpec() }
-                    .getOrElse { error ->
-                        reason = error.message
-                        startupLogStore.append(
-                            "$tag failed=${error.message ?: "${label.lowercase()} runtime spec refresh failed"}"
-                        )
-                        Timber.w("$label runtime spec refresh failed: ${error.message}")
-                        return@launch
-                    }
+            val spec = runCatching {
+                createSpec()
+            }
+                .getOrElse { error ->
+                    reason = error.message
+                    startupLogStore.append(
+                        "$tag failed=${error.message ?: "${label.lowercase()} runtime spec refresh failed"}"
+                    )
+                    Timber.w("$label runtime spec refresh failed: ${error.message}")
+                    return@launch
+                }
             startupLogStore.append(
                 "$tag spec: reload create done profile=${spec.profileUuid} overrides=${spec.overrideSpecs.size}"
             )

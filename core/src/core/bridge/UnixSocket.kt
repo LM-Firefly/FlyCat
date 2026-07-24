@@ -22,16 +22,9 @@ package com.github.yumelira.yumebox.core.bridge
 
 import android.os.ParcelFileDescriptor
 import androidx.annotation.Keep
-import java.io.Closeable
-import java.io.FileDescriptor
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.io.OutputStream
+import java.io.*
 
-/**
-/** UNIX-domain connection to the local core controller (`@` path => abstract namespace). */
- */
+/** /** UNIX-domain connection to the local core controller (`@` path => abstract namespace). */ */
 @Keep
 class UnixSocket private constructor(private val descriptor: ParcelFileDescriptor) : Closeable {
 
@@ -68,13 +61,10 @@ class UnixSocket private constructor(private val descriptor: ParcelFileDescripto
             return UnixSocket(ParcelFileDescriptor.adoptFd(fd))
         }
 
-        @JvmStatic
-        private external fun nativeConnectUnixSocket(path: String, type: Int): Int
+        @JvmStatic private external fun nativeConnectUnixSocket(path: String, type: Int): Int
 
-        @JvmStatic
-        private external fun nativeSetSoTimeout(fd: Int, timeoutMs: Int)
+        @JvmStatic private external fun nativeSetSoTimeout(fd: Int, timeoutMs: Int)
 
-        @JvmStatic
-        private external fun nativeGetSoTimeout(fd: Int): Int
+        @JvmStatic private external fun nativeGetSoTimeout(fd: Int): Int
     }
 }

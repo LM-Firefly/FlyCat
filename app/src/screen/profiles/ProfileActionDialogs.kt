@@ -82,7 +82,9 @@ internal fun ProfileEditOptionsDialogHost(
             openProfileConfigPreview(
                 targetFile = configFile,
                 missingMessage =
-                    YumeTxt.ProfilesPage.SettingsDialog.ConfigMissing.format(configFile.absolutePath),
+                    YumeTxt.ProfilesPage.SettingsDialog.ConfigMissing.format(
+                        configFile.absolutePath
+                    ),
                 editable = true,
                 onReadFailed = context::toast,
             ) { content, callback ->
@@ -117,29 +119,32 @@ internal fun ProfileEditOptionsDialogHost(
 private fun shareProfileFile(context: Context, profile: Profile) {
     val file = importedConfigFile(profile)
     if (!file.exists()) {
-        context.toast(YumeTxt.ProfilesPage.ShareDialog.ImportedConfigMissing.format(file.absolutePath))
+        context.toast(
+            YumeTxt.ProfilesPage.ShareDialog.ImportedConfigMissing.format(file.absolutePath)
+        )
         return
     }
 
     runCatching {
-            val uri =
-                FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    file,
-                )
-            val shareIntent =
-                Intent(Intent.ACTION_SEND).apply {
-                    type = "application/x-yaml"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-            context.startActivity(
-                Intent.createChooser(shareIntent, YumeTxt.ProfilesPage.ShareDialog.ShareFile)
-                    .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+        val uri =
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file,
             )
-        }
+        val shareIntent =
+            Intent(Intent.ACTION_SEND).apply {
+                type = "application/x-yaml"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        context.startActivity(
+            Intent.createChooser(shareIntent, YumeTxt.ProfilesPage.ShareDialog.ShareFile).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        )
+    }
         .onFailure { error -> context.toast(error.message ?: "Share failed") }
 }
 
@@ -158,7 +163,8 @@ private fun shareProfileLink(profile: Profile) {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     context.startActivity(
-        Intent.createChooser(shareIntent, YumeTxt.ProfilesPage.ShareDialog.ShareLink)
-            .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+        Intent.createChooser(shareIntent, YumeTxt.ProfilesPage.ShareDialog.ShareLink).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
     )
 }

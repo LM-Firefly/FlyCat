@@ -31,14 +31,7 @@ import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonPrimitive
@@ -82,7 +75,6 @@ class ConnectionViewModel(private val appContext: Context) : ViewModel() {
                 initialValue = emptyList(),
             )
 
-    
     data class ConnectionScreenState(
         val state: ConnectionState = ConnectionState(),
         val filteredConnections: List<ConnectionInfo> = emptyList(),
@@ -90,8 +82,8 @@ class ConnectionViewModel(private val appContext: Context) : ViewModel() {
 
     val screenState: StateFlow<ConnectionScreenState> =
         combine(state, filteredConnections) { s, filtered ->
-            ConnectionScreenState(state = s, filteredConnections = filtered)
-        }
+                ConnectionScreenState(state = s, filteredConnections = filtered)
+            }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
@@ -111,7 +103,8 @@ class ConnectionViewModel(private val appContext: Context) : ViewModel() {
             PollingTimers.ticks(PollingTimerSpecs.ConnectionsPolling).collect {
                 try {
                     refreshConnections(showRefreshing = true)
-                } catch (error: Exception) { // fault barrier: keep the polling loop alive on any failure
+                } catch (
+                    error: Exception) { // fault barrier: keep the polling loop alive on any failure
                     Timber.w(error, "Failed to poll connections")
                     _state.update { it.copy(error = error.message, isRefreshing = false) }
                 }
@@ -173,7 +166,8 @@ class ConnectionViewModel(private val appContext: Context) : ViewModel() {
                         isRefreshing = false,
                     )
                 }
-            } catch (error: Exception) { // fault barrier: service IPC failure becomes UI error state
+            } catch (
+                error: Exception) { // fault barrier: service IPC failure becomes UI error state
                 Timber.w(error, "Failed to query connections")
                 _state.update {
                     it.copy(error = error.message, isLoading = false, isRefreshing = false)
@@ -239,6 +233,7 @@ private fun connectionDisplayTarget(connection: ConnectionInfo): String {
         host.isNotBlank() -> host
         destinationIp.isNotBlank() && destinationPort.isNotBlank() ->
             "$destinationIp:$destinationPort"
+
         destinationIp.isNotBlank() -> destinationIp
         sourceIp.isNotBlank() && sourcePort.isNotBlank() -> "$sourceIp:$sourcePort"
         else -> sourceIp

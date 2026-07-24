@@ -150,7 +150,8 @@ fun AccessControlScreen(navigator: Navigator) {
                                 ) {
                                     Icon(
                                         imageVector = MiuixIcons.Sort,
-                                        contentDescription = YumeTxt.AccessControl.Settings.SortMode,
+                                        contentDescription =
+                                            YumeTxt.AccessControl.Settings.SortMode,
                                         tint = MiuixTheme.colorScheme.onSurface,
                                     )
                                 }
@@ -176,13 +177,17 @@ fun AccessControlScreen(navigator: Navigator) {
                                     actions =
                                         remember(viewModel) {
                                             AccessControlMenuActions(
-                                                onShowSystemAppsChange = viewModel::onShowSystemAppsChange,
-                                                onSelectedFirstChange = viewModel::onSelectedFirstChange,
+                                                onShowSystemAppsChange =
+                                                    viewModel::onShowSystemAppsChange,
+                                                onSelectedFirstChange =
+                                                    viewModel::onSelectedFirstChange,
                                                 onSelectAll = viewModel::selectAll,
                                                 onDeselectAll = viewModel::deselectAll,
                                                 onInvertSelection = viewModel::invertSelection,
-                                                onSelectChinaApps = viewModel::selectChinaAppsInCurrentList,
-                                                onSelectNonChinaApps = viewModel::selectNonChinaAppsInCurrentList,
+                                                onSelectChinaApps =
+                                                    viewModel::selectChinaAppsInCurrentList,
+                                                onSelectNonChinaApps =
+                                                    viewModel::selectNonChinaAppsInCurrentList,
                                                 onImportPackages = viewModel::importPackages,
                                                 onExportPackages = viewModel::exportPackages,
                                             )
@@ -237,7 +242,7 @@ fun AccessControlScreen(navigator: Navigator) {
                         },
                     )
                 }
-            },
+            }
         ) { innerPadding ->
             val combinedInnerPadding = combinePaddingValues(innerPadding, mainLikePadding)
             val listBottomPadding = combinedInnerPadding.calculateBottomPadding()
@@ -258,8 +263,10 @@ fun AccessControlScreen(navigator: Navigator) {
                     InfiniteProgressIndicator(color = MiuixTheme.colorScheme.onSurface)
                 }
             } else if (currentSearchStatus.shouldCollapse()) {
-                // Render the list during COLLAPSING too (not just at the COLLAPSED end state) so it is
-                // already settled underneath the fading search overlay — otherwise it pops in on the
+                // Render the list during COLLAPSING too (not just at the COLLAPSED end state) so it
+                // is
+                // already settled underneath the fading search overlay — otherwise it pops in on
+                // the
                 // final frame and looks like a refresh flash.
                 ScreenLazyColumn(
                     scrollBehavior = scrollBehavior,
@@ -276,7 +283,6 @@ fun AccessControlScreen(navigator: Navigator) {
                     accessControlAppItems(filteredApps, uiState, viewModel)
                 }
             }
-
         }
 
         currentSearchStatus.SearchPager(
@@ -604,11 +610,11 @@ private fun AppIcon(
             value =
                 withContext(Dispatchers.IO) {
                     runCatching {
-                            context.packageManager
-                                .getApplicationIcon(packageName)
-                                .toBitmap(width = bitmapSize, height = bitmapSize)
-                                .asImageBitmap()
-                        }
+                        context.packageManager
+                            .getApplicationIcon(packageName)
+                            .toBitmap(width = bitmapSize, height = bitmapSize)
+                            .asImageBitmap()
+                    }
                         .getOrNull()
                 }
         }

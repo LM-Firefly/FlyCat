@@ -56,7 +56,8 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         controller.onStartCommand(startId)
 
     override fun onDestroy() {
-        // Guarantee the core child dies first: it holds the tun fd, so killing it (lock-free) is what
+        // Guarantee the core child dies first: it holds the tun fd, so killing it (lock-free) is
+        // what
         // actually brings the VPN interface down — even if the session-scoped teardown is blocked.
         com.github.yumelira.yumebox.runtime.service.core.CoreProcess.killRunning()
         controller.onDestroy()

@@ -1,5 +1,7 @@
 package dev.yume.loader;
 
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AppComponentFactory;
 import android.app.Application;
@@ -8,8 +10,6 @@ import android.content.BroadcastReceiver;
 import android.content.ContentProvider;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
-import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.os.Build;
 
 import java.lang.reflect.InvocationTargetException;
@@ -19,6 +19,17 @@ import java.lang.reflect.InvocationTargetException;
 public final class LoaderComponentFactory extends AppComponentFactory {
     private volatile AppComponentFactory delegate;
     private volatile ClassLoader payloadLoader;
+
+    private static AppComponentFactory instantiateComponentFactory(Class<?> type)
+            throws IllegalAccessException, InstantiationException {
+        try {
+            return type.asSubclass(AppComponentFactory.class).getDeclaredConstructor().newInstance();
+        } catch (NoSuchMethodException | InvocationTargetException e) {
+            InstantiationException failure = new InstantiationException(type.getName());
+            failure.initCause(e);
+            throw failure;
+        }
+    }
 
     @Override
     public Application instantiateApplication(ClassLoader classLoader, String className)
@@ -85,17 +96,6 @@ public final class LoaderComponentFactory extends AppComponentFactory {
                 }
             }
             return delegate;
-        }
-    }
-
-    private static AppComponentFactory instantiateComponentFactory(Class<?> type)
-            throws IllegalAccessException, InstantiationException {
-        try {
-            return type.asSubclass(AppComponentFactory.class).getDeclaredConstructor().newInstance();
-        } catch (NoSuchMethodException | InvocationTargetException e) {
-            InstantiationException failure = new InstantiationException(type.getName());
-            failure.initCause(e);
-            throw failure;
         }
     }
 }

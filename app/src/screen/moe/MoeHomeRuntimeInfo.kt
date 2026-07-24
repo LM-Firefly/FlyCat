@@ -30,10 +30,18 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun MoeTrafficStrip(downloadSpeed: Long, uploadSpeed: Long, modifier: Modifier = Modifier) {
+internal fun MoeTrafficStrip(
+    downloadSpeed: Long,
+    uploadSpeed: Long,
+    modifier: Modifier = Modifier,
+) {
     Row(modifier, Arrangement.spacedBy(MoeUi.Hero.trafficRowGap), Alignment.CenterVertically) {
-        Box(Modifier.weight(1f), Alignment.CenterStart) { MoeTrafficItem(YumeTxt.Home.Traffic.UpShort, uploadSpeed) }
-        Box(Modifier.weight(1f), Alignment.CenterEnd) { MoeTrafficItem(YumeTxt.Home.Traffic.DownShort, downloadSpeed) }
+        Box(Modifier.weight(1f), Alignment.CenterStart) {
+            MoeTrafficItem(YumeTxt.Home.Traffic.UpShort, uploadSpeed)
+        }
+        Box(Modifier.weight(1f), Alignment.CenterEnd) {
+            MoeTrafficItem(YumeTxt.Home.Traffic.DownShort, downloadSpeed)
+        }
     }
 }
 
@@ -72,7 +80,11 @@ private fun MoeTrafficItem(label: String, speed: Long) {
 }
 
 @Composable
-internal fun MoeHomeInfoPanel(serverName: String?, serverPing: Int?, modifier: Modifier = Modifier) {
+internal fun MoeHomeInfoPanel(
+    serverName: String?,
+    serverPing: Int?,
+    modifier: Modifier = Modifier,
+) {
     val node = remember(serverName) { serverName?.let(::extractFlaggedName) }
     val name = node?.displayName ?: serverName.orEmpty()
     val ping =

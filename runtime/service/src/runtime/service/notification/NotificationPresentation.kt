@@ -58,7 +58,10 @@ internal object NotificationPresentationFactory {
     private fun buildSpeedLine(trafficNow: Long): String {
         val upNow = decodeTrafficHalf(trafficNow ushr 32)
         val downNow = decodeTrafficHalf(trafficNow and 0xFFFFFFFFL)
-        return YumeTxt.Service.Notification.SpeedLine.format(formatSpeed(downNow), formatSpeed(upNow))
+        return YumeTxt.Service.Notification.SpeedLine.format(
+            formatSpeed(downNow),
+            formatSpeed(upNow),
+        )
     }
 
     private fun buildTotalLine(trafficTotal: Long): String {

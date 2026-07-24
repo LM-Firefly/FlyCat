@@ -52,16 +52,16 @@ import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.YumeHaze
 import com.github.yumelira.yumebox.screen.home.HomeProxyControlState
+import dev.chrisbanes.haze.ExperimentalHazeApi
+import dev.chrisbanes.haze.HazeInputScale
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.blur.blurEffect
+import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.delay
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import dev.chrisbanes.haze.ExperimentalHazeApi
-import dev.chrisbanes.haze.HazeInputScale
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.blur.blurEffect
 
 @OptIn(ExperimentalHazeApi::class)
 @Composable
@@ -270,6 +270,7 @@ internal fun MoeLaunchButton(
                     HomeProxyControlState.Connecting -> YumeTxt.Home.Status.Connecting
                     HomeProxyControlState.Running ->
                         if (isRemoteController) "运行中" else YumeTxt.Home.Control.Stop
+
                     HomeProxyControlState.Lost -> "失联"
                     HomeProxyControlState.Disconnecting -> YumeTxt.Home.Status.Disconnecting
                 }
@@ -286,7 +287,8 @@ internal fun MoeLaunchButton(
 
     Box(
         modifier =
-            modifier.graphicsLayer {
+            modifier
+                .graphicsLayer {
                     scaleX = pressScale
                     scaleY = pressScale
                 }

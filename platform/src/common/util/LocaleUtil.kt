@@ -20,7 +20,7 @@
 
 package com.github.yumelira.yumebox.common.util
 
-import java.util.Locale
+import java.util.*
 
 object LocaleUtil {
     private val normalizedRegionCodes = setOf("TW")

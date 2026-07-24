@@ -25,7 +25,7 @@ import com.github.yumelira.yumebox.data.model.OverrideMetadata
 import com.github.yumelira.yumebox.data.model.ProfileBinding
 import com.github.yumelira.yumebox.data.store.OverrideConfigStore
 import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
-import java.util.UUID
+import java.util.*
 
 class OverrideResolver(
     private val configStore: OverrideConfigStore,
@@ -77,18 +77,18 @@ class OverrideResolver(
             return emptyList()
         }
         return buildList {
-                binding.overrideIds.forEach { overrideId ->
-                    if (
-                        isLegacyPresetOverrideId(overrideId) ||
-                            OverrideConfigStore.isInternalRuntimeConfig(overrideId)
-                    ) {
-                        return@forEach
-                    }
-                    if (configStore.getConfigFilePath(overrideId) != null) {
-                        add(overrideId)
-                    }
+            binding.overrideIds.forEach { overrideId ->
+                if (
+                    isLegacyPresetOverrideId(overrideId) ||
+                        OverrideConfigStore.isInternalRuntimeConfig(overrideId)
+                ) {
+                    return@forEach
+                }
+                if (configStore.getConfigFilePath(overrideId) != null) {
+                    add(overrideId)
                 }
             }
+        }
             .distinct()
     }
 

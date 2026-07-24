@@ -17,19 +17,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.TargetedFlingBehavior
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.runtime.Composable
@@ -42,15 +30,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.navigation3.runtime.NavKey
-import com.github.yumelira.yumebox.presentation.component.BottomBarContent
-import com.github.yumelira.yumebox.presentation.component.BottomBarDestination
-import com.github.yumelira.yumebox.presentation.component.DualPaneLayout
-import com.github.yumelira.yumebox.presentation.component.LocalBottomBarScrollBehavior
-import com.github.yumelira.yumebox.presentation.component.MainPagerState
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.WindowLayoutMode
-import com.github.yumelira.yumebox.presentation.component.rememberBottomBarReservedHeight
-import com.github.yumelira.yumebox.presentation.component.rememberMainPagerFlingBehavior
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.navigation.SecondaryDetailHost
 import com.github.yumelira.yumebox.presentation.navigation.splitShellRightPaneTransform
@@ -63,8 +43,8 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 /**
  * Hosts the main pager (and optional tablet dual-pane shell).
  *
- * Split shell: each pane owns a Scaffold root so sheets/dialogs stay pane-local and can cover
- * the floating bottom bar on the left without spanning the full window.
+ * Split shell: each pane owns a Scaffold root so sheets/dialogs stay pane-local and can cover the
+ * floating bottom bar on the left without spanning the full window.
  */
 @Composable
 internal fun MainContentHost(

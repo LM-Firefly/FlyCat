@@ -61,7 +61,8 @@ fun AgeKeyGeneratorDialog(
     AppDialog(
         show = show,
         title =
-            if (hybrid) YumeTxt.MetaFeature.AgeKey.HybridTitle else YumeTxt.MetaFeature.AgeKey.X25519Title,
+            if (hybrid) YumeTxt.MetaFeature.AgeKey.HybridTitle
+            else YumeTxt.MetaFeature.AgeKey.X25519Title,
         onDismissRequest = onDismiss,
         onDismissFinished = onDismissFinished,
     ) {
@@ -94,7 +95,9 @@ fun AgeKeyGeneratorDialog(
                         scope.launch {
                             val derived =
                                 withContext(Dispatchers.Default) {
-                                    Compiler.nativeAgePublicKey(secretKey).takeIf { it.isNotBlank() }
+                                    Compiler.nativeAgePublicKey(secretKey).takeIf {
+                                        it.isNotBlank()
+                                    }
                                 }
                             if (!derived.isNullOrBlank()) {
                                 publicKey = derived
@@ -116,10 +119,12 @@ fun AgeKeyGeneratorDialog(
                                     // supported by the compiler crate; falls back to x25519).
                                     runCatching {
                                         kotlinx.serialization.json.Json.decodeFromString(
-                                            com.github.yumelira.yumebox.core.model.AgeKeyPair.serializer(),
+                                            com.github.yumelira.yumebox.core.model.AgeKeyPair
+                                                .serializer(),
                                             Compiler.nativeGenAgeKey(),
                                         )
-                                    }.getOrNull()
+                                    }
+                                        .getOrNull()
                                 }
                             generating = false
                             if (keyPair != null) {

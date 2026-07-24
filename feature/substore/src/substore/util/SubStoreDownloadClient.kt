@@ -23,27 +23,21 @@ package com.github.yumelira.yumebox.substore.util
 import android.app.Application
 import com.github.yumelira.yumebox.common.util.ByteFormatter.formatSpeed
 import com.github.yumelira.yumebox.data.store.AppSettingsStore
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.android.Android
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.request.header
-import io.ktor.client.request.prepareGet
-import io.ktor.client.statement.bodyAsChannel
-import io.ktor.http.Headers
-import io.ktor.http.HttpHeaders
-import io.ktor.http.contentLength
-import io.ktor.http.isSuccess
-import io.ktor.utils.io.jvm.javaio.toInputStream
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import timber.log.Timber
+import io.ktor.client.*
+import io.ktor.client.engine.android.*
+import io.ktor.client.plugins.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.utils.io.jvm.javaio.*
 import java.io.File
 import java.net.URLDecoder
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import java.util.Base64
-import java.util.Calendar
-import java.util.Locale
+import java.util.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 
 data class DownloadProgress(
     val progress: Int,
@@ -156,7 +150,9 @@ class SubStoreDownloadClient(
 
                         Pair(true, subscriptionInfo)
                     }
-            } catch (error: Exception) { // fault barrier: ktor/IO/URL failures all map to download-failed
+            } catch (
+                error:
+                    Exception) { // fault barrier: ktor/IO/URL failures all map to download-failed
                 Timber.e(error, "Download failed: %s", url)
                 if (targetFile.exists()) targetFile.delete()
                 Pair(false, null)
@@ -191,6 +187,7 @@ class SubStoreDownloadClient(
                     ".zip" -> ArchiveUtil.unzipZip(tempFile, targetDir)
                     ".tar.gz",
                     ".tgz" -> ArchiveUtil.untarGz(tempFile, targetDir)
+
                     ".tar" -> ArchiveUtil.untar(tempFile, targetDir)
                     else -> ArchiveUtil.unzipZip(tempFile, targetDir)
                 }
@@ -225,27 +222,27 @@ class SubStoreDownloadClient(
             return headers[key]
         }
 
-        fun parseExpireDate(value: String): Long? =
-            runCatching {
-                    when {
-                        value.matches(Regex("\\d+")) -> value.toLong() * 1000L
-                        value.contains("-") -> {
-                            val parts = value.split("-")
-                            if (parts.size < 3) return@runCatching null
+        fun parseExpireDate(value: String): Long? = runCatching {
+            when {
+                value.matches(Regex("\\d+")) -> value.toLong() * 1000L
+                value.contains("-") -> {
+                    val parts = value.split("-")
+                    if (parts.size < 3) return@runCatching null
 
-                            val year = parts[0].toIntOrNull() ?: return@runCatching null
-                            val month = parts[1].toIntOrNull() ?: return@runCatching null
-                            val day = parts[2].toIntOrNull() ?: return@runCatching null
+                    val year = parts[0].toIntOrNull() ?: return@runCatching null
+                    val month = parts[1].toIntOrNull() ?: return@runCatching null
+                    val day = parts[2].toIntOrNull() ?: return@runCatching null
 
-                            val calendar = Calendar.getInstance()
-                            calendar.set(year, month - 1, day, 0, 0, 0)
-                            calendar.set(Calendar.MILLISECOND, 0)
-                            calendar.timeInMillis
-                        }
-                        else -> null
-                    }
+                    val calendar = Calendar.getInstance()
+                    calendar.set(year, month - 1, day, 0, 0, 0)
+                    calendar.set(Calendar.MILLISECOND, 0)
+                    calendar.timeInMillis
                 }
-                .getOrNull()
+
+                else -> null
+            }
+        }
+            .getOrNull()
 
         val userInfo =
             headers["Subscription-Userinfo"] ?: findHeaderBySuffix("subscription-userinfo")
@@ -310,8 +307,8 @@ class SubStoreDownloadClient(
             if (candidate.isBlank()) return null
             if (!candidate.matches(Regex("^[A-Za-z0-9+/=]+$"))) return null
             return runCatching {
-                    String(Base64.getDecoder().decode(candidate), StandardCharsets.UTF_8).trim()
-                }
+                String(Base64.getDecoder().decode(candidate), StandardCharsets.UTF_8).trim()
+            }
                 .getOrNull()
         }
 
@@ -324,23 +321,23 @@ class SubStoreDownloadClient(
         }
 
         return runCatching {
-                val normalized = value.trim().trim('"', '\'')
-                when {
-                    normalized.startsWith("base64:", ignoreCase = true) -> {
-                        decodeBase64(normalized.substringAfter(':')) ?: value
-                    }
-                    else -> {
-                        decodeRfc5987(normalized)
-                            ?: runCatching {
-                                    URLDecoder.decode(normalized, StandardCharsets.UTF_8.name())
-                                        .trim()
-                                }
-                                .getOrNull()
-                            ?: decodeBase64(normalized)
-                            ?: value
-                    }
+            val normalized = value.trim().trim('"', '\'')
+            when {
+                normalized.startsWith("base64:", ignoreCase = true) -> {
+                    decodeBase64(normalized.substringAfter(':')) ?: value
+                }
+
+                else -> {
+                    decodeRfc5987(normalized)
+                        ?: runCatching {
+                            URLDecoder.decode(normalized, StandardCharsets.UTF_8.name()).trim()
+                        }
+                            .getOrNull()
+                        ?: decodeBase64(normalized)
+                        ?: value
                 }
             }
+        }
             .getOrElse { value }
             .takeIf { it.isNotBlank() }
     }
@@ -352,29 +349,28 @@ class SubStoreDownloadClient(
         val contentDisposition =
             headers["Content-Disposition"] ?: fallbackContentDisposition ?: return null
         return runCatching {
-                if (contentDisposition.contains("filename*=", ignoreCase = true)) {
-                        val regex =
-                            """filename\*=([^']*)'([^']*)'([^;]+)"""
-                                .toRegex(RegexOption.IGNORE_CASE)
-                        regex.find(contentDisposition)?.let { match ->
-                            val charset = match.groupValues[1].ifBlank { "UTF-8" }
-                            val encodedFilename = match.groupValues[3].trim().trim('"', '\'')
-                            val safeCharset =
-                                runCatching { Charset.forName(charset).name() }
-                                    .getOrDefault("UTF-8")
-                            URLDecoder.decode(encodedFilename, safeCharset).trim()
-                        }
-                    } else {
-                        val regex = """filename=([^;]+)""".toRegex(RegexOption.IGNORE_CASE)
-                        regex
-                            .find(contentDisposition)
-                            ?.groupValues
-                            ?.getOrNull(1)
-                            ?.trim()
-                            ?.trim('"', '\'')
+            if (contentDisposition.contains("filename*=", ignoreCase = true)) {
+                    val regex =
+                        """filename\*=([^']*)'([^']*)'([^;]+)""".toRegex(RegexOption.IGNORE_CASE)
+                    regex.find(contentDisposition)?.let { match ->
+                        val charset = match.groupValues[1].ifBlank { "UTF-8" }
+                        val encodedFilename = match.groupValues[3].trim().trim('"', '\'')
+                        val safeCharset = runCatching {
+                            Charset.forName(charset).name()
+                        }.getOrDefault("UTF-8")
+                        URLDecoder.decode(encodedFilename, safeCharset).trim()
                     }
-                    ?.takeIf { it.isNotBlank() }
-            }
+                } else {
+                    val regex = """filename=([^;]+)""".toRegex(RegexOption.IGNORE_CASE)
+                    regex
+                        .find(contentDisposition)
+                        ?.groupValues
+                        ?.getOrNull(1)
+                        ?.trim()
+                        ?.trim('"', '\'')
+                }
+                ?.takeIf { it.isNotBlank() }
+        }
             .getOrNull()
     }
 

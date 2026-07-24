@@ -34,8 +34,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 /**
- * Android [RuntimeLauncher]: VpnService foreground host + root daemon host.
- * Desktop can ship a different [RuntimeLauncher] without Android Service APIs.
+ * Android [RuntimeLauncher]: VpnService foreground host + root daemon host. Desktop can ship a
+ * different [RuntimeLauncher] without Android Service APIs.
  */
 class AndroidRuntimeLauncher(
     context: Context,
@@ -51,6 +51,7 @@ class AndroidRuntimeLauncher(
                     mode = mode,
                     source = RuntimeServiceLauncher.SOURCE_UI,
                 )
+
             RuntimeOwner.RootDaemon -> RootSessionLauncher.start(appContext, mode)
             RuntimeOwner.RemoteController,
             RuntimeOwner.None -> Unit
@@ -62,6 +63,7 @@ class AndroidRuntimeLauncher(
             RuntimeOwner.VpnService -> stopVpnRuntime()
             RuntimeOwner.RootDaemon ->
                 withContext(Dispatchers.IO) { RootSessionLauncher.stop(appContext) }
+
             RuntimeOwner.RemoteController,
             RuntimeOwner.None -> Unit
         }
@@ -69,9 +71,7 @@ class AndroidRuntimeLauncher(
 
     private suspend fun stopVpnRuntime() {
         withContext(Dispatchers.IO) {
-            appContext.sendBroadcast(
-                Intent(stopAction()).setPackage(appContext.packageName)
-            )
+            appContext.sendBroadcast(Intent(stopAction()).setPackage(appContext.packageName))
             appContext.stopService(Intent(appContext, TunService::class.java))
             awaitVpnServiceStopped()
         }

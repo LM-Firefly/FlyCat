@@ -33,14 +33,17 @@ data class TunConfig(
     val inet6Address: List<String> = listOf("fdfe:dcba:9876::1/126"),
     val dnsHijack: List<String> = listOf("any:53", "tcp://any:53"),
     val autoRoute: Boolean = true,
-    // strict-route adds FR_ACT_UNREACHABLE fallback rules that can black-hole traffic; off by default.
+    // strict-route adds FR_ACT_UNREACHABLE fallback rules that can black-hole traffic; off by
+    // default.
     val strictRoute: Boolean = false,
     // auto-redirect programs the iptables TCP redirect that carries app egress, so on by default.
     val autoRedirect: Boolean = true,
     val includeUid: List<Int> = emptyList(),
     val excludeUid: List<Int> = emptyList(),
-    // Exclude system uids (0–9999, incl. the root core's own uid 0) or the core's egress loops back into
-    // the tun it created and no traffic passes. Grammar is mihomo's "start:end" (colon, NOT a hyphen).
+    // Exclude system uids (0–9999, incl. the root core's own uid 0) or the core's egress loops back
+    // into
+    // the tun it created and no traffic passes. Grammar is mihomo's "start:end" (colon, NOT a
+    // hyphen).
     val excludeUidRange: List<String> = listOf("0:9999"),
     // Empty = do not emit include-android-user; sing-tun then covers every Android user.
     // A non-empty list is a hard allowlist and excludes every other user via ExcludeUID.

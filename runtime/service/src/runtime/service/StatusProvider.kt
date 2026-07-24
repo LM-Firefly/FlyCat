@@ -32,7 +32,7 @@ import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.initializeServiceGlobal
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.tencent.mmkv.MMKV
-import java.util.UUID
+import java.util.*
 
 class StatusProvider : ContentProvider() {
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? =
@@ -41,6 +41,7 @@ class StatusProvider : ContentProvider() {
                 syncCachedRuntimeState()
                 if (serviceRunning) Bundle().apply { putString("name", currentProfile) } else null
             }
+
             else -> super.call(method, arg, extras)
         }
 
@@ -116,7 +117,8 @@ class StatusProvider : ContentProvider() {
         // ---- session-token lifecycle (VpnService runtime) ----
         // The phase store has a single mode slot shared by every writer. VpnService writers carry a
         // token so a late write from an outgoing instance can't stomp its replacement (stale-token
-        // writes are dropped); the root daemon uses the token-less force writes below (own single writer).
+        // writes are dropped); the root daemon uses the token-less force writes below (own single
+        // writer).
 
         /** Claims the phase slot for a new local session and returns its write token. */
         @Synchronized
@@ -208,8 +210,7 @@ class StatusProvider : ContentProvider() {
         }
 
         // Failed is a terminal record kept for diagnosis, not an engaged runtime.
-        fun isRuntimeActive(mode: RunMode): Boolean =
-            queryRuntimePhase(mode).isActiveOrStopping
+        fun isRuntimeActive(mode: RunMode): Boolean = queryRuntimePhase(mode).isActiveOrStopping
 
         fun queryRuntimePhase(mode: RunMode): RuntimePhase {
             reconcilePersistedRuntimeState()
@@ -246,8 +247,10 @@ class StatusProvider : ContentProvider() {
                 return
             }
 
-            // Failed is a terminal record (service expected dead), so it must not be liveness-reset —
-            // that erased failures before they were read. It decays after retention or on the next session.
+            // Failed is a terminal record (service expected dead), so it must not be liveness-reset
+            // —
+            // that erased failures before they were read. It decays after retention or on the next
+            // session.
             if (persistedPhase == RuntimePhase.Failed) {
                 val failedAt = readPersistedRuntimeStartedAt()
                 if (
@@ -279,8 +282,10 @@ class StatusProvider : ContentProvider() {
         }
 
         // VpnService is in-process, so a flag driven from its lifecycle is an O(1) liveness signal
-        // (it replaced an ActivityManager.getRunningServices binder scan that stalled the UI). The root
-        // daemon is out-of-process and survives app death, so its liveness is a pid probe, not a flag.
+        // (it replaced an ActivityManager.getRunningServices binder scan that stalled the UI). The
+        // root
+        // daemon is out-of-process and survives app death, so its liveness is a pid probe, not a
+        // flag.
         @Volatile private var vpnServiceAlive = false
 
         /** Set from [RuntimeForegroundController.onCreate]/onDestroy for the VpnService. */
@@ -291,7 +296,8 @@ class StatusProvider : ContentProvider() {
         fun isLocalRuntimeServiceAlive(mode: RunMode): Boolean =
             when (mode) {
                 RunMode.VpnService -> vpnServiceAlive
-                RunMode.Tun, RunMode.Tproxy -> CoreProcess.isRootDaemonAlive()
+                RunMode.Tun,
+                RunMode.Tproxy -> CoreProcess.isRootDaemonAlive()
             }
 
         fun clearLegacyStateFiles() {
@@ -314,6 +320,7 @@ class StatusProvider : ContentProvider() {
                     persistRuntimeState(mode = null, phase = RuntimePhase.Idle)
                     updateInMemoryRuntimeState(mode = null, phase = RuntimePhase.Idle)
                 }
+
                 RuntimePhase.Failed -> {
                     // Terminal record: keep the failure readable (mode + error + timestamp),
                     // drop the token so any later stale write from this session is a no-op.
@@ -325,6 +332,7 @@ class StatusProvider : ContentProvider() {
                     )
                     updateInMemoryRuntimeState(mode, RuntimePhase.Failed)
                 }
+
                 else -> {
                     persistRuntimeState(
                         mode = mode,
@@ -399,8 +407,9 @@ class StatusProvider : ContentProvider() {
                 enumByNameOrNull<RuntimePhase>(cache.decodeString(KEY_RUNTIME_PHASE))
                     ?: RuntimePhase.Idle
             val mode =
-                enumByNameOrNull<RunMode>(cache.decodeString(KEY_RUNTIME_MODE))
-                    ?.takeIf { phase.isNotIdle }
+                enumByNameOrNull<RunMode>(cache.decodeString(KEY_RUNTIME_MODE))?.takeIf {
+                    phase.isNotIdle
+                }
             return mode to phase
         }
 

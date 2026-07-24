@@ -35,9 +35,9 @@ import com.github.yumelira.yumebox.common.util.showToastDialog
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.presentation.util.*
 import com.github.yumelira.yumebox.runtime.api.Profile
-import tf.gal.yumebox.locale.YumeTxt
 import java.util.*
 import kotlin.math.max
+import tf.gal.yumebox.locale.YumeTxt
 
 @Composable
 internal fun AddProfileSheet(
@@ -156,7 +156,8 @@ internal fun AddProfileSheet(
     LaunchedEffect(uiState.error) {
         val errorMessage = uiState.error
         if (errorMessage != null) {
-            // Import errors are long (YAML/download failures) and worth copying — keep the copyable dialog.
+            // Import errors are long (YAML/download failures) and worth copying — keep the copyable
+            // dialog.
             showToastDialog(errorMessage)
             if (isDownloading) {
                 isDownloading = false
@@ -239,8 +240,8 @@ internal fun AddProfileSheet(
                 }
             },
             selectType = {
-            selectedTypeIndex = it
-            clearCurrentTypeState()
+                selectedTypeIndex = it
+                clearCurrentTypeState()
             },
             changeName = { value ->
                 nameTextFieldValue = value

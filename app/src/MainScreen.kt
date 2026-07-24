@@ -25,38 +25,16 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.core.net.toUri
+import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import com.github.yumelira.yumebox.presentation.component.BottomBarDestination
-import com.github.yumelira.yumebox.presentation.component.LocalBottomBarHazeState
-import com.github.yumelira.yumebox.presentation.component.LocalBottomBarHazeStyle
-import com.github.yumelira.yumebox.presentation.component.LocalBottomBarScrollBehavior
-import com.github.yumelira.yumebox.presentation.component.LocalHandlePageChange
-import com.github.yumelira.yumebox.presentation.component.LocalMainPagerState
-import com.github.yumelira.yumebox.presentation.component.LocalNavigator
-import com.github.yumelira.yumebox.presentation.component.LocalPagerState
-import com.github.yumelira.yumebox.presentation.component.MainPagerState
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.LocalDetailNavigator
-import com.github.yumelira.yumebox.presentation.component.WindowLayoutMode
-import com.github.yumelira.yumebox.presentation.component.rememberBottomBarScrollBehavior
-import com.github.yumelira.yumebox.presentation.component.rememberMainPagerState
-import com.github.yumelira.yumebox.presentation.component.rememberWindowLayoutMode
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
-import androidx.navigation3.runtime.rememberNavBackStack
 import com.github.yumelira.yumebox.presentation.screen.ProxyPager
 import com.github.yumelira.yumebox.presentation.theme.YumeHaze
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
@@ -169,7 +147,8 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         // Runtime transitions insert/remove the proxy page and move Config/Setting between physical
         // pager slots, so preserve the semantic page.
         val currentDestination =
-            previousDestinations.getOrNull(mainPagerState.pagerState.currentPage) ?: settledDestination
+            previousDestinations.getOrNull(mainPagerState.pagerState.currentPage)
+                ?: settledDestination
         val targetDestination =
             currentDestination.takeIf { it in visibleDestinations } ?: BottomBarDestination.Config
         val targetPage = visibleDestinations.indexOf(targetDestination)
@@ -210,10 +189,11 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         remember(mainPagerState, visibleDestinations) {
             { targetPage ->
                 val destination =
-                    BottomBarDestination.entries
-                        .getOrElse(targetPage.coerceIn(0, BottomBarDestination.entries.lastIndex)) {
-                            BottomBarDestination.Home
-                        }
+                    BottomBarDestination.entries.getOrElse(
+                        targetPage.coerceIn(0, BottomBarDestination.entries.lastIndex)
+                    ) {
+                        BottomBarDestination.Home
+                    }
                 val targetDestination =
                     destination.takeIf { it in visibleDestinations } ?: BottomBarDestination.Config
                 mainPagerState.animateToPage(visibleDestinations.indexOf(targetDestination))
@@ -245,6 +225,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                     "profiles" -> handlePageChange(2)
                     "settings" -> handlePageChange(3)
                 }
+
             "screen" -> {
                 val route: Route? =
                     when (uri.lastPathSegment) {

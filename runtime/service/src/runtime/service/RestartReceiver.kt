@@ -35,6 +35,7 @@ class RestartReceiver : BroadcastReceiver() {
                         Intent.ACTION_BOOT_COMPLETED -> AutoRestartService.REASON_BOOT_COMPLETED
                         Intent.ACTION_MY_PACKAGE_REPLACED ->
                             AutoRestartService.REASON_PACKAGE_REPLACED
+
                         else -> "unknown"
                     }
                 val serviceIntent =

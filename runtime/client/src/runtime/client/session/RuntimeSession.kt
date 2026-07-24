@@ -20,20 +20,15 @@
 
 package com.github.yumelira.yumebox.runtime.client.session
 
-import com.github.yumelira.yumebox.runtime.client.ProxyGroupSyncPriority
-
 import android.net.VpnService
 import com.github.yumelira.yumebox.core.model.RunMode
-import com.github.yumelira.yumebox.runtime.api.Profile
-import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
-import com.github.yumelira.yumebox.runtime.api.RuntimePhase
-import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
-import com.github.yumelira.yumebox.runtime.api.VpnPermissionRequired
-import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
+import com.github.yumelira.yumebox.runtime.api.*
+import com.github.yumelira.yumebox.runtime.client.ProxyGroupSyncPriority
 import com.github.yumelira.yumebox.runtime.client.RuntimeStartRequest
 import com.github.yumelira.yumebox.runtime.client.RuntimeStateMapper
 import com.github.yumelira.yumebox.runtime.client.RuntimeStopRequest
 import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,29 +37,53 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
-import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * High-cohesion runtime host: snapshot/traffic/profile state, lifecycle, remote switch,
- * event bridge and traffic polling. Platform differences go through seams.
+ * High-cohesion runtime host: snapshot/traffic/profile state, lifecycle, remote switch, event
+ * bridge and traffic polling. Platform differences go through seams.
  */
-internal class RuntimeSession(
-    private val deps: RuntimeSessionDeps,
-) {
-    private val context get() = deps.context
-    private val scope get() = deps.scope
-    private val networkSettingsStorage get() = deps.networkSettingsStorage
-    private val remoteControllerStore get() = deps.remoteControllerStore
-    private val statusStore get() = deps.statusStore
-    private val processController get() = deps.processController
-    private val launcher get() = deps.launcher
-    private val queryTrafficNowAction get() = deps.queryTrafficNowAction
-    private val queryTrafficTotalAction get() = deps.queryTrafficTotalAction
-    private val onAfterRunning get() = deps.onAfterRunning
-    private val onAfterIdle get() = deps.onAfterIdle
-    private val onGroupTick get() = deps.onGroupTick
-    private val onTrafficTickExtra get() = deps.onTrafficTickExtra
-    private val onClearGroups get() = deps.onClearGroups
+internal class RuntimeSession(private val deps: RuntimeSessionDeps) {
+    private val context
+        get() = deps.context
+
+    private val scope
+        get() = deps.scope
+
+    private val networkSettingsStorage
+        get() = deps.networkSettingsStorage
+
+    private val remoteControllerStore
+        get() = deps.remoteControllerStore
+
+    private val statusStore
+        get() = deps.statusStore
+
+    private val processController
+        get() = deps.processController
+
+    private val launcher
+        get() = deps.launcher
+
+    private val queryTrafficNowAction
+        get() = deps.queryTrafficNowAction
+
+    private val queryTrafficTotalAction
+        get() = deps.queryTrafficTotalAction
+
+    private val onAfterRunning
+        get() = deps.onAfterRunning
+
+    private val onAfterIdle
+        get() = deps.onAfterIdle
+
+    private val onGroupTick
+        get() = deps.onGroupTick
+
+    private val onTrafficTickExtra
+        get() = deps.onTrafficTickExtra
+
+    private val onClearGroups
+        get() = deps.onClearGroups
 
     private companion object {
         const val TRAFFIC_TOTAL_POLL_TICKS = 10
@@ -109,11 +128,11 @@ internal class RuntimeSession(
             isRunning = { _runtimeSnapshot.value.running },
             onTrafficTick = { tick ->
                 runCatching {
-                        queryTrafficNow(queryTrafficNowAction)
-                        if (tick % TRAFFIC_TOTAL_POLL_TICKS == 0) {
-                            queryTrafficTotal(queryTrafficTotalAction)
-                        }
+                    queryTrafficNow(queryTrafficNowAction)
+                    if (tick % TRAFFIC_TOTAL_POLL_TICKS == 0) {
+                        queryTrafficTotal(queryTrafficTotalAction)
                     }
+                }
                     .onFailure { error -> Timber.d(error, "Traffic polling skipped") }
                 onTrafficTickExtra(tick)
             },
@@ -148,7 +167,8 @@ internal class RuntimeSession(
     }
 
     fun isRemoteControllerActive(): Boolean =
-        remoteControllerStore.controllerEnabled.value && remoteControllerStore.activeBackend() != null
+        remoteControllerStore.controllerEnabled.value &&
+            remoteControllerStore.activeBackend() != null
 
     fun snapshotValue(): RuntimeSnapshot = _runtimeSnapshot.value
 
@@ -167,8 +187,7 @@ internal class RuntimeSession(
 
     fun stopTrafficPolling() = polling.stopTraffic()
 
-    fun startGroupPolling(priority: ProxyGroupSyncPriority) =
-        polling.startGroups(priority)
+    fun startGroupPolling(priority: ProxyGroupSyncPriority) = polling.startGroups(priority)
 
     fun stopGroupPolling() = polling.stopGroups()
 
@@ -245,14 +264,14 @@ internal class RuntimeSession(
 
     private suspend fun stopLocalRuntimeForControllerSwitch() {
         runCatching {
-                val owner = ownership.detectActiveOwner()
-                if (owner == RuntimeOwner.VpnService || owner == RuntimeOwner.RootDaemon) {
-                    Timber.i("Controller switch: stopping local runtime owner=$owner")
-                    launcher.stop(owner)
-                    stopTrafficPolling()
-                    awaitLocalRuntimeFullyStopped(owner)
-                }
+            val owner = ownership.detectActiveOwner()
+            if (owner == RuntimeOwner.VpnService || owner == RuntimeOwner.RootDaemon) {
+                Timber.i("Controller switch: stopping local runtime owner=$owner")
+                launcher.stop(owner)
+                stopTrafficPolling()
+                awaitLocalRuntimeFullyStopped(owner)
             }
+        }
             .onFailure { error ->
                 Timber.w(error, "Failed to stop local runtime on controller switch")
             }
@@ -322,7 +341,9 @@ internal class RuntimeSession(
     }
 
     private suspend fun onConfigChanged() {
-        if (!isRemoteControllerActive() && ownership.detectActiveOwner() == RuntimeOwner.RootDaemon) {
+        if (
+            !isRemoteControllerActive() && ownership.detectActiveOwner() == RuntimeOwner.RootDaemon
+        ) {
             runCatching { reload(networkSettingsStorage.runMode.value) }
                 .onFailure { error -> Timber.w(error, "Root daemon config reload failed") }
         } else {
@@ -361,8 +382,8 @@ internal class RuntimeSession(
         }
 
         operationMutex.withLock {
-            val targetOwner = request.owner.takeIf { it != RuntimeOwner.None }
-                ?: ownership.ownerForMode(mode)
+            val targetOwner =
+                request.owner.takeIf { it != RuntimeOwner.None } ?: ownership.ownerForMode(mode)
             val currentOwner =
                 ownership.detectActiveOwner().takeIf { it != RuntimeOwner.None }
                     ?: _runtimeSnapshot.value.owner
@@ -551,7 +572,9 @@ internal class RuntimeSession(
     }
 
     fun isMissingLocalRuntime(snapshot: RuntimeSnapshot): Boolean {
-        if (snapshot.owner == RuntimeOwner.None || snapshot.owner == RuntimeOwner.RemoteController) {
+        if (
+            snapshot.owner == RuntimeOwner.None || snapshot.owner == RuntimeOwner.RemoteController
+        ) {
             return false
         }
         val mode = RuntimeStateMapper.modeForOwner(snapshot.owner) ?: return false
@@ -564,14 +587,15 @@ internal class RuntimeSession(
             return 0L
         }
         val snapshot = _runtimeSnapshot.value
-        val traffic =
-            runCatching { query() }
-                .getOrElse { error ->
-                    if (snapshot.owner == RuntimeOwner.RemoteController) {
-                        markRemoteLost(error)
-                    }
-                    throw error
+        val traffic = runCatching {
+            query()
+        }
+            .getOrElse { error ->
+                if (snapshot.owner == RuntimeOwner.RemoteController) {
+                    markRemoteLost(error)
                 }
+                throw error
+            }
         _trafficTotal.value = traffic
         updateTrafficReady()
         if (snapshot.owner == RuntimeOwner.RemoteController) {
@@ -586,14 +610,15 @@ internal class RuntimeSession(
             return 0L
         }
         val snapshot = _runtimeSnapshot.value
-        val traffic =
-            runCatching { query() }
-                .getOrElse { error ->
-                    if (snapshot.owner == RuntimeOwner.RemoteController) {
-                        markRemoteLost(error)
-                    }
-                    throw error
+        val traffic = runCatching {
+            query()
+        }
+            .getOrElse { error ->
+                if (snapshot.owner == RuntimeOwner.RemoteController) {
+                    markRemoteLost(error)
                 }
+                throw error
+            }
         _trafficNow.value = traffic
         updateTrafficReady()
         if (snapshot.owner == RuntimeOwner.RemoteController) {
@@ -618,9 +643,7 @@ internal class RuntimeSession(
         RuntimeAccess.connect(appContext)
     }
 
-    fun shouldRefreshRuntimePayload(
-        groupsEmpty: Boolean,
-    ): Boolean {
+    fun shouldRefreshRuntimePayload(groupsEmpty: Boolean): Boolean {
         val snapshot = _runtimeSnapshot.value
         return snapshot.phase == RuntimePhase.Running &&
             (!snapshot.profileReady ||

@@ -38,11 +38,11 @@ fun isSubscriptionUrl(value: String): Boolean = subscriptionUrlPattern.matches(v
 
 fun readClipboardSubscriptionUrl(context: Context): String? {
     return runCatching {
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clipData = clipboard.primaryClip ?: return null
-            if (clipData.itemCount <= 0) return null
-            clipData.getItemAt(0)?.text?.toString()?.trim()
-        }
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clipData = clipboard.primaryClip ?: return null
+        if (clipData.itemCount <= 0) return null
+        clipData.getItemAt(0)?.text?.toString()?.trim()
+    }
         .getOrNull()
         ?.takeIf { it.isNotBlank() && isSubscriptionUrl(it) }
 }
@@ -51,6 +51,7 @@ fun isYamlConfigFileName(fileName: String): Boolean =
     when (fileName.substringAfterLast(".", "").lowercase()) {
         "yaml",
         "yml" -> true
+
         else -> false
     }
 

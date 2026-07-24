@@ -21,27 +21,11 @@
 package com.github.yumelira.yumebox.screen.rules
 
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -53,35 +37,24 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.core.model.RuntimeRule
-import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.CenteredText
-import com.github.yumelira.yumebox.presentation.component.CollapsedSearchBar
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.SearchBarPadding
-import com.github.yumelira.yumebox.presentation.component.SearchPager
-import com.github.yumelira.yumebox.presentation.component.SearchStatus
-import com.github.yumelira.yumebox.presentation.component.TopAppBarAnim
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import org.koin.androidx.compose.koinViewModel
-import java.util.Locale
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.util.*
 
 /**
- * Runtime rules from `GET /rules`. Each card has an enable switch wired to
- * `PATCH /rules/disable`. This is **not** the custom-routing editor.
+ * Runtime rules from `GET /rules`. Each card has an enable switch wired to `PATCH /rules/disable`.
+ * This is **not** the custom-routing editor.
  *
- * Search chrome mirrors [com.github.yumelira.yumebox.screen.connection.ConnectionScreen]
- * (collapsed bar in TopBar + SearchPager overlay). Horizontal inset for cards is owned by
- * shared [Card] (`applyHorizontalPadding`), same as Log — not LazyColumn contentPadding.
+ * Search chrome mirrors [com.github.yumelira.yumebox.screen.connection.ConnectionScreen] (collapsed
+ * bar in TopBar + SearchPager overlay). Horizontal inset for cards is owned by shared [Card]
+ * (`applyHorizontalPadding`), same as Log — not LazyColumn contentPadding.
  */
 @Composable
 fun RulesScreen(navigator: Navigator) {
@@ -149,8 +122,7 @@ fun RulesScreen(navigator: Navigator) {
                                         )
                                         .onGloballyPositioned { coordinates ->
                                             with(density) {
-                                                val offset =
-                                                    coordinates.positionInWindow().y.toDp()
+                                                val offset = coordinates.positionInWindow().y.toDp()
                                                 if (currentSearchStatus.offsetY != offset) {
                                                     searchStatus =
                                                         currentSearchStatus.copy(offsetY = offset)
@@ -159,9 +131,7 @@ fun RulesScreen(navigator: Navigator) {
                                         }
                                         .then(
                                             if (currentSearchStatus.isCollapsed()) {
-                                                Modifier.pointerInput(
-                                                    currentSearchStatus.current
-                                                ) {
+                                                Modifier.pointerInput(currentSearchStatus.current) {
                                                     detectTapGestures {
                                                         searchStatus =
                                                             currentSearchStatus.copy(
@@ -173,7 +143,7 @@ fun RulesScreen(navigator: Navigator) {
                                             } else {
                                                 Modifier
                                             }
-                                        ),
+                                        )
                             ) {
                                 CollapsedSearchBar(
                                     label = currentSearchStatus.label,
@@ -195,18 +165,21 @@ fun RulesScreen(navigator: Navigator) {
                             secondLine = YumeTxt.Rules.Empty.LoadingHint,
                         )
                     }
+
                     !uiState.isRunning && uiState.rules.isEmpty() -> {
                         CenteredText(
                             firstLine = YumeTxt.Rules.Empty.NotRunning,
                             secondLine = YumeTxt.Rules.Empty.NotRunningHint,
                         )
                     }
+
                     uiState.rules.isEmpty() -> {
                         CenteredText(
                             firstLine = YumeTxt.Rules.Empty.NoRules,
                             secondLine = YumeTxt.Rules.Empty.NoRulesHint,
                         )
                     }
+
                     else -> {
                         ScreenLazyColumn(
                             scrollBehavior = scrollBehavior,
@@ -297,7 +270,7 @@ private fun RuleCard(
         Column(
             modifier =
                 Modifier.fillMaxWidth()
-                    .padding(horizontal = spacing.space16, vertical = spacing.space12),
+                    .padding(horizontal = spacing.space16, vertical = spacing.space12)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -325,9 +298,7 @@ private fun RuleCard(
                 horizontalArrangement = Arrangement.spacedBy(spacing.space12),
             ) {
                 Text(
-                    text =
-                        "${rule.type.ifBlank { "-" }}  ·  " +
-                            rule.proxy.ifBlank { "-" },
+                    text = "${rule.type.ifBlank { "-" }}  ·  " + rule.proxy.ifBlank { "-" },
                     modifier = Modifier.weight(1f),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,

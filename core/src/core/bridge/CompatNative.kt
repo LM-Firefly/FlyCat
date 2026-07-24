@@ -27,8 +27,7 @@ package com.github.yumelira.yumebox.core.bridge
  * the XZ compressed-lib path that the heavyweight core libraries use.
  */
 internal object CompatNative {
-    @Volatile
-    private var loaded = false
+    @Volatile private var loaded = false
 
     fun ensureLoaded() {
         if (loaded) return

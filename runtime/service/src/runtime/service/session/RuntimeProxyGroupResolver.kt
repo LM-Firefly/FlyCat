@@ -44,6 +44,7 @@ class RuntimeProxyGroupResolver(
 ) {
     private val rest
         get() = com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(context)
+
     private val expectedNameCacheLock = Any()
     private var expectedNameCache: ExpectedGroupCache? = null
 
@@ -79,10 +80,9 @@ class RuntimeProxyGroupResolver(
                 }
         }
 
-        val groups =
-            runCatching { compiledConfigPipeline.previewGroups(spec, excludeNotSelectable) }
-                .getOrDefault(emptyList())
-                .filter { it.name.isNotBlank() }
+        val groups = runCatching {
+            compiledConfigPipeline.previewGroups(spec, excludeNotSelectable)
+        }.getOrDefault(emptyList()).filter { it.name.isNotBlank() }
 
         if (groups.isNotEmpty()) {
             synchronized(canonicalCacheLock) {

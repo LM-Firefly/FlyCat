@@ -23,15 +23,24 @@
         "groups": [
           {
             "group": "开始",
-            "pages": ["/index", "/update/history"]
+            "pages": [
+              "/index",
+              "/update/history"
+            ]
           },
           {
             "group": "指南",
-            "pages": ["/guide/app"]
+            "pages": [
+              "/guide/app"
+            ]
           },
           {
             "group": "开发",
-            "pages": ["/override/override", "/override/fields", "/guide/build"]
+            "pages": [
+              "/override/override",
+              "/override/fields",
+              "/guide/build"
+            ]
           },
           {
             "group": "API",
@@ -39,27 +48,38 @@
               {
                 "group": "日志",
                 "openapi": "api/openapi.json",
-                "pages": ["GET /logs"]
+                "pages": [
+                  "GET /logs"
+                ]
               },
               {
                 "group": "流量信息",
                 "openapi": "api/openapi.json",
-                "pages": ["GET /traffic"]
+                "pages": [
+                  "GET /traffic"
+                ]
               },
               {
                 "group": "内存信息",
                 "openapi": "api/openapi.json",
-                "pages": ["GET /memory"]
+                "pages": [
+                  "GET /memory"
+                ]
               },
               {
                 "group": "版本信息",
                 "openapi": "api/openapi.json",
-                "pages": ["GET /version"]
+                "pages": [
+                  "GET /version"
+                ]
               },
               {
                 "group": "缓存",
                 "openapi": "api/openapi.json",
-                "pages": ["POST /cache/fakeip/flush", "POST /cache/dns/flush"]
+                "pages": [
+                  "POST /cache/fakeip/flush",
+                  "POST /cache/dns/flush"
+                ]
               },
               {
                 "group": "运行配置",
@@ -116,12 +136,18 @@
               {
                 "group": "规则",
                 "openapi": "api/openapi.json",
-                "pages": ["GET /rules", "PATCH /rules/disable"]
+                "pages": [
+                  "GET /rules",
+                  "PATCH /rules/disable"
+                ]
               },
               {
                 "group": "规则集合",
                 "openapi": "api/openapi.json",
-                "pages": ["GET /providers/rules", "PUT /providers/rules/{name}"]
+                "pages": [
+                  "GET /providers/rules",
+                  "PUT /providers/rules/{name}"
+                ]
               },
               {
                 "group": "连接",
@@ -135,7 +161,9 @@
               {
                 "group": "域名查询",
                 "openapi": "api/openapi.json",
-                "pages": ["GET /dns/query"]
+                "pages": [
+                  "GET /dns/query"
+                ]
               },
               {
                 "group": "存储",
@@ -149,7 +177,10 @@
               {
                 "group": "DEBUG",
                 "openapi": "api/openapi.json",
-                "pages": ["PUT /debug/gc", "GET /debug/pprof"]
+                "pages": [
+                  "PUT /debug/gc",
+                  "GET /debug/pprof"
+                ]
               }
             ]
           }
@@ -160,15 +191,24 @@
         "groups": [
           {
             "group": "Start here",
-            "pages": ["/en/index", "/en/update/history"]
+            "pages": [
+              "/en/index",
+              "/en/update/history"
+            ]
           },
           {
             "group": "App guide",
-            "pages": ["/en/guide/app"]
+            "pages": [
+              "/en/guide/app"
+            ]
           },
           {
             "group": "Development",
-            "pages": ["/en/override/override", "/en/override/fields", "/en/guide/build"]
+            "pages": [
+              "/en/override/override",
+              "/en/override/fields",
+              "/en/guide/build"
+            ]
           }
         ]
       }
@@ -192,7 +232,14 @@
     }
   },
   "contextual": {
-    "options": ["copy", "view", "chatgpt", "claude", "grok", "aistudio"]
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "grok",
+      "aistudio"
+    ]
   },
   "seo": {
     "metatags": {

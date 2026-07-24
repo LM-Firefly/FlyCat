@@ -24,8 +24,8 @@ import com.android.build.api.artifact.ArtifactTransformationRequest
 import com.android.build.api.artifact.SingleArtifact
 import dev.yume.packer.BuildLoaderDexTask
 import dev.yume.packer.PackApkTask
-import java.util.*
 import java.text.SimpleDateFormat
+import java.util.*
 
 plugins {
     id("com.android.application")
@@ -37,7 +37,8 @@ plugins {
 
 abstract class TransformPackedApksTask : PackApkTask() {
     @get:Internal
-    abstract val transformationRequest: Property<ArtifactTransformationRequest<TransformPackedApksTask>>
+    abstract val transformationRequest:
+        Property<ArtifactTransformationRequest<TransformPackedApksTask>>
 
     @TaskAction
     fun transform() {
@@ -59,9 +60,7 @@ kotlin {
     }
 }
 
-
-val appAbiList =
-    gropify.abi.app.list.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+val appAbiList = gropify.abi.app.list.split(',').map { it.trim() }.filter { it.isNotEmpty() }
 
 // Packaging matrix switches. CLI -P properties (same pattern as build.number below), NOT
 // gropify keys, so CI can flip them per invocation:
@@ -70,15 +69,17 @@ val appAbiList =
 //  - geo.bundle=false   -> keep the XZ geo databases and BundleMRS.7z out of assets (the local
 //    default); App.extractGeoFiles skips them and mihomo falls back to remote provider data.
 // Release-only native-lib XZ compression is handled by the dev.yume.packer APK transform (which
-// keeps libclash/libloader raw in nativeLibraryDir and packs the rest into assets/loader/), not here.
+// keeps libclash/libloader raw in nativeLibraryDir and packs the rest into assets/loader/), not
+// here.
 val buildAllAbis = providers.gradleProperty("build.allAbis").orNull?.toBoolean() ?: false
 val geoBundle = providers.gradleProperty("geo.bundle").orNull?.toBoolean() ?: false
 val splitAbiList = if (buildAllAbis) appAbiList else listOf("arm64-v8a")
 val geoFilesAssetsDir = rootProject.layout.buildDirectory.dir("generated/assets/geo")
 val signingPropertiesFile = rootProject.file("signing.properties")
-val releaseSigningProperties = signingPropertiesFile.takeIf(File::isFile)?.let { file ->
-    Properties().apply { file.inputStream().use(::load) }
-}
+val releaseSigningProperties =
+    signingPropertiesFile.takeIf(File::isFile)?.let { file ->
+        Properties().apply { file.inputStream().use(::load) }
+    }
 
 // CI-computed build versioning. CI injects `-Pbuild.number=<N>` where N is the commit
 // count of the built commit's parent chain (`git rev-list --count HEAD`, computed inside
@@ -96,32 +97,36 @@ val releaseSigningProperties = signingPropertiesFile.takeIf(File::isFile)?.let {
 // injected - official releases pass no hash/branch, so they keep the clean base version
 // (e.g. 0.5.2) while still getting a unique versionCode.
 val baseVersionCode = gropify.project.version.code
-val ciBuildNumber = providers.gradleProperty("build.number").orNull
-    ?.trim()?.takeIf { it.isNotEmpty() }?.toInt()
-val ciBuildHash = providers.gradleProperty("build.hash").orNull
-    ?.trim()?.takeIf { it.isNotEmpty() }?.take(8)
+val ciBuildNumber =
+    providers.gradleProperty("build.number").orNull?.trim()?.takeIf { it.isNotEmpty() }?.toInt()
+val ciBuildHash =
+    providers.gradleProperty("build.hash").orNull?.trim()?.takeIf { it.isNotEmpty() }?.take(8)
 // Branch segment normalization (must stay in sync with reusable-prepare-publish.yml):
 // lowercase, every non-[a-z0-9] run collapses to a single '-', leading/trailing '-' trimmed.
-val ciBuildBranch = providers.gradleProperty("build.branch").orNull
-    ?.lowercase()
-    ?.replace(Regex("[^a-z0-9]+"), "-")
-    ?.trim('-')
-    ?.takeIf { it.isNotEmpty() }
+val ciBuildBranch =
+    providers
+        .gradleProperty("build.branch")
+        .orNull
+        ?.lowercase()
+        ?.replace(Regex("[^a-z0-9]+"), "-")
+        ?.trim('-')
+        ?.takeIf { it.isNotEmpty() }
 val appVersionCode = baseVersionCode + (ciBuildNumber ?: 0)
-val appVersionName = ciBuildHash
-    ?.let { hash -> listOfNotNull(gropify.project.version.name, ciBuildBranch, hash).joinToString(".") }
-    ?: gropify.project.version.name
+val appVersionName =
+    ciBuildHash?.let { hash ->
+        listOfNotNull(gropify.project.version.name, ciBuildBranch, hash).joinToString(".")
+    } ?: gropify.project.version.name
 
 // Published APK file names are produced directly by Gradle. CI supplies the tail and
 // optional channel segment once per workflow run; local builds omit both.
-val apkOutputPrefix = providers.gradleProperty("apk.output.prefix").orNull
-    ?.trim()?.takeIf { it.isNotEmpty() } ?: gropify.project.name
-val apkOutputTail = providers.gradleProperty("apk.output.tail").orNull
-    ?.trim()?.takeIf { it.isNotEmpty() }
-val apkChannelSegment = providers.gradleProperty("apk.output.channel").orNull
-    ?.trim()?.takeIf { it.isNotEmpty() }
+val apkOutputPrefix =
+    providers.gradleProperty("apk.output.prefix").orNull?.trim()?.takeIf { it.isNotEmpty() }
+        ?: gropify.project.name
+val apkOutputTail =
+    providers.gradleProperty("apk.output.tail").orNull?.trim()?.takeIf { it.isNotEmpty() }
+val apkChannelSegment =
+    providers.gradleProperty("apk.output.channel").orNull?.trim()?.takeIf { it.isNotEmpty() }
 val apkGeoSegment = if (geoBundle) "builtin" else "external"
-
 
 // Resolve the tracked mihomo tree at configure time so About / BuildConfig can show branch + hash
 // without a runtime JNI probe (the core is out-of-process now). Prefer kernel.properties for the
@@ -199,7 +204,9 @@ fun readGitHead(repoDir: File): Pair<String, String?> {
     if (head.startsWith("ref:")) {
         val ref = head.removePrefix("ref:").trim()
         val branch =
-            ref.removePrefix("refs/heads/").takeIf { ref.startsWith("refs/heads/") && it.isNotEmpty() }
+            ref.removePrefix("refs/heads/").takeIf {
+                ref.startsWith("refs/heads/") && it.isNotEmpty()
+            }
         // Prefer the local branch ref; some shallow/single-branch checkouts only pack the remote.
         val full =
             readGitRef(gitDir, ref)
@@ -216,7 +223,8 @@ fun loadCoreVersionStamp(rootDir: File): Properties? {
         add(rootDir.resolve("build/generated/core-version.properties"))
         val jniRoot = rootDir.resolve("jniLibs")
         if (jniRoot.isDirectory) {
-            jniRoot.listFiles()
+            jniRoot
+                .listFiles()
                 ?.filter { it.isDirectory }
                 ?.sortedBy { it.name }
                 ?.forEach { abiDir -> add(File(abiDir, "core-version.properties")) }
@@ -244,8 +252,8 @@ fun resolveMihomoBuildInfo(rootDir: File): MihomoBuildInfo {
         props.getProperty("external.mihomo.branch", "Alpha").trim().ifEmpty { "Alpha" }
     val suffix = props.getProperty("external.mihomo.suffix", "").trim()
     val includeTimestamp =
-        props.getProperty("external.mihomo.includeTimestamp", "false")
-            .toBooleanStrictOrNull() ?: false
+        props.getProperty("external.mihomo.includeTimestamp", "false").toBooleanStrictOrNull()
+            ?: false
     val mihomoRel = props.getProperty("external.mihomo.dir", "lib/mihomo/mihomo").trim()
     val mihomoDir = rootDir.resolve(mihomoRel)
 
@@ -253,19 +261,17 @@ fun resolveMihomoBuildInfo(rootDir: File): MihomoBuildInfo {
     // 1) -Pcore.branch / -Pcore.commit overrides
     // 2) live git checkout under external.mihomo.dir (local dev — freshest)
     // 3) core-version.properties stamped by native-build (CI APK job has no mihomo tree)
-    val propBranch = providers.gradleProperty("core.branch").orNull?.trim()?.takeIf { it.isNotEmpty() }
-    val propCommit = providers.gradleProperty("core.commit").orNull?.trim()?.takeIf { it.isNotEmpty() }
+    val propBranch =
+        providers.gradleProperty("core.branch").orNull?.trim()?.takeIf { it.isNotEmpty() }
+    val propCommit =
+        providers.gradleProperty("core.commit").orNull?.trim()?.takeIf { it.isNotEmpty() }
     val versionStamp = loadCoreVersionStamp(rootDir)
     val (gitCommit, gitBranch) = readGitHead(mihomoDir)
     val liveGitCommit = gitCommit.takeIf { it != "unknown" }
     val stampCommit = versionStamp?.getProperty("core.commit")?.trim()?.takeIf { it.isNotEmpty() }
     val usingStampCommit = propCommit == null && liveGitCommit == null && stampCommit != null
 
-    val commit =
-        propCommit
-            ?: liveGitCommit
-            ?: stampCommit
-            ?: "unknown"
+    val commit = propCommit ?: liveGitCommit ?: stampCommit ?: "unknown"
     // Channel from kernel.properties is the product label; stamp / git branch are fallbacks.
     val branchBase = configuredBranch.ifBlank { gitBranch ?: "mihomo" }
     val branchLabel =
@@ -310,7 +316,6 @@ fun resolveMihomoBuildInfo(rootDir: File): MihomoBuildInfo {
 
 val mihomoBuildInfo = resolveMihomoBuildInfo(rootProject.projectDir)
 
-
 android {
     namespace = gropify.project.namespace.base
 
@@ -321,8 +326,16 @@ android {
         versionName = appVersionName
         buildConfigField("String", "BASE_VERSION", "\"${gropify.project.version.name}\"")
         // Mihomo core identity (branch + short hash) from kernel.properties / lib/mihomo checkout.
-        buildConfigField("String", "CORE_BRANCH", "\"${escapeBuildConfigString(mihomoBuildInfo.branch)}\"")
-        buildConfigField("String", "CORE_COMMIT", "\"${escapeBuildConfigString(mihomoBuildInfo.commit)}\"")
+        buildConfigField(
+            "String",
+            "CORE_BRANCH",
+            "\"${escapeBuildConfigString(mihomoBuildInfo.branch)}\"",
+        )
+        buildConfigField(
+            "String",
+            "CORE_COMMIT",
+            "\"${escapeBuildConfigString(mihomoBuildInfo.commit)}\"",
+        )
         buildConfigField(
             "String",
             "CORE_VERSION",
@@ -422,7 +435,8 @@ android {
     splits {
         abi {
             //noinspection WrongGradleMethod
-            isEnable = gradle.startParameter.taskNames.none { it.contains("bundle", ignoreCase = true) }
+            isEnable =
+                gradle.startParameter.taskNames.none { it.contains("bundle", ignoreCase = true) }
             reset()
             // AGP Split.include only accepts vararg; copying this tiny ABI list is negligible.
             @Suppress("SpreadOperator")
@@ -476,64 +490,78 @@ android {
     androidComponents {
         onVariants { variant ->
             variant.outputs.forEach { output ->
-                val abiName = output.filters.find {
-                    it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI
-                }?.identifier ?: "universal"
-                val outputName = buildList {
-                    add(apkOutputPrefix)
-                    add(apkGeoSegment)
-                    if (abiName != "arm64-v8a") add(abiName)
-                    apkChannelSegment?.let(::add)
-                    apkOutputTail?.let(::add)
-                }.joinToString("-") + ".apk"
+                val abiName =
+                    output.filters
+                        .find {
+                            it.filterType ==
+                                com.android.build.api.variant.FilterConfiguration.FilterType.ABI
+                        }
+                        ?.identifier ?: "universal"
+                val outputName =
+                    buildList {
+                            add(apkOutputPrefix)
+                            add(apkGeoSegment)
+                            if (abiName != "arm64-v8a") add(abiName)
+                            apkChannelSegment?.let(::add)
+                            apkOutputTail?.let(::add)
+                        }
+                        .joinToString("-") + ".apk"
                 output.versionName.set(appVersionName)
-                (output as com.android.build.api.variant.impl.VariantOutputImpl).outputFileName.set(
-                    outputName
-                )
+                (output as com.android.build.api.variant.impl.VariantOutputImpl)
+                    .outputFileName
+                    .set(outputName)
             }
         }
     }
 }
 
 if (releaseSigningProperties != null) {
-    val loaderRuntime = configurations.detachedConfiguration(
-        dependencies.create("org.lsposed.hiddenapibypass:hiddenapibypass:6.1"),
-    )
+    val loaderRuntime =
+        configurations.detachedConfiguration(
+            dependencies.create("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
+        )
     androidComponents {
         onVariants(selector().withBuildType("release")) { variant ->
             val capitalized = variant.name.replaceFirstChar(Char::uppercaseChar)
-            val loaderDexTask = tasks.register<BuildLoaderDexTask>("build${capitalized}LoaderDex") {
-                group = "build"
-                description = "Builds the standalone loader DEX for ${variant.name}"
-                loaderAar.set(
-                    project(":pack").layout.buildDirectory.file(
-                        "outputs/aar/pack-release.aar"
+            val loaderDexTask =
+                tasks.register<BuildLoaderDexTask>("build${capitalized}LoaderDex") {
+                    group = "build"
+                    description = "Builds the standalone loader DEX for ${variant.name}"
+                    loaderAar.set(
+                        project(":pack").layout.buildDirectory.file("outputs/aar/pack-release.aar")
                     )
-                )
-                runtimeArtifacts.from(loaderRuntime)
-                sdkDirectory.set(sdkComponents.sdkDirectory)
-                minSdk.set(variant.minSdk.apiLevel)
-                outputDirectory.set(layout.buildDirectory.dir("intermediates/yumePacker/${variant.name}/loaderDex"))
-                dependsOn(":pack:bundleReleaseAar")
-            }
-            val packApkTask = tasks.register<TransformPackedApksTask>("pack${capitalized}Apk") {
-                group = "build"
-                description = "Compresses DEX payloads and installs the loader in ${variant.name} APKs"
-                loaderDex.set(loaderDexTask.flatMap { it.outputDirectory.file("classes.dex") })
-                sdkDirectory.set(sdkComponents.sdkDirectory)
-                originalApplication.set("com.github.yumelira.yumebox.App")
-                originalComponentFactory.set("androidx.core.app.CoreComponentFactory")
-                keyStoreFile.set(rootProject.layout.projectDirectory.file("release.keystore"))
-                keyStorePassword.set(releaseSigningProperties.getProperty("keystore.password"))
-                keyAlias.set(releaseSigningProperties.getProperty("key.alias"))
-                keyPassword.set(releaseSigningProperties.getProperty("key.password"))
-            }
-            val artifactRequest = variant.artifacts.use(packApkTask)
-                .wiredWithDirectories(
-                    TransformPackedApksTask::inputApkDirectory,
-                    TransformPackedApksTask::outputApkDirectory,
-                )
-                .toTransformMany(SingleArtifact.APK)
+                    runtimeArtifacts.from(loaderRuntime)
+                    sdkDirectory.set(sdkComponents.sdkDirectory)
+                    minSdk.set(variant.minSdk.apiLevel)
+                    outputDirectory.set(
+                        layout.buildDirectory.dir(
+                            "intermediates/yumePacker/${variant.name}/loaderDex"
+                        )
+                    )
+                    dependsOn(":pack:bundleReleaseAar")
+                }
+            val packApkTask =
+                tasks.register<TransformPackedApksTask>("pack${capitalized}Apk") {
+                    group = "build"
+                    description =
+                        "Compresses DEX payloads and installs the loader in ${variant.name} APKs"
+                    loaderDex.set(loaderDexTask.flatMap { it.outputDirectory.file("classes.dex") })
+                    sdkDirectory.set(sdkComponents.sdkDirectory)
+                    originalApplication.set("com.github.yumelira.yumebox.App")
+                    originalComponentFactory.set("androidx.core.app.CoreComponentFactory")
+                    keyStoreFile.set(rootProject.layout.projectDirectory.file("release.keystore"))
+                    keyStorePassword.set(releaseSigningProperties.getProperty("keystore.password"))
+                    keyAlias.set(releaseSigningProperties.getProperty("key.alias"))
+                    keyPassword.set(releaseSigningProperties.getProperty("key.password"))
+                }
+            val artifactRequest =
+                variant.artifacts
+                    .use(packApkTask)
+                    .wiredWithDirectories(
+                        TransformPackedApksTask::inputApkDirectory,
+                        TransformPackedApksTask::outputApkDirectory,
+                    )
+                    .toTransformMany(SingleArtifact.APK)
             packApkTask.configure {
                 transformationRequest.set(artifactRequest)
             }

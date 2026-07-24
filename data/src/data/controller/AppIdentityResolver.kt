@@ -23,11 +23,11 @@ package com.github.yumelira.yumebox.data.controller
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import java.util.concurrent.ConcurrentHashMap
 
 data class AppIdentity(
     val appKey: String,
@@ -121,14 +121,13 @@ class AppIdentityResolver(context: Context) {
     private fun resolveByProcess(processName: String): String? {
         if (processName.isBlank()) return null
 
-        val candidates =
-            buildList {
-                    add(processName)
-                    add(processName.substringBefore(':'))
-                }
-                .map(String::trim)
-                .filter(String::isNotEmpty)
-                .distinct()
+        val candidates = buildList {
+            add(processName)
+            add(processName.substringBefore(':'))
+        }
+            .map(String::trim)
+            .filter(String::isNotEmpty)
+            .distinct()
 
         candidates.firstNotNullOfOrNull(::findInstalledPackage)?.let {
             return it
@@ -151,18 +150,19 @@ class AppIdentityResolver(context: Context) {
         installedAppsCache?.let {
             return it
         }
-        val apps =
-            runCatching { packageManager.getInstalledApplications(PackageManager.GET_META_DATA) }
-                .getOrDefault(emptyList<ApplicationInfo>())
-                .map { app ->
-                    InstalledAppIdentity(
-                        packageName = app.packageName,
-                        processName = app.processName?.trim().orEmpty(),
-                        label =
-                            runCatching { app.loadLabel(packageManager).toString().trim() }
-                                .getOrDefault(""),
-                    )
-                }
+        val apps = runCatching {
+            packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
+        }
+            .getOrDefault(emptyList<ApplicationInfo>())
+            .map { app ->
+                InstalledAppIdentity(
+                    packageName = app.packageName,
+                    processName = app.processName?.trim().orEmpty(),
+                    label =
+                        runCatching { app.loadLabel(packageManager).toString().trim() }
+                            .getOrDefault(""),
+                )
+            }
         installedAppsCache = apps
         return apps
     }
@@ -170,9 +170,9 @@ class AppIdentityResolver(context: Context) {
     private fun findInstalledPackage(packageName: String): String? {
         if (packageName.isBlank()) return null
         return runCatching {
-                packageManager.getApplicationInfo(packageName, 0)
-                packageName
-            }
+            packageManager.getApplicationInfo(packageName, 0)
+            packageName
+        }
             .getOrNull()
     }
 

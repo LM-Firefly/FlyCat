@@ -26,7 +26,7 @@ import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.api.UUIDSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import java.util.UUID
+import java.util.*
 
 @Serializable
 data class Imported(

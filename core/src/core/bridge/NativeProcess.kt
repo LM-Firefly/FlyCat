@@ -31,11 +31,12 @@ import androidx.annotation.Keep
  * its own end from the `CHANNEL` environment variable.
  *
  * NOTE: this is the *non-root* launch primitive (the app fork+execs the binary directly). The root
- * path launches the same binary through `su` (libsu `Shell`) instead and talks to it purely over the
- * UNIX controller socket; it does not use [start].
+ * path launches the same binary through `su` (libsu `Shell`) instead and talks to it purely over
+ * the UNIX controller socket; it does not use [start].
  */
 @Keep
-class NativeProcess private constructor(
+class NativeProcess
+private constructor(
     val pid: Int,
     val channelFd: Int,
 ) {
@@ -52,16 +53,17 @@ class NativeProcess private constructor(
 
         /**
          * Fork and execve [path] (which must be readable and executable — i.e. an
-         * extracted-and-chmod'd copy under the app's storage, or a file living in `nativeLibraryDir`).
-         * [args] are appended after `argv[0] = path`; [env] entries are added on top of the inherited
-         * environment. The child `chdir`s into [workdir] (the core home) before exec, and receives the
-         * channel socket fd through `CHANNEL=<fd>`.
+         * extracted-and-chmod'd copy under the app's storage, or a file living in
+         * `nativeLibraryDir`). [args] are appended after `argv[0] = path`; [env] entries are added
+         * on top of the inherited environment. The child `chdir`s into [workdir] (the core home)
+         * before exec, and receives the channel socket fd through `CHANNEL=<fd>`.
          *
-         * The call blocks until the child has execve'd (or failed to): a pre-exec failure in the child
-         * is reported back and rethrown here, so a returned handle always means the core is running.
+         * The call blocks until the child has execve'd (or failed to): a pre-exec failure in the
+         * child is reported back and rethrown here, so a returned handle always means the core is
+         * running.
          *
-         * @throws java.io.IOException if the file is not executable, chdir/socketpair/fork fails, or
-         *   the child could not exec [path].
+         * @throws java.io.IOException if the file is not executable, chdir/socketpair/fork fails,
+         *   or the child could not exec [path].
          */
         fun start(
             path: String,
@@ -81,10 +83,8 @@ class NativeProcess private constructor(
             workdir: String?,
         ): IntArray
 
-        @JvmStatic
-        private external fun nativeKill(pid: Int)
+        @JvmStatic private external fun nativeKill(pid: Int)
 
-        @JvmStatic
-        private external fun nativeWait(pid: Int): Int
+        @JvmStatic private external fun nativeWait(pid: Int): Int
     }
 }

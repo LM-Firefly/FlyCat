@@ -31,28 +31,24 @@ import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.util.importedDir
 import com.github.yumelira.yumebox.runtime.service.util.sendProfileChanged
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.statement.bodyAsChannel
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpHeaders
-import io.ktor.http.isSuccess
-import io.ktor.utils.io.jvm.javaio.toInputStream
 import com.tencent.mmkv.MMKV
+import io.ktor.client.*
+import io.ktor.client.engine.okhttp.*
+import io.ktor.client.plugins.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.utils.io.jvm.javaio.*
 import java.io.File
 import java.net.URLDecoder
 import java.security.MessageDigest
-import java.util.Base64
+import java.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.UUID
 
 object ProfileProcessor {
     private val profileLock = Mutex()
@@ -82,7 +78,8 @@ object ProfileProcessor {
 
     /**
      * Downloads a subscription URL to `stagingDir/config.yaml` with progress, parsing the
-     * `subscription-userinfo` header into a SubscriptionInfo (deep config validation happens at compile time).
+     * `subscription-userinfo` header into a SubscriptionInfo (deep config validation happens at
+     * compile time).
      */
     private suspend fun fetchSubscription(
         stagingDir: File,
@@ -91,56 +88,67 @@ object ProfileProcessor {
     ) {
         onStatus(FetchStatus(FetchStatus.Action.FetchConfiguration, listOf(url), 0, 1))
         HttpClient(OkHttp) {
-            install(HttpTimeout) { requestTimeoutMillis = 60_000 }
-            followRedirects = true
-        }.use { client ->
-            // Airports gate the real config on a recognized Clash-client User-Agent; "YumeBox" gets a
-            // crippled response, so send the user's custom UA or the Sub-Store client's default.
-            val response =
-                client.get(url) { header(HttpHeaders.UserAgent, resolveSubscriptionUserAgent()) }
-            val body = response.bodyAsText()
-            stagingDir.mkdirs()
-            File(stagingDir, "config.yaml").writeText(body)
-            onStatus(FetchStatus(FetchStatus.Action.Verifying, emptyList(), 1, 1))
-
-            val headers = response.headers
-            val fields =
-                headers["subscription-userinfo"]
-                    ?.split(';')
-                    ?.mapNotNull { part ->
-                        val kv = part.split('=', limit = 2)
-                        if (kv.size == 2) kv[0].trim().lowercase() to kv[1].trim() else null
+                install(HttpTimeout) { requestTimeoutMillis = 60_000 }
+                followRedirects = true
+            }
+            .use { client ->
+                // Airports gate the real config on a recognized Clash-client User-Agent; "YumeBox"
+                // gets a
+                // crippled response, so send the user's custom UA or the Sub-Store client's
+                // default.
+                val response =
+                    client.get(url) {
+                        header(HttpHeaders.UserAgent, resolveSubscriptionUserAgent())
                     }
-                    ?.toMap()
-                    .orEmpty()
-            val title =
-                decodeSubscriptionTitle(headers["profile-title"] ?: headers["subscription-title"])
-            val filename = parseContentDispositionFilename(headers["content-disposition"])
-            val interval =
-                (headers["profile-update-interval"] ?: headers["subscription-update-interval"])
-                    ?.trim()
-                    ?.toLongOrNull()
+                val body = response.bodyAsText()
+                stagingDir.mkdirs()
+                File(stagingDir, "config.yaml").writeText(body)
+                onStatus(FetchStatus(FetchStatus.Action.Verifying, emptyList(), 1, 1))
 
-            // Emit the subscription-info status unconditionally: a server may send profile-title
-            // (airport name) without subscription-userinfo, and vice versa.
-            onStatus(
-                FetchStatus(
-                    action = FetchStatus.Action.SubscriptionInfo,
-                    args = emptyList(),
-                    progress = 1,
-                    max = 1,
-                    subUpload = fields["upload"]?.toLongOrNull(),
-                    subDownload = fields["download"]?.toLongOrNull(),
-                    subTotal = fields["total"]?.toLongOrNull(),
-                    // `expire` here is a Unix timestamp in SECONDS, but the UI renders Profile.expire
-                    // as epoch MILLIS — convert, or a real future date reads as 1970 ("expired").
-                    subExpire = fields["expire"]?.toLongOrNull()?.takeIf { it > 0 }?.let { it * 1000L },
-                    subUpdateInterval = interval,
-                    subTitle = title,
-                    subFilename = filename,
+                val headers = response.headers
+                val fields =
+                    headers["subscription-userinfo"]
+                        ?.split(';')
+                        ?.mapNotNull { part ->
+                            val kv = part.split('=', limit = 2)
+                            if (kv.size == 2) kv[0].trim().lowercase() to kv[1].trim() else null
+                        }
+                        ?.toMap()
+                        .orEmpty()
+                val title =
+                    decodeSubscriptionTitle(
+                        headers["profile-title"] ?: headers["subscription-title"]
+                    )
+                val filename = parseContentDispositionFilename(headers["content-disposition"])
+                val interval =
+                    (headers["profile-update-interval"] ?: headers["subscription-update-interval"])
+                        ?.trim()
+                        ?.toLongOrNull()
+
+                // Emit the subscription-info status unconditionally: a server may send
+                // profile-title
+                // (airport name) without subscription-userinfo, and vice versa.
+                onStatus(
+                    FetchStatus(
+                        action = FetchStatus.Action.SubscriptionInfo,
+                        args = emptyList(),
+                        progress = 1,
+                        max = 1,
+                        subUpload = fields["upload"]?.toLongOrNull(),
+                        subDownload = fields["download"]?.toLongOrNull(),
+                        subTotal = fields["total"]?.toLongOrNull(),
+                        // `expire` here is a Unix timestamp in SECONDS, but the UI renders
+                        // Profile.expire
+                        // as epoch MILLIS — convert, or a real future date reads as 1970
+                        // ("expired").
+                        subExpire =
+                            fields["expire"]?.toLongOrNull()?.takeIf { it > 0 }?.let { it * 1000L },
+                        subUpdateInterval = interval,
+                        subTitle = title,
+                        subFilename = filename,
+                    )
                 )
-            )
-        }
+            }
     }
 
     private const val DEFAULT_SUBSCRIPTION_UA = "ClashMetaForAndroid"
@@ -157,40 +165,40 @@ object ProfileProcessor {
     ) {
         val config = stagingDir.resolve("config.yaml")
         if (!config.isFile) return
-        val providers =
-            runCatching {
-                collectExternalProviders(
-                    root = YamlCodec.loadMap(config.readText()),
-                    stagingDir = stagingDir,
-                    profileDir = profileDir,
-                )
-            }
-                .onFailure { Timber.w(it, "Skip external provider prefetch: config parse failed") }
-                .getOrDefault(emptyList())
+        val providers = runCatching {
+            collectExternalProviders(
+                root = YamlCodec.loadMap(config.readText()),
+                stagingDir = stagingDir,
+                profileDir = profileDir,
+            )
+        }
+            .onFailure { Timber.w(it, "Skip external provider prefetch: config parse failed") }
+            .getOrDefault(emptyList())
         if (providers.isEmpty()) return
 
         HttpClient(OkHttp) {
-            install(HttpTimeout) {
-                connectTimeoutMillis = 15_000
-                requestTimeoutMillis = 60_000
+                install(HttpTimeout) {
+                    connectTimeoutMillis = 15_000
+                    requestTimeoutMillis = 60_000
+                }
+                followRedirects = true
             }
-            followRedirects = true
-        }.use { client ->
-            providers.forEachIndexed { index, provider ->
-                onStatus(
-                    FetchStatus(
-                        action = FetchStatus.Action.FetchProviders,
-                        args = listOf(provider.name),
-                        progress = index + 1,
-                        max = providers.size,
+            .use { client ->
+                providers.forEachIndexed { index, provider ->
+                    onStatus(
+                        FetchStatus(
+                            action = FetchStatus.Action.FetchProviders,
+                            args = listOf(provider.name),
+                            progress = index + 1,
+                            max = providers.size,
+                        )
                     )
-                )
-                runCatching { downloadExternalProvider(client, provider) }
-                    .onFailure { error ->
-                        Timber.w(error, "Skip external provider download: %s", provider.url)
-                    }
+                    runCatching { downloadExternalProvider(client, provider) }
+                        .onFailure { error ->
+                            Timber.w(error, "Skip external provider download: %s", provider.url)
+                        }
+                }
             }
-        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -198,12 +206,12 @@ object ProfileProcessor {
         root: Map<String, Any?>,
         stagingDir: File,
         profileDir: File,
-    ): List<ExternalProvider> =
-        buildList {
-            listOf(
+    ): List<ExternalProvider> = buildList {
+        listOf(
                 "rule-providers" to RULE_PROVIDER_SCOPE,
                 "proxy-providers" to PROXY_PROVIDER_SCOPE,
-            ).forEach { (field, scope) ->
+            )
+            .forEach { (field, scope) ->
                 val definitions = root[field] as? Map<*, *> ?: return@forEach
                 definitions.forEach { (rawName, rawDefinition) ->
                     val definition = rawDefinition as? Map<*, *> ?: return@forEach
@@ -214,22 +222,26 @@ object ProfileProcessor {
                     val extension =
                         if (
                             scope == RULE_PROVIDER_SCOPE &&
-                                definition["format"]?.toString()?.equals("mrs", ignoreCase = true) == true
+                                definition["format"]
+                                    ?.toString()
+                                    ?.equals("mrs", ignoreCase = true) == true
                         ) {
                             "mrs"
                         } else {
                             "yaml"
                         }
                     val target =
-                        profileProviderScopeDir(stagingDir, scope).resolve(
-                            providerRelativePath(
-                                path = definition["path"]?.toString().orEmpty(),
-                                url = url,
-                                extension = extension,
-                                profileProviderDir = profileProviderScopeDir(profileDir, scope),
+                        profileProviderScopeDir(stagingDir, scope)
+                            .resolve(
+                                providerRelativePath(
+                                    path = definition["path"]?.toString().orEmpty(),
+                                    url = url,
+                                    extension = extension,
+                                    profileProviderDir = profileProviderScopeDir(profileDir, scope),
+                                )
                             )
-                        )
-                    val name = rawName?.toString()?.trim().takeUnless { it.isNullOrEmpty() } ?: target.name
+                    val name =
+                        rawName?.toString()?.trim().takeUnless { it.isNullOrEmpty() } ?: target.name
                     add(
                         ExternalProvider(
                             name = name,
@@ -240,7 +252,7 @@ object ProfileProcessor {
                     )
                 }
             }
-        }
+    }
 
     private fun providerRelativePath(
         path: String,
@@ -260,7 +272,8 @@ object ProfileProcessor {
         val cleaned = mutableListOf<String>()
         segments.forEach { segment ->
             when (segment) {
-                "", "." -> Unit
+                "",
+                "." -> Unit
                 ".." -> if (cleaned.isNotEmpty()) cleaned.removeAt(cleaned.lastIndex)
                 else -> cleaned += segment
             }
@@ -290,10 +303,13 @@ object ProfileProcessor {
                 val name = rawName?.toString()?.trim().orEmpty()
                 if (name.isBlank()) return@forEach
                 when (rawValue) {
-                    is Iterable<*> -> rawValue.forEach { value ->
-                        value?.toString()?.takeIf(String::isNotBlank)?.let { add(name to it) }
-                    }
-                    else -> rawValue?.toString()?.takeIf(String::isNotBlank)?.let { add(name to it) }
+                    is Iterable<*> ->
+                        rawValue.forEach { value ->
+                            value?.toString()?.takeIf(String::isNotBlank)?.let { add(name to it) }
+                        }
+
+                    else ->
+                        rawValue?.toString()?.takeIf(String::isNotBlank)?.let { add(name to it) }
                 }
             }
         }
@@ -304,15 +320,17 @@ object ProfileProcessor {
         provider.target.parentFile?.mkdirs()
         temporary.delete()
         try {
-            client.get(provider.url) {
-                header(HttpHeaders.UserAgent, resolveSubscriptionUserAgent())
-                provider.headers.forEach { (name, value) -> header(name, value) }
-            }.let { response ->
-                check(response.status.isSuccess()) { "HTTP ${response.status.value}" }
-                response.bodyAsChannel().toInputStream().use { input ->
-                    temporary.outputStream().buffered().use { output -> input.copyTo(output) }
+            client
+                .get(provider.url) {
+                    header(HttpHeaders.UserAgent, resolveSubscriptionUserAgent())
+                    provider.headers.forEach { (name, value) -> header(name, value) }
                 }
-            }
+                .let { response ->
+                    check(response.status.isSuccess()) { "HTTP ${response.status.value}" }
+                    response.bodyAsChannel().toInputStream().use { input ->
+                        temporary.outputStream().buffered().use { output -> input.copyTo(output) }
+                    }
+                }
             temporary.copyTo(provider.target, overwrite = true)
         } finally {
             temporary.delete()
@@ -323,25 +341,26 @@ object ProfileProcessor {
         startsWith("https://", ignoreCase = true) || startsWith("http://", ignoreCase = true)
 
     private fun sha256(value: String): String =
-        MessageDigest.getInstance("SHA-256")
-            .digest(value.toByteArray())
-            .joinToString("") { "%02x".format(it) }
+        MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") {
+            "%02x".format(it)
+        }
 
-    private val providerPathPrefixes = setOf("providers", "provider", "clash", "ruleset", "rules", "proxies")
+    private val providerPathPrefixes =
+        setOf("providers", "provider", "clash", "ruleset", "rules", "proxies")
 
     /** The user's configured User-Agent (settings store), or the airport-recognized default. */
     private fun resolveSubscriptionUserAgent(): String {
-        val custom =
-            runCatching {
-                    MMKV.mmkvWithID("settings", MMKV.MULTI_PROCESS_MODE)
-                        .decodeString("customUserAgent")
-                }
-                .getOrNull()
-                ?.trim()
+        val custom = runCatching {
+            MMKV.mmkvWithID("settings", MMKV.MULTI_PROCESS_MODE).decodeString("customUserAgent")
+        }
+            .getOrNull()
+            ?.trim()
         return custom?.takeIf { it.isNotEmpty() } ?: DEFAULT_SUBSCRIPTION_UA
     }
 
-    /** Decodes a `profile-title` header: plain, `base64:…`, RFC 5987 (`UTF-8''…`), or url-encoded. */
+    /**
+     * Decodes a `profile-title` header: plain, `base64:…`, RFC 5987 (`UTF-8''…`), or url-encoded.
+     */
     private fun decodeSubscriptionTitle(raw: String?): String? {
         val value = raw?.trim()?.trim('"', '\'')?.takeIf { it.isNotBlank() } ?: return null
         if (value.startsWith("base64:", ignoreCase = true)) {
@@ -352,12 +371,16 @@ object ProfileProcessor {
             runCatching { URLDecoder.decode(match.groupValues[2], charset).trim() }
                 .getOrNull()
                 ?.takeIf { it.isNotBlank() }
-                ?.let { return it }
+                ?.let {
+                    return it
+                }
         }
         runCatching { URLDecoder.decode(value, "UTF-8").trim() }
             .getOrNull()
             ?.takeIf { it.isNotBlank() && it != value }
-            ?.let { return it }
+            ?.let {
+                return it
+            }
         return decodeBase64OrNull(value) ?: value
     }
 
@@ -371,20 +394,21 @@ object ProfileProcessor {
 
     /**
      * Extracts the filename from a Content-Disposition header — RFC 5987 `filename*=charset''…`
-     * (url-decoded) and plain `filename=…`, stopping at the next `;` so trailing params aren't swallowed.
+     * (url-decoded) and plain `filename=…`, stopping at the next `;` so trailing params aren't
+     * swallowed.
      */
     private fun parseContentDispositionFilename(contentDisposition: String?): String? {
         val cd = contentDisposition?.takeIf { it.isNotBlank() } ?: return null
         return runCatching {
-                if (cd.contains("filename*=", ignoreCase = true)) {
+            if (cd.contains("filename*=", ignoreCase = true)) {
                     Regex("""filename\*=([^']*)'([^']*)'([^;]+)""", RegexOption.IGNORE_CASE)
                         .find(cd)
                         ?.let { match ->
                             val charset = match.groupValues[1].ifBlank { "UTF-8" }
                             val encoded = match.groupValues[3].trim().trim('"', '\'')
-                            val safeCharset =
-                                runCatching { java.nio.charset.Charset.forName(charset).name() }
-                                    .getOrDefault("UTF-8")
+                            val safeCharset = runCatching {
+                                java.nio.charset.Charset.forName(charset).name()
+                            }.getOrDefault("UTF-8")
                             URLDecoder.decode(encoded, safeCharset).trim()
                         }
                 } else {
@@ -394,8 +418,9 @@ object ProfileProcessor {
                         ?.getOrNull(1)
                         ?.trim()
                         ?.trim('"', '\'')
-                }?.takeIf { it.isNotBlank() }
-            }
+                }
+                ?.takeIf { it.isNotBlank() }
+        }
             .getOrNull()
     }
 
@@ -461,9 +486,11 @@ object ProfileProcessor {
                 var subInfo: SubscriptionInfo? = null
 
                 try {
-                    // Age secret key is applied per-profile inside the compiler (compile request), not
+                    // Age secret key is applied per-profile inside the compiler (compile request),
+                    // not
                     // as global core state — nothing to set here.
-                    // Only Url profiles are fetched: a File profile's config.yaml was already written at
+                    // Only Url profiles are fetched: a File profile's config.yaml was already
+                    // written at
                     // import time, so HTTP-getting its local source would just clobber it.
                     if (snapshot.imported.type == Profile.Type.Url) {
                         fetchSubscription(stagingDir, snapshot.imported.source) { status ->

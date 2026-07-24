@@ -150,9 +150,8 @@ fun PanelShortcutDialog(
     }
 }
 
-private fun faviconUrlOf(url: String): String =
-    runCatching {
-            val u = java.net.URL(url)
-            "${u.protocol}://${u.host}/favicon.ico"
-        }
-        .getOrDefault(url)
+private fun faviconUrlOf(url: String): String = runCatching {
+    val u = java.net.URL(url)
+    "${u.protocol}://${u.host}/favicon.ico"
+}
+    .getOrDefault(url)

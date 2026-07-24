@@ -30,9 +30,9 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 
 /**
- * The VpnService "service config" sub-page (reached from the network-settings Advanced section). Holds
- * every knob the userspace VpnService/gVisor path exposes; the TCP/IP stack is fixed to gVisor so there
- * is no stack picker. Shares [NetworkSettingsViewModel] with the picker screen.
+ * The VpnService "service config" sub-page (reached from the network-settings Advanced section).
+ * Holds every knob the userspace VpnService/gVisor path exposes; the TCP/IP stack is fixed to
+ * gVisor so there is no stack picker. Shares [NetworkSettingsViewModel] with the picker screen.
  */
 @Composable
 fun VpnServiceOptionsScreen() {
@@ -42,7 +42,10 @@ fun VpnServiceOptionsScreen() {
 
     Scaffold(
         topBar = {
-            TopBar(title = YumeTxt.NetworkSettings.Section.VpnOptions, scrollBehavior = scrollBehavior)
+            TopBar(
+                title = YumeTxt.NetworkSettings.Section.VpnOptions,
+                scrollBehavior = scrollBehavior,
+            )
         }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()

@@ -59,7 +59,9 @@ import top.yukonga.miuix.kmp.icon.basic.Search
 import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
-/** Search-bar padding trio threaded from the screen; unspecified fields fall back to theme values. */
+/**
+ * Search-bar padding trio threaded from the screen; unspecified fields fall back to theme values.
+ */
 data class SearchBarPadding(
     val top: Dp = Dp.Unspecified,
     val start: Dp = Dp.Unspecified,
@@ -90,7 +92,8 @@ fun CollapsedSearchBar(
             )
         },
         modifier =
-            modifier.fillMaxWidth()
+            modifier
+                .fillMaxWidth()
                 .padding(start = startPadding, end = endPadding)
                 .padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding),
         onSearch = {},
@@ -123,15 +126,15 @@ fun SearchStatus.TopAppBarAnim(
 }
 
 /**
- * Expandable search overlay. Callers must keep this composed always (do not
- * `if (!isCollapsed)`) so expand/collapse animations stay continuous.
+ * Expandable search overlay. Callers must keep this composed always (do not `if (!isCollapsed)`) so
+ * expand/collapse animations stay continuous.
  *
- * When settled [SearchStatus.Status.COLLAPSED]: zero-size, no zIndex, no pointer — does not
- * cover the page. While expanding / expanded / collapsing: full-screen dim + bar.
+ * When settled [SearchStatus.Status.COLLAPSED]: zero-size, no zIndex, no pointer — does not cover
+ * the page. While expanding / expanded / collapsing: full-screen dim + bar.
  *
  * Must be placed as a **full-window sibling** of the page Scaffold (see AccessControl /
- * Connection), not inside Scaffold content — [topPadding] animates relative to the window
- * top (status bars), matching the collapsed bar's [SearchStatus.offsetY].
+ * Connection), not inside Scaffold content — [topPadding] animates relative to the window top
+ * (status bars), matching the collapsed bar's [SearchStatus.offsetY].
  */
 @Composable
 fun SearchStatus.SearchPager(
@@ -221,9 +224,7 @@ private fun SearchPagerTopRow(
 ) {
     Row(
         modifier =
-            Modifier.fillMaxWidth()
-                .padding(top = topPadding)
-                .background(colorScheme.surface),
+            Modifier.fillMaxWidth().padding(top = topPadding).background(colorScheme.surface),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
     ) {

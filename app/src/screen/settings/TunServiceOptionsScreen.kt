@@ -36,8 +36,8 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 
 /**
- * Root Tun "service config" sub-page (network-settings Advanced, Tun mode): the kernel-TUN geometry the
- * core opens for itself. Shares [NetworkSettingsViewModel] with the picker screen.
+ * Root Tun "service config" sub-page (network-settings Advanced, Tun mode): the kernel-TUN geometry
+ * the core opens for itself. Shares [NetworkSettingsViewModel] with the picker screen.
  */
 @Composable
 fun TunServiceOptionsScreen() {
@@ -55,7 +55,10 @@ fun TunServiceOptionsScreen() {
 
     Scaffold(
         topBar = {
-            TopBar(title = YumeTxt.NetworkSettings.TunOptions.Title, scrollBehavior = scrollBehavior)
+            TopBar(
+                title = YumeTxt.NetworkSettings.TunOptions.Title,
+                scrollBehavior = scrollBehavior,
+            )
         }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
@@ -127,7 +130,10 @@ fun TunServiceOptionsScreen() {
     }
 }
 
-/** Tappable row that opens an [AppTextFieldDialog] to edit a single text/number value (row + dialog packaged together). */
+/**
+ * Tappable row that opens an [AppTextFieldDialog] to edit a single text/number value (row + dialog
+ * packaged together).
+ */
 @Composable
 internal fun TextInputArrowItem(
     title: String,

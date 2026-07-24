@@ -24,9 +24,10 @@ import com.github.yumelira.yumebox.data.store.MMKVProvider
 
 /**
  * Persisted handle to the decoupled root core daemon. Unlike the tracked VPN child core, the root
- * daemon outlives the app process, so its `{pid, secret, mode}` must survive process death for a fresh
- * start to detect and reattach over the REST socket — held in the multi-process `root_tun_state` MMKV
- * (pre-created by StatusProvider). The app is the single writer; the daemon never touches it.
+ * daemon outlives the app process, so its `{pid, secret, mode}` must survive process death for a
+ * fresh start to detect and reattach over the REST socket — held in the multi-process
+ * `root_tun_state` MMKV (pre-created by StatusProvider). The app is the single writer; the daemon
+ * never touches it.
  */
 object RootDaemonState {
     private const val ID = "root_tun_state"
@@ -50,7 +51,10 @@ object RootDaemonState {
     fun load(): Record? {
         val mmkv = store()
         val pid = mmkv.decodeInt(KEY_PID, 0).takeIf { it > 0 } ?: return null
-        val mode = mmkv.decodeString(KEY_MODE).orEmpty().ifEmpty { return null }
+        val mode =
+            mmkv.decodeString(KEY_MODE).orEmpty().ifEmpty {
+                return null
+            }
         return Record(pid = pid, secret = mmkv.decodeString(KEY_SECRET).orEmpty(), mode = mode)
     }
 

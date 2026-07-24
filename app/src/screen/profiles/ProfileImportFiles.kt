@@ -28,12 +28,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
-import java.util.UUID
+import java.util.*
 
 internal fun importedProfileDir(profile: Profile): File =
     App.instance.filesDir.importedProfileDir(profile.uuid)
 
-internal fun importedConfigFile(profile: Profile): File = importedProfileDir(profile).resolve("config.yaml")
+internal fun importedConfigFile(profile: Profile): File =
+    importedProfileDir(profile).resolve("config.yaml")
 
 internal suspend fun Application.copyProfileImport(uri: Uri, uuid: UUID) {
     withContext(Dispatchers.IO) {

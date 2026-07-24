@@ -82,12 +82,13 @@ class AppSettingsViewModel(
     )
 
     val behaviorSectionState: StateFlow<BehaviorSectionState> =
-        combine(automaticRestart.state, autoUpdateCurrentProfileOnStart.state) { restart, autoUpdate ->
-            BehaviorSectionState(
-                automaticRestart = restart,
-                autoUpdateCurrentProfileOnStart = autoUpdate,
-            )
-        }
+        combine(automaticRestart.state, autoUpdateCurrentProfileOnStart.state) { restart, autoUpdate
+                ->
+                BehaviorSectionState(
+                    automaticRestart = restart,
+                    autoUpdateCurrentProfileOnStart = autoUpdate,
+                )
+            }
             .stateInWhileSubscribed(
                 viewModelScope,
                 BehaviorSectionState(
@@ -109,31 +110,34 @@ class AppSettingsViewModel(
 
     val interfaceSectionState: StateFlow<InterfaceSectionState> =
         combine(
-            combine(
-                themeMode.state,
-                appLanguage.state,
-                themeSeedColorArgb.state,
-                invertOnPrimaryColors.state,
-                bottomBarAutoHide.state,
-            ) { theme, lang, seed, invert, bottomBar ->
-                InterfaceSectionState(
-                    themeMode = theme,
-                    appLanguage = lang,
-                    themeSeedColorArgb = seed,
-                    invertOnPrimaryColors = invert,
-                    bottomBarAutoHide = bottomBar,
+                combine(
+                    themeMode.state,
+                    appLanguage.state,
+                    themeSeedColorArgb.state,
+                    invertOnPrimaryColors.state,
+                    bottomBarAutoHide.state,
+                ) { theme, lang, seed, invert, bottomBar ->
+                    InterfaceSectionState(
+                        themeMode = theme,
+                        appLanguage = lang,
+                        themeSeedColorArgb = seed,
+                        invertOnPrimaryColors = invert,
+                        bottomBarAutoHide = bottomBar,
+                    )
+                },
+                combine(topBarBlurEnabled.state, pageScale.state, classicHomeEnabled.state) {
+                    blur,
+                    scale,
+                    classic ->
+                    Triple(blur, scale, classic)
+                },
+            ) { base, extra ->
+                base.copy(
+                    topBarBlurEnabled = extra.first,
+                    pageScale = extra.second,
+                    classicHomeEnabled = extra.third,
                 )
-            },
-            combine(topBarBlurEnabled.state, pageScale.state, classicHomeEnabled.state) { blur, scale, classic ->
-                Triple(blur, scale, classic)
-            },
-        ) { base, extra ->
-            base.copy(
-                topBarBlurEnabled = extra.first,
-                pageScale = extra.second,
-                classicHomeEnabled = extra.third,
-            )
-        }
+            }
             .stateInWhileSubscribed(
                 viewModelScope,
                 InterfaceSectionState(
@@ -156,16 +160,16 @@ class AppSettingsViewModel(
 
     val serviceSectionState: StateFlow<ServiceSectionState> =
         combine(
-            showTrafficNotification.state,
-            singleNodeTest.state,
-            exitUiWhenBackground.state,
-        ) { traffic, single, exitUi ->
-            ServiceSectionState(
-                showTrafficNotification = traffic,
-                singleNodeTest = single,
-                exitUiWhenBackground = exitUi,
-            )
-        }
+                showTrafficNotification.state,
+                singleNodeTest.state,
+                exitUiWhenBackground.state,
+            ) { traffic, single, exitUi ->
+                ServiceSectionState(
+                    showTrafficNotification = traffic,
+                    singleNodeTest = single,
+                    exitUiWhenBackground = exitUi,
+                )
+            }
             .stateInWhileSubscribed(
                 viewModelScope,
                 ServiceSectionState(
@@ -175,7 +179,6 @@ class AppSettingsViewModel(
                 ),
             )
 
-
     data class PrivacySectionState(
         val hideAppIcon: Boolean = false,
         val excludeFromRecents: Boolean = false,
@@ -183,8 +186,8 @@ class AppSettingsViewModel(
 
     val privacySectionState: StateFlow<PrivacySectionState> =
         combine(hideAppIcon.state, excludeFromRecents.state) { hide, exclude ->
-            PrivacySectionState(hideAppIcon = hide, excludeFromRecents = exclude)
-        }
+                PrivacySectionState(hideAppIcon = hide, excludeFromRecents = exclude)
+            }
             .stateInWhileSubscribed(
                 viewModelScope,
                 PrivacySectionState(
@@ -193,9 +196,7 @@ class AppSettingsViewModel(
                 ),
             )
 
-    data class NetworkSectionState(
-        val customUserAgent: String = "",
-    )
+    data class NetworkSectionState(val customUserAgent: String = "")
 
     val networkSectionState: StateFlow<NetworkSectionState> =
         customUserAgent.state
@@ -204,7 +205,6 @@ class AppSettingsViewModel(
                 viewModelScope,
                 NetworkSectionState(customUserAgent = customUserAgent.value),
             )
-
 
     data class MoeHomeSectionState(
         val themeMode: ThemeMode = ThemeMode.Auto,
@@ -215,18 +215,18 @@ class AppSettingsViewModel(
 
     val moeHomeSectionState: StateFlow<MoeHomeSectionState> =
         combine(
-            themeMode.state,
-            classicHomeEnabled.state,
-            moeHomeQuote.state,
-            moeSidebarExpanded.state,
-        ) { theme, classic, quote, sidebar ->
-            MoeHomeSectionState(
-                themeMode = theme,
-                classicHomeEnabled = classic,
-                moeHomeQuote = quote,
-                sidebarExpanded = sidebar,
-            )
-        }
+                themeMode.state,
+                classicHomeEnabled.state,
+                moeHomeQuote.state,
+                moeSidebarExpanded.state,
+            ) { theme, classic, quote, sidebar ->
+                MoeHomeSectionState(
+                    themeMode = theme,
+                    classicHomeEnabled = classic,
+                    moeHomeQuote = quote,
+                    sidebarExpanded = sidebar,
+                )
+            }
             .stateInWhileSubscribed(
                 viewModelScope,
                 MoeHomeSectionState(

@@ -23,21 +23,12 @@ package com.github.yumelira.yumebox.data.store
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
 import com.github.yumelira.yumebox.core.util.YamlCodec
-import com.github.yumelira.yumebox.data.model.BuiltInOverrideCatalog
-import com.github.yumelira.yumebox.data.model.BuiltInOverrideDefinition
-import com.github.yumelira.yumebox.data.model.MetadataIndex
-import com.github.yumelira.yumebox.data.model.OverrideConfig
-import com.github.yumelira.yumebox.data.model.OverrideContentType
-import com.github.yumelira.yumebox.data.model.OverrideMetadata
+import com.github.yumelira.yumebox.data.model.*
+import java.io.File
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
 
 class OverrideConfigStore(
     private val context: Context,
@@ -97,13 +88,10 @@ class OverrideConfigStore(
             BuiltInOverrideCatalog.all.mapNotNull { def -> loadBuiltInConfig(def.id) }
         }
 
-    override fun getUserConfigsFlow(): Flow<List<OverrideConfig>> =
-        flow {
-                emit(
-                    loadUserConfigs().filter(::isUserOwnedConfig)
-                )
-            }
-            .flowOn(Dispatchers.IO)
+    override fun getUserConfigsFlow(): Flow<List<OverrideConfig>> = flow {
+        emit(loadUserConfigs().filter(::isUserOwnedConfig))
+    }
+        .flowOn(Dispatchers.IO)
 
     override suspend fun save(config: OverrideConfig) =
         withContext(Dispatchers.IO) {
@@ -257,28 +245,27 @@ class OverrideConfigStore(
         return synchronized(OverrideMetadataFileLock.monitor) {
             val metadata = loadMetadataIndex().getById(id) ?: return@synchronized false
             runCatching {
-                    val file = findConfigFile(metadata) ?: resolveConfigFile(id, metadata.contentType)
-                    file.parentFile?.mkdirs()
-                    file.writeText(content)
+                val file = findConfigFile(metadata) ?: resolveConfigFile(id, metadata.contentType)
+                file.parentFile?.mkdirs()
+                file.writeText(content)
 
-                    val updatedIndex =
-                        loadMetadataIndex()
-                            .upsert(metadata.copy(updatedAt = System.currentTimeMillis()))
-                    saveMetadataIndex(updatedIndex)
-                    val userConfigsById =
-                        configsFlow.value.associateBy(OverrideConfig::id).toMutableMap().apply {
-                            loadConfigContent(
-                                    metadata.copy(
-                                        updatedAt =
-                                            updatedIndex.getById(id)?.updatedAt
-                                                ?: metadata.updatedAt
-                                    )
+                val updatedIndex =
+                    loadMetadataIndex()
+                        .upsert(metadata.copy(updatedAt = System.currentTimeMillis()))
+                saveMetadataIndex(updatedIndex)
+                val userConfigsById =
+                    configsFlow.value.associateBy(OverrideConfig::id).toMutableMap().apply {
+                        loadConfigContent(
+                                metadata.copy(
+                                    updatedAt =
+                                        updatedIndex.getById(id)?.updatedAt ?: metadata.updatedAt
                                 )
-                                ?.let { put(id, it) }
-                        }
-                    updateConfigsFlowSnapshot(updatedIndex, userConfigsById)
-                    true
-                }
+                            )
+                            ?.let { put(id, it) }
+                    }
+                updateConfigsFlowSnapshot(updatedIndex, userConfigsById)
+                true
+            }
                 .isSuccess
         }
     }
@@ -337,7 +324,10 @@ class OverrideConfigStore(
             configsDir.mkdirs()
         }
         return loadMetadataIndex().sortedUserMetadata().mapNotNull { metadata ->
-            if (isInternalRuntimeConfig(metadata.id) || BuiltInOverrideCatalog.isBuiltIn(metadata.id)) {
+            if (
+                isInternalRuntimeConfig(metadata.id) ||
+                    BuiltInOverrideCatalog.isBuiltIn(metadata.id)
+            ) {
                 return@mapNotNull null
             }
             loadConfigContent(metadata)
@@ -370,14 +360,13 @@ class OverrideConfigStore(
         )
     }
 
-    private fun readBuiltInAsset(def: BuiltInOverrideDefinition): String? =
-        runCatching {
-                context.assets.open(def.assetPath).bufferedReader().use { it.readText() }
-            }
-            .onFailure { error ->
-                Timber.w(error, "Failed to read built-in override asset: %s", def.assetPath)
-            }
-            .getOrNull()
+    private fun readBuiltInAsset(def: BuiltInOverrideDefinition): String? = runCatching {
+        context.assets.open(def.assetPath).bufferedReader().use { it.readText() }
+    }
+        .onFailure { error ->
+            Timber.w(error, "Failed to read built-in override asset: %s", def.assetPath)
+        }
+        .getOrNull()
 
     /**
      * Copy the asset into `configsDir` if missing so override resolution can open a real path.
@@ -397,12 +386,12 @@ class OverrideConfigStore(
             return target
         }
         return runCatching {
-                configsDir.mkdirs()
-                context.assets.open(def.assetPath).use { input ->
-                    target.outputStream().use { output -> input.copyTo(output) }
-                }
-                target
+            configsDir.mkdirs()
+            context.assets.open(def.assetPath).use { input ->
+                target.outputStream().use { output -> input.copyTo(output) }
             }
+            target
+        }
             .onFailure { error ->
                 Timber.w(error, "Failed to materialize built-in override: %s", def.id)
             }
@@ -430,8 +419,8 @@ class OverrideConfigStore(
                     MetadataIndex()
                 } else {
                     runCatching {
-                            YamlCodec.decode(MetadataIndex.serializer(), metadataFile.readText())
-                        }
+                        YamlCodec.decode(MetadataIndex.serializer(), metadataFile.readText())
+                    }
                         .getOrElse { error ->
                             Timber.w(
                                 error,
@@ -481,7 +470,8 @@ class OverrideConfigStore(
     private fun sanitizeMetadataIndex(index: MetadataIndex): MetadataIndex {
         val sanitizedConfigs =
             index.configs.filterValues { metadata ->
-                !isLegacySystemPresetId(metadata.id) && !BuiltInOverrideCatalog.isBuiltIn(metadata.id)
+                !isLegacySystemPresetId(metadata.id) &&
+                    !BuiltInOverrideCatalog.isBuiltIn(metadata.id)
             }
         val sanitizedProfileChains =
             index.profileChains.mapValues { (_, binding) ->

@@ -23,9 +23,9 @@ package com.github.yumelira.yumebox.screen.settings
 import android.content.Context
 import android.net.Uri
 import com.github.yumelira.yumebox.core.util.moeWallpaperFile
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 
 /**
  * Copies the Moe wallpaper from an external [sourceUri] (typically a `content://` URI from the
@@ -42,18 +42,18 @@ object MoeWallpaperImporter {
     suspend fun importToLocal(context: Context, sourceUri: String): String? =
         withContext(Dispatchers.IO) {
             runCatching {
-                    val target = context.moeWallpaperFile()
-                    val tmp = File(target.parentFile, "wallpaper.tmp")
-                    context.contentResolver.openInputStream(Uri.parse(sourceUri)).use { input ->
-                        requireNotNull(input) { "Unable to open Moe wallpaper source: $sourceUri" }
-                        tmp.outputStream().use { input.copyTo(it) }
-                    }
-                    if (!tmp.renameTo(target)) {
-                        target.delete()
-                        check(tmp.renameTo(target)) { "Failed to swap Moe wallpaper temp file" }
-                    }
-                    "file://${target.absolutePath}"
+                val target = context.moeWallpaperFile()
+                val tmp = File(target.parentFile, "wallpaper.tmp")
+                context.contentResolver.openInputStream(Uri.parse(sourceUri)).use { input ->
+                    requireNotNull(input) { "Unable to open Moe wallpaper source: $sourceUri" }
+                    tmp.outputStream().use { input.copyTo(it) }
                 }
+                if (!tmp.renameTo(target)) {
+                    target.delete()
+                    check(tmp.renameTo(target)) { "Failed to swap Moe wallpaper temp file" }
+                }
+                "file://${target.absolutePath}"
+            }
                 .getOrNull()
         }
 }

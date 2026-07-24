@@ -20,25 +20,12 @@
 
 package com.github.yumelira.yumebox.runtime.client.access
 
-import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
-import com.github.yumelira.yumebox.core.model.Provider
-import com.github.yumelira.yumebox.core.model.ProviderList
-import com.github.yumelira.yumebox.core.model.ProxyGroup
-import com.github.yumelira.yumebox.core.model.ProxySort
-import com.github.yumelira.yumebox.core.model.RuntimeRule
-import com.github.yumelira.yumebox.core.model.TunnelState
-import com.github.yumelira.yumebox.core.model.UiConfiguration
+import com.github.yumelira.yumebox.core.model.*
 import com.github.yumelira.yumebox.runtime.api.CoreApi
 import com.github.yumelira.yumebox.runtime.api.CoreAsyncQueries
 import com.github.yumelira.yumebox.runtime.api.LogObserver
 import com.github.yumelira.yumebox.runtime.api.LogSubscription
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 /** Routes [CoreApi] to remote controller when active, otherwise the local controller. */
 class CoreRouter(
@@ -53,7 +40,10 @@ class CoreRouter(
 
     private fun pick(): CoreApi = if (isRemoteControllerActive()) remote else local
 
-    private suspend fun <T> routeAsync(block: suspend CoreAsyncQueries.() -> T, sync: CoreApi.() -> T): T {
+    private suspend fun <T> routeAsync(
+        block: suspend CoreAsyncQueries.() -> T,
+        sync: CoreApi.() -> T,
+    ): T {
         val target = pick()
         val async = target as? CoreAsyncQueries
         return if (async != null) async.block() else sync(target)
@@ -71,7 +61,9 @@ class CoreRouter(
     override suspend fun queryConnectionsAsync(): ConnectionSnapshot =
         routeAsync({ queryConnectionsAsync() }, { queryConnections() })
 
-    override suspend fun queryProfileProxyGroupsAsync(excludeNotSelectable: Boolean): List<ProxyGroup> =
+    override suspend fun queryProfileProxyGroupsAsync(
+        excludeNotSelectable: Boolean
+    ): List<ProxyGroup> =
         routeAsync(
             { queryProfileProxyGroupsAsync(excludeNotSelectable) },
             { queryProfileProxyGroups(excludeNotSelectable) },
@@ -111,32 +103,51 @@ class CoreRouter(
         routeAsync({ closeAllConnectionsAsync() }, { closeAllConnections() })
 
     override fun queryTunnelState(): TunnelState = pick().queryTunnelState()
+
     override fun queryTrafficNow(): Long = pick().queryTrafficNow()
+
     override fun queryTrafficTotal(): Long = pick().queryTrafficTotal()
+
     override fun queryConnections(): ConnectionSnapshot = pick().queryConnections()
+
     override fun queryProfileProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
         pick().queryProfileProxyGroups(excludeNotSelectable)
+
     override fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
         pick().queryAllProxyGroups(excludeNotSelectable)
+
     override fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> =
         pick().queryProxyGroupNames(excludeNotSelectable)
+
     override fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup =
         pick().queryProxyGroup(name, proxySort)
+
     override fun queryConfiguration(): UiConfiguration = pick().queryConfiguration()
+
     override fun queryProviders(): ProviderList = pick().queryProviders()
+
     override fun queryRules(): List<RuntimeRule> = pick().queryRules()
+
     override suspend fun setRuleDisabled(rule: RuntimeRule, disabled: Boolean): List<RuntimeRule> {
         val target = pick()
         return target.setRuleDisabled(rule, disabled)
     }
-    override fun patchSelector(group: String, name: String): Boolean = pick().patchSelector(group, name)
+
+    override fun patchSelector(group: String, name: String): Boolean =
+        pick().patchSelector(group, name)
+
     override fun closeConnection(id: String): Boolean = pick().closeConnection(id)
+
     override fun closeAllConnections() = pick().closeAllConnections()
+
     override suspend fun healthCheck(group: String) = pick().healthCheck(group)
+
     override suspend fun healthCheckProxy(group: String, proxyName: String): Int =
         pick().healthCheckProxy(group, proxyName)
+
     override suspend fun updateProvider(type: Provider.Type, name: String) =
         pick().updateProvider(type, name)
+
     override fun requestStop() = pick().requestStop()
 
     @Synchronized
@@ -147,24 +158,23 @@ class CoreRouter(
 
         var target = pick()
         routedLogSubscription = target.subscribeLogs(observer)
-        logRoutingJob =
-            logScope.launch {
-                while (isActive) {
-                    delay(LOG_ROUTE_POLL_MS)
-                    synchronized(this@CoreRouter) {
-                        if (activeLogToken !== token) return@launch
-                        val nextTarget = pick()
-                        if (nextTarget !== target) {
-                            runCatching { nextTarget.subscribeLogs(observer) }
-                                .onSuccess { nextSubscription ->
-                                    routedLogSubscription?.close()
-                                    routedLogSubscription = nextSubscription
-                                    target = nextTarget
-                                }
-                        }
+        logRoutingJob = logScope.launch {
+            while (isActive) {
+                delay(LOG_ROUTE_POLL_MS)
+                synchronized(this@CoreRouter) {
+                    if (activeLogToken !== token) return@launch
+                    val nextTarget = pick()
+                    if (nextTarget !== target) {
+                        runCatching { nextTarget.subscribeLogs(observer) }
+                            .onSuccess { nextSubscription ->
+                                routedLogSubscription?.close()
+                                routedLogSubscription = nextSubscription
+                                target = nextTarget
+                            }
                     }
                 }
             }
+        }
         return LogSubscription {
             synchronized(this@CoreRouter) {
                 if (activeLogToken === token) clearActiveLogSubscription()

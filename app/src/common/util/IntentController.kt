@@ -54,20 +54,20 @@ class IntentController(private val scope: CoroutineScope) : KoinComponent {
     private fun handleStartRuntime() {
         scope.launch {
             runCatching {
-                    val activeProfile = profilesRepository.queryActiveProfile()
-                    if (activeProfile == null) {
-                        Timber.w("Skip external start: no active profile")
-                        return@launch
-                    }
-
-                    Timber.i("External start: profile=${activeProfile.name}")
-                    AutoStartSessionGate.clearManualPaused()
-
-                    val mode = networkSettingsStorage.runMode.value
-                    proxyFacade.startProxy(mode)
-
-                    Timber.i("External start ok")
+                val activeProfile = profilesRepository.queryActiveProfile()
+                if (activeProfile == null) {
+                    Timber.w("Skip external start: no active profile")
+                    return@launch
                 }
+
+                Timber.i("External start: profile=${activeProfile.name}")
+                AutoStartSessionGate.clearManualPaused()
+
+                val mode = networkSettingsStorage.runMode.value
+                proxyFacade.startProxy(mode)
+
+                Timber.i("External start ok")
+            }
                 .onFailure { error -> Timber.e(error, "External start failed") }
         }
     }

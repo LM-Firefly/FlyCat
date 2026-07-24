@@ -26,11 +26,11 @@ import android.os.Looper
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import java.util.*
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.util.ArrayDeque
-import java.util.concurrent.atomic.AtomicLong
 
 data class ToastDialogEvent(
     val id: Long,
@@ -79,7 +79,9 @@ fun showToastDialog(message: String, title: String = "提示") {
 
 private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
 
-/** The system toast — the app-wide default. The copyable dialog toast is reserved for import errors. */
+/**
+ * The system toast — the app-wide default. The copyable dialog toast is reserved for import errors.
+ */
 fun Context.toast(message: String, duration: Int = Toast.LENGTH_SHORT) {
     if (message.isBlank()) return
     val ctx = applicationContext

@@ -21,35 +21,19 @@
 package com.github.yumelira.yumebox.runtime.client
 
 import android.content.Context
-import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
-import com.github.yumelira.yumebox.core.model.Proxy
-import com.github.yumelira.yumebox.core.model.ProxySort
-import com.github.yumelira.yumebox.core.model.RunMode
-import com.github.yumelira.yumebox.core.model.Traffic
+import com.github.yumelira.yumebox.core.model.*
 import com.github.yumelira.yumebox.data.store.MMKVProvider
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
 import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
-import com.github.yumelira.yumebox.runtime.api.Profile
-import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
-import com.github.yumelira.yumebox.runtime.api.RuntimePhase
-import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
-import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
+import com.github.yumelira.yumebox.runtime.api.*
 import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
 import com.github.yumelira.yumebox.runtime.client.session.RuntimeCoreOps
 import com.github.yumelira.yumebox.runtime.client.session.RuntimeGroupHub
 import com.github.yumelira.yumebox.runtime.client.session.RuntimeSession
 import com.github.yumelira.yumebox.runtime.client.session.RuntimeSessionDeps
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import timber.log.Timber
 
 enum class ProxyGroupSyncPriority {
@@ -59,8 +43,8 @@ enum class ProxyGroupSyncPriority {
 }
 
 /**
- * UI-facing runtime facade. Runtime lifecycle/state live in [RuntimeSession];
- * proxy-group ops live in [RuntimeGroupHub].
+ * UI-facing runtime facade. Runtime lifecycle/state live in [RuntimeSession]; proxy-group ops live
+ * in [RuntimeGroupHub].
  */
 class ProxyFacade(
     context: Context,
@@ -165,6 +149,7 @@ class ProxyFacade(
                     existing.join()
                     return
                 }
+
                 existing.isCompleted -> return
             }
         }
@@ -191,11 +176,7 @@ class ProxyFacade(
     suspend fun stopProxy(request: RuntimeStopRequest) = session.stop(request)
 
     suspend fun stopProxy(mode: RunMode? = null) =
-        session.stop(
-            RuntimeStopRequest(
-                targetMode = mode ?: networkSettingsStorage.runMode.value,
-            )
-        )
+        session.stop(RuntimeStopRequest(targetMode = mode ?: networkSettingsStorage.runMode.value))
 
     suspend fun selectProxy(group: String, proxyName: String): Boolean =
         groups.selectProxy(group, proxyName)
@@ -214,11 +195,11 @@ class ProxyFacade(
         return coreOps.queryConnections()
     }
 
-    suspend fun queryTrafficTotal(): Long =
-        session.queryTrafficTotal { coreOps.queryTrafficTotal() }
+    suspend fun queryTrafficTotal(): Long = session.queryTrafficTotal {
+        coreOps.queryTrafficTotal()
+    }
 
-    suspend fun queryTrafficNow(): Long =
-        session.queryTrafficNow { coreOps.queryTrafficNow() }
+    suspend fun queryTrafficNow(): Long = session.queryTrafficNow { coreOps.queryTrafficNow() }
 
     suspend fun refreshProxyGroups() = groups.refreshProxyGroups()
 
@@ -232,11 +213,11 @@ class ProxyFacade(
             return
         }
         runCatching {
-                session.connectBackend()
-                val profile = RuntimeAccess.profile().queryActive()
-                session.setCurrentProfile(profile)
-                session.updateProfileReady(profile)
-            }
+            session.connectBackend()
+            val profile = RuntimeAccess.profile().queryActive()
+            session.setCurrentProfile(profile)
+            session.updateProfileReady(profile)
+        }
             .onFailure { error -> Timber.e(error, "Failed to refresh current profile") }
     }
 
@@ -252,15 +233,17 @@ class ProxyFacade(
         }
     }
 
-    private fun launchPreviewWarmup(): Job =
-        scope.launch {
-            runCatching { refreshProxyGroups() }
-                .onFailure { error -> Timber.d(error, "Warm up proxy groups skipped") }
-        }
+    private fun launchPreviewWarmup(): Job = scope.launch {
+        runCatching { refreshProxyGroups() }
+            .onFailure { error -> Timber.d(error, "Warm up proxy groups skipped") }
+    }
 
     private suspend fun refreshAllSafely() {
         val snapshot = session.snapshotValue()
-        if (snapshot.phase != RuntimePhase.Running && snapshot.owner != RuntimeOwner.RemoteController) {
+        if (
+            snapshot.phase != RuntimePhase.Running &&
+                snapshot.owner != RuntimeOwner.RemoteController
+        ) {
             return
         }
         runCatching { refreshAll() }
@@ -274,9 +257,9 @@ class ProxyFacade(
 
     private suspend fun refreshPreviewStateSafely() {
         runCatching {
-                refreshCurrentProfile()
-                refreshProxyGroups()
-            }
+            refreshCurrentProfile()
+            refreshProxyGroups()
+        }
             .onFailure { error -> Timber.d(error, "Refresh preview data skipped") }
     }
 
@@ -294,7 +277,10 @@ class ProxyFacade(
         snapshot: RuntimeSnapshot,
         requests: Map<String, ProxyGroupSyncPriority>,
     ): ProxyGroupSyncPriority {
-        if (snapshot.phase != RuntimePhase.Running && snapshot.owner != RuntimeOwner.RemoteController) {
+        if (
+            snapshot.phase != RuntimePhase.Running &&
+                snapshot.owner != RuntimeOwner.RemoteController
+        ) {
             return ProxyGroupSyncPriority.OFF
         }
         val requested = requests.values.maxByOrNull { it.ordinal } ?: ProxyGroupSyncPriority.OFF

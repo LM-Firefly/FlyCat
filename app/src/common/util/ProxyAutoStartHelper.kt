@@ -22,8 +22,8 @@ package com.github.yumelira.yumebox.common.util
 
 import android.content.Context
 import android.net.VpnService
-import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
 import com.github.yumelira.yumebox.core.model.RunMode
+import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.util.AutoStartExecutionGate
@@ -115,15 +115,18 @@ object ProxyAutoStartHelper {
                 Timber.tag(TAG).d("Skip auto update: post-update cold-start marker consumed")
                 return
             }
+
             AutoStartUpdatePolicy.Decision.NoActiveProfile -> {
                 Timber.tag(TAG).d("Skip auto update: no active profile")
                 return
             }
+
             AutoStartUpdatePolicy.Decision.UnsupportedProfileType -> {
                 Timber.tag(TAG)
                     .d("Skip auto update: unsupported profile type=${activeProfile?.type}")
                 return
             }
+
             AutoStartUpdatePolicy.Decision.SkipColdStartReason -> return
         }
 

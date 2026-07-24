@@ -40,9 +40,9 @@
             android:permission="android.permission.BIND_VPN_SERVICE">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="yumebox_vpn" />
+                android:value="yumebox_vpn"/>
             <intent-filter>
-                <action android:name="android.net.VpnService" />
+                <action android:name="android.net.VpnService"/>
             </intent-filter>
         </service>
 
@@ -52,7 +52,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="root_tun_tproxy_notification" />
+                android:value="root_tun_tproxy_notification"/>
         </service>
 
         <service
@@ -61,7 +61,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="auto_restart_service" />
+                android:value="auto_restart_service"/>
         </service>
 
         <service
@@ -71,7 +71,7 @@
             android:label="@string/tile_proxy_label"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
-                <action android:name="android.service.quicksettings.action.QS_TILE" />
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
             </intent-filter>
         </service>
 
@@ -79,8 +79,8 @@
             android:name="com.github.yumelira.yumebox.runtime.service.DialerReceiver"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.provider.Telephony.SECRET_CODE" />
-                <data android:host="0721" android:scheme="android_secret_code" />
+                <action android:name="android.provider.Telephony.SECRET_CODE"/>
+                <data android:host="0721" android:scheme="android_secret_code"/>
             </intent-filter>
         </receiver>
 
@@ -88,8 +88,8 @@
             android:name="com.github.yumelira.yumebox.runtime.service.RestartReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
             </intent-filter>
         </receiver>
     </application>

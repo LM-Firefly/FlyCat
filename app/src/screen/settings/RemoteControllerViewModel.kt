@@ -32,11 +32,7 @@ import com.github.yumelira.yumebox.data.store.update
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
 import com.github.yumelira.yumebox.runtime.service.controller.CoreController
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -47,15 +43,20 @@ class RemoteControllerViewModel(
 ) : AndroidViewModel(application) {
 
     val controllerEnabled: StateFlow<Boolean> =
-        store.controllerEnabled.state.stateInWhileSubscribed(viewModelScope, store.controllerEnabled.value)
+        store.controllerEnabled.state.stateInWhileSubscribed(
+            viewModelScope,
+            store.controllerEnabled.value,
+        )
 
     val backends: StateFlow<List<RemoteBackend>> =
         store.backends.state.stateInWhileSubscribed(viewModelScope, store.backends.value)
 
     val activeBackendId: StateFlow<String> =
-        store.activeBackendId.state.stateInWhileSubscribed(viewModelScope, store.activeBackendId.value)
+        store.activeBackendId.state.stateInWhileSubscribed(
+            viewModelScope,
+            store.activeBackendId.value,
+        )
 
-    
     data class SectionState(
         val controllerEnabled: Boolean = false,
         val backends: List<RemoteBackend> = emptyList(),
@@ -64,12 +65,12 @@ class RemoteControllerViewModel(
 
     val sectionState: StateFlow<SectionState> =
         combine(controllerEnabled, backends, activeBackendId) { enabled, list, activeId ->
-            SectionState(
-                controllerEnabled = enabled,
-                backends = list,
-                activeBackendId = activeId,
-            )
-        }
+                SectionState(
+                    controllerEnabled = enabled,
+                    backends = list,
+                    activeBackendId = activeId,
+                )
+            }
             .stateInWhileSubscribed(
                 viewModelScope,
                 SectionState(

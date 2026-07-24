@@ -20,26 +20,21 @@
 
 package com.github.yumelira.yumebox.data.store
 
-import com.github.yumelira.yumebox.data.model.AppRouteTrafficUsage
-import com.github.yumelira.yumebox.data.model.AppTrafficDeltaRecord
-import com.github.yumelira.yumebox.data.model.AppTrafficUsage
-import com.github.yumelira.yumebox.data.model.DailyTrafficSummary
-import com.github.yumelira.yumebox.data.model.HourlyTrafficSummary
-import com.github.yumelira.yumebox.data.model.StatisticsTimeRange
-import com.github.yumelira.yumebox.data.model.TrafficStatisticsBuckets
+import com.github.yumelira.yumebox.data.model.*
 import com.github.yumelira.yumebox.data.store.room.AppTrafficDelta
 import com.github.yumelira.yumebox.data.store.room.RouteTrafficDelta
 import com.github.yumelira.yumebox.data.store.room.TrafficStatisticsDao
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.flow.Flow
-import java.util.Calendar
+import java.util.*
 
 /**
  * Facade over traffic statistics persistence.
  *
- * Daily per-app / per-route aggregation lives in Room (see [TrafficStatisticsDao]); each record is a
- * row-level accumulate rather than a whole-history JSON rewrite. The only state that stays in MMKV is
- * the collector's resume baseline (last total upload/download + profile id), kept synchronous.
+ * Daily per-app / per-route aggregation lives in Room (see [TrafficStatisticsDao]); each record is
+ * a row-level accumulate rather than a whole-history JSON rewrite. The only state that stays in
+ * MMKV is the collector's resume baseline (last total upload/download + profile id), kept
+ * synchronous.
  */
 class TrafficStatisticsStore(
     private val mmkv: MMKV,
@@ -47,8 +42,10 @@ class TrafficStatisticsStore(
     private val now: () -> Long = { System.currentTimeMillis() },
 ) {
     init {
-        // One-time, idempotent cleanup: the daily-summary aggregation now lives in Room, so drop the
-        // legacy MMKV blobs (current v2/v3 keys + legacy v1 keys). Baseline scalars are intentionally
+        // One-time, idempotent cleanup: the daily-summary aggregation now lives in Room, so drop
+        // the
+        // legacy MMKV blobs (current v2/v3 keys + legacy v1 keys). Baseline scalars are
+        // intentionally
         // left in MMKV.
         mmkv.removeValueForKey(KEY_DAILY_APP_SUMMARIES)
         mmkv.removeValueForKey(KEY_DAILY_ROUTE_SUMMARIES)
@@ -146,7 +143,8 @@ class TrafficStatisticsStore(
 
     // region resume baseline (synchronous MMKV scalars)
 
-    fun getLastTrafficUpload(): Long = mmkv.decodeLong(KEY_LAST_TRAFFIC_UPLOAD, NO_PERSISTED_TRAFFIC)
+    fun getLastTrafficUpload(): Long =
+        mmkv.decodeLong(KEY_LAST_TRAFFIC_UPLOAD, NO_PERSISTED_TRAFFIC)
 
     fun getLastTrafficDownload(): Long =
         mmkv.decodeLong(KEY_LAST_TRAFFIC_DOWNLOAD, NO_PERSISTED_TRAFFIC)
@@ -154,8 +152,8 @@ class TrafficStatisticsStore(
     fun getLastProfileId(): String? = mmkv.decodeString(KEY_LAST_PROFILE_ID)
 
     /**
-     * Persists the resume baseline scalars. [forcePersist] is retained for source compatibility with
-     * the collector but no longer schedules a flush — Room/MMKV writes are already immediate.
+     * Persists the resume baseline scalars. [forcePersist] is retained for source compatibility
+     * with the collector but no longer schedules a flush — Room/MMKV writes are already immediate.
      */
     fun setLastTraffic(
         upload: Long,

@@ -27,8 +27,8 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import com.github.yumelira.yumebox.data.model.AppLanguage
-import tf.gal.shirosu.fyl.fytxt.FYTxtConfig
 import java.util.*
+import tf.gal.shirosu.fyl.fytxt.FYTxtConfig
 
 object AppLanguageManager {
     @Volatile private var activeLanguage: AppLanguage = AppLanguage.System

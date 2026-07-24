@@ -127,7 +127,9 @@ private fun ProfileLinkList(
                             text = link.url,
                             style = MiuixTheme.textStyles.body2,
                             color =
-                                MiuixTheme.colorScheme.onSurface.copy(alpha = opacity.secondaryText),
+                                MiuixTheme.colorScheme.onSurface.copy(
+                                    alpha = opacity.secondaryText
+                                ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )

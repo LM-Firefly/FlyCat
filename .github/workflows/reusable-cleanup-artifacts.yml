@@ -7,7 +7,7 @@ name: Cleanup Artifacts
 # debugging and job re-runs.
 
 on:
-  workflow_call: {}
+  workflow_call: { }
 
 permissions:
   actions: write

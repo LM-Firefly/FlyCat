@@ -20,7 +20,7 @@
 
 package com.github.yumelira.yumebox.runtime.api
 
-import java.util.UUID
+import java.util.*
 
 interface ProfileApi {
     suspend fun create(

@@ -30,22 +30,16 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyGridState
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.Velocity
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.Velocity
 import com.github.yumelira.yumebox.data.model.ProxySortMode
 import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
 import com.github.yumelira.yumebox.domain.model.isSelectable
@@ -55,18 +49,15 @@ import com.github.yumelira.yumebox.presentation.icon.yume.Eye
 import com.github.yumelira.yumebox.presentation.icon.yume.Folders
 import com.github.yumelira.yumebox.presentation.icon.yume.`List-chevrons-up-down`
 import com.github.yumelira.yumebox.presentation.icon.yume.Speed
-import com.github.yumelira.yumebox.presentation.screen.node.NodeSortPopup
 import com.github.yumelira.yumebox.presentation.screen.node.NodeCard
+import com.github.yumelira.yumebox.presentation.screen.node.NodeSortPopup
 import com.github.yumelira.yumebox.presentation.screen.node.nodeGridItems
 import com.github.yumelira.yumebox.presentation.screen.node.nodeGroupItems
-import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
-import com.github.yumelira.yumebox.presentation.theme.verticalBounceContentTransform
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.theme.LocalSpacing
-import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumelira.yumebox.presentation.theme.*
 import com.github.yumelira.yumebox.presentation.util.KeepLazyListTopAnchorOnReorder
 import com.github.yumelira.yumebox.presentation.viewmodel.ProxyViewModel
 import dev.chrisbanes.haze.hazeSource
+import kotlin.math.abs
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
@@ -74,7 +65,6 @@ import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.math.abs
 
 private fun LazyListState.isScrolledFromTop(): Boolean =
     firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
@@ -89,8 +79,8 @@ private fun LazyGridState.isScrolledFromTop(): Boolean =
  * 3) Spring back over the overshoot for a light rubber-band bounce.
  * 4) [scrollToItem] settles any residual pixel drift so cards never land half-offset.
  *
- * Resting offset is [beforeContentPadding], not 0 - aiming at 0 was the source of the
- * post-locate misalignment under large top bar + content padding.
+ * Resting offset is [beforeContentPadding], not 0 - aiming at 0 was the source of the post-locate
+ * misalignment under large top bar + content padding.
  */
 private suspend fun animateLocateScroll(
     targetIndex: Int,
@@ -189,7 +179,6 @@ private suspend fun LazyGridState.animateLocateToItem(targetIndex: Int) {
         animateBy = { delta, anim -> animateScrollBy(delta, anim) },
     )
 }
-
 
 private data class ProxyScreenVmState(
     val proxyGroups: List<ProxyGroupInfo>,
@@ -293,20 +282,24 @@ fun ProxyPager(
             if (selectedGroupName == null) {
                 null
             } else {
-                displayGroup?.takeIf { group -> group.name == selectedGroupName }?.let { group ->
-                    fun() {
-                        val proxyIndex =
-                            group.proxies.indexOfFirst { proxy -> proxy.name == group.now }
-                        if (proxyIndex < 0) return
-                        coroutineScope.launch {
-                            nodeListState.animateLocateToItem(proxyIndex + 1)
+                displayGroup
+                    ?.takeIf { group -> group.name == selectedGroupName }
+                    ?.let { group ->
+                        fun() {
+                            val proxyIndex =
+                                group.proxies.indexOfFirst { proxy -> proxy.name == group.now }
+                            if (proxyIndex < 0) return
+                            coroutineScope.launch {
+                                nodeListState.animateLocateToItem(proxyIndex + 1)
+                            }
                         }
                     }
-                }
             }
         }
 
-    BackHandler(enabled = !inSplitShell && selectedGroupName != null) { groupSelection.clearSelection() }
+    BackHandler(enabled = !inSplitShell && selectedGroupName != null) {
+        groupSelection.clearSelection()
+    }
 
     LaunchedEffect(isActive) { proxyViewModel.ensureCoreLoaded(isActive, source = "proxy_page") }
 
@@ -459,10 +452,9 @@ fun ProxyPager(
     }
 }
 
-
 /**
- * Right-pane node list for the tablet dual-pane shell.
- * Selection is shared with [ProxyPager] via [ProxyViewModel.uiSelectedGroupName].
+ * Right-pane node list for the tablet dual-pane shell. Selection is shared with [ProxyPager] via
+ * [ProxyViewModel.uiSelectedGroupName].
  */
 @Composable
 fun ProxyShellNodeDetail(
@@ -546,17 +538,20 @@ fun ProxyShellNodeDetail(
                 if (groupName == null || pageGroup == null) {
                     null
                 } else {
-                    pageGroup.takeIf { group -> group.name == groupName }?.let { group ->
-                        fun() {
-                            val proxyIndex =
-                                group.proxies.indexOfFirst { proxy -> proxy.name == group.now }
-                            if (proxyIndex < 0) return
-                            // Grid keeps a reserved refresh row at index 0 (collapsed when idle).
-                            coroutineScope.launch {
-                                nodeGridState.animateLocateToItem(proxyIndex + 1)
+                    pageGroup
+                        .takeIf { group -> group.name == groupName }
+                        ?.let { group ->
+                            fun() {
+                                val proxyIndex =
+                                    group.proxies.indexOfFirst { proxy -> proxy.name == group.now }
+                                if (proxyIndex < 0) return
+                                // Grid keeps a reserved refresh row at index 0 (collapsed when
+                                // idle).
+                                coroutineScope.launch {
+                                    nodeGridState.animateLocateToItem(proxyIndex + 1)
+                                }
                             }
                         }
-                    }
                 }
             }
         val isFabTesting = pageGroup?.name?.let(testingGroupNames::contains) == true
@@ -564,11 +559,7 @@ fun ProxyShellNodeDetail(
         Scaffold(
             floatingActionButton = {
                 AnimatedVisibility(
-                    visible =
-                        groupName != null &&
-                            pageGroup != null &&
-                            !fabHidden &&
-                            !isFabTesting,
+                    visible = groupName != null && pageGroup != null && !fabHidden && !isFabTesting,
                     enter = scaleIn(),
                     exit = scaleOut(),
                     label = "proxy_shell_test_fab_visibility",
@@ -636,7 +627,6 @@ fun ProxyShellNodeDetail(
             }
         }
     }
-
 }
 
 @Composable
@@ -663,7 +653,10 @@ private fun ProxyTopBar(
             Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
                 if (showBack) {
                     IconButton(onClick = onBack) {
-                        Icon(MiuixIcons.Back, contentDescription = YumeTxt.Component.Navigation.Back)
+                        Icon(
+                            MiuixIcons.Back,
+                            contentDescription = YumeTxt.Component.Navigation.Back,
+                        )
                     }
                 } else {
                     if (onNavigateToProviders != null) {
@@ -685,7 +678,10 @@ private fun ProxyTopBar(
             }
             Box {
                 IconButton(onClick = { onShowSortPopupChange(true) }) {
-                    Icon(Yume.`List-chevrons-up-down`, contentDescription = YumeTxt.Proxy.Action.Sort)
+                    Icon(
+                        Yume.`List-chevrons-up-down`,
+                        contentDescription = YumeTxt.Proxy.Action.Sort,
+                    )
                 }
                 NodeSortPopup(
                     show = showSortPopup,

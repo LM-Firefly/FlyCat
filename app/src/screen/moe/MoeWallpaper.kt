@@ -36,9 +36,9 @@ import com.github.panpf.sketch.resize.Scale
 import com.github.panpf.sketch.util.Size
 import com.github.yumelira.yumebox.R
 import com.github.yumelira.yumebox.presentation.component.calculateWallpaperViewportLayout
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 
 @Composable
 internal fun MoeWallpaperBackground(
@@ -56,24 +56,30 @@ internal fun MoeWallpaperBackground(
         produceState(bundledWallpaper, wallpaperUri) {
             value = withContext(Dispatchers.IO) { resolveWallpaperModel(context, wallpaperUri) }
         }
-    val imageBounds by produceState<Pair<Int, Int>?>(null, model) {
-        value = if (model == bundledWallpaper) null else readImageBounds(context, model)
-    }
+    val imageBounds by
+        produceState<Pair<Int, Int>?>(null, model) {
+            value = if (model == bundledWallpaper) null else readImageBounds(context, model)
+        }
 
     BoxWithConstraints(modifier = modifier) {
         val width = with(density) { maxWidth.toPx() }.coerceAtLeast(1f)
         val height = with(density) { maxHeight.toPx() }.coerceAtLeast(1f)
         val painter = rememberWallpaperPainter(context, model, width, height, qualityMode)
         val intrinsic = painter.intrinsicSize
-        val layout = calculateWallpaperViewportLayout(
-            containerWidthPx = width,
-            containerHeightPx = height,
-            imageWidthPx = intrinsic.width.takeIf { it > 0f && it.isFinite() } ?: imageBounds?.first?.toFloat(),
-            imageHeightPx = intrinsic.height.takeIf { it > 0f && it.isFinite() } ?: imageBounds?.second?.toFloat(),
-            zoom = wallpaperZoom.coerceIn(1f, 5f),
-            biasX = wallpaperBiasX,
-            biasY = wallpaperBiasY,
-        )
+        val layout =
+            calculateWallpaperViewportLayout(
+                containerWidthPx = width,
+                containerHeightPx = height,
+                imageWidthPx =
+                    intrinsic.width.takeIf { it > 0f && it.isFinite() }
+                        ?: imageBounds?.first?.toFloat(),
+                imageHeightPx =
+                    intrinsic.height.takeIf { it > 0f && it.isFinite() }
+                        ?: imageBounds?.second?.toFloat(),
+                zoom = wallpaperZoom.coerceIn(1f, 5f),
+                biasX = wallpaperBiasX,
+                biasY = wallpaperBiasY,
+            )
         Image(
             painter = painter,
             contentDescription = null,
@@ -91,31 +97,41 @@ private fun rememberWallpaperPainter(
     width: Float,
     height: Float,
     quality: MoeWallpaperQualityMode,
-) = rememberAsyncImagePainter(
-    request = ImageRequest(context, model) {
-        scale(Scale.CENTER_CROP)
-        memoryCachePolicy(CachePolicy.DISABLED)
-        downloadCachePolicy(CachePolicy.DISABLED)
-        resultCachePolicy(CachePolicy.DISABLED)
-        if (quality == MoeWallpaperQualityMode.BackgroundBlur) {
-            size(kotlin.math.ceil(width * 1.2f).toInt(), kotlin.math.ceil(height * 1.2f).toInt())
-            precision(Precision.LESS_PIXELS)
-        } else {
-            size(Size.Origin)
-            precision(Precision.EXACTLY)
-        }
-    },
-)
+) =
+    rememberAsyncImagePainter(
+        request =
+            ImageRequest(context, model) {
+                scale(Scale.CENTER_CROP)
+                memoryCachePolicy(CachePolicy.DISABLED)
+                downloadCachePolicy(CachePolicy.DISABLED)
+                resultCachePolicy(CachePolicy.DISABLED)
+                if (quality == MoeWallpaperQualityMode.BackgroundBlur) {
+                    size(
+                        kotlin.math.ceil(width * 1.2f).toInt(),
+                        kotlin.math.ceil(height * 1.2f).toInt(),
+                    )
+                    precision(Precision.LESS_PIXELS)
+                } else {
+                    size(Size.Origin)
+                    precision(Precision.EXACTLY)
+                }
+            }
+    )
 
 private suspend fun readImageBounds(context: Context, model: String): Pair<Int, Int>? =
     withContext(Dispatchers.IO) {
         runCatching {
             context.contentResolver.openInputStream(Uri.parse(model))?.use { input ->
-                BitmapFactory.Options().apply { inJustDecodeBounds = true }.also { options ->
-                    BitmapFactory.decodeStream(input, null, options)
-                }.takeIf { it.outWidth > 0 && it.outHeight > 0 }?.let { it.outWidth to it.outHeight }
+                BitmapFactory.Options()
+                    .apply { inJustDecodeBounds = true }
+                    .also { options ->
+                        BitmapFactory.decodeStream(input, null, options)
+                    }
+                    .takeIf { it.outWidth > 0 && it.outHeight > 0 }
+                    ?.let { it.outWidth to it.outHeight }
             }
-        }.getOrNull()
+        }
+            .getOrNull()
     }
 
 private fun resolveWallpaperModel(context: Context, uri: String): String {
@@ -125,9 +141,9 @@ private fun resolveWallpaperModel(context: Context, uri: String): String {
         val path = uri.removePrefix("file://")
         return if (File(path).exists()) uri else bundledWallpaper
     }
-    val readable =
-        runCatching {
-            context.contentResolver.openInputStream(Uri.parse(uri))?.use { true } ?: false
-        }.getOrDefault(false)
+    val readable = runCatching {
+        context.contentResolver.openInputStream(Uri.parse(uri))?.use { true } ?: false
+    }
+        .getOrDefault(false)
     return if (readable) uri else bundledWallpaper
 }

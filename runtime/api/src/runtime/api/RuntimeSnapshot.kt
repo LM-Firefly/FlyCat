@@ -30,7 +30,10 @@ enum class RuntimeOwner {
     /** The non-root Android VpnService path (a service-hosted fork+exec child core). */
     VpnService,
 
-    /** The root libsu daemon (both Tun and Tproxy modes; disambiguated by [RuntimeSnapshot.runMode]). */
+    /**
+     * The root libsu daemon (both Tun and Tproxy modes; disambiguated by
+     * [RuntimeSnapshot.runMode]).
+     */
     RootDaemon,
     RemoteController,
 }

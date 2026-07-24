@@ -42,9 +42,7 @@ import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-fun RemoteControllerSection(
-    viewModel: RemoteControllerViewModel = koinViewModel(),
-) {
+fun RemoteControllerSection(viewModel: RemoteControllerViewModel = koinViewModel()) {
     val context = LocalContext.current
 
     val section by viewModel.sectionState.collectAsState()
@@ -106,7 +104,9 @@ fun RemoteControllerSection(
         BackendEditSheet(
             show = sheetVisible,
             state = state.form,
-            title = if (state is BackendSheetState.Add) YumeTxt.Feature.RemoteController.AddBackend else YumeTxt.Feature.RemoteController.EditBackend,
+            title =
+                if (state is BackendSheetState.Add) YumeTxt.Feature.RemoteController.AddBackend
+                else YumeTxt.Feature.RemoteController.EditBackend,
             onDismiss = { sheetVisible = false },
             onDismissFinished = { sheetState = null },
             onConfirm = { name, host, port, secret ->
@@ -248,7 +248,9 @@ private fun BackendEditSheet(
                 }
                 TextButton(
                     text = YumeTxt.Component.Button.Confirm,
-                    onClick = { if (canConfirm) onConfirm(name, normalizedHost, parsedPort, secret) },
+                    onClick = {
+                        if (canConfirm) onConfirm(name, normalizedHost, parsedPort, secret)
+                    },
                     modifier = Modifier.weight(1f),
                     enabled = canConfirm,
                     colors = ButtonDefaults.textButtonColorsPrimary(),

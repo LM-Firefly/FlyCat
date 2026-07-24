@@ -107,11 +107,11 @@ object NativeLibraryManager {
         }
 
         return runCatching {
-                when (info.source) {
-                    LibrarySource.MAIN_APK -> extractFromMainApk(info, targetFile)
-                    LibrarySource.EXTENSION_APK -> extractFromExtensionApk(info, targetFile)
-                }
+            when (info.source) {
+                LibrarySource.MAIN_APK -> extractFromMainApk(info, targetFile)
+                LibrarySource.EXTENSION_APK -> extractFromExtensionApk(info, targetFile)
             }
+        }
             .getOrElse { error ->
                 Timber.w(error, "Library extract failed: ${info.name}")
                 false
@@ -199,10 +199,10 @@ object NativeLibraryManager {
 
     private fun getExtensionApk(packageName: String): File? =
         runCatching {
-                val pm = context?.packageManager ?: return null
-                val info = pm.getApplicationInfo(packageName, 0)
-                File(info.sourceDir)
-            }
+            val pm = context?.packageManager ?: return null
+            val info = pm.getApplicationInfo(packageName, 0)
+            File(info.sourceDir)
+        }
             .getOrNull()
 
     fun getLibraryPath(name: String): String? {
@@ -234,9 +234,9 @@ object NativeLibraryManager {
         val path = getLibraryPath(name) ?: return false
 
         return runCatching {
-                System.load(path)
-                true
-            }
+            System.load(path)
+            true
+        }
             .getOrElse { error ->
                 Timber.e(error, "JNI load failed: $name")
                 false

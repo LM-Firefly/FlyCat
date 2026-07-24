@@ -20,14 +20,14 @@
 
 @file:DependsOn("org.tukaani:xz:1.9")
 
-import org.tukaani.xz.LZMA2Options
-import org.tukaani.xz.XZOutputStream
 import java.io.File
 import java.io.IOException
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.concurrent.thread
+import org.tukaani.xz.LZMA2Options
+import org.tukaani.xz.XZOutputStream
 
 class ProjectConfig {
     private val properties = Properties()
@@ -63,10 +63,7 @@ class ProjectConfig {
     }
 
     fun getCsv(key: String, default: String = ""): List<String> {
-        return getString(key, default)
-            .split(',')
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
+        return getString(key, default).split(',').map { it.trim() }.filter { it.isNotEmpty() }
     }
 }
 
@@ -93,11 +90,12 @@ object SystemDetector {
 
     fun checkCommandExists(cmd: String): Boolean {
         return try {
-            val process = if (os == "windows") {
-                ProcessBuilder("cmd", "/c", "where", cmd).start()
-            } else {
-                ProcessBuilder("which", cmd).start()
-            }
+            val process =
+                if (os == "windows") {
+                    ProcessBuilder("cmd", "/c", "where", cmd).start()
+                } else {
+                    ProcessBuilder("which", cmd).start()
+                }
             process.waitFor() == 0
         } catch (_: IOException) {
             false
@@ -110,7 +108,7 @@ object SystemDetector {
 data class CommandResult(
     val success: Boolean,
     val output: String = "",
-    val error: String = ""
+    val error: String = "",
 )
 
 // Deliberate fault barrier: any process launch failure must become CommandResult(success=false).
@@ -123,7 +121,7 @@ fun executeCommand(
     printStderr: Boolean = true,
     stderrIsError: Boolean = true,
     stdoutPrefix: String? = "[cmd]",
-    stderrPrefix: String? = if (stderrIsError) "[err]" else "[cmd]"
+    stderrPrefix: String? = if (stderrIsError) "[err]" else "[cmd]",
 ): CommandResult {
     return try {
         val processBuilder = ProcessBuilder(command)
@@ -133,34 +131,36 @@ fun executeCommand(
         val process = processBuilder.start()
         val output = StringBuilder()
         val error = StringBuilder()
-        val stdoutThread = thread(start = true, name = "stdout-reader") {
-            process.inputStream.bufferedReader().useLines { lines ->
-                lines.forEach { line ->
-                    output.appendLine(line)
-                    if (printStdout) {
-                        if (stdoutPrefix != null) {
-                            println("$stdoutPrefix $line")
-                        } else {
-                            println(line)
+        val stdoutThread =
+            thread(start = true, name = "stdout-reader") {
+                process.inputStream.bufferedReader().useLines { lines ->
+                    lines.forEach { line ->
+                        output.appendLine(line)
+                        if (printStdout) {
+                            if (stdoutPrefix != null) {
+                                println("$stdoutPrefix $line")
+                            } else {
+                                println(line)
+                            }
                         }
                     }
                 }
             }
-        }
-        val stderrThread = thread(start = true, name = "stderr-reader") {
-            process.errorStream.bufferedReader().useLines { lines ->
-                lines.forEach { line ->
-                    error.appendLine(line)
-                    if (printStderr) {
-                        if (stderrPrefix != null) {
-                            println("$stderrPrefix $line")
-                        } else {
-                            println(line)
+        val stderrThread =
+            thread(start = true, name = "stderr-reader") {
+                process.errorStream.bufferedReader().useLines { lines ->
+                    lines.forEach { line ->
+                        error.appendLine(line)
+                        if (printStderr) {
+                            if (stderrPrefix != null) {
+                                println("$stderrPrefix $line")
+                            } else {
+                                println(line)
+                            }
                         }
                     }
                 }
             }
-        }
 
         val exitCode = process.waitFor()
         stdoutThread.join()
@@ -168,7 +168,7 @@ fun executeCommand(
         CommandResult(
             success = exitCode == 0,
             output = output.toString(),
-            error = error.toString()
+            error = error.toString(),
         )
     } catch (e: Exception) {
         CommandResult(success = false, error = e.message ?: "Unknown error")
@@ -177,11 +177,11 @@ fun executeCommand(
 
 class NdkTools(private val config: ProjectConfig) {
     private val sdkDir: File by lazy {
-        val path = config.getString("sdk.dir", "")
-            .takeIf { it.isNotEmpty() }
-            ?: System.getenv("ANDROID_HOME")
-            ?: System.getenv("ANDROID_SDK_ROOT")
-            ?: error("Android SDK not found. Please configure sdk.dir or ANDROID_HOME.")
+        val path =
+            config.getString("sdk.dir", "").takeIf { it.isNotEmpty() }
+                ?: System.getenv("ANDROID_HOME")
+                ?: System.getenv("ANDROID_SDK_ROOT")
+                ?: error("Android SDK not found. Please configure sdk.dir or ANDROID_HOME.")
         File(path).also {
             require(it.isDirectory) { "Android SDK not found: ${it.absolutePath}" }
         }
@@ -190,8 +190,8 @@ class NdkTools(private val config: ProjectConfig) {
     val ndkDir: File by lazy {
         val explicitNdk = config.getString("ndk.dir", "")
         val ndkVersion = config.getString("android.ndkVersion", "")
-        val ndkPath = explicitNdk.takeIf { it.isNotEmpty() }
-            ?: File(sdkDir, "ndk/$ndkVersion").absolutePath
+        val ndkPath =
+            explicitNdk.takeIf { it.isNotEmpty() } ?: File(sdkDir, "ndk/$ndkVersion").absolutePath
 
         File(ndkPath).also {
             require(it.isDirectory) { "NDK not found: ${it.absolutePath}" }
@@ -199,20 +199,29 @@ class NdkTools(private val config: ProjectConfig) {
     }
 
     fun getClangPath(abi: String): String {
-        val triple = when (abi) {
-            "arm64-v8a" -> "aarch64-linux-android"
-            "armeabi-v7a" -> "armv7a-linux-androideabi"
-            "x86" -> "i686-linux-android"
-            "x86_64" -> "x86_64-linux-android"
-            else -> throw IllegalArgumentException("Unsupported ABI: $abi")
-        }
+        val triple =
+            when (abi) {
+                "arm64-v8a" -> "aarch64-linux-android"
+                "armeabi-v7a" -> "armv7a-linux-androideabi"
+                "x86" -> "i686-linux-android"
+                "x86_64" -> "x86_64-linux-android"
+                else -> throw IllegalArgumentException("Unsupported ABI: $abi")
+            }
         val ext = if (SystemDetector.os == "windows") ".cmd" else ""
-        return File(ndkDir, "toolchains/llvm/prebuilt/${SystemDetector.hostTag}/bin/${triple}${getMinAndroidApi()}-clang${ext}").absolutePath
+        return File(
+                ndkDir,
+                "toolchains/llvm/prebuilt/${SystemDetector.hostTag}/bin/${triple}${getMinAndroidApi()}-clang${ext}",
+            )
+            .absolutePath
     }
 
     fun getStripPath(): String {
         val ext = if (SystemDetector.os == "windows") ".exe" else ""
-        return File(ndkDir, "toolchains/llvm/prebuilt/${SystemDetector.hostTag}/bin/llvm-strip${ext}").absolutePath
+        return File(
+                ndkDir,
+                "toolchains/llvm/prebuilt/${SystemDetector.hostTag}/bin/llvm-strip${ext}",
+            )
+            .absolutePath
     }
 
     fun getMinAndroidApi(): Int = maxOf(config.getInt("android.minSdk", 24), 24)
@@ -220,49 +229,51 @@ class NdkTools(private val config: ProjectConfig) {
     fun getCmakePath(): String {
         val ext = if (SystemDetector.os == "windows") ".exe" else ""
         val cmakeRoot = File(sdkDir, "cmake")
-        require(cmakeRoot.isDirectory) { "CMake not found under Android SDK: ${cmakeRoot.absolutePath}" }
+        require(cmakeRoot.isDirectory) {
+            "CMake not found under Android SDK: ${cmakeRoot.absolutePath}"
+        }
 
-        val preferred = listOf("3.22.1")
-            .map { File(cmakeRoot, "$it/bin/cmake$ext") }
-            .firstOrNull { it.isFile }
+        val preferred =
+            listOf("3.22.1").map { File(cmakeRoot, "$it/bin/cmake$ext") }.firstOrNull { it.isFile }
         if (preferred != null) {
             return preferred.absolutePath
         }
 
-        return cmakeRoot.listFiles()
+        return cmakeRoot
+            .listFiles()
             ?.filter { it.isDirectory }
             ?.sortedByDescending { it.name }
             ?.map { File(it, "bin/cmake$ext") }
             ?.firstOrNull { it.isFile }
-            ?.absolutePath
-            ?: error("CMake executable not found under ${cmakeRoot.absolutePath}")
+            ?.absolutePath ?: error("CMake executable not found under ${cmakeRoot.absolutePath}")
     }
 
     fun getNinjaPath(): String {
         val ext = if (SystemDetector.os == "windows") ".exe" else ""
         val cmakeRoot = File(sdkDir, "cmake")
-        require(cmakeRoot.isDirectory) { "CMake not found under Android SDK: ${cmakeRoot.absolutePath}" }
+        require(cmakeRoot.isDirectory) {
+            "CMake not found under Android SDK: ${cmakeRoot.absolutePath}"
+        }
 
-        val preferred = listOf("3.22.1")
-            .map { File(cmakeRoot, "$it/bin/ninja$ext") }
-            .firstOrNull { it.isFile }
+        val preferred =
+            listOf("3.22.1").map { File(cmakeRoot, "$it/bin/ninja$ext") }.firstOrNull { it.isFile }
         if (preferred != null) {
             return preferred.absolutePath
         }
 
-        return cmakeRoot.listFiles()
+        return cmakeRoot
+            .listFiles()
             ?.filter { it.isDirectory }
             ?.sortedByDescending { it.name }
             ?.map { File(it, "bin/ninja$ext") }
             ?.firstOrNull { it.isFile }
-            ?.absolutePath
-            ?: error("Ninja executable not found under ${cmakeRoot.absolutePath}")
+            ?.absolutePath ?: error("Ninja executable not found under ${cmakeRoot.absolutePath}")
     }
 }
 
 /**
- * Mihomo core identity stamped next to the native libs so the APK job (which never has the
- * mihomo git tree) can still embed branch + short hash into BuildConfig.
+ * Mihomo core identity stamped next to the native libs so the APK job (which never has the mihomo
+ * git tree) can still embed branch + short hash into BuildConfig.
  */
 data class CoreVersionStamp(
     val branch: String,
@@ -283,18 +294,24 @@ data class CoreVersionStamp(
 
 // Resolve branch/hash while the mihomo checkout is present (native job / local --go). Prefer `git`
 // itself (handles worktrees, packed-refs, remotes) and fall back to kernel.properties labels.
-fun resolveCoreVersionStamp(config: ProjectConfig, mihomoDir: File = File("lib/mihomo/mihomo")): CoreVersionStamp {
+fun resolveCoreVersionStamp(
+    config: ProjectConfig,
+    mihomoDir: File = File("lib/mihomo/mihomo"),
+): CoreVersionStamp {
     val configuredBranch = config.getString("external.mihomo.branch", "Alpha").ifEmpty { "Alpha" }
     val suffix = config.getString("external.mihomo.suffix", "")
     val includeTimestamp = config.getBoolean("external.mihomo.includeTimestamp", false)
     val mihomoRel = config.getString("external.mihomo.dir", "lib/mihomo/mihomo")
     val repoDir = if (mihomoDir.isDirectory) mihomoDir else File(mihomoRel)
 
-    val commit = runGit(repoDir, listOf("rev-parse", "--short=8", "HEAD"))
-        ?.takeIf { it.matches(Regex("[0-9a-fA-F]{4,40}")) }
-        ?: "unknown"
-    val gitBranch = runGit(repoDir, listOf("rev-parse", "--abbrev-ref", "HEAD"))
-        ?.takeIf { it.isNotEmpty() && it != "HEAD" }
+    val commit =
+        runGit(repoDir, listOf("rev-parse", "--short=8", "HEAD"))?.takeIf {
+            it.matches(Regex("[0-9a-fA-F]{4,40}"))
+        } ?: "unknown"
+    val gitBranch =
+        runGit(repoDir, listOf("rev-parse", "--abbrev-ref", "HEAD"))?.takeIf {
+            it.isNotEmpty() && it != "HEAD"
+        }
 
     val branchBase = configuredBranch.ifBlank { gitBranch ?: "mihomo" }
     val branchLabel = branchBase + suffix
@@ -317,12 +334,13 @@ fun resolveCoreVersionStamp(config: ProjectConfig, mihomoDir: File = File("lib/m
 
 fun runGit(repoDir: File, args: List<String>): String? {
     if (!repoDir.isDirectory || !File(repoDir, ".git").exists()) return null
-    val result = executeCommand(
-        command = listOf("git", "-C", repoDir.absolutePath) + args,
-        printStdout = false,
-        printStderr = false,
-        stderrIsError = false,
-    )
+    val result =
+        executeCommand(
+            command = listOf("git", "-C", repoDir.absolutePath) + args,
+            printStdout = false,
+            printStderr = false,
+            stderrIsError = false,
+        )
     if (!result.success) return null
     return result.output.trim().lineSequence().firstOrNull()?.trim()?.takeIf { it.isNotEmpty() }
 }
@@ -342,7 +360,8 @@ fun writeCoreVersionStamp(stamp: CoreVersionStamp, abis: List<String>) {
 }
 
 // Builds the standalone mihomo PIE core executable (libclash.so) used by the out-of-process
-// architecture: `-buildmode=pie` from the `cfa/native` main package (entry.go), named lib*.so so the
+// architecture: `-buildmode=pie` from the `cfa/native` main package (entry.go), named lib*.so so
+// the
 // installer drops it into nativeLibraryDir (where it is executable) — fork+exec'd, no System.load.
 class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkTools) {
     private val sourceDir = File("lib/native/go")
@@ -356,12 +375,13 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
     private val mihomoDir = File("lib/mihomo/mihomo")
     private val kernelPatchDir = File(".github/patches/mihomo")
 
-    private val abiToGoArch = mapOf(
-        "arm64-v8a" to "arm64",
-        "armeabi-v7a" to "arm",
-        "x86" to "386",
-        "x86_64" to "amd64"
-    )
+    private val abiToGoArch =
+        mapOf(
+            "arm64-v8a" to "arm64",
+            "armeabi-v7a" to "arm",
+            "x86" to "386",
+            "x86_64" to "amd64",
+        )
 
     private val buildTags = config.getCsv("golang.buildTags", "cmfa")
     private val buildFlags = config.getCsv("golang.buildFlags", "-trimpath")
@@ -379,7 +399,9 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
         coreVersionStamp = stamp
         val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
         writeCoreVersionStamp(stamp, abis)
-        println("[CoreExe] Building PIE core executable ($outputLibraryName) for ABIs: ${abis.joinToString()}")
+        println(
+            "[CoreExe] Building PIE core executable ($outputLibraryName) for ABIs: ${abis.joinToString()}"
+        )
         abis.forEach(::buildForAbi)
     }
 
@@ -387,40 +409,48 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
     // patch that is already applied (reverse-check succeeds) is skipped, so re-runs are safe.
     private fun applyKernelPatches() {
         if (!kernelPatchDir.isDirectory || !File(mihomoDir, ".git").exists()) return
-        val patches = kernelPatchDir.listFiles { file -> file.extension == "patch" }
-            ?.sortedBy { it.name }
-            .orEmpty()
+        val patches =
+            kernelPatchDir
+                .listFiles { file -> file.extension == "patch" }
+                ?.sortedBy { it.name }
+                .orEmpty()
         if (patches.isEmpty()) return
         println("[CoreExe] Applying ${patches.size} mihomo kernel patch(es)")
         patches.forEach { patch ->
-            val alreadyApplied = executeCommand(
-                command = listOf("git", "apply", "--reverse", "--check", patch.absolutePath),
-                workingDir = mihomoDir,
-                printStdout = false,
-                printStderr = false,
-                stderrIsError = false,
-            ).success
+            val alreadyApplied =
+                executeCommand(
+                        command =
+                            listOf("git", "apply", "--reverse", "--check", patch.absolutePath),
+                        workingDir = mihomoDir,
+                        printStdout = false,
+                        printStderr = false,
+                        stderrIsError = false,
+                    )
+                    .success
             if (alreadyApplied) {
                 println("[CoreExe]   already applied: ${patch.name}")
                 return@forEach
             }
-            val result = executeCommand(
-                command = listOf("git", "apply", patch.absolutePath),
-                workingDir = mihomoDir,
-                stdoutPrefix = "[patch]",
-                stderrPrefix = "[patch]",
-                stderrIsError = false,
-            )
+            val result =
+                executeCommand(
+                    command = listOf("git", "apply", patch.absolutePath),
+                    workingDir = mihomoDir,
+                    stdoutPrefix = "[patch]",
+                    stderrPrefix = "[patch]",
+                    stderrIsError = false,
+                )
             check(result.success) { "Failed to apply kernel patch ${patch.name}: ${result.error}" }
             println("[CoreExe]   applied: ${patch.name}")
         }
     }
 
     private fun buildForAbi(abi: String) {
-        val arch = abiToGoArch[abi] ?: run {
-            println("[CoreExe] Unsupported ABI: $abi")
-            return
-        }
+        val arch =
+            abiToGoArch[abi]
+                ?: run {
+                    println("[CoreExe] Unsupported ABI: $abi")
+                    return
+                }
         println("[building] Building for $abi (PIE core exe, arch: $arch)...")
         val outputLibDir = File(outputDir, abi)
         outputLibDir.mkdirs()
@@ -442,14 +472,15 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
             add(packageName)
         }
 
-        val result = executeCommand(
-            command = command,
-            workingDir = sourceDir,
-            environment = buildGoEnv(abi),
-            stdoutPrefix = "[building][$abi]",
-            stderrPrefix = "[building][$abi]",
-            stderrIsError = false
-        )
+        val result =
+            executeCommand(
+                command = command,
+                workingDir = sourceDir,
+                environment = buildGoEnv(abi),
+                stdoutPrefix = "[building][$abi]",
+                stderrPrefix = "[building][$abi]",
+                stderrIsError = false,
+            )
         if (result.success && outputFile.isFile) {
             val destDir = File(appJniRoot, abi)
             destDir.mkdirs()
@@ -464,7 +495,8 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
     private fun buildGoEnv(abi: String): Map<String, String> {
         val arch = abiToGoArch.getValue(abi)
         // The Go source is cgo-free (no `import "C"`, the c-shared bridge is gone). But
-        // `-buildmode=pie` for android/{arm,386,amd64} REQUIRES external linking — only android/arm64
+        // `-buildmode=pie` for android/{arm,386,amd64} REQUIRES external linking — only
+        // android/arm64
         // links PIE with the internal linker. So enable CGO purely to route linking through the NDK
         // clang; Android rejects non-PIE executables on every ABI. No C is compiled here.
         return mapOf(
@@ -513,7 +545,9 @@ class RustBuilder(private val config: ProjectConfig) {
 
     fun buildAll() {
         if (!File(sourceDir, "Cargo.toml").isFile) {
-            error("[Rust] Source directory not ready: missing ${File(sourceDir, "Cargo.toml").absolutePath}")
+            error(
+                "[Rust] Source directory not ready: missing ${File(sourceDir, "Cargo.toml").absolutePath}"
+            )
         }
 
         val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
@@ -527,39 +561,55 @@ class RustBuilder(private val config: ProjectConfig) {
     private fun buildForAbi(abi: String) {
         println("[building] Building for $abi (Rust)...")
 
-        val command = listOf(
-            "cargo", "ndk",
-            "-t", abi,
-            "-o", outputDir.absolutePath,
-            "build", "--release", "--lib",
-            // Rebuild std from source so the runtime-performance profile (opt-level=3, LTO)
-            // applies to it too. Requires the nightly
-            // toolchain pinned below plus the rust-src component.
-            "-Z", "build-std=std,panic_abort",
-        )
+        val command =
+            listOf(
+                "cargo",
+                "ndk",
+                "-t",
+                abi,
+                "-o",
+                outputDir.absolutePath,
+                "build",
+                "--release",
+                "--lib",
+                // Rebuild std from source so the runtime-performance profile (opt-level=3, LTO)
+                // applies to it too. Requires the nightly
+                // toolchain pinned below plus the rust-src component.
+                "-Z",
+                "build-std=std,panic_abort",
+            )
 
-        val result = executeCommand(
-            command = command,
-            workingDir = sourceDir,
-            environment = mapOf(
-                // -Z flags and -Cpanic=immediate-abort are nightly-only; pin via
-                // rustup so the build does not depend on the host default toolchain.
-                "RUSTUP_TOOLCHAIN" to "nightly",
-                // Panic handling is irrelevant to normal compilation throughput. Keep immediate
-                // abort for the native failure boundary, but avoid size-only linker passes that
-                // can trade code layout for a smaller output.
-                "RUSTFLAGS" to listOf(
-                    "-Zunstable-options",
-                    "-Cpanic=immediate-abort",
-                    // liboverride is loaded via System.loadLibrary("override"); give it a stable
-                    // soname so it resolves whether packed (code_cache) or raw (nativeLibraryDir).
-                    "-C", "link-arg=-Wl,-soname,liboverride.so",
-                ).joinToString(" "),
-            ),
-            stdoutPrefix = "[building][$abi]",
-            stderrPrefix = "[building][$abi]",
-            stderrIsError = false
-        )
+        val result =
+            executeCommand(
+                command = command,
+                workingDir = sourceDir,
+                environment =
+                    mapOf(
+                        // -Z flags and -Cpanic=immediate-abort are nightly-only; pin via
+                        // rustup so the build does not depend on the host default toolchain.
+                        "RUSTUP_TOOLCHAIN" to "nightly",
+                        // Panic handling is irrelevant to normal compilation throughput. Keep
+                        // immediate
+                        // abort for the native failure boundary, but avoid size-only linker passes
+                        // that
+                        // can trade code layout for a smaller output.
+                        "RUSTFLAGS" to
+                            listOf(
+                                    "-Zunstable-options",
+                                    "-Cpanic=immediate-abort",
+                                    // liboverride is loaded via System.loadLibrary("override");
+                                    // give it a stable
+                                    // soname so it resolves whether packed (code_cache) or raw
+                                    // (nativeLibraryDir).
+                                    "-C",
+                                    "link-arg=-Wl,-soname,liboverride.so",
+                                )
+                                .joinToString(" "),
+                    ),
+                stdoutPrefix = "[building][$abi]",
+                stderrPrefix = "[building][$abi]",
+                stderrIsError = false,
+            )
         if (result.success) {
             val sourceLib = File(outputDir, "$abi/$outputLibraryName")
             if (sourceLib.exists()) {
@@ -606,37 +656,46 @@ class LoaderCBuilder(private val config: ProjectConfig, private val ndkTools: Nd
         objDir.mkdirs()
         libDir.mkdirs()
         val toolchain = File(ndkTools.ndkDir, "build/cmake/android.toolchain.cmake")
-        val configure = executeCommand(
-            command = listOf(
-                ndkTools.getCmakePath(),
-                "-S", sourceDir.absolutePath,
-                "-B", objDir.absolutePath,
-                "-G", "Ninja",
-                "-DCMAKE_MAKE_PROGRAM=${ndkTools.getNinjaPath()}",
-                "-DCMAKE_TOOLCHAIN_FILE=${toolchain.absolutePath}",
-                "-DANDROID_ABI=$abi",
-                "-DANDROID_PLATFORM=android-${ndkTools.getMinAndroidApi()}",
-                "-DCMAKE_BUILD_TYPE=Release",
-                "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${libDir.absolutePath}",
-            ),
-            stdoutPrefix = "[building][$abi]",
-            stderrPrefix = "[building][$abi]",
-            stderrIsError = false,
-        )
+        val configure =
+            executeCommand(
+                command =
+                    listOf(
+                        ndkTools.getCmakePath(),
+                        "-S",
+                        sourceDir.absolutePath,
+                        "-B",
+                        objDir.absolutePath,
+                        "-G",
+                        "Ninja",
+                        "-DCMAKE_MAKE_PROGRAM=${ndkTools.getNinjaPath()}",
+                        "-DCMAKE_TOOLCHAIN_FILE=${toolchain.absolutePath}",
+                        "-DANDROID_ABI=$abi",
+                        "-DANDROID_PLATFORM=android-${ndkTools.getMinAndroidApi()}",
+                        "-DCMAKE_BUILD_TYPE=Release",
+                        "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${libDir.absolutePath}",
+                    ),
+                stdoutPrefix = "[building][$abi]",
+                stderrPrefix = "[building][$abi]",
+                stderrIsError = false,
+            )
         if (!configure.success) {
             val reason = configure.error.ifBlank { configure.output }.trim()
             error("[building] Failed to configure $abi (Loader C): $reason")
         }
-        val build = executeCommand(
-            command = listOf(
-                ndkTools.getCmakePath(),
-                "--build", objDir.absolutePath,
-                "--target", "loader",
-            ),
-            stdoutPrefix = "[building][$abi]",
-            stderrPrefix = "[building][$abi]",
-            stderrIsError = false,
-        )
+        val build =
+            executeCommand(
+                command =
+                    listOf(
+                        ndkTools.getCmakePath(),
+                        "--build",
+                        objDir.absolutePath,
+                        "--target",
+                        "loader",
+                    ),
+                stdoutPrefix = "[building][$abi]",
+                stderrPrefix = "[building][$abi]",
+                stderrIsError = false,
+            )
         if (!build.success) {
             val reason = build.error.ifBlank { build.output }.trim()
             error("[building] Failed to build $abi (Loader C): $reason")
@@ -665,7 +724,9 @@ class CompatBuilder(private val config: ProjectConfig, private val ndkTools: Ndk
         }
 
         val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
-        println("[Compat] Building out-of-process core bridge (libcompat.so) for ABIs: ${abis.joinToString()}")
+        println(
+            "[Compat] Building out-of-process core bridge (libcompat.so) for ABIs: ${abis.joinToString()}"
+        )
         abis.forEach(::buildForAbi)
     }
 
@@ -676,37 +737,46 @@ class CompatBuilder(private val config: ProjectConfig, private val ndkTools: Ndk
         objDir.mkdirs()
         libDir.mkdirs()
         val toolchain = File(ndkTools.ndkDir, "build/cmake/android.toolchain.cmake")
-        val configure = executeCommand(
-            command = listOf(
-                ndkTools.getCmakePath(),
-                "-S", sourceDir.absolutePath,
-                "-B", objDir.absolutePath,
-                "-G", "Ninja",
-                "-DCMAKE_MAKE_PROGRAM=${ndkTools.getNinjaPath()}",
-                "-DCMAKE_TOOLCHAIN_FILE=${toolchain.absolutePath}",
-                "-DANDROID_ABI=$abi",
-                "-DANDROID_PLATFORM=android-${ndkTools.getMinAndroidApi()}",
-                "-DCMAKE_BUILD_TYPE=Release",
-                "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${libDir.absolutePath}",
-            ),
-            stdoutPrefix = "[building][$abi]",
-            stderrPrefix = "[building][$abi]",
-            stderrIsError = false,
-        )
+        val configure =
+            executeCommand(
+                command =
+                    listOf(
+                        ndkTools.getCmakePath(),
+                        "-S",
+                        sourceDir.absolutePath,
+                        "-B",
+                        objDir.absolutePath,
+                        "-G",
+                        "Ninja",
+                        "-DCMAKE_MAKE_PROGRAM=${ndkTools.getNinjaPath()}",
+                        "-DCMAKE_TOOLCHAIN_FILE=${toolchain.absolutePath}",
+                        "-DANDROID_ABI=$abi",
+                        "-DANDROID_PLATFORM=android-${ndkTools.getMinAndroidApi()}",
+                        "-DCMAKE_BUILD_TYPE=Release",
+                        "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${libDir.absolutePath}",
+                    ),
+                stdoutPrefix = "[building][$abi]",
+                stderrPrefix = "[building][$abi]",
+                stderrIsError = false,
+            )
         if (!configure.success) {
             val reason = configure.error.ifBlank { configure.output }.trim()
             error("[building] Failed to configure $abi (Compat C): $reason")
         }
-        val build = executeCommand(
-            command = listOf(
-                ndkTools.getCmakePath(),
-                "--build", objDir.absolutePath,
-                "--target", "compat",
-            ),
-            stdoutPrefix = "[building][$abi]",
-            stderrPrefix = "[building][$abi]",
-            stderrIsError = false,
-        )
+        val build =
+            executeCommand(
+                command =
+                    listOf(
+                        ndkTools.getCmakePath(),
+                        "--build",
+                        objDir.absolutePath,
+                        "--target",
+                        "compat",
+                    ),
+                stdoutPrefix = "[building][$abi]",
+                stderrPrefix = "[building][$abi]",
+                stderrIsError = false,
+            )
         if (!build.success) {
             val reason = build.error.ifBlank { build.output }.trim()
             error("[building] Failed to build $abi (Compat C): $reason")
@@ -729,12 +799,41 @@ class ResourceDownloader(private val config: ProjectConfig) {
     fun downloadGeoFiles() {
         outputDir.mkdirs()
 
-        val assets = listOf(
-            AssetInfo("geoip.metadb", config.getString("asset.geoip.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb"), compress = true),
-            AssetInfo("geosite.dat", config.getString("asset.geosite.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"), compress = true),
-            AssetInfo("ASN.mmdb", config.getString("asset.asn.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"), compress = true),
-            AssetInfo("BundleMRS.7z", config.getString("asset.bundleMRS.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/BundleMRS.7z"), compress = false)
-        )
+        val assets =
+            listOf(
+                AssetInfo(
+                    "geoip.metadb",
+                    config.getString(
+                        "asset.geoip.url",
+                        "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb",
+                    ),
+                    compress = true,
+                ),
+                AssetInfo(
+                    "geosite.dat",
+                    config.getString(
+                        "asset.geosite.url",
+                        "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat",
+                    ),
+                    compress = true,
+                ),
+                AssetInfo(
+                    "ASN.mmdb",
+                    config.getString(
+                        "asset.asn.url",
+                        "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb",
+                    ),
+                    compress = true,
+                ),
+                AssetInfo(
+                    "BundleMRS.7z",
+                    config.getString(
+                        "asset.bundleMRS.url",
+                        "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/BundleMRS.7z",
+                    ),
+                    compress = false,
+                ),
+            )
 
         assets.forEach { asset ->
             if (asset.url.isNotEmpty() && asset.url.startsWith("https://")) {
@@ -789,7 +888,8 @@ class ResourceDownloader(private val config: ProjectConfig) {
 }
 
 fun printUsage() {
-    println("""
+    println(
+        """
         YumeBox Native Build Tool
 
         Usage: kotlin scripts/native-build.main.kts [options]
@@ -804,7 +904,9 @@ fun printUsage() {
           --clean    Clean build outputs
           --all      Build everything (default)
           --help     Show this help
-    """.trimIndent())
+        """
+            .trimIndent()
+    )
 }
 
 fun cleanBuildOutputs() {
@@ -828,15 +930,16 @@ fun cleanBuildOutputs() {
     println("[Clean] Done")
 }
 
-val message = """
- __   __                             ____                 
- \ \ / /  _   _   _ __ ___     ___  | __ )    ___   __  __
-  \ V /  | | | | | '_ ` _ \   / _ \ |  _ \   / _ \  \ \/ /
-   | |   | |_| | | | | | | | |  __/ | |_) | | (_) |  >  < 
-   |_|    \__,_| |_| |_| |_|  \___| |____/   \___/  /_/\_\
-                                                          
-""".trimIndent()
-
+val message =
+    """
+    __   __                             ____                 
+    \ \ / /  _   _   _ __ ___     ___  | __ )    ___   __  __
+     \ V /  | | | | | '_ ` _ \   / _ \ |  _ \   / _ \  \ \/ /
+      | |   | |_| | | | | | | | |  __/ | |_) | | (_) |  >  < 
+      |_|    \__,_| |_| |_| |_|  \___| |____/   \___/  /_/\_\
+                                                             
+    """
+        .trimIndent()
 
 fun main(args: Array<String>) {
     if (args.contains("--help")) {
@@ -862,8 +965,10 @@ fun main(args: Array<String>) {
     val buildCompat = args.isEmpty() || args.contains("--all") || args.contains("--compat")
     val downloadGeo = args.isEmpty() || args.contains("--all") || args.contains("--geo")
 
-    // The Go PIE core is cgo-free in source, but -buildmode=pie for the 32-bit/x86 Android ABIs must
-    // be linked by the NDK clang (see GoExeBuilder.buildGoEnv); the loader/compat C libs need it too.
+    // The Go PIE core is cgo-free in source, but -buildmode=pie for the 32-bit/x86 Android ABIs
+    // must
+    // be linked by the NDK clang (see GoExeBuilder.buildGoEnv); the loader/compat C libs need it
+    // too.
     val needsNdk = buildGo || buildCoreExe || buildLoader || buildCompat
     val ndkTools by lazy { NdkTools(config) }
 

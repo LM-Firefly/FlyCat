@@ -10,7 +10,8 @@ import java.lang.reflect.Method;
 final class ReflectionAccess {
     private static volatile boolean exempted;
 
-    private ReflectionAccess() {}
+    private ReflectionAccess() {
+    }
 
     static void exemptHiddenApis() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || exempted) {

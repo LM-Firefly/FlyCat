@@ -20,8 +20,8 @@ import androidx.compose.ui.platform.LocalConfiguration
  * - [Compact]: phone single stack; secondary screens push on the root navigator.
  * - [RailSingle]/[TwoPane]: tablet dual-pane shell (left main pager + right detail host).
  *
- * Module-level master/detail inside a tab is intentionally not used anymore; tablet detail
- * always goes through [LocalDetailNavigator] in the shell right pane.
+ * Module-level master/detail inside a tab is intentionally not used anymore; tablet detail always
+ * goes through [LocalDetailNavigator] in the shell right pane.
  */
 enum class WindowLayoutMode {
     Compact,

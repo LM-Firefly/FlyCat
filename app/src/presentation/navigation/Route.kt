@@ -28,8 +28,7 @@ import kotlinx.serialization.Serializable
  * objects. The arg-carrying screens are data classes, the rest are objects.
  */
 sealed interface Route : NavKey {
-    @Serializable
-    data class Main(val initialPage: Int = 0) : Route
+    @Serializable data class Main(val initialPage: Int = 0) : Route
 
     @Serializable
     data class MoeWallpaperCrop(
@@ -39,67 +38,46 @@ sealed interface Route : NavKey {
         val initialBiasY: Float = 0f,
     ) : Route
 
-    @Serializable
-    data object AppSettings : Route
+    @Serializable data object AppSettings : Route
 
-    @Serializable
-    data object NetworkSettings : Route
+    @Serializable data object NetworkSettings : Route
 
-    @Serializable
-    data object VpnServiceOptions : Route
+    @Serializable data object VpnServiceOptions : Route
 
-    @Serializable
-    data object TunServiceOptions : Route
+    @Serializable data object TunServiceOptions : Route
 
-    @Serializable
-    data object TproxyServiceOptions : Route
+    @Serializable data object TproxyServiceOptions : Route
 
-    @Serializable
-    data object AccessControl : Route
+    @Serializable data object AccessControl : Route
 
-    @Serializable
-    data object MetaFeature : Route
+    @Serializable data object MetaFeature : Route
 
-    @Serializable
-    data object Connection : Route
+    @Serializable data object Connection : Route
 
-    @Serializable
-    data class ConnectionDetail(val connectionId: String) : Route
+    @Serializable data class ConnectionDetail(val connectionId: String) : Route
 
-    @Serializable
-    data object TrafficStatistics : Route
+    @Serializable data object TrafficStatistics : Route
 
-    @Serializable
-    data object Log : Route
+    @Serializable data object Log : Route
 
     /** Runtime rules from GET /rules (not custom routing). */
-    @Serializable
-    data object Rules : Route
+    @Serializable data object Rules : Route
 
-    @Serializable
-    data object About : Route
+    @Serializable data object About : Route
 
-    @Serializable
-    data object OpenSourceLicenses : Route
+    @Serializable data object OpenSourceLicenses : Route
 
-    @Serializable
-    data object Override : Route
+    @Serializable data object Override : Route
 
-    @Serializable
-    data object OverrideConfigPreview : Route
+    @Serializable data object OverrideConfigPreview : Route
 
-    @Serializable
-    data object Providers : Route
+    @Serializable data object Providers : Route
 
-    @Serializable
-    data object Feature : Route
+    @Serializable data object Feature : Route
 
-    @Serializable
-    data object CustomRouting : Route
+    @Serializable data object CustomRouting : Route
 
-    @Serializable
-    data object StringListEditor : Route
+    @Serializable data object StringListEditor : Route
 
-    @Serializable
-    data object KeyValueEditor : Route
+    @Serializable data object KeyValueEditor : Route
 }

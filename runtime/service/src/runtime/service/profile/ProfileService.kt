@@ -22,19 +22,19 @@ package com.github.yumelira.yumebox.runtime.service.profile
 
 import android.content.Context
 import com.github.yumelira.yumebox.runtime.api.FetchObserver
-import com.github.yumelira.yumebox.runtime.api.ProfileApi
 import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumelira.yumebox.runtime.api.ProfileApi
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.util.directoryLastModified
 import com.github.yumelira.yumebox.runtime.service.util.importedDir
 import com.github.yumelira.yumebox.runtime.service.util.sendProfileChanged
+import java.io.FileNotFoundException
+import java.util.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.FileNotFoundException
-import java.util.UUID
 
 class ProfileService(private val context: Context) :
     ProfileApi, CoroutineScope by CoroutineScope(Dispatchers.IO) {

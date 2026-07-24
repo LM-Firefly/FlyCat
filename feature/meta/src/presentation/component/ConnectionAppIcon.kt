@@ -132,11 +132,11 @@ private object ConnectionAppIconResolver {
         val resolvedPackageName =
             packageName?.trim().orEmpty().takeIf { it.isNotEmpty() } ?: return null
         return runCatching {
-                context.packageManager
-                    .getApplicationIcon(resolvedPackageName)
-                    .toBitmap(width = bitmapSize, height = bitmapSize)
-                    .asImageBitmap()
-            }
+            context.packageManager
+                .getApplicationIcon(resolvedPackageName)
+                .toBitmap(width = bitmapSize, height = bitmapSize)
+                .asImageBitmap()
+        }
             .getOrNull()
     }
 }

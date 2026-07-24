@@ -22,13 +22,7 @@ package com.github.yumelira.yumebox.screen.moe
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -40,7 +34,10 @@ import androidx.compose.ui.unit.dp
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/** Shared color roles the guide mockups derive from the theme — one place instead of a block per composable. */
+/**
+ * Shared color roles the guide mockups derive from the theme — one place instead of a block per
+ * composable.
+ */
 internal data class MockupPalette(
     val mask: Color,
     val maskStrong: Color,
@@ -87,8 +84,7 @@ internal fun MockupPhoneFrame(
         val frameWidth = frameHeight * 0.46f
         Box(
             modifier =
-                Modifier
-                    .width(frameWidth)
+                Modifier.width(frameWidth)
                     .height(frameHeight)
                     .clip(RoundedCornerShape(22.dp))
                     .background(palette.surface)

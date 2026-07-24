@@ -22,11 +22,7 @@ package com.github.yumelira.yumebox.screen.profiles
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import com.github.yumelira.yumebox.MainActivity
 import com.github.yumelira.yumebox.presentation.component.WindowLayoutMode
 import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel

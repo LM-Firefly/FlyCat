@@ -23,8 +23,9 @@ package com.github.yumelira.yumebox.runtime.api
 import com.github.yumelira.yumebox.core.model.RunMode
 
 /**
- * Platform-neutral core process control. Android wires [com.github.yumelira.yumebox.runtime.service.core.CoreProcess];
- * desktop can implement the same contract without VpnService/libsu.
+ * Platform-neutral core process control. Android wires
+ * [com.github.yumelira.yumebox.runtime.service.core.CoreProcess]; desktop can implement the same
+ * contract without VpnService/libsu.
  */
 interface ProcessController {
     /** Active controller endpoint for the running core, or null when stopped. */
@@ -65,8 +66,8 @@ interface RuntimeStatusStore {
 }
 
 /**
- * Platform-specific start/stop of the local runtime host (VPN service, root daemon, etc.).
- * Desktop can implement without Android Service APIs.
+ * Platform-specific start/stop of the local runtime host (VPN service, root daemon, etc.). Desktop
+ * can implement without Android Service APIs.
  */
 interface RuntimeLauncher {
     suspend fun start(owner: RuntimeOwner, mode: RunMode)
@@ -75,7 +76,8 @@ interface RuntimeLauncher {
 }
 
 /**
- * Resolves the live core controller endpoint (local unix path + secret, or remote backend metadata).
+ * Resolves the live core controller endpoint (local unix path + secret, or remote backend
+ * metadata).
  */
 interface CoreEndpointSource {
     fun localSocketPath(): String?

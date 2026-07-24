@@ -20,14 +20,7 @@
 
 package com.github.yumelira.yumebox.runtime.client
 
-import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
-import com.github.yumelira.yumebox.core.model.Provider
-import com.github.yumelira.yumebox.core.model.ProviderList
-import com.github.yumelira.yumebox.core.model.ProxyGroup
-import com.github.yumelira.yumebox.core.model.ProxySort
-import com.github.yumelira.yumebox.core.model.RuntimeRule
-import com.github.yumelira.yumebox.core.model.TunnelState
-import com.github.yumelira.yumebox.core.model.UiConfiguration
+import com.github.yumelira.yumebox.core.model.*
 import com.github.yumelira.yumebox.runtime.api.CoreApi
 import com.github.yumelira.yumebox.runtime.api.CoreAsyncQueries
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +31,11 @@ import kotlinx.coroutines.withContext
  * never nests runBlocking; falls back to [CoreApi] on IO for legacy implementations.
  */
 object CoreQueries {
-    private suspend fun <T> query(api: CoreApi, async: suspend CoreAsyncQueries.() -> T, sync: CoreApi.() -> T): T {
+    private suspend fun <T> query(
+        api: CoreApi,
+        async: suspend CoreAsyncQueries.() -> T,
+        sync: CoreApi.() -> T,
+    ): T {
         val asyncApi = api as? CoreAsyncQueries
         return if (asyncApi != null) {
             asyncApi.async()
@@ -66,7 +63,10 @@ object CoreQueries {
             { queryAllProxyGroups(excludeNotSelectable) },
         )
 
-    suspend fun queryProfileProxyGroups(api: CoreApi, excludeNotSelectable: Boolean): List<ProxyGroup> =
+    suspend fun queryProfileProxyGroups(
+        api: CoreApi,
+        excludeNotSelectable: Boolean,
+    ): List<ProxyGroup> =
         query(
             api,
             { queryProfileProxyGroupsAsync(excludeNotSelectable) },

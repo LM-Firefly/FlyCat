@@ -27,12 +27,12 @@ import androidx.compose.ui.unit.Dp
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.HazeColorEffect
 import dev.chrisbanes.haze.blur.HazeProgressive
 import dev.chrisbanes.haze.blur.blurEffect
 import dev.chrisbanes.haze.blur.materials.HazeMaterials
+import dev.chrisbanes.haze.hazeEffect
 
 object YumeHaze {
     const val ChromeNoiseFactor: Float = 0.06f
@@ -54,9 +54,7 @@ object YumeHaze {
         return material.copy(
             backgroundColor = background.copy(alpha = opacity.subtle),
             colorEffects =
-                listOf(
-                    HazeColorEffect.tint(background.copy(alpha = opacity.softOverlay)),
-                ),
+                listOf(HazeColorEffect.tint(background.copy(alpha = opacity.softOverlay))),
             noiseFactor = ChromeNoiseFactor,
             fallbackColorEffect = HazeColorEffect.tint(background.copy(alpha = FallbackAlpha)),
         )

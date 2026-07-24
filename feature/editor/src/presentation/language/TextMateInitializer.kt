@@ -115,13 +115,14 @@ object TextMateInitializer {
         Timber.tag(TAG).d("Loading grammars...")
         try {
             val definitions = LanguageDefinitionReader.read("textmate/languages.json")
-            grammarDefinitions = LanguageScope.entries
-                .filterNot { it == LanguageScope.Text }
-                .associateWith { language ->
-                    definitions.firstOrNull {
-                        it.name.equals(language.displayName, ignoreCase = true)
-                    } ?: error("Grammar definition not found: ${language.displayName}")
-                }
+            grammarDefinitions =
+                LanguageScope.entries
+                    .filterNot { it == LanguageScope.Text }
+                    .associateWith { language ->
+                        definitions.firstOrNull {
+                            it.name.equals(language.displayName, ignoreCase = true)
+                        } ?: error("Grammar definition not found: ${language.displayName}")
+                    }
             check(grammarDefinitions.isNotEmpty()) { "No TextMate grammar definitions found" }
             Timber.tag(TAG).d("Grammar definitions loaded successfully")
         } catch (error: Exception) { // fault barrier: TextMate/tm4e throws unspecified exceptions
@@ -137,18 +138,20 @@ object TextMateInitializer {
         }
 
         try {
-            val definition = grammarDefinitions[language]
-                ?: error("Grammar not found: ${language.scopeName}")
+            val definition =
+                grammarDefinitions[language] ?: error("Grammar not found: ${language.scopeName}")
             val themeRegistry = ThemeRegistry.getInstance()
-            val grammarRegistry = GrammarRegistry(GrammarRegistry.getInstance()).apply {
-                setTheme(themeRegistry.currentThemeModel)
-            }
-            val textMateLanguage = TextMateLanguage.create(
-                definition,
-                grammarRegistry,
-                themeRegistry,
-                false,
-            )
+            val grammarRegistry =
+                GrammarRegistry(GrammarRegistry.getInstance()).apply {
+                    setTheme(themeRegistry.currentThemeModel)
+                }
+            val textMateLanguage =
+                TextMateLanguage.create(
+                    definition,
+                    grammarRegistry,
+                    themeRegistry,
+                    false,
+                )
             editor.setEditorLanguage(textMateLanguage)
             Timber.tag(TAG).d("Language set to: ${language.displayName}")
         } catch (error: Exception) { // fault barrier: TextMate/tm4e throws unspecified exceptions

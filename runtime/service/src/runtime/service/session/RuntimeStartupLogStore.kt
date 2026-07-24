@@ -75,7 +75,8 @@ class RuntimeStartupLogStore(
         fun scopeForMode(mode: RunMode): Scope =
             when (mode) {
                 RunMode.VpnService -> Scope.LOCAL_TUN
-                RunMode.Tun, RunMode.Tproxy -> Scope.ROOT_TUN
+                RunMode.Tun,
+                RunMode.Tproxy -> Scope.ROOT_TUN
             }
     }
 }

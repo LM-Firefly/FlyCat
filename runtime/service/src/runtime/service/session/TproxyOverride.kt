@@ -28,9 +28,10 @@ import java.io.File
 
 /**
  * Builds the built-in `tproxy-port` + `iptables` fragment for TPROXY mode. mihomo opens the tproxy
- * listener, programs and tears down the host iptables mangle rules itself (`iptables.enable: true`) — no
- * Kotlin-side iptables. Access-control uids flow through `iptables.include-uid`/`exclude-uid` (mihomo
- * excludes the core's own uid so its egress never loops). DNS is left to the compiler, as in Tun.
+ * listener, programs and tears down the host iptables mangle rules itself (`iptables.enable: true`)
+ * — no Kotlin-side iptables. Access-control uids flow through `iptables.include-uid`/`exclude-uid`
+ * (mihomo excludes the core's own uid so its egress never loops). DNS is left to the compiler, as
+ * in Tun.
  */
 object TproxyOverride {
     const val FILE_NAME = "__tproxy_override__.yaml"
@@ -49,8 +50,10 @@ object TproxyOverride {
         val dns =
             linkedMapOf<String, Any?>(
                 "enable" to true,
-                // dns-redirect needs a concrete listen address (mihomo ParseAddrPort's it and fails the
-                // whole iptables setup if empty); the REDIRECT rule points :53 traffic at this port.
+                // dns-redirect needs a concrete listen address (mihomo ParseAddrPort's it and fails
+                // the
+                // whole iptables setup if empty); the REDIRECT rule points :53 traffic at this
+                // port.
                 "listen" to "0.0.0.0:1053",
                 "enhanced-mode" to if (fakeIp) "fake-ip" else "redir-host",
             )
@@ -61,7 +64,8 @@ object TproxyOverride {
             }
         }
 
-        // No allow-lan here: the tproxy listener binds 0.0.0.0 on its own (mihomo ReCreateTProxy), so
+        // No allow-lan here: the tproxy listener binds 0.0.0.0 on its own (mihomo ReCreateTProxy),
+        // so
         // the other inbounds (http/socks/dns) stay on 127.0.0.1 and are not exposed to the LAN.
         return YamlCodec.dumpMap(
             linkedMapOf<String, Any?>(

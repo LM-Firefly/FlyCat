@@ -24,10 +24,11 @@ import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_FILE
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_URL
 import com.github.yumelira.yumebox.runtime.api.Profile
-import tf.gal.yumebox.locale.YumeTxt
 import java.util.*
+import tf.gal.yumebox.locale.YumeTxt
 
 internal typealias AddProfile = (String, String, Profile.Type, Long, Uri?, String) -> Unit
+
 internal typealias UpdateProfile = (UUID, String, String, Long) -> Unit
 
 internal data class ProfileDraft(

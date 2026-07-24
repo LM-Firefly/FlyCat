@@ -31,7 +31,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="sub_store_service" />
+                android:value="sub_store_service"/>
         </service>
     </application>
 </manifest>

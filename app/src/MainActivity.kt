@@ -28,18 +28,12 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.github.yumelira.yumebox.common.util.AppLanguageManager
@@ -178,8 +172,9 @@ class MainActivity : FragmentActivity() {
                                 AppNavContainer()
                                 ToastDialogHost()
 
-                                var showHomeGuide by
-                                    remember { mutableStateOf(showHomeGuideInitially) }
+                                var showHomeGuide by remember {
+                                    mutableStateOf(showHomeGuideInitially)
+                                }
                                 HomePreviewGuideDialog(
                                     show = showHomeGuide,
                                     onDismissRequest = { showHomeGuide = false },
@@ -262,40 +257,38 @@ class MainActivity : FragmentActivity() {
     }
 
     /**
-     * On launch, auto-request the two runtime permissions the app needs: notifications (Android 13+)
-     * and the MIUI dynamic "get installed apps" permission. Both are fired in a single system dialog
-     * sequence; permissions that aren't runtime-requestable on this device/OS are simply skipped.
+     * On launch, auto-request the two runtime permissions the app needs: notifications (Android
+     * 13+) and the MIUI dynamic "get installed apps" permission. Both are fired in a single system
+     * dialog sequence; permissions that aren't runtime-requestable on this device/OS are simply
+     * skipped.
      */
     private fun requestStartupPermissions() {
-        val permissions =
-            buildList {
-                if (
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                        checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
-                            android.content.pm.PackageManager.PERMISSION_GRANTED
-                ) {
-                    add(android.Manifest.permission.POST_NOTIFICATIONS)
-                }
-                if (
-                    isMiuiGetInstalledAppsDynamicSupported() &&
-                        checkSelfPermission(MIUI_GET_INSTALLED_APPS_PERMISSION) !=
-                            android.content.pm.PackageManager.PERMISSION_GRANTED
-                ) {
-                    add(MIUI_GET_INSTALLED_APPS_PERMISSION)
-                }
+        val permissions = buildList {
+            if (
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+                        android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                add(android.Manifest.permission.POST_NOTIFICATIONS)
             }
+            if (
+                isMiuiGetInstalledAppsDynamicSupported() &&
+                    checkSelfPermission(MIUI_GET_INSTALLED_APPS_PERMISSION) !=
+                        android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                add(MIUI_GET_INSTALLED_APPS_PERMISSION)
+            }
+        }
         if (permissions.isNotEmpty()) {
             requestPermissions(permissions.toTypedArray(), REQUEST_STARTUP_PERMISSIONS)
         }
     }
 
-    private fun isMiuiGetInstalledAppsDynamicSupported(): Boolean =
-        runCatching {
-                packageManager
-                    .getPermissionInfo(MIUI_GET_INSTALLED_APPS_PERMISSION, 0)
-                    .packageName == "com.lbe.security.miui"
-            }
-            .getOrDefault(false)
+    private fun isMiuiGetInstalledAppsDynamicSupported(): Boolean = runCatching {
+        packageManager.getPermissionInfo(MIUI_GET_INSTALLED_APPS_PERMISSION, 0).packageName ==
+            "com.lbe.security.miui"
+    }
+        .getOrDefault(false)
 
     @Suppress("DEPRECATION")
     private fun applyExcludeFromRecents(exclude: Boolean) {

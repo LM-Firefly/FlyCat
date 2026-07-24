@@ -7,7 +7,8 @@ final class NativePayloadExtractor {
         System.loadLibrary("loader");
     }
 
-    private NativePayloadExtractor() {}
+    private NativePayloadExtractor() {
+    }
 
     static native long openArchive(String apkPath) throws IOException;
 

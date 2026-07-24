@@ -26,21 +26,17 @@ import java.io.FileDescriptor
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.net.InetAddress
-import java.net.InetSocketAddress
-import java.net.Socket
-import java.net.SocketAddress
-import java.net.SocketImpl
+import java.net.*
 
 /**
- * A [java.net.Socket] backed by a UNIX-domain connection to the local core's mihomo controller,
- * so an OkHttp `SocketFactory` can speak HTTP over it. YumeBox's analogue of CFA's `UnixSocket`.
+ * A [java.net.Socket] backed by a UNIX-domain connection to the local core's mihomo controller, so
+ * an OkHttp `SocketFactory` can speak HTTP over it. YumeBox's analogue of CFA's `UnixSocket`.
  *
  * Constructed with no [SocketImpl] (`super(null as SocketImpl?)`) so the JDK never allocates a real
  * TCP impl; every method OkHttp touches is overridden to delegate to the underlying fd. Stream
  * closes are decoupled from the fd (reads/writes go through [Os] on the raw descriptor, and only
- * [close] releases it) so OkHttp reading the response while the request stream is done does not tear
- * down the connection.
+ * [close] releases it) so OkHttp reading the response while the request stream is done does not
+ * tear down the connection.
  */
 class UnixDomainSocket(private val path: String) : Socket(null as SocketImpl?) {
 
@@ -78,22 +74,38 @@ class UnixDomainSocket(private val path: String) : Socket(null as SocketImpl?) {
 
     // --- Socket contract OkHttp probes; unix sockets have no meaningful TCP semantics ---
     override fun setTcpNoDelay(on: Boolean) = Unit
+
     override fun getTcpNoDelay(): Boolean = true
+
     override fun setKeepAlive(on: Boolean) = Unit
+
     override fun getKeepAlive(): Boolean = false
+
     override fun bind(bindpoint: SocketAddress?) = Unit
+
     override fun isConnected(): Boolean = connection != null
+
     override fun isBound(): Boolean = true
+
     override fun isClosed(): Boolean = connection == null
+
     override fun isInputShutdown(): Boolean = connection == null
+
     override fun isOutputShutdown(): Boolean = connection == null
+
     override fun getInetAddress(): InetAddress = InetAddress.getLoopbackAddress()
-    override fun getRemoteSocketAddress(): SocketAddress = InetSocketAddress(InetAddress.getLoopbackAddress(), 0)
-    override fun getLocalSocketAddress(): SocketAddress = InetSocketAddress(InetAddress.getLoopbackAddress(), 0)
+
+    override fun getRemoteSocketAddress(): SocketAddress =
+        InetSocketAddress(InetAddress.getLoopbackAddress(), 0)
+
+    override fun getLocalSocketAddress(): SocketAddress =
+        InetSocketAddress(InetAddress.getLoopbackAddress(), 0)
 
     private class FdInputStream(private val fd: FileDescriptor) : InputStream() {
         private val one = ByteArray(1)
+
         override fun read(): Int = if (read(one, 0, 1) <= 0) -1 else one[0].toInt() and 0xff
+
         override fun read(b: ByteArray, off: Int, len: Int): Int =
             try {
                 val n = Os.read(fd, b, off, len)
@@ -101,24 +113,28 @@ class UnixDomainSocket(private val path: String) : Socket(null as SocketImpl?) {
             } catch (e: ErrnoException) {
                 throw IOException(e)
             }
+
         override fun close() = Unit // fd is owned by the socket
     }
 
     private class FdOutputStream(private val fd: FileDescriptor) : OutputStream() {
         override fun write(b: Int) = write(byteArrayOf(b.toByte()), 0, 1)
+
         override fun write(b: ByteArray, off: Int, len: Int) {
             var offset = off
             var remaining = len
             while (remaining > 0) {
-                val n = try {
-                    Os.write(fd, b, offset, remaining)
-                } catch (e: ErrnoException) {
-                    throw IOException(e)
-                }
+                val n =
+                    try {
+                        Os.write(fd, b, offset, remaining)
+                    } catch (e: ErrnoException) {
+                        throw IOException(e)
+                    }
                 offset += n
                 remaining -= n
             }
         }
+
         override fun close() = Unit // fd is owned by the socket
     }
 }

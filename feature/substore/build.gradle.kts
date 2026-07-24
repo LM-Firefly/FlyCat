@@ -57,4 +57,3 @@ dependencies {
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)
 }
-

@@ -20,17 +20,11 @@
 
 package com.github.yumelira.yumebox.presentation.theme
 
-import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.ui.unit.IntOffset
 
 /** Vertical layered bounce used by tablet split-shell pane switches. */
@@ -50,15 +44,15 @@ fun verticalBounceContentTransform(forward: Boolean): ContentTransform {
     val transform =
         if (forward) {
             (slideInVertically(animationSpec = enterSpring) { fullHeight ->
-                    fullHeight / 10
-                } + fadeIn(animationSpec = fadeInSpec)) togetherWith
+                fullHeight / 10
+            } + fadeIn(animationSpec = fadeInSpec)) togetherWith
                 (slideOutVertically(animationSpec = exitSpring) { fullHeight ->
                     -fullHeight / 14
                 } + fadeOut(animationSpec = fadeOutSpec))
         } else {
             (slideInVertically(animationSpec = enterSpring) { fullHeight ->
-                    -fullHeight / 10
-                } + fadeIn(animationSpec = fadeInSpec)) togetherWith
+                -fullHeight / 10
+            } + fadeIn(animationSpec = fadeInSpec)) togetherWith
                 (slideOutVertically(animationSpec = exitSpring) { fullHeight ->
                     fullHeight / 14
                 } + fadeOut(animationSpec = fadeOutSpec))

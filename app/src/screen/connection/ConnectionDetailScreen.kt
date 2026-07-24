@@ -23,14 +23,7 @@ package com.github.yumelira.yumebox.screen.connection
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -38,11 +31,7 @@ import com.github.yumelira.yumebox.core.model.ConnectionInfo
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.feature.meta.presentation.component.ConnectionDetailContent
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
 import kotlinx.coroutines.Dispatchers
@@ -55,8 +44,8 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * Full-page connection detail. Replaces the old bottom sheet so search expand / sheet open no longer
- * fight for the same gesture layer.
+ * Full-page connection detail. Replaces the old bottom sheet so search expand / sheet open no
+ * longer fight for the same gesture layer.
  */
 @Composable
 fun ConnectionDetailScreen(navigator: Navigator, connectionId: String) {
@@ -67,9 +56,7 @@ fun ConnectionDetailScreen(navigator: Navigator, connectionId: String) {
     val scope = rememberCoroutineScope()
 
     var connection by remember {
-        mutableStateOf(
-            ConnectionDetailHolder.connection?.takeIf { it.id == connectionId },
-        )
+        mutableStateOf(ConnectionDetailHolder.connection?.takeIf { it.id == connectionId })
     }
     var canInterrupt by remember {
         mutableStateOf(ConnectionDetailHolder.canInterrupt && connection != null)
@@ -82,9 +69,9 @@ fun ConnectionDetailScreen(navigator: Navigator, connectionId: String) {
             val latest =
                 withContext(Dispatchers.IO) {
                     runCatching {
-                            RuntimeAccess.connect(context)
-                            RuntimeAccess.core().queryConnections().connections
-                        }
+                        RuntimeAccess.connect(context)
+                        RuntimeAccess.core().queryConnections().connections
+                    }
                         .getOrNull()
                 }
             val match = latest?.firstOrNull { it.id == connectionId }
@@ -112,19 +99,15 @@ fun ConnectionDetailScreen(navigator: Navigator, connectionId: String) {
         topBar = {
             TopBar(
                 title = YumeTxt.Connection.Detail.Title,
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
             )
-        },
+        }
     ) { innerPadding ->
         val combinedPadding = combinePaddingValues(innerPadding, mainLikePadding)
         val info = connection
         if (info == null) {
             Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(combinedPadding)
-                        .padding(spacing.space32),
+                modifier = Modifier.fillMaxSize().padding(combinedPadding).padding(spacing.space32),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

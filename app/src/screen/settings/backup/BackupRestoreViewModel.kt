@@ -30,9 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tf.gal.yumebox.locale.YumeTxt
 
-data class BackupRestoreUiState(
-    val isBusy: Boolean = false,
-)
+data class BackupRestoreUiState(val isBusy: Boolean = false)
 
 sealed interface BackupRestoreEvent {
     data class Message(val text: String) : BackupRestoreEvent

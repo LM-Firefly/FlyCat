@@ -56,7 +56,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-
 @Composable
 private fun CircularIcon(
     imageVector: androidx.compose.ui.graphics.vector.ImageVector,
@@ -165,8 +164,9 @@ private fun SettingsMasterList(
     versionInfo: String,
     onOpen: (Route) -> Unit,
 ) {
-    Scaffold(topBar = { TopBar(title = YumeTxt.Settings.Title, scrollBehavior = scrollBehavior) }) {
-        innerPadding ->
+    Scaffold(
+        topBar = { TopBar(title = YumeTxt.Settings.Title, scrollBehavior = scrollBehavior) }
+    ) { innerPadding ->
         ScreenLazyColumn(
             scrollBehavior = scrollBehavior,
             innerPadding = combinePaddingValues(innerPadding, mainInnerPadding),

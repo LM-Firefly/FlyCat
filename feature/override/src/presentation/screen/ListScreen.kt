@@ -28,8 +28,8 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,24 +47,24 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.data.model.OverrideConfig
 import com.github.yumelira.yumebox.data.model.OverrideContentType
-import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.*
+import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.Spacing
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
+import com.github.yumelira.yumebox.runtime.api.Profile
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableCollectionItemScope
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import tf.gal.yumebox.locale.YumeTxt
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -72,10 +72,10 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.preference.CheckboxLocation
+import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
-import top.yukonga.miuix.kmp.preference.CheckboxPreference
-import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 private val overrideConfigItemGap = Spacing().space12
@@ -114,8 +114,9 @@ private class OverrideListDialogState {
 }
 
 @Composable
-private fun rememberOverrideListDialogState(): OverrideListDialogState =
-    remember { OverrideListDialogState() }
+private fun rememberOverrideListDialogState(): OverrideListDialogState = remember {
+    OverrideListDialogState()
+}
 
 @Composable
 fun OverrideListScreen(
@@ -167,8 +168,7 @@ fun OverrideListScreen(
     // Layout: [builtin title?] + N built-in cards + [user title?] + M user cards
     val userListIndexOffset =
         remember(builtInItems, userItems) {
-            val builtinBlock =
-                if (builtInItems.isEmpty()) 0 else 1 + builtInItems.size
+            val builtinBlock = if (builtInItems.isEmpty()) 0 else 1 + builtInItems.size
             val userTitle = if (userItems.isEmpty()) 0 else 1
             builtinBlock + userTitle
         }
@@ -191,11 +191,11 @@ fun OverrideListScreen(
             }
 
             runCatching {
-                    context.contentResolver.openOutputStream(uri)?.use { output ->
-                        output.write(targetConfig.content.toByteArray())
-                        output.flush()
-                    } ?: error(YumeTxt.Override.Export.Failed.format(targetConfig.name))
-                }
+                context.contentResolver.openOutputStream(uri)?.use { output ->
+                    output.write(targetConfig.content.toByteArray())
+                    output.flush()
+                } ?: error(YumeTxt.Override.Export.Failed.format(targetConfig.name))
+            }
                 .onSuccess {
                     context.toast(YumeTxt.Override.Export.Success.format(targetConfig.name))
                 }
@@ -224,8 +224,8 @@ fun OverrideListScreen(
         val userIndex = userItems.indexOfFirst { it.config.id == targetId }
         val targetIndex =
             when {
-                builtInIndex >= 0 ->
-                    (if (builtInItems.isEmpty()) 0 else 1) + builtInIndex
+                builtInIndex >= 0 -> (if (builtInItems.isEmpty()) 0 else 1) + builtInIndex
+
                 userIndex >= 0 -> userListIndexOffset + userIndex
                 else -> return@LaunchedEffect
             }
@@ -255,7 +255,8 @@ fun OverrideListScreen(
             lazyListState = listState,
             onScrollDirectionChanged = createFabController::onScrollDirectionChanged,
         ) {
-            // Built-ins first. No empty-state placeholder — with bundled overrides the list is never blank.
+            // Built-ins first. No empty-state placeholder — with bundled overrides the list is
+            // never blank.
             if (builtInItems.isNotEmpty()) {
                 item(key = "section-builtin", contentType = "section-title") {
                     Title(YumeTxt.Override.Section.BuiltIn)
@@ -370,9 +371,9 @@ private fun openApplySheet(
 }
 
 /**
- * Inverse of the per-subscription override picker: pick which subscriptions should bind
- * this one override. Global switch = all selected; individual rows stay free of dividers to
- * match the cleaned-up subscription settings sheet.
+ * Inverse of the per-subscription override picker: pick which subscriptions should bind this one
+ * override. Global switch = all selected; individual rows stay free of dividers to match the
+ * cleaned-up subscription settings sheet.
  */
 @Composable
 private fun OverrideApplyToProfilesSheet(
@@ -430,8 +431,7 @@ private fun OverrideApplyToProfilesSheet(
 
     val allProfileIds = remember(profiles) { profiles.map { it.uuid.toString() }.toSet() }
     val selectionReady = selectionSeeded && !isLoading
-    val applyGlobally =
-        allProfileIds.isNotEmpty() && selectedProfileIds.containsAll(allProfileIds)
+    val applyGlobally = allProfileIds.isNotEmpty() && selectedProfileIds.containsAll(allProfileIds)
 
     val saveSelection = {
         val target = config
@@ -477,10 +477,7 @@ private fun OverrideApplyToProfilesSheet(
         enableNestedScroll = true,
     ) {
         Column(
-            modifier =
-                Modifier.fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(bottom = UiDp.dp16),
+            modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(bottom = UiDp.dp16),
             verticalArrangement = Arrangement.spacedBy(spacing.space16),
         ) {
             Card {
@@ -507,6 +504,7 @@ private fun OverrideApplyToProfilesSheet(
                     // Keep sheet height stable while the profile list loads.
                     Spacer(modifier = Modifier.height(UiDp.dp24))
                 }
+
                 profiles.isEmpty() -> {
                     Text(
                         text = YumeTxt.Override.ApplySheet.Empty,
@@ -514,6 +512,7 @@ private fun OverrideApplyToProfilesSheet(
                         modifier = Modifier.padding(horizontal = spacing.space16),
                     )
                 }
+
                 else -> {
                     Card {
                         LazyColumn(
@@ -608,8 +607,7 @@ private fun OverrideConfigCard(
         modifier = Modifier,
     )
     // silence unused for symmetry with reorderable overload
-    @Suppress("UNUSED_EXPRESSION")
-    enableDrag
+    @Suppress("UNUSED_EXPRESSION") enableDrag
 }
 
 @Composable
@@ -832,6 +830,7 @@ private fun CreateConfigDialog(
             OverrideConfigInputMode.CreateNew -> nameTextFieldValueState.value.text.isNotBlank()
             OverrideConfigInputMode.LocalFile ->
                 selectedImportUri != null && selectedImportFileName.isNotBlank()
+
             OverrideConfigInputMode.NetworkUrl -> networkImportUrl.isNotBlank() && !isImporting
         }
     val importConfigLauncher =
@@ -886,12 +885,12 @@ private fun CreateConfigDialog(
                         OverrideConfigInputMode.LocalFile -> {
                             val importUri = selectedImportUri ?: return@AppBottomSheetConfirmAction
                             runCatching {
-                                    context.contentResolver
-                                        .openInputStream(importUri)
-                                        ?.bufferedReader()
-                                        ?.use { reader -> reader.readText() }
-                                        ?: error(YumeTxt.Override.Import.ReadError)
-                                }
+                                context.contentResolver
+                                    .openInputStream(importUri)
+                                    ?.bufferedReader()
+                                    ?.use { reader -> reader.readText() }
+                                    ?: error(YumeTxt.Override.Import.ReadError)
+                            }
                                 .onSuccess { content ->
                                     scope.launch {
                                         isImporting = true
@@ -1036,8 +1035,7 @@ private fun ImportOverrideFileContent(
         top.yukonga.miuix.kmp.basic.Card {
             BasicComponent(
                 title = YumeTxt.ProfilesPage.Input.SelectFile,
-                summary =
-                    fileName.ifBlank { YumeTxt.ProfilesPage.Validation.SelectFile },
+                summary = fileName.ifBlank { YumeTxt.ProfilesPage.Validation.SelectFile },
                 onClick = onPickFile,
             )
         }

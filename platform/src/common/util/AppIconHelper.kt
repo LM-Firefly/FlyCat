@@ -47,21 +47,21 @@ object AppIconHelper {
             }
 
         runCatching {
-                val current = pm.getComponentEnabledSetting(alias)
-                val unchanged =
-                    current == target ||
-                        (!hide && current == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT)
-                if (unchanged) return
+            val current = pm.getComponentEnabledSetting(alias)
+            val unchanged =
+                current == target ||
+                    (!hide && current == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT)
+            if (unchanged) return
 
-                val main =
-                    ComponentName(context.packageName, "com.github.yumelira.yumebox.MainActivity")
-                pm.setComponentEnabledSetting(
-                    main,
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                    PackageManager.DONT_KILL_APP,
-                )
-                pm.setComponentEnabledSetting(alias, target, PackageManager.DONT_KILL_APP)
-            }
+            val main =
+                ComponentName(context.packageName, "com.github.yumelira.yumebox.MainActivity")
+            pm.setComponentEnabledSetting(
+                main,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP,
+            )
+            pm.setComponentEnabledSetting(alias, target, PackageManager.DONT_KILL_APP)
+        }
             .onFailure { error ->
                 Timber.w(error, "Failed to ${if (hide) "hide" else "show"} app icon")
             }

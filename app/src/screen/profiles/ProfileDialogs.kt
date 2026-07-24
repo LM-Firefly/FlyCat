@@ -32,8 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
-import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
 import com.github.yumelira.yumebox.common.util.toast
+import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
 import com.github.yumelira.yumebox.data.model.OverrideConfig
 import com.github.yumelira.yumebox.data.model.ProfileBinding
 import com.github.yumelira.yumebox.presentation.component.AgeSecretKeyField
@@ -45,10 +45,12 @@ import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.runtime.api.Profile
 import kotlinx.coroutines.launch
 import tf.gal.yumebox.locale.YumeTxt
-import top.yukonga.miuix.kmp.basic.*
-import top.yukonga.miuix.kmp.preference.SwitchPreference
-import top.yukonga.miuix.kmp.preference.CheckboxPreference
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
+import top.yukonga.miuix.kmp.preference.CheckboxPreference
+import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
 
 private enum class ProfileSettingsSection {
@@ -73,13 +75,12 @@ internal fun ProfileSettingsDialog(
     val spacing = AppTheme.spacing
     val componentSizes = AppTheme.sizes
     val selectableConfigs = remember(builtInConfigs, userConfigs) { builtInConfigs + userConfigs }
-    val sectionOptions =
-        remember {
-            listOf(
-                ProfileSettingsSection.Subscription,
-                ProfileSettingsSection.Override,
-            )
-        }
+    val sectionOptions = remember {
+        listOf(
+            ProfileSettingsSection.Subscription,
+            ProfileSettingsSection.Override,
+        )
+    }
 
     var selectedSection by remember { mutableStateOf(ProfileSettingsSection.Subscription) }
     var editName by remember {
@@ -138,42 +139,38 @@ internal fun ProfileSettingsDialog(
             scope.launch {
                 isSaving = true
                 runCatching {
-                        val trimmedName = editName.text.trim()
-                        val trimmedSource = editSource.text.trim()
-                        val trimmedAgeSecretKey = editAgeSecretKey.text.trim()
-                        val targetSource =
-                            if (profile.type == Profile.Type.Url && trimmedSource.isNotEmpty()) {
-                                trimmedSource
-                            } else {
-                                profile.source
-                            }
-                        val hasMetaChanges =
-                            trimmedName != profile.name ||
-                                targetSource != profile.source ||
-                                ageSecretKeyEdited
-                        if (
-                            trimmedName.isNotEmpty() &&
-                                targetSource.isNotEmpty() &&
-                                hasMetaChanges
-                        ) {
-                            onSaveProfileMeta(
-                                ProfileMetaUpdate(
-                                    name = trimmedName,
-                                    source = targetSource,
-                                    updateAgeSecretKey = ageSecretKeyEdited,
-                                    ageSecretKey =
-                                        if (ageSecretKeyEdited) trimmedAgeSecretKey else null,
-                                )
-                            )
+                    val trimmedName = editName.text.trim()
+                    val trimmedSource = editSource.text.trim()
+                    val trimmedAgeSecretKey = editAgeSecretKey.text.trim()
+                    val targetSource =
+                        if (profile.type == Profile.Type.Url && trimmedSource.isNotEmpty()) {
+                            trimmedSource
+                        } else {
+                            profile.source
                         }
-
-                        val finalSelectedOverrideIds =
-                            buildFinalOverrideIds(
-                                selectedOverrideIds = pendingSelectedOverrideIds,
-                                customRoutingSelected = customRoutingSelected,
+                    val hasMetaChanges =
+                        trimmedName != profile.name ||
+                            targetSource != profile.source ||
+                            ageSecretKeyEdited
+                    if (trimmedName.isNotEmpty() && targetSource.isNotEmpty() && hasMetaChanges) {
+                        onSaveProfileMeta(
+                            ProfileMetaUpdate(
+                                name = trimmedName,
+                                source = targetSource,
+                                updateAgeSecretKey = ageSecretKeyEdited,
+                                ageSecretKey =
+                                    if (ageSecretKeyEdited) trimmedAgeSecretKey else null,
                             )
-                        onSaveOverrideSettings(finalSelectedOverrideIds)
+                        )
                     }
+
+                    val finalSelectedOverrideIds =
+                        buildFinalOverrideIds(
+                            selectedOverrideIds = pendingSelectedOverrideIds,
+                            customRoutingSelected = customRoutingSelected,
+                        )
+                    onSaveOverrideSettings(finalSelectedOverrideIds)
+                }
                     .onSuccess { onDismiss() }
                     .onFailure { error ->
                         context.toast(error.message ?: YumeTxt.Util.Error.UnknownError)
@@ -285,7 +282,8 @@ internal fun ProfileSettingsDialog(
                                     SwitchPreference(
                                         title = YumeTxt.ProfilesPage.SettingsDialog.CustomRouting,
                                         summary =
-                                            YumeTxt.ProfilesPage.SettingsDialog.CustomRoutingSummary,
+                                            YumeTxt.ProfilesPage.SettingsDialog
+                                                .CustomRoutingSummary,
                                         checked = customRoutingSelected,
                                         onCheckedChange = {
                                             overrideSelectionInitialized = true
@@ -309,8 +307,7 @@ internal fun ProfileSettingsDialog(
                                             selectableConfigs,
                                             key = { config -> config.id },
                                         ) { config ->
-                                            val isSelected =
-                                                config.id in pendingSelectedOverrideIds
+                                            val isSelected = config.id in pendingSelectedOverrideIds
                                             CheckboxPreference(
                                                 title = config.name,
                                                 checked = isSelected,

@@ -21,27 +21,12 @@
 package com.github.yumelira.yumebox.screen.connection
 
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -55,28 +40,12 @@ import com.github.yumelira.yumebox.feature.meta.presentation.component.TabRowWit
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.ConnectionSort
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.ConnectionTab
 import com.github.yumelira.yumebox.feature.meta.presentation.viewmodel.ConnectionViewModel
-import com.github.yumelira.yumebox.presentation.component.CollapsedSearchBar
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
-import com.github.yumelira.yumebox.presentation.component.SearchBarPadding
-import com.github.yumelira.yumebox.presentation.component.SearchPager
-import com.github.yumelira.yumebox.presentation.component.SearchStatus
-import com.github.yumelira.yumebox.presentation.component.TopAppBarAnim
-import com.github.yumelira.yumebox.presentation.component.TopBar
-import com.github.yumelira.yumebox.presentation.component.combinePaddingValues
-import com.github.yumelira.yumebox.presentation.component.rememberStandalonePageMainPadding
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
-import top.yukonga.miuix.kmp.basic.DropdownImpl
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
@@ -173,8 +142,7 @@ fun ConnectionScreen(navigator: Navigator) {
     fun openConnectionDetail(connection: ConnectionInfo) {
         // Collapse search first so the expand gesture never races the detail push.
         if (!currentSearchStatus.isCollapsed()) {
-            searchStatus =
-                currentSearchStatus.copy(current = SearchStatus.Status.COLLAPSING)
+            searchStatus = currentSearchStatus.copy(current = SearchStatus.Status.COLLAPSING)
         }
         ConnectionDetailHolder.setup(
             info = connection,
@@ -274,7 +242,7 @@ fun ConnectionScreen(navigator: Navigator) {
                                             } else {
                                                 Modifier
                                             }
-                                        ),
+                                        )
                             ) {
                                 CollapsedSearchBar(
                                     label = currentSearchStatus.label,
@@ -353,8 +321,7 @@ fun ConnectionScreen(navigator: Navigator) {
             emptyResult = {
                 ConnectionSearchEmptyState(
                     text = YumeTxt.Connection.NoResults,
-                    modifier =
-                        Modifier.padding(bottom = mainLikePadding.calculateBottomPadding()),
+                    modifier = Modifier.padding(bottom = mainLikePadding.calculateBottomPadding()),
                 )
             },
         ) {

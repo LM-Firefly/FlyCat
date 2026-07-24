@@ -15,17 +15,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
-import com.github.yumelira.yumebox.presentation.component.PreferenceSwitchItem
-import com.github.yumelira.yumebox.presentation.component.PreferenceValueItem
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.TextField
@@ -44,9 +36,10 @@ internal fun MoeHomeSettingsSheet(
 ) {
     val spacing = AppTheme.spacing
     var draftQuote by remember(show, quote) { mutableStateOf(quote) }
-    var draftClassicHomeEnabled by remember(show, classicHomeEnabled) {
-        mutableStateOf(classicHomeEnabled)
-    }
+    var draftClassicHomeEnabled by
+        remember(show, classicHomeEnabled) {
+            mutableStateOf(classicHomeEnabled)
+        }
     var draftSidebarExpanded by remember(show, sidebarExpanded) { mutableStateOf(sidebarExpanded) }
     val save = {
         onQuoteChange(draftQuote)

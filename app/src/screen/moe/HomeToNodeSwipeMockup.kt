@@ -20,26 +20,10 @@
 
 package com.github.yumelira.yumebox.screen.moe
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.keyframes
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -106,11 +90,10 @@ internal fun HomeToNodeSwipeMockup(modifier: Modifier = Modifier) {
             NodePagePreview(
                 palette = palette,
                 modifier =
-                    Modifier.fillMaxSize()
-                        .graphicsLayer {
-                            translationX = (1f - swipeProgress) * size.width
-                            alpha = 0.7f + 0.3f * swipeProgress
-                        },
+                    Modifier.fillMaxSize().graphicsLayer {
+                        translationX = (1f - swipeProgress) * size.width
+                        alpha = 0.7f + 0.3f * swipeProgress
+                    },
             )
 
             HomePagePreview(
@@ -128,10 +111,9 @@ internal fun HomeToNodeSwipeMockup(modifier: Modifier = Modifier) {
 
             Box(
                 modifier =
-                    Modifier.matchParentSize()
-                        .graphicsLayer {
-                            translationX = (0.22f - 0.32f * swipeProgress) * size.width
-                        },
+                    Modifier.matchParentSize().graphicsLayer {
+                        translationX = (0.22f - 0.32f * swipeProgress) * size.width
+                    },
                 contentAlignment = Alignment.Center,
             ) {
                 Box(
@@ -161,7 +143,7 @@ private fun HomePagePreview(palette: MockupPalette, modifier: Modifier = Modifie
                 .clip(RoundedCornerShape(15.dp))
                 .background(colorScheme.surface)
                 .border(1.dp, palette.frameBorder, RoundedCornerShape(15.dp))
-                .padding(7.dp),
+                .padding(7.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxHeight().weight(0.22f),
@@ -226,14 +208,18 @@ private fun HomePagePreview(palette: MockupPalette, modifier: Modifier = Modifie
                     Box(
                         Modifier.size(18.dp)
                             .clip(CircleShape)
-                            .background(colorScheme.surfaceVariant.copy(alpha = opacity.surfaceVariant))
+                            .background(
+                                colorScheme.surfaceVariant.copy(alpha = opacity.surfaceVariant)
+                            )
                             .border(1.dp, palette.frameBorder, CircleShape)
                     )
                     Box(
                         Modifier.weight(1f)
                             .height(18.dp)
                             .clip(RoundedCornerShape(50))
-                            .background(colorScheme.surfaceVariant.copy(alpha = opacity.surfaceVariant))
+                            .background(
+                                colorScheme.surfaceVariant.copy(alpha = opacity.surfaceVariant)
+                            )
                             .border(1.dp, palette.frameBorder, RoundedCornerShape(50))
                     )
                 }

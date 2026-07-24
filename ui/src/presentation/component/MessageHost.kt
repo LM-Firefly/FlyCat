@@ -102,7 +102,10 @@ private fun getTitle(type: MessageType, title: String): String {
 @Composable
 fun SimpleMessage(message: String?, onDismiss: () -> Unit) {
     if (message != null) {
-        MessageHost(message = Message(YumeTxt.Component.Message.Hint, message), onDismiss = onDismiss)
+        MessageHost(
+            message = Message(YumeTxt.Component.Message.Hint, message),
+            onDismiss = onDismiss,
+        )
     }
 }
 
@@ -111,7 +114,12 @@ fun ErrorMessage(error: String?, onDismiss: () -> Unit) {
     if (error != null) {
         MessageHost(
             message =
-                Message(YumeTxt.Component.Message.Error, error, MessageType.ERROR, autoClose = false),
+                Message(
+                    YumeTxt.Component.Message.Error,
+                    error,
+                    MessageType.ERROR,
+                    autoClose = false,
+                ),
             onDismiss = onDismiss,
         )
     }

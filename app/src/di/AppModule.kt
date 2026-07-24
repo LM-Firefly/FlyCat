@@ -22,8 +22,8 @@ package com.github.yumelira.yumebox.di
 
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
 import com.github.yumelira.yumebox.screen.log.LogViewModel
-import com.github.yumelira.yumebox.screen.rules.RulesViewModel
 import com.github.yumelira.yumebox.screen.profiles.ProfilesViewModel
+import com.github.yumelira.yumebox.screen.rules.RulesViewModel
 import com.github.yumelira.yumebox.screen.settings.AccessControlViewModel
 import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
 import com.github.yumelira.yumebox.screen.settings.NetworkSettingsViewModel

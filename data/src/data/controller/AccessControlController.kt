@@ -60,7 +60,10 @@ class AccessControlController(
             try {
                 beforeRestart(targetMode)
                 restartProxy(targetMode)
-            } catch (error: Exception) { // best-effort restart: any failure keeps the current session running
+            } catch (
+                error:
+                    Exception) { // best-effort restart: any failure keeps the current session
+                                 // running
                 if (error is CancellationException) throw error
             }
         }

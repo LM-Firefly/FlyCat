@@ -20,7 +20,7 @@
 
 package com.github.yumelira.yumebox.runtime.service.profile
 
-import java.util.UUID
+import java.util.*
 
 object ImportedDao {
     fun queryByUUID(uuid: UUID): Imported? = ProfileStore.loadImported().find { it.uuid == uuid }

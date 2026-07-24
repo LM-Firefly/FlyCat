@@ -3,7 +3,8 @@ package dev.yume.loader;
 import android.content.pm.ApplicationInfo;
 
 final class RuntimeBootstrap {
-    private RuntimeBootstrap() {}
+    private RuntimeBootstrap() {
+    }
 
     static ApplicationInfo currentApplicationInfo() {
         return (ApplicationInfo) boundField("appInfo");

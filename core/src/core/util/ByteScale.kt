@@ -20,7 +20,10 @@
 
 package com.github.yumelira.yumebox.core.util
 
-/** A byte count scaled down the shared 1024 ladder: [value] in the unit at [rank] (0 = bytes, 1 = K…, 5 = P…). */
+/**
+ * A byte count scaled down the shared 1024 ladder: [value] in the unit at [rank] (0 = bytes, 1 =
+ * K…, 5 = P…).
+ */
 data class ScaledBytes(val value: Double, val rank: Int)
 
 /**

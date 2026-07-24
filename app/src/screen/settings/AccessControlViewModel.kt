@@ -132,12 +132,11 @@ class AccessControlViewModel(
             return
         }
 
-        val isMiui =
-            runCatching {
-                    val permissionInfo = context.packageManager.getPermissionInfo(permission, 0)
-                    permissionInfo.packageName == "com.lbe.security.miui"
-                }
-                .getOrElse { false }
+        val isMiui = runCatching {
+            val permissionInfo = context.packageManager.getPermissionInfo(permission, 0)
+            permissionInfo.packageName == "com.lbe.security.miui"
+        }
+            .getOrElse { false }
 
         if (isMiui) {
             _uiState.update { it.copy(needsMiuiPermission = true, isLoading = false) }
@@ -160,14 +159,15 @@ class AccessControlViewModel(
             _uiState.update { it.copy(isLoading = true) }
 
             val selectedPackages = settings.accessControlPackages.value
-            val apps =
-                runCatching { withContext(Dispatchers.IO) { loadInstalledApps() } }
-                    .getOrElse {
-                        _uiState.update { state ->
-                            state.copy(isLoading = false, needsMiuiPermission = true)
-                        }
-                        return@launch
+            val apps = runCatching {
+                withContext(Dispatchers.IO) { loadInstalledApps() }
+            }
+                .getOrElse {
+                    _uiState.update { state ->
+                        state.copy(isLoading = false, needsMiuiPermission = true)
                     }
+                    return@launch
+                }
 
             _uiState.update { state ->
                 state.copy(
@@ -184,15 +184,16 @@ class AccessControlViewModel(
         val pm = getApplication<Application>().packageManager
         val selfPackageName = getApplication<Application>().packageName
 
-        val packages =
-            runCatching { pm.getInstalledApplications(PackageManager.GET_META_DATA) }
-                .getOrElse { error ->
-                    if (error is SecurityException) {
-                        loadInstalledAppsFromRoot(pm, selfPackageName)
-                    } else {
-                        throw error
-                    }
+        val packages = runCatching {
+            pm.getInstalledApplications(PackageManager.GET_META_DATA)
+        }
+            .getOrElse { error ->
+                if (error is SecurityException) {
+                    loadInstalledAppsFromRoot(pm, selfPackageName)
+                } else {
+                    throw error
                 }
+            }
 
         return packages
             .filter { it.packageName != selfPackageName }
@@ -246,6 +247,7 @@ class AccessControlViewModel(
             when (sortMode) {
                 AccessControlSortMode.PACKAGE_NAME ->
                     compareBy<AppInfo> { it.packageName.lowercase() }
+
                 AccessControlSortMode.LABEL -> compareBy { it.label.lowercase() }
                 AccessControlSortMode.INSTALL_TIME -> compareBy { it.installTime }
                 AccessControlSortMode.UPDATE_TIME -> compareBy { it.updateTime }
@@ -323,31 +325,29 @@ class AccessControlViewModel(
 
     fun selectChinaAppsInCurrentList() = applyRegionalSelectionInCurrentList(selectChina = true)
 
-    fun selectNonChinaAppsInCurrentList() =
-        applyRegionalSelectionInCurrentList(selectChina = false)
+    fun selectNonChinaAppsInCurrentList() = applyRegionalSelectionInCurrentList(selectChina = false)
 
     /**
      * China-app membership is computed on demand (FlClash-style deep scan behind
-     * [ChinaAppDetector]'s cache): the first run dex-scans undecided APKs and can take a
-     * while, so the list's loading state is raised for the duration.
+     * [ChinaAppDetector]'s cache): the first run dex-scans undecided APKs and can take a while, so
+     * the list's loading state is raised for the duration.
      */
     private fun applyRegionalSelectionInCurrentList(selectChina: Boolean) {
         val currentFiltered = filteredApps.value
         if (currentFiltered.isEmpty()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val chinaPackages =
-                runCatching {
-                        chinaAppDetector.detectChinaPackages(
-                            currentFiltered.map {
-                                ChinaAppDetector.Candidate(it.packageName, it.updateTime)
-                            }
-                        )
+            val chinaPackages = runCatching {
+                chinaAppDetector.detectChinaPackages(
+                    currentFiltered.map {
+                        ChinaAppDetector.Candidate(it.packageName, it.updateTime)
                     }
-                    .getOrElse {
-                        _uiState.update { state -> state.copy(isLoading = false) }
-                        return@launch
-                    }
+                )
+            }
+                .getOrElse {
+                    _uiState.update { state -> state.copy(isLoading = false) }
+                    return@launch
+                }
             _uiState.update { state ->
                 val currentPackages = currentFiltered.mapTo(linkedSetOf()) { it.packageName }
                 val targetPackages =

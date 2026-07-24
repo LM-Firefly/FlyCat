@@ -7,7 +7,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 final class ApplicationBridge {
-    private ApplicationBridge() {}
+    private ApplicationBridge() {
+    }
 
     static Application create(Context base, ClassLoader loader, String className) {
         try {

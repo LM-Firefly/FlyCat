@@ -20,10 +20,10 @@
 
 @file:Suppress("UnstableApiUsage")
 
-
 rootProject.name = "YumeBox"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 enableFeaturePreview("STABLE_CONFIGURATION_CACHE")
 
 pluginManagement {
@@ -62,7 +62,7 @@ dependencyResolutionManagement {
         gradlePluginPortal()
 
         maven("https://jitpack.io")
-        maven ("https://maven.aliyun.com/nexus/content/repositories/releases/")
+        maven("https://maven.aliyun.com/nexus/content/repositories/releases/")
         maven("https://raw.githubusercontent.com/MetaCubeX/maven-backup/main/releases")
 
         maven("https://maven.oom-wg.dev")

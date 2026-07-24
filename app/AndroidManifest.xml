@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur" />
+    <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur"/>
 
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.telephony" android:required="false"/>
@@ -11,7 +11,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="com.android.permission.GET_INSTALLED_APPS"/>
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="PackageVisibilityPolicy,QueryAllPackagesPermission"/>
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+                     tools:ignore="PackageVisibilityPolicy,QueryAllPackagesPermission"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
                      tools:ignore="BatteryLife"/>
@@ -27,23 +28,23 @@
     <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
-            android:name="${applicationClass}"
-            android:appComponentFactory="${componentFactory}"
-            tools:ignore="MissingApplicationIcon,Instantiatable"
-            android:allowBackup="true"
-            android:enableOnBackInvokedCallback="true"
-            android:icon="@mipmap/ic_launcher"
-            android:label="${appName}"
-            android:supportsRtl="true"
-            android:theme="@style/Theme.YumeBox"
-            android:usesCleartextTraffic="true"
-            tools:replace="android:appComponentFactory">
+        android:name="${applicationClass}"
+        android:appComponentFactory="${componentFactory}"
+        android:allowBackup="true"
+        android:enableOnBackInvokedCallback="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="${appName}"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.YumeBox"
+        android:usesCleartextTraffic="true"
+        tools:ignore="MissingApplicationIcon,Instantiatable"
+        tools:replace="android:appComponentFactory">
         <activity
-                android:name=".MainActivity"
-                android:exported="true"
-                android:launchMode="singleTop"
-                android:theme="@style/Theme.YumeBox.Starting"
-                android:windowSoftInputMode="adjustResize">
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.YumeBox.Starting"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -77,13 +78,13 @@
         </activity>
 
         <activity
-                android:name=".ProxySheetActivity"
-                android:excludeFromRecents="true"
-                android:exported="false"
-                android:finishOnTaskLaunch="true"
-                android:launchMode="singleInstance"
-                android:taskAffinity=""
-                android:theme="@style/Theme.YumeBox.Translucent.Popup"/>
+            android:name=".ProxySheetActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:finishOnTaskLaunch="true"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:theme="@style/Theme.YumeBox.Translucent.Popup"/>
 
         <activity
             android:name=".WebViewActivity"
@@ -92,12 +93,12 @@
             android:hardwareAccelerated="true"/>
 
         <activity-alias
-                android:name=".MainActivityAlias"
-                android:exported="true"
-                android:targetActivity=".MainActivity">
+            android:name=".MainActivityAlias"
+            android:exported="true"
+            android:targetActivity=".MainActivity">
             <meta-data
-                    android:name="android.app.shortcuts"
-                    android:resource="@xml/shortcuts"/>
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts"/>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -105,23 +106,23 @@
         </activity-alias>
 
         <meta-data
-                android:name="org.chromium.webapk.shell_apk"
-                android:value=""/>
+            android:name="org.chromium.webapk.shell_apk"
+            android:value=""/>
         <meta-data
-                android:name="com.android.stamp.type"
-                android:value="STAMP_TYPE_DISTRIBUTION_APK"/>
+            android:name="com.android.stamp.type"
+            android:value="STAMP_TYPE_DISTRIBUTION_APK"/>
         <meta-data
-                android:name="com.android.stamp.source"
-                android:value="https://play.google.com/store"/>
+            android:name="com.android.stamp.source"
+            android:value="https://play.google.com/store"/>
 
         <provider
-                android:name="androidx.core.content.FileProvider"
-                android:authorities="${applicationId}.fileprovider"
-                android:exported="false"
-                android:grantUriPermissions="true">
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
             <meta-data
-                    android:name="android.support.FILE_PROVIDER_PATHS"
-                    android:resource="@xml/file_paths"/>
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"/>
         </provider>
 
     </application>

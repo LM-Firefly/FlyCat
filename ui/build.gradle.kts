@@ -60,5 +60,3 @@ dependencies {
     implementation(libs.miuix.preference)
     implementation(libs.miuix.icons)
 }
-
-

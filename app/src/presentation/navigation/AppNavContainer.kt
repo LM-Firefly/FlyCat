@@ -20,26 +20,16 @@
 
 package com.github.yumelira.yumebox.presentation.navigation
 
-import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.*
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.NavEntryDecorator
-import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberDecoratedNavEntries
-import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.runtime.*
 import androidx.navigation3.scene.SceneInfo
 import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.scene.rememberSceneState
@@ -56,12 +46,16 @@ private const val FADE_DURATION = 140
 private val slideEasing = CubicBezierEasing(0.25f, 0.10f, 0.25f, 1.0f)
 
 private fun slideEnter(offset: (Int) -> Int): EnterTransition =
-    slideInHorizontally(animationSpec = tween(DURATION, easing = slideEasing), initialOffsetX = offset) +
-        fadeIn(animationSpec = tween(FADE_DURATION, easing = LinearEasing))
+    slideInHorizontally(
+        animationSpec = tween(DURATION, easing = slideEasing),
+        initialOffsetX = offset,
+    ) + fadeIn(animationSpec = tween(FADE_DURATION, easing = LinearEasing))
 
 private fun slideExit(offset: (Int) -> Int): ExitTransition =
-    slideOutHorizontally(animationSpec = tween(DURATION, easing = slideEasing), targetOffsetX = offset) +
-        fadeOut(animationSpec = tween(FADE_DURATION, easing = LinearEasing))
+    slideOutHorizontally(
+        animationSpec = tween(DURATION, easing = slideEasing),
+        targetOffsetX = offset,
+    ) + fadeOut(animationSpec = tween(FADE_DURATION, easing = LinearEasing))
 
 /**
  * The app's navigation3 host. Renders the back stack through [NavDisplay] using YumeBox's original
@@ -88,7 +82,9 @@ fun AppNavContainer() {
                 ),
             entryProvider =
                 entryProvider {
-                    entry<Route.Main> { route -> MainScreen(navigator, initialPage = route.initialPage) }
+                    entry<Route.Main> { route ->
+                        MainScreen(navigator, initialPage = route.initialPage)
+                    }
                     entry<Route.MoeWallpaperCrop> { route ->
                         MoeWallpaperCropScreen(
                             navigator = navigator,

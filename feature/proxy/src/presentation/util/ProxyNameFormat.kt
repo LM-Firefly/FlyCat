@@ -323,20 +323,19 @@ private fun extractCountryCodeFromName(name: String): Pair<String?, String> {
 
     if (countryCode == null) return null to name
 
-    val displayName =
-        buildString {
-                append(name.substring(0, match.range.first))
-                append(name.substring(match.range.last + 1))
-            }
-            .trim {
-                it.isWhitespace() ||
-                    it == '-' ||
-                    it == '|' ||
-                    it == '·' ||
-                    it == '•' ||
-                    it == '—' ||
-                    it == ':'
-            }
+    val displayName = buildString {
+        append(name.substring(0, match.range.first))
+        append(name.substring(match.range.last + 1))
+    }
+        .trim {
+            it.isWhitespace() ||
+                it == '-' ||
+                it == '|' ||
+                it == '·' ||
+                it == '•' ||
+                it == '—' ||
+                it == ':'
+        }
 
     return countryCode to displayName.ifEmpty { name }
 }

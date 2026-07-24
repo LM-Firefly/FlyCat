@@ -110,10 +110,10 @@ class ProxyViewModel(
         if (isActive) {
             viewModelScope.launch {
                 runCatching {
-                        if (proxyGroups.value.isEmpty()) {
-                            proxyFacade.refreshProxyGroups()
-                        }
+                    if (proxyGroups.value.isEmpty()) {
+                        proxyFacade.refreshProxyGroups()
                     }
+                }
                     .onFailure { error -> if (error is CancellationException) throw error }
             }
         }
@@ -178,13 +178,13 @@ class ProxyViewModel(
     fun selectProxy(groupName: String, proxyName: String) {
         viewModelScope.launch {
             runCatching {
-                    val success = proxyFacade.selectProxy(groupName, proxyName)
-                    if (success) {
-                        showMessage(YumeTxt.Proxy.Selection.Switched.format(proxyName))
-                    } else {
-                        showError(YumeTxt.Proxy.Selection.Failed)
-                    }
+                val success = proxyFacade.selectProxy(groupName, proxyName)
+                if (success) {
+                    showMessage(YumeTxt.Proxy.Selection.Switched.format(proxyName))
+                } else {
+                    showError(YumeTxt.Proxy.Selection.Failed)
                 }
+            }
                 .onFailure { error ->
                     showError(YumeTxt.Proxy.Selection.Error.format(error.message))
                 }

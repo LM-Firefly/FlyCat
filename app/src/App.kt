@@ -38,17 +38,13 @@ import com.github.yumelira.yumebox.runtime.client.ProxyFacade
 import com.github.yumelira.yumebox.screen.settings.MoeWallpaperImporter
 import com.github.yumelira.yumebox.substore.util.AppUtil
 import com.tencent.mmkv.MMKV
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import java.io.File
+import kotlinx.coroutines.*
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.tukaani.xz.XZInputStream
 import timber.log.Timber
-import java.io.File
 
 class App : Application() {
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -110,10 +106,10 @@ class App : Application() {
      */
     private fun copyAssetIfExists(name: String, target: File) {
         runCatching {
-                assets.open(name).use { input ->
-                    target.outputStream().use { input.copyTo(it) }
-                }
+            assets.open(name).use { input ->
+                target.outputStream().use { input.copyTo(it) }
             }
+        }
             .onFailure {
                 target.delete()
                 Timber.i("Runtime asset %s not bundled, deferring to remote data", name)
@@ -141,17 +137,16 @@ class App : Application() {
         }
     }
 
-    private fun extractXzAsset(assetName: String, target: File): Unit? =
-        runCatching {
-                assets.open(assetName).use { input ->
-                    XZInputStream(input.buffered()).use { xz ->
-                        target.outputStream().buffered().use { xz.copyTo(it) }
-                    }
-                }
-                Unit
+    private fun extractXzAsset(assetName: String, target: File): Unit? = runCatching {
+        assets.open(assetName).use { input ->
+            XZInputStream(input.buffered()).use { xz ->
+                target.outputStream().buffered().use { xz.copyTo(it) }
             }
-            .onFailure { target.delete() }
-            .getOrNull()
+        }
+        Unit
+    }
+        .onFailure { target.delete() }
+        .getOrNull()
 
     private fun scheduleDeferredStartupTasks(
         koin: Koin,
@@ -159,7 +154,8 @@ class App : Application() {
         appSettings: AppSettingsStore,
     ) {
         StartupTaskCoordinator.startWarmup(startupScope) {
-            // Assets may be several megabytes compressed; never decompress them during Application.onCreate.
+            // Assets may be several megabytes compressed; never decompress them during
+            // Application.onCreate.
             withContext(Dispatchers.IO) { extractGeoFiles() }
         }
         startupScope.launch {

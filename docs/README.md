@@ -18,7 +18,8 @@
 
 YumeBox currently only supports **Android 8.0 (API 26) and above**.
 
-- Download the installation package for your architecture from the [Release](https://github.com/YumeYucca/YumeBox/releases) page
+- Download the installation package for your architecture from
+  the [Release](https://github.com/YumeYucca/YumeBox/releases) page
 - For more information, visit the official documentation: [yumebox.gal.tf](https://yumebox.gal.tf)
 - Override configuration syntax reference: [Override document](https://yumebox.gal.tf/override/override)
 
@@ -26,7 +27,8 @@ If this project is helpful to you, please give it a Star — it is the motivatio
 
 ### Feedback and suggestions
 
-If you encounter a bug, or have ideas and suggestions for improvements, please submit them on the [Issues](https://github.com/YumeYucca/YumeBox/issues) page.
+If you encounter a bug, or have ideas and suggestions for improvements, please submit them on
+the [Issues](https://github.com/YumeYucca/YumeBox/issues) page.
 
 For more discussion and feedback, join the group: [@OOM_WG](https://t.me/OOM_Group)
 
@@ -34,25 +36,29 @@ For more discussion and feedback, join the group: [@OOM_WG](https://t.me/OOM_Gro
 
 If you want to make YumeBox better, please refer to [CONTRIBUTING](../CONTRIBUTING.md).
 
-If you want to translate YumeBox into more languages, or improve the existing translations, fork this project and create or update the corresponding translation file in the `locale/lang` directory.
+If you want to translate YumeBox into more languages, or improve the existing translations, fork this project and create
+or update the corresponding translation file in the `locale/lang` directory.
 
 ### Notices
 
-> ~~The author knows nothing about the code in this project. The code is either available or unavailable, there is no third case.~~
+> ~~The author knows nothing about the code in this project. The code is either available or unavailable, there is no
+third case.~~
 
 See [ThirdParty](ThirdParty.md) for the third-party libraries used in this project.
 
 1. **Icon copyright**: The copyright of the YumeBox application icon and brand assets belongs to the project owners.
 2. **Fork release restrictions**:
-   - Releases must not use the YumeBox project name.
-   - Releases must not use the original YumeBox icon.
-   - Releases must not include YumeBox's official issue feedback channels.
+    - Releases must not use the YumeBox project name.
+    - Releases must not use the original YumeBox icon.
+    - Releases must not include YumeBox's official issue feedback channels.
 
 ## Build
 
-YumeBox does not use Git submodules. A clean checkout needs the mihomo source and generated assets before Gradle can build the app.
+YumeBox does not use Git submodules. A clean checkout needs the mihomo source and generated assets before Gradle can
+build the app.
 
-1. Install **OpenJDK 24**, **Android SDK 37**, **NDK 30.0.14904198**, **CMake 3.22.1**, **Kotlin CLI**, **Go 1.26**, **Rust nightly**, Git, and `patch`.
+1. Install **OpenJDK 24**, **Android SDK 37**, **NDK 30.0.14904198**, **CMake 3.22.1**, **Kotlin CLI**, **Go 1.26**,
+   **Rust nightly**, Git, and `patch`.
 
    ```bash
    sdkmanager "platforms;android-37" "ndk;30.0.14904198" "cmake;3.22.1"
@@ -92,7 +98,8 @@ YumeBox does not use Git submodules. A clean checkout needs the mihomo source an
 
    Run the native script with `--help` to build Go, Rust, C++, or Geo assets separately.
 
-6. Optionally sign release builds. Place the keystore at `release.keystore` in the project root, then create `signing.properties`:
+6. Optionally sign release builds. Place the keystore at `release.keystore` in the project root, then create
+   `signing.properties`:
 
    ```properties
    keystore.password=<keystore password>
@@ -113,4 +120,5 @@ YumeBox does not use Git submodules. A clean checkout needs the mihomo source an
    ./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
    ```
 
-   APKs are written to `app/build/outputs/apk/<build-type>/`. External builds omit Geo assets and `BundleMRS.7z`; mihomo downloads them when needed. On Windows, use `gradlew.bat`.
+   APKs are written to `app/build/outputs/apk/<build-type>/`. External builds omit Geo assets and `BundleMRS.7z`; mihomo
+   downloads them when needed. On Windows, use `gradlew.bat`.

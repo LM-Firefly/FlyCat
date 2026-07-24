@@ -1,21 +1,14 @@
 package dev.yume.packer
 
+import java.io.File
+import java.util.zip.ZipFile
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Classpath
-import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
 import org.gradle.work.DisableCachingByDefault
-import java.io.File
-import java.util.zip.ZipFile
 
 @DisableCachingByDefault(because = "The output depends on the installed Android SDK toolchain")
 abstract class BuildLoaderDexTask : DefaultTask() {
@@ -23,17 +16,13 @@ abstract class BuildLoaderDexTask : DefaultTask() {
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val loaderAar: RegularFileProperty
 
-    @get:Classpath
-    abstract val runtimeArtifacts: ConfigurableFileCollection
+    @get:Classpath abstract val runtimeArtifacts: ConfigurableFileCollection
 
-    @get:Internal
-    abstract val sdkDirectory: DirectoryProperty
+    @get:Internal abstract val sdkDirectory: DirectoryProperty
 
-    @get:Input
-    abstract val minSdk: Property<Int>
+    @get:Input abstract val minSdk: Property<Int>
 
-    @get:OutputDirectory
-    abstract val outputDirectory: DirectoryProperty
+    @get:OutputDirectory abstract val outputDirectory: DirectoryProperty
 
     @TaskAction
     fun buildDex() {
@@ -44,40 +33,48 @@ abstract class BuildLoaderDexTask : DefaultTask() {
         val inputs = mutableListOf<File>()
         inputs += extractClassesJar(loaderAar.get().asFile, "loader")
         runtimeArtifacts.files.sortedBy(File::getName).forEachIndexed { index, artifact ->
-            inputs += if (artifact.extension == "aar") {
-                extractClassesJar(artifact, "dependency-$index")
-            } else {
-                artifact
-            }
+            inputs +=
+                if (artifact.extension == "aar") {
+                    extractClassesJar(artifact, "dependency-$index")
+                } else {
+                    artifact
+                }
         }
 
         val sdk = sdkDirectory.get().asFile
-        val buildTools = sdk.resolve("build-tools").listFiles()
-            ?.filter(File::isDirectory)
-            ?.maxWithOrNull { left, right -> compareVersions(left.name, right.name) }
-            ?: error("No Android build-tools installation found under $sdk")
-        val platform = sdk.resolve("platforms").listFiles()
-            ?.filter { it.isDirectory && it.resolve("android.jar").isFile }
-            ?.maxWithOrNull { left, right ->
-                compareVersions(left.name.removePrefix("android-"), right.name.removePrefix("android-"))
-            }
-            ?: error("No Android platform installation found under $sdk")
+        val buildTools =
+            sdk.resolve("build-tools").listFiles()?.filter(File::isDirectory)?.maxWithOrNull {
+                left,
+                right ->
+                compareVersions(left.name, right.name)
+            } ?: error("No Android build-tools installation found under $sdk")
+        val platform =
+            sdk.resolve("platforms")
+                .listFiles()
+                ?.filter { it.isDirectory && it.resolve("android.jar").isFile }
+                ?.maxWithOrNull { left, right ->
+                    compareVersions(
+                        left.name.removePrefix("android-"),
+                        right.name.removePrefix("android-"),
+                    )
+                } ?: error("No Android platform installation found under $sdk")
         val d8Jar = buildTools.resolve("lib/d8.jar")
         check(d8Jar.isFile) { "D8 not found: $d8Jar" }
 
-        val command = mutableListOf(
-            javaExecutable(),
-            "-cp",
-            d8Jar.absolutePath,
-            "com.android.tools.r8.D8",
-            "--release",
-            "--min-api",
-            minSdk.get().toString(),
-            "--lib",
-            platform.resolve("android.jar").absolutePath,
-            "--output",
-            output.absolutePath,
-        )
+        val command =
+            mutableListOf(
+                javaExecutable(),
+                "-cp",
+                d8Jar.absolutePath,
+                "com.android.tools.r8.D8",
+                "--release",
+                "--min-api",
+                minSdk.get().toString(),
+                "--lib",
+                platform.resolve("android.jar").absolutePath,
+                "--output",
+                output.absolutePath,
+            )
         command += inputs.map(File::getAbsolutePath)
         runCommand(command, "D8 failed while building the loader DEX")
         check(output.resolve("classes.dex").isFile) { "D8 did not produce classes.dex" }

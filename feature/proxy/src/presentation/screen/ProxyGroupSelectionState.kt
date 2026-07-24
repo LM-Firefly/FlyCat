@@ -40,7 +40,9 @@ fun rememberProxyGroupSelectionState(
     proxyGroups: List<ProxyGroupInfo>,
     onRefreshGroup: (String) -> Unit,
     retainLastKnownGroup: Boolean,
-    /** When non-null, selection is controlled by the caller (e.g. shared ViewModel for dual-pane). */
+    /**
+     * When non-null, selection is controlled by the caller (e.g. shared ViewModel for dual-pane).
+     */
     controlledSelectedGroupName: String? = null,
     onControlledSelectedGroupNameChange: ((String?) -> Unit)? = null,
 ): ProxyGroupSelectionState {
@@ -49,24 +51,26 @@ fun rememberProxyGroupSelectionState(
     val selectedGroupName =
         if (controlledSetter != null) controlledSelectedGroupName else uncontrolledNameState.value
     val selectedGroupSnapshotState = remember { mutableStateOf<ProxyGroupInfo?>(null) }
-    val selectGroup = remember(controlledSetter) {
-        { group: ProxyGroupInfo ->
-            if (controlledSetter != null) {
-                controlledSetter(group.name)
-            } else {
-                uncontrolledNameState.value = group.name
+    val selectGroup =
+        remember(controlledSetter) {
+            { group: ProxyGroupInfo ->
+                if (controlledSetter != null) {
+                    controlledSetter(group.name)
+                } else {
+                    uncontrolledNameState.value = group.name
+                }
             }
         }
-    }
-    val clearSelection = remember(controlledSetter) {
-        {
-            if (controlledSetter != null) {
-                controlledSetter(null)
-            } else {
-                uncontrolledNameState.value = null
+    val clearSelection =
+        remember(controlledSetter) {
+            {
+                if (controlledSetter != null) {
+                    controlledSetter(null)
+                } else {
+                    uncontrolledNameState.value = null
+                }
             }
         }
-    }
     val selectedGroup =
         remember(selectedGroupName, proxyGroups) {
             selectedGroupName?.let { groupName ->

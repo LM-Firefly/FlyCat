@@ -69,7 +69,9 @@ internal fun rememberProfileImportLaunchers(
                         context.toast(YumeTxt.ProfilesPage.QrScanner.RecognizeSuccess)
                     }
                 } catch (error: Exception) {
-                    context.toast(YumeTxt.ProfilesPage.QrScanner.RecognizeError.format(error.message ?: ""))
+                    context.toast(
+                        YumeTxt.ProfilesPage.QrScanner.RecognizeError.format(error.message ?: "")
+                    )
                 }
             }
         }

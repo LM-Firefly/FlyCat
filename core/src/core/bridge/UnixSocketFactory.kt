@@ -28,17 +28,28 @@ import javax.net.SocketFactory
  * A [SocketFactory] whose sockets always connect to a fixed UNIX-domain path (the local core's
  * mihomo controller), regardless of the host/port OkHttp resolves from the request URL. Plug this
  * into an OkHttp client to speak HTTP over the controller socket:
- *
  * ```
  * OkHttpClient.Builder().socketFactory(UnixSocketFactory(socketPath)).build()
  * ```
  */
 class UnixSocketFactory(private val path: String) : SocketFactory() {
     override fun createSocket(): Socket = UnixDomainSocket(path)
+
     override fun createSocket(host: String?, port: Int): Socket = UnixDomainSocket(path)
-    override fun createSocket(host: String?, port: Int, localHost: InetAddress?, localPort: Int): Socket =
-        UnixDomainSocket(path)
+
+    override fun createSocket(
+        host: String?,
+        port: Int,
+        localHost: InetAddress?,
+        localPort: Int,
+    ): Socket = UnixDomainSocket(path)
+
     override fun createSocket(host: InetAddress?, port: Int): Socket = UnixDomainSocket(path)
-    override fun createSocket(address: InetAddress?, port: Int, localAddress: InetAddress?, localPort: Int): Socket =
-        UnixDomainSocket(path)
+
+    override fun createSocket(
+        address: InetAddress?,
+        port: Int,
+        localAddress: InetAddress?,
+        localPort: Int,
+    ): Socket = UnixDomainSocket(path)
 }

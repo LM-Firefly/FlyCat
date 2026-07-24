@@ -58,8 +58,7 @@ class ServiceNotificationManager(
     // Once released, the traffic updater must never notify() again — otherwise a tick that was mid
     // queryTrafficNow() (IPC to the core) when the service stopped can re-post the ongoing
     // notification AFTER stopForeground(REMOVE), leaving it stuck on screen.
-    @Volatile
-    private var released = false
+    @Volatile private var released = false
 
     fun createChannel() {
         legacyChannelIds.forEach(notificationManager::deleteNotificationChannel)
@@ -79,8 +78,7 @@ class ServiceNotificationManager(
     fun createInitialNotification(): Notification =
         buildNotification(
             NotificationPresentationFactory.createStatus(
-                profileName =
-                    service.applicationInfo.loadLabel(service.packageManager).toString(),
+                profileName = service.applicationInfo.loadLabel(service.packageManager).toString(),
                 status = YumeTxt.Service.Notification.Running,
             )
         )
@@ -95,7 +93,8 @@ class ServiceNotificationManager(
                 val fingerprint =
                     "${notification.extras.getCharSequence(Notification.EXTRA_TITLE)}|" +
                         "${notification.extras.getCharSequence(Notification.EXTRA_TEXT)}"
-                // Re-check after the (possibly slow) core query: the service may have stopped while we
+                // Re-check after the (possibly slow) core query: the service may have stopped while
+                // we
                 // were building the notification, and a notify() now would resurrect it.
                 if (!released && fingerprint != lastNotificationFingerprint) {
                     lastNotificationFingerprint = fingerprint
@@ -104,7 +103,10 @@ class ServiceNotificationManager(
             }
         }
 
-    /** Stop updating and clear the notification. After this the traffic updater never notifies again. */
+    /**
+     * Stop updating and clear the notification. After this the traffic updater never notifies
+     * again.
+     */
     fun release() {
         released = true
         runCatching { notificationManager.cancel(config.notificationId) }
@@ -170,7 +172,8 @@ class ServiceNotificationManager(
     }
 
     private fun resolveProfileName(): String {
-        val active = serviceStore.activeProfile ?: return YumeTxt.Service.Notification.UnknownProfile
+        val active =
+            serviceStore.activeProfile ?: return YumeTxt.Service.Notification.UnknownProfile
         return ImportedDao.queryByUUID(active)?.name?.takeIf { it.isNotBlank() }
             ?: YumeTxt.Service.Notification.UnknownProfile
     }

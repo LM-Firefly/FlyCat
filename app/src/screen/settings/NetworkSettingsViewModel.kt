@@ -24,26 +24,21 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.yumelira.yumebox.common.util.stateInWhileSubscribed
-import com.github.yumelira.yumebox.data.controller.NetworkSettingsController
 import com.github.yumelira.yumebox.core.model.TunDnsMode
+import com.github.yumelira.yumebox.data.controller.NetworkSettingsController
 import com.github.yumelira.yumebox.data.model.AccessControlMode
 import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.data.model.TunStack
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.Preference
 import com.github.yumelira.yumebox.runtime.service.root.RootAccessSupport
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /**
  * Backs both the run-mode picker ([NetworkSettingsScreen]) and the VpnService options page
- * ([VpnServiceOptionsScreen]). The TCP/IP stack is fixed to gVisor and the parallel HTTP run mode is
- * gone, so this only exposes the configured mode plus the VpnService knobs.
+ * ([VpnServiceOptionsScreen]). The TCP/IP stack is fixed to gVisor and the parallel HTTP run mode
+ * is gone, so this only exposes the configured mode plus the VpnService knobs.
  */
 class NetworkSettingsViewModel(
     application: Application,
@@ -69,8 +64,10 @@ class NetworkSettingsViewModel(
     val tunMtu: Preference<Int> = settings.tunMtu
     val tproxyPort: Preference<Int> = settings.tproxyPort
 
-    // Root availability, probed once on open — gates the Tun / TPROXY cards (greyed when false, no toast).
-    // Probing constructs the libsu shell, so a rooted device may surface its su prompt here; that grant
+    // Root availability, probed once on open — gates the Tun / TPROXY cards (greyed when false, no
+    // toast).
+    // Probing constructs the libsu shell, so a rooted device may surface its su prompt here; that
+    // grant
     // flow is intended. A non-rooted device fast-fails to false and the root cards stay disabled.
     private val _rootAvailable = MutableStateFlow(false)
     val rootAvailable: StateFlow<Boolean> = _rootAvailable.asStateFlow()
@@ -84,18 +81,18 @@ class NetworkSettingsViewModel(
 
     val networkScreenState: StateFlow<NetworkSettingsScreenState> =
         combine(
-            runMode.state,
-            disableAllOverride.state,
-            accessControlMode.state,
-            rootAvailable,
-        ) { mode, disableOverride, accessMode, root ->
-            NetworkSettingsScreenState(
-                runMode = mode,
-                disableAllOverride = disableOverride,
-                accessControlMode = accessMode,
-                rootAvailable = root,
-            )
-        }
+                runMode.state,
+                disableAllOverride.state,
+                accessControlMode.state,
+                rootAvailable,
+            ) { mode, disableOverride, accessMode, root ->
+                NetworkSettingsScreenState(
+                    runMode = mode,
+                    disableAllOverride = disableOverride,
+                    accessControlMode = accessMode,
+                    rootAvailable = root,
+                )
+            }
             .stateInWhileSubscribed(
                 viewModelScope,
                 NetworkSettingsScreenState(
@@ -119,26 +116,34 @@ class NetworkSettingsViewModel(
 
     val tunOptionsScreenState: StateFlow<TunOptionsScreenState> =
         combine(
-            combine(tunIfName.state, tunMtu.state, tunStack.state, tunAutoRoute.state, tunStrictRoute.state) {
-                ifName, mtu, stack, autoRoute, strictRoute ->
-                TunOptionsScreenState(
-                    ifName = ifName,
-                    mtu = mtu,
-                    stack = stack,
-                    autoRoute = autoRoute,
-                    strictRoute = strictRoute,
+                combine(
+                    tunIfName.state,
+                    tunMtu.state,
+                    tunStack.state,
+                    tunAutoRoute.state,
+                    tunStrictRoute.state,
+                ) { ifName, mtu, stack, autoRoute, strictRoute ->
+                    TunOptionsScreenState(
+                        ifName = ifName,
+                        mtu = mtu,
+                        stack = stack,
+                        autoRoute = autoRoute,
+                        strictRoute = strictRoute,
+                    )
+                },
+                combine(tunAutoRedirect.state, tunDnsMode.state, enableIPv6.state) {
+                    autoRedirect,
+                    dnsMode,
+                    ipv6 ->
+                    Triple(autoRedirect, dnsMode, ipv6)
+                },
+            ) { base, extra ->
+                base.copy(
+                    autoRedirect = extra.first,
+                    dnsMode = extra.second,
+                    enableIPv6 = extra.third,
                 )
-            },
-            combine(tunAutoRedirect.state, tunDnsMode.state, enableIPv6.state) { autoRedirect, dnsMode, ipv6 ->
-                Triple(autoRedirect, dnsMode, ipv6)
-            },
-        ) { base, extra ->
-            base.copy(
-                autoRedirect = extra.first,
-                dnsMode = extra.second,
-                enableIPv6 = extra.third,
-            )
-        }
+            }
             .stateInWhileSubscribed(
                 viewModelScope,
                 TunOptionsScreenState(
@@ -199,14 +204,13 @@ class NetworkSettingsViewModel(
             )
 
     /**
-     * Selects the run mode — the single mode key across the runtime. The root Tun / TPROXY cards are
-     * disabled in the UI when [rootAvailable] is false, so reaching here for a root mode already implies
-     * root was granted.
+     * Selects the run mode — the single mode key across the runtime. The root Tun / TPROXY cards
+     * are disabled in the UI when [rootAvailable] is false, so reaching here for a root mode
+     * already implies root was granted.
      */
     fun onRunModeChange(mode: RunMode) {
         controller.setRunMode(mode)
     }
-
 
     data class TproxyOptionsScreenState(
         val port: Int = 0,
@@ -216,8 +220,8 @@ class NetworkSettingsViewModel(
 
     val tproxyOptionsScreenState: StateFlow<TproxyOptionsScreenState> =
         combine(tproxyPort.state, tunDnsMode.state, enableIPv6.state) { port, dns, ipv6 ->
-            TproxyOptionsScreenState(port = port, dnsMode = dns, enableIPv6 = ipv6)
-        }
+                TproxyOptionsScreenState(port = port, dnsMode = dns, enableIPv6 = ipv6)
+            }
             .stateInWhileSubscribed(
                 viewModelScope,
                 TproxyOptionsScreenState(
@@ -258,8 +262,7 @@ class NetworkSettingsViewModel(
     fun onTunAutoRedirectChange(enabled: Boolean) =
         controller.setAndRestartIfNeeded(tunAutoRedirect, enabled)
 
-    fun onTunDnsModeChange(value: TunDnsMode) =
-        controller.setAndRestartIfNeeded(tunDnsMode, value)
+    fun onTunDnsModeChange(value: TunDnsMode) = controller.setAndRestartIfNeeded(tunDnsMode, value)
 
     fun onTunIfNameChange(value: String) {
         val trimmed = value.trim()
@@ -283,9 +286,7 @@ class NetworkSettingsViewModel(
     }
 }
 
-data class NetworkSettingsUiState(
-    val configuredMode: RunMode = RunMode.VpnService,
-)
+data class NetworkSettingsUiState(val configuredMode: RunMode = RunMode.VpnService)
 
 data class CommonTunOptionsUiState(
     val bypassPrivateNetwork: Boolean = false,

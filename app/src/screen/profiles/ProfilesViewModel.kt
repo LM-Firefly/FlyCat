@@ -32,6 +32,7 @@ import com.github.yumelira.yumebox.runtime.api.FetchObserver
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.client.ProfilePatch
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
+import java.util.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,7 +40,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
-import java.util.*
 
 class ProfilesViewModel(
     application: Application,
@@ -83,7 +83,9 @@ class ProfilesViewModel(
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to refresh profiles")
-                showError(YumeTxt.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown"))
+                showError(
+                    YumeTxt.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown")
+                )
             } finally {
                 setLoading(false)
             }
@@ -181,7 +183,9 @@ class ProfilesViewModel(
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to delete profile")
-                showError(YumeTxt.ProfilesVM.Message.DeleteFailed.format(error.message ?: "Unknown"))
+                showError(
+                    YumeTxt.ProfilesVM.Message.DeleteFailed.format(error.message ?: "Unknown")
+                )
             } finally {
                 setLoading(false)
             }
@@ -201,7 +205,9 @@ class ProfilesViewModel(
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to activate profile")
-                showError(YumeTxt.ProfilesVM.Message.ToggleFailed.format(error.message ?: "Unknown"))
+                showError(
+                    YumeTxt.ProfilesVM.Message.ToggleFailed.format(error.message ?: "Unknown")
+                )
             } finally {
                 setLoading(false)
             }
@@ -235,7 +241,9 @@ class ProfilesViewModel(
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to update profile")
-                showError(YumeTxt.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown"))
+                showError(
+                    YumeTxt.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown")
+                )
                 _downloadProgress.value = null
             } finally {
                 setLoading(false)
@@ -256,7 +264,9 @@ class ProfilesViewModel(
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to patch profile")
-                showError(YumeTxt.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown"))
+                showError(
+                    YumeTxt.ProfilesVM.Message.UpdateFailed.format(error.message ?: "Unknown")
+                )
             } finally {
                 setLoading(false)
             }
@@ -310,7 +320,9 @@ class ProfilesViewModel(
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to toggle profile")
-                showError(YumeTxt.ProfilesVM.Message.ToggleFailed.format(error.message ?: "Unknown"))
+                showError(
+                    YumeTxt.ProfilesVM.Message.ToggleFailed.format(error.message ?: "Unknown")
+                )
             }
         }
     }

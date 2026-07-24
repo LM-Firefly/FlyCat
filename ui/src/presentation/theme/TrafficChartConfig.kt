@@ -38,12 +38,16 @@ object TrafficChartConfig {
             }
 
             speedBytes < secondSpeedBound -> {
-                val ratio = ((speedBytes - firstSpeedBound) / (secondSpeedBound - firstSpeedBound)).coerceIn(0.0, 1.0)
+                val ratio =
+                    ((speedBytes - firstSpeedBound) / (secondSpeedBound - firstSpeedBound))
+                        .coerceIn(0.0, 1.0)
                 (0.4 + ratio * 0.3).toFloat()
             }
 
             speedBytes < thirdSpeedBound -> {
-                val ratio = ((speedBytes - secondSpeedBound) / (thirdSpeedBound - secondSpeedBound)).coerceIn(0.0, 1.0)
+                val ratio =
+                    ((speedBytes - secondSpeedBound) / (thirdSpeedBound - secondSpeedBound))
+                        .coerceIn(0.0, 1.0)
                 (0.7 + ratio * 0.3).toFloat()
             }
 

@@ -23,7 +23,7 @@ package com.github.yumelira.yumebox.runtime.service.config
 import com.github.yumelira.yumebox.core.model.TunDnsMode
 import com.tencent.mmkv.MMKV
 import kotlinx.serialization.json.Json
-import java.util.UUID
+import java.util.*
 
 class ServiceStore {
     private val store = Store(MMKV.mmkvWithID("service", MMKV.MULTI_PROCESS_MODE).asStoreProvider())
@@ -39,6 +39,7 @@ class ServiceStore {
         when {
             networkSettings.containsKey(newKey) ->
                 networkSettings.decodeString(newKey, defaultValue) ?: defaultValue
+
             else -> store.provider.getString(legacyKey, defaultValue)
         }
 
@@ -56,6 +57,7 @@ class ServiceStore {
         when {
             networkSettings.containsKey(newKey) ->
                 networkSettings.decodeStringSet(newKey, defaultValue) ?: defaultValue
+
             else -> store.provider.getStringSet(legacyKey, defaultValue)
         }
 
@@ -174,6 +176,7 @@ class ServiceStore {
             when {
                 networkSettings.containsKey("enableIPv6") ->
                     networkSettings.decodeBool("enableIPv6", false)
+
                 else -> store.provider.getBoolean("allow_ipv6", false)
             }
         set(value) {
@@ -187,10 +190,13 @@ class ServiceStore {
                 return when (networkSettings.decodeString("tunStack", "System")) {
                     "System",
                     "system" -> "system"
+
                     "GVisor",
                     "gvisor" -> "gvisor"
+
                     "Mixed",
                     "mixed" -> "mixed"
+
                     else -> "system"
                 }
             }

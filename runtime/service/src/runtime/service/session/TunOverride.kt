@@ -27,17 +27,18 @@ import com.github.yumelira.yumebox.core.util.YamlCodec
 import java.io.File
 
 /**
- * Builds the built-in `tun:` fragment for Tun mode from the app-side [TunConfig]. The core opens its OWN
- * kernel TUN from this block (liboverride keeps it authoritative via the Rust `RunMode` flag), so all
- * geometry — interface, MTU, stack, auto-route/redirect, uid scoping — is chosen here in the app.
+ * Builds the built-in `tun:` fragment for Tun mode from the app-side [TunConfig]. The core opens
+ * its OWN kernel TUN from this block (liboverride keeps it authoritative via the Rust `RunMode`
+ * flag), so all geometry — interface, MTU, stack, auto-route/redirect, uid scoping — is chosen here
+ * in the app.
  *
  * A partial `dns:` block flips `dns.enable` on and SUPPRESSES the compiler's full fake-ip injection
- * ([patch_static_runtime]); the compiler backfills the nameserver whenever this leaves DNS empty, so Tun
- * and VpnService resolve identically and the resolver is never left crippled.
+ * ([patch_static_runtime]); the compiler backfills the nameserver whenever this leaves DNS empty,
+ * so Tun and VpnService resolve identically and the resolver is never left crippled.
  *
- * Delivered as an ordinary override, NOT a reserved one: "disable all overrides" empties the whole chain
- * including this (raw subscription then wins), by design. A plain `tun:` object flows through liboverride's
- * per-field merge and passes even keys outside the tun schema through untouched.
+ * Delivered as an ordinary override, NOT a reserved one: "disable all overrides" empties the whole
+ * chain including this (raw subscription then wins), by design. A plain `tun:` object flows through
+ * liboverride's per-field merge and passes even keys outside the tun schema through untouched.
  */
 object TunOverride {
     const val FILE_NAME = "__tun_override__.yaml"
@@ -53,7 +54,8 @@ object TunOverride {
                 "strict-route" to config.strictRoute,
                 "auto-redirect" to config.autoRedirect,
                 // Tun mode replaces the VpnService's per-socket protect with auto-detect-interface:
-                // the core follows the real default route so its own egress never loops into the tun.
+                // the core follows the real default route so its own egress never loops into the
+                // tun.
                 "auto-detect-interface" to true,
                 "dns-hijack" to config.dnsHijack,
                 "inet4-address" to config.inet4Address,
@@ -72,8 +74,10 @@ object TunOverride {
             tun["route-exclude-address"] = config.routeExcludeAddress
         }
 
-        // DNS follows the user's mode (redir-host works out of the box; fake-ip needs pool + filter).
-        // `enable` here suppresses the compiler's fake-ip injection, so it backfills the nameserver when
+        // DNS follows the user's mode (redir-host works out of the box; fake-ip needs pool +
+        // filter).
+        // `enable` here suppresses the compiler's fake-ip injection, so it backfills the nameserver
+        // when
         // this leaves it empty (patch_static_runtime) — the resolver is never left crippled.
         val fakeIp = config.dnsMode == TunDnsMode.FakeIp
         val dns =

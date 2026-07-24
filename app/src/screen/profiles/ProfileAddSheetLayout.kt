@@ -80,7 +80,9 @@ internal fun ProfileAddSheetContent(
 
     AppActionBottomSheet(
         show = show,
-        title = if (isEditing) YumeTxt.ProfilesPage.Sheet.EditTitle else YumeTxt.ProfilesPage.Sheet.AddTitle,
+        title =
+            if (isEditing) YumeTxt.ProfilesPage.Sheet.EditTitle
+            else YumeTxt.ProfilesPage.Sheet.AddTitle,
         startAction = {
             if (!isDownloading) {
                 AppBottomSheetCloseAction(contentDescription = "Cancel", onClick = actions.dismiss)
@@ -88,7 +90,10 @@ internal fun ProfileAddSheetContent(
         },
         endAction = {
             if (!isDownloading && selectedTypeIndex != PROFILE_IMPORT_TYPE_QR) {
-                AppBottomSheetConfirmAction(contentDescription = "Confirm", onClick = actions.submit)
+                AppBottomSheetConfirmAction(
+                    contentDescription = "Confirm",
+                    onClick = actions.submit,
+                )
             }
         },
         onDismissRequest = actions.dismiss,
@@ -98,7 +103,7 @@ internal fun ProfileAddSheetContent(
                 Modifier.fillMaxWidth()
                     .wrapContentHeight()
                     .animateContentSize(animationSpec = tween(300, easing = FastOutSlowInEasing))
-                    .padding(bottom = UiDp.dp16),
+                    .padding(bottom = UiDp.dp16)
         ) {
             AnimatedContent(
                 targetState = isDownloading,

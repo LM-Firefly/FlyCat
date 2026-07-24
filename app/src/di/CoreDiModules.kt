@@ -22,30 +22,9 @@ package com.github.yumelira.yumebox.di
 
 import com.github.yumelira.yumebox.common.util.AppLanguageManager
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
-import com.github.yumelira.yumebox.data.controller.AccessControlController
-import com.github.yumelira.yumebox.data.controller.ActiveProfileOverrideReloader
-import com.github.yumelira.yumebox.data.controller.AppIdentityResolver
-import com.github.yumelira.yumebox.data.controller.AppSettingsController
-import com.github.yumelira.yumebox.data.controller.AppTrafficStatisticsCollector
-import com.github.yumelira.yumebox.data.controller.NetworkSettingsController
-import com.github.yumelira.yumebox.data.controller.OverrideResolver
-import com.github.yumelira.yumebox.data.controller.OverrideService
-import com.github.yumelira.yumebox.data.controller.ProvidersController
-import com.github.yumelira.yumebox.data.controller.RuntimeOverrideController
-import com.github.yumelira.yumebox.data.controller.TrafficQuerySource
+import com.github.yumelira.yumebox.data.controller.*
 import com.github.yumelira.yumebox.data.network.NetworkInfoService
-import com.github.yumelira.yumebox.data.store.AppSettingsStore
-import com.github.yumelira.yumebox.data.store.FeatureStore
-import com.github.yumelira.yumebox.data.store.MMKVProvider
-import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
-import com.github.yumelira.yumebox.data.store.OverrideConfigProvider
-import com.github.yumelira.yumebox.data.store.OverrideConfigStore
-import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
-import com.github.yumelira.yumebox.data.store.ProfileBindingStore
-import com.github.yumelira.yumebox.data.store.ProfileLinksStore
-import com.github.yumelira.yumebox.data.store.ProxyDisplaySettingsStore
-import com.github.yumelira.yumebox.data.store.RemoteControllerStore
-import com.github.yumelira.yumebox.data.store.TrafficStatisticsStore
+import com.github.yumelira.yumebox.data.store.*
 import com.github.yumelira.yumebox.data.store.room.createTrafficStatisticsDao
 import com.github.yumelira.yumebox.domain.model.TrafficData
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
@@ -127,7 +106,8 @@ val appDataRuntimeModule = module {
             context = appContext,
             queryProvidersAction = {
                 com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess.connect(appContext)
-                com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess.core().queryProviders()
+                com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess.core()
+                    .queryProviders()
             },
             updateProviderAction = { type, name ->
                 com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess.connect(appContext)

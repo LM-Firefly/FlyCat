@@ -34,44 +34,46 @@ val Yume.Diff: ImageVector
         if (_Diff != null) {
             return _Diff!!
         }
-        _Diff = ImageVector.Builder(
-            name = "Diff",
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f
-        ).apply {
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(12f, 3f)
-                verticalLineToRelative(14f)
-            }
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(5f, 10f)
-                horizontalLineToRelative(14f)
-            }
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(5f, 21f)
-                horizontalLineToRelative(14f)
-            }
-        }.build()
+        _Diff =
+            ImageVector.Builder(
+                    name = "Diff",
+                    defaultWidth = 24.dp,
+                    defaultHeight = 24.dp,
+                    viewportWidth = 24f,
+                    viewportHeight = 24f,
+                )
+                .apply {
+                    path(
+                        stroke = SolidColor(Color.Black),
+                        strokeLineWidth = 2f,
+                        strokeLineCap = StrokeCap.Round,
+                        strokeLineJoin = StrokeJoin.Round,
+                    ) {
+                        moveTo(12f, 3f)
+                        verticalLineToRelative(14f)
+                    }
+                    path(
+                        stroke = SolidColor(Color.Black),
+                        strokeLineWidth = 2f,
+                        strokeLineCap = StrokeCap.Round,
+                        strokeLineJoin = StrokeJoin.Round,
+                    ) {
+                        moveTo(5f, 10f)
+                        horizontalLineToRelative(14f)
+                    }
+                    path(
+                        stroke = SolidColor(Color.Black),
+                        strokeLineWidth = 2f,
+                        strokeLineCap = StrokeCap.Round,
+                        strokeLineJoin = StrokeJoin.Round,
+                    ) {
+                        moveTo(5f, 21f)
+                        horizontalLineToRelative(14f)
+                    }
+                }
+                .build()
 
         return _Diff!!
     }
 
-@Suppress("ObjectPropertyName")
-private var _Diff: ImageVector? = null
+@Suppress("ObjectPropertyName") private var _Diff: ImageVector? = null

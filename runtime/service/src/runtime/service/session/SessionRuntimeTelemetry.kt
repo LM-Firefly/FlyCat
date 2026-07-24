@@ -24,13 +24,13 @@ import com.github.yumelira.yumebox.core.domain.ConnectionHistoryManager
 import com.github.yumelira.yumebox.core.model.LogMessage
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.serialization.json.Json
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicLong
+import kotlinx.serialization.json.Json
 
 internal class SessionRuntimeTelemetry(
     private val host: RuntimeHost,
@@ -65,8 +65,10 @@ internal class SessionRuntimeTelemetry(
                 host.onLogReady(true)
                 onLogReadyChanged(true)
                 try {
-                    // Iterating the channel ends cleanly when it closes (empty stub, or the core's REST
-                    // /logs stream ending on restart); receive() would instead throw ClosedReceiveChannelException.
+                    // Iterating the channel ends cleanly when it closes (empty stub, or the core's
+                    // REST
+                    // /logs stream ending on restart); receive() would instead throw
+                    // ClosedReceiveChannelException.
                     for (item in receiver) {
                         localLogObserver?.invoke(item)
                         host.onLogItem(item)
@@ -101,7 +103,9 @@ internal class SessionRuntimeTelemetry(
                 PollingTimers.ticks(PollingTimerSpecs.SessionConnectionTracking).collect {
                     runCatching {
                         val core =
-                            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(host.context)
+                            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(
+                                host.context
+                            )
                         val snapshot = core.queryConnections()
                         ConnectionHistoryManager.updateConnections(snapshot.connections)
                     }

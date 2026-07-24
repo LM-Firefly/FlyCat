@@ -31,9 +31,11 @@ object Intents {
     fun actionServiceRecreated(packageName: String): String =
         intentAction(packageName, "CLASH_RECREATED")
 
-    fun actionRuntimeStarted(packageName: String): String = intentAction(packageName, "CLASH_STARTED")
+    fun actionRuntimeStarted(packageName: String): String =
+        intentAction(packageName, "CLASH_STARTED")
 
-    fun actionRuntimeStopped(packageName: String): String = intentAction(packageName, "CLASH_STOPPED")
+    fun actionRuntimeStopped(packageName: String): String =
+        intentAction(packageName, "CLASH_STOPPED")
 
     fun actionRuntimeRequestStop(packageName: String): String =
         intentAction(packageName, "CLASH_REQUEST_STOP")

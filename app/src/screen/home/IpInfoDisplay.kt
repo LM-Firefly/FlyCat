@@ -184,6 +184,7 @@ private fun formatIpv6Address(ipAddress: String, isIpVisible: Boolean): String {
             visibleSegments.size == 1 -> "${visibleSegments.first()}:****"
             visibleSegments.size == 2 ->
                 "${visibleSegments[0]}:${"*".repeat(visibleSegments[1].length.coerceAtLeast(4))}"
+
             else -> "${visibleSegments[0]}:${visibleSegments[1]}:****"
         }
     }

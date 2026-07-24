@@ -28,6 +28,7 @@ const val LEGACY_RUNTIME_HOME_DIR_NAME = "clash"
 const val PROFILE_PROVIDERS_DIR_NAME = "providers"
 const val RULE_PROVIDER_SCOPE = "rules"
 const val PROXY_PROVIDER_SCOPE = "proxies"
+
 // Kept as the literal "acg" so wallpapers copied under the old path stay resolvable after the rename.
 const val MOE_ASSETS_DIR_NAME = "acg"
 const val MOE_WALLPAPER_FILE_NAME = "wallpaper.dat"

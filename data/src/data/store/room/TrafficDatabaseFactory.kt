@@ -54,7 +54,8 @@ private val TRAFFIC_MIGRATION_1_2 =
                     `total_download` INTEGER NOT NULL,
                     PRIMARY KEY(`hour_start_millis`)
                 )
-                """.trimIndent()
+                """
+                    .trimIndent()
             )
         }
     }

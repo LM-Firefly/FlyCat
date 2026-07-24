@@ -57,7 +57,8 @@ fun BackupRestoreSection() {
         }
 
     val restoreLauncher =
-        rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri ->
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri
+            ->
             restoreUri = uri
         }
 
@@ -77,7 +78,9 @@ fun BackupRestoreSection() {
             enabled = !uiState.isBusy,
             onClick = {
                 runCatching { exportLauncher.launch(viewModel.defaultBackupFileName()) }
-                    .onFailure { context.toast(YumeTxt.Feature.BackupRestore.Error.OpenOutputFailed) }
+                    .onFailure {
+                        context.toast(YumeTxt.Feature.BackupRestore.Error.OpenOutputFailed)
+                    }
             },
         )
         ArrowPreference(
@@ -86,11 +89,13 @@ fun BackupRestoreSection() {
             enabled = !uiState.isBusy,
             onClick = {
                 runCatching {
-                        restoreLauncher.launch(
-                            arrayOf("application/zip", "application/octet-stream", "*/*")
-                        )
+                    restoreLauncher.launch(
+                        arrayOf("application/zip", "application/octet-stream", "*/*")
+                    )
+                }
+                    .onFailure {
+                        context.toast(YumeTxt.Feature.BackupRestore.Error.OpenInputFailed)
                     }
-                    .onFailure { context.toast(YumeTxt.Feature.BackupRestore.Error.OpenInputFailed) }
             },
         )
     }

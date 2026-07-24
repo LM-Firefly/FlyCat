@@ -66,9 +66,11 @@ class SessionRuntimeSpecFactory(
             } else {
                 compiledConfigPipeline.resolveOverrideSpecs(profile.uuid.toString())
             }
-        // Each mode injects its own built-in override (subject to disable-all-overrides): Tun the tun
+        // Each mode injects its own built-in override (subject to disable-all-overrides): Tun the
+        // tun
         // geometry, Tproxy tproxy-port + iptables; VpnService gets its fd path and needs neither.
-        val tunConfig = if (!skipRuntimePatches && runMode == RunMode.Tun) buildTunConfig() else null
+        val tunConfig =
+            if (!skipRuntimePatches && runMode == RunMode.Tun) buildTunConfig() else null
         val tproxyConfig =
             if (!skipRuntimePatches && runMode == RunMode.Tproxy) buildTproxyConfig() else null
         val overrideSpecs =
@@ -77,6 +79,7 @@ class SessionRuntimeSpecFactory(
                 tunConfig != null -> userOverrides + TunOverride.materialize(tunConfig, profileDir)
                 tproxyConfig != null ->
                     userOverrides + TproxyOverride.materialize(tproxyConfig, profileDir)
+
                 else -> userOverrides
             }
         val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
@@ -167,9 +170,9 @@ class SessionRuntimeSpecFactory(
     }
 
     /**
-     * Empty list means "all Android users": TunOverride omits include-android-user and sing-tun does
-     * not install per-user ExcludeUID ranges. The old hard-coded default [0, 10] only kept owner +
-     * work-profile traffic and silently dropped every other multi-user profile.
+     * Empty list means "all Android users": TunOverride omits include-android-user and sing-tun
+     * does not install per-user ExcludeUID ranges. The old hard-coded default [0, 10] only kept
+     * owner + work-profile traffic and silently dropped every other multi-user profile.
      */
     private fun resolveIncludeAndroidUsers(): List<Int> {
         val users = networkSettings.tunIncludeAndroidUser.value
@@ -180,8 +183,9 @@ class SessionRuntimeSpecFactory(
         return users
     }
 
-    private fun resolvePackageUid(pkg: String): Int? =
-        runCatching { context.packageManager.getPackageInfo(pkg, 0).applicationInfo?.uid }.getOrNull()
+    private fun resolvePackageUid(pkg: String): Int? = runCatching {
+        context.packageManager.getPackageInfo(pkg, 0).applicationInfo?.uid
+    }.getOrNull()
 
     private data class TunAccessControl(
         val includeUid: List<Int> = emptyList(),
