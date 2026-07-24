@@ -11,6 +11,72 @@ linter: jetbrains/qodana-jvm-android:2026.2-eap
 profile:
   name: qodana.recommended
 
+
+# Qodana's Android image auto-installs missing platforms during Gradle import.
+# API 37 + build-tools 36 occasionally land as truncated zips (ZipException /
+# corrupt source.properties). Repair them before project open so analysis can start.
+bootstrap: |
+  set -eu
+  SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/opt/android-sdk}}"
+  echo "Qodana bootstrap: repairing Android SDK under $SDK"
+  rm -rf \
+    "$SDK/build-tools/36.0.0" \
+    "$SDK/platforms/android-37" \
+    "$SDK/platforms/android-37.0" \
+    "$SDK/.temp" \
+    "$SDK/temp" \
+    "$SDK/.downloadIntermediates" || true
+  mkdir -p "$SDK/licenses"
+  # Accept all licenses non-interactively (sdkmanager prints many prompts).
+  yes 2>/dev/null | sdkmanager --sdk_root="$SDK" --licenses >/dev/null || true
+  install_ok=0
+  for attempt in 1 2 3 4 5; do
+    echo "sdkmanager install attempt $attempt"
+    # Prefer the base platform package; some SDK indexes also expose android-37.0.
+    if sdkmanager --sdk_root="$SDK" --install "build-tools;36.0.0" \
+      && (sdkmanager --sdk_root="$SDK" --install "platforms;android-37" \
+          || sdkmanager --sdk_root="$SDK" --install "platforms;android-37.0"); then
+      install_ok=1
+      break
+    fi
+    echo "sdkmanager failed on attempt $attempt; cleaning partial packages and retrying"
+    rm -rf \
+      "$SDK/build-tools/36.0.0" \
+      "$SDK/platforms/android-37" \
+      "$SDK/platforms/android-37.0" \
+      "$SDK/.temp" \
+      "$SDK/temp" || true
+    sleep $((attempt * 3))
+  done
+
+  if [ "$install_ok" != "1" ]; then
+    echo "FATAL: failed to install platforms;android-37 / build-tools;36.0.0" >&2
+    exit 1
+  fi
+  # AGP with compileSdkMinor may look for android-37.0; accept either layout.
+  if [ ! -f "$SDK/platforms/android-37/android.jar" ] && [ ! -f "$SDK/platforms/android-37.0/android.jar" ]; then
+    echo "FATAL: android.jar missing after sdkmanager install" >&2
+    ls -la "$SDK/platforms" || true
+    exit 1
+  fi
+  if [ ! -f "$SDK/build-tools/36.0.0/source.properties" ]; then
+    echo "FATAL: build-tools 36.0.0 source.properties missing" >&2
+    ls -la "$SDK/build-tools" || true
+    exit 1
+  fi
+  # AGP 9 with compileSdkMinor may resolve platform dir as android-37.0.
+  if [ -f "$SDK/platforms/android-37/android.jar" ] && [ ! -e "$SDK/platforms/android-37.0" ]; then
+    ln -s android-37 "$SDK/platforms/android-37.0"
+    echo "linked platforms/android-37.0 -> android-37"
+  fi
+  if [ -f "$SDK/platforms/android-37.0/android.jar" ] && [ ! -e "$SDK/platforms/android-37" ]; then
+    ln -s android-37.0 "$SDK/platforms/android-37"
+    echo "linked platforms/android-37 -> android-37.0"
+  fi
+  echo "Qodana bootstrap: Android SDK ready"
+  sdkmanager --sdk_root="$SDK" --list_installed | sed -n '1,80p' || true
+
+
 # Kotlin/Java static analysis only. Exclude everything that is not app source:
 #  - lib/      native libs (Go PIE libclash, Rust liboverride, C libcompat/libloader) + mihomo
 #  - scripts/  standalone *.main.kts build tooling (native-build / locale codegen)
