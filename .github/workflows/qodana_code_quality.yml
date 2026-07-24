@@ -31,8 +31,6 @@ jobs:
           java-version: "24"
       - name: Setup Kotlin
         uses: fwilhe2/setup-kotlin@88d53291848568823e529973af5d0cdb8ddf8d87 # main
-      # Host-side SDK is not used by the Qodana Android container; package repair
-      # happens in qodana.yaml `bootstrap` against /opt/android-sdk inside the image.
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@4861e015da555e86a72b862892aba6c2b93e6891 # v2026.1
         env:
@@ -40,12 +38,10 @@ jobs:
         with:
           # When pr-mode is set to true, Qodana analyzes only the files that have been changed
           pr-mode: false
-          # If a previous run cached a half-installed platform-37 / build-tools-36, disable
-          # caches once or bump the qodana.yaml bootstrap comment to force a fresh image layer.
           use-caches: true
           post-pr-comment: true
           use-annotations: true
           # Upload Qodana results (SARIF, other artifacts, logs) as an artifact to the job
-          upload-result: true
+          upload-result: false
           # quick-fixes available in Ultimate and Ultimate Plus plans
           push-fixes: 'none'
