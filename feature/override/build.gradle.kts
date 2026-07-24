@@ -34,7 +34,7 @@ android {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":platform"))
+    implementation(project(":common"))
     implementation(project(":locale"))
     implementation(project(":ui"))
     implementation(project(":data"))

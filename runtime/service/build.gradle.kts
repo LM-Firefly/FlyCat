@@ -29,7 +29,7 @@ android {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":platform"))
+    implementation(project(":common"))
     implementation(project(":locale"))
     implementation(project(":data"))
     implementation(project(":runtime:api"))

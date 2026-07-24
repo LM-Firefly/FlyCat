@@ -105,7 +105,7 @@ gropify {
 
 include(
     ":core",
-    ":platform",
+    ":common",
     ":locale",
     ":ui",
     ":data",
