@@ -118,14 +118,10 @@ class CoreController(
         local?.secret?.invoke() ?: (backendProvider()?.secret.orEmpty())
 
     private fun ensureEndpointReady() {
-        val localTarget = local
-        if (localTarget != null) {
-            val secret = runCatching { localTarget.secret.invoke() }.getOrNull()
-            if (secret.isNullOrBlank()) {
-                error("local core controller not ready (missing secret)")
-            }
-            return
-        }
+        // Local controller: socket path is fixed; secret may be blank when the profile does not
+        // set one (Bearer is optional). Do NOT treat empty secret as "core not ready" — that
+        // false-failed root/VPN startup probes right after the core published clash.sock.
+        if (local != null) return
         if (backendProvider() == null) {
             error("No active remote controller backend")
         }
