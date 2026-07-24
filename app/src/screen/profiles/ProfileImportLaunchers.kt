@@ -21,6 +21,7 @@
 package com.github.yumelira.yumebox.screen.profiles
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,6 +32,7 @@ import com.github.yumelira.yumebox.presentation.util.isYamlConfigFileName
 import com.github.yumelira.yumebox.presentation.util.readDisplayName
 import kotlinx.coroutines.launch
 import tf.gal.yumebox.locale.YumeTxt
+import timber.log.Timber
 
 internal data class ProfileImportLaunchers(
     val pickFile: () -> Unit,
@@ -46,13 +48,22 @@ internal fun rememberProfileImportLaunchers(
 ): ProfileImportLaunchers {
     val scope = rememberCoroutineScope()
     val file =
-        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri ?: return@rememberLauncherForActivityResult
             val fileName = readDisplayName(context, uri, YumeTxt.ProfilesPage.Message.UnknownFile)
             if (!isYamlConfigFileName(fileName)) {
                 onUnsupportedFile()
                 return@rememberLauncherForActivityResult
             }
+            runCatching {
+                    context.contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    )
+                }
+                .onFailure { error ->
+                    Timber.w(error, "Persist profile source permission failed: %s", uri)
+                }
             onFileSelected(uri, fileName)
         }
     val qrImage =
@@ -76,7 +87,7 @@ internal fun rememberProfileImportLaunchers(
             }
         }
     return ProfileImportLaunchers(
-        pickFile = { file.launch("*/*") },
+        pickFile = { file.launch(arrayOf("*/*")) },
         selectQrImage = { qrImage.launch("image/*") },
     )
 }

@@ -21,6 +21,10 @@
 package com.github.yumelira.yumebox.runtime.service.profile
 
 import android.content.Context
+import android.net.Uri
+import com.github.yumelira.yumebox.core.bridge.Compiler
+import com.github.yumelira.yumebox.core.model.CompileRequest
+import com.github.yumelira.yumebox.core.model.CompileResult
 import com.github.yumelira.yumebox.core.model.FetchStatus
 import com.github.yumelira.yumebox.core.util.PROXY_PROVIDER_SCOPE
 import com.github.yumelira.yumebox.core.util.RULE_PROVIDER_SCOPE
@@ -29,6 +33,7 @@ import com.github.yumelira.yumebox.core.util.profileProviderScopeDir
 import com.github.yumelira.yumebox.runtime.api.FetchObserver
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
+import com.github.yumelira.yumebox.runtime.service.session.CompiledConfigPipeline
 import com.github.yumelira.yumebox.runtime.service.util.importedDir
 import com.github.yumelira.yumebox.runtime.service.util.sendProfileChanged
 import com.tencent.mmkv.MMKV
@@ -48,11 +53,18 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import timber.log.Timber
 
 object ProfileProcessor {
     private val profileLock = Mutex()
     private val processLock = Mutex()
+
+    private val compilerJson = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        coerceInputValues = true
+    }
 
     private data class SubscriptionInfo(
         val upload: Long? = null,
@@ -100,6 +112,7 @@ object ProfileProcessor {
                     client.get(url) {
                         header(HttpHeaders.UserAgent, resolveSubscriptionUserAgent())
                     }
+                check(response.status.isSuccess()) { "HTTP ${response.status.value}" }
                 val body = response.bodyAsText()
                 stagingDir.mkdirs()
                 File(stagingDir, "config.yaml").writeText(body)
@@ -155,26 +168,82 @@ object ProfileProcessor {
 
     /**
      * Pre-fetches HTTP providers into the same profile-private paths that liboverride emits into
-     * the runtime config. This is deliberately best-effort: mihomo remains the fallback owner and
-     * downloads a missing resource itself, so one failed provider must never reject an import.
+     * the runtime config. Path rewriting goes through Compiler.nativeCompile first (same as the
+     * old FetchAndValid → UnmarshalAndPatch → download sequence) so Kotlin never invents a second
+     * provider-path scheme. Best-effort: one failed provider must never reject an import.
      */
     private suspend fun fetchExternalProviders(
+        context: Context,
+        uuid: UUID,
         stagingDir: File,
         profileDir: File,
+        ageSecretKey: String?,
         onStatus: (FetchStatus) -> Unit,
     ) {
         val config = stagingDir.resolve("config.yaml")
-        if (!config.isFile) return
-        val providers = runCatching {
-            collectExternalProviders(
-                root = YamlCodec.loadMap(config.readText()),
+        if (!config.isFile || config.length() <= 0L) {
+            Timber.e("Skip external provider prefetch: missing config.yaml under %s", stagingDir)
+            return
+        }
+
+        val configText = readConfigText(config)
+        onStatus(
+            FetchStatus(
+                action = FetchStatus.Action.FetchProviders,
+                args = emptyList(),
+                progress = 0,
+                max = 1,
+            )
+        )
+
+        // Source config is the source of truth for *which* providers to download. liboverride is
+        // only used to obtain the rewritten path that runtime will later resolve. Never treat an
+        // empty liboverride result as "no providers" — that previously skipped local imports.
+        val rewrittenPaths =
+            loadLiboverrideProviderPaths(
+                context = context,
+                uuid = uuid,
                 stagingDir = stagingDir,
                 profileDir = profileDir,
+                ageSecretKey = ageSecretKey,
             )
+        val providers =
+            collectDownloadableProviders(
+                configText = configText,
+                stagingDir = stagingDir,
+                profileDir = profileDir,
+                rewrittenPaths = rewrittenPaths,
+            )
+
+        if (providers.isEmpty()) {
+            val declaresProviders =
+                configText.contains("proxy-providers") || configText.contains("rule-providers")
+            val hasHttpUrl = HTTP_URL_IN_TEXT.containsMatchIn(configText)
+            if (declaresProviders && hasHttpUrl) {
+                Timber.e(
+                    "Provider prefetch collected 0 items but config declares providers with http(s) urls " +
+                        "(staging=%s size=%d rewritten=%d)",
+                    stagingDir,
+                    config.length(),
+                    rewrittenPaths.size,
+                )
+            } else {
+                Timber.i(
+                    "No downloadable external providers under %s (declaresProviders=%s hasHttpUrl=%s)",
+                    stagingDir,
+                    declaresProviders,
+                    hasHttpUrl,
+                )
+            }
+            return
         }
-            .onFailure { Timber.w(it, "Skip external provider prefetch: config parse failed") }
-            .getOrDefault(emptyList())
-        if (providers.isEmpty()) return
+        Timber.i(
+            "Prefetching %d external providers staging=%s profileDir=%s rewritten=%d",
+            providers.size,
+            stagingDir,
+            profileDir,
+            rewrittenPaths.size,
+        )
 
         HttpClient(OkHttp) {
                 install(HttpTimeout) {
@@ -194,64 +263,324 @@ object ProfileProcessor {
                         )
                     )
                     runCatching { downloadExternalProvider(client, provider) }
+                        .onSuccess {
+                            Timber.i(
+                                "Downloaded provider %s -> %s (%d bytes)",
+                                provider.name,
+                                provider.target,
+                                provider.target.length(),
+                            )
+                        }
                         .onFailure { error ->
-                            Timber.w(error, "Skip external provider download: %s", provider.url)
+                            Timber.e(
+                                error,
+                                "Provider download failed: name=%s url=%s target=%s",
+                                provider.name,
+                                provider.url,
+                                provider.target,
+                            )
                         }
                 }
             }
     }
 
-    @Suppress("UNCHECKED_CAST")
-    private fun collectExternalProviders(
-        root: Map<String, Any?>,
+    /**
+     * Compiles the staged config and returns a map of `scope:name -> relative path under
+     * providers/{scope}/`. Used only for path alignment with runtime; URL discovery always reads
+     * the source config so a liboverride empty result cannot skip downloads.
+     */
+    private fun loadLiboverrideProviderPaths(
+        context: Context,
+        uuid: UUID,
         stagingDir: File,
         profileDir: File,
-    ): List<ExternalProvider> = buildList {
+        ageSecretKey: String?,
+    ): Map<String, String> {
+        if (!ageSecretKey.isNullOrBlank()) {
+            Timber.i("Encrypted profile %s: skip liboverride path map, use source paths", uuid)
+            return emptyMap()
+        }
+        return runCatching {
+                val overrides =
+                    runCatching {
+                            CompiledConfigPipeline(context).resolveOverrideSpecs(uuid.toString())
+                        }
+                        .onFailure { Timber.w(it, "Resolve overrides for provider path map failed") }
+                        .getOrDefault(emptyList())
+                val request =
+                    CompileRequest(
+                        profileUuid = uuid.toString(),
+                        profileDir = profileDir.absolutePath,
+                        profilePath = stagingDir.resolve("config.yaml").absolutePath,
+                        overrides = overrides,
+                        outputPath = "",
+                        ageSecretKey = null,
+                    )
+                val result =
+                    compilerJson.decodeFromString(
+                        CompileResult.serializer(),
+                        Compiler.nativeCompile(
+                            compilerJson.encodeToString(CompileRequest.serializer(), request)
+                        ),
+                    )
+                check(result.success) {
+                    result.error ?: "liboverride compile failed for provider path map"
+                }
+                extractProviderPathMap(result.finalYaml)
+            }
+            .onFailure { Timber.w(it, "liboverride provider path map failed; using source paths") }
+            .getOrDefault(emptyMap())
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun extractProviderPathMap(finalYaml: String): Map<String, String> {
+        val root = parseConfigMap(finalYaml) ?: return emptyMap()
+        val out = linkedMapOf<String, String>()
         listOf(
-                "rule-providers" to RULE_PROVIDER_SCOPE,
                 "proxy-providers" to PROXY_PROVIDER_SCOPE,
+                "rule-providers" to RULE_PROVIDER_SCOPE,
             )
             .forEach { (field, scope) ->
                 val definitions = root[field] as? Map<*, *> ?: return@forEach
                 definitions.forEach { (rawName, rawDefinition) ->
+                    val name = rawName?.toString()?.trim().orEmpty()
                     val definition = rawDefinition as? Map<*, *> ?: return@forEach
-                    val type = definition["type"]?.toString()?.trim().orEmpty()
-                    val url = definition["url"]?.toString()?.trim().orEmpty()
-                    if (!type.equals("http", ignoreCase = true) || !url.isHttpUrl()) return@forEach
-
-                    val extension =
-                        if (
-                            scope == RULE_PROVIDER_SCOPE &&
-                                definition["format"]
-                                    ?.toString()
-                                    ?.equals("mrs", ignoreCase = true) == true
-                        ) {
-                            "mrs"
-                        } else {
-                            "yaml"
-                        }
-                    val target =
-                        profileProviderScopeDir(stagingDir, scope)
-                            .resolve(
-                                providerRelativePath(
-                                    path = definition["path"]?.toString().orEmpty(),
-                                    url = url,
-                                    extension = extension,
-                                    profileProviderDir = profileProviderScopeDir(profileDir, scope),
-                                )
-                            )
-                    val name =
-                        rawName?.toString()?.trim().takeUnless { it.isNullOrEmpty() } ?: target.name
-                    add(
-                        ExternalProvider(
-                            name = name,
-                            url = url,
-                            target = target,
-                            headers = providerHeaders(definition),
-                        )
-                    )
+                    if (name.isEmpty()) return@forEach
+                    val rewritten = definition["path"]?.toString()?.trim().orEmpty()
+                    val relative = providerRelativeFromRewritten(rewritten, scope) ?: return@forEach
+                    out["$scope:$name"] = relative
                 }
             }
+        return out
+    }
+
+    private fun providerRelativeFromRewritten(rewrittenPath: String, scope: String): String? {
+        val normalized = rewrittenPath.replace('\\', '/').trim()
+        if (normalized.isEmpty()) return null
+        val match = PROVIDER_PATH_TAIL.find(normalized) ?: return null
+        if (match.groupValues[1] != scope) return null
+        return match.groupValues[2].takeIf { it.isNotBlank() }
+    }
+
+    /**
+     * Discovers downloadable providers from the source config. Prefer liboverride-rewritten
+     * relative paths when available; otherwise use the same normalization runtime expects.
+     */
+    private fun collectDownloadableProviders(
+        configText: String,
+        stagingDir: File,
+        profileDir: File,
+        rewrittenPaths: Map<String, String>,
+    ): List<ExternalProvider> {
+        val root = parseConfigMap(configText)
+        val fromYaml =
+            if (root != null) {
+                collectProvidersFromRoot(root, stagingDir, profileDir, rewrittenPaths)
+            } else {
+                emptyList()
+            }
+        if (fromYaml.isNotEmpty()) return fromYaml
+
+        val fromScan = collectProvidersByTextScan(configText, stagingDir, profileDir, rewrittenPaths)
+        if (fromScan.isNotEmpty()) {
+            Timber.w(
+                "YAML map parse found 0 providers; text scan recovered %d downloadable providers",
+                fromScan.size,
+            )
+        }
+        return fromScan
+    }
+
+    private fun parseConfigMap(content: String): Map<String, Any?>? =
+        runCatching {
+                val loaded = YamlCodec.loadMap(content)
+                loaded.takeIf { it.isNotEmpty() }
+            }
+            .onFailure { Timber.w(it, "YAML parse failed for provider collection") }
+            .getOrNull()
+
+    @Suppress("UNCHECKED_CAST")
+    private fun collectProvidersFromRoot(
+        root: Map<String, Any?>,
+        stagingDir: File,
+        profileDir: File,
+        rewrittenPaths: Map<String, String>,
+    ): List<ExternalProvider> = buildList {
+        listOf(
+                "proxy-providers" to PROXY_PROVIDER_SCOPE,
+                "rule-providers" to RULE_PROVIDER_SCOPE,
+            )
+            .forEach { (field, scope) ->
+                val definitions = asStringKeyedMap(root[field]) ?: return@forEach
+                definitions.forEach { (name, rawDefinition) ->
+                    val definition = asStringKeyedMap(rawDefinition) ?: return@forEach
+                    val provider =
+                        buildExternalProvider(
+                            name = name,
+                            definition = definition,
+                            scope = scope,
+                            stagingDir = stagingDir,
+                            profileDir = profileDir,
+                            rewrittenPaths = rewrittenPaths,
+                        ) ?: return@forEach
+                    add(provider)
+                }
+            }
+    }
+
+    private fun buildExternalProvider(
+        name: String,
+        definition: Map<String, Any?>,
+        scope: String,
+        stagingDir: File,
+        profileDir: File,
+        rewrittenPaths: Map<String, String>,
+    ): ExternalProvider? {
+        val type = definition["type"]?.toString()?.trim().orEmpty()
+        val url = definition["url"]?.toString().orEmpty().trim().trim('"', '\'').trim()
+        // Old FetchAndValid: any provider with url+path after patch is downloadable.
+        // Inline payloads are already in-config; everything else with an http(s) URL is fetched.
+        if (!url.isHttpUrl() || type.equals("inline", ignoreCase = true)) return null
+
+        val extension =
+            if (
+                scope == RULE_PROVIDER_SCOPE &&
+                    definition["format"]?.toString()?.equals("mrs", ignoreCase = true) == true
+            ) {
+                "mrs"
+            } else {
+                "yaml"
+            }
+
+        val relative =
+            rewrittenPaths["$scope:$name"]
+                ?: providerRelativePath(
+                    path = definition["path"]?.toString().orEmpty(),
+                    url = url,
+                    extension = extension,
+                    profileProviderDir = profileProviderScopeDir(profileDir, scope),
+                )
+        val target = profileProviderScopeDir(stagingDir, scope).resolve(relative)
+        val resolvedName = name.trim().ifEmpty { target.name }
+        return ExternalProvider(
+            name = resolvedName,
+            url = url,
+            target = target,
+            headers = providerHeaders(definition),
+        )
+    }
+
+    /**
+     * Last-resort extractor when SnakeYAML cannot load the document as a map (merge keys / odd
+     * tags). Walks proxy-providers / rule-providers blocks and pulls `url:` entries.
+     */
+    private fun collectProvidersByTextScan(
+        configText: String,
+        stagingDir: File,
+        profileDir: File,
+        rewrittenPaths: Map<String, String>,
+    ): List<ExternalProvider> {
+        val out = linkedMapOf<String, ExternalProvider>()
+        listOf(
+                "proxy-providers" to PROXY_PROVIDER_SCOPE,
+                "rule-providers" to RULE_PROVIDER_SCOPE,
+            )
+            .forEach { (field, scope) ->
+                val section = extractTopLevelSection(configText, field) ?: return@forEach
+                var currentName: String? = null
+                var currentUrl: String? = null
+                var currentPath: String? = null
+                var currentFormat: String? = null
+                var currentType: String? = null
+
+                fun flush() {
+                    val name = currentName?.trim().orEmpty()
+                    val url = currentUrl.orEmpty().trim().trim('"', '\'').trim()
+                    val type = currentType.orEmpty().trim()
+                    if (name.isNotEmpty() && url.isHttpUrl() && !type.equals("inline", true)) {
+                        val extension =
+                            if (
+                                scope == RULE_PROVIDER_SCOPE &&
+                                    currentFormat?.equals("mrs", ignoreCase = true) == true
+                            ) {
+                                "mrs"
+                            } else {
+                                "yaml"
+                            }
+                        val relative =
+                            rewrittenPaths["$scope:$name"]
+                                ?: providerRelativePath(
+                                    path = currentPath.orEmpty(),
+                                    url = url,
+                                    extension = extension,
+                                    profileProviderDir =
+                                        profileProviderScopeDir(profileDir, scope),
+                                )
+                        val target = profileProviderScopeDir(stagingDir, scope).resolve(relative)
+                        out["$scope:$name"] =
+                            ExternalProvider(
+                                name = name,
+                                url = url,
+                                target = target,
+                                headers = emptyList(),
+                            )
+                    }
+                    currentUrl = null
+                    currentPath = null
+                    currentFormat = null
+                    currentType = null
+                }
+
+                section.lineSequence().forEach { rawLine ->
+                    val line = rawLine.trimEnd()
+                    val indent = line.indexOfFirst { !it.isWhitespace() }.let { if (it < 0) 0 else it }
+                    val content = line.trim()
+                    if (content.isEmpty() || content.startsWith("#")) return@forEach
+
+                    // New provider entry at indent 2 (or any non-nested map key with trailing ':')
+                    val nameMatch = PROVIDER_ENTRY_NAME.find(content)
+                    if (indent <= 2 && nameMatch != null && !content.contains(": ") && content.endsWith(":")) {
+                        flush()
+                        currentName = nameMatch.groupValues[1].trim().trim('"', '\'')
+                        return@forEach
+                    }
+                    if (currentName == null) return@forEach
+
+                    val kv = content.split(":", limit = 2)
+                    if (kv.size != 2) return@forEach
+                    val key = kv[0].trim()
+                    val value = kv[1].trim().trim('"', '\'')
+                    when (key) {
+                        "url" -> currentUrl = value
+                        "path" -> currentPath = value
+                        "format" -> currentFormat = value
+                        "type" -> currentType = value
+                    }
+                }
+                flush()
+            }
+        return out.values.toList()
+    }
+
+    private fun extractTopLevelSection(configText: String, key: String): String? {
+        val header = Regex("^$key\\s*:\\s*(?:#.*)?$", RegexOption.MULTILINE).find(configText)
+            ?: return null
+        val start = header.range.last + 1
+        val rest = configText.substring(start)
+        val nextTop = Regex("^[A-Za-z0-9_.-]+\\s*:", RegexOption.MULTILINE).find(rest)
+        return if (nextTop == null) rest else rest.substring(0, nextTop.range.first)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun asStringKeyedMap(value: Any?): Map<String, Any?>? {
+        val map = value as? Map<*, *> ?: return null
+        if (map.isEmpty()) return emptyMap()
+        val out = LinkedHashMap<String, Any?>(map.size)
+        map.forEach { (rawKey, rawValue) ->
+            val key = rawKey?.toString()?.trim().orEmpty()
+            if (key.isNotEmpty()) out[key] = rawValue
+        }
+        return out
     }
 
     private fun providerRelativePath(
@@ -340,6 +669,73 @@ object ProfileProcessor {
     private fun String.isHttpUrl(): Boolean =
         startsWith("https://", ignoreCase = true) || startsWith("http://", ignoreCase = true)
 
+    private fun readConfigText(config: File): String =
+        config.readText().removePrefix("\uFEFF")
+
+    /**
+     * Materialize a local profile's config.yaml into [stagingDir], matching the old native
+     * `FetchAndValid(force=true)` path that re-opened `content://` / `file://` sources.
+     *
+     * Prefer the original source URI when still readable so a missing or partial copy from
+     * [copyProfileImport] cannot silently leave staging without a config (and therefore without
+     * provider prefetch). Fall back to whatever is already staged.
+     */
+    private fun materializeLocalConfig(context: Context, stagingDir: File, imported: Imported) {
+        val config = stagingDir.resolve("config.yaml")
+        val temporary = stagingDir.resolve(".config.yaml.local")
+        val source = imported.source.trim()
+        if (source.isEmpty()) {
+            if (!config.isFile || config.length() <= 0L) {
+                Timber.w("Local profile %s has empty source and no staged config", imported.uuid)
+            }
+            return
+        }
+
+        val reloaded =
+            runCatching {
+                    stagingDir.mkdirs()
+                    temporary.delete()
+                    when {
+                        source.startsWith("content:", ignoreCase = true) ||
+                            source.startsWith("file:", ignoreCase = true) -> {
+                            val uri = Uri.parse(source)
+                            context.contentResolver.openInputStream(uri)?.use { input ->
+                                temporary.outputStream().use { output -> input.copyTo(output) }
+                                true
+                            } ?: false
+                        }
+                        File(source).isFile -> {
+                            File(source).inputStream().use { input ->
+                                temporary.outputStream().use { output -> input.copyTo(output) }
+                            }
+                            true
+                        }
+                        else -> false
+                    }
+                        .also { copied ->
+                            if (copied) {
+                                check(temporary.isFile && temporary.length() > 0L) {
+                                    "Local profile source is empty: $source"
+                                }
+                                temporary.copyTo(config, overwrite = true)
+                            }
+                        }
+                }
+                .onFailure { error ->
+                    Timber.w(error, "Failed to re-read local profile source: %s", source)
+                }
+                .getOrDefault(false)
+        temporary.delete()
+
+        if (!reloaded && (!config.isFile || config.length() <= 0L)) {
+            Timber.w(
+                "Local profile %s has no config.yaml after materialize (source=%s)",
+                imported.uuid,
+                source,
+            )
+        }
+    }
+
     private fun sha256(value: String): String =
         MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") {
             "%02x".format(it)
@@ -347,6 +743,15 @@ object ProfileProcessor {
 
     private val providerPathPrefixes =
         setOf("providers", "provider", "clash", "ruleset", "rules", "proxies")
+
+    private val PROVIDER_PATH_TAIL =
+        Regex("""(?:^|/)providers/(proxies|rules)/(.+)$""")
+
+    private val HTTP_URL_IN_TEXT =
+        Regex("""https?://\S+""", RegexOption.IGNORE_CASE)
+
+    private val PROVIDER_ENTRY_NAME =
+        Regex("""^([^:#{}\[\]]+)\s*:$""")
 
     /** The user's configured User-Agent (settings store), or the airport-recognized default. */
     private fun resolveSubscriptionUserAgent(): String {
@@ -508,15 +913,31 @@ object ProfileProcessor {
                                 Timber.w(error, "Report fetch status: %s", error.message)
                             }
                         }
+                    } else {
+                        // Local/file profiles still need provider prefetch. Re-materialize the
+                        // original local source into staging (old native force-fetch behavior)
+                        // so a missing copy cannot skip every proxy/rule provider download.
+                        materializeLocalConfig(context, stagingDir, snapshot.imported)
                     }
 
-                    fetchExternalProviders(stagingDir, targetDir) { status ->
+                    fetchExternalProviders(
+                        context = context,
+                        uuid = snapshot.imported.uuid,
+                        stagingDir = stagingDir,
+                        profileDir = targetDir,
+                        ageSecretKey = snapshot.imported.ageSecretKey,
+                    ) { status ->
                         try {
                             cb?.updateStatus(status)
                         } catch (error: Exception) {
                             cb = null
                             Timber.w(error, "Report provider fetch status: %s", error.message)
                         }
+                    }
+
+                    val stagedConfig = stagingDir.resolve("config.yaml")
+                    check(stagedConfig.isFile && stagedConfig.length() > 0L) {
+                        "Profile update produced no config.yaml: ${snapshot.imported.uuid}"
                     }
 
                     profileLock.withLock {

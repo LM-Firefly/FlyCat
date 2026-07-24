@@ -110,7 +110,14 @@ class ProfilesViewModel(
             var createdUuid: UUID? = null
             try {
                 setLoading(true)
-                val uuid = profilesRepository.createProfile(type, name, source, ageSecretKey)
+                // File imports must persist the content/file URI as source so ProfileProcessor can
+                // re-materialize config.yaml and prefetch proxy/rule providers on update.
+                val resolvedSource =
+                    source.ifBlank {
+                        if (type == Profile.Type.File) fileUri?.toString().orEmpty() else ""
+                    }
+                val uuid =
+                    profilesRepository.createProfile(type, name, resolvedSource, ageSecretKey)
                 createdUuid = uuid
 
                 _downloadProgress.value =

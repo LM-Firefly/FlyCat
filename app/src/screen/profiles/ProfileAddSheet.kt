@@ -40,6 +40,7 @@ import com.github.yumelira.yumebox.presentation.util.*
 import com.github.yumelira.yumebox.runtime.api.Profile
 import java.util.*
 import kotlin.math.max
+import kotlinx.coroutines.delay
 import tf.gal.yumebox.locale.YumeTxt
 
 @Composable
@@ -173,14 +174,23 @@ internal fun AddProfileSheet(
     LaunchedEffect(downloadProgress?.isCompleted, isDownloading) {
         if (isDownloading && downloadProgress?.isCompleted == true && !hasShownCompleteAnimation) {
             hasShownCompleteAnimation = true
-            onDownloadComplete()
+            delay(DOWNLOAD_COMPLETE_DISPLAY_MILLIS)
+            if (show.value && isDownloading && downloadProgress?.isCompleted == true) {
+                onDownloadComplete()
+            }
         }
     }
 
     LaunchedEffect(uiState.message) {
-        if (uiState.message != null && isDownloading && !hasShownCompleteAnimation) {
+        if (
+            profileToEdit != null &&
+                uiState.message != null &&
+                isDownloading &&
+                !hasShownCompleteAnimation
+        ) {
             hasShownCompleteAnimation = true
-            onDownloadComplete()
+            delay(DOWNLOAD_COMPLETE_DISPLAY_MILLIS)
+            if (show.value && isDownloading) onDownloadComplete()
         }
         if (uiState.message != null) {
             profilesViewModel.clearMessage()
@@ -283,3 +293,5 @@ internal fun AddProfileSheet(
         )
     }
 }
+
+private const val DOWNLOAD_COMPLETE_DISPLAY_MILLIS = 700L

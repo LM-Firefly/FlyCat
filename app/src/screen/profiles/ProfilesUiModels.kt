@@ -61,13 +61,14 @@ internal fun FetchStatus.toDownloadProgress(): DownloadProgress {
                     detail.ifBlank { YumeTxt.ProfilesPage.Progress.Downloading }
                 }
 
-            FetchStatus.Action.FetchProviders -> detail
+            FetchStatus.Action.FetchProviders ->
+                detail.ifBlank { YumeTxt.ProfilesPage.Progress.Downloading }
             FetchStatus.Action.SubscriptionInfo -> ""
             FetchStatus.Action.Verifying -> detail.ifBlank { YumeTxt.ProfilesVM.Progress.Verifying }
         }
     val itemProgress =
-        if (action == FetchStatus.Action.FetchProviders && max > 0) {
-            "${progress.coerceIn(1, max)} / $max"
+        if (action == FetchStatus.Action.FetchProviders && progress > 0 && max > 0) {
+            "${progress.coerceAtMost(max)} / $max"
         } else {
             null
         }

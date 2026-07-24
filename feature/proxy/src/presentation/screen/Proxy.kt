@@ -262,6 +262,8 @@ fun ProxyPager(
     val fabGroup = displayGroup
     val isFabTesting = fabGroup?.name?.let(testingGroupNames::contains) == true
     val coroutineScope = rememberCoroutineScope()
+    val groupListState =
+        rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val nodeListState =
         rememberSaveable(selectedGroupName, saver = LazyListState.Saver) { LazyListState() }
 
@@ -374,6 +376,7 @@ fun ProxyPager(
                         mainInnerPadding = mainInnerPadding,
                         testingGroupNames = testingGroupNames,
                         onGroupClick = groupSelection.selectGroup,
+                        listState = groupListState,
                     )
                 }
             } else {
@@ -421,6 +424,7 @@ fun ProxyPager(
                                 mainInnerPadding = mainInnerPadding,
                                 testingGroupNames = testingGroupNames,
                                 onGroupClick = groupSelection.selectGroup,
+                                listState = groupListState,
                             )
                         }
                     } else {
@@ -959,9 +963,11 @@ private fun ProxyContent(
     mainInnerPadding: PaddingValues,
     onGroupClick: (ProxyGroupInfo) -> Unit,
     testingGroupNames: Set<String>,
+    listState: LazyListState,
 ) {
     val spacing = LocalSpacing.current
     ScreenLazyColumn(
+        lazyListState = listState,
         scrollBehavior = scrollBehavior,
         innerPadding = innerPadding,
         enableGlobalScroll = true,

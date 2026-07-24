@@ -269,9 +269,33 @@ class CoreController(
     override fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup =
         runBlocking(Dispatchers.IO) { queryProxyGroupAsync(name, proxySort) }
 
-    private suspend fun fetchProxies(): Map<String, RawProxy> {
-        val raw = request(HttpMethod.Get, "proxies").bodyAsText()
-        return json.decodeFromString<RawProxiesResponse>(raw).proxies
+    private suspend fun fetchProxies(): Map<String, RawProxy> = coroutineScope {
+        val primaryRequest = async {
+            val raw = request(HttpMethod.Get, "proxies").bodyAsText()
+            json.decodeFromString<RawProxiesResponse>(raw).proxies
+        }
+        val providerRequest = async {
+            runCatching {
+                    val raw = request(HttpMethod.Get, "providers", "proxies").bodyAsText()
+                    json.decodeFromString<RawProvidersResponse>(raw)
+                        .providers
+                        .values
+                        .flatMap(RawProvider::proxies)
+                }
+                .onFailure { error ->
+                    Timber.w(error, "Fetch proxy-provider nodes failed")
+                }
+                .getOrDefault(emptyList())
+        }
+
+        buildMap {
+            providerRequest.await().forEach { proxy ->
+                if (proxy.name.isNotBlank()) put(proxy.name, proxy)
+            }
+            // The canonical /proxies snapshot wins for built-ins and groups. Mihomo exposes
+            // external provider nodes only through /providers/proxies, so both are required.
+            putAll(primaryRequest.await())
+        }
     }
 
     private suspend fun fetchGroups(): List<RawProxy> {
@@ -598,6 +622,7 @@ class CoreController(
         val name: String = "",
         val vehicleType: String = "",
         val updatedAt: String? = null,
+        val proxies: List<RawProxy> = emptyList(),
     )
 
     @Serializable

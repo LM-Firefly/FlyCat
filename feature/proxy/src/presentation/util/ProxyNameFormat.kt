@@ -310,42 +310,23 @@ private val countryNameRegex: Regex = run {
 
 private val countryCodes = countryNameToCode.values.toSet()
 
-private val countryCodeAbbreviationRegex = Regex("(?<![A-Za-z])([A-Z]{2})(?![A-Za-z])")
+private val countryCodeAbbreviationRegex = Regex("(?<![A-Za-z])([A-Za-z]{2})(?![A-Za-z])")
 
-private fun extractCountryCodeFromName(name: String): Pair<String?, String> {
+private fun findCountryCodeFromName(name: String): String? {
     val match = countryNameRegex.find(name)
-    match ?: return null to name
+    match ?: return null
 
     val countryName = match.value
-    val countryCode =
-        countryNameToCode[countryName]
-            ?: countryNameToCode.entries
-                .find { it.key.equals(countryName, ignoreCase = true) }
-                ?.value
-
-    if (countryCode == null) return null to name
-
-    val displayName = buildString {
-        append(name.substring(0, match.range.first))
-        append(name.substring(match.range.last + 1))
-    }
-        .trim {
-            it.isWhitespace() ||
-                it == '-' ||
-                it == '|' ||
-                it == '·' ||
-                it == '•' ||
-                it == '—' ||
-                it == ':'
-        }
-
-    return countryCode to displayName.ifEmpty { name }
+    return countryNameToCode[countryName]
+        ?: countryNameToCode.entries
+            .find { it.key.equals(countryName, ignoreCase = true) }
+            ?.value
 }
 
 private fun findCountryCodeAbbreviation(name: String): String? =
     countryCodeAbbreviationRegex
         .findAll(name)
-        .map { it.groupValues[1] }
+        .map { it.groupValues[1].uppercase() }
         .firstOrNull(countryCodes::contains)
 
 private fun findFlagEmojiCountryCode(text: String): Pair<String, IntRange>? {
@@ -392,9 +373,8 @@ fun extractFlaggedName(rawName: String): FlaggedName {
         return FlaggedName(countryCode = countryCode, displayName = displayName)
     }
 
-    val (codeFromName, displayName) = extractCountryCodeFromName(trimmed)
-    if (codeFromName != null) {
-        return FlaggedName(countryCode = codeFromName, displayName = displayName)
+    findCountryCodeFromName(trimmed)?.let { countryCode ->
+        return FlaggedName(countryCode = countryCode, displayName = trimmed)
     }
 
     findCountryCodeAbbreviation(trimmed)?.let { countryCode ->
