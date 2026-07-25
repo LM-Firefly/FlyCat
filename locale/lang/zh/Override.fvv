@@ -47,8 +47,6 @@ Override = {
 
     ApplySheet = {
         Title = "应用到订阅"
-        Global = "全局应用"
-        GlobalSummary = "将此覆写应用到全部订阅"
         Empty = "暂无订阅"
         Success = "已更新应用范围"
         Failed = "更新应用范围失败：%s"

@@ -30,7 +30,6 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
@@ -53,11 +52,9 @@ import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.*
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.Spacing
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
-import com.github.yumelira.yumebox.runtime.api.Profile
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableCollectionItemScope
@@ -74,10 +71,7 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.preference.CheckboxLocation
-import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 private val overrideConfigItemGap = Spacing().space12
@@ -112,7 +106,6 @@ private class OverrideListDialogState {
     val deleteTargetConfig = mutableStateOf<OverrideConfig?>(null)
     val exportTargetConfig = mutableStateOf<OverrideConfig?>(null)
     val applyTargetConfig = mutableStateOf<OverrideConfig?>(null)
-    val showApplySheet = mutableStateOf(false)
 }
 
 @Composable
@@ -142,7 +135,6 @@ fun OverrideListScreen(
     val deleteTargetConfig = dialogs.deleteTargetConfig
     val exportTargetConfig = dialogs.exportTargetConfig
     val applyTargetConfig = dialogs.applyTargetConfig
-    val showApplySheet = dialogs.showApplySheet
 
     val listState = rememberLazyListState()
     val createFabController = rememberOverrideFabController()
@@ -274,7 +266,7 @@ fun OverrideListScreen(
                         isDragging = false,
                         isInUse = item.isInUse,
                         isBuiltIn = true,
-                        onApply = { openApplySheet(config, applyTargetConfig, showApplySheet) },
+                        onApply = { applyTargetConfig.value = config },
                         onCopy = { viewModel.duplicateConfig(config.id) },
                         onExport = {
                             exportTargetConfig.value = config
@@ -306,7 +298,7 @@ fun OverrideListScreen(
                             isDragging = isDragging,
                             isInUse = item.isInUse,
                             isBuiltIn = false,
-                            onApply = { openApplySheet(config, applyTargetConfig, showApplySheet) },
+                            onApply = { applyTargetConfig.value = config },
                             onCopy = { viewModel.duplicateConfig(config.id) },
                             onExport = {
                                 exportTargetConfig.value = config
@@ -354,199 +346,10 @@ fun OverrideListScreen(
         )
 
         OverrideApplyToProfilesSheet(
-            show = showApplySheet,
-            config = applyTargetConfig.value,
+            target = applyTargetConfig.value,
             viewModel = viewModel,
-            onDismiss = { showApplySheet.value = false },
-            onDismissFinished = { applyTargetConfig.value = null },
+            onDismiss = { applyTargetConfig.value = null },
         )
-    }
-}
-
-private fun openApplySheet(
-    config: OverrideConfig,
-    applyTargetConfig: MutableState<OverrideConfig?>,
-    showApplySheet: MutableState<Boolean>,
-) {
-    applyTargetConfig.value = config
-    showApplySheet.value = true
-}
-
-/**
- * Inverse of the per-subscription override picker: pick which subscriptions should bind this one
- * override. Global switch = all selected; individual rows stay free of dividers to match the
- * cleaned-up subscription settings sheet.
- */
-@Composable
-private fun OverrideApplyToProfilesSheet(
-    show: MutableState<Boolean>,
-    config: OverrideConfig?,
-    viewModel: OverrideConfigViewModel,
-    onDismiss: () -> Unit,
-    onDismissFinished: () -> Unit,
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val spacing = AppTheme.spacing
-    val componentSizes = AppTheme.sizes
-    val isShown = show.value && config != null
-
-    var profiles by remember { mutableStateOf(emptyList<Profile>()) }
-    var selectedProfileIds by remember { mutableStateOf(emptySet<String>()) }
-    var selectionSeeded by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    var isSaving by remember { mutableStateOf(false) }
-
-    LaunchedEffect(isShown, config?.id) {
-        // Capture first so the null check smart-casts; checking `config == null` after
-        // `isShown` would be always-false (isShown already implies config != null).
-        val target = config
-        if (target == null || !isShown) {
-            profiles = emptyList()
-            selectedProfileIds = emptySet()
-            selectionSeeded = false
-            isLoading = false
-            isSaving = false
-            return@LaunchedEffect
-        }
-        isLoading = true
-        selectionSeeded = false
-        viewModel
-            .loadApplySnapshot(target.id)
-            .onSuccess { snapshot ->
-                profiles = snapshot.profiles
-                selectedProfileIds = snapshot.selectedProfileIds
-                selectionSeeded = true
-            }
-            .onFailure { error ->
-                context.toast(
-                    YumeTxt.Override.ApplySheet.Failed.format(
-                        error.message ?: YumeTxt.Util.Error.UnknownError
-                    )
-                )
-                profiles = emptyList()
-                selectedProfileIds = emptySet()
-                selectionSeeded = true
-            }
-        isLoading = false
-    }
-
-    val allProfileIds = remember(profiles) { profiles.map { it.uuid.toString() }.toSet() }
-    val selectionReady = selectionSeeded && !isLoading
-    val applyGlobally = allProfileIds.isNotEmpty() && selectedProfileIds.containsAll(allProfileIds)
-
-    val saveSelection = {
-        val target = config
-        if (!isSaving && target != null && selectionSeeded) {
-            scope.launch {
-                isSaving = true
-                viewModel
-                    .applyOverrideToProfiles(target.id, selectedProfileIds)
-                    .onSuccess {
-                        context.toast(YumeTxt.Override.ApplySheet.Success)
-                        onDismiss()
-                    }
-                    .onFailure { error ->
-                        context.toast(
-                            YumeTxt.Override.ApplySheet.Failed.format(
-                                error.message ?: YumeTxt.Util.Error.UnknownError
-                            )
-                        )
-                    }
-                isSaving = false
-            }
-        }
-    }
-
-    AppActionBottomSheet(
-        show = isShown,
-        title = YumeTxt.Override.ApplySheet.Title,
-        startAction = {
-            AppBottomSheetCloseAction(
-                onClick = onDismiss,
-                contentDescription = YumeTxt.Override.ApplySheet.Button.Cancel,
-            )
-        },
-        endAction = {
-            AppBottomSheetConfirmAction(
-                enabled = !isSaving && !isLoading && selectionSeeded,
-                onClick = saveSelection,
-                contentDescription = YumeTxt.Override.ApplySheet.Button.Confirm,
-            )
-        },
-        onDismissRequest = onDismiss,
-        onDismissFinished = onDismissFinished,
-        enableNestedScroll = true,
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(bottom = UiDp.dp16),
-            verticalArrangement = Arrangement.spacedBy(spacing.space16),
-        ) {
-            Card {
-                SwitchPreference(
-                    title = YumeTxt.Override.ApplySheet.Global,
-                    summary = YumeTxt.Override.ApplySheet.GlobalSummary,
-                    checked = applyGlobally,
-                    enabled = selectionReady && allProfileIds.isNotEmpty(),
-                    onCheckedChange = { enabled ->
-                        if (selectionReady && allProfileIds.isNotEmpty()) {
-                            selectedProfileIds =
-                                if (enabled) {
-                                    allProfileIds
-                                } else {
-                                    emptySet()
-                                }
-                        }
-                    },
-                )
-            }
-
-            when {
-                isLoading || !selectionSeeded -> {
-                    // Keep sheet height stable while the profile list loads.
-                    Spacer(modifier = Modifier.height(UiDp.dp24))
-                }
-
-                profiles.isEmpty() -> {
-                    Text(
-                        text = YumeTxt.Override.ApplySheet.Empty,
-                        color = colorScheme.onSurfaceVariantSummary,
-                        modifier = Modifier.padding(horizontal = spacing.space16),
-                    )
-                }
-
-                else -> {
-                    Card {
-                        LazyColumn(
-                            modifier =
-                                Modifier.fillMaxWidth()
-                                    .heightIn(max = componentSizes.profileSettingsListMaxHeight)
-                        ) {
-                            items(
-                                items = profiles,
-                                key = { profile -> profile.uuid.toString() },
-                            ) { profile ->
-                                val profileId = profile.uuid.toString()
-                                val isSelected = profileId in selectedProfileIds
-                                CheckboxPreference(
-                                    title = profile.name,
-                                    checked = isSelected,
-                                    checkboxLocation = CheckboxLocation.End,
-                                    onCheckedChange = { checked ->
-                                        selectedProfileIds =
-                                            if (checked) {
-                                                selectedProfileIds + profileId
-                                            } else {
-                                                selectedProfileIds - profileId
-                                            }
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 

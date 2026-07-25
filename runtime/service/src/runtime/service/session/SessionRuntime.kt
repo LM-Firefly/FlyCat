@@ -448,9 +448,30 @@ class SessionRuntime(
                     .orEmpty(),
         )
 
+        // ApplyConfig (geo/providers/TUN) routinely takes multiple seconds on cold start; the old
+        // 10×200ms window failed while clash.sock was still not bound (ENOENT).
+        val deadlineMs = System.currentTimeMillis() + PROXY_GROUP_READY_TIMEOUT_MS
         var lastControllerError: String? = null
-        repeat(PROXY_GROUP_READY_RETRY_COUNT) { attempt ->
+        var attempt = 0
+        while (System.currentTimeMillis() < deadlineMs) {
             ensureNotInterrupted(spec)
+            attempt++
+
+            // Dead core cannot create the controller; fail fast with core.log instead of spinning.
+            if (
+                spec.owner == RuntimeOwner.VpnService &&
+                    !com.github.yumelira.yumebox.runtime.service.core.CoreProcess.isLocalCoreAlive()
+            ) {
+                val coreTail =
+                    com.github.yumelira.yumebox.runtime.service.core.CoreProcess.coreLogTail(
+                        host.context.appContextOrSelf
+                    )
+                error(
+                    "core process exited before controller became ready" +
+                        (coreTail?.let { " ($it)" } ?: "")
+                )
+            }
+
             val names = runCatching {
                 rest.queryProxyGroupNames(false)
             }
@@ -474,6 +495,8 @@ class SessionRuntime(
                 }
                 .getOrDefault(false)
             // Controller answered: if the profile exposes no groups to verify, startup is ready.
+            // Note: previewGroups is currently a stub (always empty), so this path is the normal
+            // success path once REST is up — not proof that the profile has zero groups.
             if (tunnelOk && expectedGroups.isEmpty()) {
                 startupLog(
                     spec,
@@ -481,25 +504,26 @@ class SessionRuntime(
                 )
                 return
             }
-            // Only log the first miss and the final attempt — intermediate retries are noise.
-            if (attempt == 0 || attempt == PROXY_GROUP_READY_RETRY_COUNT - 1) {
+            // Only log the first miss and when we are about to give up — intermediate retries are noise.
+            val remainingMs = deadlineMs - System.currentTimeMillis()
+            if (attempt == 1 || remainingMs <= PROXY_GROUP_READY_RETRY_DELAY_MS) {
                 startupLog(
                     spec,
                     "runtime verify: actualGroups=0 controller=${if (tunnelOk) "ok" else "down"}" +
                         (lastControllerError?.let { " err=$it" } ?: "") +
-                        " attempt=${attempt + 1}/$PROXY_GROUP_READY_RETRY_COUNT",
+                        " attempt=$attempt remainingMs=$remainingMs",
                 )
             }
-            if (attempt < PROXY_GROUP_READY_RETRY_COUNT - 1) {
-                runBlocking {
-                    PollingTimers.awaitTick(
-                        PollingTimerSpecs.dynamic(
-                            name = "runtime_group_ready_retry",
-                            intervalMillis = PROXY_GROUP_READY_RETRY_DELAY_MS,
-                            initialDelayMillis = PROXY_GROUP_READY_RETRY_DELAY_MS,
-                        )
+            if (remainingMs <= 0) break
+            runBlocking {
+                PollingTimers.awaitTick(
+                    PollingTimerSpecs.dynamic(
+                        name = "runtime_group_ready_retry",
+                        intervalMillis = PROXY_GROUP_READY_RETRY_DELAY_MS,
+                        initialDelayMillis =
+                            min(PROXY_GROUP_READY_RETRY_DELAY_MS, remainingMs.coerceAtLeast(1L)),
                     )
-                }
+                )
             }
         }
 
@@ -739,8 +763,9 @@ class SessionRuntime(
     }
 
     private companion object {
-        private const val PROXY_GROUP_READY_RETRY_COUNT = 10
-        private const val PROXY_GROUP_READY_RETRY_DELAY_MS = 200L
+        /** Cold ApplyConfig (geo + providers + gVisor TUN) can exceed several seconds. */
+        private const val PROXY_GROUP_READY_TIMEOUT_MS = 30_000L
+        private const val PROXY_GROUP_READY_RETRY_DELAY_MS = 250L
 
         /** The session instance currently owning the process-wide Go core. */
         @Volatile private var coreOwner: SessionRuntime? = null

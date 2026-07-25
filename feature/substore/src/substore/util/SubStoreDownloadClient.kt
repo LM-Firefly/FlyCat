@@ -22,6 +22,7 @@ package com.github.yumelira.yumebox.substore.util
 
 import android.app.Application
 import com.github.yumelira.yumebox.common.util.ByteFormatter.formatSpeed
+import com.github.yumelira.yumebox.common.util.SubscriptionUserAgentDefaults
 import com.github.yumelira.yumebox.data.store.AppSettingsStore
 import io.ktor.client.*
 import io.ktor.client.engine.android.*
@@ -61,7 +62,6 @@ class SubStoreDownloadClient(
     private val appSettings: AppSettingsStore,
 ) {
     companion object {
-        private const val DEFAULT_USER_AGENT = "ClashMetaForAndroid"
         private const val UPDATE_INTERVAL_MS = 500L
     }
 
@@ -203,7 +203,7 @@ class SubStoreDownloadClient(
 
     private fun resolveUserAgent(): String {
         val customUA = appSettings.customUserAgent.value
-        return customUA.ifEmpty { DEFAULT_USER_AGENT }
+        return customUA.ifEmpty { SubscriptionUserAgentDefaults.DEFAULT }
     }
 
     private fun parseSubscriptionInfo(headers: Headers): SubscriptionInfo {

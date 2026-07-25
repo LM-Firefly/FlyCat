@@ -47,8 +47,6 @@ Override = {
 
     ApplySheet = {
         Title = "購読へ適用"
-        Global = "全体に適用"
-        GlobalSummary = "この上書きをすべての購読に使用"
         Empty = "購読がありません"
         Success = "適用範囲を更新しました"
         Failed = "適用範囲の更新に失敗しました: %s"

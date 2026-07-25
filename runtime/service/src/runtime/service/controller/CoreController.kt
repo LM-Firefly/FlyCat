@@ -191,7 +191,7 @@ class CoreController(
         client
             .prepareGet(buildUrl("traffic")) { applyAuth() }
             .execute { response ->
-                val line = response.bodyAsChannel().readUTF8Line()
+                val line = response.bodyAsChannel().readLine()
                 line?.let { json.decodeFromString<RawTraffic>(it) }
             }
     }
@@ -209,7 +209,7 @@ class CoreController(
             }
             .execute { response ->
                 val line =
-                    response.bodyAsChannel().readUTF8Line()
+                    response.bodyAsChannel().readLine()
                         ?: error("connections stream ended before the first snapshot")
                 json.decodeFromString<ConnectionSnapshot>(line)
             }
@@ -524,7 +524,7 @@ class CoreController(
                 sink.observer.onConnected()
                 val channel = response.bodyAsChannel()
                 while (logSink.get() === sink && !channel.isClosedForRead) {
-                    val line = channel.readUTF8Line() ?: break
+                    val line = channel.readLine() ?: break
                     if (line.isBlank()) continue
                     val entry =
                         runCatching { json.decodeFromString<RawLogLine>(line) }.getOrNull()

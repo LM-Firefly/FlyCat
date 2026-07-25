@@ -26,6 +26,7 @@ import com.github.yumelira.yumebox.core.data.RepositoryUtils.safeApiCall
 import com.github.yumelira.yumebox.runtime.api.FetchObserver
 import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumelira.yumebox.runtime.api.ProfileUpdateReport
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
 import java.util.*
@@ -136,14 +137,16 @@ class ProfilesRepository(private val context: Context) {
             .getOrThrow()
     }
 
-    suspend fun updateProfile(uuid: UUID, callback: FetchObserver? = null) {
+    suspend fun updateProfile(
+        uuid: UUID,
+        callback: FetchObserver? = null,
+    ): ProfileUpdateReport =
         safeApiCall(TAG, "updateProfile") {
                 Timber.d("Updating profile: uuid=$uuid")
                 RuntimeAccess.connect(context)
                 RuntimeAccess.profile().update(uuid, callback)
             }
             .getOrThrow()
-    }
 
     suspend fun patchProfile(uuid: UUID, patch: ProfilePatch) {
         safeApiCall(TAG, "patchProfile") {

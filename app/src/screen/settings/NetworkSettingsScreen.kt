@@ -111,9 +111,6 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                     PreferenceSwitchItem(
                         title = YumeTxt.NetworkSettings.Advanced.DisableOverrideTitle,
                         checked = disableAllOverride,
-                        // Only the root Tun / TPROXY modes do their own routing where skipping the
-                        // override chain makes sense; it stays disabled under VPN 服务.
-                        enabled = runMode == RunMode.Tun || runMode == RunMode.Tproxy,
                         onCheckedChange = viewModel::onDisableAllOverrideChange,
                     )
                 }

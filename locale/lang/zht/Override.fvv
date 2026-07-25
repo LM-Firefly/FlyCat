@@ -47,8 +47,6 @@ Override = {
 
     ApplySheet = {
         Title = "套用到訂閱"
-        Global = "全域套用"
-        GlobalSummary = "將此覆寫套用到全部訂閱"
         Empty = "暫無訂閱"
         Success = "已更新套用範圍"
         Failed = "更新套用範圍失敗：%s"

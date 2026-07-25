@@ -26,6 +26,7 @@ import android.content.Context
 import com.github.yumelira.yumebox.runtime.api.FetchObserver
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.api.ProfileApi
+import com.github.yumelira.yumebox.runtime.api.ProfileUpdateReport
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.util.directoryLastModified
@@ -139,8 +140,8 @@ class ProfileService(private val context: Context) :
         context.sendProfileChanged(uuid, affectsRuntime = store.activeProfile == uuid)
     }
 
-    override suspend fun update(uuid: UUID, callback: FetchObserver?) {
-        ProfileProcessor.update(context, uuid, callback)
+    override suspend fun update(uuid: UUID, callback: FetchObserver?): ProfileUpdateReport {
+        return ProfileProcessor.update(context, uuid, callback)
     }
 
     override suspend fun delete(uuid: UUID) {

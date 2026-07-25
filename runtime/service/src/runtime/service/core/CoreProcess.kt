@@ -288,6 +288,19 @@ class CoreProcess(private val context: Context) {
         }
 
         /**
+         * True if the non-root VPN child core is still alive. Used by LOCAL_TUN startup verify so a
+         * dead process fails immediately instead of spinning on a missing clash.sock.
+         */
+        fun isLocalCoreAlive(): Boolean {
+            val pid = running?.pid ?: return false
+            return runCatching {
+                    Os.kill(pid, 0)
+                    true
+                }
+                .getOrDefault(false)
+        }
+
+        /**
          * The run mode of the persisted root daemon ("tun"/"tproxy" → [RunMode]), or null when
          * none.
          */

@@ -28,8 +28,7 @@ import com.github.yumelira.yumebox.data.model.TunStack
 import com.tencent.mmkv.MMKV
 
 class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
-    // Run mode selected in the UI. Only VpnService ships today; the root modes gate options like
-    // disable-all-overrides.
+    // Run mode selected in the UI (VpnService / Tun / TPROXY).
     val runMode by enumFlow(RunMode.VpnService)
 
     val bypassPrivateNetwork by boolFlow(true)
@@ -38,8 +37,8 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     val enableIPv6 by boolFlow(false)
     val systemProxy by boolFlow(true)
 
-    // When on, the override chain is skipped entirely and the raw subscription config is used
-    // as-is.
+    // All modes: drop the user override chain. Root Tun/TPROXY additionally skip mode geometry
+    // injection and compiler runtime patches (skipRuntimePatches).
     val disableAllOverride by boolFlow(false)
 
     // gVisor is the reliable VpnService default (userspace, no per-socket protect); system/mixed

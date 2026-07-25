@@ -43,7 +43,7 @@ interface ProfileApi {
         ageSecretKey: String? = null,
     )
 
-    suspend fun update(uuid: UUID, callback: FetchObserver? = null)
+    suspend fun update(uuid: UUID, callback: FetchObserver? = null): ProfileUpdateReport
 
     suspend fun queryByUUID(uuid: UUID): Profile?
 

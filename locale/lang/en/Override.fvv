@@ -47,8 +47,6 @@ Override = {
 
     ApplySheet = {
         Title = "Apply to Subscriptions"
-        Global = "Apply Globally"
-        GlobalSummary = "Use this override on every subscription"
         Empty = "No subscriptions"
         Success = "Application scope updated"
         Failed = "Failed to update application scope: %s"

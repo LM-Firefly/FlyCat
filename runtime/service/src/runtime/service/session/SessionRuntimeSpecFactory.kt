@@ -55,33 +55,30 @@ class SessionRuntimeSpecFactory(
     private fun createSpec(owner: RuntimeOwner, runMode: RunMode): RuntimeSpec {
         val profile = requireActiveProfile()
         val profileDir = context.importedDir.resolve(profile.uuid.toString())
-        val skipRuntimePatches =
-            networkSettings.disableAllOverride.value &&
-                (runMode == RunMode.Tun || runMode == RunMode.Tproxy)
-        // Root users can opt out of every visual/runtime patch and make their profile YAML fully
-        // authoritative. VPN never takes this path because Android owns its TUN transport.
+        val disableAllUserOverrides = networkSettings.disableAllOverride.value
+        val skipModePatches =
+            disableAllUserOverrides && (runMode == RunMode.Tun || runMode == RunMode.Tproxy)
         val userOverrides =
-            if (skipRuntimePatches) {
+            if (disableAllUserOverrides) {
                 emptyList()
             } else {
                 compiledConfigPipeline.resolveOverrideSpecs(profile.uuid.toString())
             }
-        // Each mode injects its own built-in override (subject to disable-all-overrides): Tun the
-        // tun
-        // geometry, Tproxy tproxy-port + iptables; VpnService gets its fd path and needs neither.
         val tunConfig =
-            if (!skipRuntimePatches && runMode == RunMode.Tun) buildTunConfig() else null
+            if (!skipModePatches && runMode == RunMode.Tun) buildTunConfig() else null
         val tproxyConfig =
-            if (!skipRuntimePatches && runMode == RunMode.Tproxy) buildTproxyConfig() else null
-        val overrideSpecs =
+            if (!skipModePatches && runMode == RunMode.Tproxy) buildTproxyConfig() else null
+        // Mode/system fragments first; app global-ua always last so it beats subscription + user
+        // overrides and survives disable-all (core provider refresh must use the same UA).
+        val modeOverrides =
             when {
-                skipRuntimePatches -> userOverrides
                 tunConfig != null -> userOverrides + TunOverride.materialize(tunConfig, profileDir)
                 tproxyConfig != null ->
                     userOverrides + TproxyOverride.materialize(tproxyConfig, profileDir)
 
                 else -> userOverrides
             }
+        val overrideSpecs = modeOverrides + GlobalUaOverride.materialize(profileDir)
         val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
         return RuntimeSpec(
             owner = owner,
@@ -92,7 +89,8 @@ class SessionRuntimeSpecFactory(
             ageSecretKey = ageSecretKey,
             overrideSpecs = overrideSpecs,
             runMode = runMode,
-            skipRuntimePatches = skipRuntimePatches,
+            // Only Root Tun/TPROXY skip compiler patches; VPN keeps DNS/path injection.
+            skipRuntimePatches = skipModePatches,
             tunConfig = tunConfig,
             tproxyConfig = tproxyConfig,
             effectiveFingerprint =
@@ -100,7 +98,7 @@ class SessionRuntimeSpecFactory(
                     profile.uuid.toString(),
                     overrideSpecs,
                     ageSecretKey,
-                    skipRuntimePatches,
+                    skipModePatches,
                 ),
             profileFingerprint = buildProfileFingerprint(profile.uuid.toString()),
         )

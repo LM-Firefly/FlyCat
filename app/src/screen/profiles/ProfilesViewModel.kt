@@ -33,6 +33,7 @@ import com.github.yumelira.yumebox.data.store.ProfileLink
 import com.github.yumelira.yumebox.data.store.ProfileLinksStore
 import com.github.yumelira.yumebox.runtime.api.FetchObserver
 import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumelira.yumebox.runtime.api.ProfileUpdateReport
 import com.github.yumelira.yumebox.runtime.client.ProfilePatch
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
 import java.util.*
@@ -131,7 +132,7 @@ class ProfilesViewModel(
                     getApplication<Application>().copyProfileImport(fileUri, uuid)
                 }
 
-                profilesRepository.updateProfile(uuid, observer)
+                val report = profilesRepository.updateProfile(uuid, observer)
                 _downloadProgress.value =
                     DownloadProgress(
                         percent = 100,
@@ -139,7 +140,7 @@ class ProfilesViewModel(
                         isCompleted = true,
                     )
 
-                showMessage(YumeTxt.ProfilesVM.Message.ProfileAdded.format(name))
+                showMessage(successMessage(report, displayName = name, isCreate = true))
                 refreshProfiles()
                 Timber.i("Profile created: $uuid")
             } catch (error: Exception) {
@@ -237,7 +238,7 @@ class ProfilesViewModel(
                     _downloadProgress.value = status.toDownloadProgress()
                 }
 
-                profilesRepository.updateProfile(uuid, observer)
+                val report = profilesRepository.updateProfile(uuid, observer)
 
                 _downloadProgress.value =
                     DownloadProgress(
@@ -245,7 +246,9 @@ class ProfilesViewModel(
                         message = YumeTxt.ProfilesVM.Progress.ImportComplete,
                         isCompleted = true,
                     )
-                showMessage(YumeTxt.ProfilesVM.Message.ProfileUpdated.format(uuid.toString()))
+                val displayName =
+                    profilesRepository.queryProfileByUUID(uuid)?.name ?: uuid.toString()
+                showMessage(successMessage(report, displayName = displayName, isCreate = false))
                 refreshProfiles()
                 Timber.i("Profile updated: $uuid")
             } catch (error: Exception) {
@@ -347,6 +350,36 @@ class ProfilesViewModel(
 
     fun clearMessage() {
         clearMessageState()
+    }
+
+    /**
+     * Soft warnings for partial provider prefetch. Never routes through showError so the Add sheet
+     * stays on the success path when the main config committed.
+     */
+    private fun successMessage(
+        report: ProfileUpdateReport,
+        displayName: String,
+        isCreate: Boolean,
+    ): String {
+        val providers = report.providers
+        if (providers.failedNames.isNotEmpty()) {
+            val preview =
+                providers.failedNames.take(3).joinToString(", ").let { names ->
+                    if (providers.failedNames.size > 3) "$names…" else names
+                }
+            return YumeTxt.ProfilesVM.Message.ProvidersPartial.format(
+                providers.failedNames.size,
+                preview,
+            )
+        }
+        if (providers.discoveryAnomaly) {
+            return YumeTxt.ProfilesVM.Message.ProvidersUndiscovered
+        }
+        return if (isCreate) {
+            YumeTxt.ProfilesVM.Message.ProfileAdded.format(displayName)
+        } else {
+            YumeTxt.ProfilesVM.Message.ProfileUpdated.format(displayName)
+        }
     }
 
     private fun showError(message: String) {

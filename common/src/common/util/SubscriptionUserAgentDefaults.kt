@@ -18,19 +18,9 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.util
+package com.github.yumelira.yumebox.common.util
 
-import android.content.Context
-
-/**
- * Legacy core-process hooks. Custom User-Agent is injected via compile-chain
- * [com.github.yumelira.yumebox.runtime.service.session.GlobalUaOverride], not a runtime REST patch.
- */
-object CoreRuntimeConfig {
-    @Deprecated(
-        message = "UA is injected by GlobalUaOverride during compile; this is a no-op.",
-        replaceWith = ReplaceWith(""),
-    )
-    @Suppress("UNUSED_PARAMETER")
-    fun applyCustomUserAgentIfPresent(context: Context) = Unit
+/** Shared default User-Agent recognized by most airport subscription gates. */
+object SubscriptionUserAgentDefaults {
+    const val DEFAULT = "ClashMetaForAndroid"
 }

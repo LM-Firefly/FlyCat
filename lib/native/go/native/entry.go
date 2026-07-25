@@ -81,10 +81,14 @@ func main() {
 	}
 	boot("[core] setup received: mode=%s config=%d bytes tunFd=%d", *mode, len(rawConfig), tunFd)
 
+	// Milestones stay outside logrus so a hang between stages is visible in core.log even when
+	// profile log-level is ERROR (the default we pin below).
+	boot("[core] parse begin")
 	cfg, err := config.Parse(rawConfig)
 	if err != nil {
 		fatal("parse compiled config: %v", err)
 	}
+	boot("[core] parse ok")
 	// Profile log-level must not reopen the floodgates after ApplyConfig.
 	cfg.General.LogLevel = log.ERROR
 	log.SetLevel(log.ERROR)
@@ -93,11 +97,16 @@ func main() {
 	}
 
 	if *mode == "vpn" && tunFd >= 0 {
+		boot("[core] tun configure begin fd=%d", tunFd)
 		if err := tun.Configure(cfg, tunFd, *gateway, *portal, *dns); err != nil {
 			fatal("configure tun: %v", err)
 		}
+		boot("[core] tun configure ok")
 	}
 
+	// Controller socket is created inside ApplyConfig; until this returns, Kotlin REST probes
+	// get ENOENT ("No such file or directory") against clash.sock.
+	boot("[core] apply begin controller=%q", *controller)
 	hub.ApplyConfig(cfg)
 	log.SetLevel(log.ERROR)
 	boot("[core] config applied; mode=%s controller=%q tun.enable=%v", *mode, *controller, cfg.General.Tun.Enable)
