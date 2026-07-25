@@ -173,14 +173,21 @@ private fun OverrideConfigCardContent(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp8)) {
                     OverrideCardActionIconButton(
-                        imageVector = Yume.Copy,
-                        contentDescription = YumeTxt.Override.Card.Copy,
-                        onClick = onCopy,
-                    )
-                    OverrideCardActionIconButton(
                         imageVector = Yume.Share,
                         contentDescription = YumeTxt.Override.Card.Export,
                         onClick = onExport,
+                    )
+                    if (onDelete != null) {
+                        OverrideCardActionIconButton(
+                            imageVector = Yume.Delete,
+                            contentDescription = YumeTxt.Override.Card.Delete,
+                            onClick = onDelete,
+                        )
+                    }
+                    OverrideCardActionIconButton(
+                        imageVector = Yume.Copy,
+                        contentDescription = YumeTxt.Override.Card.Copy,
+                        onClick = onCopy,
                     )
                 }
 
@@ -215,7 +222,6 @@ private fun OverrideConfigCardContent(
                 }
 
                 IconButton(
-                    modifier = Modifier.padding(end = if (onDelete != null) UiDp.dp8 else UiDp.dp0),
                     backgroundColor = colorScheme.primary.copy(alpha = 0.1f),
                     minHeight = UiDp.dp35,
                     minWidth = UiDp.dp35,
@@ -239,34 +245,6 @@ private fun OverrideConfigCardContent(
                             fontWeight = FontWeight.Medium,
                             fontSize = 15.sp,
                         )
-                    }
-                }
-
-                if (onDelete != null) {
-                    IconButton(
-                        backgroundColor = colorScheme.secondaryContainer.copy(alpha = 0.78f),
-                        minHeight = UiDp.dp35,
-                        minWidth = UiDp.dp35,
-                        onClick = onDelete,
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = UiDp.dp10),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                modifier = Modifier.size(UiDp.dp20),
-                                imageVector = Yume.Delete,
-                                tint = colorScheme.onSurface.copy(alpha = 0.85f),
-                                contentDescription = YumeTxt.Override.Card.Delete,
-                            )
-                            Text(
-                                modifier = Modifier.padding(start = UiDp.dp4, end = UiDp.dp3),
-                                text = YumeTxt.Override.Card.DeleteButton,
-                                color = colorScheme.onSurface.copy(alpha = 0.85f),
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 15.sp,
-                            )
-                        }
                     }
                 }
             }
