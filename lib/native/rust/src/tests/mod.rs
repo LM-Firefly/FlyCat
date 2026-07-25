@@ -588,6 +588,57 @@ fn two_js_overrides_apply_in_order() {
     assert_eq!(result.root.get("port").and_then(JsonValue::as_i64), Some(5));
 }
 
+
+#[test]
+fn js_runtime_reuses_realm_without_leaking_previous_main() {
+    let root = json!({ "mode": "rule", "port": 1 });
+    let overrides = vec![
+        LoadedOverride {
+            path: "first.js".to_string(),
+            ext: "js".to_string(),
+            content: "function main(p) { p.port = 7; return p; }".to_string(),
+        },
+        LoadedOverride {
+            path: "second-missing-main.js".to_string(),
+            ext: "js".to_string(),
+            // Intentionally no main(); reused realm must not call first.js's main again.
+            content: "const unused = 1;".to_string(),
+        },
+    ];
+    let error = engine::apply_overrides(root, &overrides, false)
+        .expect_err("second script without main must hard-fail");
+    assert!(
+        error.contains("must define main(profile)"),
+        "unexpected error: {error}"
+    );
+}
+
+#[test]
+fn many_js_overrides_reuse_runtime_and_accumulate() {
+    let mut overrides = Vec::new();
+    for index in 0..8 {
+        overrides.push(LoadedOverride {
+            path: format!("step-{index}.js"),
+            ext: "js".to_string(),
+            content: format!(
+                "function main(profile) {{ profile.port = (profile.port || 0) + 1; return profile; }}"
+            ),
+        });
+    }
+    let result = engine::apply_overrides(json!({ "mode": "rule", "port": 0 }), &overrides, false)
+        .expect("multi js chain");
+    assert_eq!(result.root.get("port").and_then(JsonValue::as_i64), Some(8));
+}
+
+#[test]
+fn empty_override_list_is_noop() {
+    let root = json!({ "mode": "rule", "port": 9 });
+    let result = engine::apply_overrides(root.clone(), &[], false).expect("empty overrides");
+    assert_eq!(result.root, root);
+    assert!(result.warnings.is_empty());
+}
+
+
 #[test]
 fn compile_request_emits_warning_for_empty_override_file() {
     let temp_dir = std::env::temp_dir().join(format!(

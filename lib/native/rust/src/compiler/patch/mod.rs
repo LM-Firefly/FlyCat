@@ -276,6 +276,9 @@ pub fn apply_override_document(target: &mut JsonValue, patch: &JsonValue) {
         *target = clone_raw_value(patch);
         return;
     };
+    if patch_object.is_empty() {
+        return;
+    }
 
     if !target.is_object() {
         *target = JsonValue::Object(JsonMap::new());
@@ -582,7 +585,13 @@ fn literal_key_inner(key: &str) -> Option<&str> {
 }
 
 fn unescape_literal_key(key: &str) -> String {
-    literal_key_inner(key).unwrap_or(key).to_string()
+    // Angle-wrapped keys are rare; avoid scanning every key for a trailing '>' first.
+    if key.as_bytes().first() == Some(&b'<') {
+        if let Some(inner) = literal_key_inner(key) {
+            return inner.to_string();
+        }
+    }
+    key.to_string()
 }
 
 fn provider_extension(provider: &JsonMap<String, JsonValue>, prefix: &str) -> &'static str {
