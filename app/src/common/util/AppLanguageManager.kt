@@ -48,7 +48,10 @@ object AppLanguageManager {
             when (language) {
                 AppLanguage.System -> LocaleListCompat.getEmptyLocaleList()
                 AppLanguage.Zh -> LocaleListCompat.forLanguageTags("zh-Hans")
+                AppLanguage.ZhHant -> LocaleListCompat.forLanguageTags("zh-Hant")
                 AppLanguage.En -> LocaleListCompat.forLanguageTags("en")
+                AppLanguage.Ja -> LocaleListCompat.forLanguageTags("ja")
+                AppLanguage.Ru -> LocaleListCompat.forLanguageTags("ru")
             }
         )
 
@@ -57,7 +60,10 @@ object AppLanguageManager {
         when (language) {
             AppLanguage.System -> FYTxtConfig.updateTags(lock = false)
             AppLanguage.Zh -> FYTxtConfig.updateTags(listOf("ZH"), lock = true)
+            AppLanguage.ZhHant -> FYTxtConfig.updateTags(listOf("ZHT"), lock = true)
             AppLanguage.En -> FYTxtConfig.updateTags(listOf("EN"), lock = true)
+            AppLanguage.Ja -> FYTxtConfig.updateTags(listOf("JA"), lock = true)
+            AppLanguage.Ru -> FYTxtConfig.updateTags(listOf("RU"), lock = true)
         }
     }
 
@@ -77,7 +83,10 @@ object AppLanguageManager {
         when (language) {
             AppLanguage.System -> systemLocale()
             AppLanguage.Zh -> Locale.SIMPLIFIED_CHINESE
+            AppLanguage.ZhHant -> Locale.TRADITIONAL_CHINESE
             AppLanguage.En -> Locale.ENGLISH
+            AppLanguage.Ja -> Locale.JAPANESE
+            AppLanguage.Ru -> Locale("ru")
         }
 
     private fun systemLocale(): Locale {

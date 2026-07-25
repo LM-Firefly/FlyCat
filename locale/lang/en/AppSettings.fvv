@@ -26,7 +26,10 @@ AppSettings = {
         LanguageTitle = "App Language"
         LanguageSystem = "Follow System"
         LanguageChinese = "简体中文"
+        LanguageChineseTraditional = "繁體中文"
         LanguageEnglish = "English"
+        LanguageJapanese = "日本語"
+        LanguageRussian = "Русский"
 
         ColorThemeTitle = "Theme Palette"
         ColorThemePickerTitle = "Pick Theme Color"

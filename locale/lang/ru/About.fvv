@@ -1,0 +1,37 @@
+<About Page>
+About = {
+    Title = "О приложении"
+
+    App = {
+        VersionLoading = "Загрузка..."
+        VersionFailed = "Не удалось загрузить"
+    }
+
+    Section = {
+        ProjectLinks = "Ссылки проекта"
+        More = "Ещё"
+        Support = "Поддержка"
+        License = "Лицензия"
+    }
+
+    Support = {
+        ExportLogs = "Экспорт журналов"
+        ReportIssue = "Сообщить о проблеме"
+        ExportSuccess = "Журналы экспортированы"
+        ExportFailed = "Не удалось экспортировать журналы"
+    }
+
+    Link = {
+        TelegramGroup = "Группа Telegram"
+        TelegramChannel = "Канал Telegram"
+    }
+
+    License = {
+        Libraries = "Библиотеки"
+        LibrariesSummary = "Просмотреть все сторонние библиотеки, используемые в приложении"
+        AgplName = "GNU Affero General Public License v3.0"
+        AgplDescription = "Эта программа — свободное ПО: вы можете распространять и/или изменять её на условиях GNU Affero General Public License."
+    }
+
+    Copyright = "© 2025 – Present YumeYucca"
+}

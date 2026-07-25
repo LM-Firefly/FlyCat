@@ -1,0 +1,67 @@
+<Network Settings Page>
+NetworkSettings = {
+    Title = "Сетевые настройки"
+
+    Section = {
+        VpnOptions = "Параметры службы"
+        Advanced = "Дополнительно"
+        ProxyOptions = "Контроль доступа"
+    }
+
+    Advanced = {
+        DisableOverrideTitle = "Отключить все переопределения"
+    }
+
+    RunMode = {
+        SectionTitle = "Режим работы"
+        VpnServiceTitle = "Vpn Service"
+        VpnServiceSummary = "Системный VPN, глобальный прокси"
+        TunTitle = "Tun"
+        TunSummary = "Ядерный TUN-туннель с root"
+        TproxyTitle = "TPROXY"
+        TproxySummary = "Ядерный прозрачный прокси с root"
+    }
+
+    VpnOptions = {
+        BypassPrivateTitle = "Обходить частные сети"
+        DnsHijackTitle = "Перехват DNS"
+        AllowBypassTitle = "Разрешить обход приложениями"
+        EnableIpv6Title = "Включить IPv6"
+        SystemProxyTitle = "Встроенный системный прокси VPN"
+    }
+
+    TunOptions = {
+        Title = "Параметры Tun"
+        IfNameTitle = "Виртуальный NIC"
+        MtuTitle = "MTU"
+        StackTitle = "Сетевой стек"
+        StackSystem = "System"
+        StackGVisor = "gVisor"
+        StackMixed = "Mixed"
+        AutoRouteTitle = "Автомаршрут"
+        StrictRouteTitle = "Строгий маршрут"
+        AutoRedirectTitle = "Автоперенаправление"
+        DnsModeTitle = "Режим DNS"
+        DnsRedirHost = "RedirHost"
+        DnsFakeIp = "FakeIP"
+        Ipv6Title = "Включить IPv6"
+    }
+
+    TproxyOptions = {
+        Title = "Параметры TPROXY"
+        PortTitle = "Порт TPROXY"
+    }
+
+    ProxyOptions = {
+        AccessControlModeTitle = "Режим контроля доступа"
+        AllowAll = "Разрешить все"
+        AllowSelected = "Разрешить выбранные"
+        RejectSelected = "Запретить выбранные"
+        ManageAccessControlTitle = "Управление контролем доступа"
+    }
+
+    Error = {
+        VpnDenied = "Разрешение VPN отклонено"
+        RootRequired = "Для Tun / TPROXY у YumeBox должен быть рабочий root-доступ"
+    }
+}

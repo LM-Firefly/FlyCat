@@ -1,0 +1,67 @@
+<Home Page>
+Home = {
+    Title = "YumeBox"
+
+    Message = {
+        ConfigSwitched = "Профиль переключён"
+        ConfigSwitchFailed = "Не удалось переключить профиль: %s"
+        Preparing = "Подготовка..."
+        StartFailed = "Не удалось запустить: %s"
+        StopFailed = "Не удалось остановить: %s"
+    }
+
+    Control = {
+        HintAddProfile = "Сначала добавьте профиль"
+        HintEnableProfile = "Сначала включите профиль на странице «Профили»"
+    }
+
+    NodeInfo = {
+        Node = "Узел"
+        Delay = "Задержка"
+        Unknown = "Неизвестно"
+        DelayValue = "%dms"
+    }
+
+    Traffic = {
+        UpShort = "UP"
+        DownShort = "DOWN"
+        NoProfile = "Нет профиля"
+    }
+
+    IpInfo = {
+        ExitIp = "Выходной IP"
+    }
+
+    Status = {
+        Connecting = "Подключение"
+        Disconnecting = "Отключение"
+        Running = "Работает"
+        TapToStart = "Нажмите, чтобы запустить"
+    }
+
+    Control = {
+        HintAddProfile = "Сначала добавьте профиль"
+        HintEnableProfile = "Сначала включите профиль на странице «Профили»"
+        Start = "Старт"
+        Stop = "Стоп"
+    }
+
+    ProxyMode = {
+        Vpn = "VPN"
+        Tun = "TUN"
+        Tproxy = "TPROXY"
+    }
+
+    PreviewGuide = {
+        Title = "Добро пожаловать в YumeBox"
+        Description = "Нажмите «Старт» внизу, чтобы подключиться"
+        Next = "Далее"
+        Start = "Начать"
+        WallpaperTitle = "Сменить обои"
+        WallpaperDescription = "Удерживайте обои, чтобы выбрать изображение из альбома"
+        SwipeTitle = "Листайте страницы"
+        SwipeDescription = "Смахивайте по главному экрану, чтобы перейти к прокси, профилям и настройкам"
+        AddTitle = "Добавить подписку"
+        AddDescription = "Нажмите значок справа сверху и вставьте ссылку"
+    }
+}

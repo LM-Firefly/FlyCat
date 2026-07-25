@@ -1,0 +1,67 @@
+<Network Settings Page>
+NetworkSettings = {
+    Title = "ネットワーク設定"
+
+    Section = {
+        VpnOptions = "サービス設定"
+        Advanced = "詳細"
+        ProxyOptions = "アクセス制御"
+    }
+
+    Advanced = {
+        DisableOverrideTitle = "すべての上書きを無効化"
+    }
+
+    RunMode = {
+        SectionTitle = "実行モード"
+        VpnServiceTitle = "Vpn Service"
+        VpnServiceSummary = "システム VPN による全体プロキシ"
+        TunTitle = "Tun"
+        TunSummary = "Root が必要なカーネル TUN トンネル"
+        TproxyTitle = "TPROXY"
+        TproxySummary = "Root が必要なカーネル透過プロキシ"
+    }
+
+    VpnOptions = {
+        BypassPrivateTitle = "プライベートネットワークをバイパス"
+        DnsHijackTitle = "DNS ハイジャック"
+        AllowBypassTitle = "アプリのバイパスを許可"
+        EnableIpv6Title = "IPv6 を有効化"
+        SystemProxyTitle = "VPN 内蔵システムプロキシ"
+    }
+
+    TunOptions = {
+        Title = "Tun 設定"
+        IfNameTitle = "仮想 NIC"
+        MtuTitle = "MTU"
+        StackTitle = "ネットワークスタック"
+        StackSystem = "System"
+        StackGVisor = "gVisor"
+        StackMixed = "Mixed"
+        AutoRouteTitle = "自動ルート"
+        StrictRouteTitle = "厳密ルート"
+        AutoRedirectTitle = "自動リダイレクト"
+        DnsModeTitle = "DNS モード"
+        DnsRedirHost = "RedirHost"
+        DnsFakeIp = "FakeIP"
+        Ipv6Title = "IPv6 を有効化"
+    }
+
+    TproxyOptions = {
+        Title = "TPROXY 設定"
+        PortTitle = "TPROXY ポート"
+    }
+
+    ProxyOptions = {
+        AccessControlModeTitle = "アクセス制御モード"
+        AllowAll = "すべて許可"
+        AllowSelected = "選択のみ許可"
+        RejectSelected = "選択を拒否"
+        ManageAccessControlTitle = "アクセス制御を管理"
+    }
+
+    Error = {
+        VpnDenied = "VPN 権限が拒否されました"
+        RootRequired = "Tun / TPROXY には YumeBox の利用可能な Root 権限が必要です"
+    }
+}

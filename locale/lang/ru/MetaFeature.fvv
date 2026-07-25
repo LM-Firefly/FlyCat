@@ -1,0 +1,45 @@
+<Meta Feature Page>
+MetaFeature = {
+    Title = "Функции Meta"
+
+    Section = {
+        ConnectionAndTraffic = "Соединения, журналы и правила"
+        Routing = "Маршрутизация"
+    }
+
+    GeoX = {
+        OnlineUpdateTitle = "Обновить GeoX"
+        OnlineUpdateSummary = "Скачать базу данных"
+    }
+
+    CustomRouting = {
+        Title = "Своя маршрутизация"
+        Summary = "Отдельная конфигурация правил маршрутизации"
+        EditYaml = "Редактировать YAML"
+        GroupTypeTitle = "Типы групп"
+        GroupTypeUrlTest = "UrlTest"
+        GroupTypeFallback = "Fallback"
+        UrlTestRegionGroupTitle = "Региональные группы UrlTest"
+        FallbackRegionGroupTitle = "Региональные группы Fallback"
+    }
+
+    RuntimeRules = {
+        Title = "Правила"
+        Summary = "Просмотр и временное переключение правил"
+    }
+
+    Download = {
+        DialogTitle = "Онлайн-обновление GeoX"
+        DownloadComplete = "Загрузка завершена: %d/%d"
+    }
+
+    AgeKey = {
+        Section = "Ключи Age"
+        X25519Title = "X25519"
+        HybridTitle = "mlkem768-x25519"
+        SecretKey = "Секретный ключ"
+        PublicKey = "Открытый ключ"
+        Generate = "Сгенерировать"
+        DerivePublicKey = "Вывести открытый ключ"
+    }
+}

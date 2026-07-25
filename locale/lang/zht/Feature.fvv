@@ -1,0 +1,86 @@
+<Feature Page>
+Feature = {
+    Title = "功能管理"
+
+    ServiceStatus = {
+        Section = "服務狀態"
+        SwitchStartSubStore = "啟動 Sub-Store 服務"
+        OpenSubStorePanel = "開啟 Sub-Store 面板"
+        AllowLan = "允許區域網路存取"
+        AutoCloseModeTitle = "自動關閉時間"
+        AutoCloseModeAlwaysOn = "常開"
+        AutoCloseMode5Min = "5 分鐘"
+        AutoCloseMode10Min = "10 分鐘"
+        AutoClosed = "Sub-Store 已自動關閉"
+    }
+
+    Panel = {
+        Section = "面板選擇"
+        SelectPanel = "選擇面板"
+        Unknown = "未知面板"
+        CreateShortcut = "在桌面建立捷徑"
+        CreateShortcutSummary = "將目前面板加入桌面，使用網站圖示"
+        ShortcutTitle = "建立捷徑"
+        ShortcutName = "名稱"
+        ShortcutPickIcon = "選擇圖示"
+        ShortcutResetIcon = "重設"
+    }
+
+    RemoteController = {
+        Section = "外部控制"
+        ModeTitle = "外部控制器模式"
+        ControlBackend = "控制後端"
+        AddBackend = "新增後端"
+        EditBackend = "編輯後端"
+        Name = "名稱"
+        Host = "IP / 主機"
+        Port = "連接埠"
+        Secret = "密鑰（可留空）"
+        PortRangeError = "連接埠範圍必須是 1-65535"
+        Delete = "刪除"
+    }
+
+    SubStore = {
+        Section = "Sub-Store 資源"
+        ExtensionInstalled = "擴充套件已安裝"
+        ExtensionInstall = "安裝擴充套件"
+        JavetAvailable = "Javet 函式庫可用，點一下重新整理狀態"
+        JavetPending = "擴充套件已安裝，Javet 函式庫待解壓，點一下重新整理狀態"
+        DownloadHint = "點一下前往下載擴充套件，需同時安裝擴充套件與靜態資源；首次安裝後請重新啟動應用"
+        DownloadResources = "下載資源"
+        DownloadResourcesSummary = "一次下載前端與後端資源"
+        Not32Bit = "Sub-Store 不支援 32 位元裝置"
+        InstallExtension = "請先安裝擴充套件"
+        DownloadSubStoreFirst = "請先下載 Sub-Store 資源"
+        JavetNotReady = "Javet 函式庫未就緒，請確認擴充套件已正確安裝"
+        FrontendDownloadSuccess = "Sub-Store 前端下載完成"
+        FrontendDownloadFailed = "Sub-Store 前端下載失敗"
+        BackendDownloadSuccess = "Sub-Store 後端下載完成"
+        BackendDownloadFailed = "Sub-Store 後端下載失敗"
+        DownloadError = "下載出錯：%s"
+    }
+
+    BackupRestore = {
+        Section = "資料備份"
+        ExportTitle = "匯出備份"
+        ExportSummary = "匯出設定、訂閱、覆寫與 Sub-Store 資料"
+        RestoreTitle = "還原備份"
+        RestoreSummary = "選擇備份檔案並覆蓋目前設定"
+        Cancel = "取消"
+
+        RestoreDialog = {
+            Title = "還原備份？"
+            Message = "還原會停止代理與 Sub-Store，並覆蓋目前設定、訂閱、覆寫與 Sub-Store 資料。"
+        }
+
+        Message = {
+            RestoreSuccess = "還原完成，建議重新啟動應用以重新整理全部介面"
+        }
+
+        Error = {
+            OpenOutputFailed = "無法寫入備份檔案"
+            OpenInputFailed = "無法讀取備份檔案"
+            OperationFailed = "操作失敗：%s"
+        }
+    }
+}

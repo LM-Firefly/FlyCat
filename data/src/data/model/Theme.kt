@@ -29,7 +29,10 @@ enum class ThemeMode {
 enum class AppLanguage {
     System,
     Zh,
+    ZhHant,
     En,
+    Ja,
+    Ru,
 }
 
 enum class AppColorTheme {

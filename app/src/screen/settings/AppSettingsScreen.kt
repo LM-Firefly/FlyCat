@@ -162,7 +162,10 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
                 listOf(
                     YumeTxt.AppSettings.Interface.LanguageSystem,
                     YumeTxt.AppSettings.Interface.LanguageChinese,
+                    YumeTxt.AppSettings.Interface.LanguageChineseTraditional,
                     YumeTxt.AppSettings.Interface.LanguageEnglish,
+                    YumeTxt.AppSettings.Interface.LanguageJapanese,
+                    YumeTxt.AppSettings.Interface.LanguageRussian,
                 ),
             values = AppLanguage.entries,
             onValueChange = viewModel::onAppLanguageChange,

@@ -1,0 +1,22 @@
+<Profiles ViewModel>
+ProfilesVM = {
+    Message = {
+        ProfileAdded = "設定檔已新增：%s"
+        AddFailed = "新增設定檔失敗：%s"
+        ProfileDeleted = "設定檔已刪除"
+        DeleteFailed = "刪除設定檔失敗：%s"
+        ProfileUpdated = "設定檔已更新：%s"
+        UpdateFailed = "更新設定檔失敗：%s"
+        ToggleFailed = "切換狀態失敗：%s"
+    }
+
+    Progress = {
+        Preparing = "準備下載..."
+        Verifying = "正在驗證設定..."
+        ImportComplete = "匯入完成"
+    }
+
+    Error = {
+        ProfileNotExist = "設定檔不存在"
+    }
+}
