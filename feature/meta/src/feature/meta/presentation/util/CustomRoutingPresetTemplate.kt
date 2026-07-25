@@ -22,22 +22,22 @@
 
 package com.github.yumelira.yumebox.feature.meta.presentation.util
 
-import com.github.yumelira.yumebox.core.util.YamlCodec
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-private const val OFFICIAL_MRS_RULE_PROVIDER_INTERVAL = 86400
-private const val OFFICIAL_MRS_URL_TEST_INTERVAL = 300
-private const val OFFICIAL_MRS_URL_TEST_URL = "https://www.gstatic.com/generate_204"
-private const val OFFICIAL_MRS_EXCLUDE_FILTER = "(?i)GB|Traffic|Expire|Premium|频道|订阅|ISP|流量|到期|重置"
+internal const val OFFICIAL_MRS_RULE_PROVIDER_INTERVAL = 86400
+internal const val OFFICIAL_MRS_URL_TEST_INTERVAL = 300
+internal const val OFFICIAL_MRS_URL_TEST_URL = "https://www.gstatic.com/generate_204"
+internal const val OFFICIAL_MRS_EXCLUDE_FILTER =
+    "(?i)GB|Traffic|Expire|Premium|频道|订阅|ISP|流量|到期|重置"
 private const val OFFICIAL_MRS_POPULAR_REGION_EXCLUDE_FILTER =
     "(?i)(香港|HK|Hong Kong|\\x{1F1ED}\\x{1F1F0}|台湾|TW|Taiwan|\\x{1F1F9}\\x{1F1FC}|日本|JP|Japan|东京|大阪|\\x{1F1EF}\\x{1F1F5}|新加坡|SG|Singapore|狮城|\\x{1F1F8}\\x{1F1EC}|美国|US|United States|America|洛杉矶|硅谷|\\x{1F1FA}\\x{1F1F8})"
-private const val OFFICIAL_MRS_GEOSITE_URL =
+internal const val OFFICIAL_MRS_GEOSITE_URL =
     "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/%s.mrs"
-private const val OFFICIAL_MRS_GEOIP_URL =
+internal const val OFFICIAL_MRS_GEOIP_URL =
     "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/%s.mrs"
-private const val OFFICIAL_MRS_AUTO_GROUP_NAME = "Auto"
-private const val OFFICIAL_MRS_FALLBACK_GROUP_NAME = "Fallback"
+internal const val OFFICIAL_MRS_AUTO_GROUP_NAME = "Auto"
+internal const val OFFICIAL_MRS_FALLBACK_GROUP_NAME = "Fallback"
 private const val OFFICIAL_MRS_ICON_APP_BASE_URL =
     "https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps"
 private const val OFFICIAL_MRS_CATALOG_BASE_URL =
@@ -850,7 +850,7 @@ enum class OverridePresetItem(
     ),
 }
 
-private enum class OfficialMrsHealthCheckGroupType(val wireName: String) {
+internal enum class OfficialMrsHealthCheckGroupType(val wireName: String) {
     UrlTest("url-test"),
     Fallback("fallback"),
 }
@@ -872,17 +872,16 @@ data class OfficialMrsRuleSpec(
     val noResolve: Boolean = false,
 )
 
-private val orderedRegions = OverridePresetRegion.entries.toList()
-private val orderedItems = OverridePresetItem.entries.toList()
-private val orderedServiceItems = orderedItems.filter(OverridePresetItem::isService)
+internal val orderedRegions = OverridePresetRegion.entries.toList()
+internal val orderedItems = OverridePresetItem.entries.toList()
+internal val orderedServiceItems = orderedItems.filter(OverridePresetItem::isService)
 private val orderedBaseItems = orderedItems.filterNot(OverridePresetItem::isService)
-private val itemById = orderedItems.associateBy(OverridePresetItem::id)
-private val regionById = orderedRegions.associateBy(OverridePresetRegion::specId)
-private val templateProviderIds =
+internal val itemById = orderedItems.associateBy(OverridePresetItem::id)
+internal val templateProviderIds =
     orderedItems.flatMap { it.providers }.map(OfficialMrsProviderSpec::id).toSet()
-private val serviceGroupNames =
+internal val serviceGroupNames =
     orderedServiceItems.mapNotNull(OverridePresetItem::groupName).toSet()
-private val regionGroupNames =
+internal val regionGroupNames =
     orderedRegions.flatMap { region -> listOf(region.groupName, region.fallbackGroupName) }.toSet()
 private val defaultEnabledItemIds =
     linkedSetOf(
@@ -904,7 +903,7 @@ private val defaultEnabledItemIds =
         "geolocation_not_cn",
         "match",
     )
-private val ruleOrder =
+internal val ruleOrder =
     listOf(
         "ads",
         "google",
@@ -954,7 +953,7 @@ private val ruleOrder =
         "geolocation_not_cn",
         "match",
     )
-private val templateRules = orderedItems.flatMap(OverridePresetItem::detectionRules).toSet()
+internal val templateRules = orderedItems.flatMap(OverridePresetItem::detectionRules).toSet()
 
 fun defaultEnabledPresetItems(): Set<OverridePresetItem> =
     defaultEnabledItemIds.mapNotNull(itemById::get).toCollection(linkedSetOf())
@@ -989,409 +988,7 @@ fun defaultOverridePresetTemplateSelection(): OverridePresetTemplateSelection =
         enableFallbackGroup = false,
     )
 
-fun analyzePresetTemplateContent(content: String?): OverridePresetTemplateContentAnalysis {
-    if (content.isNullOrBlank()) {
-        return OverridePresetTemplateContentAnalysis(
-            selection = defaultOverridePresetTemplateSelection(),
-            matchesTemplateExactly = true,
-        )
-    }
-
-    val document =
-        runCatching { YamlCodec.loadValue(content).asStringKeyedMap() }
-            .getOrElse {
-                return OverridePresetTemplateContentAnalysis(
-                    selection = defaultOverridePresetTemplateSelection(),
-                    matchesTemplateExactly = false,
-                )
-            }
-            ?: return OverridePresetTemplateContentAnalysis(
-                selection = defaultOverridePresetTemplateSelection(),
-                matchesTemplateExactly = false,
-            )
-
-    val selection =
-        inferPresetTemplateSelection(document)
-            ?: return OverridePresetTemplateContentAnalysis(
-                selection = defaultOverridePresetTemplateSelection(),
-                matchesTemplateExactly = false,
-            )
-
-    val generatedDocument = runCatching {
-        buildPresetTemplateYaml(selection).let(YamlCodec::loadValue).asStringKeyedMap()
-    }
-        .getOrNull()
-
-    return OverridePresetTemplateContentAnalysis(
-        selection = selection,
-        matchesTemplateExactly = generatedDocument != null && document == generatedDocument,
-    )
-}
-
-fun inferPresetTemplateSelection(content: String?): OverridePresetTemplateSelection =
-    analyzePresetTemplateContent(content).selection
-
-private fun inferPresetTemplateSelection(
-    document: Map<String, Any?>
-): OverridePresetTemplateSelection? {
-    val providerKeys = document.stringKeyedMap("rule-providers").keys
-    val groupNames =
-        document
-            .listOfMaps("proxy-groups")
-            .mapNotNull { group -> group["name"]?.toString()?.takeIf(String::isNotBlank) }
-            .toSet()
-    val rules = document.stringList("rules")
-
-    val hasTemplateSignals =
-        providerKeys.any(templateProviderIds::contains) ||
-            groupNames.any(serviceGroupNames::contains) ||
-            groupNames.any(regionGroupNames::contains) ||
-            rules.any(::isOfficialMrsTemplateRule)
-
-    if (!hasTemplateSignals) {
-        return null
-    }
-
-    val inferredUrlTestRegions =
-        orderedRegions.filter { it.groupName in groupNames }.toCollection(linkedSetOf())
-    val inferredFallbackRegions =
-        orderedRegions.filter { it.fallbackGroupName in groupNames }.toCollection(linkedSetOf())
-    val inferredEnabledItems =
-        orderedItems
-            .filter { item ->
-                isOfficialMrsItemEnabledInConfig(
-                    item = item,
-                    providerKeys = providerKeys,
-                    groupNames = groupNames,
-                    rules = rules,
-                )
-            }
-            .toCollection(linkedSetOf())
-            .ifEmpty { defaultEnabledPresetItems() }
-
-    return OverridePresetTemplateSelection(
-        urlTestRegions = inferredUrlTestRegions,
-        fallbackRegions = inferredFallbackRegions,
-        enabledItems = inferredEnabledItems,
-        enableUrlTestGroup =
-            OFFICIAL_MRS_AUTO_GROUP_NAME in groupNames ||
-                orderedRegions.any { it.groupName in groupNames },
-        enableFallbackGroup =
-            OFFICIAL_MRS_FALLBACK_GROUP_NAME in groupNames ||
-                orderedRegions.any { it.fallbackGroupName in groupNames },
-    )
-}
-
-fun buildPresetTemplateYaml(selection: OverridePresetTemplateSelection): String {
-    val normalizedEnabledItems = normalizeEnabledItems(selection.enabledItems)
-    val selectedUrlTestRegions = orderedRegions.filter { it in selection.urlTestRegions }
-    val selectedFallbackRegions = orderedRegions.filter { it in selection.fallbackRegions }
-    val document =
-        linkedMapOf<String, Any?>(
-                "rule-providers" to buildRuleProviders(normalizedEnabledItems),
-                "proxy-groups" to
-                    buildProxyGroups(
-                        selectedUrlTestRegions = selectedUrlTestRegions,
-                        selectedFallbackRegions = selectedFallbackRegions,
-                        enabledItems = normalizedEnabledItems,
-                        enableUrlTestGroup = selection.enableUrlTestGroup,
-                        enableFallbackGroup = selection.enableFallbackGroup,
-                    ),
-                "rules" to buildRules(normalizedEnabledItems),
-            )
-            .filterValues { value ->
-                when (value) {
-                    is Collection<*> -> value.isNotEmpty()
-                    is Map<*, *> -> value.isNotEmpty()
-                    else -> value != null
-                }
-            }
-
-    val yamlContent = YamlCodec.dumpMap(document)
-    runCatching {
-        YamlCodec.validate(yamlContent)
-        YamlCodec.loadMap(yamlContent)
-    }
-        .getOrElse { error ->
-            throw IllegalStateException(
-                "Custom routing YAML self-check failed: ${error.message}",
-                error,
-            )
-        }
-    return yamlContent
-}
-
-private fun normalizeEnabledItems(items: Set<OverridePresetItem>): Set<OverridePresetItem> =
-    items.ifEmpty {
-        linkedSetOf(OverridePresetItem.Match)
-    }
-
-private fun buildRuleProviders(
-    enabledItems: Set<OverridePresetItem>
-): Map<String, Map<String, Any?>> =
-    linkedMapOf<String, Map<String, Any?>>().apply {
-        orderedItems
-            .filter { item -> item in enabledItems && item != OverridePresetItem.Match }
-            .flatMap(OverridePresetItem::providers)
-            .forEach { provider ->
-                put(
-                    provider.id,
-                    linkedMapOf(
-                        "type" to "http",
-                        "format" to "mrs",
-                        "behavior" to provider.behavior.wireName,
-                        "url" to provider.urlTemplate().format(provider.remoteName),
-                        "path" to "./providers/rules/${provider.id}.mrs",
-                        "interval" to OFFICIAL_MRS_RULE_PROVIDER_INTERVAL,
-                    ),
-                )
-            }
-    }
-
-private fun buildProxyGroups(
-    selectedUrlTestRegions: List<OverridePresetRegion>,
-    selectedFallbackRegions: List<OverridePresetRegion>,
-    enabledItems: Set<OverridePresetItem>,
-    enableUrlTestGroup: Boolean,
-    enableFallbackGroup: Boolean,
-): List<Map<String, Any?>> {
-    val regionNames = buildList {
-        if (enableUrlTestGroup) {
-            addAll(selectedUrlTestRegions.map(OverridePresetRegion::groupName))
-        }
-        if (enableFallbackGroup) {
-            addAll(selectedFallbackRegions.map(OverridePresetRegion::fallbackGroupName))
-        }
-    }
-
-    return buildList {
-        add(
-            buildProxySelectGroup(
-                regionNames = regionNames,
-                enableUrlTestGroup = enableUrlTestGroup,
-                enableFallbackGroup = enableFallbackGroup,
-            )
-        )
-        if (enableUrlTestGroup) {
-            add(
-                buildHealthCheckGroup(
-                    name = OFFICIAL_MRS_AUTO_GROUP_NAME,
-                    type = OfficialMrsHealthCheckGroupType.UrlTest,
-                )
-            )
-        }
-        if (enableFallbackGroup) {
-            add(
-                buildHealthCheckGroup(
-                    name = OFFICIAL_MRS_FALLBACK_GROUP_NAME,
-                    type = OfficialMrsHealthCheckGroupType.Fallback,
-                )
-            )
-        }
-        addAll(
-            orderedServiceItems
-                .filter { it in enabledItems }
-                .map { item ->
-                    buildServiceSelectGroup(
-                        item = item,
-                        regionNames = regionNames,
-                        enableUrlTestGroup = enableUrlTestGroup,
-                        enableFallbackGroup = enableFallbackGroup,
-                    )
-                }
-        )
-        if (enableUrlTestGroup) {
-            addAll(
-                selectedUrlTestRegions.map { region ->
-                    buildHealthCheckGroup(
-                        name = region.groupName,
-                        type = OfficialMrsHealthCheckGroupType.UrlTest,
-                        filter = region.filter,
-                        excludeFilter = region.excludeFilter,
-                        icon = region.icon,
-                    )
-                }
-            )
-        }
-        if (enableFallbackGroup) {
-            addAll(
-                selectedFallbackRegions.map { region ->
-                    buildHealthCheckGroup(
-                        name = region.fallbackGroupName,
-                        type = OfficialMrsHealthCheckGroupType.Fallback,
-                        filter = region.filter,
-                        excludeFilter = region.excludeFilter,
-                        icon = region.icon,
-                    )
-                }
-            )
-        }
-    }
-}
-
-private fun buildRules(enabledItems: Set<OverridePresetItem>): List<String> {
-    val enabledItemIds = enabledItems.map(OverridePresetItem::id).toSet()
-    return buildList {
-        ruleOrder
-            .mapNotNull(itemById::get)
-            .filter { it.id in enabledItemIds }
-            .forEach { item -> addAll(item.detectionRules) }
-        if ("match" in enabledItemIds || isEmpty()) {
-            if ("MATCH,Proxy" !in this) {
-                add("MATCH,Proxy")
-            }
-        }
-    }
-}
-
-private fun buildHealthCheckGroup(
-    name: String,
-    type: OfficialMrsHealthCheckGroupType,
-    filter: String? = null,
-    excludeFilter: String? = null,
-    icon: String =
-        when (type) {
-            OfficialMrsHealthCheckGroupType.UrlTest ->
-                officialMrsCatalogIconUrl("Urltest").orEmpty()
-
-            OfficialMrsHealthCheckGroupType.Fallback ->
-                officialMrsCatalogIconUrl("Available").orEmpty()
-        },
-): Map<String, Any?> =
-    linkedMapOf<String, Any?>().apply {
-        put("name", name)
-        put("type", type.wireName)
-        put("icon", icon)
-        put("url", OFFICIAL_MRS_URL_TEST_URL)
-        put("interval", OFFICIAL_MRS_URL_TEST_INTERVAL)
-        put("include-all", true)
-        put("exclude-filter", combineOfficialMrsExcludeFilters(excludeFilter))
-        filter?.let { put("filter", it) }
-    }
-
-private fun buildProxySelectGroup(
-    regionNames: List<String>,
-    enableUrlTestGroup: Boolean,
-    enableFallbackGroup: Boolean,
-): Map<String, Any?> =
-    linkedMapOf(
-        "name" to "Proxy",
-        "type" to "select",
-        "icon" to OverridePresetItem.Proxy.icon.orEmpty(),
-        "proxies" to
-            buildSelectableGroupNames(
-                regionNames = regionNames,
-                enableUrlTestGroup = enableUrlTestGroup,
-                enableFallbackGroup = enableFallbackGroup,
-            ),
-        "include-all" to true,
-    )
-
-private fun buildServiceSelectGroup(
-    item: OverridePresetItem,
-    regionNames: List<String>,
-    enableUrlTestGroup: Boolean,
-    enableFallbackGroup: Boolean,
-): Map<String, Any?> {
-    val serviceGroupName = checkNotNull(item.groupName)
-    return linkedMapOf<String, Any?>().apply {
-        put("name", serviceGroupName)
-        put("type", "select")
-        item.icon?.takeIf(String::isNotBlank)?.let { put("icon", it) }
-        put(
-            "proxies",
-            buildList {
-                add("Proxy")
-                add("DIRECT")
-                if (enableUrlTestGroup) {
-                    add(OFFICIAL_MRS_AUTO_GROUP_NAME)
-                }
-                if (enableFallbackGroup) {
-                    add(OFFICIAL_MRS_FALLBACK_GROUP_NAME)
-                }
-                addAll(regionNames)
-            }
-                .distinct(),
-        )
-    }
-}
-
-private fun buildSelectableGroupNames(
-    regionNames: List<String>,
-    enableUrlTestGroup: Boolean,
-    enableFallbackGroup: Boolean,
-): List<String> = buildList {
-    if (enableUrlTestGroup) {
-        add(OFFICIAL_MRS_AUTO_GROUP_NAME)
-    }
-    if (enableFallbackGroup) {
-        add(OFFICIAL_MRS_FALLBACK_GROUP_NAME)
-    }
-    addAll(regionNames)
-}
-    .distinct()
-
-private fun combineOfficialMrsExcludeFilters(extraExcludeFilter: String?): String =
-    listOf(OFFICIAL_MRS_EXCLUDE_FILTER, extraExcludeFilter).filterNotNull().joinToString("|")
-
-private fun OfficialMrsProviderSpec.urlTemplate(): String =
-    when (behavior) {
-        OfficialMrsRuleBehavior.Domain -> OFFICIAL_MRS_GEOSITE_URL
-        OfficialMrsRuleBehavior.IpCidr -> OFFICIAL_MRS_GEOIP_URL
-    }
-
-private fun isOfficialMrsItemEnabledInConfig(
-    item: OverridePresetItem,
-    providerKeys: Set<String>,
-    groupNames: Set<String>,
-    rules: List<String>,
-): Boolean {
-    val providerIds = item.providers.map(OfficialMrsProviderSpec::id)
-    return when (item.id) {
-        "match" -> rules.any { rule -> rule.trim() == "MATCH,Proxy" }
-        else ->
-            providerIds.any(providerKeys::contains) ||
-                item.detectionRules.any(rules::contains) ||
-                (item.groupName != null && item.groupName in groupNames)
-    }
-}
-
-private fun isOfficialMrsTemplateRule(rule: String): Boolean {
-    val normalizedRule = rule.trim()
-    return normalizedRule in templateRules ||
-        templateProviderIds.any { providerId -> normalizedRule.contains(providerId) }
-}
-
-private fun Map<String, Any?>.stringKeyedMap(key: String): Map<String, Any?> =
-    (this[key] as? Map<*, *>)
-        ?.entries
-        ?.associate { entry -> entry.key.toString() to entry.value }
-        .orEmpty()
-
-private fun Map<String, Any?>.listOfMaps(key: String): List<Map<String, Any?>> =
-    (this[key] as? List<*>)
-        ?.mapNotNull { element ->
-            (element as? Map<*, *>)?.entries?.associate { entry ->
-                entry.key.toString() to entry.value
-            }
-        }
-        .orEmpty()
-
-private fun Map<String, Any?>.stringList(key: String): List<String> =
-    (this[key] as? List<*>)
-        ?.mapNotNull { value ->
-            when (value) {
-                null -> null
-                is String -> value
-                else -> value.toString()
-            }
-        }
-        .orEmpty()
-
-private fun Any?.asStringKeyedMap(): Map<String, Any?>? =
-    (this as? Map<*, *>)?.entries?.associate { entry -> entry.key.toString() to entry.value }
-
-private fun officialMrsCatalogIconUrl(iconName: String?): String? {
+internal fun officialMrsCatalogIconUrl(iconName: String?): String? {
     val normalizedIconName = iconName?.trim()?.takeIf(String::isNotBlank) ?: return null
     return "$OFFICIAL_MRS_CATALOG_BASE_URL/${encodePathSegment(normalizedIconName)}.png"
 }

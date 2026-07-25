@@ -16,6 +16,7 @@ MetaFeature = {
         Title = "Своя маршрутизация"
         Summary = "Отдельная конфигурация правил маршрутизации"
         EditYaml = "Редактировать YAML"
+        ManualYamlPresetDiscarded = "Несохранённые изменения пресета отменены для защиты YAML, отредактированного вручную."
         GroupTypeTitle = "Типы групп"
         GroupTypeUrlTest = "UrlTest"
         GroupTypeFallback = "Fallback"

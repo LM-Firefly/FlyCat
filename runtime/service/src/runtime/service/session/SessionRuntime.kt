@@ -29,8 +29,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
 import com.github.yumelira.yumebox.core.model.*
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
-import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
@@ -59,6 +57,7 @@ class SessionRuntime(
     private val proxyGroupResolver =
         RuntimeProxyGroupResolver(compiledConfigPipeline, host.context.appContextOrSelf)
     private val lock = Any()
+    private val interruptMonitor = Object()
     private val snapshotLock = Any()
 
     @Volatile private var interruptReason: String? = null
@@ -136,6 +135,7 @@ class SessionRuntime(
 
     fun requestStop(reason: String? = null) {
         interruptReason = reason ?: "runtime stop requested"
+        synchronized(interruptMonitor) { interruptMonitor.notifyAll() }
     }
 
     fun destroy() {
@@ -415,6 +415,7 @@ class SessionRuntime(
 
     private fun rollback(spec: RuntimeSpec, reason: String) {
         stopLogStream()
+        stopConnectionTracking()
         stopObservers()
         teardownTransportAndCore()
         currentSpec = null
@@ -494,9 +495,8 @@ class SessionRuntime(
                     lastControllerError = error.message ?: error::class.simpleName
                 }
                 .getOrDefault(false)
-            // Controller answered: if the profile exposes no groups to verify, startup is ready.
-            // Note: previewGroups is currently a stub (always empty), so this path is the normal
-            // success path once REST is up — not proof that the profile has zero groups.
+            // Controller answered: if the compiled profile exposes no groups to verify, startup is
+            // ready even though the live group list is empty.
             if (tunnelOk && expectedGroups.isEmpty()) {
                 startupLog(
                     spec,
@@ -515,16 +515,9 @@ class SessionRuntime(
                 )
             }
             if (remainingMs <= 0) break
-            runBlocking {
-                PollingTimers.awaitTick(
-                    PollingTimerSpecs.dynamic(
-                        name = "runtime_group_ready_retry",
-                        intervalMillis = PROXY_GROUP_READY_RETRY_DELAY_MS,
-                        initialDelayMillis =
-                            min(PROXY_GROUP_READY_RETRY_DELAY_MS, remainingMs.coerceAtLeast(1L)),
-                    )
-                )
-            }
+            waitForRetryOrInterrupt(
+                min(PROXY_GROUP_READY_RETRY_DELAY_MS, remainingMs.coerceAtLeast(1L))
+            )
         }
 
         ensureNotInterrupted(spec)
@@ -571,13 +564,18 @@ class SessionRuntime(
         store.append("${scope.tag} core diagnostics end")
     }
 
-    private fun readExpectedGroupNames(spec: RuntimeSpec): List<String> = runCatching {
-        runBlocking { proxyGroupResolver.expectedGroupNames(spec, false) }
-    }
-        .getOrElse { error ->
-            startupLog(spec, "runtime verify: expected group inspect failed=${error.message}")
-            emptyList()
+    private fun readExpectedGroupNames(spec: RuntimeSpec): List<String> =
+        runCatching { proxyGroupResolver.expectedGroupNames(spec, false) }
+            .getOrElse { error ->
+                startupLog(spec, "runtime verify: expected group inspect failed=${error.message}")
+                emptyList()
+            }
+
+    private fun waitForRetryOrInterrupt(delayMs: Long) {
+        synchronized(interruptMonitor) {
+            if (interruptReason == null) interruptMonitor.wait(delayMs)
         }
+    }
 
     private fun startObservers() {
         val appContext = host.context.appContextOrSelf
@@ -688,14 +686,10 @@ class SessionRuntime(
     }
 
     private fun resolveRuntimeProxyGroupNames(excludeNotSelectable: Boolean): List<String> =
-        runBlocking {
-            proxyGroupResolver.resolvedGroupNames(currentSpec, excludeNotSelectable)
-        }
+        proxyGroupResolver.resolvedGroupNames(currentSpec, excludeNotSelectable)
 
     private fun resolveRuntimeProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
-        runBlocking {
-            proxyGroupResolver.resolvedGroups(currentSpec, excludeNotSelectable, enrichLive = true)
-        }
+        proxyGroupResolver.resolvedGroups(currentSpec, excludeNotSelectable, enrichLive = true)
 
     private fun ensureRuntimeSnapshot(): SessionRuntimeQuerySnapshot {
         val snapshot = queryCache.snapshot()
@@ -707,10 +701,7 @@ class SessionRuntime(
     }
 
     private fun startLogStream() {
-        // TODO: stream the core's REST /logs (websocket). Until then the log source is empty.
-        telemetry.startLogStream {
-            kotlinx.coroutines.channels.Channel<LogMessage>().apply { close() }
-        }
+        telemetry.startLogStream(rest::subscribeLogs)
     }
 
     private fun stopLogStream() {

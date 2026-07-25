@@ -25,10 +25,13 @@ package com.github.yumelira.yumebox.core.util
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
-import java.net.URL
+import java.net.URI
 
 fun parseInetSocketAddress(address: String): InetSocketAddress {
-    val url = URL("https://$address")
-
-    return InetSocketAddress(InetAddress.getByName(url.host), url.port)
+    val uri = runCatching { URI("tcp://$address") }
+        .getOrElse { throw IllegalArgumentException("Invalid socket address: $address", it) }
+    val host = uri.host ?: throw IllegalArgumentException("Socket address requires a host: $address")
+    val port = uri.port.takeIf { it in 1..65535 }
+        ?: throw IllegalArgumentException("Socket address requires a valid port: $address")
+    return InetSocketAddress(InetAddress.getByName(host), port)
 }

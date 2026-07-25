@@ -49,7 +49,7 @@ class CustomRoutingViewModel(
     private val customRoutingContentState = MutableStateFlow("")
     val customRoutingContent: StateFlow<String> = customRoutingContentState.asStateFlow()
 
-    private val templateRoundTripSafeState = MutableStateFlow(true)
+    private val templateRoundTripSafeState = MutableStateFlow(false)
     val templateRoundTripSafe: StateFlow<Boolean> = templateRoundTripSafeState.asStateFlow()
 
     init {
@@ -64,6 +64,9 @@ class CustomRoutingViewModel(
     suspend fun savePresetSelection(
         updatedPresetSelection: OverridePresetTemplateSelection
     ): Result<Unit> = runCatching {
+        check(templateRoundTripSafeState.value) {
+            "Preset changes cannot overwrite manually edited custom routing YAML"
+        }
         val generatedYaml = buildPresetTemplateYaml(updatedPresetSelection)
         overrideConfigRepository.saveCustomRoutingContent(generatedYaml)
         applyContentState(generatedYaml)

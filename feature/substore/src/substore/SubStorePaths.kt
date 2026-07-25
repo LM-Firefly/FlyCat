@@ -28,6 +28,7 @@ object SubStorePaths {
     private const val FRONTEND_DIR = "frontend"
     private const val BACKEND_DIR = "backend"
     private const val DATA_DIR = "data"
+    private const val FRONTEND_INDEX = "index.html"
     private const val BACKEND_BUNDLE = "sub-store.bundle.js"
 
     private val baseDir: File
@@ -59,9 +60,7 @@ object SubStorePaths {
     fun isBackendReady(): Boolean = backendBundle.exists()
 
     fun isFrontendReady(): Boolean =
-        frontendDir.exists() &&
-            frontendDir.isDirectory &&
-            (frontendDir.listFiles()?.isNotEmpty() == true)
+        frontendDir.resolve(FRONTEND_INDEX).let { it.isFile && it.length() > 0L }
 
     fun isResourcesReady(): Boolean = isBackendReady() && isFrontendReady()
 }

@@ -25,6 +25,7 @@ package com.github.yumelira.yumebox.runtime.service.core
 import android.annotation.SuppressLint
 
 import android.content.Context
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.system.Os
 import com.github.yumelira.yumebox.core.bridge.Channel
@@ -33,10 +34,13 @@ import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.core.util.runtimeHomeDir
 import com.github.yumelira.yumebox.runtime.api.CoreApi
 import com.github.yumelira.yumebox.runtime.service.controller.CoreController
+import com.github.yumelira.yumebox.runtime.service.util.SocketOwnerResolver
 import com.topjohnwu.superuser.Shell
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.util.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -59,6 +63,8 @@ data class CoreEndpoint(val sock: String, val secret: String)
 class CoreProcess(private val context: Context) {
 
     private var process: NativeProcess? = null
+    private var ownerChannel: Channel? = null
+    private var ownerQueryThread: Thread? = null
 
     /** Fork the core for VpnService mode, deliver [config] and [tunFd], and publish [current]. */
     fun startVpn(
@@ -90,6 +96,10 @@ class CoreProcess(private val context: Context) {
                 portal,
                 "--dns",
                 dns,
+                "--mode",
+                "vpn",
+                "--sdk",
+                Build.VERSION.SDK_INT.toString(),
             )
         Timber.tag(TAG).i("launch core, tunFd=%d", tunFd)
         val proc = spawn(home, args)
@@ -99,23 +109,96 @@ class CoreProcess(private val context: Context) {
         // Stream config over the socketpair (in memory), then the TUN fd as a terminating
         // SCM_RIGHTS
         // message. The core dups the fd; the app closes its own copy.
-        runCatching {
-            val channel = Channel(proc.channelFd)
-            val bytes = runtimeConfig.toByteArray(Charsets.UTF_8)
-            var offset = 0
-            while (offset < bytes.size) {
-                val len = minOf(CHUNK, bytes.size - offset)
-                channel.writeMessage(bytes, offset, len)
-                offset += len
+        val handoff =
+            runCatching {
+                val channel = Channel(proc.channelFd)
+                var ownershipRpcStarted = false
+                try {
+                    val bytes = runtimeConfig.toByteArray(Charsets.UTF_8)
+                    var offset = 0
+                    while (offset < bytes.size) {
+                        val len = minOf(CHUNK, bytes.size - offset)
+                        channel.writeMessage(bytes, offset, len)
+                        offset += len
+                    }
+                    channel.writeMessage(END, 0, END.size, attachFd = tunFd)
+                    startOwnerQueryLoop(channel)
+                    ownershipRpcStarted = true
+                } finally {
+                    if (!ownershipRpcStarted) {
+                        channel.close()
+                    }
+                }
             }
-            channel.writeMessage(END, 0, END.size, attachFd = tunFd)
-            channel.close()
-        }
-            .onFailure { Timber.tag(TAG).w(it, "config/fd handoff failed") }
         runCatching { ParcelFileDescriptor.adoptFd(tunFd).close() }
+        handoff.getOrElse { error ->
+            runCatching { proc.kill() }
+            stopOwnerQueryLoop()
+            if (running === proc) running = null
+            if (process === proc) process = null
+            current = null
+            throw IllegalStateException("config/fd handoff failed", error)
+        }
 
         return CoreEndpoint(sock, secret).also { current = it }
     }
+
+    private fun startOwnerQueryLoop(channel: Channel) {
+        val resolver = SocketOwnerResolver(context)
+        ownerChannel = channel
+        ownerQueryThread =
+            Thread {
+                    val buffer = ByteArray(OWNER_QUERY_BUFFER_SIZE)
+                    try {
+                        while (true) {
+                            val result = channel.readMessage(buffer, 0, buffer.size)
+                            if (result.count <= 0) break
+                            val request = buffer.decodeToString(0, result.count)
+                            val response = resolveOwnerQuery(resolver, request)
+                            val responseBytes = response.toByteArray(Charsets.UTF_8)
+                            channel.writeMessage(responseBytes, 0, responseBytes.size)
+                        }
+                    } catch (error: Throwable) {
+                        if (ownerChannel === channel && isLocalCoreAlive()) {
+                            Timber.tag(TAG).w(error, "socket owner RPC stopped unexpectedly")
+                        }
+                    } finally {
+                        if (ownerChannel === channel) {
+                            ownerChannel = null
+                            ownerQueryThread = null
+                        }
+                        runCatching { channel.close() }
+                    }
+                }
+                .apply {
+                    name = "Core-SocketOwner"
+                    isDaemon = true
+                    start()
+                }
+    }
+
+    private fun resolveOwnerQuery(resolver: SocketOwnerResolver, request: String): String {
+        val fields = request.split('\t', limit = 3)
+        if (fields.size != 3) return UNKNOWN_SOCKET_OWNER
+        val protocol = fields[0].toIntOrNull() ?: return UNKNOWN_SOCKET_OWNER
+        val source = parseSocketAddress(fields[1]) ?: return UNKNOWN_SOCKET_OWNER
+        val target = parseSocketAddress(fields[2]) ?: return UNKNOWN_SOCKET_OWNER
+        return resolver.queryOwner(protocol, source, target)
+    }
+
+    private fun parseSocketAddress(value: String): InetSocketAddress? = runCatching {
+        val (host, portText) =
+            if (value.startsWith('[')) {
+                val closingBracket = value.indexOf(']')
+                require(closingBracket > 1 && value.getOrNull(closingBracket + 1) == ':')
+                value.substring(1, closingBracket) to value.substring(closingBracket + 2)
+            } else {
+                val separator = value.lastIndexOf(':')
+                require(separator > 0)
+                value.substring(0, separator) to value.substring(separator + 1)
+            }
+        InetSocketAddress(InetAddress.getByName(host), portText.toInt())
+    }.getOrNull()
 
     /**
      * Launch the core as a detached ROOT daemon (tun / tproxy) via `su`: it runs in the root
@@ -142,6 +225,7 @@ class CoreProcess(private val context: Context) {
         val logFile = File(home, CORE_LOG).absolutePath
         val command =
             "exec ${quote(lib)} --mode $mode --home ${quote(home.absolutePath)} " +
+                "--sdk ${Build.VERSION.SDK_INT} " +
                 "--controller ${quote(sock)} " +
                 "--config ${quote(fifo.absolutePath)} " +
                 "</dev/null >${quote(logFile)} 2>&1 & echo \$!"
@@ -181,16 +265,31 @@ class CoreProcess(private val context: Context) {
         }
         fifo.delete()
 
-        RootDaemonState.save(RootDaemonState.Record(pid = pid, secret = secret, mode = mode))
+        RootDaemonState.save(
+            RootDaemonState.Record(
+                pid = pid,
+                secret = secret,
+                mode = mode,
+                startTimeTicks = rootProcessStartTimeTicks(pid) ?: 0L,
+            )
+        )
         Timber.tag(TAG).i("root core launched, pid=%d mode=%s", pid, mode)
         return CoreEndpoint(sock, secret).also { current = it }
     }
 
     fun stop() {
         process?.let { runCatching { it.kill() } }
+        stopOwnerQueryLoop()
         if (running === process) running = null
         process = null
         current = null
+    }
+
+    private fun stopOwnerQueryLoop() {
+        val channel = ownerChannel
+        ownerChannel = null
+        runCatching { channel?.close() }
+        ownerQueryThread = null
     }
 
     /**
@@ -280,12 +379,45 @@ class CoreProcess(private val context: Context) {
             running = null
         }
 
-        /** True if the persisted root daemon is still alive (`kill -0` via su). */
+        /** True if the persisted root daemon still has the recorded process identity. */
         fun isRootDaemonAlive(): Boolean {
             val record = RootDaemonState.load() ?: return false
-            return runCatching { Shell.cmd("kill -0 ${record.pid}").exec().isSuccess }
-                .getOrDefault(false)
+            return isRootRecordAlive(record)
         }
+
+        private fun isRootRecordAlive(record: RootDaemonState.Record): Boolean {
+            val alive =
+                runCatching { Shell.cmd("kill -0 ${record.pid}").exec().isSuccess }
+                    .getOrDefault(false)
+            if (!alive) return false
+
+            val executable =
+                runCatching {
+                        Shell.cmd("readlink /proc/${record.pid}/exe")
+                            .exec()
+                            .out
+                            .firstOrNull()
+                            ?.substringBefore(" (deleted)")
+                            ?.let(::File)
+                            ?.name
+                    }
+                    .getOrNull()
+            if (executable !in ROOT_CORE_EXECUTABLE_NAMES) return false
+
+            val recordedStartTime = record.startTimeTicks
+            return recordedStartTime <= 0L ||
+                rootProcessStartTimeTicks(record.pid) == recordedStartTime
+        }
+
+        private fun rootProcessStartTimeTicks(pid: Int): Long? =
+            runCatching {
+                    val stat = Shell.cmd("cat /proc/$pid/stat").exec().out.joinToString(" ")
+                    stat.substringAfterLast(") ", missingDelimiterValue = "")
+                        .split(Regex("\\s+"))
+                        .getOrNull(PROC_STAT_START_TIME_INDEX_AFTER_COMM)
+                        ?.toLongOrNull()
+                }
+                .getOrNull()
 
         /**
          * True if the non-root VPN child core is still alive. Used by LOCAL_TUN startup verify so a
@@ -333,10 +465,7 @@ class CoreProcess(private val context: Context) {
          */
         fun reconnectRoot(context: Context): String? {
             val record = RootDaemonState.load() ?: return null
-            val alive = runCatching {
-                Shell.cmd("kill -0 ${record.pid}").exec().isSuccess
-            }.getOrDefault(false)
-            if (!alive) {
+            if (!isRootRecordAlive(record)) {
                 RootDaemonState.clear()
                 return null
             }
@@ -396,7 +525,12 @@ class CoreProcess(private val context: Context) {
 
         private const val TAG = "CoreProcess"
         private const val LIB = "libclash.so"
+        private val ROOT_CORE_EXECUTABLE_NAMES = setOf(LIB, "clash")
+        // After stripping "pid (comm) ", index 0 is field 3 (state), so field 22 is index 19.
+        private const val PROC_STAT_START_TIME_INDEX_AFTER_COMM = 19
         private const val CHUNK = 32 * 1024
+        private const val OWNER_QUERY_BUFFER_SIZE = 4096
+        private const val UNKNOWN_SOCKET_OWNER = "-1\t"
         private val END = byteArrayOf(1)
     }
 }

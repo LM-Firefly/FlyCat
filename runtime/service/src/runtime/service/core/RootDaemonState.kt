@@ -34,9 +34,15 @@ object RootDaemonState {
     private const val KEY_PID = "root_daemon_pid"
     private const val KEY_SECRET = "root_daemon_secret"
     private const val KEY_MODE = "root_daemon_mode"
+    private const val KEY_START_TIME_TICKS = "root_daemon_start_time_ticks"
 
     /** [mode] is the launch `--mode` value: "tun" or "tproxy". */
-    data class Record(val pid: Int, val secret: String, val mode: String)
+    data class Record(
+        val pid: Int,
+        val secret: String,
+        val mode: String,
+        val startTimeTicks: Long = 0L,
+    )
 
     private fun store() = MMKVProvider().getMMKV(ID)
 
@@ -45,6 +51,7 @@ object RootDaemonState {
             encode(KEY_PID, record.pid)
             encode(KEY_SECRET, record.secret)
             encode(KEY_MODE, record.mode)
+            encode(KEY_START_TIME_TICKS, record.startTimeTicks)
         }
     }
 
@@ -55,7 +62,12 @@ object RootDaemonState {
             mmkv.decodeString(KEY_MODE).orEmpty().ifEmpty {
                 return null
             }
-        return Record(pid = pid, secret = mmkv.decodeString(KEY_SECRET).orEmpty(), mode = mode)
+        return Record(
+            pid = pid,
+            secret = mmkv.decodeString(KEY_SECRET).orEmpty(),
+            mode = mode,
+            startTimeTicks = mmkv.decodeLong(KEY_START_TIME_TICKS, 0L),
+        )
     }
 
     fun clear() {
@@ -63,6 +75,7 @@ object RootDaemonState {
             removeValueForKey(KEY_PID)
             removeValueForKey(KEY_SECRET)
             removeValueForKey(KEY_MODE)
+            removeValueForKey(KEY_START_TIME_TICKS)
         }
     }
 }

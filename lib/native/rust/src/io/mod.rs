@@ -1,5 +1,7 @@
-use std::fs;
+use std::fs::{self, OpenOptions};
+use std::io::Write;
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::model::{LoadedOverride, OverrideSpec};
 
@@ -46,16 +48,38 @@ pub fn load_overrides(
     })
 }
 
+static NEXT_TEMP_ID: AtomicU64 = AtomicU64::new(0);
+
 pub fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), String> {
     let parent = path
         .parent()
         .ok_or_else(|| "runtime output path has no parent".to_string())?;
     fs::create_dir_all(parent).map_err(|err| err.to_string())?;
-    let tmp = path.with_extension("yaml.tmp");
-    fs::write(&tmp, bytes).map_err(|err| err.to_string())?;
-    if path.exists() {
-        fs::remove_file(path).map_err(|err| err.to_string())?;
+    let file_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| "runtime output path has no valid file name".to_string())?;
+    let temp_id = NEXT_TEMP_ID.fetch_add(1, Ordering::Relaxed);
+    let tmp = parent.join(format!(
+        ".{file_name}.{}.{}.tmp",
+        std::process::id(),
+        temp_id
+    ));
+
+    let publish = (|| -> Result<(), String> {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&tmp)
+            .map_err(|err| err.to_string())?;
+        file.write_all(bytes).map_err(|err| err.to_string())?;
+        file.sync_all().map_err(|err| err.to_string())?;
+        drop(file);
+        fs::rename(&tmp, path).map_err(|err| err.to_string())?;
+        Ok(())
+    })();
+    if publish.is_err() {
+        let _ = fs::remove_file(&tmp);
     }
-    fs::rename(&tmp, path).map_err(|err| err.to_string())?;
-    Ok(())
+    publish
 }

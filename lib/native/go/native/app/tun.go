@@ -33,12 +33,15 @@ func QuerySocketOwner(source, target net.Addr) SocketOwner {
 		return SocketOwner{UID: -1}
 	}
 
-	if PlatformVersion() < 29 {
-		uid := platform.QuerySocketUIDFromProcFs(source, target)
-		return SocketOwner{UID: uid}
+	if PlatformVersion() >= 29 {
+		owner := decodeSocketOwner(querySocketOwnerImpl(protocol, source.String(), target.String()))
+		if owner.UID >= 0 || owner.Package != "" {
+			return owner
+		}
 	}
 
-	return decodeSocketOwner(querySocketOwnerImpl(protocol, source.String(), target.String()))
+	uid := platform.QuerySocketUIDFromProcFs(source, target)
+	return SocketOwner{UID: uid}
 }
 
 func ApplyTunContext(

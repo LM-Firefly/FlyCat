@@ -23,8 +23,6 @@ package com.github.yumelira.yumebox.common.util
 import android.os.Build
 
 object DeviceUtil {
-    fun is32BitDevice(): Boolean {
-        val abis = Build.SUPPORTED_ABIS
-        return abis.isNotEmpty() && abis.all { it.contains("armeabi-v7a") || it.contains("x86") }
-    }
+    fun is32BitDevice(): Boolean =
+        Build.SUPPORTED_32_BIT_ABIS.isNotEmpty() && Build.SUPPORTED_64_BIT_ABIS.isEmpty()
 }

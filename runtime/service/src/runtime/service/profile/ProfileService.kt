@@ -88,7 +88,7 @@ class ProfileService(private val context: Context) :
             Imported(
                 uuid = newUUID,
                 name = imported.name,
-                type = Profile.Type.File,
+                type = imported.type,
                 source = imported.source,
                 interval = imported.interval,
                 upload = imported.upload,

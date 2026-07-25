@@ -42,6 +42,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.github.yumelira.yumebox.BuildConfig
 import com.github.yumelira.yumebox.WebViewActivity
 import tf.gal.yumebox.locale.YumeTxt
+import timber.log.Timber
 import top.yukonga.miuix.kmp.basic.Text
 
 private object NoOpWebViewClient : WebViewClient()
@@ -61,9 +62,8 @@ fun LocalWebView(
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
 
     LaunchedEffect(enableDebug) {
-        try {
-            WebView.setWebContentsDebuggingEnabled(enableDebug)
-        } catch (_: Exception) {}
+        runCatching { WebView.setWebContentsDebuggingEnabled(enableDebug) }
+            .onFailure { Timber.w(it, "Failed to update WebView debugging state") }
     }
 
     DisposableEffect(lifecycleOwner) {

@@ -57,8 +57,13 @@ class FeatureViewModel(
     val selectedPanelType: Preference<Int> = store.selectedPanelType
     val panelOpenMode: Preference<LinkOpenMode> = store.panelOpenMode
     val exitUiWhenBackground: Preference<Boolean> = store.exitUiWhenBackground
+    private val autoCloseModePreference: Preference<Int> = store.subStoreAutoCloseMode
 
-    private val _autoCloseMode = MutableStateFlow(AutoCloseMode.ALWAYS_ON)
+    private val _autoCloseMode =
+        MutableStateFlow(
+            AutoCloseMode.entries.getOrNull(autoCloseModePreference.value)
+                ?: AutoCloseMode.ALWAYS_ON
+        )
     val autoCloseMode: StateFlow<AutoCloseMode> = _autoCloseMode.asStateFlow()
 
     val serviceRunningState: StateFlow<Boolean> =
@@ -165,12 +170,7 @@ class FeatureViewModel(
             runCatching {
                 SubStoreServiceController.startService(
                     context = application,
-                    request =
-                        SubStoreServiceRequest(
-                            backendPort = backendPort.value,
-                            frontendPort = frontendPort.value,
-                            allowLan = allowLanAccess.value,
-                        ),
+                    request = currentServiceRequest(),
                 )
             }
                 .onSuccess { setupAutoCloseTimer() }
@@ -205,10 +205,23 @@ class FeatureViewModel(
         }
     }
 
-    fun setAllowLanAccess(allow: Boolean) = allowLanAccess.set(allow)
+    fun setAllowLanAccess(allow: Boolean) {
+        allowLanAccess.set(allow)
+        if (serviceRunningState.value) {
+            SubStoreServiceController.startService(application, currentServiceRequest())
+        }
+    }
+
+    private fun currentServiceRequest() =
+        SubStoreServiceRequest(
+            backendPort = backendPort.value,
+            frontendPort = frontendPort.value,
+            allowLan = allowLanAccess.value,
+        )
 
     fun setAutoCloseMode(mode: AutoCloseMode) {
         _autoCloseMode.value = mode
+        autoCloseModePreference.set(mode.ordinal)
         if (serviceRunningState.value) {
             cancelAutoCloseTimer()
             setupAutoCloseTimer()

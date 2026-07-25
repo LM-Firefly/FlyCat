@@ -95,6 +95,7 @@ class StatusProvider : ContentProvider() {
             listOf("service_running.lock", "service_autostart.lock", "service_running_mode.txt")
         private const val SERVICE_CACHE_ID = "service_cache"
         private const val STARTING_GRACE_MS = 60_000L
+        private const val STARTING_DISPATCH_GRACE_MS = 2_000L
         private const val FAILED_RETENTION_MS = 10 * 60_000L
         private const val KEY_TUN_STARTING_LEGACY = "local_tun_starting"
         private const val KEY_RUNTIME_MODE = "local_runtime_mode"
@@ -268,8 +269,12 @@ class StatusProvider : ContentProvider() {
                 return
             }
 
-            // Keep recent starts; stale Starting states must pass the liveness check.
-            if (persistedPhase == RuntimePhase.Starting && isStartingWithinGrace()) {
+            // Allow only the short startForegroundService dispatch window without a lifecycle
+            // signal. Beyond it, Starting must prove service/core liveness like Running does.
+            if (
+                persistedPhase == RuntimePhase.Starting &&
+                    startingElapsedMs()?.let { it <= STARTING_DISPATCH_GRACE_MS } == true
+            ) {
                 updateInMemoryRuntimeState(persistedMode, persistedPhase)
                 return
             }
@@ -421,9 +426,12 @@ class StatusProvider : ContentProvider() {
                 it > 0L
             }
 
-        private fun isStartingWithinGrace(): Boolean {
-            val startedAt = readPersistedRuntimeStartedAt() ?: return false
-            return System.currentTimeMillis() - startedAt in 0..STARTING_GRACE_MS
+        private fun isStartingWithinGrace(): Boolean =
+            startingElapsedMs()?.let { it in 0..STARTING_GRACE_MS } == true
+
+        private fun startingElapsedMs(): Long? {
+            val startedAt = readPersistedRuntimeStartedAt() ?: return null
+            return (System.currentTimeMillis() - startedAt).takeIf { it >= 0L }
         }
 
         private fun resolveRuntimeStartedAt(mode: RunMode?, phase: RuntimePhase): Long? {

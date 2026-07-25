@@ -42,14 +42,14 @@ final class PayloadInstaller {
                 ensureDirectory(root);
                 try (RandomAccessFile lockFile = new RandomAccessFile(new File(root, "install.lock"), "rw");
                      java.nio.channels.FileLock ignored = lockFile.getChannel().lock()) {
-                    File payloadDir = new File(root, metadata.id);
+                    File payloadDir = safeChild(root, metadata.id, "payload id");
                     File dexDir = new File(payloadDir, "dex");
                     ensureDirectory(dexDir);
 
                     List<PayloadMetadata.NativeEntry> nativeEntries = selectNativeEntries(metadata.nativeEntries);
                     File nativeDir = null;
                     if (!nativeEntries.isEmpty()) {
-                        nativeDir = new File(payloadDir, "lib/" + nativeEntries.get(0).abi);
+                        nativeDir = safeChild(new File(payloadDir, "lib"), nativeEntries.get(0).abi, "ABI");
                         ensureDirectory(nativeDir);
                     }
                     File completeMarker = new File(payloadDir, CACHE_MARKER);
@@ -63,7 +63,7 @@ final class PayloadInstaller {
                     List<File> dexFiles = new ArrayList<>(metadata.dexEntries.size());
                     try {
                         for (PayloadMetadata.DexEntry entry : metadata.dexEntries) {
-                            File target = new File(dexDir, entry.outputName);
+                            File target = safeChild(dexDir, entry.outputName, "dex output name");
                             if (!cacheComplete && !isValid(target, entry.size, entry.sha256)) {
                                 extract(archive, entry.assetName, entry.size, entry.sha256, target);
                             }
@@ -72,7 +72,7 @@ final class PayloadInstaller {
                         }
                         if (!nativeEntries.isEmpty()) {
                             for (PayloadMetadata.NativeEntry entry : nativeEntries) {
-                                File target = new File(nativeDir, entry.outputName);
+                                File target = safeChild(nativeDir, entry.outputName, "native output name");
                                 if (!cacheComplete && !isValid(target, entry.size, entry.sha256)) {
                                     extract(archive, entry.assetName, entry.size, entry.sha256, target);
                                 }
@@ -189,17 +189,21 @@ final class PayloadInstaller {
             List<PayloadMetadata.NativeEntry> nativeEntries,
             File nativeDir
     ) {
-        for (PayloadMetadata.DexEntry entry : dexEntries) {
-            if (!hasExpectedSize(new File(dexDir, entry.outputName), entry.size)) {
-                return false;
+        try {
+            for (PayloadMetadata.DexEntry entry : dexEntries) {
+                if (!isValid(safeChild(dexDir, entry.outputName, "dex output name"), entry.size, entry.sha256)) {
+                    return false;
+                }
             }
-        }
-        for (PayloadMetadata.NativeEntry entry : nativeEntries) {
-            if (!hasExpectedSize(new File(nativeDir, entry.outputName), entry.size)) {
-                return false;
+            for (PayloadMetadata.NativeEntry entry : nativeEntries) {
+                if (!isValid(safeChild(nativeDir, entry.outputName, "native output name"), entry.size, entry.sha256)) {
+                    return false;
+                }
             }
+            return true;
+        } catch (IOException invalidPayload) {
+            return false;
         }
-        return true;
     }
 
     private static boolean hasCompleteMarker(File marker, String payloadId) {
@@ -223,8 +227,16 @@ final class PayloadInstaller {
         }
     }
 
-    private static boolean hasExpectedSize(File file, long expectedSize) {
-        return file.isFile() && file.length() == expectedSize;
+    private static File safeChild(File parent, String name, String field) throws IOException {
+        if (name == null || name.isEmpty()) {
+            throw new IOException("Payload " + field + " is empty");
+        }
+        File canonicalParent = parent.getCanonicalFile();
+        File candidate = new File(canonicalParent, name).getCanonicalFile();
+        if (!canonicalParent.equals(candidate.getParentFile())) {
+            throw new IOException("Payload " + field + " escapes its directory: " + name);
+        }
+        return candidate;
     }
 
     private static void publishCompleteMarker(File payloadDir, String payloadId, File target)

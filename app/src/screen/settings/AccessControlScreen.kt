@@ -22,48 +22,31 @@
 
 package com.github.yumelira.yumebox.screen.settings
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.core.graphics.drawable.toBitmap
-import com.github.yumelira.yumebox.data.model.AccessControlSortMode
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Settings2
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.AppTheme.spacing
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Search
 import top.yukonga.miuix.kmp.icon.extended.Sort
-import top.yukonga.miuix.kmp.overlay.OverlayCascadingListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -296,7 +279,7 @@ fun AccessControlScreen(navigator: Navigator) {
                     end = listEndPadding,
                 ),
             emptyResult = {
-                SearchEmptyState(
+                AccessControlSearchEmptyState(
                     text = YumeTxt.AccessControl.Search.Empty,
                     modifier = Modifier.padding(bottom = mainLikePadding.calculateBottomPadding()),
                 )
@@ -358,280 +341,4 @@ private fun AccessControlCollapsedSearchBar(
         expanded = false,
         onExpandedChange = {},
     )
-}
-
-// :data cannot depend on YumeTxt, so the display-name mapping for the persisted sort-mode enum
-// stays here on the :app side.
-private val AccessControlSortMode.displayName: String
-    get() =
-        when (this) {
-            AccessControlSortMode.PACKAGE_NAME -> YumeTxt.AccessControl.SortMode.PackageName
-            AccessControlSortMode.LABEL -> YumeTxt.AccessControl.SortMode.Label
-            AccessControlSortMode.INSTALL_TIME -> YumeTxt.AccessControl.SortMode.InstallTime
-            AccessControlSortMode.UPDATE_TIME -> YumeTxt.AccessControl.SortMode.UpdateTime
-        }
-
-@Composable
-private fun AccessControlSortMenu(
-    show: Boolean,
-    sortMode: AccessControlSortMode,
-    onDismiss: () -> Unit,
-    onSortModeChange: (AccessControlSortMode) -> Unit,
-) {
-    val entries =
-        listOf(
-            DropdownEntry(
-                items =
-                    AccessControlSortMode.entries.map { mode ->
-                        DropdownItem(
-                            text = mode.displayName,
-                            selected = mode == sortMode,
-                            onClick = { onSortModeChange(mode) },
-                        )
-                    }
-            )
-        )
-
-    // Picking a sort mode dismisses the popup (collapseOnSelection defaults to true).
-    OverlayCascadingListPopup(
-        show = show,
-        entries = entries,
-        onDismissRequest = onDismiss,
-    )
-}
-
-/** Operations-menu callbacks bundled so the menu keeps a flat four-parameter signature. */
-private data class AccessControlMenuActions(
-    val onShowSystemAppsChange: (Boolean) -> Unit,
-    val onSelectedFirstChange: (Boolean) -> Unit,
-    val onSelectAll: () -> Unit,
-    val onDeselectAll: () -> Unit,
-    val onInvertSelection: () -> Unit,
-    val onSelectChinaApps: () -> Unit,
-    val onSelectNonChinaApps: () -> Unit,
-    val onImportPackages: (String) -> Int,
-    val onExportPackages: () -> String,
-)
-
-@Composable
-private fun AccessControlOperationsMenu(
-    show: Boolean,
-    uiState: AccessControlViewModel.UiState,
-    onDismiss: () -> Unit,
-    actions: AccessControlMenuActions,
-) {
-    val context = LocalContext.current
-    val clipboardManager =
-        remember(context) {
-            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        }
-    val settings = YumeTxt.AccessControl.Settings
-
-    val entries =
-        listOf(
-            DropdownEntry(
-                items =
-                    listOf(
-                        DropdownItem(
-                            text = settings.ShowSystemApps,
-                            selected = uiState.showSystemApps,
-                            onClick = { actions.onShowSystemAppsChange(!uiState.showSystemApps) },
-                        ),
-                        DropdownItem(
-                            text = settings.SelectedFirst,
-                            selected = uiState.selectedFirst,
-                            onClick = { actions.onSelectedFirstChange(!uiState.selectedFirst) },
-                        ),
-                    )
-            ),
-            DropdownEntry(
-                items =
-                    listOf(
-                        DropdownItem(
-                            text = settings.BatchOperation,
-                            children =
-                                listOf(
-                                    DropdownItem(
-                                        text = settings.SelectAll,
-                                        onClick = actions.onSelectAll,
-                                    ),
-                                    DropdownItem(
-                                        text = settings.DeselectAll,
-                                        onClick = actions.onDeselectAll,
-                                    ),
-                                    DropdownItem(
-                                        text = settings.Invert,
-                                        onClick = actions.onInvertSelection,
-                                    ),
-                                ),
-                        ),
-                        DropdownItem(
-                            text = settings.RegionQuickSelect,
-                            children =
-                                listOf(
-                                    DropdownItem(
-                                        text = settings.ChinaApps,
-                                        onClick = { actions.onSelectChinaApps() },
-                                    ),
-                                    DropdownItem(
-                                        text = settings.OverseasApps,
-                                        onClick = { actions.onSelectNonChinaApps() },
-                                    ),
-                                ),
-                        ),
-                        DropdownItem(
-                            text = settings.ImportExport,
-                            children =
-                                listOf(
-                                    DropdownItem(
-                                        text = settings.Import,
-                                        onClick = {
-                                            val text =
-                                                clipboardManager.primaryClip
-                                                    ?.takeIf { it.itemCount > 0 }
-                                                    ?.getItemAt(0)
-                                                    ?.text
-                                                    ?.toString()
-                                                    .orEmpty()
-                                            if (text.isNotEmpty()) {
-                                                actions.onImportPackages(text)
-                                            }
-                                        },
-                                    ),
-                                    DropdownItem(
-                                        text = settings.Export,
-                                        onClick = {
-                                            clipboardManager.setPrimaryClip(
-                                                ClipData.newPlainText(
-                                                    "packages",
-                                                    actions.onExportPackages(),
-                                                )
-                                            )
-                                        },
-                                    ),
-                                ),
-                        ),
-                    )
-            ),
-        )
-
-    // Selecting any item (including inside a 2nd-level submenu) collapses and dismisses the popup —
-    // collapseOnSelection defaults to true. The submenu can also be backed out via the system back
-    // gesture or by tapping outside the popup (both handled by the Miuix cascading layout).
-    OverlayCascadingListPopup(
-        show = show,
-        entries = entries,
-        onDismissRequest = onDismiss,
-    )
-}
-
-private fun LazyListScope.accessControlAppItems(
-    apps: List<AccessControlViewModel.AppInfo>,
-    uiState: AccessControlViewModel.UiState,
-    viewModel: AccessControlViewModel,
-) {
-    items(items = apps, key = { it.packageName }) { app ->
-        AppCard(
-            app = app,
-            selected = app.packageName in uiState.selectedPackages,
-            onSelectionChange = { checked ->
-                viewModel.onAppSelectionChange(app.packageName, checked)
-            },
-            onClick = {
-                viewModel.onAppSelectionChange(
-                    app.packageName,
-                    app.packageName !in uiState.selectedPackages,
-                )
-            },
-        )
-    }
-}
-
-@Composable
-private fun AppCard(
-    app: AccessControlViewModel.AppInfo,
-    selected: Boolean,
-    onSelectionChange: (Boolean) -> Unit,
-    onClick: () -> Unit,
-) {
-    val spacing = spacing
-    val componentSizes = AppTheme.sizes
-
-    Card(modifier = Modifier.padding(vertical = spacing.space4), applyHorizontalPadding = false) {
-        BasicComponent(
-            // Reduce the default 16dp vertical inside-margin a little for a tighter row, keep
-            // horizontal at 16dp so the card width is unchanged.
-            insideMargin = PaddingValues(horizontal = spacing.space16, vertical = spacing.space12),
-            startAction = {
-                AppIcon(
-                    packageName = app.packageName,
-                    contentDescription = app.label,
-                    imageSize = componentSizes.iconBadgeMedium,
-                    bitmapSize = 80,
-                    modifier = Modifier.padding(end = spacing.space12),
-                )
-            },
-            endActions = {
-                Checkbox(
-                    state = ToggleableState(selected),
-                    onClick = { onSelectionChange(!selected) },
-                )
-            },
-            onClick = onClick,
-        ) {
-            Text(
-                text = app.label,
-                fontSize = MiuixTheme.textStyles.headline1.fontSize,
-                fontWeight = FontWeight.Medium,
-                color = MiuixTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = app.packageName,
-                fontSize = MiuixTheme.textStyles.body2.fontSize,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-@Composable
-private fun AppIcon(
-    packageName: String,
-    contentDescription: String,
-    imageSize: androidx.compose.ui.unit.Dp,
-    bitmapSize: Int,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    val iconBitmap by
-        produceState<ImageBitmap?>(initialValue = null, key1 = packageName, key2 = bitmapSize) {
-            value =
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                        context.packageManager
-                            .getApplicationIcon(packageName)
-                            .toBitmap(width = bitmapSize, height = bitmapSize)
-                            .asImageBitmap()
-                    }
-                        .getOrNull()
-                }
-        }
-
-    val bitmap = iconBitmap ?: return
-    Image(
-        bitmap = bitmap,
-        contentDescription = contentDescription,
-        modifier = modifier.size(imageSize),
-    )
-}
-
-@Composable
-private fun SearchEmptyState(text: String, modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = text, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
-    }
 }

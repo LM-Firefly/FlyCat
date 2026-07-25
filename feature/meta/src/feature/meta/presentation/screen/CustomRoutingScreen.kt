@@ -48,6 +48,7 @@ fun CustomRoutingScreen(
     val viewModel: CustomRoutingViewModel = koinViewModel()
     val presetSelection by viewModel.presetSelection.collectAsState()
     val customRoutingContent by viewModel.customRoutingContent.collectAsState()
+    val templateRoundTripSafe by viewModel.templateRoundTripSafe.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val selectedUrlTestRegions = remember { mutableStateListOf<OverridePresetRegion>() }
@@ -59,17 +60,28 @@ fun CustomRoutingScreen(
     var isSaving by remember { mutableStateOf(false) }
     val scrollBehavior = MiuixScrollBehavior()
 
-    LaunchedEffect(presetSelection) {
+    fun applyPresetSelection(selection: OverridePresetTemplateSelection) {
         selectedUrlTestRegions.clear()
-        selectedUrlTestRegions.addAll(sortPresetRegions(presetSelection.urlTestRegions))
+        selectedUrlTestRegions.addAll(sortPresetRegions(selection.urlTestRegions))
         selectedFallbackRegions.clear()
-        selectedFallbackRegions.addAll(sortPresetRegions(presetSelection.fallbackRegions))
+        selectedFallbackRegions.addAll(sortPresetRegions(selection.fallbackRegions))
         enabledItems.clear()
-        enabledItems.addAll(sortPresetItems(presetSelection.enabledItems))
-        enableUrlTestGroup = presetSelection.enableUrlTestGroup
-        enableFallbackGroup = presetSelection.enableFallbackGroup
+        enabledItems.addAll(sortPresetItems(selection.enabledItems))
+        enableUrlTestGroup = selection.enableUrlTestGroup
+        enableFallbackGroup = selection.enableFallbackGroup
         isDirty = false
     }
+
+    fun editedPresetSelection() =
+        OverridePresetTemplateSelection(
+            urlTestRegions = selectedUrlTestRegions.toSet(),
+            fallbackRegions = selectedFallbackRegions.toSet(),
+            enabledItems = enabledItems.toSet(),
+            enableUrlTestGroup = enableUrlTestGroup,
+            enableFallbackGroup = enableFallbackGroup,
+        )
+
+    LaunchedEffect(presetSelection) { applyPresetSelection(presetSelection) }
 
     fun saveAndExit() {
         if (isSaving) return
@@ -77,15 +89,14 @@ fun CustomRoutingScreen(
             onNavigateBack()
             return
         }
+        if (!templateRoundTripSafe) {
+            applyPresetSelection(presetSelection)
+            context.toast(YumeTxt.MetaFeature.CustomRouting.ManualYamlPresetDiscarded)
+            onNavigateBack()
+            return
+        }
 
-        val updatedSelection =
-            OverridePresetTemplateSelection(
-                urlTestRegions = selectedUrlTestRegions.toSet(),
-                fallbackRegions = selectedFallbackRegions.toSet(),
-                enabledItems = enabledItems.toSet(),
-                enableUrlTestGroup = enableUrlTestGroup,
-                enableFallbackGroup = enableFallbackGroup,
-            )
+        val updatedSelection = editedPresetSelection()
         scope.launch {
             isSaving = true
             viewModel
@@ -110,11 +121,40 @@ fun CustomRoutingScreen(
                     IconButton(
                         enabled = !isSaving,
                         onClick = {
-                            onOpenYamlEditor(
-                                YumeTxt.MetaFeature.CustomRouting.EditYaml,
-                                customRoutingContent,
-                            ) { content ->
-                                viewModel.saveCustomRoutingYaml(content).getOrElse { throw it }
+                            fun openEditor(content: String) {
+                                onOpenYamlEditor(
+                                    YumeTxt.MetaFeature.CustomRouting.EditYaml,
+                                    content,
+                                ) { updatedContent ->
+                                    viewModel
+                                        .saveCustomRoutingYaml(updatedContent)
+                                        .getOrElse { throw it }
+                                }
+                            }
+
+                            when {
+                                !isDirty -> openEditor(customRoutingContent)
+                                !templateRoundTripSafe -> {
+                                    applyPresetSelection(presetSelection)
+                                    context.toast(
+                                        YumeTxt.MetaFeature.CustomRouting.ManualYamlPresetDiscarded
+                                    )
+                                    openEditor(customRoutingContent)
+                                }
+                                else ->
+                                    scope.launch {
+                                        isSaving = true
+                                        viewModel
+                                            .savePresetSelection(editedPresetSelection())
+                                            .onSuccess {
+                                                isDirty = false
+                                                openEditor(viewModel.customRoutingContent.value)
+                                            }
+                                            .onFailure { error ->
+                                                context.toast(error.message ?: "保存失败")
+                                            }
+                                        isSaving = false
+                                    }
                             }
                         },
                     ) {

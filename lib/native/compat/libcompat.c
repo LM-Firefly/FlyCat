@@ -43,6 +43,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -362,6 +363,25 @@ Java_com_github_yumelira_yumebox_core_bridge_NativeProcess_nativeWait(
     return (jint)status;
 }
 
+static int validate_channel_arrays(
+        JNIEnv *env, jbyteArray buffer, jint offset, jint length, jintArray fd_holder) {
+    if (buffer == NULL) {
+        throw_io(env, "channel buffer is null");
+        return 0;
+    }
+    jsize buffer_length = (*env)->GetArrayLength(env, buffer);
+    if (offset < 0 || length < 0 || offset > buffer_length - length) {
+        throw_io(env, "invalid channel buffer slice: offset=%d length=%d size=%d",
+                 offset, length, buffer_length);
+        return 0;
+    }
+    if (fd_holder != NULL && (*env)->GetArrayLength(env, fd_holder) < 1) {
+        throw_io(env, "channel fd holder is empty");
+        return 0;
+    }
+    return 1;
+}
+
 /*
  * Channel.nativeReadMessage(fd, buf, off, len, fdHolder) -> bytes read (0 = EOF, -1 = error)
  * If the peer attached a descriptor via SCM_RIGHTS, it is stored into fdHolder[0].
@@ -370,6 +390,9 @@ JNIEXPORT jint JNICALL
 Java_com_github_yumelira_yumebox_core_bridge_Channel_nativeReadMessage(
         JNIEnv *env, jclass clazz, jint fd, jbyteArray buffer, jint offset, jint length, jintArray fd_holder) {
     (void)clazz;
+    if (!validate_channel_arrays(env, buffer, offset, length, fd_holder)) {
+        return -1;
+    }
     jbyte *bytes = (*env)->GetByteArrayElements(env, buffer, NULL);
     if (bytes == NULL) {
         return -1;
@@ -428,6 +451,9 @@ JNIEXPORT jint JNICALL
 Java_com_github_yumelira_yumebox_core_bridge_Channel_nativeWriteMessage(
         JNIEnv *env, jclass clazz, jint fd, jbyteArray buffer, jint offset, jint length, jintArray fd_holder) {
     (void)clazz;
+    if (!validate_channel_arrays(env, buffer, offset, length, fd_holder)) {
+        return -1;
+    }
     jint pass_fd = -1;
     if (fd_holder != NULL) {
         (*env)->GetIntArrayRegion(env, fd_holder, 0, 1, &pass_fd);
@@ -477,12 +503,12 @@ Java_com_github_yumelira_yumebox_core_bridge_Channel_nativeWriteMessage(
 }
 
 /*
- * UnixSocket.nativeConnectUnixSocket(path, type) -> connected fd
+ * UnixSocket.nativeConnectUnixSocket(path, type, timeoutMs) -> connected fd
  * A leading '@' selects the abstract namespace (path[0] becomes NUL, matching mihomo/CFA).
  */
 JNIEXPORT jint JNICALL
 Java_com_github_yumelira_yumebox_core_bridge_UnixSocket_nativeConnectUnixSocket(
-        JNIEnv *env, jclass clazz, jstring path_value, jint type) {
+        JNIEnv *env, jclass clazz, jstring path_value, jint type, jint timeout_ms) {
     (void)clazz;
     const char *path = (*env)->GetStringUTFChars(env, path_value, NULL);
     if (path == NULL) {
@@ -515,8 +541,46 @@ Java_com_github_yumelira_yumebox_core_bridge_UnixSocket_nativeConnectUnixSocket(
         address_len = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + path_len + 1);
     }
 
+    int original_flags = -1;
+    if (timeout_ms > 0) {
+        original_flags = fcntl(fd, F_GETFL, 0);
+        if (original_flags < 0 || fcntl(fd, F_SETFL, original_flags | O_NONBLOCK) < 0) {
+            int saved_errno = errno;
+            throw_io(env, "fcntl: %s", strerror(saved_errno));
+            close(fd);
+            (*env)->ReleaseStringUTFChars(env, path_value, path);
+            return -1;
+        }
+    }
+
+    int connect_error = 0;
     if (connect(fd, (struct sockaddr *)&address, address_len) < 0) {
-        throw_io(env, "connect: %s", strerror(errno));
+        connect_error = errno;
+        if (timeout_ms > 0 && connect_error == EINPROGRESS) {
+            struct pollfd poll_fd = {.fd = fd, .events = POLLOUT, .revents = 0};
+            int poll_result;
+            do {
+                poll_result = poll(&poll_fd, 1, timeout_ms);
+            } while (poll_result < 0 && errno == EINTR);
+
+            if (poll_result == 0) {
+                connect_error = ETIMEDOUT;
+            } else if (poll_result < 0) {
+                connect_error = errno;
+            } else {
+                socklen_t error_len = sizeof(connect_error);
+                if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &connect_error, &error_len) < 0) {
+                    connect_error = errno;
+                }
+            }
+        }
+    }
+
+    if (original_flags >= 0 && fcntl(fd, F_SETFL, original_flags) < 0 && connect_error == 0) {
+        connect_error = errno;
+    }
+    if (connect_error != 0) {
+        throw_io(env, "connect: %s", strerror(connect_error));
         close(fd);
         (*env)->ReleaseStringUTFChars(env, path_value, path);
         return -1;

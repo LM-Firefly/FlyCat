@@ -24,6 +24,11 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.*
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.constructor.SafeConstructor
+import org.yaml.snakeyaml.nodes.Tag
+import org.yaml.snakeyaml.representer.Representer
+import org.yaml.snakeyaml.resolver.Resolver
+import java.util.regex.Pattern
 
 object YamlCodec {
     private val json = Json {
@@ -33,8 +38,8 @@ object YamlCodec {
         prettyPrint = true
     }
 
-    private val yaml =
-        Yaml(
+    private fun newYaml(): Yaml {
+        val options =
             DumperOptions().apply {
                 defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
                 defaultScalarStyle = DumperOptions.ScalarStyle.PLAIN
@@ -44,7 +49,8 @@ object YamlCodec {
                 width = 160
                 splitLines = false
             }
-        )
+        return Yaml(SafeConstructor(), Representer(), options, JsonBooleanResolver())
+    }
 
     fun <T> encode(serializer: KSerializer<T>, value: T): String {
         val element = json.encodeToJsonElement(serializer, value)
@@ -62,17 +68,19 @@ object YamlCodec {
 
     @Suppress("UNCHECKED_CAST")
     fun loadMap(content: String): Map<String, Any?> {
+        if (content.isBlank()) return emptyMap()
         val loaded = loadValue(content)
-        return loaded as? Map<String, Any?> ?: emptyMap()
+        require(loaded is Map<*, *>) { "YAML document root must be a map" }
+        return loaded as Map<String, Any?>
     }
 
-    fun dumpValue(value: Any?): String = yaml.dump(normalizeYamlValue(value))
+    fun dumpValue(value: Any?): String = newYaml().dump(normalizeYamlValue(value))
 
-    fun loadValue(content: String): Any? = normalizeYamlValue(yaml.load(content))
+    fun loadValue(content: String): Any? = normalizeYamlValue(newYaml().load(content))
 
     fun validate(content: String) {
         if (content.isBlank()) return
-        yaml.load(content)
+        newYaml().load(content)
     }
 
     private fun toYamlNode(element: JsonElement): Any? =
@@ -129,4 +137,21 @@ object YamlCodec {
             is Array<*> -> value.map(::normalizeYamlValue)
             else -> value
         }
+
+    private class JsonBooleanResolver : Resolver() {
+        override fun addImplicitResolvers() {
+            addImplicitResolver(Tag.BOOL, JSON_BOOLEAN, "tTfF")
+            addImplicitResolver(Tag.INT, INT, "-+0123456789")
+            addImplicitResolver(Tag.FLOAT, FLOAT, "-+0123456789.")
+            addImplicitResolver(Tag.MERGE, MERGE, "<")
+            addImplicitResolver(Tag.NULL, NULL, "~nN\u0000")
+            addImplicitResolver(Tag.NULL, EMPTY, null)
+            addImplicitResolver(Tag.TIMESTAMP, TIMESTAMP, "0123456789")
+            addImplicitResolver(Tag.YAML, YAML, "!&*")
+        }
+
+        private companion object {
+            val JSON_BOOLEAN: Pattern = Pattern.compile("^(?:true|True|TRUE|false|False|FALSE)$")
+        }
+    }
 }

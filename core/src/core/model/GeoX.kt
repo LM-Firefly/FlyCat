@@ -28,7 +28,6 @@ enum class GeoFileType {
     GeoSite,
     Country,
     ASN,
-    Model,
 }
 
 data class GeoXItem(

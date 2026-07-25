@@ -53,6 +53,7 @@ class BackupRestoreViewModel(
             application.contentResolver.openOutputStream(uri)?.use { output ->
                 repository.exportBackup(output)
             } ?: error(YumeTxt.Feature.BackupRestore.Error.OpenOutputFailed)
+            emitMessage(YumeTxt.Feature.BackupRestore.Message.ExportSuccess)
         }
     }
 

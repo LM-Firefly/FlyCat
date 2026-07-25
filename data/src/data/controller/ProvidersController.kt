@@ -24,6 +24,11 @@ import android.content.Context
 import android.net.Uri
 import com.github.yumelira.yumebox.core.model.Provider
 import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -71,14 +76,7 @@ class ProvidersController(
                         ?: return@withContext Result.failure(IllegalStateException("无法读取文件: $uri"))
 
                 inputStream.use { input ->
-                    val size = input.available().toLong()
-                    if (size > maxBytes) {
-                        return@withContext Result.failure(
-                            IllegalStateException("文件超过 ${maxBytes / (1024 * 1024)}MB 限制")
-                        )
-                    }
-
-                    targetFile.outputStream().use { output -> input.copyTo(output) }
+                    copyBoundedAtomic(input, targetFile, maxBytes)
                 }
 
                 Result.success(Unit)
@@ -99,6 +97,44 @@ class ProvidersController(
         } catch (error: Exception) { // fault barrier: injected update action may fail arbitrarily
             Result.failure(error)
         }
+
+    private fun copyBoundedAtomic(input: InputStream, targetFile: File, maxBytes: Long) {
+        require(maxBytes >= 0L) { "maxBytes must not be negative" }
+        val parent = targetFile.parentFile ?: error("Provider file has no parent")
+        val temporary = File.createTempFile("${targetFile.name}.", ".tmp", parent)
+        try {
+            FileOutputStream(temporary).use { output ->
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                var written = 0L
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    written += read.toLong()
+                    check(written <= maxBytes) {
+                        "文件超过 ${maxBytes / (1024 * 1024)}MB 限制"
+                    }
+                    output.write(buffer, 0, read)
+                }
+                output.fd.sync()
+            }
+            try {
+                Files.move(
+                    temporary.toPath(),
+                    targetFile.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE,
+                )
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(
+                    temporary.toPath(),
+                    targetFile.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
+            }
+        } finally {
+            runCatching { temporary.delete() }
+        }
+    }
 
     private fun buildTargetFile(provider: Provider): File {
         if (provider.path.isBlank()) {

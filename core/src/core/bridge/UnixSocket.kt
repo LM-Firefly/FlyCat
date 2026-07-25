@@ -59,12 +59,14 @@ class UnixSocket private constructor(private val descriptor: ParcelFileDescripto
          *
          * @throws java.io.IOException on socket/connect failure.
          */
-        fun connect(path: String, type: Int = SOCK_STREAM): UnixSocket {
-            val fd = nativeConnectUnixSocket(path, type)
+        fun connect(path: String, type: Int = SOCK_STREAM, timeoutMs: Int = 0): UnixSocket {
+            require(timeoutMs >= 0) { "timeoutMs < 0" }
+            val fd = nativeConnectUnixSocket(path, type, timeoutMs)
             return UnixSocket(ParcelFileDescriptor.adoptFd(fd))
         }
 
-        @JvmStatic private external fun nativeConnectUnixSocket(path: String, type: Int): Int
+        @JvmStatic
+        private external fun nativeConnectUnixSocket(path: String, type: Int, timeoutMs: Int): Int
 
         @JvmStatic private external fun nativeSetSoTimeout(fd: Int, timeoutMs: Int)
 

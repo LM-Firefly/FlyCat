@@ -34,6 +34,8 @@ import com.github.yumelira.yumebox.data.store.OverrideConfigStore
 import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLDecoder
@@ -61,6 +63,7 @@ class OverrideConfigViewModel(
         private const val TAG = "OverrideConfigViewModel"
         private const val NETWORK_IMPORT_CONNECT_TIMEOUT_MS = 15_000
         private const val NETWORK_IMPORT_READ_TIMEOUT_MS = 30_000
+        private const val NETWORK_IMPORT_MAX_BYTES = 5L * 1024 * 1024
     }
 
     private val _configs = MutableStateFlow<List<OverrideConfig>>(emptyList())
@@ -327,6 +330,13 @@ class OverrideConfigViewModel(
                             YumeTxt.Override.Import.HttpError.format(responseCode)
                         }
 
+                        require(
+                            connection.contentLengthLong < 0L ||
+                                connection.contentLengthLong <= NETWORK_IMPORT_MAX_BYTES
+                        ) {
+                            "远程配置超过 ${NETWORK_IMPORT_MAX_BYTES / (1024 * 1024)}MB 限制"
+                        }
+
                         val contentTypeHeader = connection.contentType.orEmpty()
                         val sourceName =
                             resolveNetworkImportSourceName(
@@ -335,7 +345,10 @@ class OverrideConfigViewModel(
                                     connection.getHeaderField("Content-Disposition"),
                                 contentType = contentTypeHeader,
                             )
-                        val content = connection.inputStream.bufferedReader().use { it.readText() }
+                        val content =
+                            connection.inputStream.use { input ->
+                                readUtf8TextLimited(input, NETWORK_IMPORT_MAX_BYTES)
+                            }
                         val inferredContentType =
                             OverrideContentType.fromFileName(sourceName)
                                 ?: inferContentTypeFromHeader(contentTypeHeader)
@@ -448,6 +461,23 @@ class OverrideConfigViewModel(
         }
         _usageCountMap.value = countMap
     }
+}
+
+internal fun readUtf8TextLimited(input: InputStream, maxBytes: Long): String {
+    require(maxBytes in 0..Int.MAX_VALUE.toLong()) { "maxBytes is out of range" }
+    val output = ByteArrayOutputStream(minOf(DEFAULT_BUFFER_SIZE.toLong(), maxBytes).toInt())
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    var total = 0L
+    while (true) {
+        val read = input.read(buffer)
+        if (read < 0) break
+        total += read.toLong()
+        require(total <= maxBytes) {
+            "远程配置超过 ${maxBytes / (1024 * 1024)}MB 限制"
+        }
+        output.write(buffer, 0, read)
+    }
+    return output.toString(Charsets.UTF_8.name())
 }
 
 private fun resolveNetworkImportSourceName(

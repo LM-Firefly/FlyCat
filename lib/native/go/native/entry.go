@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
@@ -52,11 +53,11 @@ func main() {
 	delegate.Init(*home, *versionName, *gitVersion, *sdkVersion)
 	boot("Init core, home=%s versionName=%s gitVersion=%s platformVersion=%d",
 		*home, *versionName, *gitVersion, *sdkVersion)
-	app.ApplyTunContext(nil, nil)
 
 	var (
 		rawConfig []byte
 		tunFd     = -1
+		channelFd = -1
 	)
 	switch *mode {
 	case "tun", "tproxy":
@@ -69,7 +70,7 @@ func main() {
 		}
 		rawConfig = data
 	default: // vpn
-		channelFd := channelFromEnv()
+		channelFd = channelFromEnv()
 		if channelFd < 0 {
 			fatal("missing CHANNEL: vpn mode delivers config over the socketpair, not a file")
 		}
@@ -78,6 +79,12 @@ func main() {
 			fatal("read setup from channel: %v", err)
 		}
 		rawConfig, tunFd = data, fd
+	}
+	if channelFd >= 0 {
+		defer syscall.Close(channelFd)
+		app.ApplyTunContext(nil, socketOwnerQuery(channelFd))
+	} else {
+		app.ApplyTunContext(nil, nil)
 	}
 	boot("[core] setup received: mode=%s config=%d bytes tunFd=%d", *mode, len(rawConfig), tunFd)
 
@@ -150,6 +157,25 @@ func readSetup(channelFd int) ([]byte, int, error) {
 			return config, -1, nil
 		}
 		config = append(config, buf[:n]...)
+	}
+}
+
+func socketOwnerQuery(channelFd int) func(int, string, string) string {
+	var mutex sync.Mutex
+	return func(protocol int, source, target string) string {
+		mutex.Lock()
+		defer mutex.Unlock()
+
+		request := []byte(fmt.Sprintf("%d\t%s\t%s", protocol, source, target))
+		if err := syscall.Sendmsg(channelFd, request, nil, nil, 0); err != nil {
+			return "-1\t"
+		}
+		response := make([]byte, 4096)
+		n, _, _, _, err := syscall.Recvmsg(channelFd, response, nil, 0)
+		if err != nil || n <= 0 {
+			return "-1\t"
+		}
+		return string(response[:n])
 	}
 }
 

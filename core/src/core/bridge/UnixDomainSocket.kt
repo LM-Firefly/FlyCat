@@ -42,14 +42,25 @@ class UnixDomainSocket(private val path: String) : Socket(null as SocketImpl?) {
 
     private var connection: UnixSocket? = null
     private var soTimeoutMs: Int = 0
+    private var connected = false
+    private var closed = false
 
     override fun connect(endpoint: SocketAddress?) = connect(endpoint, 0)
 
     override fun connect(endpoint: SocketAddress?, timeout: Int) {
-        if (connection == null) {
-            val conn = UnixSocket.connect(path, UnixSocket.SOCK_STREAM)
+        require(endpoint != null) { "endpoint == null" }
+        require(timeout >= 0) { "timeout < 0" }
+        if (closed) throw SocketException("Socket is closed")
+        if (connected) throw SocketException("Socket is already connected")
+
+        val conn = UnixSocket.connect(path, UnixSocket.SOCK_STREAM, timeout)
+        try {
             if (soTimeoutMs > 0) conn.setSoTimeout(soTimeoutMs)
             connection = conn
+            connected = true
+        } catch (error: Throwable) {
+            runCatching { conn.close() }
+            throw error
         }
     }
 
@@ -61,6 +72,7 @@ class UnixDomainSocket(private val path: String) : Socket(null as SocketImpl?) {
     override fun getOutputStream(): OutputStream = FdOutputStream(requireFd())
 
     override fun setSoTimeout(timeout: Int) {
+        require(timeout >= 0) { "timeout < 0" }
         soTimeoutMs = timeout
         connection?.setSoTimeout(timeout)
     }
@@ -68,6 +80,8 @@ class UnixDomainSocket(private val path: String) : Socket(null as SocketImpl?) {
     override fun getSoTimeout(): Int = connection?.getSoTimeout() ?: soTimeoutMs
 
     override fun close() {
+        if (closed) return
+        closed = true
         connection?.let { conn -> runCatching { conn.close() } }
         connection = null
     }
@@ -83,15 +97,15 @@ class UnixDomainSocket(private val path: String) : Socket(null as SocketImpl?) {
 
     override fun bind(bindpoint: SocketAddress?) = Unit
 
-    override fun isConnected(): Boolean = connection != null
+    override fun isConnected(): Boolean = connected
 
-    override fun isBound(): Boolean = true
+    override fun isBound(): Boolean = connected
 
-    override fun isClosed(): Boolean = connection == null
+    override fun isClosed(): Boolean = closed
 
-    override fun isInputShutdown(): Boolean = connection == null
+    override fun isInputShutdown(): Boolean = false
 
-    override fun isOutputShutdown(): Boolean = connection == null
+    override fun isOutputShutdown(): Boolean = false
 
     override fun getInetAddress(): InetAddress = InetAddress.getLoopbackAddress()
 

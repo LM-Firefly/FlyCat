@@ -125,10 +125,11 @@ internal fun StableQrScanner(onScanned: (String) -> Unit) {
             previewView
         },
         onRelease = { previewView ->
-            try {
-                val context = previewView.context
-                ProcessCameraProvider.getInstance(context).get().unbindAll()
-            } catch (_: Exception) {}
+            runCatching {
+                    val context = previewView.context
+                    ProcessCameraProvider.getInstance(context).get().unbindAll()
+                }
+                .onFailure { Timber.w(it, "Failed to release camera lifecycle") }
         },
     )
 }

@@ -123,9 +123,6 @@ class MainActivity : FragmentActivity() {
 
         val showHomeGuideInitially =
             savedInstanceState == null && !appSettingsStorage.homePreviewGuideShown.value
-        if (showHomeGuideInitially) {
-            appSettingsStorage.homePreviewGuideShown.set(true)
-        }
 
         setContent {
             val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
@@ -177,7 +174,10 @@ class MainActivity : FragmentActivity() {
                                 }
                                 HomePreviewGuideDialog(
                                     show = showHomeGuide,
-                                    onDismissRequest = { showHomeGuide = false },
+                                    onDismissRequest = {
+                                        showHomeGuide = false
+                                        appSettingsStorage.homePreviewGuideShown.set(true)
+                                    },
                                 )
                             }
                         }

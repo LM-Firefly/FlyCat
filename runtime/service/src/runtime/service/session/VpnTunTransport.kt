@@ -108,7 +108,7 @@ class VpnTunTransport(
                 if (Build.VERSION.SDK_INT >= 29 && store.systemProxy) {
                     httpProxyPort(config)?.let { port ->
                         setHttpProxy(
-                            ProxyInfo.buildDirectProxy("127.0.0.1", port, httpProxyLocalList)
+                            ProxyInfo.buildDirectProxy("127.0.0.1", port, httpProxyExclusionList)
                         )
                     }
                 }
@@ -239,6 +239,7 @@ class VpnTunTransport(
     private fun portFromConfig(config: String, key: String): Int? =
         config
             .lineSequence()
+            .map(String::trimStart)
             .firstOrNull { it.startsWith("$key:") }
             ?.substringAfter("$key:")
             ?.trim()
@@ -277,7 +278,7 @@ class VpnTunTransport(
         private const val NET_ANY = "0.0.0.0"
         private const val NET_ANY6 = "::"
 
-        private val httpProxyLocalList =
+        private val httpProxyExclusionList =
             listOf(
                 "localhost",
                 "*.local",
@@ -291,9 +292,6 @@ class VpnTunTransport(
                 "172.30.*",
                 "172.31.*",
                 "192.168.*",
-            )
-        private val httpProxyBlackList =
-            listOf(
                 "*zhihu.com",
                 "*zhimg.com",
                 "*jd.com",

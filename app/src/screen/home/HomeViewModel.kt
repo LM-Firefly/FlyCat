@@ -28,7 +28,6 @@ import androidx.lifecycle.viewModelScope
 import com.github.yumelira.yumebox.common.util.stateInWhileSubscribed
 import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.core.presentation.AndroidContractStateViewModel
-import com.github.yumelira.yumebox.core.presentation.LoadableState
 import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
@@ -49,24 +48,6 @@ import kotlinx.coroutines.flow.*
 import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
 
-enum class HomeProxyControlState {
-    Idle,
-    Connecting,
-    Running,
-    Lost,
-    Disconnecting;
-
-    val canInteract: Boolean
-        get() = this == Idle || this == Running
-}
-
-private enum class PendingTransition {
-    None,
-    AwaitingPermission,
-    Starting,
-    Stopping,
-}
-
 class HomeViewModel(
     application: Application,
     private val proxyFacade: ProxyFacade,
@@ -75,7 +56,7 @@ class HomeViewModel(
     private val networkSettingsStore: NetworkSettingsStore,
     private val remoteControllerStore: com.github.yumelira.yumebox.data.store.RemoteControllerStore,
 ) :
-    AndroidContractStateViewModel<HomeViewModel.HomeUiState, HomeViewModel.HomeUiEffect>(
+    AndroidContractStateViewModel<HomeUiState, HomeUiEffect>(
         application,
         HomeUiState(),
     ) {
@@ -152,11 +133,11 @@ class HomeViewModel(
 
     val controlState: StateFlow<HomeProxyControlState> =
         combine(runtimeSnapshot, _pendingTransition) { snapshot, pendingTransition ->
-                resolveControlState(snapshot.owner, snapshot.phase, pendingTransition)
+                resolveHomeControlState(snapshot.owner, snapshot.phase, pendingTransition)
             }
             .stateInWhileSubscribed(
                 viewModelScope,
-                resolveControlState(
+                resolveHomeControlState(
                     runtimeSnapshot.value.owner,
                     runtimeSnapshot.value.phase,
                     _pendingTransition.value,
@@ -217,15 +198,13 @@ class HomeViewModel(
                     selectedServerPing,
                     speedHistory,
                 ) { recommended, current, serverName, serverPing, history ->
-                    Array(5) { i ->
-                        when (i) {
-                            0 -> recommended
-                            1 -> current
-                            2 -> serverName
-                            3 -> serverPing
-                            else -> history
-                        }
-                    }
+                    HomeProfileSummary(
+                        recommendedProfile = recommended,
+                        currentProfile = current,
+                        selectedServerName = serverName,
+                        selectedServerPing = serverPing,
+                        speedHistory = history,
+                    )
                 },
                 combine(
                     proxyMode,
@@ -234,40 +213,27 @@ class HomeViewModel(
                     ipMonitoringState,
                     uiState,
                 ) { mode, remote, backendName, ipState, ui ->
-                    Array(5) { i ->
-                        when (i) {
-                            0 -> mode
-                            1 -> remote
-                            2 -> backendName
-                            3 -> ipState
-                            else -> ui
-                        }
-                    }
+                    HomeRuntimeSummary(
+                        proxyMode = mode,
+                        isRemoteController = remote,
+                        controllerBackendName = backendName,
+                        ipMonitoringState = ipState,
+                        uiState = ui,
+                    )
                 },
-            ) { base, mid, tail ->
-                val recommended = mid[0] as Profile?
-                val current = mid[1] as Profile?
-                val serverName = mid[2] as String?
-                val serverPing = mid[3] as Int?
-
-                @Suppress("UNCHECKED_CAST") val history = mid[4] as List<Long>
-                val mode = tail[0] as RunMode
-                val remote = tail[1] as Boolean
-                val backendName = tail[2] as String?
-                val ipState = tail[3] as IpMonitoringState
-                val ui = tail[4] as HomeUiState
+            ) { base, profile, runtime ->
                 base.copy(
-                    recommendedProfile = recommended,
-                    currentProfile = current,
-                    selectedServerName = serverName,
-                    selectedServerPing = serverPing,
-                    speedHistory = history,
-                    proxyMode = mode,
-                    isRemoteController = remote,
-                    controllerBackendName = backendName,
-                    ipMonitoringState = ipState,
-                    uiMessage = ui.message,
-                    uiError = ui.error,
+                    recommendedProfile = profile.recommendedProfile,
+                    currentProfile = profile.currentProfile,
+                    selectedServerName = profile.selectedServerName,
+                    selectedServerPing = profile.selectedServerPing,
+                    speedHistory = profile.speedHistory,
+                    proxyMode = runtime.proxyMode,
+                    isRemoteController = runtime.isRemoteController,
+                    controllerBackendName = runtime.controllerBackendName,
+                    ipMonitoringState = runtime.ipMonitoringState,
+                    uiMessage = runtime.uiState.message,
+                    uiError = runtime.uiState.error,
                 )
             }
             .combine(runtimeSnapshot) { screen, snapshot ->
@@ -538,12 +504,8 @@ class HomeViewModel(
 
                         else -> 0L
                     }
-                _speedHistory.update { old ->
-                    buildList(sampleLimit) {
-                        repeat((sampleLimit - old.size - 1).coerceAtLeast(0)) { add(0L) }
-                        addAll(old.takeLast(sampleLimit - 1))
-                        add(sample)
-                    }
+                _speedHistory.update { history ->
+                    appendSpeedSample(history, sample, sampleLimit)
                 }
             }
         }
@@ -609,80 +571,8 @@ class HomeViewModel(
         pendingStartRequest = null
     }
 
-    private fun resolveControlState(
-        owner: RuntimeOwner,
-        phase: RuntimePhase,
-        pendingTransition: PendingTransition,
-    ): HomeProxyControlState {
-        if (owner == RuntimeOwner.RemoteController && phase == RuntimePhase.Failed) {
-            return HomeProxyControlState.Lost
-        }
-        val phaseStillActive =
-            phase != RuntimePhase.Stopping &&
-                phase != RuntimePhase.Idle &&
-                phase != RuntimePhase.Failed
-        if (pendingTransition == PendingTransition.Stopping && phaseStillActive) {
-            return HomeProxyControlState.Disconnecting
-        }
-        return when (phase) {
-            RuntimePhase.Running -> HomeProxyControlState.Running
-            RuntimePhase.Starting -> HomeProxyControlState.Connecting
-            RuntimePhase.Stopping -> HomeProxyControlState.Disconnecting
-            RuntimePhase.Idle,
-            RuntimePhase.Failed ->
-                when (pendingTransition) {
-                    PendingTransition.AwaitingPermission,
-                    PendingTransition.Starting -> HomeProxyControlState.Connecting
-
-                    PendingTransition.Stopping -> HomeProxyControlState.Idle
-                    PendingTransition.None -> HomeProxyControlState.Idle
-                }
-        }
-    }
-
     private data class PendingStartRequest(
         val profileId: String,
         val mode: RunMode,
     )
-
-    /** Aggregated home page snapshot — Screen should collect this once. */
-    data class HomeScreenState(
-        val controlState: HomeProxyControlState = HomeProxyControlState.Idle,
-        val trafficNow: com.github.yumelira.yumebox.core.model.Traffic = 0L,
-        val profiles: List<Profile> = emptyList(),
-        val profilesLoaded: Boolean = false,
-        val hasEnabledProfile: Boolean = false,
-        val recommendedProfile: Profile? = null,
-        val currentProfile: Profile? = null,
-        val selectedServerName: String? = null,
-        val selectedServerPing: Int? = null,
-        val speedHistory: List<Long> = emptyList(),
-        val proxyMode: RunMode = RunMode.VpnService,
-        val isRemoteController: Boolean = false,
-        val controllerBackendName: String? = null,
-        val ipMonitoringState: IpMonitoringState = IpMonitoringState.Loading,
-        val uiMessage: String? = null,
-        val uiError: String? = null,
-        val runtimeStartedAt: Long? = null,
-    )
-
-    data class HomeUiState(
-        override val isLoading: Boolean = false,
-        val isStartingProxy: Boolean = false,
-        val loadingProgress: String? = null,
-        override val message: String? = null,
-        override val error: String? = null,
-    ) : LoadableState<HomeUiState> {
-        override fun withLoading(loading: Boolean): HomeUiState = copy(isLoading = loading)
-
-        override fun withError(error: String?): HomeUiState = copy(error = error)
-
-        override fun withMessage(message: String?): HomeUiState = copy(message = message)
-    }
-
-    sealed interface HomeUiEffect {
-        data class ShowMessage(val message: String) : HomeUiEffect
-
-        data class ShowError(val message: String) : HomeUiEffect
-    }
 }

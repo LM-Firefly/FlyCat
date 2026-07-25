@@ -1,14 +1,15 @@
 use std::collections::BTreeMap;
 use std::fs::{self, OpenOptions};
 use std::io::{Read, Write};
-use std::net::TcpStream;
+use std::net::{TcpStream, ToSocketAddrs};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use boa_engine::builtins::promise::PromiseState;
-use boa_engine::object::builtins::JsPromise;
 use boa_engine::object::FunctionObjectBuilder;
+use boa_engine::object::builtins::JsPromise;
 use boa_engine::property::Attribute;
-use boa_engine::{js_string, Context, JsNativeError, JsValue, NativeFunction, Source};
+use boa_engine::{Context, JsNativeError, JsValue, NativeFunction, Source, js_string};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
@@ -562,6 +563,32 @@ fn append_override_log_from_context(
     append_override_log(Path::new(&log_path), level, message)
 }
 
+const FETCH_IO_TIMEOUT: Duration = Duration::from_secs(15);
+
+fn connect_fetch(host: &str, port: u16) -> Result<TcpStream, String> {
+    let addresses = (host, port)
+        .to_socket_addrs()
+        .map_err(|err| format!("resolve fetch host {host}: {err}"))?;
+    let mut last_error = None;
+    for address in addresses {
+        match TcpStream::connect_timeout(&address, FETCH_IO_TIMEOUT) {
+            Ok(stream) => {
+                stream
+                    .set_read_timeout(Some(FETCH_IO_TIMEOUT))
+                    .map_err(|err| format!("set fetch read timeout: {err}"))?;
+                stream
+                    .set_write_timeout(Some(FETCH_IO_TIMEOUT))
+                    .map_err(|err| format!("set fetch write timeout: {err}"))?;
+                return Ok(stream);
+            }
+            Err(error) => last_error = Some(error),
+        }
+    }
+    Err(last_error
+        .map(|error| format!("connect fetch host {host}:{port}: {error}"))
+        .unwrap_or_else(|| format!("fetch host {host}:{port} resolved to no addresses")))
+}
+
 fn execute_fetch(request: FetchRequest) -> Result<FetchResponsePayload, String> {
     if request.url.trim().is_empty() {
         return Err("fetch request url is empty".to_string());
@@ -576,7 +603,7 @@ fn execute_fetch(request: FetchRequest) -> Result<FetchResponsePayload, String> 
 
     let method = request.method.trim().to_ascii_uppercase();
     let body = request.body.unwrap_or_default();
-    let mut stream = TcpStream::connect((request_url.host.as_str(), request_url.port))
+    let mut stream = connect_fetch(&request_url.host, request_url.port)
         .map_err(|err| format!("fetch {method} {} failed: {err}", request.url))?;
     let mut request_headers = request.headers;
     request_headers
@@ -651,7 +678,7 @@ fn parse_fetch_url(raw_url: &str) -> Result<ParsedFetchUrl, String> {
         let end = authority
             .find(']')
             .ok_or_else(|| format!("invalid IPv6 fetch authority: {authority}"))?;
-        let host = authority[..=end].to_string();
+        let host = authority[1..end].to_string();
         let port = authority[end + 1..]
             .strip_prefix(':')
             .map(parse_fetch_port)
@@ -835,3 +862,16 @@ fn decode_base64_chunk(chunk: &[u8; 4], bytes: &mut Vec<u8>) -> Result<(), Strin
 }
 
 const MAX_PROMISE_JOB_PASSES: usize = 1024;
+
+#[cfg(test)]
+mod tests {
+    use super::parse_fetch_url;
+
+    #[test]
+    fn parse_fetch_url_removes_ipv6_brackets_for_socket_resolution() {
+        let parsed = parse_fetch_url("http://[::1]:8080/path").expect("parse IPv6 URL");
+        assert_eq!(parsed.host, "::1");
+        assert_eq!(parsed.authority, "[::1]:8080");
+        assert_eq!(parsed.port, 8080);
+    }
+}

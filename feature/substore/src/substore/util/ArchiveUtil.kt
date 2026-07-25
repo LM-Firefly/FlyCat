@@ -120,26 +120,12 @@ object ArchiveUtil {
     }
 
     private fun resolveEntryTarget(destination: File, entryName: String): File {
-        val targetFile = File(destination, entryName)
         val canonicalDestination = destination.canonicalFile
-        val canonicalTarget = targetFile.canonicalFile
-
-        val relativePath = getRelativePath(canonicalDestination, canonicalTarget)
-        if (relativePath == null || relativePath.startsWith("..")) {
+        val canonicalTarget = File(canonicalDestination, entryName).canonicalFile
+        if (!canonicalTarget.toPath().startsWith(canonicalDestination.toPath())) {
             throw SecurityException("检测到路径遍历: $entryName")
         }
-        return targetFile
-    }
-
-    private fun getRelativePath(base: File, target: File): String? {
-        val basePath = base.absolutePath
-        val targetPath = target.absolutePath
-
-        return if (targetPath.startsWith(basePath)) {
-            if (basePath == targetPath) "" else targetPath.substring(basePath.length + 1)
-        } else {
-            null
-        }
+        return canonicalTarget
     }
 
     private fun ensureDirectory(directory: File) {

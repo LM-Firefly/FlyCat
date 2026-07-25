@@ -74,6 +74,7 @@ Feature = {
         }
 
         Message = {
+            ExportSuccess = "Backup exported successfully."
             RestoreSuccess = "Restore complete. Restart the app to refresh all screens."
         }
 

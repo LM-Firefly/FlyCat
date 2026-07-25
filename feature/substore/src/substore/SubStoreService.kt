@@ -22,20 +22,30 @@ package com.github.yumelira.yumebox.substore
 
 import android.app.Service
 import android.content.Intent
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import com.github.yumelira.yumebox.substore.engine.NativeLibraryManager
 import timber.log.Timber
 
 class SubStoreService : Service() {
     private var caseEngine: CaseEngine? = null
+    private var activeRequest: SubStoreServiceRequest? = null
     private var isRunning = false
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun onBind(intent: Intent): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (isRunning) return START_STICKY
-
         val request = SubStoreServiceController.requestFrom(intent)
+        if (isRunning && activeRequest == request) {
+            SubStoreServiceController.markRunning()
+            return START_STICKY
+        }
+        if (isRunning) {
+            cleanupService()
+        }
+
         return runCatching {
             if (
                 NetworkUtil.isPortInUse(request.frontendPort) ||
@@ -48,11 +58,15 @@ class SubStoreService : Service() {
                 error("Javet native 库加载失败")
             }
 
-            val engine =
+            lateinit var engine: CaseEngine
+            engine =
                 CaseEngine(
                     backendPort = request.backendPort,
                     frontendPort = request.frontendPort,
                     allowLan = request.allowLan,
+                    onTerminated = {
+                        mainHandler.post { handleEngineTermination(engine, startId) }
+                    },
                 )
             caseEngine = engine
 
@@ -61,6 +75,7 @@ class SubStoreService : Service() {
             }
 
             engine.startServer()
+            activeRequest = request
             isRunning = true
             SubStoreServiceController.markRunning()
 
@@ -104,10 +119,20 @@ class SubStoreService : Service() {
             false
         }
 
+    private fun handleEngineTermination(engine: CaseEngine, startId: Int) {
+        if (caseEngine !== engine) return
+        caseEngine = null
+        activeRequest = null
+        isRunning = false
+        SubStoreServiceController.markStopped()
+        stopSelfResult(startId)
+    }
+
     private fun cleanupService() {
         runCatching { caseEngine?.stopServer() }
             .onFailure { error -> Timber.e(error, "Failed to stop Sub-Store service") }
         caseEngine = null
+        activeRequest = null
         isRunning = false
         SubStoreServiceController.markStopped()
     }

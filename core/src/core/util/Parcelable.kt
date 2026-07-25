@@ -40,8 +40,9 @@ private class SliceParcelableListBpBinder(
 
                 val offset = request.readInt()
                 val chunk = request.readInt()
+                if (offset !in 0..items.size || chunk <= 0) return false
 
-                val end = (offset + chunk).coerceAtMost(items.size)
+                val end = (offset.toLong() + chunk).coerceAtMost(items.size.toLong()).toInt()
 
                 reply.writeInt(end - offset)
 
@@ -70,10 +71,12 @@ fun <T : Parcelable> List<T>.writeToParcelSlice(parcel: Parcel, flags: Int) {
 
 fun <T : Parcelable> Parcelable.Creator<T>.createListFromParcelSlice(
     parcel: Parcel,
-    flags: Int,
+    @Suppress("UNUSED_PARAMETER") flags: Int,
     chunk: Int,
 ): List<T> {
     val total = parcel.readInt()
+    require(total >= 0) { "Negative parcel slice size: $total" }
+    require(chunk > 0) { "Parcel slice chunk must be positive" }
     val remote = parcel.readStrongBinder()
     val result = ArrayList<T>(total)
 
@@ -84,32 +87,36 @@ fun <T : Parcelable> Parcelable.Creator<T>.createListFromParcelSlice(
         val reply = Parcel.obtain()
 
         try {
+            val requested = minOf(chunk, total - offset)
             request.writeInt(offset)
-            request.writeInt(chunk)
+            request.writeInt(requested)
 
-            if (
-                !remote.transact(
+            check(
+                remote.transact(
                     SliceParcelableListBpBinder.TRANSACTION_GET_ITEMS,
                     request,
                     reply,
-                    flags,
+                    0,
                 )
             ) {
-                break
+                "Parcel slice transaction failed at offset $offset"
             }
 
             val size = reply.readInt()
+            check(size in 1..requested) {
+                "Invalid parcel slice size $size at offset $offset (requested $requested)"
+            }
 
             repeat(size) { result.add(createFromParcel(reply)) }
-
             offset += size
-
-            if (size == 0) break
         } finally {
             request.recycle()
             reply.recycle()
         }
     }
 
+    check(result.size == total) {
+        "Parcel slice truncated: expected $total items, received ${result.size}"
+    }
     return result
 }

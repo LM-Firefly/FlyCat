@@ -33,6 +33,7 @@ class CaseEngine(
     backendPort: Int,
     frontendPort: Int,
     allowLan: Boolean,
+    private val onTerminated: () -> Unit = {},
 ) : Closeable {
     val host = if (allowLan) "0.0.0.0" else "127.0.0.1"
 
@@ -71,6 +72,7 @@ class CaseEngine(
                     "--SUB_STORE_BACKEND_API_HOST=$host",
                     "--SUB_STORE_BACKEND_API_PORT=$backendPort",
                     "--SUB_STORE_DATA_BASE_PATH=${SubStorePaths.dataDir.absolutePath}",
+                    "--SUB_STORE_WORKING_DIR=${SubStorePaths.workingDir.absolutePath}",
                 )
             )
 
@@ -105,8 +107,9 @@ class CaseEngine(
         thread =
             Thread {
                 try {
-                    val workingDir = SubStorePaths.workingDir.path
-                    runtime.getExecutor("process.chdir('$workingDir')").executeVoid()
+                    runtime
+                        .getExecutor("process.chdir(process.env.SUB_STORE_WORKING_DIR)")
+                        .executeVoid()
 
                     runtime.getExecutor(codeFile).executeVoid()
                     while (shouldAwait) {
@@ -117,6 +120,8 @@ class CaseEngine(
                     Timber.e(error, "CaseEngine run failed")
                 } finally {
                     cleanup()
+                    runCatching(onTerminated)
+                        .onFailure { Timber.e(it, "CaseEngine termination callback failed") }
                 }
             }
                 .apply {

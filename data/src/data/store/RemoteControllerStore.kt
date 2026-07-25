@@ -33,19 +33,28 @@ import com.tencent.mmkv.MMKV
  * and service processes observe the same configuration.
  */
 class RemoteControllerStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
+    private val backendCodec = RemoteBackendStorageCodec()
+
     /**
      * Master switch — when on (and an active backend exists) the app runs in remote-controller
      * mode.
      */
     val controllerEnabled by boolFlow(false)
 
-    /** All saved backends. */
+    /** All saved backends. Secrets are encrypted at this persistence boundary. */
     val backends by
         jsonListFlow(
             default = emptyList<RemoteBackend>(),
-            decode = { str -> decodeFromString<List<RemoteBackend>>(str) },
-            encode = { value -> encodeToString(value) },
+            decode = { str -> backendCodec.decode(this, str) },
+            encode = { value -> backendCodec.encode(this, value) },
         )
+
+    init {
+        val persisted = mmkv.decodeString("backends").orEmpty()
+        if (Regex("\"secret\"\\s*:").containsMatchIn(persisted)) {
+            backends.set(backends.value)
+        }
+    }
 
     /** Id of the currently active backend, or blank if none selected. */
     val activeBackendId by strFlow("")

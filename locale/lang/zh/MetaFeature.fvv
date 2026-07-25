@@ -16,6 +16,7 @@ MetaFeature = {
         Title = "自定义分流"
         Summary = "独立的分流规则配置"
         EditYaml = "编辑 YAML"
+        ManualYamlPresetDiscarded = "已丢弃未保存的预设开关，以保护手写 YAML 内容"
         GroupTypeTitle = "策略组类型"
         GroupTypeUrlTest = "UrlTest"
         GroupTypeFallback = "Fallback"

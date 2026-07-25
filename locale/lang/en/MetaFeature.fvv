@@ -16,6 +16,7 @@ MetaFeature = {
         Title = "Custom Routing"
         Summary = "Standalone routing rules configuration"
         EditYaml = "Edit YAML"
+        ManualYamlPresetDiscarded = "Unsaved preset switches were discarded to protect manually edited YAML."
         GroupTypeTitle = "Group Types"
         GroupTypeUrlTest = "UrlTest"
         GroupTypeFallback = "Fallback"

@@ -33,6 +33,7 @@ import java.io.File
 import java.security.MessageDigest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 class CompiledConfigPipeline(private val context: Context) {
@@ -141,14 +142,25 @@ class CompiledConfigPipeline(private val context: Context) {
     }
 
     /**
-     * Authoritative group list straight from the compiled rawConfig. Always goes through the native
-     * in-memory compile (`compileAndInspectGroups`) for every profile — encrypted and non-encrypted
-     * alike — so no plaintext finalYaml is ever returned to Kotlin and no runtime.yaml is written.
+     * Authoritative group list straight from the compiled rawConfig. The list retains declaration
+     * order; live state is overlaid from the running core by [RuntimeProxyGroupResolver].
      */
-    fun previewGroups(spec: RuntimeSpec, excludeNotSelectable: Boolean): List<ProxyGroup> =
-        // TODO: parse proxy-groups out of the compiled finalYaml for pre-start preview. Until then
-        // the group list is populated from the running core over REST once it is up.
-        emptyList()
+    fun previewGroups(spec: RuntimeSpec, excludeNotSelectable: Boolean): List<ProxyGroup> {
+        val request = buildRequest(spec)
+        val result =
+            compilerJson.decodeFromString(
+                CompileResult.serializer(),
+                Compiler.nativeCompile(compilerJson.encodeToString(CompileRequest.serializer(), request)),
+            )
+        check(result.success) { result.error ?: "override group preview failed" }
+        val rawConfig = YamlCodec.decode(CompiledGroupConfig.serializer(), result.finalYaml)
+        return rawConfig.proxyGroups
+            .asSequence()
+            .filter { it.name.isNotBlank() }
+            .map(CompiledProxyGroup::toProxyGroup)
+            .filter { !excludeNotSelectable || it.isSelectable }
+            .toList()
+    }
 
     /**
      * Returns the compiled YAML for non-encrypted profiles (the user-initiated "view compiled
@@ -387,7 +399,7 @@ class CompiledConfigPipeline(private val context: Context) {
         }
     }
 
-    suspend fun previewGroupNames(spec: RuntimeSpec, excludeNotSelectable: Boolean): List<String> =
+    fun previewGroupNames(spec: RuntimeSpec, excludeNotSelectable: Boolean): List<String> =
         previewGroups(spec, excludeNotSelectable).map(ProxyGroup::name).filter(String::isNotBlank)
 
     private fun File.toOverrideSpec(): OverrideSpec {
@@ -421,6 +433,41 @@ class CompiledConfigPipeline(private val context: Context) {
     )
 
     @Serializable
+    private data class CompiledGroupConfig(
+        @SerialName("proxy-groups") val proxyGroups: List<CompiledProxyGroup> = emptyList()
+    )
+
+    @Serializable
+    private data class CompiledProxyGroup(
+        val name: String = "",
+        val type: String = "",
+        val proxies: List<String> = emptyList(),
+        val icon: String? = null,
+        val hidden: Boolean = false,
+    ) {
+        fun toProxyGroup(): ProxyGroup {
+            val runtimeType = type.toRuntimeProxyType()
+            return ProxyGroup(
+                name = name,
+                type = runtimeType,
+                proxies =
+                    proxies.map { proxyName ->
+                        Proxy(
+                            name = proxyName,
+                            title = proxyName,
+                            subtitle = "",
+                            type = Proxy.Type.Unknown,
+                            delay = 0,
+                        )
+                    },
+                now = "",
+                icon = icon,
+                hidden = hidden,
+            )
+        }
+    }
+
+    @Serializable
     private data class MetadataIndexPayload(
         val configs: Map<String, ConfigMetadataPayload> = emptyMap(),
         val profileChains: Map<String, ProfileChainPayload> = emptyMap(),
@@ -445,6 +492,17 @@ class CompiledConfigPipeline(private val context: Context) {
         const val LEGACY_PRESET_PREFIX = "preset-"
     }
 }
+
+private fun String.toRuntimeProxyType(): String =
+    when (lowercase()) {
+        "select" -> Proxy.Type.Selector
+        "url-test" -> Proxy.Type.URLTest
+        "fallback" -> Proxy.Type.Fallback
+        "load-balance" -> Proxy.Type.LoadBalance
+        "relay" -> Proxy.Type.Relay
+        "smart" -> Proxy.Type.Smart
+        else -> Proxy.Type.Unknown
+    }
 
 private fun String.toOverrideExtension(): String? =
     when (lowercase()) {

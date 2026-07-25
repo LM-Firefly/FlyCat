@@ -35,21 +35,33 @@ import javax.net.SocketFactory
 class UnixSocketFactory(private val path: String) : SocketFactory() {
     override fun createSocket(): Socket = UnixDomainSocket(path)
 
-    override fun createSocket(host: String?, port: Int): Socket = UnixDomainSocket(path)
+    override fun createSocket(host: String?, port: Int): Socket =
+        connectedSocket(host, port)
 
     override fun createSocket(
         host: String?,
         port: Int,
         localHost: InetAddress?,
         localPort: Int,
-    ): Socket = UnixDomainSocket(path)
+    ): Socket = connectedSocket(host, port)
 
-    override fun createSocket(host: InetAddress?, port: Int): Socket = UnixDomainSocket(path)
+    override fun createSocket(host: InetAddress?, port: Int): Socket =
+        connectedSocket(host, port)
 
     override fun createSocket(
         address: InetAddress?,
         port: Int,
         localAddress: InetAddress?,
         localPort: Int,
-    ): Socket = UnixDomainSocket(path)
+    ): Socket = connectedSocket(address, port)
+
+    private fun connectedSocket(host: String?, port: Int): Socket =
+        UnixDomainSocket(path).apply {
+            connect(java.net.InetSocketAddress.createUnresolved(host ?: "localhost", port))
+        }
+
+    private fun connectedSocket(address: InetAddress?, port: Int): Socket =
+        UnixDomainSocket(path).apply {
+            connect(java.net.InetSocketAddress(address ?: InetAddress.getLoopbackAddress(), port))
+        }
 }

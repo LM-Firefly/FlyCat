@@ -24,24 +24,27 @@ import com.github.yumelira.yumebox.core.domain.ConnectionHistoryManager
 import com.github.yumelira.yumebox.core.model.LogMessage
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
+import com.github.yumelira.yumebox.runtime.api.LogObserver
+import com.github.yumelira.yumebox.runtime.api.LogSubscription
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import timber.log.Timber
 
 internal class SessionRuntimeTelemetry(
     private val host: RuntimeHost,
     private val scope: CoroutineScope,
     private val onLogReadyChanged: (Boolean) -> Unit,
 ) {
-    private var logJob: Job? = null
+    private var logSubscription: LogSubscription? = null
+    @Volatile private var logStreaming = false
     private var connectionTrackingJob: Job? = null
     private val logSeq = AtomicLong(0L)
     private val recentLogs = ArrayDeque<Pair<Long, String>>()
-    private var localLogObserver: ((LogMessage) -> Unit)? = null
+    @Volatile private var localLogObserver: ((LogMessage) -> Unit)? = null
 
     fun setLogObserver(observer: ((LogMessage) -> Unit)?) {
         localLogObserver = observer
@@ -54,25 +57,28 @@ internal class SessionRuntimeTelemetry(
         }
     }
 
-    fun isLogStreaming(): Boolean = logJob?.isActive == true
+    fun isLogStreaming(): Boolean = logStreaming
 
-    fun startLogStream(subscribe: () -> ReceiveChannel<LogMessage>) {
+    fun startLogStream(subscribe: (LogObserver) -> LogSubscription) {
         stopLogStream()
-        host.onLogReady(false)
-        logJob =
-            scope.launch(Dispatchers.IO) {
-                val receiver = subscribe()
-                host.onLogReady(true)
-                onLogReadyChanged(true)
-                try {
-                    // Iterating the channel ends cleanly when it closes (empty stub, or the core's
-                    // REST
-                    // /logs stream ending on restart); receive() would instead throw
-                    // ClosedReceiveChannelException.
-                    for (item in receiver) {
-                        localLogObserver?.invoke(item)
-                        host.onLogItem(item)
-                        val encoded = Json.encodeToString(LogMessage.serializer(), item)
+        setLogReady(false)
+        logSubscription =
+            subscribe(
+                object : LogObserver {
+                    override fun onConnected() {
+                        setLogReady(true)
+                    }
+
+                    override fun onError(error: Throwable) {
+                        setLogReady(false)
+                    }
+
+                    override fun newItem(log: LogMessage) {
+                        runCatching { localLogObserver?.invoke(log) }
+                            .onFailure { Timber.w(it, "Local log observer rejected an item") }
+                        runCatching { host.onLogItem(log) }
+                            .onFailure { Timber.w(it, "Runtime host rejected a log item") }
+                        val encoded = Json.encodeToString(LogMessage.serializer(), log)
                         val seq = logSeq.incrementAndGet()
                         synchronized(recentLogs) {
                             recentLogs.addLast(seq to encoded)
@@ -81,19 +87,24 @@ internal class SessionRuntimeTelemetry(
                             }
                         }
                     }
-                } finally {
-                    receiver.cancel()
-                    host.onLogReady(false)
-                    onLogReadyChanged(false)
                 }
-            }
+            )
     }
 
     fun stopLogStream() {
-        logJob?.cancel()
-        logJob = null
+        runCatching { logSubscription?.close() }
+            .onFailure { Timber.w(it, "Failed to close runtime log subscription") }
+        logSubscription = null
         synchronized(recentLogs) { recentLogs.clear() }
-        host.onLogReady(false)
+        setLogReady(false)
+    }
+
+    private fun setLogReady(ready: Boolean) {
+        logStreaming = ready
+        runCatching { host.onLogReady(ready) }
+            .onFailure { Timber.w(it, "Runtime host rejected log readiness") }
+        runCatching { onLogReadyChanged(ready) }
+            .onFailure { Timber.w(it, "Runtime snapshot rejected log readiness") }
     }
 
     fun startConnectionTracking() {

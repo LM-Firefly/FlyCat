@@ -33,6 +33,7 @@ import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.service.config.AccessControlMode
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.profile.ImportedDao
+import com.github.yumelira.yumebox.runtime.service.root.RootPackageShell
 import com.github.yumelira.yumebox.runtime.service.util.directoryLastModified
 import com.github.yumelira.yumebox.runtime.service.util.importedDir
 import java.io.File
@@ -150,9 +151,12 @@ class SessionRuntimeSpecFactory(
      */
     private fun resolveTunAccessControl(): TunAccessControl {
         val self = context.applicationInfo.uid
+        val selectedPackages =
+            store.accessControlPackages.map(String::trim).filter(String::isNotEmpty).toSet()
+        val rootUidMap = RootPackageShell.queryPackageUidMap(selectedPackages)
         val selectedUid =
-            store.accessControlPackages
-                .mapNotNull(::resolvePackageUid)
+            selectedPackages
+                .mapNotNull { pkg -> rootUidMap?.get(pkg) ?: resolvePackageUid(pkg) }
                 .filter { it != self }
                 .distinct()
                 .sorted()

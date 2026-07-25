@@ -94,7 +94,7 @@ class RuntimeProxyGroupResolver(
         return groups
     }
 
-    suspend fun expectedGroupNames(spec: RuntimeSpec, excludeNotSelectable: Boolean): List<String> {
+    fun expectedGroupNames(spec: RuntimeSpec, excludeNotSelectable: Boolean): List<String> {
         val cacheKey =
             ExpectedGroupKey(
                 profileUuid = spec.profileUuid,
@@ -127,7 +127,7 @@ class RuntimeProxyGroupResolver(
     fun runtimeGroupNames(excludeNotSelectable: Boolean): List<String> =
         rest.queryProxyGroupNames(excludeNotSelectable)
 
-    suspend fun resolvedGroupNames(
+    fun resolvedGroupNames(
         spec: RuntimeSpec?,
         excludeNotSelectable: Boolean,
     ): List<String> {
@@ -155,7 +155,7 @@ class RuntimeProxyGroupResolver(
      *   (transient start window) or when [enrichLive] is false (preview / not running), the
      *   compiled rawConfig ([canonicalGroups]) is used instead.
      */
-    suspend fun resolvedGroups(
+    fun resolvedGroups(
         spec: RuntimeSpec?,
         excludeNotSelectable: Boolean,
         enrichLive: Boolean = true,

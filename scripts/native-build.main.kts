@@ -391,8 +391,7 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
 
     fun buildAll() {
         if (!sourceDir.exists()) {
-            println("[CoreExe] Source directory not found: ${sourceDir.absolutePath}")
-            return
+            error("[CoreExe] Source directory not found: ${sourceDir.absolutePath}")
         }
         applyKernelPatches()
         val stamp = resolveCoreVersionStamp(config, mihomoDir)
@@ -447,10 +446,7 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
     private fun buildForAbi(abi: String) {
         val arch =
             abiToGoArch[abi]
-                ?: run {
-                    println("[CoreExe] Unsupported ABI: $abi")
-                    return
-                }
+                ?: error("[CoreExe] Unsupported ABI: $abi")
         println("[building] Building for $abi (PIE core exe, arch: $arch)...")
         val outputLibDir = File(outputDir, abi)
         outputLibDir.mkdirs()
@@ -488,7 +484,7 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
             println("[CoreExe] Copied to ${File(destDir, outputLibraryName).absolutePath}")
         } else {
             val reason = result.error.ifBlank { result.output }.trim()
-            println("[CoreExe] Failed to build $abi: $reason")
+            error("[CoreExe] Failed to build $abi: $reason")
         }
     }
 

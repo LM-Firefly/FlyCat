@@ -74,6 +74,7 @@ Feature = {
         }
 
         Message = {
+            ExportSuccess = "备份导出完成"
             RestoreSuccess = "恢复完成，建议重启应用以刷新全部界面"
         }
 

@@ -67,17 +67,6 @@ internal class RuntimeGroupHub(
         Timber.d("Select proxy: group=$group proxy=$proxyName")
         val ok = coreOps.patchSelector(group, proxyName)
         if (ok) {
-            val cachedGroup = groupStore.groups.value.find { it.name == group }
-            if (cachedGroup != null && cachedGroup.now != proxyName) {
-                groupStore.publish(groupStore.upsert(cachedGroup.copy(now = proxyName)))
-            }
-            PollingTimers.awaitTick(
-                PollingTimerSpecs.dynamic(
-                    name = "proxy_select_refresh",
-                    intervalMillis = 200L,
-                    initialDelayMillis = 200L,
-                )
-            )
             refreshProxyGroup(group)
             scheduleGroupsRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
         }
@@ -96,11 +85,7 @@ internal class RuntimeGroupHub(
         Timber.d("Health check all request")
         val manager = coreOps.api()
         val groupNames =
-            if (isRemoteControllerActive()) {
-                groupStore.groups.value.map { it.name }
-            } else {
-                manager.queryAllProxyGroups(excludeNotSelectable = false).map { it.name }
-            }
+            manager.queryAllProxyGroups(excludeNotSelectable = false).map { it.name }
         groupNames.forEach { groupName ->
             manager.healthCheck(groupName)
             scheduleGroupRefresh(

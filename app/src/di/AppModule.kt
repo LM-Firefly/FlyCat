@@ -30,6 +30,7 @@ import com.github.yumelira.yumebox.screen.settings.NetworkSettingsViewModel
 import com.github.yumelira.yumebox.screen.settings.RemoteControllerViewModel
 import com.github.yumelira.yumebox.screen.settings.backup.BackupRepository
 import com.github.yumelira.yumebox.screen.settings.backup.BackupRestoreViewModel
+import com.github.yumelira.yumebox.screen.settings.backup.BackupStoreAdapter
 import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
@@ -37,8 +38,7 @@ import org.koin.dsl.module
 
 val appIntegrationModule = module {
     single {
-        BackupRepository(
-            application = androidApplication(),
+        BackupStoreAdapter(
             appSettings = get(),
             networkSettings = get(),
             featureSettings = get(),
@@ -47,6 +47,13 @@ val appIntegrationModule = module {
             remoteController = get(),
             proxyFacade = get(),
             mmkvProvider = get(),
+        )
+    }
+    single {
+        BackupRepository(
+            application = androidApplication(),
+            proxyFacade = get(),
+            storeAdapter = get(),
         )
     }
 }

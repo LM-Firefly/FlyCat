@@ -28,32 +28,34 @@ import com.github.yumelira.yumebox.data.model.OverrideContentType
 import com.github.yumelira.yumebox.data.store.OverrideConfigStore
 import com.github.yumelira.yumebox.runtime.api.Profile
 import java.util.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class RuntimeOverrideController(
     private val configStore: OverrideConfigStore,
     private val queryActiveProfile: suspend () -> Profile?,
 ) {
+    private val updateMutex = Mutex()
+
     suspend fun updateProfile(transform: (String) -> String): Result<String> =
         updateInternal(transform)
 
-    private suspend fun loadInternal(): Result<String> = runCatching {
-        val activeProfile = queryActiveProfile() ?: return@runCatching ""
-        configStore.getById(runtimeOverrideId(activeProfile.uuid))?.content.orEmpty()
+    private suspend fun loadInternal(profile: Profile): Result<String> = runCatching {
+        configStore.getById(runtimeOverrideId(profile.uuid))?.content.orEmpty()
     }
 
-    private suspend fun saveInternal(content: String): Result<Unit> = runCatching {
+    private suspend fun saveInternal(profile: Profile, content: String): Result<Unit> = runCatching {
         if (content.isBlank()) {
-            clearInternal().getOrThrow()
+            configStore.delete(runtimeOverrideId(profile.uuid))
             return@runCatching
         }
-        val activeProfile = requireActiveProfile()
-        val configId = runtimeOverrideId(activeProfile.uuid)
+        val configId = runtimeOverrideId(profile.uuid)
         val existing = configStore.getById(configId)
         configStore.save(
             OverrideConfig(
                 id = configId,
                 name = INTERNAL_RUNTIME_NAME,
-                description = "internal runtime override for ${activeProfile.uuid}",
+                description = "internal runtime override for ${profile.uuid}",
                 contentType = OverrideContentType.Yaml,
                 content = content,
                 createdAt = existing?.createdAt ?: System.currentTimeMillis(),
@@ -62,28 +64,26 @@ class RuntimeOverrideController(
         )
     }
 
-    private suspend fun clearInternal(): Result<Unit> = runCatching {
-        val activeProfile = queryActiveProfile() ?: return@runCatching
-        configStore.delete(runtimeOverrideId(activeProfile.uuid))
-    }
-
-    private suspend fun updateInternal(transform: (String) -> String): Result<String> {
-        val current =
-            loadInternal().getOrElse {
-                return Result.failure(it)
+    private suspend fun updateInternal(transform: (String) -> String): Result<String> =
+        updateMutex.withLock {
+            val profile =
+                queryActiveProfile()
+                    ?: return@withLock Result.failure(
+                        IllegalStateException("No active profile selected")
+                    )
+            val current =
+                loadInternal(profile).getOrElse {
+                    return@withLock Result.failure(it)
+                }
+            val updated = transform(current)
+            val saveResult = saveInternal(profile, updated)
+            if (saveResult.isFailure) {
+                return@withLock Result.failure(
+                    saveResult.exceptionOrNull() ?: IllegalStateException("保存运行时覆写失败")
+                )
             }
-        val updated = transform(current)
-        val saveResult = saveInternal(updated)
-        if (saveResult.isFailure) {
-            return Result.failure(
-                saveResult.exceptionOrNull() ?: IllegalStateException("保存运行时覆写失败")
-            )
+            Result.success(updated)
         }
-        return Result.success(updated)
-    }
-
-    private suspend fun requireActiveProfile(): Profile =
-        queryActiveProfile() ?: error("No active profile selected")
 
     private fun runtimeOverrideId(profileUuid: UUID): String =
         "${OverrideConfigStore.INTERNAL_RUNTIME_PREFIX}-profile-$profileUuid"

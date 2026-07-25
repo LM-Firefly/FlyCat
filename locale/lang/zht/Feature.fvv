@@ -74,6 +74,7 @@ Feature = {
         }
 
         Message = {
+            ExportSuccess = "備份匯出完成"
             RestoreSuccess = "還原完成，建議重新啟動應用以重新整理全部介面"
         }
 
