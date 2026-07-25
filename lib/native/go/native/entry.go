@@ -45,9 +45,15 @@ func main() {
 	flag.Parse()
 
 	// Import-time validation: parse only, no controller/TUN/ApplyConfig side effects.
+	// Official mihomo -t always has a home (e.g. ~/.config/mihomo). Without SetHomeDir,
+	// GEOIP/GEOSITE rule parsing builds an empty MMDB path and fails with
+	// `open : no such file or directory` even though the config itself is fine.
 	if *testConfig {
 		if *configPath == "" {
 			fatal("--test requires --config")
+		}
+		if *home != "" {
+			constant.SetHomeDir(*home)
 		}
 		data, err := os.ReadFile(*configPath)
 		if err != nil {

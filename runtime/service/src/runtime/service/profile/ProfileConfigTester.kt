@@ -22,9 +22,9 @@ package com.github.yumelira.yumebox.runtime.service.profile
 
 import android.annotation.SuppressLint
 import android.content.Context
+import com.github.yumelira.yumebox.core.util.runtimeHomeDir
 import timber.log.Timber
 import java.io.File
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 /**
@@ -57,14 +57,21 @@ internal object ProfileConfigTester {
                 ?: return Result.failure(
                     IllegalStateException("mihomo core binary unavailable for config test")
                 )
-        val workDir =
-            File(context.cacheDir, "mihomo-config-test-${UUID.randomUUID()}").apply {
-                mkdirs()
-            }
+        // Match runtime: GEOIP/GEOSITE resolution keys off the core home, not the staging cwd.
+        // Desktop `mihomo -t` always has a home; without --home the parser builds an empty MMDB
+        // path and false-fails valid subscriptions on rules like GEOIP,CN.
+        val homeDir = context.runtimeHomeDir.apply { mkdirs() }
         return try {
             val process =
-                ProcessBuilder(binary.absolutePath, "--test", "--config", configFile.absolutePath)
-                    .directory(workDir)
+                ProcessBuilder(
+                        binary.absolutePath,
+                        "--test",
+                        "--home",
+                        homeDir.absolutePath,
+                        "--config",
+                        configFile.absolutePath,
+                    )
+                    .directory(homeDir)
                     .redirectErrorStream(true)
                     .also { builder ->
                         val nativeLibDir = context.applicationInfo.nativeLibraryDir
@@ -94,8 +101,6 @@ internal object ProfileConfigTester {
                     error,
                 )
             )
-        } finally {
-            workDir.deleteRecursively()
         }
     }
 
