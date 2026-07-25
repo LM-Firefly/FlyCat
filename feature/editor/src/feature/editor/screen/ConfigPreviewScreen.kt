@@ -125,7 +125,14 @@ fun ConfigPreviewScreen(
             )
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .consumeWindowInsets(paddingValues)
+                    .imePadding()
+        ) {
             CodeEditor(state = editorState, modifier = Modifier.fillMaxSize())
         }
     }
