@@ -1,6 +1,6 @@
 <Util>
 Util = {
     Error = {
-        UnknownError = "未知錯誤"
+        UnknownError = "未知错误"
     }
 }

@@ -59,8 +59,8 @@ object AppLanguageManager {
         LocaleUtil.setCurrentLocale(locale)
         when (language) {
             AppLanguage.System -> FYTxtConfig.updateTags(lock = false)
-            AppLanguage.Zh -> FYTxtConfig.updateTags(listOf("ZH"), lock = true)
-            AppLanguage.ZhHant -> FYTxtConfig.updateTags(listOf("ZHT"), lock = true)
+            AppLanguage.Zh -> FYTxtConfig.updateTags(listOf("ZH_HANS"), lock = true)
+            AppLanguage.ZhHant -> FYTxtConfig.updateTags(listOf("ZH"), lock = true)
             AppLanguage.En -> FYTxtConfig.updateTags(listOf("EN"), lock = true)
             AppLanguage.Ja -> FYTxtConfig.updateTags(listOf("JA"), lock = true)
             AppLanguage.Ru -> FYTxtConfig.updateTags(listOf("RU"), lock = true)

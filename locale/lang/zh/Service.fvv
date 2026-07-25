@@ -1,22 +1,22 @@
 <Service>
 Service = {
     Notification = {
-        Running = "运行中"
-        UnknownProfile = "未知配置"
+        Running = "執行中"
+        UnknownProfile = "未知設定檔"
         SpeedLine = "下行 %s  上行 %s"
-        TotalTraffic = "总流量 %s"
-        LogChannel = "日志记录"
-        LogRecording = "正在记录日志"
-        LogRecordingPending = "日志记录中..."
+        TotalTraffic = "總流量 %s"
+        LogChannel = "日誌記錄"
+        LogRecording = "正在記錄日誌"
+        LogRecordingPending = "日誌記錄中..."
         Stop = "停止"
     }
 
     Tile = {
-        ClickToOpen = "点击打开应用"
-        ClickToStartProxy = "启动代理"
+        ClickToOpen = "點一下開啟應用"
+        ClickToStartProxy = "啟動代理"
         ClickToStopProxy = "停止代理"
-        Connecting = "正在连接..."
-        Disconnecting = "正在断开..."
+        Connecting = "連線中..."
+        Disconnecting = "斷線中..."
     }
 
 }

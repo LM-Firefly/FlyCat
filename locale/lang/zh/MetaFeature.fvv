@@ -3,44 +3,44 @@ MetaFeature = {
     Title = "Meta 功能"
 
     Section = {
-        ConnectionAndTraffic = "连接、日志与规则"
-        Routing = "分流相关"
+        ConnectionAndTraffic = "連線、日誌與規則"
+        Routing = "分流相關"
     }
 
     GeoX = {
         OnlineUpdateTitle = "更新 GeoX"
-        OnlineUpdateSummary = "下载数据库文件"
+        OnlineUpdateSummary = "下載資料庫檔案"
     }
 
     CustomRouting = {
-        Title = "自定义分流"
-        Summary = "独立的分流规则配置"
-        EditYaml = "编辑 YAML"
-        ManualYamlPresetDiscarded = "已丢弃未保存的预设开关，以保护手写 YAML 内容"
-        GroupTypeTitle = "策略组类型"
+        Title = "自訂分流"
+        Summary = "獨立的分流規則設定"
+        EditYaml = "編輯 YAML"
+        ManualYamlPresetDiscarded = "已捨棄未儲存的預設切換，以保護手寫 YAML 內容"
+        GroupTypeTitle = "策略組類型"
         GroupTypeUrlTest = "UrlTest"
         GroupTypeFallback = "Fallback"
-        UrlTestRegionGroupTitle = "UrlTest 地区组"
-        FallbackRegionGroupTitle = "Fallback 地区组"
+        UrlTestRegionGroupTitle = "UrlTest 地區組"
+        FallbackRegionGroupTitle = "Fallback 地區組"
     }
 
     RuntimeRules = {
-        Title = "规则"
-        Summary = "查看并临时开关运行时规则"
+        Title = "規則"
+        Summary = "檢視並暫時開關執行中規則"
     }
 
     Download = {
-        DialogTitle = "更新 GeoX"
-        DownloadComplete = "下载完成：%d/%d"
+        DialogTitle = "線上更新 GeoX"
+        DownloadComplete = "下載完成：%d/%d"
     }
 
     AgeKey = {
-        Section = "Age 密钥"
+        Section = "Age 金鑰"
         X25519Title = "X25519"
         HybridTitle = "mlkem768-x25519"
-        SecretKey = "私钥"
-        PublicKey = "公钥"
-        Generate = "生成"
-        DerivePublicKey = "推导公钥"
+        SecretKey = "私鑰"
+        PublicKey = "公鑰"
+        Generate = "產生"
+        DerivePublicKey = "推導公鑰"
     }
 }

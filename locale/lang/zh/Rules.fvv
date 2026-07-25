@@ -1,8 +1,8 @@
 <Rules Page>
 Rules = {
-    Title = "规则"
-    Summary = "查看并临时开关运行时规则"
-    SearchHint = "搜索规则"
+    Title = "規則"
+    Summary = "檢視並暫時開關執行中規則"
+    SearchHint = "搜尋規則"
 
     Label = {
         Proxy = "策略"
@@ -10,16 +10,16 @@ Rules = {
     }
 
     Message = {
-        ToggleFailed = "切换规则失败：%s"
+        ToggleFailed = "切換規則失敗：%s"
     }
 
     Empty = {
-        Loading = "加载中"
-        LoadingHint = "正在从内核拉取规则"
-        NotRunning = "代理未启动"
-        NotRunningHint = "请先启动代理服务以查看规则"
-        NoRules = "暂无规则"
-        NoRulesHint = "当前配置未包含规则"
-        NoResults = "没有匹配的规则"
+        Loading = "載入中"
+        LoadingHint = "正在從核心拉取規則"
+        NotRunning = "代理未啟動"
+        NotRunningHint = "請先啟動代理服務以檢視規則"
+        NoRules = "暫無規則"
+        NoRulesHint = "目前設定檔未包含規則"
+        NoResults = "沒有符合的規則"
     }
 }

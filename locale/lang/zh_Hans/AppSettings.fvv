@@ -1,0 +1,88 @@
+<App Settings Page>
+AppSettings = {
+    Title = "应用设置"
+
+    Section = {
+        Behavior = "行为"
+        Interface = "界面"
+        Privacy = "隐私"
+        Service = "服务"
+        Network = "网络"
+        Home = "首页"
+    }
+
+    Behavior = {
+        AutoStartTitle = "自动启动"
+        AutoUpdateOnStartTitle = "启动更新配置"
+        OneChinaTitle = "坚持一个中国原则"
+    }
+
+    Interface = {
+        ThemeModeTitle = "主题模式"
+        ThemeModeSummary = "选择应用的主题样式"
+        ThemeModeSystem = "跟随系统"
+        ThemeModeLight = "浅色"
+        ThemeModeDark = "深色"
+        LanguageTitle = "应用语言"
+        LanguageSystem = "跟随系统"
+        LanguageChinese = "简体中文"
+        LanguageChineseTraditional = "繁體中文"
+        LanguageEnglish = "English"
+        LanguageJapanese = "日本語"
+        LanguageRussian = "Русский"
+
+        ColorThemeTitle = "主题配色"
+        ColorThemePickerTitle = "选择主题色"
+        ColorThemeCodeLabel = "主题色代码（#RRGGBB）"
+        ColorThemeCustomSummary = "当前主题色：%s"
+        ThemeColorPolarityInvertTitle = "反转主题前景色"
+        TopBarBlurTitle = "背景模糊"
+        AutoHideNavbarTitle = "滑动隐藏底栏"
+
+        PageScaleTitle = "页面缩放"
+        PageScaleDialogSummary = "80% - 120%"
+
+        ClassicHomeTitle = "经典首页"
+        HomeQuoteTitle = "首页一言"
+        HomeQuoteDefault = "在安静的线路上，等一朵云完成漫游"
+        HomeQuoteAuthorTitle = "一言作者"
+        HomeQuoteAuthorDefault = "YumeBox"
+        EditHomeQuoteTitle = "编辑一言"
+        EditHomeQuoteAuthorTitle = "编辑一言作者"
+        HomeWallpaperImportFailed = "无法将壁纸复制到本地，已改用原始来源"
+    }
+
+    Privacy = {
+
+        HideIconTitle = "隐藏应用图标"
+        HideFromRecentsTitle = "隐藏后台卡片"
+    }
+
+    ServiceSection = {
+        TrafficNotificationTitle = "显示流量通知"
+        SingleNodeTestTitle = "单节点测试"
+        ExitUiWhenBackgroundTitle = "后台隐藏时释放界面"
+        BatteryOptimizationTitle = "电池优化无限制"
+        BatteryOptimizationSummaryEnabled = "已允许后台无限制运行"
+        BatteryOptimizationSummaryDisabled = "受电池优化限制，点击前往设置"
+    }
+
+    Network = {
+        CustomUserAgentTitle = "自定义 User-Agent"
+        CustomUserAgentSummaryDefault = "未设置，使用默认值"
+    }
+
+    WarningDialog = {
+        Title = "警告"
+        HideIconMsg1 = "请在隐藏之前确认你能够访问本应用的设置界面！"
+        HideIconMsg2 = "对于 HyperOS, 请开启 自启动 和 后台弹出界面 权限，以接受拨号界面代码！"
+    }
+
+    EditDialog = {
+        UserAgentTitle = "编辑 User-Agent"
+    }
+
+    Button = {
+        Apply = "应用"
+    }
+}

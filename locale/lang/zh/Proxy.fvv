@@ -1,52 +1,52 @@
 <Proxy Page>
 Proxy = {
-    Title = "节点"
+    Title = "節點"
 
     Mode = {
-        Direct = "直连"
+        Direct = "直連"
     }
 
     Action = {
         Panel = "面板"
-        Test = "测试"
+        Test = "測試"
         Sort = "排序"
     }
 
     Node = {
-        Timeout = "超时"
-        Count = "%d 节点"
+        Timeout = "逾時"
+        Count = "%d 節點"
     }
 
 
     Empty = {
-        NoNodes = "暂无节点"
-        Hint = "请在配置页面加载配置文件"
+        NoNodes = "暫無節點"
+        Hint = "請在設定檔頁面載入設定檔"
     }
 
     Testing = {
-        Group = "正在测试节点组：%s"
-        All = "正在测试所有节点组..."
-        RequestSent = "测试请求已发送"
-        Failed = "测试失败：%s"
-        InProgress = "正在测试节点"
+        Group = "正在測試節點組：%s"
+        All = "正在測試所有節點組..."
+        RequestSent = "測試請求已送出"
+        Failed = "測試失敗：%s"
+        InProgress = "正在測試節點"
     }
 
     Selection = {
-        Switched = "已切换到：%s"
-        Failed = "切换失败"
-        Error = "切换失败：%s"
+        Switched = "已切換到：%s"
+        Failed = "切換失敗"
+        Error = "切換失敗：%s"
     }
 
     SortMode = {
-        Default = "默认顺序"
-        ByName = "按名称排序"
-        ByLatency = "按延迟排序"
+        Default = "預設順序"
+        ByName = "依名稱排序"
+        ByLatency = "依延遲排序"
     }
 
     DisplayMode = {
-        SingleDetailed = "单列详细"
-        SingleSimple = "单列简洁"
-        DoubleDetailed = "双列详细"
-        DoubleSimple = "双列简洁"
+        SingleDetailed = "單欄詳細"
+        SingleSimple = "單欄簡潔"
+        DoubleDetailed = "雙欄詳細"
+        DoubleSimple = "雙欄簡潔"
     }
 }

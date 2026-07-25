@@ -3,21 +3,21 @@ Home = {
     Title = "YumeBox"
 
     Message = {
-        ConfigSwitched = "配置已切换"
-        ConfigSwitchFailed = "配置切换失败：%s"
-        Preparing = "正在准备..."
-        StartFailed = "启动失败：%s"
-        StopFailed = "停止失败：%s"
+        ConfigSwitched = "設定檔已切換"
+        ConfigSwitchFailed = "設定檔切換失敗：%s"
+        Preparing = "準備中..."
+        StartFailed = "啟動失敗：%s"
+        StopFailed = "停止失敗：%s"
     }
 
     Control = {
-        HintAddProfile = "请先添加配置文件"
-        HintEnableProfile = "请先在「配置」页面启用一个配置"
+        HintAddProfile = "請先新增設定檔"
+        HintEnableProfile = "請先在「設定檔」頁面啟用一個設定"
     }
 
     NodeInfo = {
-        Node = "节点"
-        Delay = "延迟"
+        Node = "節點"
+        Delay = "延遲"
         Unknown = "未知"
         DelayValue = "%dms"
     }
@@ -25,7 +25,7 @@ Home = {
     Traffic = {
         UpShort = "UP"
         DownShort = "DOWN"
-        NoProfile = "无配置"
+        NoProfile = "無設定檔"
     }
 
     IpInfo = {
@@ -33,16 +33,16 @@ Home = {
     }
 
     Status = {
-        Connecting = "连接中"
-        Disconnecting = "断开中"
-        Running = "运行中"
-        TapToStart = "轻触启动"
+        Connecting = "連線中"
+        Disconnecting = "斷線中"
+        Running = "執行中"
+        TapToStart = "輕觸啟動"
     }
 
     Control = {
-        HintAddProfile = "请先添加配置文件"
-        HintEnableProfile = "请先在「配置」页面启用一个配置"
-        Start = "启动"
+        HintAddProfile = "請先新增設定檔"
+        HintEnableProfile = "請先在「設定檔」頁面啟用一個設定"
+        Start = "啟動"
         Stop = "停止"
     }
 
@@ -53,15 +53,15 @@ Home = {
     }
 
     PreviewGuide = {
-        Title = "欢迎使用 YumeBox"
-        Description = "点亮底部「启动」，一键连接"
-        Next = "下一个"
-        Start = "开始使用"
-        WallpaperTitle = "更换壁纸"
-        WallpaperDescription = "长按壁纸，从相册换图"
-        SwipeTitle = "左右滑动"
-        SwipeDescription = "横向滑动首页，切换代理、配置和设置页面"
-        AddTitle = "添加订阅"
-        AddDescription = "点右上角图标，粘贴链接即可添加"
+        Title = "歡迎使用 YumeBox"
+        Description = "點亮底部「啟動」，一鍵連線"
+        Next = "下一個"
+        Start = "開始使用"
+        WallpaperTitle = "更換桌布"
+        WallpaperDescription = "長按桌布，從相簿換圖"
+        SwipeTitle = "左右滑動"
+        SwipeDescription = "橫向滑動首頁，切換代理、設定檔和設定頁面"
+        AddTitle = "新增訂閱"
+        AddDescription = "點右上角圖示，貼上連結即可新增"
     }
 }

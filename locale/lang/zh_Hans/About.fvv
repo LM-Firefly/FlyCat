@@ -1,0 +1,37 @@
+<About Page>
+About = {
+    Title = "关于"
+
+    App = {
+        VersionLoading = "Loading..."
+        VersionFailed = "Failed to load"
+    }
+
+    Section = {
+        ProjectLinks = "项目链接"
+        More = "更多"
+        Support = "支持"
+        License = "许可证"
+    }
+
+    Support = {
+        ExportLogs = "导出日志"
+        ReportIssue = "报告问题"
+        ExportSuccess = "日志已导出"
+        ExportFailed = "日志导出失败"
+    }
+
+    Link = {
+        TelegramGroup = "Telegram 群组"
+        TelegramChannel = "Telegram 频道"
+    }
+
+    License = {
+        Libraries = "引用库"
+        LibrariesSummary = "View all third-party libraries used in this app"
+        AgplName = "GNU Affero General Public License v3.0"
+        AgplDescription = "This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License."
+    }
+
+    Copyright = "© 2025 – 至今 YumeYucca"
+}

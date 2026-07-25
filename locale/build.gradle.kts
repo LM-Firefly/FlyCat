@@ -30,7 +30,11 @@ fytxt {
     objectName = "YumeTxt"
 
     langSrcs = mapOf("Locale" to layout.projectDirectory.dir("lang"))
-    defaultLang = "ZH"
+    langAliases = mapOf(
+        "ZH_HANS" to "^ZH_.*(HANS|CN|SG)",
+        "ZH" to "^ZH_(?!.*(HANS|CN|SG)).*"
+    )
+    defaultLang = "ZH_HANS"
 
     composeGen = true
     internalClass = false

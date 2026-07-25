@@ -1,0 +1,67 @@
+<Network Settings Page>
+NetworkSettings = {
+    Title = "网络设置"
+
+    Section = {
+        VpnOptions = "服务配置"
+        Advanced = "高级选项"
+        ProxyOptions = "访问控制"
+    }
+
+    Advanced = {
+        DisableOverrideTitle = "禁用所有覆写"
+    }
+
+    RunMode = {
+        SectionTitle = "运行模式"
+        VpnServiceTitle = "Vpn Service"
+        VpnServiceSummary = "系统 VPN 全局代理"
+        TunTitle = "Tun"
+        TunSummary = "需要 Root 的内核虚拟网卡"
+        TproxyTitle = "TPROXY"
+        TproxySummary = "需要 Root 的内核透明代理"
+    }
+
+    VpnOptions = {
+        BypassPrivateTitle = "绕过私有网络"
+        DnsHijackTitle = "DNS 劫持"
+        AllowBypassTitle = "允许应用绕过"
+        EnableIpv6Title = "运行 IPv6"
+        SystemProxyTitle = "VPN 系统代理"
+    }
+
+    TunOptions = {
+        Title = "Tun 配置"
+        IfNameTitle = "虚拟网卡"
+        MtuTitle = "MTU"
+        StackTitle = "协议栈"
+        StackSystem = "System"
+        StackGVisor = "gVisor"
+        StackMixed = "Mixed"
+        AutoRouteTitle = "自动路由"
+        StrictRouteTitle = "严格路由"
+        AutoRedirectTitle = "自动重定向"
+        DnsModeTitle = "DNS 模式"
+        DnsRedirHost = "RedirHost"
+        DnsFakeIp = "FakeIP"
+        Ipv6Title = "启用 IPv6"
+    }
+
+    TproxyOptions = {
+        Title = "TPROXY 配置"
+        PortTitle = "TPROXY 端口"
+    }
+
+    ProxyOptions = {
+        AccessControlModeTitle = "访问控制模式"
+        AllowAll = "允许所有"
+        AllowSelected = "允许选择"
+        RejectSelected = "拒绝选择"
+        ManageAccessControlTitle = "管理访问控制列表"
+    }
+
+    Error = {
+        VpnDenied = "VPN 权限被拒绝"
+        RootRequired = "Tun / TPROXY 需要 YumeBox 已获取可用的 Root 权限"
+    }
+}
