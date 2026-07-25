@@ -108,8 +108,30 @@ class CompiledConfigPipeline(private val context: Context) {
      * it. Used by the out-of-process path: the caller streams this to the core over the socketpair,
      * so it is never written to disk. The core reads and applies it itself.
      */
-    suspend fun compile(spec: RuntimeSpec): String =
+    data class CompiledRuntimeConfig(
+        val finalYaml: String,
+        val proxyGroupNames: List<String>,
+        val warnings: List<String> = emptyList(),
+        val fingerprint: String = "",
+    )
+
+    suspend fun compile(spec: RuntimeSpec): String = compileDetailed(spec).finalYaml
+
+    /**
+     * Compile once and extract proxy-group names so startup readiness does not need a second
+     * nativeCompile just to know which groups to expect.
+     */
+    suspend fun compileDetailed(spec: RuntimeSpec): CompiledRuntimeConfig =
         withContext(Dispatchers.Default) {
+            if (spec.compiledFinalYaml.isNotBlank()) {
+                return@withContext CompiledRuntimeConfig(
+                    finalYaml = spec.compiledFinalYaml,
+                    proxyGroupNames =
+                        spec.expectedProxyGroupNames.ifEmpty {
+                            extractProxyGroupNames(spec.compiledFinalYaml)
+                        },
+                )
+            }
             val request = buildRequest(spec)
             val result =
                 compilerJson.decodeFromString(
@@ -119,8 +141,24 @@ class CompiledConfigPipeline(private val context: Context) {
                     ),
                 )
             check(result.success) { result.error ?: "override compile failed" }
-            result.finalYaml
+            CompiledRuntimeConfig(
+                finalYaml = result.finalYaml,
+                proxyGroupNames = extractProxyGroupNames(result.finalYaml),
+                warnings = result.warnings,
+                fingerprint = result.fingerprint,
+            )
         }
+
+    fun extractProxyGroupNames(finalYaml: String): List<String> =
+        runCatching {
+                YamlCodec.decode(CompiledGroupConfig.serializer(), finalYaml)
+                    .proxyGroups
+                    .asSequence()
+                    .map { it.name.trim() }
+                    .filter { it.isNotEmpty() }
+                    .toList()
+            }
+            .getOrDefault(emptyList())
 
     /**
      * Deletes any leftover runtime.yaml before loading a profile. runtime.yaml is no longer
@@ -384,7 +422,7 @@ class CompiledConfigPipeline(private val context: Context) {
         overrideId.startsWith(LEGACY_PRESET_PREFIX)
 
     private fun describeOverrideFile(file: File, overrideId: String): String {
-        val content = file.takeIf(File::exists)?.readText().orEmpty()
+        // Avoid reading full override bodies just for diagnostics on the start hot path.
         return buildString {
             append("override resolve: file id=")
             append(overrideId)
@@ -393,9 +431,9 @@ class CompiledConfigPipeline(private val context: Context) {
             append(" exists=")
             append(file.exists())
             append(" size=")
-            append(content.length)
-            append(" sha=")
-            append(content.sha256Short())
+            append(if (file.exists()) file.length() else -1L)
+            append(" mtime=")
+            append(if (file.exists()) file.lastModified() else -1L)
         }
     }
 

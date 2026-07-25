@@ -52,11 +52,16 @@ class VpnTunTransport(
 
     override fun start(spec: RuntimeSpec) {
         startupLogStore.append("LOCAL_TUN transport start: begin")
-        // Compile the config (in memory) before establishing the TUN; it is streamed to the core.
-        val config = runBlocking {
-            StartupTaskCoordinator.awaitWarmup()
-            pipeline.compile(spec)
-        }
+        // Prefer the precompiled YAML attached to the spec (single compile on the start path).
+        // Fall back to a local compile only for callers that have not prepared the spec yet.
+        // Geo assets must exist before the core boots; compile itself does not need them.
+        runBlocking { StartupTaskCoordinator.awaitWarmup() }
+        val config =
+            if (spec.compiledFinalYaml.isNotBlank()) {
+                spec.compiledFinalYaml
+            } else {
+                runBlocking { pipeline.compile(spec) }
+            }
         val device =
             with(vpnService.Builder()) {
                 val explicitRouteExcludes =

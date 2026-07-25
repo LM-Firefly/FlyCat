@@ -461,6 +461,7 @@ fn parse_modifier_key(key: &str) -> ParsedKey<'_> {
         };
     }
 
+    // Explicit YAML suffixes take priority over the JS-compatible +/- forms.
     for (suffix, modifier) in [
         ("-start", PatchModifier::Start),
         ("-end", PatchModifier::End),
@@ -468,7 +469,27 @@ fn parse_modifier_key(key: &str) -> ParsedKey<'_> {
         ("-force", PatchModifier::Force),
     ] {
         if let Some(base) = key.strip_suffix(suffix) {
-            return ParsedKey { base, modifier };
+            if !base.is_empty() {
+                return ParsedKey { base, modifier };
+            }
+        }
+    }
+
+    // JS-style array modifiers: +key prepends, key+ appends.
+    if let Some(base) = key.strip_prefix('+') {
+        if !base.is_empty() {
+            return ParsedKey {
+                base,
+                modifier: PatchModifier::Start,
+            };
+        }
+    }
+    if let Some(base) = key.strip_suffix('+') {
+        if !base.is_empty() {
+            return ParsedKey {
+                base,
+                modifier: PatchModifier::End,
+            };
         }
     }
 

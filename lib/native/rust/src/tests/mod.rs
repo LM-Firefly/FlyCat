@@ -403,7 +403,7 @@ async function main(profile) {{
 }
 
 #[test]
-fn js_override_failure_is_reported_as_warning_and_keeps_original_profile() {
+fn js_override_failure_hard_fails_compile_chain() {
     let temp_dir = std::env::temp_dir().join(format!(
         "yumebox-js-failure-test-{}",
         std::time::SystemTime::now()
@@ -421,12 +421,10 @@ fn js_override_failure_is_reported_as_warning_and_keeps_original_profile() {
         content: "function main(profile) { throw new Error('boom'); }".to_string(),
     }];
 
-    let result =
-        engine::apply_overrides(root.clone(), &overrides, false).expect("apply broken js override");
-    assert_eq!(result.root, root);
-    assert_eq!(result.warnings.len(), 1);
-    assert!(result.warnings[0].contains("skip JS override"));
-    assert!(result.warnings[0].contains("boom"));
+    let error = engine::apply_overrides(root.clone(), &overrides, false)
+        .expect_err("broken js override should hard-fail");
+    assert!(error.contains("JS override"));
+    assert!(error.contains("boom"));
 
     let log_content =
         fs::read_to_string(override_path.with_extension("log")).expect("read failure log");
@@ -459,11 +457,11 @@ function main(profile) {
         .to_string(),
     }];
 
-    let result = engine::apply_overrides(json!({ "mode": "secret-rule" }), &overrides, true)
-        .expect("apply encrypted js override");
-    assert_eq!(result.warnings.len(), 1);
-    assert!(!result.warnings[0].contains("secret-rule"));
-    assert!(!result.warnings[0].contains(&override_path.to_string_lossy().to_string()));
+    let error = engine::apply_overrides(json!({ "mode": "secret-rule" }), &overrides, true)
+        .expect_err("encrypted js override failure should hard-fail");
+    assert!(error.contains("JS override failed for encrypted profile"));
+    assert!(!error.contains("secret-rule"));
+    assert!(!error.contains(&override_path.to_string_lossy().to_string()));
 
     let log_content =
         fs::read_to_string(override_path.with_extension("log")).expect("read encrypted log");
@@ -472,6 +470,122 @@ function main(profile) {
     assert!(!log_content.contains("secret mode"));
 
     let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn yaml_plus_rules_modifier_matches_rules_start() {
+    let root = json!({
+        "mode": "rule",
+        "rules": ["MATCH,PROXY"]
+    });
+    let overrides = vec![LoadedOverride {
+        path: "plus.yaml".to_string(),
+        ext: "yaml".to_string(),
+        content: "+rules:\n  - DOMAIN-SUFFIX,baidu.com,DIRECT\n".to_string(),
+    }];
+    let result = engine::apply_overrides(root, &overrides, false).expect("apply +rules");
+    let rules = result
+        .root
+        .get("rules")
+        .and_then(JsonValue::as_array)
+        .expect("rules");
+    assert_eq!(rules.len(), 2);
+    assert_eq!(
+        rules[0].as_str(),
+        Some("DOMAIN-SUFFIX,baidu.com,DIRECT")
+    );
+    assert_eq!(rules[1].as_str(), Some("MATCH,PROXY"));
+}
+
+#[test]
+fn multiple_yaml_overrides_accumulate_list_start_end() {
+    let root = json!({
+        "mode": "rule",
+        "rules": ["MATCH,PROXY"]
+    });
+    let overrides = vec![
+        LoadedOverride {
+            path: "a.yaml".to_string(),
+            ext: "yaml".to_string(),
+            content: "rules-start:\n  - DOMAIN-SUFFIX,a.com,DIRECT\n".to_string(),
+        },
+        LoadedOverride {
+            path: "b.yaml".to_string(),
+            ext: "yaml".to_string(),
+            content: "rules-end:\n  - DOMAIN-SUFFIX,b.com,DIRECT\n".to_string(),
+        },
+    ];
+    let result = engine::apply_overrides(root, &overrides, false).expect("apply two yaml");
+    let rules = result
+        .root
+        .get("rules")
+        .and_then(JsonValue::as_array)
+        .expect("rules");
+    assert_eq!(
+        rules
+            .iter()
+            .map(|v| v.as_str().unwrap_or_default())
+            .collect::<Vec<_>>(),
+        vec![
+            "DOMAIN-SUFFIX,a.com,DIRECT",
+            "MATCH,PROXY",
+            "DOMAIN-SUFFIX,b.com,DIRECT"
+        ]
+    );
+}
+
+#[test]
+fn yaml_then_js_override_chain_applies_both() {
+    let root = json!({
+        "mode": "rule",
+        "port": 1,
+        "rules": ["MATCH,PROXY"]
+    });
+    let overrides = vec![
+        LoadedOverride {
+            path: "a.yaml".to_string(),
+            ext: "yaml".to_string(),
+            content: "rules-start:\n  - DOMAIN-SUFFIX,a.com,DIRECT\n".to_string(),
+        },
+        LoadedOverride {
+            path: "b.js".to_string(),
+            ext: "js".to_string(),
+            content: r#"
+function main(profile) {
+  profile.port = 2;
+  return profile;
+}
+"#
+            .to_string(),
+        },
+    ];
+    let result = engine::apply_overrides(root, &overrides, false).expect("yaml+js");
+    assert_eq!(result.root.get("port").and_then(JsonValue::as_i64), Some(2));
+    let rules = result
+        .root
+        .get("rules")
+        .and_then(JsonValue::as_array)
+        .expect("rules");
+    assert_eq!(rules[0].as_str(), Some("DOMAIN-SUFFIX,a.com,DIRECT"));
+}
+
+#[test]
+fn two_js_overrides_apply_in_order() {
+    let root = json!({ "mode": "rule", "port": 1 });
+    let overrides = vec![
+        LoadedOverride {
+            path: "a.js".to_string(),
+            ext: "js".to_string(),
+            content: "function main(p) { p.port = 2; return p; }".to_string(),
+        },
+        LoadedOverride {
+            path: "b.js".to_string(),
+            ext: "js".to_string(),
+            content: "function main(p) { p.port = p.port + 3; return p; }".to_string(),
+        },
+    ];
+    let result = engine::apply_overrides(root, &overrides, false).expect("js+js");
+    assert_eq!(result.root.get("port").and_then(JsonValue::as_i64), Some(5));
 }
 
 #[test]

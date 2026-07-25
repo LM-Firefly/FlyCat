@@ -111,6 +111,17 @@ object ProfileProcessor {
                         materializeLocalConfig(context, stagingDir, snapshot.imported)
                     }
 
+                    // First-time import only: reject broken main configs before provider downloads
+                    // or commit. Updates keep the previous committed profile if the new payload is
+                    // invalid at runtime instead of blocking refresh here.
+                    if (!snapshot.hasCommittedConfig) {
+                        val stagedMain = stagingDir.resolve("config.yaml")
+                        check(stagedMain.isFile && stagedMain.length() > 0L) {
+                            "Profile import produced no config.yaml: ${snapshot.imported.uuid}"
+                        }
+                        ProfileConfigTester.validateMainConfigOrThrow(context, stagedMain)
+                    }
+
                     providerReport =
                         fetchExternalProviders(
                             context = context,

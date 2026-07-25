@@ -78,7 +78,12 @@ fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
             homeViewModel.consumeError()
         }
     }
-    LaunchedEffect(screen.uiMessage) { screen.uiMessage?.let { homeViewModel.consumeMessage() } }
+    LaunchedEffect(screen.uiMessage) {
+        screen.uiMessage?.let {
+            context.toast(it, Toast.LENGTH_SHORT)
+            homeViewModel.consumeMessage()
+        }
+    }
 
     val scrollBehavior = MiuixScrollBehavior()
     val isRunning = screen.controlState == HomeProxyControlState.Running

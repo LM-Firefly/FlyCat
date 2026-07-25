@@ -60,6 +60,10 @@ class HomeViewModel(
         application,
         HomeUiState(),
     ) {
+    /** Dedupes Failed-phase toasts against the same runtime generation / start attempt. */
+    private var lastPresentedFailureGeneration: Long = -1L
+    private var suppressNextRuntimeFailureToast: Boolean = false
+
     private val _profiles = MutableStateFlow<List<Profile>>(emptyList())
     val profiles: StateFlow<List<Profile>> = _profiles.asStateFlow()
 
@@ -361,10 +365,20 @@ class HomeViewModel(
                 .drop(1)
                 .map { snapshot -> Triple(snapshot.phase, snapshot.lastError, snapshot.generation) }
                 .distinctUntilChanged()
-                .collect { (phase, lastError, _) ->
-                    if (phase == RuntimePhase.Failed && !lastError.isNullOrBlank()) {
-                        showError(lastError)
+                .collect { (phase, lastError, generation) ->
+                    if (phase != RuntimePhase.Failed || lastError.isNullOrBlank()) {
+                        return@collect
                     }
+                    if (suppressNextRuntimeFailureToast) {
+                        suppressNextRuntimeFailureToast = false
+                        lastPresentedFailureGeneration = generation
+                        return@collect
+                    }
+                    if (generation == lastPresentedFailureGeneration) {
+                        return@collect
+                    }
+                    lastPresentedFailureGeneration = generation
+                    showError(readableStartupError(lastError))
                 }
         }
     }
@@ -563,8 +577,36 @@ class HomeViewModel(
             clearPendingStart()
             _pendingTransition.value = PendingTransition.None
             Timber.e(error, "Failed to start proxy")
-            showError(YumeTxt.Home.Message.StartFailed.format(error.message))
+            // startProxyInternal already surfaces the failure; skip the duplicate Failed-phase toast.
+            suppressNextRuntimeFailureToast = true
+            lastPresentedFailureGeneration = runtimeSnapshot.value.generation
+            showError(
+                YumeTxt.Home.Message.StartFailed.format(
+                    readableStartupError(error.message)
+                )
+            )
         }
+    }
+
+    private fun readableStartupError(raw: String?): String {
+        val message = raw?.trim().orEmpty()
+        if (message.isEmpty()) {
+            return YumeTxt.Util.Error.UnknownError
+        }
+        // Prefer the first actionable line; strip huge core.log tails and stack noise.
+        val firstLine =
+            message
+                .lineSequence()
+                .map { it.trim() }
+                .firstOrNull { it.isNotEmpty() }
+                ?: message
+        val cleaned =
+            firstLine
+                .removePrefix("java.lang.IllegalStateException:")
+                .removePrefix("java.lang.IllegalArgumentException:")
+                .removePrefix("java.lang.RuntimeException:")
+                .trim()
+        return cleaned.take(280).ifBlank { YumeTxt.Util.Error.UnknownError }
     }
 
     private fun clearPendingStart() {

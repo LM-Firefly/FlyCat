@@ -254,8 +254,18 @@ class SessionRuntimeSpecFactory(
             update("missing:${file.absolutePath}".toByteArray())
             return
         }
+        // Stream path + size + mtime + content hash without loading the whole file into a byte[].
         update(file.absolutePath.toByteArray())
-        update(file.readBytes())
+        update(file.length().toString().toByteArray())
+        update(file.lastModified().toString().toByteArray())
+        file.inputStream().use { input ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                update(buffer, 0, read)
+            }
+        }
     }
 
     private fun normalizeAgeSecretKey(value: String?): String? =

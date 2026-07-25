@@ -40,8 +40,25 @@ func main() {
 		dns         = flag.String("dns", "", "tun DNS hijack address(es)")
 		mode        = flag.String("mode", "vpn", "run mode: vpn | tun | tproxy")
 		configPath  = flag.String("config", "", "compiled config path; root modes read the config here instead of the channel")
+		testConfig  = flag.Bool("test", false, "parse config and exit (mihomo -t equivalent); requires --config")
 	)
 	flag.Parse()
+
+	// Import-time validation: parse only, no controller/TUN/ApplyConfig side effects.
+	if *testConfig {
+		if *configPath == "" {
+			fatal("--test requires --config")
+		}
+		data, err := os.ReadFile(*configPath)
+		if err != nil {
+			fatal("read config %q: %v", *configPath, err)
+		}
+		if _, err := config.Parse(data); err != nil {
+			fatal("configuration file %s test failed: %v", *configPath, err)
+		}
+		fmt.Fprintln(os.Stdout, "configuration file", *configPath, "test is successful")
+		return
+	}
 
 	if *home == "" {
 		fatal("missing required --home")

@@ -47,7 +47,7 @@ pub fn apply_js_override(
     root: JsonValue,
     override_item: &LoadedOverride,
     encrypted: bool,
-) -> JsOverrideOutcome {
+) -> Result<JsOverrideOutcome, String> {
     let log_path = override_log_path(&override_item.path);
     let mut warnings = Vec::new();
     if let Err(err) = reset_override_log(&log_path) {
@@ -63,14 +63,13 @@ pub fn apply_js_override(
     }
     let _ = append_override_log(&log_path, "info", "开始执行脚本");
 
-    let original_root = root.clone();
     match try_apply_js_override(root, override_item, &log_path, encrypted) {
         Ok(next_root) => {
             let _ = append_override_log(&log_path, "info", "脚本执行成功");
-            JsOverrideOutcome {
+            Ok(JsOverrideOutcome {
                 root: next_root,
                 warnings,
-            }
+            })
         }
         Err(err) => {
             let failure_message = if encrypted {
@@ -78,16 +77,11 @@ pub fn apply_js_override(
             } else {
                 format!("脚本执行失败：{err}")
             };
-            let warning = if encrypted {
-                "skip JS override: redacted error for encrypted profile".to_string()
-            } else {
-                format!("skip JS override {}: {err}", override_item.path)
-            };
             let _ = append_override_log(&log_path, "exception", &failure_message);
-            warnings.push(warning);
-            JsOverrideOutcome {
-                root: original_root,
-                warnings,
+            if encrypted {
+                Err("JS override failed for encrypted profile".to_string())
+            } else {
+                Err(format!("JS override {}: {err}", override_item.path))
             }
         }
     }

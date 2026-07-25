@@ -78,20 +78,17 @@ class OverrideResolver(
         if (binding == null) {
             return emptyList()
         }
-        return buildList {
-            binding.overrideIds.forEach { overrideId ->
-                if (
-                    isLegacyPresetOverrideId(overrideId) ||
-                        OverrideConfigStore.isInternalRuntimeConfig(overrideId)
-                ) {
-                    return@forEach
-                }
-                if (configStore.getConfigFilePath(overrideId) != null) {
-                    add(overrideId)
-                }
+        // Keep every bound id (except legacy/internal). Do not drop missing files here — callers
+        // compare resolved specs vs ids so a missing override surfaces as a failed apply instead of
+        // silently compiling a shorter chain.
+        return binding.overrideIds
+            .asSequence()
+            .filterNot { overrideId ->
+                isLegacyPresetOverrideId(overrideId) ||
+                    OverrideConfigStore.isInternalRuntimeConfig(overrideId)
             }
-        }
             .distinct()
+            .toList()
     }
 
     private suspend fun resolveOrderedSpecs(overrideIds: List<String>): List<OverrideSpec> {

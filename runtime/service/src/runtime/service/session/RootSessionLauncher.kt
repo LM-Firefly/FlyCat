@@ -57,8 +57,11 @@ object RootSessionLauncher {
             log.append(
                 "${logScope.tag} root launcher: profile=${spec.profileName} overrides=${spec.overrideSpecs.size}"
             )
-            val config = CompiledConfigPipeline(appContext).compile(spec)
-            CoreProcess(appContext).startRoot(mode.coreArg, config)
+            val compiled = CompiledConfigPipeline(appContext).compileDetailed(spec)
+            log.append(
+                "${logScope.tag} root launcher: compiled groups=${compiled.proxyGroupNames.size}"
+            )
+            CoreProcess(appContext).startRoot(mode.coreArg, compiled.finalYaml)
 
             // The fork succeeding proves nothing: a rejected config kills the core moments later
             // (only

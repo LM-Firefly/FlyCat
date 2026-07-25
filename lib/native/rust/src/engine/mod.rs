@@ -27,7 +27,7 @@ pub fn apply_overrides(
                 apply_override_document(&mut root, &patch);
             }
             "js" => {
-                let outcome = js::apply_js_override(root, override_item, encrypted);
+                let outcome = js::apply_js_override(root, override_item, encrypted)?;
                 root = outcome.root;
                 warnings.extend(outcome.warnings);
             }

@@ -14,8 +14,9 @@ pub fn load_overrides(
     overrides: &[OverrideSpec],
     encrypted: bool,
 ) -> Result<LoadedOverrides, String> {
-    let mut loaded = Vec::new();
+    let mut loaded = Vec::with_capacity(overrides.len());
     let mut warnings = Vec::new();
+    // Read override files sequentially but fail fast; order must match binding application order.
     for override_spec in overrides {
         let content = fs::read_to_string(&override_spec.path).map_err(|err| {
             if encrypted {

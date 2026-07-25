@@ -278,37 +278,39 @@ class SessionRuntime(
 
     private fun startInternal(spec: RuntimeSpec) {
         val startedAt = System.currentTimeMillis()
-        currentSpec = spec
+        // One nativeCompile for the whole start path: transport handoff + expected group names.
+        val prepared = prepareCompiledSpec(spec)
+        currentSpec = prepared
         publishSnapshot(
             RuntimeSnapshot(
-                owner = spec.owner,
+                owner = prepared.owner,
                 phase = RuntimePhase.Starting,
                 runMode = host.mode,
-                profileUuid = spec.profileUuid,
-                profileName = spec.profileName,
+                profileUuid = prepared.profileUuid,
+                profileName = prepared.profileName,
                 profileReady = true,
                 startedAt = startedAt,
-                effectiveFingerprint = spec.effectiveFingerprint,
+                effectiveFingerprint = prepared.effectiveFingerprint,
             )
         )
-        host.onStarting(spec)
-        ensureNotInterrupted(spec)
+        host.onStarting(prepared)
+        ensureNotInterrupted(prepared)
 
         claimCoreAndTeardownPrevious()
-        ensureNotInterrupted(spec)
+        ensureNotInterrupted(prepared)
         startObservers()
         notifyCurrentTimeZone()
         startConnectionTracking()
-        ensureNotInterrupted(spec)
+        ensureNotInterrupted(prepared)
 
-        transport.prepare(spec)
-        transport.start(spec)
+        transport.prepare(prepared)
+        transport.start(prepared)
         startupLog(
-            spec,
-            "core launched profile=${spec.profileName} overrides=${spec.overrideSpecs.size}",
+            prepared,
+            "core launched profile=${prepared.profileName} overrides=${prepared.overrideSpecs.size}",
         )
-        awaitProxyGroupsReady(spec)
-        ensureNotInterrupted(spec)
+        awaitProxyGroupsReady(prepared)
+        ensureNotInterrupted(prepared)
         startLogStream()
         refreshRuntimeSnapshot()
 
@@ -322,22 +324,23 @@ class SessionRuntime(
                 transportReady = true,
                 logReady = telemetry.isLogStreaming(),
                 startedAt = startedAt,
-                effectiveFingerprint = spec.effectiveFingerprint,
+                effectiveFingerprint = prepared.effectiveFingerprint,
             )
         }
-        host.onProfileLoaded(spec.profileUuid)
-        host.onStarted(spec)
-        startupLog(spec, "started")
+        host.onProfileLoaded(prepared.profileUuid)
+        host.onStarted(prepared)
+        startupLog(prepared, "started")
     }
 
     private fun reloadInternal(spec: RuntimeSpec) {
         check(currentSpec != null) { "runtime not started" }
+        val prepared = prepareCompiledSpec(spec)
         updateSnapshot {
             it.copy(
                 phase = RuntimePhase.Starting,
-                profileUuid = spec.profileUuid,
-                profileName = spec.profileName,
-                effectiveFingerprint = spec.effectiveFingerprint,
+                profileUuid = prepared.profileUuid,
+                profileName = prepared.profileName,
+                effectiveFingerprint = prepared.effectiveFingerprint,
                 groupsReady = false,
                 trafficReady = false,
             )
@@ -347,10 +350,10 @@ class SessionRuntime(
         // core
         // reads its config at launch); re-verify groups afterwards.
         runCatching { transport.stop() }
-        transport.start(spec)
-        awaitProxyGroupsReady(spec)
-        ensureNotInterrupted(spec)
-        currentSpec = spec
+        transport.start(prepared)
+        awaitProxyGroupsReady(prepared)
+        ensureNotInterrupted(prepared)
+        currentSpec = prepared
         refreshRuntimeSnapshot()
         updateSnapshot {
             it.copy(
@@ -361,12 +364,12 @@ class SessionRuntime(
                 configReady = true,
                 transportReady = true,
                 logReady = telemetry.isLogStreaming(),
-                effectiveFingerprint = spec.effectiveFingerprint,
+                effectiveFingerprint = prepared.effectiveFingerprint,
                 lastError = null,
             )
         }
-        host.onProfileLoaded(spec.profileUuid)
-        startupLog(spec, "reload done")
+        host.onProfileLoaded(prepared.profileUuid)
+        startupLog(prepared, "reload done")
     }
 
     private fun stopInternal(reason: String?, notifyHost: Boolean) {
@@ -564,12 +567,44 @@ class SessionRuntime(
         store.append("${scope.tag} core diagnostics end")
     }
 
-    private fun readExpectedGroupNames(spec: RuntimeSpec): List<String> =
-        runCatching { proxyGroupResolver.expectedGroupNames(spec, false) }
+    private fun readExpectedGroupNames(spec: RuntimeSpec): List<String> {
+        if (spec.expectedProxyGroupNames.isNotEmpty()) {
+            return spec.expectedProxyGroupNames
+        }
+        if (spec.compiledFinalYaml.isNotBlank()) {
+            return compiledConfigPipeline.extractProxyGroupNames(spec.compiledFinalYaml)
+        }
+        // Last resort only: should be rare once start/reload always prepare the compiled YAML.
+        return runCatching { proxyGroupResolver.expectedGroupNames(spec, false) }
             .getOrElse { error ->
                 startupLog(spec, "runtime verify: expected group inspect failed=${error.message}")
                 emptyList()
             }
+    }
+
+    /**
+     * Ensures [RuntimeSpec.compiledFinalYaml] / [RuntimeSpec.expectedProxyGroupNames] are populated
+     * with a single nativeCompile so transport handoff and readiness share the same result.
+     */
+    private fun prepareCompiledSpec(spec: RuntimeSpec): RuntimeSpec {
+        if (spec.compiledFinalYaml.isNotBlank()) {
+            if (spec.expectedProxyGroupNames.isNotEmpty()) {
+                return spec
+            }
+            val names = compiledConfigPipeline.extractProxyGroupNames(spec.compiledFinalYaml)
+            return spec.copy(expectedProxyGroupNames = names)
+        }
+        val compiled =
+            kotlinx.coroutines.runBlocking { compiledConfigPipeline.compileDetailed(spec) }
+        startupLog(
+            spec,
+            "compiled once groups=${compiled.proxyGroupNames.size} warnings=${compiled.warnings.size}",
+        )
+        return spec.copy(
+            compiledFinalYaml = compiled.finalYaml,
+            expectedProxyGroupNames = compiled.proxyGroupNames,
+        )
+    }
 
     private fun waitForRetryOrInterrupt(delayMs: Long) {
         synchronized(interruptMonitor) {

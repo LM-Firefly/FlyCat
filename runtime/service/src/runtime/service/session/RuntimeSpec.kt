@@ -44,6 +44,13 @@ data class RuntimeSpec(
     val transportFingerprint: String = "",
     val effectiveFingerprint: String = "",
     val profileFingerprint: String = "",
+    /**
+     * Precompiled final mihomo YAML for this start/reload. When non-blank, transports and
+     * readiness checks must reuse it instead of calling nativeCompile again.
+     */
+    val compiledFinalYaml: String = "",
+    /** Proxy-group names extracted from [compiledFinalYaml] (declaration order). */
+    val expectedProxyGroupNames: List<String> = emptyList(),
 )
 
 @Serializable
