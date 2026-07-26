@@ -29,6 +29,7 @@ import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.TunService
+import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 
 object RuntimeServiceLauncher {
     const val EXTRA_REQUEST_SOURCE = "runtime_request_source"
@@ -49,15 +50,11 @@ object RuntimeServiceLauncher {
         source: String = SOURCE_UNKNOWN,
     ) {
         val appContext = context.appContextOrSelf
-        val logScope = RuntimeStartupLogStore.scopeForMode(mode)
-        val startupLogStore = RuntimeStartupLogStore(appContext, logScope)
-        startupLogStore.clear()
-        startupLogStore.append(
-            "${logScope.tag} launcher: request start source=$source mode=${mode.name}"
-        )
+        val log = RuntimeLog.writer(appContext, mode)
+        log.beginSession("launcher", "request start source=$source mode=${mode.name}")
 
         if (RemoteControllerStore.isActive()) {
-            startupLogStore.append("${logScope.tag} launcher: skipped, remote controller active")
+            log.i("launcher", "skipped: remote controller active")
             return
         }
 
@@ -65,12 +62,12 @@ object RuntimeServiceLauncher {
         // phase as Starting with nothing to flip it back to Running afterwards.
         val currentPhase = StatusProvider.queryRuntimePhase(mode)
         if (currentPhase == RuntimePhase.Running) {
-            startupLogStore.append("${logScope.tag} launcher: skipped, already running")
+            log.i("launcher", "skipped: already running")
             return
         }
 
         if (StatusProvider.isRuntimeStartingWithinGrace(mode)) {
-            startupLogStore.append("${logScope.tag} launcher: skipped, already starting")
+            log.i("launcher", "skipped: already starting")
             return
         }
 
@@ -82,7 +79,7 @@ object RuntimeServiceLauncher {
             StatusProvider.queryRuntimePhase(mode) == RuntimePhase.Starting &&
                 StatusProvider.isLocalRuntimeServiceAlive(mode)
         ) {
-            startupLogStore.append("${logScope.tag} launcher: stopping stale ${mode.name} runtime")
+            log.w("launcher", "stopping stale ${mode.name} runtime before restart")
             appContext.sendBroadcast(
                 Intent(Intents.ACTION_RUNTIME_REQUEST_STOP)
                     .setPackage(appContext.packageName)
@@ -98,9 +95,10 @@ object RuntimeServiceLauncher {
             Intent(appContext, TunService::class.java).putExtra(EXTRA_REQUEST_SOURCE, source)
 
         runCatching { appContext.startForegroundService(intent) }
+            .onSuccess { log.i("launcher", "service start requested") }
             .onFailure { error ->
                 StatusProvider.markRuntimeIdle(mode, sessionToken)
-                startupLogStore.append("${logScope.tag} launcher: failed=${error.message}")
+                log.e("launcher", "service start request failed", error)
                 throw error
             }
     }

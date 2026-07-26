@@ -47,10 +47,8 @@ import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
-import com.github.yumelira.yumebox.runtime.service.session.RuntimeStartupLogStore
+import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 import java.io.IOException
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -76,7 +74,7 @@ fun AboutScreen(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
     val exportLogsLauncher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.CreateDocument("application/zip")
+            contract = ActivityResultContracts.CreateDocument("text/plain")
         ) { uri ->
             uri ?: return@rememberLauncherForActivityResult
             scope.launch(Dispatchers.IO) {
@@ -207,7 +205,7 @@ fun AboutScreen(navigator: Navigator) {
                         title = YumeTxt.About.Support.ExportLogs,
                         onClick = {
                             exportLogsLauncher.launch(
-                                "yumebox_startup_logs_${System.currentTimeMillis()}.zip"
+                                "yumebox_runtime_${System.currentTimeMillis()}.log"
                             )
                         },
                     )
@@ -249,30 +247,27 @@ fun AboutScreen(navigator: Navigator) {
     }
 }
 
+/**
+ * One plain-text file, not a zip of partial ones: the unified log already interleaves every source
+ * in timestamp order, and the core's own log is appended so nothing lives outside it.
+ */
 private fun exportStartupLogs(context: Context, targetUri: Uri): Boolean {
-    val logs =
-        listOf(
-            RuntimeStartupLogStore.Scope.ROOT_TUN to
-                RuntimeStartupLogStore(context, RuntimeStartupLogStore.Scope.ROOT_TUN).snapshot(),
-            RuntimeStartupLogStore.Scope.LOCAL_TUN to
-                RuntimeStartupLogStore(context, RuntimeStartupLogStore.Scope.LOCAL_TUN).snapshot(),
-        )
-    val coreDiagnostics = runCatching {
-        CoreProcess.coreDiagnosticLog(context)
+    val runtimeLog = RuntimeLog.snapshot(context)
+    val coreLog = runCatching { CoreProcess.coreDiagnosticLog(context) }.getOrDefault("")
+    val export = buildString {
+        appendLine("# YumeBox runtime log")
+        appendLine("# app=${BuildConfig.VERSION_NAME} core=${BuildConfig.CORE_VERSION}")
+        appendLine()
+        append(runtimeLog.ifBlank { "(no runtime entries recorded)\n" })
+        if (coreLog.isNotBlank()) {
+            appendLine()
+            appendLine("--- current core.log (verbatim) ---")
+            appendLine(coreLog)
+        }
     }
-        .getOrDefault("")
     return try {
         context.contentResolver.openOutputStream(targetUri)?.use { output ->
-            ZipOutputStream(output).use { zip ->
-                logs.forEach { (scope, content) ->
-                    zip.putNextEntry(ZipEntry(scope.fileName))
-                    zip.write(content.toByteArray(Charsets.UTF_8))
-                    zip.closeEntry()
-                }
-                zip.putNextEntry(ZipEntry(CORE_DIAGNOSTICS_EXPORT_NAME))
-                zip.write(coreDiagnostics.toByteArray(Charsets.UTF_8))
-                zip.closeEntry()
-            }
+            output.write(export.toByteArray(Charsets.UTF_8))
         } ?: return false
         true
     } catch (_: IOException) {
@@ -281,8 +276,6 @@ private fun exportStartupLogs(context: Context, targetUri: Uri): Boolean {
         false
     }
 }
-
-private const val CORE_DIAGNOSTICS_EXPORT_NAME = "core_diagnostics.log"
 
 @Composable
 private fun AboutLinkItem(

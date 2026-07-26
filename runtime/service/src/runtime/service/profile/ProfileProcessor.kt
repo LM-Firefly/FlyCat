@@ -26,6 +26,7 @@ import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.api.ProfileUpdateReport
 import com.github.yumelira.yumebox.runtime.api.ProviderPrefetchReport
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
+import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 import com.github.yumelira.yumebox.runtime.service.util.importedDir
 import com.github.yumelira.yumebox.runtime.service.util.sendProfileChanged
 import java.util.UUID
@@ -85,6 +86,17 @@ object ProfileProcessor {
                 var subInfo: SubscriptionInfo? = null
                 var providerReport = ProviderPrefetchReport()
 
+                val log = RuntimeLog.writer(context, RuntimeLog.Source.Profile)
+                // A first import and a refresh of an existing subscription fail in very different
+                // ways (rollback vs keep-previous), so the log says which one this is up front.
+                val isFirstImport = !snapshot.hasCommittedConfig
+                val label = "${snapshot.imported.name} ($uuid)"
+                log.beginSession(
+                    "import",
+                    "begin profile=$label type=${snapshot.imported.type} " +
+                        "mode=${if (isFirstImport) "first-import" else "update"}",
+                )
+
                 try {
                     // Only Url profiles are fetched: a File profile's config.yaml was already
                     // written at import time, so HTTP-getting its local source would just clobber it.
@@ -104,22 +116,26 @@ object ProfileProcessor {
                                 Timber.w(error, "Report fetch status: %s", error.message)
                             }
                         }
+                        log.i("import", "subscription fetched profile=$label")
                     } else {
                         // Local/file profiles still need provider prefetch. Re-materialize the
                         // original local source into staging so a missing copy cannot skip every
                         // proxy/rule provider download.
                         materializeLocalConfig(context, stagingDir, snapshot.imported)
+                        log.i("import", "local source materialized profile=$label")
                     }
 
                     // First-time import only: reject broken main configs before provider downloads
                     // or commit. Updates keep the previous committed profile if the new payload is
                     // invalid at runtime instead of blocking refresh here.
-                    if (!snapshot.hasCommittedConfig) {
+                    if (isFirstImport) {
                         val stagedMain = stagingDir.resolve("config.yaml")
                         check(stagedMain.isFile && stagedMain.length() > 0L) {
                             "Profile import produced no config.yaml: ${snapshot.imported.uuid}"
                         }
-                        ProfileConfigTester.validateMainConfigOrThrow(context, stagedMain)
+                        // Throws on a failed core test, which the catch below turns into a full
+                        // rollback: a subscription the core rejects is never committed.
+                        ProfileConfigTester.validateMainConfigOrThrow(context, stagedMain, label)
                     }
 
                     providerReport =
@@ -137,6 +153,7 @@ object ProfileProcessor {
                                 Timber.w(error, "Report provider fetch status: %s", error.message)
                             }
                         }
+                    logProviderReport(log, label, providerReport)
 
                     val stagedConfig = stagingDir.resolve("config.yaml")
                     check(stagedConfig.isFile && stagedConfig.length() > 0L) {
@@ -183,9 +200,11 @@ object ProfileProcessor {
                         }
                     }
 
+                    log.i("import", "success: profile=$label committed")
                     ProfileUpdateReport(providers = providerReport)
                 } catch (error: Exception) {
                     // fault barrier: roll back the staged update atomically, then rethrow.
+                    var rolledBack = false
                     profileLock.withLock {
                         if (
                             !snapshot.hasCommittedConfig &&
@@ -193,6 +212,7 @@ object ProfileProcessor {
                         ) {
                             ImportedDao.remove(snapshot.imported.uuid)
                             targetDir.deleteRecursively()
+                            rolledBack = true
                             context.sendProfileChanged(
                                 snapshot.imported.uuid,
                                 affectsRuntime =
@@ -200,6 +220,13 @@ object ProfileProcessor {
                             )
                         }
                     }
+                    log.e(
+                        "import",
+                        "failed: profile=$label " +
+                            if (rolledBack) "rolled back, not imported"
+                            else "previous config kept",
+                        error,
+                    )
                     val errorMessage = error.message ?: ""
                     if (
                         errorMessage.contains("no identities specified") ||
@@ -216,6 +243,32 @@ object ProfileProcessor {
                     stagingDir.deleteRecursively()
                 }
             }
+        }
+    }
+
+    /**
+     * External providers are best-effort — a failed one never blocks the commit — so they are
+     * logged as warnings rather than surfacing through the update result.
+     */
+    private fun logProviderReport(
+        log: RuntimeLog.Writer,
+        label: String,
+        report: ProviderPrefetchReport,
+    ) {
+        val stage = "providers"
+        log.i(
+            stage,
+            "prefetch profile=$label attempted=${report.attempted} " +
+                "failed=${report.failedNames.size}",
+        )
+        if (report.failedNames.isNotEmpty()) {
+            log.w(stage, "failed profile=$label names=${report.failedNames.joinToString(", ")}")
+        }
+        if (report.discoveryAnomaly) {
+            log.w(stage, "config declares providers but none were downloadable profile=$label")
+        }
+        if (report.headerDegraded) {
+            log.w(stage, "header parse degraded; custom headers may be missing profile=$label")
         }
     }
 

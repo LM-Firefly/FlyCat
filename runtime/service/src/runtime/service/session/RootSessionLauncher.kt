@@ -31,6 +31,7 @@ import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.service.RootForegroundService
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
+import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 
 /**
  * Launches the root [RunMode.Tun] / [RunMode.Tproxy] daemon. A foreground notification host tracks
@@ -44,23 +45,20 @@ object RootSessionLauncher {
             "RootSessionLauncher handles root modes only, got $mode"
         }
         val appContext = context.appContextOrSelf
-        val logScope = RuntimeStartupLogStore.scopeForMode(mode)
-        val log = RuntimeStartupLogStore(appContext, logScope)
-        log.clear()
-        log.append("${logScope.tag} root launcher: start mode=${mode.name}")
+        val log = RuntimeLog.writer(appContext, mode)
+        log.beginSession("launcher", "root start mode=${mode.name}")
 
         RootForegroundService.start(appContext)
         try {
             StatusProvider.markRuntimeStarting(mode)
             StartupTaskCoordinator.awaitWarmup()
             val spec = SessionRuntimeSpecFactory(appContext).createRootSpec(mode)
-            log.append(
-                "${logScope.tag} root launcher: profile=${spec.profileName} overrides=${spec.overrideSpecs.size}"
+            log.i(
+                "launcher",
+                "profile=${spec.profileName} overrides=${spec.overrideSpecs.size}",
             )
             val compiled = CompiledConfigPipeline(appContext).compileDetailed(spec)
-            log.append(
-                "${logScope.tag} root launcher: compiled groups=${compiled.proxyGroupNames.size}"
-            )
+            log.i("launcher", "compiled groups=${compiled.proxyGroupNames.size}")
             CoreProcess(appContext).startRoot(mode.coreArg, compiled.finalYaml)
 
             // The fork succeeding proves nothing: a rejected config kills the core moments later
@@ -95,28 +93,17 @@ object RootSessionLauncher {
                         error,
                     )
                 }
-            log.append("${logScope.tag} root launcher: controller ready")
+            log.i("launcher", "controller ready")
 
             StatusProvider.markRuntimeRunning(mode)
             broadcast(appContext, Intents.actionRuntimeStarted(appContext.packageName))
-            log.append("${logScope.tag} root launcher: done")
+            log.i("launcher", "success: root daemon running mode=${mode.name}")
         } catch (error: Throwable) {
             runCatching { CoreProcess.stopRoot() }
             StatusProvider.markRuntimeFailed(mode, error.message)
             RootForegroundService.stop(appContext)
-            log.append("${logScope.tag} root launcher: failed=${error.message}")
-            val diagnostics = CoreProcess.coreDiagnosticLog(appContext)
-            if (diagnostics.isBlank()) {
-                log.append(
-                    "${logScope.tag} core diagnostics: (empty — core may have died before boot)"
-                )
-            } else {
-                log.append("${logScope.tag} core diagnostics begin")
-                diagnostics.lineSequence().forEach { line ->
-                    log.append("${logScope.tag} core| $line")
-                }
-                log.append("${logScope.tag} core diagnostics end")
-            }
+            log.e("launcher", "root start failed", error)
+            log.coreDiagnostics(CoreProcess.coreDiagnosticLog(appContext))
             throw error
         }
     }

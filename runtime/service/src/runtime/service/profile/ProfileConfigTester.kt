@@ -23,6 +23,7 @@ package com.github.yumelira.yumebox.runtime.service.profile
 import android.annotation.SuppressLint
 import android.content.Context
 import com.github.yumelira.yumebox.core.util.runtimeHomeDir
+import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 import timber.log.Timber
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -31,31 +32,51 @@ import java.util.concurrent.TimeUnit
  * Validates a profile's main `config.yaml` with the packaged mihomo core (`libclash.so --test`),
  * without applying overrides or runtime patches. Used on first import so a broken main config is
  * rejected before commit.
+ *
+ * Every outcome is written to [RuntimeLog] under `PROFILE/core-test`, verbatim core output
+ * included: this test is the gate that decides whether a subscription is importable at all, so
+ * "why was my subscription rejected" has to be answerable from the exported log alone.
  */
 internal object ProfileConfigTester {
     private const val TAG = "ProfileConfigTester"
     private const val LIB = "libclash.so"
+    private const val STAGE = "core-test"
     private const val TIMEOUT_MS = 20_000L
     private const val MAX_ERROR_CHARS = 400
+    private const val MAX_LOGGED_OUTPUT_CHARS = 8_000
+    private const val CORE_FATAL_PREFIX = "mihomo:"
+    private const val TEST_FAILED_MARKER = "test failed:"
 
-    fun validateMainConfigOrThrow(context: Context, configFile: File) {
-        validateMainConfig(context, configFile).getOrThrow()
+    fun validateMainConfigOrThrow(context: Context, configFile: File, profileLabel: String) {
+        validateMainConfig(context, configFile, profileLabel).getOrThrow()
     }
 
-    fun validateMainConfig(context: Context, configFile: File): Result<Unit> {
+    fun validateMainConfig(
+        context: Context,
+        configFile: File,
+        profileLabel: String,
+    ): Result<Unit> {
+        val log = RuntimeLog.writer(context, RuntimeLog.Source.Profile)
+        log.i(STAGE, "begin profile=$profileLabel config=${configFile.name}")
+
         if (!configFile.isFile || configFile.length() <= 0L) {
-            return Result.failure(IllegalArgumentException("config.yaml is missing or empty"))
+            return log.reject(
+                profileLabel,
+                IllegalArgumentException("config.yaml is missing or empty"),
+            )
         }
         if (isAgeEncrypted(configFile)) {
             // Ciphertext cannot be parsed by mihomo; age-key handling stays on the existing path.
             Timber.tag(TAG).i("Skip mihomo test for age-encrypted profile config")
+            log.i(STAGE, "skipped profile=$profileLabel reason=age-encrypted config")
             return Result.success(Unit)
         }
 
         val binary =
             resolveCoreBinary(context)
-                ?: return Result.failure(
-                    IllegalStateException("mihomo core binary unavailable for config test")
+                ?: return log.reject(
+                    profileLabel,
+                    IllegalStateException("mihomo core binary unavailable for config test"),
                 )
         // Match runtime: GEOIP/GEOSITE resolution keys off the core home, not the staging cwd.
         // Desktop `mihomo -t` always has a home; without --home the parser builds an empty MMDB
@@ -86,22 +107,54 @@ internal object ProfileConfigTester {
             val finished = process.waitFor(TIMEOUT_MS, TimeUnit.MILLISECONDS)
             if (!finished) {
                 process.destroyForcibly()
-                return Result.failure(IllegalStateException("mihomo config test timed out"))
+                log.appendCoreOutput(output)
+                return log.reject(
+                    profileLabel,
+                    IllegalStateException("mihomo config test timed out after ${TIMEOUT_MS}ms"),
+                )
             }
             if (process.exitValue() == 0) {
+                log.i(STAGE, "success: profile=$profileLabel config accepted by the core")
                 Result.success(Unit)
             } else {
-                Result.failure(IllegalArgumentException(readableError(output)))
+                // The core's full stdout is what actually names the offending key/line; the
+                // condensed message below is only what the UI can fit in a toast.
+                log.appendCoreOutput(output)
+                log.reject(
+                    profileLabel,
+                    IllegalArgumentException(readableError(output)),
+                    detail = "exit=${process.exitValue()}",
+                )
             }
         } catch (error: Exception) {
             Timber.tag(TAG).e(error, "mihomo config test failed to run")
-            Result.failure(
+            log.reject(
+                profileLabel,
                 IllegalStateException(
                     error.message?.takeIf { it.isNotBlank() } ?: "mihomo config test failed to run",
                     error,
-                )
+                ),
             )
         }
+    }
+
+    /** Records the rejection with its real cause, then hands the same error back to the caller. */
+    private fun RuntimeLog.Writer.reject(
+        profileLabel: String,
+        error: Throwable,
+        detail: String? = null,
+    ): Result<Unit> {
+        val suffix = detail?.let { " $it" }.orEmpty()
+        e(STAGE, "failed: profile=$profileLabel import rejected$suffix", error)
+        return Result.failure(error)
+    }
+
+    private fun RuntimeLog.Writer.appendCoreOutput(output: String) {
+        if (output.isBlank()) {
+            w(STAGE, "core produced no output")
+            return
+        }
+        coreDiagnostics(output.take(MAX_LOGGED_OUTPUT_CHARS))
     }
 
     private fun isAgeEncrypted(configFile: File): Boolean {
@@ -136,6 +189,11 @@ internal object ProfileConfigTester {
         return dst
     }
 
+    /**
+     * The condensed, user-facing reason. The native entry point reports a failed parse as
+     * `mihomo: configuration file <path> test failed: <cause>`; only `<cause>` is actionable, the
+     * rest is an app-private path. The full output still reaches the log via [appendCoreOutput].
+     */
     private fun readableError(output: String): String {
         val lines =
             output
@@ -143,17 +201,20 @@ internal object ProfileConfigTester {
                 .map { it.trim() }
                 .filter { it.isNotEmpty() }
                 .toList()
-        val preferred =
-            lines.lastOrNull { line ->
-                line.contains("test failed", ignoreCase = true) ||
-                    line.contains("parse", ignoreCase = true) ||
-                    line.startsWith("mihomo:")
-            } ?: lines.lastOrNull()
-        val message =
-            preferred
-                ?.removePrefix("mihomo:")
+        val fatal =
+            lines
+                .lastOrNull { it.startsWith(CORE_FATAL_PREFIX) }
+                ?.removePrefix(CORE_FATAL_PREFIX)
                 ?.trim()
-                ?.takeIf { it.isNotBlank() }
+        val cause =
+            fatal?.let { line ->
+                val marker = line.indexOf(TEST_FAILED_MARKER, ignoreCase = true)
+                if (marker < 0) line else line.substring(marker + TEST_FAILED_MARKER.length).trim()
+            }
+        val message =
+            cause?.takeIf(String::isNotBlank)
+                ?: lines.lastOrNull { it.contains("error", ignoreCase = true) }
+                ?: lines.lastOrNull()
                 ?: "configuration test failed"
         return message.take(MAX_ERROR_CHARS)
     }

@@ -33,6 +33,7 @@ import com.github.yumelira.yumebox.runtime.service.R
 import com.github.yumelira.yumebox.runtime.service.config.AccessControlMode
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
+import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 import com.github.yumelira.yumebox.runtime.service.util.buildIncludedRoutesFromExcludedCidrs
 import com.github.yumelira.yumebox.runtime.service.util.parseCIDR
 import java.net.InetAddress
@@ -42,13 +43,12 @@ class VpnTunTransport(
     private val vpnService: VpnService,
     private val store: ServiceStore = ServiceStore(),
 ) : RuntimeTransport {
-    private val startupLogStore =
-        RuntimeStartupLogStore(vpnService, RuntimeStartupLogStore.Scope.LOCAL_TUN)
+    private val log = RuntimeLog.writer(vpnService, RuntimeLog.Source.LocalTun)
     private val pipeline = CompiledConfigPipeline(vpnService)
     private val core = CoreProcess(vpnService)
 
     override fun start(spec: RuntimeSpec) {
-        startupLogStore.append("LOCAL_TUN transport start: begin")
+        log.i("transport", "start begin")
         // Prefer the precompiled YAML attached to the spec (single compile on the start path).
         // Fall back to a local compile only for callers that have not prepared the spec yet.
         val config =
@@ -132,7 +132,7 @@ class VpnTunTransport(
             dns = device.dns,
             config = config,
         )
-        startupLogStore.append("LOCAL_TUN transport start: done")
+        log.i("transport", "success: tun attached and core launched")
     }
 
     /**
@@ -206,8 +206,9 @@ class VpnTunTransport(
      */
     private fun VpnService.Builder.configurePerAppRouting() {
         val self = vpnService.packageName
-        startupLogStore.append(
-            "LOCAL_TUN per-app routing: ui mode=${store.accessControlMode} (self excluded)"
+        log.i(
+            "transport",
+            "per-app routing: ui mode=${store.accessControlMode} (self excluded)",
         )
         when (store.accessControlMode) {
             // Route everything except ourselves.

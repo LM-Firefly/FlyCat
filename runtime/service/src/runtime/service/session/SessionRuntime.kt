@@ -34,6 +34,7 @@ import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
+import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 import kotlin.math.min
 import kotlinx.coroutines.*
 import timber.log.Timber
@@ -76,17 +77,25 @@ class SessionRuntime(
     fun start(spec: RuntimeSpec): RuntimeOperationResult = startFresh(spec, name = "start")
 
     fun reload(spec: RuntimeSpec): RuntimeOperationResult =
-        runGuarded(spec, name = "reload", onFailure = { startupLog(spec, "failed=$it") }) {
-            startupLog(spec, "session: reload begin")
+        runGuarded(
+            spec,
+            name = "reload",
+            onFailure = { message, error -> startupError(spec, "reload failed: $message", error) },
+        ) {
+            startupLog(spec, "reload begin")
             reloadInternal(spec)
         }
 
     fun restart(spec: RuntimeSpec): RuntimeOperationResult = startFresh(spec, name = "restart")
 
     private fun startFresh(spec: RuntimeSpec, name: String): RuntimeOperationResult =
-        runGuarded(spec, name = name, onFailure = { rollback(spec, it) }) {
+        runGuarded(
+            spec,
+            name = name,
+            onFailure = { message, error -> rollback(spec, message, error) },
+        ) {
             stopInternal(reason = null, notifyHost = false)
-            startupLog(spec, "session: $name begin")
+            startupLog(spec, "$name begin")
             startInternal(spec)
         }
 
@@ -94,11 +103,14 @@ class SessionRuntime(
      * Shared interrupt-aware wrapper for the lifecycle entry points: serializes on [lock], treats
      * [RuntimeInterruptedException] as a successful no-op, and routes any other failure through
      * [onFailure] before surfacing it in the result.
+     *
+     * [onFailure] receives the raw [Throwable] as well as the flattened message: the message alone
+     * is routinely a generic wrapper, while the cause chain holds the reason the log needs.
      */
     private fun runGuarded(
         spec: RuntimeSpec,
         name: String,
-        onFailure: (String) -> Unit,
+        onFailure: (String, Throwable) -> Unit,
         body: () -> Unit,
     ): RuntimeOperationResult =
         synchronized(lock) {
@@ -109,11 +121,12 @@ class SessionRuntime(
             }
                 .getOrElse { error ->
                     if (error is RuntimeInterruptedException) {
-                        startupLog(spec, "session: $name interrupted reason=${error.message}")
+                        startupLog(spec, "$name interrupted reason=${error.message}")
                         RuntimeOperationResult(success = true)
                     } else {
-                        val message = error.message ?: "$name runtime failed"
-                        onFailure(message)
+                        val message = error.message?.takeIf(String::isNotBlank)
+                            ?: "$name runtime failed"
+                        onFailure(message, error)
                         RuntimeOperationResult(success = false, error = message)
                     }
                 }
@@ -344,7 +357,7 @@ class SessionRuntime(
         }
         host.onProfileLoaded(prepared.profileUuid)
         host.onStarted(prepared)
-        startupLog(prepared, "started elapsedMs=${elapsedMillis(startedAtNanos)}")
+        startupLog(prepared, "success: started elapsedMs=${elapsedMillis(startedAtNanos)}")
         scheduleRuntimeSnapshotRefresh(prepared)
     }
 
@@ -385,7 +398,7 @@ class SessionRuntime(
             )
         }
         host.onProfileLoaded(prepared.profileUuid)
-        startupLog(prepared, "reload done")
+        startupLog(prepared, "success: reload done")
         scheduleRuntimeSnapshotRefresh(prepared)
     }
 
@@ -435,7 +448,7 @@ class SessionRuntime(
         clearInterruptRequest()
     }
 
-    private fun rollback(spec: RuntimeSpec, reason: String) {
+    private fun rollback(spec: RuntimeSpec, reason: String, error: Throwable? = null) {
         stopLogStream()
         stopConnectionTracking()
         stopObservers()
@@ -454,7 +467,7 @@ class SessionRuntime(
                 effectiveFingerprint = spec.effectiveFingerprint,
             )
         )
-        startupLog(spec, "failed=$reason")
+        startupError(spec, "start failed: $reason", error)
         appendCoreDiagnostics(spec)
         host.reportFailure(reason)
     }
@@ -462,9 +475,9 @@ class SessionRuntime(
     private fun awaitProxyGroupsReady(spec: RuntimeSpec): List<ProxyGroup> {
         ensureNotInterrupted(spec)
         val expectedGroups = readExpectedGroupNames(spec)
-        startupLog(
+        verifyLog(
             spec,
-            "runtime verify: expectedGroups=${expectedGroups.size}" +
+            "expectedGroups=${expectedGroups.size}" +
                 expectedGroups
                     .takeIf { it.isNotEmpty() }
                     ?.let { " sample=${it.take(5)}" }
@@ -499,10 +512,7 @@ class SessionRuntime(
                 .getOrDefault(emptyList())
             val names = groups.map(ProxyGroup::name).filter(String::isNotBlank)
             if (names.isNotEmpty()) {
-                startupLog(
-                    spec,
-                    "runtime verify: actualGroups=${names.size} sample=${names.take(5)}",
-                )
+                verifyLog(spec, "success: actualGroups=${names.size} sample=${names.take(5)}")
                 return groups
             }
             val tunnelOk = runCatching {
@@ -516,17 +526,14 @@ class SessionRuntime(
             // Controller answered: if the compiled profile exposes no groups to verify, startup is
             // ready even though the live group list is empty.
             if (tunnelOk && expectedGroups.isEmpty()) {
-                startupLog(
-                    spec,
-                    "runtime verify: controller ok with 0 expected groups; treating as ready",
-                )
+                verifyLog(spec, "success: controller ok with 0 expected groups")
                 return emptyList()
             }
             // Only log the first miss and the final attempt — intermediate retries are noise.
             if (attempt == 0 || attempt == PROXY_GROUP_READY_RETRY_COUNT - 1) {
-                startupLog(
+                verifyWarn(
                     spec,
-                    "runtime verify: actualGroups=0 controller=${if (tunnelOk) "ok" else "down"}" +
+                    "actualGroups=0 controller=${if (tunnelOk) "ok" else "down"}" +
                         (lastControllerError?.let { " err=$it" } ?: "") +
                         " attempt=${attempt + 1}/$PROXY_GROUP_READY_RETRY_COUNT",
                 )
@@ -564,28 +571,12 @@ class SessionRuntime(
     }
 
     private fun appendCoreDiagnostics(spec: RuntimeSpec) {
-        val scope =
-            when (spec.owner) {
-                RuntimeOwner.VpnService -> RuntimeStartupLogStore.Scope.LOCAL_TUN
-                RuntimeOwner.RootDaemon -> RuntimeStartupLogStore.Scope.ROOT_TUN
-                RuntimeOwner.RemoteController,
-                RuntimeOwner.None -> return
-            }
-        val diagnostics =
+        val writer = logWriter(spec) ?: return
+        writer.coreDiagnostics(
             com.github.yumelira.yumebox.runtime.service.core.CoreProcess.coreDiagnosticLog(
                 host.context.appContextOrSelf
             )
-        if (diagnostics.isBlank()) {
-            RuntimeStartupLogStore(host.context.appContextOrSelf, scope)
-                .append("${scope.tag} core diagnostics: (empty — core may have died before boot)")
-            return
-        }
-        val store = RuntimeStartupLogStore(host.context.appContextOrSelf, scope)
-        store.append("${scope.tag} core diagnostics begin")
-        diagnostics.lineSequence().forEach { line ->
-            store.append("${scope.tag} core| $line")
-        }
-        store.append("${scope.tag} core diagnostics end")
+        )
     }
 
     private fun readExpectedGroupNames(spec: RuntimeSpec): List<String> {
@@ -598,7 +589,7 @@ class SessionRuntime(
         // Last resort only: should be rare once start/reload always prepare the compiled YAML.
         return runCatching { proxyGroupResolver.expectedGroupNames(spec, false) }
             .getOrElse { error ->
-                startupLog(spec, "runtime verify: expected group inspect failed=${error.message}")
+                verifyWarn(spec, "expected group inspect failed: ${error.message}")
                 emptyList()
             }
     }
@@ -790,16 +781,32 @@ class SessionRuntime(
         }
     }
 
-    private fun startupLog(spec: RuntimeSpec, message: String) {
-        val scope =
+    /** Null for owners that run no local session of their own (remote controller / idle). */
+    private fun logWriter(spec: RuntimeSpec): RuntimeLog.Writer? {
+        val source =
             when (spec.owner) {
-                RuntimeOwner.VpnService -> RuntimeStartupLogStore.Scope.LOCAL_TUN
-                RuntimeOwner.RootDaemon -> RuntimeStartupLogStore.Scope.ROOT_TUN
+                RuntimeOwner.VpnService -> RuntimeLog.Source.LocalTun
+                RuntimeOwner.RootDaemon -> RuntimeLog.Source.RootTun
                 RuntimeOwner.RemoteController,
-                RuntimeOwner.None -> return
+                RuntimeOwner.None -> return null
             }
-        RuntimeStartupLogStore(host.context.appContextOrSelf, scope)
-            .append("${scope.tag} session: $message")
+        return RuntimeLog.writer(host.context.appContextOrSelf, source)
+    }
+
+    private fun startupLog(spec: RuntimeSpec, message: String) {
+        logWriter(spec)?.i("session", message)
+    }
+
+    private fun startupError(spec: RuntimeSpec, message: String, error: Throwable? = null) {
+        logWriter(spec)?.e("session", message, error)
+    }
+
+    private fun verifyLog(spec: RuntimeSpec, message: String) {
+        logWriter(spec)?.i("verify", message)
+    }
+
+    private fun verifyWarn(spec: RuntimeSpec, message: String) {
+        logWriter(spec)?.w("verify", message)
     }
 
     private fun elapsedMillis(startedAtNanos: Long): Long =

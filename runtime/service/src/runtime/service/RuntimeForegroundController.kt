@@ -31,6 +31,7 @@ import com.github.yumelira.yumebox.core.model.LogMessage
 import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
+import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 import com.github.yumelira.yumebox.runtime.service.notification.ServiceNotificationManager
 import com.github.yumelira.yumebox.runtime.service.session.*
 import com.github.yumelira.yumebox.runtime.service.util.CoreRuntimeConfig
@@ -59,19 +60,15 @@ class RuntimeForegroundController(
     private val mode: RunMode,
     private val label: String,
     private val notificationConfig: ServiceNotificationManager.Config,
-    private val logScope: RuntimeStartupLogStore.Scope,
+    private val logSource: RuntimeLog.Source,
     private val createTransport: () -> RuntimeTransport,
     private val createSpec: () -> RuntimeSpec,
 ) {
-    private val tag = logScope.tag
-
     private var reason: String? = null
     private val notificationManager by lazy {
         ServiceNotificationManager(service, notificationConfig)
     }
-    private val startupLogStore by lazy {
-        RuntimeStartupLogStore(service, logScope)
-    }
+    private val runtimeLog by lazy { RuntimeLog.writer(service, logSource) }
     private var notificationJob: Job? = null
     private var runtime: SessionRuntime? = null
     private var reloadJob: Job? = null
@@ -122,14 +119,14 @@ class RuntimeForegroundController(
         // services share this process). Set first so it holds even if the start below fails.
         StatusProvider.setServiceAlive(mode, true)
         runCatching {
-            startupLogStore.append("$tag service: onCreate begin")
+            runtimeLog.i("service", "onCreate begin mode=${mode.name}")
 
             notificationManager.createChannel()
             service.startForeground(
                 notificationConfig.notificationId,
                 notificationManager.createInitialNotification(),
             )
-            startupLogStore.append("$tag service: startForeground done")
+            runtimeLog.i("service", "startForeground done")
 
             StatusProvider.clearLegacyStateFiles()
             sessionToken = StatusProvider.adoptOrBeginRuntimeSession(mode)
@@ -173,7 +170,7 @@ class RuntimeForegroundController(
 
                             override fun reportFailure(error: String) {
                                 reason = error
-                                startupLogStore.append("$tag failed=$error")
+                                runtimeLog.e("session", "runtime reported failure: $error")
                                 markFailed(error)
                                 service.sendRuntimeStopped(error)
                                 Timber.e("$label runtime failed: $error")
@@ -185,32 +182,34 @@ class RuntimeForegroundController(
                 )
 
             registerRuntimeReceiver()
-            startupLogStore.append("$tag service: receiver registered")
+            runtimeLog.i("service", "receiver registered")
             scope.launch {
                 runCatching {
-                    startupLogStore.append("$tag spec: create begin")
+                    runtimeLog.i("spec", "create begin")
                     val spec = createSpec()
-                    startupLogStore.append(
-                        "$tag spec: create done profile=${spec.profileUuid} overrides=${spec.overrideSpecs.size}"
+                    runtimeLog.i(
+                        "spec",
+                        "create done profile=${spec.profileUuid} " +
+                            "overrides=${spec.overrideSpecs.size}",
                     )
                     val result = runtime!!.start(spec)
                     check(result.success) {
                         result.error ?: "${label.lowercase()} runtime start failed"
                     }
                 }
-                    .onFailure { error ->
-                        failStartup(error.message ?: "${label.lowercase()} runtime start failed")
-                    }
+                    .onFailure { error -> failStartup(startFailureMessage(error), error) }
             }
         }
-            .onFailure { error ->
-                failStartup(error.message ?: "${label.lowercase()} runtime start failed")
-            }
+            .onFailure { error -> failStartup(startFailureMessage(error), error) }
     }
 
-    private fun failStartup(message: String) {
+    private fun startFailureMessage(error: Throwable): String =
+        error.message?.takeIf(String::isNotBlank) ?: "${label.lowercase()} runtime start failed"
+
+    /** [error] carries the cause chain the persisted status message alone would lose. */
+    private fun failStartup(message: String, error: Throwable? = null) {
         reason = message
-        startupLogStore.append("$tag failed=$message")
+        runtimeLog.e("service", "startup failed: $message", error)
         markFailed(message)
         service.sendRuntimeStopped(message)
         service.stopSelf()
@@ -271,17 +270,15 @@ class RuntimeForegroundController(
         // must stay readable after the service is gone).
         StatusProvider.markRuntimeIdle(mode, sessionToken)
         service.sendRuntimeStopped(reason)
-        startupLogStore.append("$tag destroy")
+        runtimeLog.i("service", "destroyed reason=${reason ?: "normal stop"}")
         Timber.i("${service.javaClass.simpleName} destroyed: ${reason ?: "successfully"}")
 
         // A start command can land on a dying instance, and a stale session may explicitly
         // request a handoff. Both cases must wait until this instance releases its token.
         if (restartAfterStop || (stopRequested && lastStartId != stopCommandStartId)) {
-            startupLogStore.append("$tag service: relaunching after stop")
+            runtimeLog.i("service", "relaunching after stop")
             runCatching { service.startForegroundService(Intent(service, service.javaClass)) }
-                .onFailure { error ->
-                    startupLogStore.append("$tag service: relaunch failed=${error.message}")
-                }
+                .onFailure { error -> runtimeLog.e("service", "relaunch failed", error) }
         }
     }
 
@@ -358,27 +355,30 @@ class RuntimeForegroundController(
     private fun scheduleReload() {
         reloadJob?.cancel()
         reloadJob = scope.launch {
-            startupLogStore.append("$tag spec: reload create begin")
+            runtimeLog.i("reload", "spec create begin")
             val spec = runCatching {
                 createSpec()
             }
                 .getOrElse { error ->
                     reason = error.message
-                    startupLogStore.append(
-                        "$tag failed=${error.message ?: "${label.lowercase()} runtime spec refresh failed"}"
-                    )
+                    runtimeLog.e("reload", "spec refresh failed", error)
                     Timber.w("$label runtime spec refresh failed: ${error.message}")
                     return@launch
                 }
-            startupLogStore.append(
-                "$tag spec: reload create done profile=${spec.profileUuid} overrides=${spec.overrideSpecs.size}"
+            runtimeLog.i(
+                "reload",
+                "spec create done profile=${spec.profileUuid} " +
+                    "overrides=${spec.overrideSpecs.size}",
             )
 
             val result = runtime!!.reload(spec)
-            if (!result.success) {
+            if (result.success) {
+                runtimeLog.i("reload", "success profile=${spec.profileUuid}")
+            } else {
                 reason = result.error
-                startupLogStore.append(
-                    "$tag failed=${result.error ?: "${label.lowercase()} runtime reload failed"}"
+                runtimeLog.e(
+                    "reload",
+                    "failed: ${result.error ?: "${label.lowercase()} runtime reload failed"}",
                 )
                 Timber.w("$label runtime reload failed: ${result.error}")
             }

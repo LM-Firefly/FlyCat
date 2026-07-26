@@ -36,9 +36,9 @@ import com.github.yumelira.yumebox.core.util.StartupTaskCoordinator
 import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.data.store.*
 import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 import com.github.yumelira.yumebox.runtime.service.profile.ProfileService
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
-import com.github.yumelira.yumebox.runtime.service.session.RuntimeStartupLogStore
 import com.github.yumelira.yumebox.runtime.service.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.*
@@ -184,11 +184,10 @@ class AutoRestartService : Service() {
                 cleanupIncompleteRuntime(runMode)
                 throw error
             }
-        val logScope = RuntimeStartupLogStore.scopeForMode(runMode)
-        val startupLogStore = RuntimeStartupLogStore(this, logScope)
+        val log = RuntimeLog.writer(this, runMode)
         when (activationResult) {
             is RuntimeActivationResult.Running -> {
-                startupLogStore.append("${logScope.tag} auto-start: running reason=$reason")
+                log.i("auto-start", "success: running reason=$reason mode=$runMode")
                 Timber.tag(TAG)
                     .i(
                         "Auto start active: reason=$reason profile=${activeProfile.name}, " +
@@ -199,9 +198,7 @@ class AutoRestartService : Service() {
             is RuntimeActivationResult.Failed -> {
                 cleanupIncompleteRuntime(runMode)
                 val message = activationResult.error ?: "runtime entered Failed"
-                startupLogStore.append(
-                    "${logScope.tag} auto-start: failed reason=$reason error=$message"
-                )
+                log.e("auto-start", "failed reason=$reason error=$message")
                 error(message)
             }
 
@@ -210,10 +207,10 @@ class AutoRestartService : Service() {
                 val message =
                     "runtime activation timed out in ${activationResult.lastState.phase}" +
                         activationResult.lastState.error?.let { ": $it" }.orEmpty()
-                startupLogStore.append(
-                    "${logScope.tag} auto-start: timeout reason=$reason " +
-                        "phase=${activationResult.lastState.phase} " +
-                        "error=${activationResult.lastState.error}"
+                log.e(
+                    "auto-start",
+                    "timeout reason=$reason phase=${activationResult.lastState.phase} " +
+                        "error=${activationResult.lastState.error}",
                 )
                 error(message)
             }

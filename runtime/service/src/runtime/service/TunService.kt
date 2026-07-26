@@ -25,8 +25,8 @@ import android.net.VpnService
 import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.api.initializeServiceGlobal
+import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 import com.github.yumelira.yumebox.runtime.service.notification.ServiceNotificationManager
-import com.github.yumelira.yumebox.runtime.service.session.RuntimeStartupLogStore
 import com.github.yumelira.yumebox.runtime.service.session.SessionRuntimeSpecFactory
 import com.github.yumelira.yumebox.runtime.service.session.VpnTunTransport
 import com.github.yumelira.yumebox.runtime.service.util.cancelAndJoinBlocking
@@ -41,7 +41,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             mode = RunMode.VpnService,
             label = "Tun",
             notificationConfig = ServiceNotificationManager.vpnConfig,
-            logScope = RuntimeStartupLogStore.Scope.LOCAL_TUN,
+            logSource = RuntimeLog.Source.LocalTun,
             createTransport = { VpnTunTransport(this) },
             createSpec = { SessionRuntimeSpecFactory(appContextOrSelf).createVpnSpec() },
         )
