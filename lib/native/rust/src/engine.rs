@@ -1,3 +1,5 @@
+//! Override execution: runs a chain of YAML/JS override documents against the config tree.
+
 pub mod js;
 pub mod yaml;
 
@@ -26,7 +28,8 @@ pub fn apply_overrides(
 
     let mut warnings = Vec::new();
     // One JS realm per compile chain: helpers are installed once and profile objects are passed
-    // natively instead of JSON-string round trips on every script.
+    // natively instead of JSON-string round trips on every script. The realm is only created if
+    // the chain actually contains a JS override.
     let mut js_runtime: Option<js::JsRuntime> = None;
 
     for override_item in overrides {
@@ -35,7 +38,7 @@ pub fn apply_overrides(
                 let patch = yaml::parse_yaml_override(&override_item.content).map_err(|error| {
                     format!("parse yaml override {}: {}", override_item.path, error)
                 })?;
-                apply_override_document(&mut root, &patch);
+                apply_override_document(&mut root, patch);
             }
             "js" => {
                 if js_runtime.is_none() {

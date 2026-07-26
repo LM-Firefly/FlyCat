@@ -1,0 +1,287 @@
+//! Non-negotiable runtime patches.
+//!
+//! These run after the user's overrides and encode what the app's process model requires from the
+//! core, independent of what the profile asked for.
+
+use std::path::Path;
+
+use serde_json::{Map as JsonMap, Value as JsonValue};
+use sha2::{Digest, Sha256};
+
+use crate::compiler::fingerprint::hex_lower;
+use crate::compiler::patch::paths::{
+    normalize_path, normalize_provider_path, profile_provider_path, runtime_home_dir,
+};
+use crate::compiler::patch::values::{
+    ensure_array_field, ensure_object_field, has_non_empty_string,
+};
+use crate::compiler::schema::{
+    DEFAULT_FAKE_IP_FILTER, DEFAULT_FAKE_IP_RANGE, DEFAULT_NAME_SERVERS,
+};
+use crate::model::RunMode;
+
+const PROVIDER_FIELDS: [(&str, &str); 2] =
+    [("proxy-providers", "proxies"), ("rule-providers", "rules")];
+
+fn default_name_servers() -> JsonValue {
+    JsonValue::Array(
+        DEFAULT_NAME_SERVERS
+            .iter()
+            .map(|value| JsonValue::String((*value).to_string()))
+            .collect(),
+    )
+}
+
+pub fn patch_static_runtime(root: &mut JsonValue, profile_dir: &Path, run_mode: RunMode) {
+    let Some(object) = root.as_object_mut() else {
+        return;
+    };
+
+    object.insert(
+        "interface-name".to_string(),
+        JsonValue::String(String::new()),
+    );
+    object.insert("routing-mark".to_string(), JsonValue::from(0));
+
+    if has_non_empty_string(object.get("external-controller"))
+        || has_non_empty_string(object.get("external-controller-tls"))
+    {
+        object.insert(
+            "external-ui".to_string(),
+            JsonValue::String("./ui".to_string()),
+        );
+    }
+
+    let profile = ensure_object_field(object, "profile");
+    profile.insert("store-selected".to_string(), JsonValue::Bool(true));
+    profile.insert("store-fake-ip".to_string(), JsonValue::Bool(true));
+
+    let append_system_dns = bool_field(object, "clash-for-android", "append-system-dns");
+    let dns_enabled = bool_field(object, "dns", "enable");
+
+    if !dns_enabled {
+        let dns = ensure_object_field(object, "dns");
+        dns.insert("enable".to_string(), JsonValue::Bool(true));
+        dns.insert("use-hosts".to_string(), JsonValue::Bool(true));
+        dns.insert("default-nameserver".to_string(), default_name_servers());
+        dns.insert("nameserver".to_string(), default_name_servers());
+        dns.insert(
+            "enhanced-mode".to_string(),
+            JsonValue::String("fake-ip".to_string()),
+        );
+        dns.insert(
+            "fake-ip-range".to_string(),
+            JsonValue::String(DEFAULT_FAKE_IP_RANGE.to_string()),
+        );
+        dns.insert(
+            "fake-ip-filter".to_string(),
+            JsonValue::Array(
+                DEFAULT_FAKE_IP_FILTER
+                    .iter()
+                    .map(|value| JsonValue::String((*value).to_string()))
+                    .collect(),
+            ),
+        );
+        let clash_for_android = ensure_object_field(object, "clash-for-android");
+        clash_for_android.insert("append-system-dns".to_string(), JsonValue::Bool(true));
+    }
+
+    if object
+        .get("clash-for-android")
+        .and_then(JsonValue::as_object)
+        .and_then(|value| value.get("append-system-dns"))
+        .and_then(JsonValue::as_bool)
+        .unwrap_or(append_system_dns)
+    {
+        let dns = ensure_object_field(object, "dns");
+        let nameserver = ensure_array_field(dns, "nameserver");
+        if !nameserver
+            .iter()
+            .any(|item| item.as_str() == Some("system://"))
+        {
+            nameserver.push(JsonValue::String("system://".to_string()));
+        }
+    }
+
+    backfill_enabled_dns_without_nameserver(object);
+
+    // In the VpnService path the TUN is attached at runtime via a file descriptor; a config-provided
+    // tun block must never open its own /dev/net/tun (it would fail on non-root and fight the
+    // fd-based listener). TPROXY also needs TUN off (mihomo refuses to program iptables while a tun is
+    // up). So force any tun block off — EXCEPT in tun mode, where the compiled tun block is
+    // authoritative and the core opens its own kernel device (auto-route / auto-detect-interface) in
+    // the root domain.
+    if run_mode != RunMode::Tun
+        && let Some(tun) = object.get_mut("tun").and_then(JsonValue::as_object_mut)
+    {
+        tun.insert("enable".to_string(), JsonValue::Bool(false));
+        tun.insert("auto-route".to_string(), JsonValue::Bool(false));
+        tun.insert("auto-detect-interface".to_string(), JsonValue::Bool(false));
+    }
+
+    patch_listeners(object);
+    patch_providers(object, profile_dir);
+}
+
+/// An override may force `dns.enable: true` onto a profile that carries no nameservers (the
+/// built-in Tun override does exactly this when the subscription has no `dns:` block). mihomo
+/// hard-fails on "DNS enabled but NameServer empty", killing the core at parse time — backfill
+/// the defaults so an enabled-but-empty DNS block always resolves.
+fn backfill_enabled_dns_without_nameserver(object: &mut JsonMap<String, JsonValue>) {
+    let needs_backfill = object
+        .get("dns")
+        .and_then(JsonValue::as_object)
+        .map(|dns| {
+            dns.get("enable")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(false)
+                && dns
+                    .get("nameserver")
+                    .and_then(JsonValue::as_array)
+                    .map(Vec::is_empty)
+                    .unwrap_or(true)
+        })
+        .unwrap_or(false);
+    if !needs_backfill {
+        return;
+    }
+
+    let dns = ensure_object_field(object, "dns");
+    dns.insert("nameserver".to_string(), default_name_servers());
+    let default_nameserver_missing = dns
+        .get("default-nameserver")
+        .and_then(JsonValue::as_array)
+        .map(Vec::is_empty)
+        .unwrap_or(true);
+    if default_nameserver_missing {
+        dns.insert("default-nameserver".to_string(), default_name_servers());
+    }
+}
+
+fn bool_field(object: &JsonMap<String, JsonValue>, block: &str, key: &str) -> bool {
+    object
+        .get(block)
+        .and_then(JsonValue::as_object)
+        .and_then(|value| value.get(key))
+        .and_then(JsonValue::as_bool)
+        .unwrap_or(false)
+}
+
+/// The app owns the transparent-proxy entry points; a profile-declared tproxy/redir/tun listener
+/// would collide with them.
+fn patch_listeners(object: &mut JsonMap<String, JsonValue>) {
+    let Some(listeners) = object
+        .get_mut("listeners")
+        .and_then(JsonValue::as_array_mut)
+    else {
+        return;
+    };
+    listeners.retain(|listener| {
+        listener
+            .as_object()
+            .and_then(|value| value.get("type"))
+            .and_then(JsonValue::as_str)
+            .map(|kind| !matches!(kind, "tproxy" | "redir" | "tun"))
+            .unwrap_or(true)
+    });
+}
+
+pub fn patch_providers(object: &mut JsonMap<String, JsonValue>, profile_dir: &Path) {
+    for (field, prefix) in PROVIDER_FIELDS {
+        let Some(providers) = object.get_mut(field).and_then(JsonValue::as_object_mut) else {
+            continue;
+        };
+        for provider in providers.values_mut() {
+            let Some(provider_object) = provider.as_object_mut() else {
+                continue;
+            };
+            let extension = provider_extension(provider_object, prefix);
+            if let Some(path) = provider_object.get("path").and_then(JsonValue::as_str)
+                && !path.trim().is_empty()
+            {
+                let normalized_path = normalize_provider_path(path, profile_dir, prefix, extension);
+                provider_object.insert("path".to_string(), JsonValue::String(normalized_path));
+                continue;
+            }
+            if is_inline_provider(provider_object) {
+                continue;
+            }
+            let Some(url) = provider_object.get("url").and_then(JsonValue::as_str) else {
+                continue;
+            };
+            let mut hasher = Sha256::new();
+            hasher.update(url.as_bytes());
+            let hash = hex_lower(&hasher.finalize());
+            provider_object.insert(
+                "path".to_string(),
+                JsonValue::String(profile_provider_path(
+                    profile_dir,
+                    prefix,
+                    Path::new(&format!("{hash}.{extension}")),
+                )),
+            );
+        }
+    }
+}
+
+/// Rejects any provider whose normalized path would leave `<profile_dir>/providers/<prefix>/`.
+pub fn validate_provider_paths(
+    object: &JsonMap<String, JsonValue>,
+    profile_dir: &Path,
+) -> Result<(), String> {
+    let runtime_home = runtime_home_dir(profile_dir);
+    for (field, prefix) in PROVIDER_FIELDS {
+        let Some(providers) = object.get(field).and_then(JsonValue::as_object) else {
+            continue;
+        };
+        let expected_base = normalize_path(profile_dir.join("providers").join(prefix));
+        for (name, provider) in providers {
+            let provider_object = provider
+                .as_object()
+                .ok_or_else(|| format!("{field}.{name} must be an object"))?;
+            let path = provider_object
+                .get("path")
+                .and_then(JsonValue::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty());
+            if path.is_none() && is_inline_provider(provider_object) {
+                continue;
+            }
+            let path = path.ok_or_else(|| format!("{field}.{name} missing normalized path"))?;
+            let candidate = Path::new(path);
+            let resolved_candidate = if candidate.is_absolute() {
+                candidate.to_path_buf()
+            } else {
+                normalize_path(runtime_home.join(candidate))
+            };
+            if candidate.is_absolute() || !resolved_candidate.starts_with(&expected_base) {
+                return Err(format!(
+                    "{field}.{name} path escaped profile scope: {path} (expected under {})",
+                    expected_base.to_string_lossy()
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn is_inline_provider(provider: &JsonMap<String, JsonValue>) -> bool {
+    provider
+        .get("type")
+        .and_then(JsonValue::as_str)
+        .map(|value| value.eq_ignore_ascii_case("inline"))
+        .unwrap_or(false)
+}
+
+fn provider_extension(provider: &JsonMap<String, JsonValue>, prefix: &str) -> &'static str {
+    if prefix == "rules"
+        && provider
+            .get("format")
+            .and_then(JsonValue::as_str)
+            .map(|value| value.eq_ignore_ascii_case("mrs"))
+            .unwrap_or(false)
+    {
+        return "mrs";
+    }
+    "yaml"
+}

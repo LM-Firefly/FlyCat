@@ -1,8 +1,14 @@
+//! `override <preview|compile>` reads a compile request on stdin and writes a result document on
+//! stdout; `override helper <yaml-parse|yaml-stringify>` is a raw YAML/JSON converter.
+//!
+//! Exit codes: 0 success, 1 usage/helper failure, 2 preview failure, 3 compile failure.
+
 use std::io::{self, Read, Write};
 
 use crate::compiler::compile_request;
+use crate::compiler::result::{compile_error_json, encode_compile_result};
 use crate::engine::yaml::{parse_yaml_to_json_string, stringify_json_to_yaml_string};
-use crate::model::{CliMode, CompileRequest, CompileResult};
+use crate::model::{CliMode, CompileRequest};
 
 pub fn run_cli() -> i32 {
     let mut args = std::env::args().skip(1);
@@ -23,7 +29,7 @@ pub fn run_cli() -> i32 {
 
     let mut stdin = String::new();
     if let Err(err) = io::stdin().read_to_string(&mut stdin) {
-        let payload = error_result(format!("read stdin: {err}"));
+        let payload = compile_error_json(format!("read stdin: {err}"));
         let _ = writeln!(io::stdout(), "{payload}");
         return 2;
     }
@@ -35,8 +41,8 @@ pub fn run_cli() -> i32 {
 
     let success = result.is_ok();
     let payload = match result {
-        Ok(result) => encode_result(result),
-        Err(err) => error_result(err),
+        Ok(result) => encode_compile_result(result),
+        Err(err) => compile_error_json(err),
     };
     let _ = writeln!(io::stdout(), "{payload}");
 
@@ -82,20 +88,4 @@ fn run_helper(helper_name: Option<&str>) -> i32 {
             1
         }
     }
-}
-
-fn error_result(message: impl Into<String>) -> String {
-    serde_json::to_string(&CompileResult {
-        success: false,
-        fingerprint: String::new(),
-        final_yaml: String::new(),
-        warnings: Vec::new(),
-        error: Some(message.into()),
-    })
-    .unwrap_or_else(|_| "{\"success\":false,\"fingerprint\":\"\",\"finalYaml\":\"\",\"warnings\":[],\"error\":\"override processor failed\"}".to_string())
-}
-
-fn encode_result(result: CompileResult) -> String {
-    serde_json::to_string(&result)
-    .unwrap_or_else(|_| "{\"success\":false,\"fingerprint\":\"\",\"finalYaml\":\"\",\"warnings\":[],\"error\":\"override result encode failed\"}".to_string())
 }

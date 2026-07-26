@@ -1,5 +1,6 @@
+//! The JSON envelope exchanged with the app (JNI / C ABI / CLI).
+
 use serde::{Deserialize, Serialize};
-use serde_json::Value as JsonValue;
 
 pub const REQUEST_SCHEMA_VERSION: u32 = 1;
 
@@ -73,63 +74,6 @@ pub struct LoadedOverride {
 pub enum CliMode {
     Preview,
     Compile,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum PatchModifier {
-    Replace,
-    Start,
-    End,
-    Merge,
-    Force,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct ParsedKey<'a> {
-    pub base: &'a str,
-    pub modifier: PatchModifier,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum SchemaId {
-    Root,
-    Dns,
-    DnsFallbackFilter,
-    Sniffer,
-    Sniff,
-    Protocol,
-    Tun,
-    ExternalControllerCors,
-    Profile,
-    GeoxUrl,
-    App,
-    ProxyItem,
-    ProxyGroupItem,
-    ProviderItem,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum ListStyle {
-    Plain,
-    NamedObjects,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum FieldBehavior {
-    Scalar,
-    List(ListStyle),
-    Map,
-    Object(SchemaId),
-    Rules,
-}
-
-#[derive(Default)]
-pub struct PatchOperations<'a> {
-    pub replace: Option<&'a JsonValue>,
-    pub start: Vec<&'a JsonValue>,
-    pub end: Vec<&'a JsonValue>,
-    pub merge: Vec<&'a JsonValue>,
-    pub force: Option<&'a JsonValue>,
 }
 
 fn default_request_schema_version() -> u32 {
