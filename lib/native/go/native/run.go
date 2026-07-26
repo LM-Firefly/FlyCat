@@ -32,7 +32,8 @@ func run(opts options) {
 		return
 	}
 
-	installHooks(opts.sdk, socketOwnerQuery(channelFd))
+	// A launcher channel is what makes this the VpnService child; the root modes have none.
+	installHooks(opts.sdk, channelFd >= 0, socketOwnerQuery(channelFd))
 
 	cfg, err := config.Parse(rawConfig)
 	if err != nil {

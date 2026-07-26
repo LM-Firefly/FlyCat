@@ -13,8 +13,9 @@ import (
 // ownerQuery resolves a connection to (uid, package), or (-1, "") when unknown; nil in root modes.
 type ownerQuery func(protocol int, source, target string) (uid int, pkg string)
 
-// installHooks points mihomo's process-global hooks at this host.
-func installHooks(sdk int, query ownerQuery) {
+// installHooks points mihomo's process-global hooks at this host. vpnHosted marks the VpnService
+// child; the root daemon is far less constrained and keeps more of mihomo's own socket path.
+func installHooks(sdk int, vpnHosted bool, query ownerQuery) {
 	process.DefaultPackageNameResolver = func(metadata *constant.Metadata) (string, error) {
 		source := metadata.RawSrcAddr
 		if source == nil {
@@ -32,6 +33,14 @@ func installHooks(sdk int, query ownerQuery) {
 		}
 
 		return pkg, nil
+	}
+
+	// Left nil for the root daemon: it runs in the root domain and can bind an interface, set a
+	// routing mark and use TFO. Tun mode is built on exactly that — TunOverride.kt turns on
+	// auto-detect-interface so the core's own egress follows the real default route instead of
+	// looping back into the tun — and a non-nil hook is what would suppress it.
+	if !vpnHosted {
+		return
 	}
 
 	// Must stay non-nil even though it does nothing: mihomo reads a non-nil DefaultSocketHook as
