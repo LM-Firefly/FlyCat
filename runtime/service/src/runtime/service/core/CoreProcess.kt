@@ -27,6 +27,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.os.SystemClock
 import android.system.Os
 import com.github.yumelira.yumebox.core.bridge.Channel
 import com.github.yumelira.yumebox.core.bridge.NativeProcess
@@ -45,6 +46,7 @@ import java.util.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -204,6 +206,7 @@ class CoreProcess(private val context: Context) {
      * [mode] = "tun"/"tproxy".
      */
     fun startRoot(mode: String, config: String): CoreEndpoint {
+        awaitRootStopGrace()
         val home = context.runtimeHomeDir.apply { mkdirs() }
         File(home, SOCK).delete()
         val sock = File(home, SOCK).absolutePath
@@ -471,25 +474,58 @@ class CoreProcess(private val context: Context) {
         }
 
         // The su kill returns fast, but libsu's shell round-trip + mihomo's SIGTERM teardown
-        // (tproxy's
-        // dozens of iptables execs, tun route/rule cleanup) add latency the stop path must not
+        // (tproxy's iptables execs, tun route/rule cleanup) add latency the stop path must not
         // block on.
         private val stopScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+        /** Pid of a daemon whose SIGTERM teardown is still running; see [awaitRootStopGrace]. */
+        @Volatile private var dyingRootPid: Int? = null
+
         /**
-         * Explicitly stop the root daemon (`su kill`, SIGTERM so mihomo tears down tun/iptables).
+         * Explicitly stop the root daemon: SIGTERM so mihomo tears down its tun/iptables state, a
+         * bounded grace for that teardown, then SIGKILL to close the window for good.
          */
         fun stopRoot() {
             val record = RootDaemonState.load()
-            // Clear state FIRST so isRootDaemonAlive() reports "stopped" immediately; the UI must
-            // never
-            // wait on the kill. mihomo tears its iptables/tun down on the SIGTERM sent off-thread
-            // below.
+            // Clear state FIRST so isRootDaemonAlive() reports "stopped" immediately; the UI
+            // must never wait on the kill.
             RootDaemonState.clear()
             current = null
             record ?: return
-            stopScope.launch { runCatching { Shell.cmd("kill ${record.pid}").exec() } }
+            dyingRootPid = record.pid
+            stopScope.launch {
+                try {
+                    runCatching { Shell.cmd("kill ${record.pid}").exec() }
+                    val deadline = SystemClock.elapsedRealtime() + ROOT_STOP_GRACE_MS
+                    while (SystemClock.elapsedRealtime() < deadline && isRootPidAlive(record.pid)) {
+                        delay(ROOT_STOP_POLL_MS)
+                    }
+                    if (isRootPidAlive(record.pid)) {
+                        runCatching { Shell.cmd("kill -9 ${record.pid}").exec() }
+                    }
+                } finally {
+                    dyingRootPid = null
+                }
+            }
         }
+
+        private fun isRootPidAlive(pid: Int): Boolean =
+            runCatching { Shell.cmd("kill -0 $pid").exec().isSuccess }.getOrDefault(false)
+
+        /**
+         * Block (bounded) until a dying predecessor has finished tearing down. The daemon's ip
+         * rules, nftables table and iptables chains all carry fixed names, so a teardown that
+         * outlives the stop can dismantle what a freshly launched successor just set up.
+         */
+        fun awaitRootStopGrace() {
+            val deadline = SystemClock.elapsedRealtime() + ROOT_STOP_GRACE_MS + ROOT_STOP_POLL_MS
+            while (dyingRootPid != null && SystemClock.elapsedRealtime() < deadline) {
+                Thread.sleep(ROOT_STOP_POLL_MS)
+            }
+        }
+
+        private const val ROOT_STOP_GRACE_MS = 2_000L
+        private const val ROOT_STOP_POLL_MS = 100L
 
         // Config is delivered over this named pipe (never persisted); LEGACY_ROOT_CONFIG is the old
         // plaintext file, deleted on launch. 0600 = owner-only (app creates it, root reads it).
