@@ -18,7 +18,7 @@
  *
  */
 
-@file:Suppress("UnusedSymbol", "UnusedVariable")
+@file:Suppress("UnusedSymbol")
 
 package com.github.yumelira.yumebox.runtime.service.session
 
@@ -36,14 +36,12 @@ import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.github.yumelira.yumebox.runtime.service.util.buildIncludedRoutesFromExcludedCidrs
 import com.github.yumelira.yumebox.runtime.service.util.parseCIDR
 import java.net.InetAddress
-import java.security.SecureRandom
 import kotlinx.coroutines.runBlocking
 
 class VpnTunTransport(
     private val vpnService: VpnService,
     private val store: ServiceStore = ServiceStore(),
 ) : RuntimeTransport {
-    private val random = SecureRandom()
     private val startupLogStore =
         RuntimeStartupLogStore(vpnService, RuntimeStartupLogStore.Scope.LOCAL_TUN)
     private val pipeline = CompiledConfigPipeline(vpnService)
@@ -63,7 +61,6 @@ class VpnTunTransport(
             with(vpnService.Builder()) {
                 val explicitRouteExcludes =
                     store.tunRouteExcludeAddress.map(String::trim).filter(String::isNotEmpty)
-                val hasExplicitRouteExcludes = explicitRouteExcludes.isNotEmpty()
 
                 addAddress(TUN_GATEWAY, TUN_SUBNET_PREFIX)
                 if (store.allowIpv6) {
@@ -120,7 +117,6 @@ class VpnTunTransport(
                     gateway =
                         "$TUN_GATEWAY/$TUN_SUBNET_PREFIX" +
                             if (store.allowIpv6) ",$TUN_GATEWAY6/$TUN_SUBNET_PREFIX6" else "",
-                    portal = TUN_PORTAL + if (store.allowIpv6) ",$TUN_PORTAL6" else "",
                     dns =
                         if (store.dnsHijacking) {
                             NET_ANY
@@ -133,7 +129,6 @@ class VpnTunTransport(
         core.startVpn(
             tunFd = device.fd,
             gateway = device.gateway,
-            portal = device.portal,
             dns = device.dns,
             config = config,
         )
@@ -261,7 +256,6 @@ class VpnTunTransport(
     private data class TunDevice(
         val fd: Int,
         val gateway: String,
-        val portal: String,
         val dns: String,
     )
 

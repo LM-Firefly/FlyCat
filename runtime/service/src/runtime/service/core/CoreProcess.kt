@@ -70,7 +70,6 @@ class CoreProcess(private val context: Context) {
     fun startVpn(
         tunFd: Int,
         gateway: String,
-        portal: String,
         dns: String,
         config: String,
     ): CoreEndpoint {
@@ -92,8 +91,6 @@ class CoreProcess(private val context: Context) {
                 sock,
                 "--gateway",
                 gateway,
-                "--portal",
-                portal,
                 "--dns",
                 dns,
                 "--mode",
