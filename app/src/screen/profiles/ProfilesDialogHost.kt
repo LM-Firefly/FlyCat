@@ -38,7 +38,6 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
-import tf.gal.yumebox.locale.YumeTxt
 
 @Composable
 internal fun ProfilesDialogHost(
@@ -212,7 +211,7 @@ private suspend fun saveProfileOverrides(
                 (profile.active || homeViewModel.isCurrentProfile(profile.uuid))
         if (shouldApplyRuntime) {
             check(overrideService.applyOverride(profileId)) {
-                YumeTxt.Override.ApplySheet.Failed.format(YumeTxt.Util.Error.UnknownError)
+                "覆写配置未能应用到当前代理"
             }
         }
         bindingProvider.getBinding(profileId) ?: updatedBinding
