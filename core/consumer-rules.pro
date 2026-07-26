@@ -12,10 +12,15 @@
     native <methods>;
 }
 
-# JNI bridge callbacks use FindClass/GetMethodID with these exact names.
+# Both native libraries resolve these by name at runtime: libcompat.so declares its entry points
+# as Java_com_github_yumelira_yumebox_core_bridge_{NativeProcess,Channel,UnixSocket}_*, and
+# liboverride.so as ..._bridge_Compiler_*. Renaming the package or the classes breaks the lookup.
 -keep class com.github.yumelira.yumebox.core.bridge.** { *; }
 
-# JNI in lib/native/compat/libcompat.c resolves these exact symbols.
+# Orphaned: the comment here used to claim libcompat.c resolved kotlin.Unit, but neither native
+# library does — libcompat.c only FindClass'es java/io/IOException, and liboverride.so touches no
+# Kotlin type at all. Left in place because dropping a keep rule changes R8 output and was not
+# worth verifying against a release build; delete it once someone can run a minified build.
 -keep class kotlin.Unit {
     public static final kotlin.Unit INSTANCE;
 }

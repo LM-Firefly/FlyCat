@@ -53,7 +53,7 @@ class UnixDomainSocket(private val path: String) : Socket(null as SocketImpl?) {
         if (closed) throw SocketException("Socket is closed")
         if (connected) throw SocketException("Socket is already connected")
 
-        val conn = UnixSocket.connect(path, UnixSocket.SOCK_STREAM, timeout)
+        val conn = UnixSocket.connect(path, timeout)
         try {
             if (soTimeoutMs > 0) conn.setSoTimeout(soTimeoutMs)
             connection = conn

@@ -25,19 +25,16 @@ package com.github.yumelira.yumebox.core.bridge
 
 import android.os.ParcelFileDescriptor
 import androidx.annotation.Keep
-import java.io.*
+import java.io.Closeable
+import java.io.FileDescriptor
 
-/** /** UNIX-domain connection to the local core controller (`@` path => abstract namespace). */ */
+/** UNIX-domain connection to the local core controller (`@` path => abstract namespace). */
 @Keep
 class UnixSocket private constructor(private val descriptor: ParcelFileDescriptor) : Closeable {
 
+    /** The raw connected fd; [UnixDomainSocket] reads/writes it directly and [close] owns it. */
     val fileDescriptor: FileDescriptor
         get() = descriptor.fileDescriptor
-
-    /** Streams over the shared fd; they do not own the descriptor — [close] does. */
-    fun inputStream(): InputStream = FileInputStream(descriptor.fileDescriptor)
-
-    fun outputStream(): OutputStream = FileOutputStream(descriptor.fileDescriptor)
 
     /** SO_RCVTIMEO/SO_SNDTIMEO in milliseconds (0 = block indefinitely). */
     fun setSoTimeout(timeoutMs: Int) = nativeSetSoTimeout(descriptor.fd, timeoutMs)
@@ -51,22 +48,20 @@ class UnixSocket private constructor(private val descriptor: ParcelFileDescripto
             CompatNative.ensureLoaded()
         }
 
-        const val SOCK_STREAM = 1
-        const val SOCK_DGRAM = 2
-
         /**
-         * Connect to a UNIX socket at [path]. A leading `@` selects the abstract namespace.
+         * Connect a `SOCK_STREAM` UNIX socket to [path]. A leading `@` selects the abstract
+         * namespace. [timeoutMs] of 0 blocks indefinitely.
          *
          * @throws java.io.IOException on socket/connect failure.
          */
-        fun connect(path: String, type: Int = SOCK_STREAM, timeoutMs: Int = 0): UnixSocket {
+        fun connect(path: String, timeoutMs: Int = 0): UnixSocket {
             require(timeoutMs >= 0) { "timeoutMs < 0" }
-            val fd = nativeConnectUnixSocket(path, type, timeoutMs)
+            val fd = nativeConnectUnixSocket(path, timeoutMs)
             return UnixSocket(ParcelFileDescriptor.adoptFd(fd))
         }
 
         @JvmStatic
-        private external fun nativeConnectUnixSocket(path: String, type: Int, timeoutMs: Int): Int
+        private external fun nativeConnectUnixSocket(path: String, timeoutMs: Int): Int
 
         @JvmStatic private external fun nativeSetSoTimeout(fd: Int, timeoutMs: Int)
 

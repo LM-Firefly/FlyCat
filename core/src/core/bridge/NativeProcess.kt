@@ -46,9 +46,6 @@ private constructor(
     /** Send SIGKILL to the child. Safe to call more than once. */
     fun kill() = nativeKill(pid)
 
-    /** Block until the child exits and return its raw wait status. */
-    fun waitFor(): Int = nativeWait(pid)
-
     companion object {
         init {
             CompatNative.ensureLoaded()
@@ -57,9 +54,9 @@ private constructor(
         /**
          * Fork and execve [path] (which must be readable and executable — i.e. an
          * extracted-and-chmod'd copy under the app's storage, or a file living in
-         * `nativeLibraryDir`). [args] are appended after `argv[0] = path`; [env] entries are added
-         * on top of the inherited environment. The child `chdir`s into [workdir] (the core home)
-         * before exec, and receives the channel socket fd through `CHANNEL=<fd>`.
+         * `nativeLibraryDir`). [args] are appended after `argv[0] = path`. The child `chdir`s into
+         * [workdir] (the core home) before exec, redirects stdout/stderr to `<workdir>/core.log`,
+         * and receives the channel socket fd through `CHANNEL=<fd>`.
          *
          * The call blocks until the child has execve'd (or failed to): a pre-exec failure in the
          * child is reported back and rethrown here, so a returned handle always means the core is
@@ -68,13 +65,8 @@ private constructor(
          * @throws java.io.IOException if the file is not executable, chdir/socketpair/fork fails,
          *   or the child could not exec [path].
          */
-        fun start(
-            path: String,
-            args: Array<String> = emptyArray(),
-            env: Array<String> = emptyArray(),
-            workdir: String? = null,
-        ): NativeProcess {
-            val handle = nativeStart(path, args, env, workdir)
+        fun start(path: String, args: Array<String>, workdir: String): NativeProcess {
+            val handle = nativeStart(path, args, workdir)
             return NativeProcess(pid = handle[0], channelFd = handle[1])
         }
 
@@ -82,12 +74,9 @@ private constructor(
         private external fun nativeStart(
             path: String,
             args: Array<String>,
-            env: Array<String>,
-            workdir: String?,
+            workdir: String,
         ): IntArray
 
         @JvmStatic private external fun nativeKill(pid: Int)
-
-        @JvmStatic private external fun nativeWait(pid: Int): Int
     }
 }

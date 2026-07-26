@@ -27,9 +27,10 @@ import androidx.annotation.Keep
 import java.io.Closeable
 
 /**
- * The socketpair control channel to the core child process ([NativeProcess.channelFd]). Carries
- * length-delimited control messages and, via SCM_RIGHTS, a single file descriptor per message —
- * this is how the TUN fd is handed to the core in the non-root VpnService path.
+ * The socketpair control channel to the core child process ([NativeProcess.channelFd]). It is a
+ * SOCK_SEQPACKET socket, so one write is one read (no framing needed), and each message can carry
+ * a single file descriptor via SCM_RIGHTS — this is how the TUN fd is handed to the core in the
+ * non-root VpnService path.
  *
  * YumeBox's equivalent of CFA's `AndroidChannel`. This is a thin fd wrapper; message framing and
  * the command vocabulary live in the Kotlin layer above it.
@@ -60,7 +61,7 @@ class Channel(private val fd: Int) : Closeable {
     fun writeMessage(buffer: ByteArray, offset: Int, length: Int, attachFd: Int = -1): Int {
         requireOpen()
         requireSlice(buffer, offset, length)
-        return nativeWriteMessage(fd, buffer, offset, length, intArrayOf(attachFd))
+        return nativeWriteMessage(fd, buffer, offset, length, attachFd)
     }
 
     /** Close the channel fd once. Signals EOF to the peer. */
@@ -103,7 +104,7 @@ class Channel(private val fd: Int) : Closeable {
             buffer: ByteArray,
             offset: Int,
             length: Int,
-            fdHolder: IntArray,
+            attachFd: Int,
         ): Int
     }
 }
