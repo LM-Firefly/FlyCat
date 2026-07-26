@@ -126,9 +126,9 @@ pub enum FieldBehavior {
 #[derive(Default)]
 pub struct PatchOperations<'a> {
     pub replace: Option<&'a JsonValue>,
-    pub start: Option<&'a JsonValue>,
-    pub end: Option<&'a JsonValue>,
-    pub merge: Option<&'a JsonValue>,
+    pub start: Vec<&'a JsonValue>,
+    pub end: Vec<&'a JsonValue>,
+    pub merge: Vec<&'a JsonValue>,
     pub force: Option<&'a JsonValue>,
 }
 

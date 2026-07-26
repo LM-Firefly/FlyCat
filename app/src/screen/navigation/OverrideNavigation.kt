@@ -47,11 +47,16 @@ fun OverrideScreen(navigator: Navigator) {
                 title = config.name,
                 content = overrideConfigViewModel.getConfigContent(config.id) ?: config.content,
                 language = config.contentType.toLanguageScope(),
-                callback = { content ->
-                    if (!overrideConfigViewModel.saveConfigContent(config.id, content)) {
-                        error("保存覆写失败")
+                callback =
+                    if (overrideConfigViewModel.isBuiltInConfig(config.id)) {
+                        null
+                    } else {
+                        { content ->
+                            if (!overrideConfigViewModel.saveConfigContent(config.id, content)) {
+                                error("保存覆写失败")
+                            }
+                        }
                     }
-                },
             )
             navigator.push(Route.OverrideConfigPreview)
         },

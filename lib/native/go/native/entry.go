@@ -16,13 +16,13 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
-	"time"
 
 	"cfa/native/app"
 	"cfa/native/delegate"
 	"cfa/native/tun"
 
 	"github.com/metacubex/mihomo/config"
+	"github.com/metacubex/mihomo/constant"
 	"github.com/metacubex/mihomo/hub"
 	"github.com/metacubex/mihomo/listener/tproxy"
 	"github.com/metacubex/mihomo/log"
@@ -70,12 +70,10 @@ func main() {
 		fatal("missing required --home")
 	}
 
-	// Pin error+ so core.log stays small; boot() writes milestones outside logrus.
+	// Keep lifecycle I/O off the startup and shutdown paths.
 	log.SetLevel(log.ERROR)
 
 	delegate.Init(*home, *versionName, *gitVersion, *sdkVersion)
-	boot("Init core, home=%s versionName=%s gitVersion=%s platformVersion=%d",
-		*home, *versionName, *gitVersion, *sdkVersion)
 
 	var (
 		rawConfig []byte
@@ -109,16 +107,10 @@ func main() {
 	} else {
 		app.ApplyTunContext(nil, nil)
 	}
-	boot("[core] setup received: mode=%s config=%d bytes tunFd=%d", *mode, len(rawConfig), tunFd)
-
-	// Milestones stay outside logrus so a hang between stages is visible in core.log even when
-	// profile log-level is ERROR (the default we pin below).
-	boot("[core] parse begin")
 	cfg, err := config.Parse(rawConfig)
 	if err != nil {
 		fatal("parse compiled config: %v", err)
 	}
-	boot("[core] parse ok")
 	// Profile log-level must not reopen the floodgates after ApplyConfig.
 	cfg.General.LogLevel = log.ERROR
 	log.SetLevel(log.ERROR)
@@ -127,24 +119,17 @@ func main() {
 	}
 
 	if *mode == "vpn" && tunFd >= 0 {
-		boot("[core] tun configure begin fd=%d", tunFd)
 		if err := tun.Configure(cfg, tunFd, *gateway, *portal, *dns); err != nil {
 			fatal("configure tun: %v", err)
 		}
-		boot("[core] tun configure ok")
 	}
 
-	// Controller socket is created inside ApplyConfig; until this returns, Kotlin REST probes
-	// get ENOENT ("No such file or directory") against clash.sock.
-	boot("[core] apply begin controller=%q", *controller)
 	hub.ApplyConfig(cfg)
 	log.SetLevel(log.ERROR)
-	boot("[core] config applied; mode=%s controller=%q tun.enable=%v", *mode, *controller, cfg.General.Tun.Enable)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
-	sig := <-signals
-	boot("[core] received %v, shutting down", sig)
+	<-signals
 
 	if *mode == "tproxy" {
 		tproxy.CleanupTProxyIPTables()
@@ -216,17 +201,6 @@ func parseRightsFd(oob []byte) int {
 		}
 	}
 	return -1
-}
-
-// boot writes a lifecycle line to stdout (core.log), bypassing logrus level.
-func boot(format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(
-		os.Stdout,
-		"time=\"%s\" level=info msg=%q\n",
-		time.Now().UTC().Format(time.RFC3339Nano),
-		msg,
-	)
 }
 
 func fatal(format string, args ...any) {

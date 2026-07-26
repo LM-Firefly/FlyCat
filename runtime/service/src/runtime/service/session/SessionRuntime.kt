@@ -27,6 +27,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import com.github.yumelira.yumebox.core.model.*
 import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
@@ -61,10 +62,11 @@ class SessionRuntime(
     private val snapshotLock = Any()
 
     @Volatile private var interruptReason: String? = null
-    private var currentSpec: RuntimeSpec? = null
+    @Volatile private var currentSpec: RuntimeSpec? = null
     @Volatile private var currentSnapshot: RuntimeSnapshot = RuntimeSnapshot(runMode = host.mode)
     private var networkObserver: ServiceNetworkObserver? = null
     private var timeZoneReceiver: BroadcastReceiver? = null
+    @Volatile private var snapshotRefreshJob: Job? = null
     private val queryCache = SessionRuntimeQueryCache()
     private val telemetry =
         SessionRuntimeTelemetry(host = host, scope = scope) { ready ->
@@ -135,6 +137,12 @@ class SessionRuntime(
 
     fun requestStop(reason: String? = null) {
         interruptReason = reason ?: "runtime stop requested"
+        currentSpec?.let { startupLog(it, "stop requested") }
+        snapshotRefreshJob?.cancel()
+        if (currentSnapshot.owner == RuntimeOwner.VpnService) {
+            // Drop the child and its TUN fd without waiting for the lifecycle lock.
+            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.killRunning()
+        }
         synchronized(interruptMonitor) { interruptMonitor.notifyAll() }
     }
 
@@ -278,8 +286,10 @@ class SessionRuntime(
 
     private fun startInternal(spec: RuntimeSpec) {
         val startedAt = System.currentTimeMillis()
+        val startedAtNanos = SystemClock.elapsedRealtimeNanos()
         // One nativeCompile for the whole start path: transport handoff + expected group names.
         val prepared = prepareCompiledSpec(spec)
+        startupLog(prepared, "compiled elapsedMs=${elapsedMillis(startedAtNanos)}")
         currentSpec = prepared
         publishSnapshot(
             RuntimeSnapshot(
@@ -307,19 +317,24 @@ class SessionRuntime(
         transport.start(prepared)
         startupLog(
             prepared,
-            "core launched profile=${prepared.profileName} overrides=${prepared.overrideSpecs.size}",
+            "core launched elapsedMs=${elapsedMillis(startedAtNanos)} " +
+                "profile=${prepared.profileName} overrides=${prepared.overrideSpecs.size}",
         )
-        awaitProxyGroupsReady(prepared)
+        val initialGroups = awaitProxyGroupsReady(prepared)
+        startupLog(
+            prepared,
+            "controller ready elapsedMs=${elapsedMillis(startedAtNanos)} groups=${initialGroups.size}",
+        )
         ensureNotInterrupted(prepared)
+        queryCache.replaceProxyGroups(initialGroups)
         startLogStream()
-        refreshRuntimeSnapshot()
 
         updateSnapshot {
             it.copy(
                 phase = RuntimePhase.Running,
                 profileReady = true,
-                groupsReady = queryCache.snapshot().proxyGroups.isNotEmpty(),
-                trafficReady = true,
+                groupsReady = initialGroups.isNotEmpty(),
+                trafficReady = false,
                 configReady = true,
                 transportReady = true,
                 logReady = telemetry.isLogStreaming(),
@@ -329,7 +344,8 @@ class SessionRuntime(
         }
         host.onProfileLoaded(prepared.profileUuid)
         host.onStarted(prepared)
-        startupLog(prepared, "started")
+        startupLog(prepared, "started elapsedMs=${elapsedMillis(startedAtNanos)}")
+        scheduleRuntimeSnapshotRefresh(prepared)
     }
 
     private fun reloadInternal(spec: RuntimeSpec) {
@@ -351,16 +367,16 @@ class SessionRuntime(
         // reads its config at launch); re-verify groups afterwards.
         runCatching { transport.stop() }
         transport.start(prepared)
-        awaitProxyGroupsReady(prepared)
+        val initialGroups = awaitProxyGroupsReady(prepared)
         ensureNotInterrupted(prepared)
         currentSpec = prepared
-        refreshRuntimeSnapshot()
+        queryCache.replaceProxyGroups(initialGroups)
         updateSnapshot {
             it.copy(
                 phase = RuntimePhase.Running,
                 profileReady = true,
-                groupsReady = queryCache.snapshot().proxyGroups.isNotEmpty(),
-                trafficReady = true,
+                groupsReady = initialGroups.isNotEmpty(),
+                trafficReady = false,
                 configReady = true,
                 transportReady = true,
                 logReady = telemetry.isLogStreaming(),
@@ -370,9 +386,12 @@ class SessionRuntime(
         }
         host.onProfileLoaded(prepared.profileUuid)
         startupLog(prepared, "reload done")
+        scheduleRuntimeSnapshotRefresh(prepared)
     }
 
     private fun stopInternal(reason: String?, notifyHost: Boolean) {
+        snapshotRefreshJob?.cancel()
+        snapshotRefreshJob = null
         if (currentSnapshot.phase == RuntimePhase.Idle && currentSpec == null) {
             clearInterruptRequest()
             return
@@ -440,7 +459,7 @@ class SessionRuntime(
         host.reportFailure(reason)
     }
 
-    private fun awaitProxyGroupsReady(spec: RuntimeSpec) {
+    private fun awaitProxyGroupsReady(spec: RuntimeSpec): List<ProxyGroup> {
         ensureNotInterrupted(spec)
         val expectedGroups = readExpectedGroupNames(spec)
         startupLog(
@@ -452,14 +471,9 @@ class SessionRuntime(
                     .orEmpty(),
         )
 
-        // ApplyConfig (geo/providers/TUN) routinely takes multiple seconds on cold start; the old
-        // 10×200ms window failed while clash.sock was still not bound (ENOENT).
-        val deadlineMs = System.currentTimeMillis() + PROXY_GROUP_READY_TIMEOUT_MS
         var lastControllerError: String? = null
-        var attempt = 0
-        while (System.currentTimeMillis() < deadlineMs) {
+        repeat(PROXY_GROUP_READY_RETRY_COUNT) { attempt ->
             ensureNotInterrupted(spec)
-            attempt++
 
             // Dead core cannot create the controller; fail fast with core.log instead of spinning.
             if (
@@ -476,19 +490,20 @@ class SessionRuntime(
                 )
             }
 
-            val names = runCatching {
-                rest.queryProxyGroupNames(false)
+            val groups = runCatching {
+                rest.queryAllProxyGroups(false)
             }
                 .onFailure { error ->
                     lastControllerError = error.message ?: error::class.simpleName
                 }
                 .getOrDefault(emptyList())
+            val names = groups.map(ProxyGroup::name).filter(String::isNotBlank)
             if (names.isNotEmpty()) {
                 startupLog(
                     spec,
                     "runtime verify: actualGroups=${names.size} sample=${names.take(5)}",
                 )
-                return
+                return groups
             }
             val tunnelOk = runCatching {
                 rest.queryTunnelState()
@@ -505,22 +520,20 @@ class SessionRuntime(
                     spec,
                     "runtime verify: controller ok with 0 expected groups; treating as ready",
                 )
-                return
+                return emptyList()
             }
-            // Only log the first miss and when we are about to give up — intermediate retries are noise.
-            val remainingMs = deadlineMs - System.currentTimeMillis()
-            if (attempt == 1 || remainingMs <= PROXY_GROUP_READY_RETRY_DELAY_MS) {
+            // Only log the first miss and the final attempt — intermediate retries are noise.
+            if (attempt == 0 || attempt == PROXY_GROUP_READY_RETRY_COUNT - 1) {
                 startupLog(
                     spec,
                     "runtime verify: actualGroups=0 controller=${if (tunnelOk) "ok" else "down"}" +
                         (lastControllerError?.let { " err=$it" } ?: "") +
-                        " attempt=$attempt remainingMs=$remainingMs",
+                        " attempt=${attempt + 1}/$PROXY_GROUP_READY_RETRY_COUNT",
                 )
             }
-            if (remainingMs <= 0) break
-            waitForRetryOrInterrupt(
-                min(PROXY_GROUP_READY_RETRY_DELAY_MS, remainingMs.coerceAtLeast(1L))
-            )
+            if (attempt < PROXY_GROUP_READY_RETRY_COUNT - 1) {
+                waitForRetryOrInterrupt(PROXY_GROUP_READY_RETRY_DELAY_MS)
+            }
         }
 
         ensureNotInterrupted(spec)
@@ -540,6 +553,14 @@ class SessionRuntime(
                 (lastControllerError?.let { ": $it" } ?: "") +
                 (coreTail?.let { " ($it)" } ?: "")
         )
+    }
+
+    private fun scheduleRuntimeSnapshotRefresh(spec: RuntimeSpec) {
+        snapshotRefreshJob?.cancel()
+        snapshotRefreshJob =
+            scope.launch(Dispatchers.IO) {
+                refreshRuntimeSnapshot(spec)
+            }
     }
 
     private fun appendCoreDiagnostics(spec: RuntimeSpec) {
@@ -677,7 +698,7 @@ class SessionRuntime(
         // in-process here now that there is no embedded core.
     }
 
-    private fun refreshRuntimeSnapshot() {
+    private fun refreshRuntimeSnapshot(expectedSpec: RuntimeSpec? = currentSpec) {
         if (
             currentSnapshot.phase != RuntimePhase.Running &&
                 currentSnapshot.phase != RuntimePhase.Starting
@@ -695,6 +716,9 @@ class SessionRuntime(
         }.getOrDefault(emptyList())
         val trafficNow = runCatching { rest.queryTrafficNow() }.getOrDefault(0L)
         val trafficTotal = runCatching { rest.queryTrafficTotal() }.getOrDefault(0L)
+        if (currentSpec !== expectedSpec || currentSnapshot.phase != RuntimePhase.Running) {
+            return
+        }
         queryCache.replace(
             configuration = configuration,
             providers = providers,
@@ -778,6 +802,9 @@ class SessionRuntime(
             .append("${scope.tag} session: $message")
     }
 
+    private fun elapsedMillis(startedAtNanos: Long): Long =
+        (SystemClock.elapsedRealtimeNanos() - startedAtNanos) / 1_000_000L
+
     private fun ensureNotInterrupted(spec: RuntimeSpec) {
         val reason = interruptReason ?: return
         startupLog(spec, "session: interrupted reason=$reason")
@@ -789,9 +816,8 @@ class SessionRuntime(
     }
 
     private companion object {
-        /** Cold ApplyConfig (geo + providers + gVisor TUN) can exceed several seconds. */
-        private const val PROXY_GROUP_READY_TIMEOUT_MS = 30_000L
-        private const val PROXY_GROUP_READY_RETRY_DELAY_MS = 250L
+        private const val PROXY_GROUP_READY_RETRY_COUNT = 10
+        private const val PROXY_GROUP_READY_RETRY_DELAY_MS = 200L
 
         /** The session instance currently owning the process-wide Go core. */
         @Volatile private var coreOwner: SessionRuntime? = null

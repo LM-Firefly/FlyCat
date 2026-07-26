@@ -30,9 +30,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumelira.yumebox.common.util.toast
@@ -47,12 +50,14 @@ import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.runtime.api.Profile
 import kotlinx.coroutines.launch
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import tf.gal.yumebox.locale.YumeTxt
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.preference.CheckboxLocation
-import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
 
@@ -99,6 +104,34 @@ internal fun ProfileSettingsDialog(
     // must not clobber a toggle the user already changed.
     var overrideSelectionInitialized by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
+    val customRoutingId = OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID
+    val selectableById = remember(selectableConfigs) { selectableConfigs.associateBy { it.id } }
+    val visibleSelectedOverrideIds =
+        remember(pendingSelectedOverrideIds, selectableById) {
+            pendingSelectedOverrideIds.filter(selectableById::containsKey)
+        }
+    val overrideRowIds =
+        remember(selectableConfigs, pendingSelectedOverrideIds, visibleSelectedOverrideIds) {
+            val selectedIds = pendingSelectedOverrideIds.toSet()
+            visibleSelectedOverrideIds +
+                selectableConfigs
+                    .asSequence()
+                    .map(OverrideConfig::id)
+                    .filterNot(selectedIds::contains)
+                    .toList()
+        }
+    val currentVisibleSelectedOverrideIds by rememberUpdatedState(visibleSelectedOverrideIds)
+    val selectedOverrideListState = rememberLazyListState()
+    val selectedOverrideReorderState =
+        rememberReorderableLazyListState(selectedOverrideListState) { from, to ->
+            pendingSelectedOverrideIds =
+                reorderVisibleOverrideIds(
+                    allIds = pendingSelectedOverrideIds,
+                    visibleIds = currentVisibleSelectedOverrideIds,
+                    from = from.index,
+                    to = to.index,
+                )
+        }
 
     // Reset per dialog-open identity only (NOT on every binding change), so re-firing when the
     // async binding loads cannot wipe edits already in progress.
@@ -128,13 +161,13 @@ internal fun ProfileSettingsDialog(
         }
     }
 
-    val setUserOverrideSelection: (String, Boolean) -> Unit = { overrideId, checked ->
+    val toggleUserOverrideSelection: (String) -> Unit = { overrideId ->
         overrideSelectionInitialized = true
         pendingSelectedOverrideIds =
-            if (checked) {
-                (pendingSelectedOverrideIds + overrideId).distinct()
-            } else {
+            if (overrideId in pendingSelectedOverrideIds) {
                 pendingSelectedOverrideIds - overrideId
+            } else {
+                (pendingSelectedOverrideIds + overrideId).distinct()
             }
     }
     val saveSettings = {
@@ -291,34 +324,93 @@ internal fun ProfileSettingsDialog(
                                         onCheckedChange = {
                                             overrideSelectionInitialized = true
                                             customRoutingSelected = it
+                                            pendingSelectedOverrideIds =
+                                                if (it) {
+                                                    (pendingSelectedOverrideIds + customRoutingId)
+                                                        .distinct()
+                                                } else {
+                                                    pendingSelectedOverrideIds - customRoutingId
+                                                }
                                         },
                                     )
                                 }
                             }
 
-                            if (selectableConfigs.isNotEmpty()) {
+                            if (overrideRowIds.isNotEmpty()) {
                                 Card {
                                     LazyColumn(
+                                        state = selectedOverrideListState,
                                         modifier =
                                             Modifier.fillMaxWidth()
                                                 .heightIn(
                                                     max =
-                                                        componentSizes.profileSettingsListMaxHeight
-                                                )
+                                                        componentSizes
+                                                            .profileSettingsListMaxHeight
+                                                ),
                                     ) {
                                         items(
-                                            selectableConfigs,
-                                            key = { config -> config.id },
-                                        ) { config ->
-                                            val isSelected = config.id in pendingSelectedOverrideIds
-                                            CheckboxPreference(
-                                                title = config.name,
-                                                checked = isSelected,
-                                                checkboxLocation = CheckboxLocation.End,
-                                                onCheckedChange = { checked ->
-                                                    setUserOverrideSelection(config.id, checked)
-                                                },
-                                            )
+                                            overrideRowIds,
+                                            key = { id -> "override-$id" },
+                                        ) { id ->
+                                            val config = selectableById[id] ?: return@items
+                                            val isSelected = id in pendingSelectedOverrideIds
+                                            Box(
+                                                modifier =
+                                                    Modifier.fillMaxWidth()
+                                                        .animateItem(
+                                                            fadeInSpec = tween(160),
+                                                            fadeOutSpec = tween(120),
+                                                            placementSpec =
+                                                                tween(
+                                                                    220,
+                                                                    easing = FastOutSlowInEasing,
+                                                                ),
+                                                        )
+                                            ) {
+                                                if (isSelected) {
+                                                    ReorderableItem(
+                                                        selectedOverrideReorderState,
+                                                        key = "override-$id",
+                                                    ) { isDragging ->
+                                                        BasicComponent(
+                                                            title = config.name,
+                                                            modifier =
+                                                                Modifier.longPressDraggableHandle()
+                                                                    .alpha(
+                                                                        if (isDragging) 0.9f else 1f
+                                                                    ),
+                                                            endActions = {
+                                                                Checkbox(
+                                                                    state = ToggleableState.On,
+                                                                    onClick = {
+                                                                        overrideSelectionInitialized =
+                                                                            true
+                                                                        pendingSelectedOverrideIds =
+                                                                            pendingSelectedOverrideIds -
+                                                                                id
+                                                                    },
+                                                                )
+                                                            },
+                                                            onClick = {},
+                                                        )
+                                                    }
+                                                } else {
+                                                    BasicComponent(
+                                                        title = config.name,
+                                                        endActions = {
+                                                            Checkbox(
+                                                                state = ToggleableState.Off,
+                                                                onClick = {
+                                                                    toggleUserOverrideSelection(id)
+                                                                },
+                                                            )
+                                                        },
+                                                        onClick = {
+                                                            toggleUserOverrideSelection(id)
+                                                        },
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -344,6 +436,20 @@ private fun buildFinalOverrideIds(
         return normalizedIds
     }
     return normalizedIds + customRoutingId
+}
+
+private fun reorderVisibleOverrideIds(
+    allIds: List<String>,
+    visibleIds: List<String>,
+    from: Int,
+    to: Int,
+): List<String> {
+    if (from !in visibleIds.indices || to !in visibleIds.indices || from == to) return allIds
+    val reorderedVisible = visibleIds.toMutableList()
+    reorderedVisible.add(to, reorderedVisible.removeAt(from))
+    val visibleSet = visibleIds.toSet()
+    val replacements = reorderedVisible.iterator()
+    return allIds.map { id -> if (id in visibleSet) replacements.next() else id }
 }
 
 internal data class ProfileMetaUpdate(

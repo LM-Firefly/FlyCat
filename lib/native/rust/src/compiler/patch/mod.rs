@@ -312,14 +312,14 @@ fn apply_field(
         }
         FieldBehavior::List(style) => apply_list_field(target_object, base_key, style, operations),
         FieldBehavior::Map => {
-            if let Some(merge) = operations.merge {
+            if let Some(replace) = operations.replace {
+                target_object.insert(base_key.to_string(), clone_raw_value(replace));
+            }
+            for merge in operations.merge {
                 let entry = target_object
                     .entry(base_key.to_string())
                     .or_insert_with(|| JsonValue::Object(JsonMap::new()));
                 merge_raw_map(entry, merge);
-            }
-            if let Some(replace) = operations.replace {
-                target_object.insert(base_key.to_string(), clone_raw_value(replace));
             }
         }
         FieldBehavior::Object(schema) => {
@@ -333,7 +333,7 @@ fn apply_field(
                     *entry = clone_raw_value(replace);
                 }
             }
-            if let Some(merge) = operations.merge {
+            for merge in operations.merge {
                 let entry = target_object
                     .entry(base_key.to_string())
                     .or_insert_with(|| JsonValue::Object(JsonMap::new()));
@@ -341,7 +341,7 @@ fn apply_field(
             }
         }
         FieldBehavior::Rules => {
-            apply_list_field(target_object, base_key, ListStyle::Plain, operations)
+            apply_rules_field(target_object, base_key, operations)
         }
     }
 }
@@ -355,12 +355,6 @@ fn apply_generic_field(
         target_object.insert(base_key.to_string(), clone_raw_value(force));
         return;
     }
-    if let Some(merge) = operations.merge {
-        let entry = target_object
-            .entry(base_key.to_string())
-            .or_insert_with(|| JsonValue::Object(JsonMap::new()));
-        merge_raw_map(entry, merge);
-    }
     if let Some(replace) = operations.replace {
         if replace.is_object() {
             let entry = target_object
@@ -371,13 +365,19 @@ fn apply_generic_field(
             target_object.insert(base_key.to_string(), clone_raw_value(replace));
         }
     }
-    if operations.start.is_some() || operations.end.is_some() {
+    for merge in operations.merge {
+        let entry = target_object
+            .entry(base_key.to_string())
+            .or_insert_with(|| JsonValue::Object(JsonMap::new()));
+        merge_raw_map(entry, merge);
+    }
+    if !operations.start.is_empty() || !operations.end.is_empty() {
         let mut items = Vec::<JsonValue>::new();
-        if let Some(start) = operations.start {
+        for start in operations.start {
             items.extend(collect_array_items(start));
         }
         items.append(&mut take_array_field(target_object, base_key));
-        if let Some(end) = operations.end {
+        for end in operations.end {
             items.extend(collect_array_items(end));
         }
         target_object.insert(base_key.to_string(), JsonValue::Array(items));
@@ -396,7 +396,7 @@ fn apply_list_field(
     }
 
     let mut items = Vec::new();
-    if let Some(start) = operations.start {
+    for start in operations.start {
         items.extend(collect_array_items(start));
     }
     if let Some(replace) = operations.replace {
@@ -404,13 +404,63 @@ fn apply_list_field(
     } else {
         items.append(&mut take_array_field(target_object, base_key));
     }
-    if let Some(end) = operations.end {
+    for merge in operations.merge {
+        items.extend(collect_array_items(merge));
+    }
+    for end in operations.end {
         items.extend(collect_array_items(end));
     }
     if matches!(style, ListStyle::NamedObjects) {
         items = dedup_named_items(items);
     }
     target_object.insert(base_key.to_string(), JsonValue::Array(items));
+}
+
+fn apply_rules_field(
+    target_object: &mut JsonMap<String, JsonValue>,
+    base_key: &str,
+    operations: PatchOperations<'_>,
+) {
+    if let Some(force) = operations.force {
+        target_object.insert(base_key.to_string(), clone_raw_value(force));
+        return;
+    }
+
+    let mut items = Vec::new();
+    for start in operations.start {
+        items.extend(collect_array_items(start));
+    }
+
+    let mut base_items =
+        if let Some(replace) = operations.replace {
+            collect_array_items(replace)
+        } else {
+            take_array_field(target_object, base_key)
+        };
+    let terminal_rules =
+        base_items
+            .iter()
+            .position(is_terminal_match_rule)
+            .map_or_else(Vec::new, |index| base_items.split_off(index));
+    items.append(&mut base_items);
+
+    for merge in operations.merge {
+        items.extend(collect_array_items(merge));
+    }
+    for end in operations.end {
+        items.extend(collect_array_items(end));
+    }
+    items.extend(terminal_rules);
+    target_object.insert(base_key.to_string(), JsonValue::Array(items));
+}
+
+fn is_terminal_match_rule(value: &JsonValue) -> bool {
+    value
+        .as_str()
+        .and_then(|rule| rule.split(',').next())
+        .map(str::trim)
+        .map(|kind| kind.eq_ignore_ascii_case("MATCH"))
+        .unwrap_or(false)
 }
 
 fn apply_nested_object_with_schema(target: &mut JsonValue, patch: &JsonValue, schema: SchemaId) {
@@ -447,9 +497,9 @@ fn group_patch_keys<'a>(map: &'a JsonMap<String, JsonValue>) -> Vec<(String, Pat
         let operations = &mut grouped[index].1;
         match parsed.modifier {
             PatchModifier::Replace => operations.replace = Some(value),
-            PatchModifier::Start => operations.start = Some(value),
-            PatchModifier::End => operations.end = Some(value),
-            PatchModifier::Merge => operations.merge = Some(value),
+            PatchModifier::Start => operations.start.push(value),
+            PatchModifier::End => operations.end.push(value),
+            PatchModifier::Merge => operations.merge.push(value),
             PatchModifier::Force => operations.force = Some(value),
         }
     }

@@ -18,7 +18,7 @@
  *
  */
 
-@file:DependsOn("org.tukaani:xz:1.9")
+@file:DependsOn("org.tukaani:xz:1.12")
 
 import java.io.File
 import java.io.IOException
@@ -500,6 +500,7 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
             "GOOS" to "android",
             "GOARCH" to arch,
             "CC" to ndkTools.getClangPath(abi),
+            "GOCACHE" to File("build/go-cache").absolutePath,
         ) + if (abi == "armeabi-v7a") mapOf("GOARM" to "7") else emptyMap()
     }
 

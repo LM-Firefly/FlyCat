@@ -30,8 +30,6 @@ import com.github.yumelira.yumebox.runtime.client.RuntimeStartRequest
 import com.github.yumelira.yumebox.runtime.client.RuntimeStateMapper
 import com.github.yumelira.yumebox.runtime.client.RuntimeStopRequest
 import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
-import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -89,8 +87,6 @@ internal class RuntimeSession(private val deps: RuntimeSessionDeps) {
 
     private companion object {
         const val TRAFFIC_TOTAL_POLL_TICKS = 10
-        const val CONTROLLER_SWITCH_STOP_TIMEOUT_MS = 4000L
-        const val CONTROLLER_SWITCH_STOP_POLL_MS = 100L
     }
 
     private val appContext = context.appContextOrSelf
@@ -271,24 +267,12 @@ internal class RuntimeSession(private val deps: RuntimeSessionDeps) {
                 Timber.i("Controller switch: stopping local runtime owner=$owner")
                 launcher.stop(owner)
                 stopTrafficPolling()
-                awaitLocalRuntimeFullyStopped(owner)
+                statusStore.reconcilePersistedRuntimeState()
             }
         }
             .onFailure { error ->
                 Timber.w(error, "Failed to stop local runtime on controller switch")
             }
-    }
-
-    private suspend fun awaitLocalRuntimeFullyStopped(owner: RuntimeOwner) {
-        val mode = ownership.localModeForOwner(owner)
-        if (mode != null) {
-            val deadline = System.currentTimeMillis() + CONTROLLER_SWITCH_STOP_TIMEOUT_MS
-            while (System.currentTimeMillis() < deadline) {
-                if (!statusStore.isLocalRuntimeServiceAlive(mode.name)) break
-                delay(CONTROLLER_SWITCH_STOP_POLL_MS.milliseconds)
-            }
-        }
-        statusStore.reconcilePersistedRuntimeState()
     }
 
     suspend fun reconcile() {

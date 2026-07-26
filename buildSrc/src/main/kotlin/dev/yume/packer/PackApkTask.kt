@@ -17,7 +17,7 @@ import org.gradle.work.DisableCachingByDefault
 import org.tukaani.xz.LZMA2Options
 import org.tukaani.xz.XZOutputStream
 
-@DisableCachingByDefault(because = "The output is signed with secret material")
+@DisableCachingByDefault(because = "The output depends on the installed Android SDK toolchain")
 abstract class PackApkTask : DefaultTask() {
     @get:InputDirectory
     @get:PathSensitive(PathSensitivity.RELATIVE)
@@ -32,6 +32,7 @@ abstract class PackApkTask : DefaultTask() {
     @get:Internal abstract val sdkDirectory: DirectoryProperty
 
     @get:InputFile
+    @get:Optional
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val keyStoreFile: RegularFileProperty
 
@@ -39,7 +40,7 @@ abstract class PackApkTask : DefaultTask() {
 
     @get:Input abstract val originalComponentFactory: Property<String>
 
-    @get:Input abstract val keyAlias: Property<String>
+    @get:Input @get:Optional abstract val keyAlias: Property<String>
 
     @get:Internal abstract val keyStorePassword: Property<String>
 
@@ -118,7 +119,11 @@ abstract class PackApkTask : DefaultTask() {
             ),
             "zipalign failed for ${input.name}",
         )
-        sign(tools, aligned)
+        if (keyStoreFile.isPresent) {
+            sign(tools, aligned)
+        } else {
+            logger.lifecycle("Packed unsigned APK: ${output.name}")
+        }
         aligned.copyTo(output, overwrite = true)
     }
 
@@ -212,6 +217,9 @@ abstract class PackApkTask : DefaultTask() {
             SIGNATURE_ENTRY.matches(name)
 
     private fun sign(buildTools: File, apk: File) {
+        check(keyAlias.isPresent && keyStorePassword.isPresent && keyPassword.isPresent) {
+            "APK signing configuration is incomplete"
+        }
         val signer = buildTools.resolve("lib/apksigner.jar")
         check(signer.isFile) { "apksigner.jar not found: $signer" }
         val command =

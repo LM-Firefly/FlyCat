@@ -47,6 +47,7 @@ class OverrideConfigStore(
     private val overridesDir = File(context.filesDir, "overrides")
     private val configsDir = File(overridesDir, "configs")
     private val metadataFile = File(overridesDir, "metadata.yaml")
+    private val builtInFiles = BuiltInOverrideFileStore(context, overridesDir)
 
     private val configExtensions = setOf("yaml", "yml", "js")
     private val cleanupExtensions = configExtensions
@@ -114,13 +115,7 @@ class OverrideConfigStore(
     override suspend fun save(config: OverrideConfig) =
         withContext(Dispatchers.IO) {
             if (BuiltInOverrideCatalog.isBuiltIn(config.id)) {
-                // Built-ins are not metadata-owned; only rewrite the materialized file.
-                configsDir.mkdirs()
-                OverrideMetadataIO.writeTextAtomic(
-                    resolveConfigFile(config.id, config.contentType),
-                    config.content,
-                )
-                cleanupStaleConfigFiles(config.id, keepExtension = config.contentType.extension)
+                // Built-ins are immutable APK templates. Customization must use duplicate().
                 return@withContext
             }
 
@@ -257,17 +252,7 @@ class OverrideConfigStore(
 
     fun saveConfigContent(id: String, content: String): Boolean {
         if (BuiltInOverrideCatalog.isBuiltIn(id)) {
-            val def = BuiltInOverrideCatalog.find(id) ?: return false
-            return runCatching {
-                    configsDir.mkdirs()
-                    OverrideMetadataIO.writeTextAtomic(
-                        resolveConfigFile(id, def.contentType),
-                        content,
-                    )
-                    cleanupStaleConfigFiles(id, keepExtension = def.contentType.extension)
-                    true
-                }
-                .getOrDefault(false)
+            return false
         }
         return synchronized(OverrideMetadataFileLock.monitor) {
             val index = loadMetadataIndexForMutation()
@@ -362,8 +347,7 @@ class OverrideConfigStore(
 
     private fun loadBuiltInConfig(id: String): OverrideConfig? {
         val def = BuiltInOverrideCatalog.find(id) ?: return null
-        // Prefer the materialized file (may include local edits); fall back to the APK asset so the
-        // list never goes empty when materialization fails.
+        // The materialized file is synchronized with the packaged asset on every resolution.
         val file = materializeBuiltInFile(def)
         val content =
             file?.let { runCatching { it.readText() }.getOrNull() }
@@ -389,34 +373,12 @@ class OverrideConfigStore(
         }
         .getOrNull()
 
-    /**
-     * Copy the asset into `configsDir` if missing so override resolution can open a real path.
-     * Existing files (including user edits of a built-in template) are preserved.
-     */
     private fun materializeBuiltInFile(id: String): File? {
-        val def = BuiltInOverrideCatalog.find(id) ?: return null
-        return materializeBuiltInFile(def)
+        return builtInFiles.sync(id)
     }
 
     private fun materializeBuiltInFile(def: BuiltInOverrideDefinition): File? {
-        val target = resolveConfigFile(def.id, def.contentType)
-        // Drop leftover files from a previous content-type (e.g. yaml → js). Never overwrite the
-        // kept extension — that file may include local edits once it exists.
-        cleanupStaleConfigFiles(def.id, keepExtension = def.contentType.extension)
-        if (target.exists()) {
-            return target
-        }
-        return runCatching {
-            configsDir.mkdirs()
-            val content =
-                context.assets.open(def.assetPath).bufferedReader().use { reader -> reader.readText() }
-            OverrideMetadataIO.writeTextAtomic(target, content)
-            target
-        }
-            .onFailure { error ->
-                Timber.w(error, "Failed to materialize built-in override: %s", def.id)
-            }
-            .getOrNull()
+        return builtInFiles.sync(def.id)
     }
 
     private fun loadConfigContent(metadata: OverrideMetadata): OverrideConfig? {

@@ -37,11 +37,7 @@ internal data class RuntimeSessionDeps(
     val remoteControllerStore: RemoteControllerStore,
     val statusStore: RuntimeStatusStore = AndroidRuntimeStatusStore,
     val processController: ProcessController = AndroidProcessController(context),
-    val launcher: RuntimeLauncher =
-        AndroidRuntimeLauncher(
-            context = context,
-            stopAction = { Intents.actionRuntimeRequestStop(context.appContextOrSelf.packageName) },
-        ),
+    val launcher: RuntimeLauncher = AndroidRuntimeLauncher(context),
     val queryTrafficNowAction: suspend () -> Long = { 0L },
     val queryTrafficTotalAction: suspend () -> Long = { 0L },
     val onAfterRunning: suspend () -> Unit = {},

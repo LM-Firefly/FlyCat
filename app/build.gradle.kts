@@ -421,14 +421,12 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             vcsInfo.include = false
+            manifestPlaceholders["applicationClass"] = "dev.yume.loader.LoaderApplication"
+            manifestPlaceholders["componentFactory"] = "dev.yume.loader.LoaderComponentFactory"
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-loader.pro",
             )
-            if (releaseSigningProperties != null) {
-                manifestPlaceholders["applicationClass"] = "dev.yume.loader.LoaderApplication"
-                manifestPlaceholders["componentFactory"] = "dev.yume.loader.LoaderComponentFactory"
-            }
         }
     }
 
@@ -515,57 +513,57 @@ android {
     }
 }
 
-if (releaseSigningProperties != null) {
-    val loaderRuntime =
-        configurations.detachedConfiguration(
-            dependencies.create("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
-        )
-    androidComponents {
-        onVariants(selector().withBuildType("release")) { variant ->
-            val capitalized = variant.name.replaceFirstChar(Char::uppercaseChar)
-            val loaderDexTask =
-                tasks.register<BuildLoaderDexTask>("build${capitalized}LoaderDex") {
-                    group = "build"
-                    description = "Builds the standalone loader DEX for ${variant.name}"
-                    loaderAar.set(
-                        project(":pack").layout.buildDirectory.file("outputs/aar/pack-release.aar")
+val loaderRuntime =
+    configurations.detachedConfiguration(
+        dependencies.create("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
+    )
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        val capitalized = variant.name.replaceFirstChar(Char::uppercaseChar)
+        val loaderDexTask =
+            tasks.register<BuildLoaderDexTask>("build${capitalized}LoaderDex") {
+                group = "build"
+                description = "Builds the standalone loader DEX for ${variant.name}"
+                loaderAar.set(
+                    project(":pack").layout.buildDirectory.file("outputs/aar/pack-release.aar")
+                )
+                runtimeArtifacts.from(loaderRuntime)
+                sdkDirectory.set(sdkComponents.sdkDirectory)
+                minSdk.set(variant.minSdk.apiLevel)
+                outputDirectory.set(
+                    layout.buildDirectory.dir(
+                        "intermediates/yumePacker/${variant.name}/loaderDex"
                     )
-                    runtimeArtifacts.from(loaderRuntime)
-                    sdkDirectory.set(sdkComponents.sdkDirectory)
-                    minSdk.set(variant.minSdk.apiLevel)
-                    outputDirectory.set(
-                        layout.buildDirectory.dir(
-                            "intermediates/yumePacker/${variant.name}/loaderDex"
-                        )
-                    )
-                    dependsOn(":pack:bundleReleaseAar")
-                }
-            val packApkTask =
-                tasks.register<TransformPackedApksTask>("pack${capitalized}Apk") {
-                    group = "build"
-                    description =
-                        "Compresses DEX payloads and installs the loader in ${variant.name} APKs"
-                    loaderDex.set(loaderDexTask.flatMap { it.outputDirectory.file("classes.dex") })
-                    sdkDirectory.set(sdkComponents.sdkDirectory)
-                    originalApplication.set("com.github.yumelira.yumebox.App")
-                    originalComponentFactory.set("androidx.core.app.CoreComponentFactory")
+                )
+                dependsOn(":pack:bundleReleaseAar")
+            }
+        val packApkTask =
+            tasks.register<TransformPackedApksTask>("pack${capitalized}Apk") {
+                group = "build"
+                description =
+                    "Compresses DEX payloads and installs the loader in ${variant.name} APKs"
+                loaderDex.set(loaderDexTask.flatMap { it.outputDirectory.file("classes.dex") })
+                sdkDirectory.set(sdkComponents.sdkDirectory)
+                originalApplication.set("com.github.yumelira.yumebox.App")
+                originalComponentFactory.set("androidx.core.app.CoreComponentFactory")
+                if (releaseSigningProperties != null) {
                     keyStoreFile.set(rootProject.layout.projectDirectory.file("release.keystore"))
-                    keyStorePassword.set(releaseSigningProperties.getProperty("keystore.password"))
+                    keyStorePassword.set(
+                        releaseSigningProperties.getProperty("keystore.password")
+                    )
                     keyAlias.set(releaseSigningProperties.getProperty("key.alias"))
                     keyPassword.set(releaseSigningProperties.getProperty("key.password"))
                 }
-            val artifactRequest =
-                variant.artifacts
-                    .use(packApkTask)
-                    .wiredWithDirectories(
-                        TransformPackedApksTask::inputApkDirectory,
-                        TransformPackedApksTask::outputApkDirectory,
-                    )
-                    .toTransformMany(SingleArtifact.APK)
-            packApkTask.configure {
-                transformationRequest.set(artifactRequest)
             }
-        }
+        val artifactRequest =
+            variant.artifacts
+                .use(packApkTask)
+                .wiredWithDirectories(
+                    TransformPackedApksTask::inputApkDirectory,
+                    TransformPackedApksTask::outputApkDirectory,
+                )
+                .toTransformMany(SingleArtifact.APK)
+        packApkTask.configure { transformationRequest.set(artifactRequest) }
     }
 }
 

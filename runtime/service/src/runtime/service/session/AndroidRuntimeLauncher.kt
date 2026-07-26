@@ -18,11 +18,7 @@
  *
  */
 
-@file:Suppress("ConvertLongToDuration")
-
 package com.github.yumelira.yumebox.runtime.service.session
-
-import kotlin.time.Duration.Companion.milliseconds
 
 import android.content.Context
 import android.content.Intent
@@ -33,6 +29,7 @@ import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.TunService
+import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -41,10 +38,7 @@ import kotlinx.coroutines.withContext
  * Android [RuntimeLauncher]: VpnService foreground host + root daemon host. Desktop can ship a
  * different [RuntimeLauncher] without Android Service APIs.
  */
-class AndroidRuntimeLauncher(
-    context: Context,
-    private val stopAction: () -> String,
-) : RuntimeLauncher {
+class AndroidRuntimeLauncher(context: Context) : RuntimeLauncher {
     private val appContext = context.appContextOrSelf
 
     override suspend fun start(owner: RuntimeOwner, mode: RunMode) {
@@ -75,22 +69,22 @@ class AndroidRuntimeLauncher(
 
     private suspend fun stopVpnRuntime() {
         withContext(Dispatchers.IO) {
-            appContext.sendBroadcast(Intent(stopAction()).setPackage(appContext.packageName))
             appContext.stopService(Intent(appContext, TunService::class.java))
-            awaitVpnServiceStopped()
-        }
-    }
-
-    private suspend fun awaitVpnServiceStopped() {
-        val deadline = SystemClock.elapsedRealtime() + STOP_HANDOVER_TIMEOUT_MS
-        while (SystemClock.elapsedRealtime() < deadline) {
-            if (!StatusProvider.isLocalRuntimeServiceAlive(RunMode.VpnService)) return
-            delay(STOP_HANDOVER_POLL_MS.milliseconds)
+            val deadline = SystemClock.elapsedRealtime() + VPN_STOP_TIMEOUT_MS
+            while (
+                StatusProvider.isLocalRuntimeServiceAlive(RunMode.VpnService) &&
+                    SystemClock.elapsedRealtime() < deadline
+            ) {
+                delay(VPN_STOP_POLL_MS)
+            }
+            if (StatusProvider.isLocalRuntimeServiceAlive(RunMode.VpnService)) {
+                CoreProcess.killRunning()
+            }
         }
     }
 
     private companion object {
-        const val STOP_HANDOVER_TIMEOUT_MS = 5_000L
-        const val STOP_HANDOVER_POLL_MS = 100L
+        const val VPN_STOP_TIMEOUT_MS = 1_000L
+        const val VPN_STOP_POLL_MS = 25L
     }
 }

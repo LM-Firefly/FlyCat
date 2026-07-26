@@ -64,6 +64,7 @@ class CoreController(
     private val logScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val logSink = AtomicReference<LogSink?>(null)
     @Volatile private var logJob: Job? = null
+    @Volatile private var trafficSampleCache: TimedTrafficSample? = null
 
     private val client: HttpClient by lazy {
         HttpClient(OkHttp) {
@@ -186,16 +187,25 @@ class CoreController(
     override fun queryTrafficTotal(): Long =
         runBlocking(Dispatchers.IO) { queryTrafficTotalAsync() }
 
-    /** First line of streaming `/traffic`, then close. */
-    private suspend fun readTrafficSample(): RawTraffic? = runCatching {
-        client
-            .prepareGet(buildUrl("traffic")) { applyAuth() }
-            .execute { response ->
-                val line = response.bodyAsChannel().readLine()
-                line?.let { json.decodeFromString<RawTraffic>(it) }
+    /** Reuse one stream sample for the adjacent now/total reads performed by the UI. */
+    private suspend fun readTrafficSample(): RawTraffic? {
+        val now = System.nanoTime()
+        trafficSampleCache?.takeIf { now - it.capturedAtNanos <= TRAFFIC_SAMPLE_CACHE_NS }?.let {
+            return it.sample
+        }
+        return runCatching {
+                client
+                    .prepareGet(buildUrl("traffic")) { applyAuth() }
+                    .execute { response ->
+                        val line = response.bodyAsChannel().readLine()
+                        line?.let { json.decodeFromString<RawTraffic>(it) }
+                    }
+            }
+            .getOrNull()
+            ?.also { sample ->
+                trafficSampleCache = TimedTrafficSample(sample, System.nanoTime())
             }
     }
-        .getOrNull()
 
     override suspend fun queryConnectionsAsync(): ConnectionSnapshot = fetchConnections()
 
@@ -225,23 +235,32 @@ class CoreController(
 
     // ---- Proxy groups ----------------------------------------------------
 
-    override suspend fun queryAllProxyGroupsAsync(excludeNotSelectable: Boolean): List<ProxyGroup> {
-        val nodes = fetchProxies()
-        val groups = orderGroups(fetchGroups(), nodes)
-        return groups
-            .filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }
-            .map { buildGroup(it, nodes, ProxySort.Default) }
-    }
+    override suspend fun queryAllProxyGroupsAsync(excludeNotSelectable: Boolean): List<ProxyGroup> =
+        withGroupQueryTimeout {
+            val nodes = fetchProxies()
+            val groups = orderGroups(fetchGroups(), nodes)
+            groups
+                .filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }
+                .map { buildGroup(it, nodes, ProxySort.Default) }
+        }
 
     override fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
         runBlocking(Dispatchers.IO) { queryAllProxyGroupsAsync(excludeNotSelectable) }
 
-    override suspend fun queryProxyGroupNamesAsync(excludeNotSelectable: Boolean): List<String> {
-        val nodes = fetchProxies()
-        return orderGroups(fetchGroups(), nodes)
-            .filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }
-            .map { it.name }
-    }
+    override suspend fun queryProxyGroupNamesAsync(excludeNotSelectable: Boolean): List<String> =
+        withGroupQueryTimeout {
+            val nodes = fetchProxies()
+            orderGroups(fetchGroups(), nodes)
+                .filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }
+                .map { it.name }
+        }
+
+    private suspend fun <T> withGroupQueryTimeout(block: suspend () -> T): T =
+        if (local != null) {
+            withTimeout(LOCAL_GROUP_QUERY_TIMEOUT_MS) { block() }
+        } else {
+            block()
+        }
 
     override fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> =
         runBlocking(Dispatchers.IO) { queryProxyGroupNamesAsync(excludeNotSelectable) }
@@ -269,33 +288,12 @@ class CoreController(
     override fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup =
         runBlocking(Dispatchers.IO) { queryProxyGroupAsync(name, proxySort) }
 
-    private suspend fun fetchProxies(): Map<String, RawProxy> = coroutineScope {
-        val primaryRequest = async {
-            val raw = request(HttpMethod.Get, "proxies").bodyAsText()
-            json.decodeFromString<RawProxiesResponse>(raw).proxies
-        }
-        val providerRequest = async {
-            runCatching {
-                    val raw = request(HttpMethod.Get, "providers", "proxies").bodyAsText()
-                    json.decodeFromString<RawProvidersResponse>(raw)
-                        .providers
-                        .values
-                        .flatMap(RawProvider::proxies)
-                }
-                .onFailure { error ->
-                    Timber.w(error, "Fetch proxy-provider nodes failed")
-                }
-                .getOrDefault(emptyList())
-        }
-
-        buildMap {
-            providerRequest.await().forEach { proxy ->
-                if (proxy.name.isNotBlank()) put(proxy.name, proxy)
-            }
-            // The canonical /proxies snapshot wins for built-ins and groups. Mihomo exposes
-            // external provider nodes only through /providers/proxies, so both are required.
-            putAll(primaryRequest.await())
-        }
+    private suspend fun fetchProxies(): Map<String, RawProxy> {
+        // `/proxies` is the canonical, immediately available runtime snapshot. Waiting for
+        // `/providers/proxies` here made every group query depend on provider initialization and
+        // regressed startup by up to the full request timeout.
+        val raw = request(HttpMethod.Get, "proxies").bodyAsText()
+        return json.decodeFromString<RawProxiesResponse>(raw).proxies
     }
 
     private suspend fun fetchGroups(): List<RawProxy> {
@@ -685,9 +683,16 @@ class CoreController(
 
     private data class LogSink(val observer: LogObserver)
 
+    private data class TimedTrafficSample(
+        val sample: RawTraffic,
+        val capturedAtNanos: Long,
+    )
+
     private companion object {
         const val CONNECT_TIMEOUT_MS = 5_000L
         const val REQUEST_TIMEOUT_MS = 10_000L
+        const val LOCAL_GROUP_QUERY_TIMEOUT_MS = 1_000L
+        const val TRAFFIC_SAMPLE_CACHE_NS = 500_000_000L
         const val LOG_STREAM_RETRY_MS = 1_500L
 
         // Dummy host; UnixSocketFactory ignores host/port.

@@ -29,6 +29,7 @@ import com.github.yumelira.yumebox.core.model.*
 import com.github.yumelira.yumebox.core.util.YamlCodec
 import com.github.yumelira.yumebox.core.util.runtimeHomeDir
 import com.github.yumelira.yumebox.data.model.BuiltInOverrideCatalog
+import com.github.yumelira.yumebox.data.store.BuiltInOverrideFileStore
 import java.io.File
 import java.security.MessageDigest
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +38,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 class CompiledConfigPipeline(private val context: Context) {
+    private val builtInOverrideFiles = BuiltInOverrideFileStore(context)
     fun resolveOverrideSpecs(profileUuid: String): List<OverrideSpec> =
         resolveOverrideBundle(profileUuid, logger = null).overrides
 
@@ -350,7 +352,7 @@ class CompiledConfigPipeline(private val context: Context) {
         overrideId: String,
         metadataIndex: MetadataIndexPayload,
     ): File? {
-        materializeBuiltInOverride(overridesDir, overrideId)?.let {
+        materializeBuiltInOverride(overrideId)?.let {
             return it
         }
 
@@ -369,31 +371,9 @@ class CompiledConfigPipeline(private val context: Context) {
             .firstOrNull(File::exists)
     }
 
-    private fun materializeBuiltInOverride(overridesDir: File, overrideId: String): File? {
-        val def = BuiltInOverrideCatalog.find(overrideId) ?: return null
-        val configsDir = overridesDir.resolve("configs")
-        val target = configsDir.resolve("$overrideId.${def.contentType.extension}")
-        // Drop leftover files from a previous content-type switch (yaml → js). Never overwrite the
-        // kept extension — that file is the user's copy of the template once it exists.
-        listOf("yaml", "yml", "js")
-            .filterNot { extension -> extension == def.contentType.extension }
-            .forEach { extension ->
-                runCatching { configsDir.resolve("$overrideId.$extension").delete() }
-            }
-        if (target.exists()) {
-            return target
-        }
-        return runCatching {
-            configsDir.mkdirs()
-            context.assets.open(def.assetPath).use { input ->
-                target.outputStream().use { output -> input.copyTo(output) }
-            }
-            target
-        }
-            .onFailure { error ->
-                Log.w(TAG, "Failed to materialize built-in override id=$overrideId", error)
-            }
-            .getOrNull()
+    private fun materializeBuiltInOverride(overrideId: String): File? {
+        if (BuiltInOverrideCatalog.find(overrideId) == null) return null
+        return builtInOverrideFiles.sync(overrideId)
     }
 
     private fun resolveRuntimeInternalOverrideFile(overridesDir: File, profileUuid: String): File? {

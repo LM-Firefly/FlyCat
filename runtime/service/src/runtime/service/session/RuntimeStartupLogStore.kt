@@ -27,6 +27,7 @@ import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.Executors
 
 class RuntimeStartupLogStore(
     context: Context,
@@ -46,33 +47,43 @@ class RuntimeStartupLogStore(
     fun path(): String = file.absolutePath
 
     fun clear() {
-        synchronized(lock) { runCatching { file.delete() } }
+        writer.execute { synchronized(lock) { runCatching { file.delete() } } }
     }
 
     fun append(line: String) {
         if (line.isBlank()) return
-        synchronized(lock) {
-            runCatching {
-                file.parentFile?.mkdirs()
-                file.appendText("${line.trimEnd()}\n", StandardCharsets.UTF_8)
+        val normalized = "${line.trimEnd()}\n"
+        writer.execute {
+            synchronized(lock) {
+                runCatching {
+                    file.parentFile?.mkdirs()
+                    file.appendText(normalized, StandardCharsets.UTF_8)
+                }
             }
         }
     }
 
     fun snapshot(): String =
-        synchronized(lock) {
-            runCatching {
-                    if (file.exists()) {
-                        file.readText(StandardCharsets.UTF_8)
-                    } else {
-                        ""
+        runCatching {
+                writer.submit<String> {
+                        synchronized(lock) {
+                            if (file.exists()) {
+                                file.readText(StandardCharsets.UTF_8)
+                            } else {
+                                ""
+                            }
+                        }
                     }
-                }
-                .getOrDefault("")
-        }
+                    .get()
+            }
+            .getOrDefault("")
 
     companion object {
         private val lock = Any()
+        private val writer =
+            Executors.newSingleThreadExecutor { runnable ->
+                Thread(runnable, "runtime-startup-log").apply { isDaemon = true }
+            }
 
         fun scopeForMode(mode: RunMode): Scope =
             when (mode) {

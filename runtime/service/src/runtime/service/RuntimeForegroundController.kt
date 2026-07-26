@@ -308,6 +308,13 @@ class RuntimeForegroundController(
         StatusProvider.markRuntimeStopping(mode, sessionToken)
         notificationJob?.cancel()
         notificationJob = null
+        // Put down the data plane before any session-scoped cleanup that may be waiting on a
+        // compile or controller request. stopSelf then drives onDestroy and the authoritative
+        // stopped broadcast without waiting for the lifecycle lock.
+        com.github.yumelira.yumebox.runtime.service.core.CoreProcess.killRunning()
+        stopForegroundService()
+        val initialStopStartId = lastStartId
+        service.stopSelf(initialStopStartId)
         thread(name = "session-runtime-stop") {
             val stopResult = runtime?.stop(reason)
             if (stopResult?.success == false) {
@@ -324,9 +331,7 @@ class RuntimeForegroundController(
             // the newer id still stops this instance, and onDestroy then relaunches a fresh
             // one for the raced command instead of silently swallowing it.
             if (!destroyed) {
-                stopForegroundService()
-                var pinnedStartId = lastStartId
-                service.stopSelf(pinnedStartId)
+                var pinnedStartId = initialStopStartId
                 while (!destroyed && pinnedStartId != lastStartId) {
                     pinnedStartId = lastStartId
                     service.stopSelf(pinnedStartId)

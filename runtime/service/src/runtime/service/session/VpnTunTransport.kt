@@ -28,7 +28,6 @@ import android.net.IpPrefix
 import android.net.ProxyInfo
 import android.net.VpnService
 import android.os.Build
-import com.github.yumelira.yumebox.core.util.StartupTaskCoordinator
 import com.github.yumelira.yumebox.runtime.api.Components
 import com.github.yumelira.yumebox.runtime.service.R
 import com.github.yumelira.yumebox.runtime.service.config.AccessControlMode
@@ -54,8 +53,6 @@ class VpnTunTransport(
         startupLogStore.append("LOCAL_TUN transport start: begin")
         // Prefer the precompiled YAML attached to the spec (single compile on the start path).
         // Fall back to a local compile only for callers that have not prepared the spec yet.
-        // Geo assets must exist before the core boots; compile itself does not need them.
-        runBlocking { StartupTaskCoordinator.awaitWarmup() }
         val config =
             if (spec.compiledFinalYaml.isNotBlank()) {
                 spec.compiledFinalYaml
