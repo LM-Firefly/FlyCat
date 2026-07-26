@@ -202,37 +202,6 @@ class OverrideConfigViewModel(
         }
     }
 
-    fun duplicateConfig(id: String) {
-        viewModelScope.launch {
-            runCatching {
-                val source = getConfigById(id) ?: configRepo.getById(id) ?: return@runCatching
-                // Built-ins have no metadata row — materialize a user copy instead of
-                // store.duplicate.
-                val duplicated =
-                    if (isBuiltInConfig(id)) {
-                        val now = System.currentTimeMillis()
-                        OverrideConfig(
-                                id = OverrideMetadata.generateId(),
-                                name = YumeTxt.Override.BuiltIn.CopyName.format(source.name),
-                                description = source.description,
-                                contentType = source.contentType,
-                                content = source.content,
-                                createdAt = now,
-                                updatedAt = now,
-                            )
-                            .also { configRepo.save(it) }
-                    } else {
-                        configRepo.duplicate(id)
-                    }
-                if (duplicated != null) {
-                    _pendingRevealConfigId.value = duplicated.id
-                }
-                refreshNow()
-            }
-                .onFailure { error -> Timber.tag(TAG).e(error, "Failed to duplicate override") }
-        }
-    }
-
     fun reorderUserConfigs(fromIndex: Int, toIndex: Int) {
         viewModelScope.launch {
             val currentConfigs = _userConfigs.value

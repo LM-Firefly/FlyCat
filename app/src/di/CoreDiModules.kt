@@ -126,9 +126,15 @@ val appDataRuntimeModule = module {
     single { OverrideResolver(get(), get()) }
     single {
         val appContext = androidContext()
-        OverrideService(appContext, get()) {
-            // Override-change reload hook (RootTun removed; VPN reloads via the normal path).
-        }
+        val proxyFacade = get<ProxyFacade>()
+        OverrideService(
+            context = appContext,
+            resolver = get(),
+            isRuntimeRunning = {
+                !proxyFacade.isRemoteControllerActive() &&
+                    RuntimeStateMapper.isActuallyRunning(proxyFacade.runtimeSnapshot.value)
+            },
+        )
     }
     single {
         val profilesRepository = get<ProfilesRepository>()

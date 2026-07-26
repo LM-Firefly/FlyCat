@@ -52,6 +52,9 @@ object Intents {
     fun actionOverrideChanged(packageName: String): String =
         intentAction(packageName, "OVERRIDE_CHANGED")
 
+    fun actionOverrideApplied(packageName: String): String =
+        intentAction(packageName, "OVERRIDE_APPLIED")
+
     fun actionRootRuntimeFailed(packageName: String): String =
         intentAction(packageName, "ROOT_RUNTIME_FAILED")
 
@@ -76,9 +79,15 @@ object Intents {
     val ACTION_OVERRIDE_CHANGED: String
         get() = actionOverrideChanged(packageName)
 
+    val ACTION_OVERRIDE_APPLIED: String
+        get() = actionOverrideApplied(packageName)
+
     const val EXTRA_STOP_REASON = "stop_reason"
     const val EXTRA_RESTART = "restart"
     const val EXTRA_RUNTIME_MODE = "runtime_mode"
     const val EXTRA_UUID = "uuid"
     const val EXTRA_AFFECTS_RUNTIME = "affects_runtime"
+    const val EXTRA_OVERRIDE_REQUEST_ID = "override_request_id"
+    const val EXTRA_OVERRIDE_APPLY_SUCCESS = "override_apply_success"
+    const val EXTRA_OVERRIDE_APPLY_ERROR = "override_apply_error"
 }

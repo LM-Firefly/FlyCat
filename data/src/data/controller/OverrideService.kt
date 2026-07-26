@@ -20,17 +20,28 @@
 
 package com.github.yumelira.yumebox.data.controller
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
+import java.util.UUID
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.withTimeout
 import timber.log.Timber
 
 class OverrideService(
     context: Context,
     private val resolver: OverrideResolver,
-    private val onRuntimeOverrideChanged: () -> Unit = {},
+    private val isRuntimeRunning: () -> Boolean = { false },
 ) {
+    private companion object {
+        const val APPLY_TIMEOUT_MILLIS = 15_000L
+    }
+
     private val appContext = context.appContextOrSelf
 
     @Suppress("TooGenericExceptionCaught")
@@ -58,21 +69,54 @@ class OverrideService(
                 return false
             }
 
-            notifyRuntimeOverrideChanged()
-
-            true
-        } catch (
-            error: Exception) { // fault barrier: any resolver/broadcast failure degrades to false
+            if (isRuntimeRunning()) {
+                notifyRuntimeOverrideChangedAndAwait()
+            } else {
+                notifyRuntimeOverrideChanged()
+                true
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
             Timber.e(error, "Failed to apply override for profile: %s", profileId)
             false
         }
     }
 
-    private fun notifyRuntimeOverrideChanged() {
+    private fun notifyRuntimeOverrideChanged(requestId: String? = null) {
         appContext.sendBroadcast(
             Intent(Intents.actionOverrideChanged(appContext.packageName))
+                .putExtra(Intents.EXTRA_OVERRIDE_REQUEST_ID, requestId)
                 .setPackage(appContext.packageName)
         )
-        onRuntimeOverrideChanged()
+    }
+
+    private suspend fun notifyRuntimeOverrideChangedAndAwait(): Boolean {
+        val requestId = UUID.randomUUID().toString()
+        val result = CompletableDeferred<Boolean>()
+        val receiver =
+            object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    if (
+                        intent?.getStringExtra(Intents.EXTRA_OVERRIDE_REQUEST_ID) == requestId
+                    ) {
+                        result.complete(
+                            intent.getBooleanExtra(Intents.EXTRA_OVERRIDE_APPLY_SUCCESS, false)
+                        )
+                    }
+                }
+            }
+        val filter = IntentFilter(Intents.actionOverrideApplied(appContext.packageName))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            appContext.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION") appContext.registerReceiver(receiver, filter)
+        }
+        return try {
+            notifyRuntimeOverrideChanged(requestId)
+            withTimeout(APPLY_TIMEOUT_MILLIS) { result.await() }
+        } finally {
+            runCatching { appContext.unregisterReceiver(receiver) }
+        }
     }
 }
