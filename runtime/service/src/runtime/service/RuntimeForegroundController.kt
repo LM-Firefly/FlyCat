@@ -76,7 +76,7 @@ class RuntimeForegroundController(
     private var notificationJob: Job? = null
     private var runtime: SessionRuntime? = null
     private var reloadJob: Job? = null
-    private var reloadOverrideRequestId: String? = null
+    @Volatile private var reloadOverrideRequestId: String? = null
     @Volatile private var stopRequested = false
 
     /** Write token for the persisted phase slot; stale writers are dropped by StatusProvider. */
@@ -258,6 +258,10 @@ class RuntimeForegroundController(
         runCatching { service.unregisterReceiver(runtimeEventsReceiver) }
         reloadJob?.cancel()
         reloadJob = null
+        reloadOverrideRequestId?.let { requestId ->
+            service.sendOverrideApplied(requestId, false, "Runtime was destroyed during reload")
+        }
+        reloadOverrideRequestId = null
         notificationJob?.cancel()
         notificationJob = null
         stopForegroundService()
@@ -380,7 +384,9 @@ class RuntimeForegroundController(
                     overrideRequestId?.let { requestId ->
                         service.sendOverrideApplied(requestId, false, error.message)
                     }
-                    reloadOverrideRequestId = null
+                    if (reloadOverrideRequestId == overrideRequestId) {
+                        reloadOverrideRequestId = null
+                    }
                     startupLogStore.append(
                         "$tag failed=${error.message ?: "${label.lowercase()} runtime spec refresh failed"}"
                     )
@@ -397,7 +403,9 @@ class RuntimeForegroundController(
             overrideRequestId?.let { requestId ->
                 service.sendOverrideApplied(requestId, result.success, result.error)
             }
-            reloadOverrideRequestId = null
+            if (reloadOverrideRequestId == overrideRequestId) {
+                reloadOverrideRequestId = null
+            }
             if (!result.success) {
                 reason = result.error
                 startupLogStore.append(
