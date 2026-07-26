@@ -66,6 +66,11 @@ class CoreController(
     @Volatile private var logJob: Job? = null
     @Volatile private var trafficSampleCache: TimedTrafficSample? = null
 
+    /** Off-critical-path refreshes (see [providerSnapshot]); never joined by a request path. */
+    private val providerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Volatile private var providerSnapshotCache: TimedProviderSnapshot? = null
+    @Volatile private var providerSnapshotJob: Deferred<ProviderSnapshot>? = null
+
     private val client: HttpClient by lazy {
         HttpClient(OkHttp) {
             expectSuccess = true
@@ -288,12 +293,89 @@ class CoreController(
     override fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup =
         runBlocking(Dispatchers.IO) { queryProxyGroupAsync(name, proxySort) }
 
-    private suspend fun fetchProxies(): Map<String, RawProxy> {
-        // `/proxies` is the canonical, immediately available runtime snapshot. Waiting for
-        // `/providers/proxies` here made every group query depend on provider initialization and
-        // regressed startup by up to the full request timeout.
-        val raw = request(HttpMethod.Get, "proxies").bodyAsText()
-        return json.decodeFromString<RawProxiesResponse>(raw).proxies
+    /**
+     * Every node the UI can render, keyed by name.
+     *
+     * `/proxies` (`tunnel.Proxies()` in the core) is the canonical, immediately available snapshot,
+     * but it holds only config-declared outbounds and groups: members a group pulls in through
+     * `proxy-providers` are absent, so [buildGroup] used to fall back to a placeholder and render
+     * every provider-backed node as type Unknown with no latency. Providers therefore form the base
+     * layer and `/proxies` is laid on top, so a config-declared proxy of the same name still wins —
+     * the same precedence the core itself resolves.
+     *
+     * The two fetches run concurrently and the provider half is bounded (see [providerSnapshot]),
+     * so this never reintroduces the startup regression that made group queries wait on provider
+     * initialization.
+     */
+    private suspend fun fetchProxies(): Map<String, RawProxy> = coroutineScope {
+        val direct = async {
+            val raw = request(HttpMethod.Get, "proxies").bodyAsText()
+            json.decodeFromString<RawProxiesResponse>(raw).proxies
+        }
+        providerSnapshot().nodes + direct.await()
+    }
+
+    /**
+     * Best-effort snapshot of the nodes served by proxy providers, keyed by node name.
+     *
+     * Deliberately kept off the critical path: the fetch runs on [providerScope] and callers wait
+     * at most [PROVIDER_SNAPSHOT_WAIT_MS] for it, so a provider that is slow or still initializing
+     * degrades to "not enriched this round" instead of stalling a group query — which local mode
+     * bounds at [LOCAL_GROUP_QUERY_TIMEOUT_MS]. The in-flight fetch keeps running and fills the
+     * cache for the next call.
+     */
+    private suspend fun providerSnapshot(): ProviderSnapshot {
+        providerSnapshotCache
+            ?.takeIf { System.nanoTime() - it.capturedAtNanos <= PROVIDER_SNAPSHOT_CACHE_NS }
+            ?.let {
+                return it.snapshot
+            }
+        val refresh = refreshProviderSnapshot()
+        return withTimeoutOrNull(PROVIDER_SNAPSHOT_WAIT_MS) { refresh.await() }
+            ?: providerSnapshotCache?.snapshot
+            ?: ProviderSnapshot.Empty
+    }
+
+    @Synchronized
+    private fun refreshProviderSnapshot(): Deferred<ProviderSnapshot> {
+        providerSnapshotJob?.takeIf { it.isActive }?.let {
+            return it
+        }
+        return providerScope
+            .async {
+                runCatching { fetchProviderSnapshot() }
+                    .onSuccess {
+                        providerSnapshotCache = TimedProviderSnapshot(it, System.nanoTime())
+                    }
+                    .onFailure { error ->
+                        Timber.d(error, "provider node snapshot unavailable")
+                    }
+                    .getOrElse {
+                        providerSnapshotCache?.snapshot ?: ProviderSnapshot.Empty
+                    }
+            }
+            .also { providerSnapshotJob = it }
+    }
+
+    private suspend fun fetchProviderSnapshot(): ProviderSnapshot {
+        val nodes = LinkedHashMap<String, RawProxy>()
+        val owners = HashMap<String, String>()
+        fetchProvidersResponse(category = "proxies").providers.forEach { (key, entry) ->
+            // The core also registers a synthetic "compatible" provider per group plus a reserved
+            // one holding every config-declared proxy. They carry nothing `/proxies` does not
+            // already have, and treating them as owners would send delay probes for ordinary nodes
+            // down the provider endpoint for no reason.
+            if (parseVehicleType(entry.vehicleType) == Provider.VehicleType.Compatible) {
+                return@forEach
+            }
+            val providerName = entry.name.ifBlank { key }
+            entry.proxies.forEach { proxy ->
+                if (proxy.name.isBlank()) return@forEach
+                nodes[proxy.name] = proxy
+                if (providerName.isNotBlank()) owners[proxy.name] = providerName
+            }
+        }
+        return ProviderSnapshot(nodes = nodes, owners = owners)
     }
 
     private suspend fun fetchGroups(): List<RawProxy> {
@@ -354,26 +436,28 @@ class CoreController(
         }
     }
 
+    override suspend fun healthCheckProxy(group: String, proxyName: String): Int {
+        readDelay("proxies", proxyName, "delay")?.let {
+            return it
+        }
+        // `/proxies/{name}` resolves against `tunnel.Proxies()`, so a provider-backed node 404s
+        // there and would always read as a timeout. Retry through the provider that owns it.
+        val owner = providerSnapshot().owners[proxyName] ?: return -1
+        return readDelay("providers", "proxies", owner, proxyName, "healthcheck") ?: -1
+    }
+
+    /** Delay in ms, or null when the endpoint rejected the probe (unknown node, timeout, error). */
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun healthCheckProxy(group: String, proxyName: String): Int =
+    private suspend fun readDelay(vararg pathSegments: String): Int? =
         try {
-            val response =
-                request(
-                    HttpMethod.Get,
-                    "proxies",
-                    proxyName,
-                    "delay",
-                    query = delayQuery,
-                )
+            val response = request(HttpMethod.Get, *pathSegments, query = delayQuery)
             if (response.status.isSuccess()) {
                 json.decodeFromString<RawDelayResult>(response.bodyAsText()).delay
             } else {
-                -1
+                null
             }
-        } catch (
-            error:
-                Throwable) { // fault barrier: remote REST delay test must degrade to timeout (-1)
-            -1
+        } catch (_: Throwable) { // fault barrier: remote REST delay test degrades to "no result"
+            null
         }
 
     // ---- Providers -------------------------------------------------------
@@ -397,12 +481,16 @@ class CoreController(
     override fun queryProviders(): ProviderList =
         runBlocking(Dispatchers.IO) { queryProvidersAsync() }
 
+    private suspend fun fetchProvidersResponse(category: String): RawProvidersResponse {
+        val raw = request(HttpMethod.Get, "providers", category).bodyAsText()
+        return json.decodeFromString<RawProvidersResponse>(raw)
+    }
+
     private suspend fun fetchProviders(
         category: String,
         type: Provider.Type,
     ): List<Provider> {
-        val raw = request(HttpMethod.Get, "providers", category).bodyAsText()
-        val response = json.decodeFromString<RawProvidersResponse>(raw)
+        val response = fetchProvidersResponse(category)
         return response.providers.mapNotNull { (key, entry) ->
             val vehicle = parseVehicleType(entry.vehicleType) ?: return@mapNotNull null
             if (vehicle == Provider.VehicleType.Compatible) return@mapNotNull null
@@ -688,11 +776,31 @@ class CoreController(
         val capturedAtNanos: Long,
     )
 
+    /** Nodes contributed by proxy providers, plus the provider each node belongs to. */
+    private data class ProviderSnapshot(
+        val nodes: Map<String, RawProxy>,
+        val owners: Map<String, String>,
+    ) {
+        companion object {
+            val Empty = ProviderSnapshot(emptyMap(), emptyMap())
+        }
+    }
+
+    private data class TimedProviderSnapshot(
+        val snapshot: ProviderSnapshot,
+        val capturedAtNanos: Long,
+    )
+
     private companion object {
         const val CONNECT_TIMEOUT_MS = 5_000L
         const val REQUEST_TIMEOUT_MS = 10_000L
         const val LOCAL_GROUP_QUERY_TIMEOUT_MS = 1_000L
         const val TRAFFIC_SAMPLE_CACHE_NS = 500_000_000L
+
+        // Comfortably inside LOCAL_GROUP_QUERY_TIMEOUT_MS so enrichment can never be what makes a
+        // group query time out; the refresh outlives the wait and warms the cache regardless.
+        const val PROVIDER_SNAPSHOT_WAIT_MS = 400L
+        const val PROVIDER_SNAPSHOT_CACHE_NS = 5_000_000_000L
         const val LOG_STREAM_RETRY_MS = 1_500L
 
         // Dummy host; UnixSocketFactory ignores host/port.
