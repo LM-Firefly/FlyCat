@@ -12,9 +12,7 @@ use crate::compiler::fingerprint::hex_lower;
 use crate::compiler::patch::paths::{
     normalize_path, normalize_provider_path, profile_provider_path, runtime_home_dir,
 };
-use crate::compiler::patch::values::{
-    ensure_array_field, ensure_object_field, has_non_empty_string,
-};
+use crate::compiler::patch::values::{ensure_object_field, has_non_empty_string};
 use crate::compiler::schema::{
     DEFAULT_FAKE_IP_FILTER, DEFAULT_FAKE_IP_RANGE, DEFAULT_NAME_SERVERS,
 };
@@ -56,7 +54,6 @@ pub fn patch_static_runtime(root: &mut JsonValue, profile_dir: &Path, run_mode: 
     profile.insert("store-selected".to_string(), JsonValue::Bool(true));
     profile.insert("store-fake-ip".to_string(), JsonValue::Bool(true));
 
-    let append_system_dns = bool_field(object, "clash-for-android", "append-system-dns");
     let dns_enabled = bool_field(object, "dns", "enable");
 
     if !dns_enabled {
@@ -82,27 +79,12 @@ pub fn patch_static_runtime(root: &mut JsonValue, profile_dir: &Path, run_mode: 
                     .collect(),
             ),
         );
-        let clash_for_android = ensure_object_field(object, "clash-for-android");
-        clash_for_android.insert("append-system-dns".to_string(), JsonValue::Bool(true));
     }
 
-    if object
-        .get("clash-for-android")
-        .and_then(JsonValue::as_object)
-        .and_then(|value| value.get("append-system-dns"))
-        .and_then(JsonValue::as_bool)
-        .unwrap_or(append_system_dns)
-    {
-        let dns = ensure_object_field(object, "dns");
-        let nameserver = ensure_array_field(dns, "nameserver");
-        if !nameserver
-            .iter()
-            .any(|item| item.as_str() == Some("system://"))
-        {
-            nameserver.push(JsonValue::String("system://".to_string()));
-        }
-    }
-
+    // `system://` is deliberately NOT appended here, even though CFA's `append-system-dns` asks for
+    // it: that nameserver resolves through `dns.UpdateSystemDNS`, which only an in-process host can
+    // call. This core runs out of process, so the client would be built with an empty server list
+    // and fail every query it is handed. A profile that lists `system://` itself is left alone.
     backfill_enabled_dns_without_nameserver(object);
 
     // In the VpnService path the TUN is attached at runtime via a file descriptor; a config-provided
