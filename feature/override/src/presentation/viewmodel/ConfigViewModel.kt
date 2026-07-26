@@ -404,6 +404,12 @@ class OverrideConfigViewModel(
      * Rewrite every subscription binding so [overrideId] is present exactly for
      * [selectedProfileIds]. Order of existing chain entries is preserved; newly added ids are
      * appended (chain order = application order).
+     *
+     * Persisting the bindings is the whole operation. The runtime reapply is fired afterwards on
+     * [viewModelScope] and is deliberately NOT awaited: it needs the runtime service and a full
+     * override-chain resolve, and letting that gate the apply left the confirm action stuck behind
+     * work the user did not ask for. A reload that fails only means the running session keeps its
+     * previous chain until the next start/reload — the bindings on disk are already correct.
      */
     suspend fun applyOverrideToProfiles(
         overrideId: String,
@@ -411,32 +417,22 @@ class OverrideConfigViewModel(
     ): Result<Unit> =
         withContext(Dispatchers.IO) {
             runCatching {
-                val profiles = profilesRepository.queryAllProfiles()
-                val activeProfileId = profilesRepository.queryActiveProfile()?.uuid?.toString()
-                val activeBefore =
-                    activeProfileId
-                        ?.let { bindingProvider.getBinding(it)?.overrideIds.orEmpty() }
-                        .orEmpty()
+                // Resolved from local metadata rather than the runtime profile list: unbinding only
+                // ever concerns profiles that already reference this override, so the write path
+                // never has to reach the service.
+                val boundProfileIds = bindingProvider.getProfilesUsingOverride(overrideId).toSet()
 
-                profiles.forEach { profile ->
-                    val profileId = profile.uuid.toString()
-                    val shouldBind = profileId in selectedProfileIds
-                    val currentIds = bindingProvider.getBinding(profileId)?.overrideIds.orEmpty()
-                    val isBound = overrideId in currentIds
-                    when {
-                        shouldBind && !isBound -> bindingProvider.addOverride(profileId, overrideId)
-
-                        !shouldBind && isBound ->
-                            bindingProvider.removeOverride(profileId, overrideId)
-                    }
+                (selectedProfileIds - boundProfileIds).forEach { profileId ->
+                    bindingProvider.addOverride(profileId, overrideId)
+                }
+                (boundProfileIds - selectedProfileIds).forEach { profileId ->
+                    bindingProvider.removeOverride(profileId, overrideId)
                 }
 
-                val activeAfter =
-                    activeProfileId
-                        ?.let { bindingProvider.getBinding(it)?.overrideIds.orEmpty() }
-                        .orEmpty()
-                if (activeProfileId != null && activeBefore != activeAfter) {
-                    activeProfileOverrideReloader.reapplyActiveProfileOverride()
+                val changedProfileIds =
+                    (selectedProfileIds - boundProfileIds) + (boundProfileIds - selectedProfileIds)
+                if (changedProfileIds.isNotEmpty()) {
+                    reapplyActiveProfileInBackground(overrideId, changedProfileIds)
                 }
                 loadUsageCounts()
             }
@@ -445,6 +441,28 @@ class OverrideConfigViewModel(
                         .e(error, "Failed to apply override %s to selected profiles", overrideId)
                 }
         }
+
+    /** Best-effort: never surfaced to the caller, never allowed to fail the binding write. */
+    private fun reapplyActiveProfileInBackground(
+        overrideId: String,
+        changedProfileIds: Set<String>,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                // Resolving the active profile is itself a runtime call, so it happens here and
+                // not on the write path. Only a change to the active profile's own chain is worth
+                // a reload.
+                val activeProfileId = profilesRepository.queryActiveProfile()?.uuid?.toString()
+                if (activeProfileId in changedProfileIds) {
+                    activeProfileOverrideReloader.reapplyActiveProfileOverride()
+                }
+            }
+                .onFailure { error ->
+                    Timber.tag(TAG)
+                        .w(error, "Deferred runtime reload failed after applying %s", overrideId)
+                }
+        }
+    }
 
     suspend fun isConfigInUse(id: String): Boolean = resolver.isOverrideInUse(id)
 
