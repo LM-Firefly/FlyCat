@@ -33,9 +33,11 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -121,6 +123,23 @@ static char **build_envp(char *channel_env) {
     memcpy(envp, environ, inherited * sizeof(char *));
     envp[inherited] = channel_env;
     return envp;
+}
+
+// Nothing else waits on the core child — Kotlin only ever SIGKILLs it — so without this it stays a
+// zombie until the app process dies. The thread blocks in waitpid and exits when the child does.
+static void *reap_child(void *arg) {
+    pid_t pid = (pid_t)(intptr_t)arg;
+    while (waitpid(pid, NULL, 0) < 0 && errno == EINTR) {
+        // retry
+    }
+    return NULL;
+}
+
+static void reap_detached(pid_t pid) {
+    pthread_t thread;
+    if (pthread_create(&thread, NULL, reap_child, (void *)(intptr_t)pid) == 0) {
+        pthread_detach(thread);
+    }
 }
 
 // err_fd is CLOEXEC, so a successful execve closes it silently and the parent sees EOF instead.
@@ -272,12 +291,17 @@ Java_com_github_yumelira_yumebox_core_bridge_NativeProcess_nativeStart(
         goto cleanup;
     }
 
+    reap_detached(pid);
+
     result = (*env)->NewIntArray(env, 2);
-    if (result != NULL) {
-        jint values[2] = {(jint)pid, (jint)fds[0]};
-        (*env)->SetIntArrayRegion(env, result, 0, 2, values);
-        fds[0] = -1; // the channel fd now belongs to Kotlin
+    if (result == NULL) {
+        // No handle to hand back, so nothing could ever stop it: an orphan core would keep the tun.
+        kill(pid, SIGKILL);
+        goto cleanup;
     }
+    jint values[2] = {(jint)pid, (jint)fds[0]};
+    (*env)->SetIntArrayRegion(env, result, 0, 2, values);
+    fds[0] = -1; // the channel fd now belongs to Kotlin
 
 cleanup:
     for (int i = 0; i < 2; i++) {
@@ -360,15 +384,23 @@ Java_com_github_yumelira_yumebox_core_bridge_Channel_nativeReadMessage(
     if (data != scratch) {
         free(data);
     }
+
+    // SEQPACKET silently discards what does not fit, and MSG_CTRUNC means the kernel closed a
+    // descriptor it could not deliver; both would corrupt the protocol if reported as success.
+    int truncated = (message.msg_flags & (MSG_TRUNC | MSG_CTRUNC)) != 0;
+    // A rejected read throws, so its ReadResult never reaches the caller — an attached descriptor
+    // would leak with nobody left to close it.
+    if (truncated && received_fd >= 0) {
+        close(received_fd);
+        received_fd = -1;
+    }
     (*env)->SetIntArrayRegion(env, fd_holder, 0, 1, &received_fd);
 
     if (count < 0) {
         throw_io(env, "recvmsg: %s", strerror(saved_errno));
         return -1;
     }
-    // SEQPACKET silently discards what does not fit, and MSG_CTRUNC means the kernel closed a
-    // descriptor it could not deliver; both would corrupt the protocol if reported as success.
-    if ((message.msg_flags & (MSG_TRUNC | MSG_CTRUNC)) != 0) {
+    if (truncated) {
         throw_io(env, "datagram truncated (flags=%#x, %d of %d bytes)", message.msg_flags,
                  (int)count, length);
         return -1;
