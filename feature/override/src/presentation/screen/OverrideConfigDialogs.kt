@@ -70,7 +70,10 @@ internal fun CreateConfigDialog(
     var selectedImportFileName by remember(show.value) { mutableStateOf("") }
     var networkImportUrl by remember(show.value) { mutableStateOf("") }
     var isImporting by remember(show.value) { mutableStateOf(false) }
-    val canConfirm =
+    // Exposed as state (not a plain val) because it is read inside the sheet's endAction lambda:
+    // the overlay-hosted title-bar row can be re-rendered from a stale composable after the app
+    // returns from background, and only a state read there keeps it subscribed to updates.
+    val canConfirm by rememberUpdatedState(
         when (inputMode) {
             OverrideConfigInputMode.CreateNew -> nameTextFieldValueState.value.text.isNotBlank()
             OverrideConfigInputMode.LocalFile ->
@@ -78,6 +81,7 @@ internal fun CreateConfigDialog(
 
             OverrideConfigInputMode.NetworkUrl -> networkImportUrl.isNotBlank() && !isImporting
         }
+    )
     val importConfigLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri ->
             selectedImportUri = uri

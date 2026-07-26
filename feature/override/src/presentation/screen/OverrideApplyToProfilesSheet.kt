@@ -100,7 +100,6 @@ internal fun OverrideApplyToProfilesSheet(
             }
     }
 
-    val ready = ui as? ApplyUi.Ready
     val saveSelection = {
         val config = target
         val selection = (ui as? ApplyUi.Ready)?.selected
@@ -135,8 +134,11 @@ internal fun OverrideApplyToProfilesSheet(
             )
         },
         endAction = {
+            // Read snapshot state inside this lambda (not a captured value): the title-bar row is
+            // hosted by the overlay and can be re-rendered from a stale composable after the app
+            // returns from background — only a state read here keeps it subscribed to updates.
             AppBottomSheetConfirmAction(
-                enabled = !isSaving && ready != null,
+                enabled = !isSaving && ui is ApplyUi.Ready,
                 onClick = saveSelection,
                 contentDescription = YumeTxt.Override.ApplySheet.Button.Confirm,
             )

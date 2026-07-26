@@ -30,7 +30,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.TextFieldValue
@@ -80,18 +82,24 @@ internal fun ProfileAddSheetContent(
             if (stableHeightPx <= 0) UiDp.dp0 else with(density) { stableHeightPx.toDp() }
         }
 
+    // Read inside the title-bar action lambdas via state (not captured parameters): the
+    // overlay-hosted action row can be re-rendered from a stale composable after the app returns
+    // from background, and only a state read there keeps it subscribed to updates.
+    val downloading by rememberUpdatedState(isDownloading)
+    val typeIndex by rememberUpdatedState(selectedTypeIndex)
+
     AppActionBottomSheet(
         show = show,
         title =
             if (isEditing) YumeTxt.ProfilesPage.Sheet.EditTitle
             else YumeTxt.ProfilesPage.Sheet.AddTitle,
         startAction = {
-            if (!isDownloading) {
+            if (!downloading) {
                 AppBottomSheetCloseAction(contentDescription = "Cancel", onClick = actions.dismiss)
             }
         },
         endAction = {
-            if (!isDownloading && selectedTypeIndex != PROFILE_IMPORT_TYPE_QR) {
+            if (!downloading && typeIndex != PROFILE_IMPORT_TYPE_QR) {
                 AppBottomSheetConfirmAction(
                     contentDescription = "Confirm",
                     onClick = actions.submit,
