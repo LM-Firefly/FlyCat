@@ -265,7 +265,6 @@ fun OverrideListScreen(
                         isInUse = item.isInUse,
                         isBuiltIn = true,
                         onApply = { applyTargetConfig.value = config },
-                        onCopy = { viewModel.duplicateConfig(config.id) },
                         onExport = {
                             exportTargetConfig.value = config
                             exportConfigLauncher.launch(
@@ -297,7 +296,6 @@ fun OverrideListScreen(
                             isInUse = item.isInUse,
                             isBuiltIn = false,
                             onApply = { applyTargetConfig.value = config },
-                            onCopy = { viewModel.duplicateConfig(config.id) },
                             onExport = {
                                 exportTargetConfig.value = config
                                 exportConfigLauncher.launch(

@@ -53,7 +53,6 @@ internal fun ReorderableCollectionItemScope.OverrideConfigCard(
     isInUse: Boolean,
     isBuiltIn: Boolean,
     onApply: () -> Unit,
-    onCopy: () -> Unit,
     onExport: () -> Unit,
     onEdit: () -> Unit,
     onDelete: (() -> Unit)?,
@@ -65,7 +64,6 @@ internal fun ReorderableCollectionItemScope.OverrideConfigCard(
         isInUse = isInUse,
         isBuiltIn = isBuiltIn,
         onApply = onApply,
-        onCopy = onCopy,
         onExport = onExport,
         onEdit = onEdit,
         onDelete = onDelete,
@@ -85,7 +83,6 @@ internal fun OverrideConfigCard(
     isInUse: Boolean,
     isBuiltIn: Boolean,
     onApply: () -> Unit,
-    onCopy: () -> Unit,
     onExport: () -> Unit,
     onEdit: () -> Unit,
     onDelete: (() -> Unit)?,
@@ -97,7 +94,6 @@ internal fun OverrideConfigCard(
         isInUse = isInUse,
         isBuiltIn = isBuiltIn,
         onApply = onApply,
-        onCopy = onCopy,
         onExport = onExport,
         onEdit = onEdit,
         onDelete = onDelete,
@@ -113,7 +109,6 @@ private fun OverrideConfigCardContent(
     isInUse: Boolean,
     isBuiltIn: Boolean,
     onApply: () -> Unit,
-    onCopy: () -> Unit,
     onExport: () -> Unit,
     onEdit: () -> Unit,
     onDelete: (() -> Unit)?,
@@ -184,11 +179,6 @@ private fun OverrideConfigCardContent(
                             onClick = onDelete,
                         )
                     }
-                    OverrideCardActionIconButton(
-                        imageVector = Yume.Copy,
-                        contentDescription = YumeTxt.Override.Card.Copy,
-                        onClick = onCopy,
-                    )
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
