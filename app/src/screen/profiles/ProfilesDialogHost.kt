@@ -25,6 +25,8 @@ package com.github.yumelira.yumebox.screen.profiles
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
 import com.github.yumelira.yumebox.data.controller.OverrideService
 import com.github.yumelira.yumebox.data.model.OverrideConfig
@@ -34,10 +36,10 @@ import com.github.yumelira.yumebox.feature.meta.presentation.util.CustomRoutingB
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.client.ProfilePatch
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
+import tf.gal.yumebox.locale.YumeTxt
+import timber.log.Timber
 
 @Composable
 internal fun ProfilesDialogHost(
@@ -140,6 +142,7 @@ private fun ProfileSettingsDialogHost(
     isRunning: Boolean,
 ) {
     val profile = state.profileToEdit ?: return
+    val context = LocalContext.current
     ProfileSettingsDialog(
         show = state.showSettings.value,
         profile = profile,
@@ -177,6 +180,7 @@ private fun ProfileSettingsDialogHost(
                     overrideService = overrideService,
                     homeViewModel = homeViewModel,
                     isRunning = isRunning,
+                    context = context,
                 )
         },
     )
@@ -191,38 +195,38 @@ private suspend fun saveProfileOverrides(
     overrideService: OverrideService,
     homeViewModel: HomeViewModel,
     isRunning: Boolean,
+    context: android.content.Context,
 ): ProfileBinding? {
     val profileId = profile.uuid.toString()
     val overrideIds = selectedIds.distinct()
-    val previousBinding = bindingProvider.getBinding(profileId)
     val updatedBinding =
-        previousBinding?.copy(overrideIds = overrideIds)
-            ?: binding?.copy(overrideIds = overrideIds)
+        binding?.copy(overrideIds = overrideIds)
             ?: ProfileBinding(profileId = profileId, overrideIds = overrideIds)
 
+    bindingProvider.setBinding(updatedBinding)
+    val refreshedBinding = bindingProvider.getBinding(profileId)
+
     if (OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID in overrideIds) {
-        routingBootstrapper.ensureDefaultContent()
+        runCatching { routingBootstrapper.ensureDefaultContent() }
+            .onFailure { error ->
+                Timber.e(
+                    error,
+                    "Failed to generate custom routing content for profile %s",
+                    profileId,
+                )
+                context.toast(error.message ?: YumeTxt.ProfilesPage.SettingsDialog.CustomRouting)
+            }
     }
 
-    return try {
-        bindingProvider.setBinding(updatedBinding)
-        val shouldApplyRuntime =
-            (isRunning || profile.active) &&
-                (profile.active || homeViewModel.isCurrentProfile(profile.uuid))
-        if (shouldApplyRuntime) {
-            check(overrideService.applyOverride(profileId)) {
-                "覆写配置未能应用到当前代理"
-            }
+    val shouldApplyRuntime =
+        (isRunning || profile.active) &&
+            (profile.active || homeViewModel.isCurrentProfile(profile.uuid))
+    if (shouldApplyRuntime) {
+        val applied = overrideService.applyOverride(profileId)
+        if (!applied) {
+            Timber.w("Override apply reported failure for profile %s", profileId)
+            context.toast(YumeTxt.Util.Error.UnknownError)
         }
-        bindingProvider.getBinding(profileId) ?: updatedBinding
-    } catch (error: Throwable) {
-        withContext(NonCancellable) {
-            if (previousBinding == null) {
-                bindingProvider.removeBinding(profileId)
-            } else {
-                bindingProvider.setBinding(previousBinding)
-            }
-        }
-        throw error
     }
+    return refreshedBinding
 }

@@ -59,15 +59,6 @@ fun Context.sendOverrideChanged() {
     sendBroadcastSelf(Intent(Intents.ACTION_OVERRIDE_CHANGED))
 }
 
-fun Context.sendOverrideApplied(requestId: String, success: Boolean, error: String? = null) {
-    sendBroadcastSelf(
-        Intent(Intents.ACTION_OVERRIDE_APPLIED)
-            .putExtra(Intents.EXTRA_OVERRIDE_REQUEST_ID, requestId)
-            .putExtra(Intents.EXTRA_OVERRIDE_APPLY_SUCCESS, success)
-            .putExtra(Intents.EXTRA_OVERRIDE_APPLY_ERROR, error)
-    )
-}
-
 fun Context.sendServiceRecreated() {
     sendBroadcastSelf(Intent(Intents.ACTION_SERVICE_RECREATED))
 }

@@ -34,7 +34,6 @@ import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 import com.github.yumelira.yumebox.runtime.service.notification.ServiceNotificationManager
 import com.github.yumelira.yumebox.runtime.service.session.*
 import com.github.yumelira.yumebox.runtime.service.util.CoreRuntimeConfig
-import com.github.yumelira.yumebox.runtime.service.util.sendOverrideApplied
 import com.github.yumelira.yumebox.runtime.service.util.sendProfileLoaded
 import com.github.yumelira.yumebox.runtime.service.util.sendRuntimeStarted
 import com.github.yumelira.yumebox.runtime.service.util.sendRuntimeStopped
@@ -76,7 +75,6 @@ class RuntimeForegroundController(
     private var notificationJob: Job? = null
     private var runtime: SessionRuntime? = null
     private var reloadJob: Job? = null
-    private var reloadOverrideRequestId: String? = null
     @Volatile private var stopRequested = false
 
     /** Write token for the persisted phase slot; stale writers are dropped by StatusProvider. */
@@ -104,10 +102,7 @@ class RuntimeForegroundController(
                         }
                     }
 
-                    Intents.ACTION_OVERRIDE_CHANGED ->
-                        scheduleReload(
-                            intent.getStringExtra(Intents.EXTRA_OVERRIDE_REQUEST_ID)
-                        )
+                    Intents.ACTION_OVERRIDE_CHANGED -> scheduleReload()
 
                     Intents.ACTION_RUNTIME_REQUEST_STOP -> {
                         val targetMode = intent.getStringExtra(Intents.EXTRA_RUNTIME_MODE)
@@ -310,10 +305,6 @@ class RuntimeForegroundController(
         reason = stopReason
         reloadJob?.cancel()
         reloadJob = null
-        reloadOverrideRequestId?.let { requestId ->
-            service.sendOverrideApplied(requestId, false, "Runtime stopped during override reload")
-        }
-        reloadOverrideRequestId = null
         StatusProvider.markRuntimeStopping(mode, sessionToken)
         notificationJob?.cancel()
         notificationJob = null
@@ -364,12 +355,8 @@ class RuntimeForegroundController(
         )
     }
 
-    private fun scheduleReload(overrideRequestId: String? = null) {
+    private fun scheduleReload() {
         reloadJob?.cancel()
-        reloadOverrideRequestId?.let { requestId ->
-            service.sendOverrideApplied(requestId, false, "Override reload was superseded")
-        }
-        reloadOverrideRequestId = overrideRequestId
         reloadJob = scope.launch {
             startupLogStore.append("$tag spec: reload create begin")
             val spec = runCatching {
@@ -377,10 +364,6 @@ class RuntimeForegroundController(
             }
                 .getOrElse { error ->
                     reason = error.message
-                    overrideRequestId?.let { requestId ->
-                        service.sendOverrideApplied(requestId, false, error.message)
-                    }
-                    reloadOverrideRequestId = null
                     startupLogStore.append(
                         "$tag failed=${error.message ?: "${label.lowercase()} runtime spec refresh failed"}"
                     )
@@ -391,13 +374,7 @@ class RuntimeForegroundController(
                 "$tag spec: reload create done profile=${spec.profileUuid} overrides=${spec.overrideSpecs.size}"
             )
 
-            val result =
-                runtime?.reload(spec)
-                    ?: RuntimeOperationResult(false, "Runtime is not ready for override reload")
-            overrideRequestId?.let { requestId ->
-                service.sendOverrideApplied(requestId, result.success, result.error)
-            }
-            reloadOverrideRequestId = null
+            val result = runtime!!.reload(spec)
             if (!result.success) {
                 reason = result.error
                 startupLogStore.append(
