@@ -79,7 +79,7 @@ func socketOwnerQuery(channelFd int) ownerQuery {
 		request = append(request, '\t')
 		request = append(request, target...)
 
-		if err := syscall.Sendmsg(channelFd, request, nil, nil, 0); err != nil {
+		if err := sendRequest(channelFd, request); err != nil {
 			// SEQPACKET sendmsg is all-or-nothing: still aligned, so do not latch the RPC off.
 			report(err, 0)
 			return -1, ""
@@ -98,6 +98,16 @@ func socketOwnerQuery(channelFd int) ownerQuery {
 				return -1, ""
 			}
 			return decodeSocketOwner(reply[:n])
+		}
+	}
+}
+
+// sendRequest retries the interrupted case the way the receive path does: a datagram send is
+// all-or-nothing, so EINTR means nothing left the socket and the RPC is still aligned.
+func sendRequest(fd int, request []byte) error {
+	for {
+		if err := syscall.Sendmsg(fd, request, nil, nil, 0); err != syscall.EINTR {
+			return err
 		}
 	}
 }
