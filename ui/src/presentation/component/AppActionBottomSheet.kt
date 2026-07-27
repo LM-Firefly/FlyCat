@@ -47,9 +47,11 @@ object AppBottomSheetDefaults {
 
     val outsideMargin = DpSize(UiDp.dp0, UiDp.dp0)
 
-    @Composable fun backgroundColor(): Color = MiuixTheme.colorScheme.surface
+    @Composable
+    fun backgroundColor(): Color = MiuixTheme.colorScheme.surface
 
-    @Composable fun dragHandleColor(): Color = MiuixTheme.colorScheme.onSurfaceVariantActions
+    @Composable
+    fun dragHandleColor(): Color = MiuixTheme.colorScheme.onSurfaceVariantActions
 
     @Composable
     fun actionIconTint(enabled: Boolean): Color =

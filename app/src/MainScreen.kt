@@ -37,10 +37,10 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.common.util.openUrl
 import com.github.yumelira.yumebox.data.store.FeatureStore
 import com.github.yumelira.yumebox.data.store.LinkOpenMode
+import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.screen.ProxyPager
 import com.github.yumelira.yumebox.presentation.theme.YumeHaze
@@ -70,10 +70,10 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val isRemoteControllerMode by homeViewModel.isRemoteControllerMode.collectAsState()
     val showProxyDestination =
         isRemoteControllerMode ||
-            isConfigReloading ||
-            runtimeSnapshot.phase == RuntimePhase.Starting ||
-            runtimeSnapshot.phase == RuntimePhase.Running ||
-            runtimeSnapshot.phase == RuntimePhase.Stopping
+                isConfigReloading ||
+                runtimeSnapshot.phase == RuntimePhase.Starting ||
+                runtimeSnapshot.phase == RuntimePhase.Running ||
+                runtimeSnapshot.phase == RuntimePhase.Stopping
     val visibleDestinations =
         remember(showProxyDestination) {
             BottomBarDestination.entries.filter { destination ->
@@ -116,41 +116,41 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val bottomBarScrollBehavior =
         rememberBottomBarScrollBehavior(autoHideEnabled = bottomBarAutoHideEnabled)
     val selectedDestination by
-        remember(mainPagerState, visibleDestinations) {
-            derivedStateOf {
-                if (previousDestinations != visibleDestinations) {
-                    previousDestinations.getOrNull(mainPagerState.selectedPage)
-                        ?: settledDestination
-                } else {
-                    visibleDestinations.getOrElse(mainPagerState.selectedPage) {
-                        BottomBarDestination.Home
-                    }
+    remember(mainPagerState, visibleDestinations) {
+        derivedStateOf {
+            if (previousDestinations != visibleDestinations) {
+                previousDestinations.getOrNull(mainPagerState.selectedPage)
+                    ?: settledDestination
+            } else {
+                visibleDestinations.getOrElse(mainPagerState.selectedPage) {
+                    BottomBarDestination.Home
                 }
             }
         }
+    }
     val homeVisibility by
-        remember(mainPagerState) {
-            derivedStateOf {
-                calculateHomeVisibility(
-                    currentPage = mainPagerState.pagerState.currentPage,
-                    currentPageOffsetFraction = mainPagerState.pagerState.currentPageOffsetFraction,
-                )
-            }
+    remember(mainPagerState) {
+        derivedStateOf {
+            calculateHomeVisibility(
+                currentPage = mainPagerState.pagerState.currentPage,
+                currentPageOffsetFraction = mainPagerState.pagerState.currentPageOffsetFraction,
+            )
         }
+    }
     // Floating nav bar (with the proxy FAB) shows on the classic home and every other page; the
     // default home has its own chrome, so it stays hidden there.
     val bottomBarVisible by
-        remember(classicHomeEnabled, settledDestination, selectedDestination) {
-            derivedStateOf {
-                when {
-                    // Dual-pane shell: still float the left-pane bottom bar when not on Moe home.
-                    classicHomeEnabled -> true
-                    selectedDestination == BottomBarDestination.Home -> false
-                    settledDestination != BottomBarDestination.Home -> true
-                    else -> false
-                }
+    remember(classicHomeEnabled, settledDestination, selectedDestination) {
+        derivedStateOf {
+            when {
+                // Dual-pane shell: still float the left-pane bottom bar when not on Moe home.
+                classicHomeEnabled -> true
+                selectedDestination == BottomBarDestination.Home -> false
+                settledDestination != BottomBarDestination.Home -> true
+                else -> false
             }
         }
+    }
     val bottomBarBackground =
         MiuixTheme.colorScheme.run {
             surface.takeIf { background.luminance() < 0.5f } ?: background
@@ -230,7 +230,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     LaunchedEffect(settledDestination) {
         if (
             settledDestination != BottomBarDestination.Proxy &&
-                detailBackStack.lastOrNull() is Route.Providers
+            detailBackStack.lastOrNull() is Route.Providers
         ) {
             detailNavigator.replaceAll(listOf(Route.About))
         }
@@ -314,7 +314,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
 @Composable
 private fun MainScreenBackHandler(mainPagerState: MainPagerState) {
     val isPagerBackHandlerEnabled by
-        remember(mainPagerState) { derivedStateOf { mainPagerState.selectedPage != 0 } }
+    remember(mainPagerState) { derivedStateOf { mainPagerState.selectedPage != 0 } }
     val navigationEventState = rememberNavigationEventState(NavigationEventInfo.None)
 
     NavigationBackHandler(

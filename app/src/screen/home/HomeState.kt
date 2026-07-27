@@ -111,8 +111,8 @@ internal fun resolveHomeControlState(
     }
     val phaseStillActive =
         phase != RuntimePhase.Stopping &&
-            phase != RuntimePhase.Idle &&
-            phase != RuntimePhase.Failed
+                phase != RuntimePhase.Idle &&
+                phase != RuntimePhase.Failed
     if (pendingTransition == PendingTransition.Stopping && phaseStillActive) {
         return HomeProxyControlState.Disconnecting
     }

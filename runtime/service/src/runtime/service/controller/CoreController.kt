@@ -65,13 +65,11 @@ class CoreController(
         HttpClient(OkHttp) {
             expectSuccess = true
             install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
-            // Bound requests so a dead backend fails fast instead of saturating Dispatchers.IO.
             install(HttpTimeout) {
                 connectTimeoutMillis = CONNECT_TIMEOUT_MS
                 socketTimeoutMillis = REQUEST_TIMEOUT_MS
                 requestTimeoutMillis = REQUEST_TIMEOUT_MS
             }
-            // Local mode routes all traffic over the fixed UNIX controller socket.
             local?.let { target ->
                 engine { config { socketFactory(UnixSocketFactory(target.socketPath)) } }
             }
@@ -92,9 +90,6 @@ class CoreController(
         local?.secret?.invoke() ?: (backendProvider()?.secret.orEmpty())
 
     private fun ensureEndpointReady() {
-        // Local controller: socket path is fixed; secret may be blank when the profile does not
-        // set one (Bearer is optional). Do NOT treat empty secret as "core not ready" — that
-        // false-failed root/VPN startup probes right after the core published clash.sock.
         if (local != null) return
         if (backendProvider() == null) {
             error("No active remote controller backend")
@@ -164,9 +159,6 @@ class CoreController(
     private inline fun <reified T> jsonBody(value: T): TextContent =
         TextContent(json.encodeToString(value), ContentType.Application.Json)
 
-    // ---- Tunnel / traffic ------------------------------------------------
-    // Async implementations are the source of truth; CoreApi sync methods are legacy bridges.
-
     override suspend fun queryTunnelStateAsync(): TunnelState {
         val raw = request(HttpMethod.Get, "configs").bodyAsText()
         val configs = json.decodeFromString<RawConfigs>(raw)
@@ -227,8 +219,6 @@ class CoreController(
                         ?: error("connections stream ended before the first snapshot")
                 json.decodeFromString<ConnectionSnapshot>(line)
             }
-
-    // ---- Proxy groups ----------------------------------------------------
 
     override suspend fun queryAllProxyGroupsAsync(excludeNotSelectable: Boolean): List<ProxyGroup> =
         withGroupQueryTimeout {
@@ -373,8 +363,6 @@ class CoreController(
         return json.decodeFromString<RawGroupResponse>(raw).proxies
     }
 
-    // ---- Selection / connections mutation --------------------------------
-
     @Suppress("TooGenericExceptionCaught")
     override suspend fun patchSelectorAsync(group: String, name: String): Boolean =
         try {
@@ -412,8 +400,6 @@ class CoreController(
         runBlocking(Dispatchers.IO) { closeAllConnectionsAsync() }
     }
 
-    // ---- Health checks ---------------------------------------------------
-
     override suspend fun healthCheck(group: String) {
         runCatching {
             request(
@@ -449,8 +435,6 @@ class CoreController(
         } catch (_: Throwable) { // fault barrier: remote REST delay test degrades to "no result"
             null
         }
-
-    // ---- Providers -------------------------------------------------------
 
     /** Proxy + rule providers; built-in Compatible entries are omitted. */
     override suspend fun queryProvidersAsync(): ProviderList {
@@ -519,13 +503,9 @@ class CoreController(
         request(HttpMethod.Put, "providers", category, name)
     }
 
-    // ---- Configuration ---------------------------------------------------
-
     override suspend fun queryConfigurationAsync(): UiConfiguration = UiConfiguration()
 
     override fun queryConfiguration(): UiConfiguration = UiConfiguration()
-
-    // ---- Rules -----------------------------------------------------------
 
     override suspend fun queryRulesAsync(): List<RuntimeRule> = fetchRules()
 
@@ -568,8 +548,6 @@ class CoreController(
             hitCount = extra?.hitCount ?: 0L,
             missCount = extra?.missCount ?: 0L,
         )
-
-    // ---- Adapters --------------------------------------------------------
 
     private fun RawProxy.toProxy(): Proxy =
         Proxy(
@@ -624,11 +602,8 @@ class CoreController(
         const val LOCAL_GROUP_QUERY_TIMEOUT_MS = 1_000L
         const val TRAFFIC_SAMPLE_CACHE_NS = 500_000_000L
 
-        // Comfortably inside LOCAL_GROUP_QUERY_TIMEOUT_MS so enrichment can never be what makes a
-        // group query time out; the refresh outlives the wait and warms the cache regardless.
         const val PROVIDER_SNAPSHOT_WAIT_MS = 400L
         const val PROVIDER_SNAPSHOT_CACHE_NS = 5_000_000_000L
-        // Dummy host; UnixSocketFactory ignores host/port.
         const val LOCAL_BASE_URL = "http://localhost"
 
         val delayQuery =

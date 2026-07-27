@@ -37,7 +37,8 @@ import java.io.Closeable
  */
 @Keep
 class Channel(private val fd: Int) : Closeable {
-    @Volatile private var closed = false
+    @Volatile
+    private var closed = false
 
     /**
      * Read one datagram into [buffer] at [offset]/[length]. Returns the number of bytes read (0

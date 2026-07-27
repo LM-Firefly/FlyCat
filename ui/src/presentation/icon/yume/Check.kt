@@ -39,12 +39,12 @@ val Yume.Check: ImageVector
         }
         checkVector =
             ImageVector.Builder(
-                    name = "Check",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "Check",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -62,4 +62,5 @@ val Yume.Check: ImageVector
         return checkVector!!
     }
 
-@Suppress("ObjectPropertyName") private var checkVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var checkVector: ImageVector? = null

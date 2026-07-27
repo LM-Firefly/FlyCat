@@ -30,13 +30,13 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
-import java.io.Closeable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.io.Closeable
 
 @Serializable
 data class IpInfo(
@@ -127,18 +127,18 @@ class NetworkInfoService : Closeable {
             )
 
         combine(refreshFlow, isProxyActiveFlow) { _, isProxyActive ->
-                try {
-                    val localIp = getLocalIp()
-                    val externalIp = getExternalIp()
-                    val newState = IpMonitoringState.Success(localIp, externalIp, isProxyActive)
-                    lastSuccessfulState = newState
-                    newState
-                } catch (error: Exception) { // fault barrier: keep last known state on any failure
-                    if (error is CancellationException) throw error
-                    lastSuccessfulState?.copy(isProxyActive = isProxyActive)
-                        ?: IpMonitoringState.Error(error.message ?: "Unknown error")
-                }
+            try {
+                val localIp = getLocalIp()
+                val externalIp = getExternalIp()
+                val newState = IpMonitoringState.Success(localIp, externalIp, isProxyActive)
+                lastSuccessfulState = newState
+                newState
+            } catch (error: Exception) { // fault barrier: keep last known state on any failure
+                if (error is CancellationException) throw error
+                lastSuccessfulState?.copy(isProxyActive = isProxyActive)
+                    ?: IpMonitoringState.Error(error.message ?: "Unknown error")
             }
+        }
             .collect { state -> emit(state) }
     }
 }

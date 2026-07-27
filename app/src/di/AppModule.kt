@@ -72,8 +72,8 @@ val appViewModelModule = module {
 
 val appModule: List<Module> =
     coreDiModules +
-        listOf(appIntegrationModule, appViewModelModule) +
-        featureSubStoreModules +
-        featureProxyModules +
-        featureOverrideModules +
-        featureMetaModules
+            listOf(appIntegrationModule, appViewModelModule) +
+            featureSubStoreModules +
+            featureProxyModules +
+            featureOverrideModules +
+            featureMetaModules

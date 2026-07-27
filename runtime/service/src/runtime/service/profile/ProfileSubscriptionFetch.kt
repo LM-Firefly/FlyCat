@@ -21,17 +21,15 @@
 package com.github.yumelira.yumebox.runtime.service.profile
 
 import com.github.yumelira.yumebox.core.model.FetchStatus
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpHeaders
-import io.ktor.http.isSuccess
+import io.ktor.client.*
+import io.ktor.client.engine.okhttp.*
+import io.ktor.client.plugins.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import java.io.File
 import java.net.URLDecoder
-import java.util.Base64
+import java.util.*
 
 internal data class SubscriptionInfo(
     val upload: Long? = null,

@@ -31,9 +31,12 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 enum class RunMode {
-    @SerialName("vpn") VpnService,
-    @SerialName("tun") Tun,
-    @SerialName("tproxy") Tproxy;
+    @SerialName("vpn")
+    VpnService,
+    @SerialName("tun")
+    Tun,
+    @SerialName("tproxy")
+    Tproxy;
 
     /**
      * The token this mode maps to for the native core's `--mode` flag and the persisted daemon

@@ -29,11 +29,11 @@ import com.github.yumelira.yumebox.data.controller.AppIdentityResolver
 import com.github.yumelira.yumebox.data.model.*
 import com.github.yumelira.yumebox.data.store.TrafficStatisticsStore
 import com.github.yumelira.yumebox.presentation.component.BarChartItem
-import java.util.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import tf.gal.yumebox.locale.YumeTxt
+import java.util.*
 
 class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStatisticsStore) :
     ViewModel() {
@@ -104,13 +104,13 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
     private fun mergeSystemTraffic(apps: List<AppTrafficUsage>): List<AppTrafficUsage> {
         val systemApps = apps.filter {
             it.appKey == AppIdentityResolver.UNKNOWN_APP_KEY ||
-                it.appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY
+                    it.appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY
         }
         if (systemApps.isEmpty()) return apps
 
         val regularApps = apps.filterNot {
             it.appKey == AppIdentityResolver.UNKNOWN_APP_KEY ||
-                it.appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY
+                    it.appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY
         }
         val systemTraffic =
             AppTrafficUsage(

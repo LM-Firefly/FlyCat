@@ -126,18 +126,18 @@ private fun AccessControlAppIcon(
 ) {
     val context = LocalContext.current
     val iconBitmap by
-        produceState<ImageBitmap?>(initialValue = null, key1 = packageName, key2 = bitmapSize) {
-            value =
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                            context.packageManager
-                                .getApplicationIcon(packageName)
-                                .toBitmap(width = bitmapSize, height = bitmapSize)
-                                .asImageBitmap()
-                        }
-                        .getOrNull()
+    produceState<ImageBitmap?>(initialValue = null, key1 = packageName, key2 = bitmapSize) {
+        value =
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    context.packageManager
+                        .getApplicationIcon(packageName)
+                        .toBitmap(width = bitmapSize, height = bitmapSize)
+                        .asImageBitmap()
                 }
-        }
+                    .getOrNull()
+            }
+    }
 
     val bitmap = iconBitmap ?: return
     Image(

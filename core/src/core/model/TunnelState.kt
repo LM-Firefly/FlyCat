@@ -33,10 +33,14 @@ import kotlinx.serialization.Serializable
 data class TunnelState(val mode: Mode) : Parcelable {
     @Serializable
     enum class Mode {
-        @SerialName("direct") Direct,
-        @SerialName("global") Global,
-        @SerialName("rule") Rule,
-        @SerialName("script") Script,
+        @SerialName("direct")
+        Direct,
+        @SerialName("global")
+        Global,
+        @SerialName("rule")
+        Rule,
+        @SerialName("script")
+        Script,
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {

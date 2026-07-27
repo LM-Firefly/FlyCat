@@ -39,12 +39,12 @@ val Yume.Waiting: ImageVector
         }
         waitingVector =
             ImageVector.Builder(
-                    name = "IconName",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "IconName",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -108,4 +108,5 @@ val Yume.Waiting: ImageVector
         return waitingVector!!
     }
 
-@Suppress("ObjectPropertyName") private var waitingVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var waitingVector: ImageVector? = null

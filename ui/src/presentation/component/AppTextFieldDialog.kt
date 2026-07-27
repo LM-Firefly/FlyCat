@@ -55,9 +55,9 @@ fun AppTextFieldDialog(
     supportingContent: @Composable (() -> Unit)? = null,
 ) {
     var localTextFieldValue by
-        remember(show) {
-            mutableStateOf(TextFieldValue(text = value, selection = TextRange(value.length)))
-        }
+    remember(show) {
+        mutableStateOf(TextFieldValue(text = value, selection = TextRange(value.length)))
+    }
     var pendingExternalSyncText by remember(show) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(show) {
@@ -137,7 +137,8 @@ fun AppTextFieldDialog(
     ) {
         AppDialogColumn {
             val textFieldModifier =
-                Modifier.fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .padding(bottom = if (supportingContent == null) UiDp.dp0 else UiDp.dp8)
             if (label.isBlank()) {
                 TextField(

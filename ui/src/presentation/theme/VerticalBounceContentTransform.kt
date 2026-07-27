@@ -46,16 +46,16 @@ fun verticalBounceContentTransform(forward: Boolean): ContentTransform {
             (slideInVertically(animationSpec = enterSpring) { fullHeight ->
                 fullHeight / 10
             } + fadeIn(animationSpec = fadeInSpec)) togetherWith
-                (slideOutVertically(animationSpec = exitSpring) { fullHeight ->
-                    -fullHeight / 14
-                } + fadeOut(animationSpec = fadeOutSpec))
+                    (slideOutVertically(animationSpec = exitSpring) { fullHeight ->
+                        -fullHeight / 14
+                    } + fadeOut(animationSpec = fadeOutSpec))
         } else {
             (slideInVertically(animationSpec = enterSpring) { fullHeight ->
                 -fullHeight / 10
             } + fadeIn(animationSpec = fadeInSpec)) togetherWith
-                (slideOutVertically(animationSpec = exitSpring) { fullHeight ->
-                    fullHeight / 14
-                } + fadeOut(animationSpec = fadeOutSpec))
+                    (slideOutVertically(animationSpec = exitSpring) { fullHeight ->
+                        fullHeight / 14
+                    } + fadeOut(animationSpec = fadeOutSpec))
         }
     return ContentTransform(
         targetContentEnter = transform.targetContentEnter,

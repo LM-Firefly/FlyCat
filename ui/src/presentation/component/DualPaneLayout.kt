@@ -91,14 +91,17 @@ fun DualPaneLayout(
         }
 
         Row(modifier = Modifier.fillMaxSize()) {
-            Box(Modifier.width(leftWidthDp).fillMaxHeight()) {
+            Box(Modifier
+                .width(leftWidthDp)
+                .fillMaxHeight()) {
                 left()
             }
 
             if (showDivider) {
                 Box(
                     modifier =
-                        Modifier.fillMaxHeight()
+                        Modifier
+                            .fillMaxHeight()
                             .width(dividerHitWidth)
                             .then(
                                 if (canDrag) {
@@ -113,14 +116,17 @@ fun DualPaneLayout(
                     contentAlignment = Alignment.Center,
                 ) {
                     Box(
-                        Modifier.fillMaxHeight()
+                        Modifier
+                            .fillMaxHeight()
                             .width(1.dp)
                             .background(MiuixTheme.colorScheme.outline.copy(alpha = 0.55f))
                     )
                 }
             }
 
-            Box(Modifier.weight(1f).fillMaxHeight()) {
+            Box(Modifier
+                .weight(1f)
+                .fillMaxHeight()) {
                 right()
             }
         }

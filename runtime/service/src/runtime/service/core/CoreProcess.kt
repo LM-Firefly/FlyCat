@@ -23,7 +23,6 @@
 package com.github.yumelira.yumebox.runtime.service.core
 
 import android.annotation.SuppressLint
-
 import android.content.Context
 import android.os.Build
 import android.os.ParcelFileDescriptor
@@ -37,18 +36,14 @@ import com.github.yumelira.yumebox.runtime.api.CoreApi
 import com.github.yumelira.yumebox.runtime.service.controller.CoreController
 import com.github.yumelira.yumebox.runtime.service.util.SocketOwnerResolver
 import com.topjohnwu.superuser.Shell
+import kotlinx.coroutines.*
+import timber.log.Timber
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.util.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import timber.log.Timber
 
 /** The running core's UNIX REST controller: socket path + bearer secret. */
 data class CoreEndpoint(val sock: String, val secret: String)

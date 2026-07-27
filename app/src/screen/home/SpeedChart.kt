@@ -62,20 +62,20 @@ fun SpeedChart(
     val fractions = remember(speedHistory) { buildSpeedChartFractions(speedHistory = speedHistory) }
     val idleTransition = rememberInfiniteTransition(label = "speed_chart_idle")
     val idlePhase by
-        idleTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation =
-                        tween(
-                            durationMillis = SPEED_CHART_IDLE_SCROLL_DURATION_MS,
-                            easing = LinearEasing,
-                        ),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "speed_chart_idle_phase",
-        )
+    idleTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    tween(
+                        durationMillis = SPEED_CHART_IDLE_SCROLL_DURATION_MS,
+                        easing = LinearEasing,
+                    ),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "speed_chart_idle_phase",
+    )
 
     Canvas(
         modifier =

@@ -39,12 +39,12 @@ val Yume.Eye: ImageVector
         }
         eyeVector =
             ImageVector.Builder(
-                    name = "IconName",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "IconName",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -123,4 +123,5 @@ val Yume.Eye: ImageVector
         return eyeVector!!
     }
 
-@Suppress("ObjectPropertyName") private var eyeVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var eyeVector: ImageVector? = null

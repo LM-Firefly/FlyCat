@@ -23,18 +23,16 @@ package com.github.yumelira.yumebox.runtime.service.profile
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.FetchStatus
 import com.github.yumelira.yumebox.runtime.api.ProviderPrefetchReport
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.statement.bodyAsChannel
-import io.ktor.http.HttpHeaders
-import io.ktor.http.isSuccess
-import io.ktor.utils.io.jvm.javaio.toInputStream
-import java.io.File
-import java.util.UUID
+import io.ktor.client.*
+import io.ktor.client.engine.okhttp.*
+import io.ktor.client.plugins.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.utils.io.jvm.javaio.*
 import timber.log.Timber
+import java.io.File
+import java.util.*
 
 /**
  * Pre-fetches HTTP providers into the same profile-private paths that liboverride emits into the

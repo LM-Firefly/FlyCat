@@ -49,27 +49,27 @@ fun LoadingDotsWave(
     val transition = rememberInfiniteTransition(label = "LoadingDotsWave")
 
     val p1 by
-        transition.animateFloat(
-            initialValue = -1f,
-            targetValue = 1f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 420, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse,
-                ),
-            label = "p1",
-        )
+    transition.animateFloat(
+        initialValue = -1f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 420, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "p1",
+    )
     val p2 by
-        transition.animateFloat(
-            initialValue = 1f,
-            targetValue = -1f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 420, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse,
-                ),
-            label = "p2",
-        )
+    transition.animateFloat(
+        initialValue = 1f,
+        targetValue = -1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 420, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "p2",
+    )
 
     Row(
         modifier = modifier,
@@ -85,7 +85,8 @@ fun LoadingDotsWave(
 private fun Dot(color: Color, dotSize: Dp, shift: Float, amplitude: Dp) {
     androidx.compose.foundation.layout.Box(
         modifier =
-            Modifier.size(dotSize)
+            Modifier
+                .size(dotSize)
                 .graphicsLayer { translationY = shift * amplitude.toPx() }
                 .background(color, CircleShape)
     )

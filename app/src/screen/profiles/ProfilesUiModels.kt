@@ -63,6 +63,7 @@ internal fun FetchStatus.toDownloadProgress(): DownloadProgress {
 
             FetchStatus.Action.FetchProviders ->
                 detail.ifBlank { YumeTxt.ProfilesPage.Progress.Downloading }
+
             FetchStatus.Action.SubscriptionInfo -> ""
             FetchStatus.Action.Verifying -> detail.ifBlank { YumeTxt.ProfilesVM.Progress.Verifying }
         }

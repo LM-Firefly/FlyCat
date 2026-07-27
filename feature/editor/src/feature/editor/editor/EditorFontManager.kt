@@ -41,8 +41,9 @@ object EditorFontManager {
                 }
             } catch (
                 error:
-                    Exception) { // fault barrier: createFromAsset throws undocumented
-                                 // RuntimeException
+                Exception
+            ) { // fault barrier: createFromAsset throws undocumented
+                // RuntimeException
                 Timber.w(error, "Failed to load JetBrainsMono font, falling back to MONOSPACE")
                 Typeface.MONOSPACE
             }

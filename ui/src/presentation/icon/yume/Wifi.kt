@@ -39,12 +39,12 @@ val Yume.Wifi: ImageVector
         }
         wifiVector =
             ImageVector.Builder(
-                    name = "Wifi",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "Wifi",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -112,4 +112,5 @@ val Yume.Wifi: ImageVector
         return wifiVector!!
     }
 
-@Suppress("ObjectPropertyName") private var wifiVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var wifiVector: ImageVector? = null

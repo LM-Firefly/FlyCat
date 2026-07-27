@@ -49,7 +49,6 @@ import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import java.text.Collator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
@@ -64,6 +63,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.text.Collator
 
 /**
  * Screen-time-style traffic statistics with day/week charts and one app-usage list. Large TopBar
@@ -225,7 +225,8 @@ fun TrafficStatisticsScreen() {
                     if (displayedApps.isEmpty()) {
                         Box(
                             modifier =
-                                Modifier.fillMaxWidth()
+                                Modifier
+                                    .fillMaxWidth()
                                     .padding(
                                         horizontal = spacing.space16,
                                         vertical = spacing.space24,
@@ -243,7 +244,7 @@ fun TrafficStatisticsScreen() {
                             displayedApps
                                 .filterNot {
                                     it.appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY ||
-                                        it.appKey == AppIdentityResolver.UNKNOWN_APP_KEY
+                                            it.appKey == AppIdentityResolver.UNKNOWN_APP_KEY
                                 }
                                 .maxOfOrNull(AppTrafficUsage::totalBytes)
                                 ?.coerceAtLeast(1L) ?: 1L
@@ -296,7 +297,8 @@ private fun AppTrafficProgressRow(
 
     Row(
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .padding(horizontal = spacing.space16, vertical = spacing.space12),
         horizontalArrangement = Arrangement.spacedBy(spacing.space12),
         verticalAlignment = Alignment.CenterVertically,
@@ -332,14 +334,16 @@ private fun AppTrafficProgressRow(
             // Track + fill (screen-time progress bar)
             Box(
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
                         .height(UiDp.dp6)
                         .clip(RoundedCornerShape(radii.full))
                         .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
             ) {
                 Box(
                     modifier =
-                        Modifier.fillMaxWidth(progress.coerceAtLeast(0.02f))
+                        Modifier
+                            .fillMaxWidth(progress.coerceAtLeast(0.02f))
                             .height(UiDp.dp6)
                             .clip(RoundedCornerShape(radii.full))
                             .background(MiuixTheme.colorScheme.primary)
@@ -356,22 +360,22 @@ private fun AppIconBadge(context: Context, packageName: String?, appName: String
     val radii = AppTheme.radii
 
     val iconBitmap by
-        produceState<ImageBitmap?>(initialValue = null, key1 = packageName) {
-            value =
-                withContext(Dispatchers.IO) {
-                    packageName
-                        ?.takeIf { it.isNotBlank() }
-                        ?.let { target ->
-                            runCatching {
-                                context.packageManager
-                                    .getApplicationIcon(target)
-                                    .toBitmap(width = 84, height = 84)
-                                    .asImageBitmap()
-                            }
-                                .getOrNull()
+    produceState<ImageBitmap?>(initialValue = null, key1 = packageName) {
+        value =
+            withContext(Dispatchers.IO) {
+                packageName
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { target ->
+                        runCatching {
+                            context.packageManager
+                                .getApplicationIcon(target)
+                                .toBitmap(width = 84, height = 84)
+                                .asImageBitmap()
                         }
-                }
-        }
+                            .getOrNull()
+                    }
+            }
+    }
 
     val bitmap = iconBitmap
     if (bitmap != null) {
@@ -379,7 +383,8 @@ private fun AppIconBadge(context: Context, packageName: String?, appName: String
             bitmap = bitmap,
             contentDescription = appName,
             modifier =
-                Modifier.size(componentSizes.iconBadgeMedium)
+                Modifier
+                    .size(componentSizes.iconBadgeMedium)
                     .clip(RoundedCornerShape(radii.radius12)),
         )
         return
@@ -387,7 +392,8 @@ private fun AppIconBadge(context: Context, packageName: String?, appName: String
 
     Box(
         modifier =
-            Modifier.size(componentSizes.iconBadgeMedium)
+            Modifier
+                .size(componentSizes.iconBadgeMedium)
                 .clip(RoundedCornerShape(radii.radius12))
                 .background(MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtleStrong)),
         contentAlignment = Alignment.Center,

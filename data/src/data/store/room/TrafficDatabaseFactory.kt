@@ -35,10 +35,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 fun createTrafficStatisticsDao(context: Context): TrafficStatisticsDao =
     Room.databaseBuilder(
-            context.applicationContext,
-            TrafficDatabase::class.java,
-            TrafficDatabase.DATABASE_NAME,
-        )
+        context.applicationContext,
+        TrafficDatabase::class.java,
+        TrafficDatabase.DATABASE_NAME,
+    )
         .addMigrations(TRAFFIC_MIGRATION_1_2)
         .build()
         .trafficStatisticsDao()

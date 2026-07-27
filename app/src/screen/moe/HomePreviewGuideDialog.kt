@@ -82,7 +82,8 @@ internal fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit)
         content = {
             Column(
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
                         .heightIn(max = contentMaxHeight)
                         .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -93,10 +94,10 @@ internal fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit)
                     transitionSpec = {
                         val forward = targetState > initialState
                         (slideInHorizontally(tween(320)) { w -> if (forward) w else -w } +
-                            fadeIn(tween(220))) togetherWith
-                            (slideOutHorizontally(tween(320)) { w -> if (forward) -w else w } +
-                                fadeOut(tween(180))) using
-                            SizeTransform(clip = false)
+                                fadeIn(tween(220))) togetherWith
+                                (slideOutHorizontally(tween(320)) { w -> if (forward) -w else w } +
+                                        fadeOut(tween(180))) using
+                                SizeTransform(clip = false)
                     },
                     label = "guide_page",
                 ) { p ->
@@ -117,7 +118,8 @@ internal fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit)
                     repeat(4) { i ->
                         Box(
                             modifier =
-                                Modifier.size(7.dp)
+                                Modifier
+                                    .size(7.dp)
                                     .clip(CircleShape)
                                     .background(
                                         if (i == page) colorScheme.primary

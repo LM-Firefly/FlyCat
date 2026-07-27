@@ -77,6 +77,7 @@ private constructor(
             workdir: String,
         ): IntArray
 
-        @JvmStatic private external fun nativeKill(pid: Int)
+        @JvmStatic
+        private external fun nativeKill(pid: Int)
     }
 }

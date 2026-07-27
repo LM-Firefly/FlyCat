@@ -27,14 +27,14 @@ import android.os.Build
 import com.android.tools.smali.dexlib2.dexbacked.DexBackedDexFile
 import com.github.yumelira.yumebox.screen.settings.ChinaAppDetector.Companion.MAX_SCANNABLE_DEX_BYTES
 import com.tencent.mmkv.MMKV
-import java.io.File
-import java.util.zip.ZipFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import java.io.File
+import java.util.zip.ZipFile
 
 /**
  * Heuristic detector for apps of Chinese origin, used by the access-control region quick select.
@@ -84,8 +84,8 @@ class ChinaAppDetector(context: Context) {
         }
         if (
             normalized.startsWith("cn.") ||
-                normalized.contains(".cn.") ||
-                normalized.endsWith(".cn")
+            normalized.contains(".cn.") ||
+            normalized.endsWith(".cn")
         ) {
             return true
         }
@@ -112,10 +112,10 @@ class ChinaAppDetector(context: Context) {
         return try {
             val flags =
                 PackageManager.MATCH_UNINSTALLED_PACKAGES or
-                    PackageManager.GET_ACTIVITIES or
-                    PackageManager.GET_SERVICES or
-                    PackageManager.GET_RECEIVERS or
-                    PackageManager.GET_PROVIDERS
+                        PackageManager.GET_ACTIVITIES or
+                        PackageManager.GET_SERVICES or
+                        PackageManager.GET_RECEIVERS or
+                        PackageManager.GET_PROVIDERS
             val packageInfo =
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     packageManager.getPackageInfo(

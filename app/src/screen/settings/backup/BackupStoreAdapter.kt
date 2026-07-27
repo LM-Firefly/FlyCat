@@ -23,7 +23,7 @@ import com.github.yumelira.yumebox.data.store.*
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.profile.ProfileStore
-import java.util.UUID
+import java.util.*
 
 internal class BackupStoreAdapter(
     private val appSettings: AppSettingsStore,
@@ -143,16 +143,16 @@ internal class BackupStoreAdapter(
 
     private fun clearConfigurationStores() {
         listOf(
-                "settings",
-                "network_settings",
-                "substore",
-                "proxy_display",
-                "profile_links",
-                "remote_controller",
-                "profiles",
-                "service",
-                "override_bindings",
-            )
+            "settings",
+            "network_settings",
+            "substore",
+            "proxy_display",
+            "profile_links",
+            "remote_controller",
+            "profiles",
+            "service",
+            "override_bindings",
+        )
             .forEach { id -> mmkvProvider.getMMKV(id).clearAll() }
         refreshPreferenceCachesAfterRawClear()
     }

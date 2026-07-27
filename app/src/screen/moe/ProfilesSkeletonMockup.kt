@@ -47,25 +47,25 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier) {
 
     val transition = rememberInfiniteTransition(label = "profiles_sheet")
     val sheetProgress by
-        transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 0f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation =
-                        keyframes {
-                            durationMillis = 3600
-                            0f at 0
-                            0f at 900
-                            1f at 1300 using FastOutSlowInEasing
-                            1f at 2900
-                            0f at 3300 using FastOutSlowInEasing
-                            0f at 3600
-                        },
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "sheet_progress",
-        )
+    transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 0f,
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    keyframes {
+                        durationMillis = 3600
+                        0f at 0
+                        0f at 900
+                        1f at 1300 using FastOutSlowInEasing
+                        1f at 2900
+                        0f at 3300 using FastOutSlowInEasing
+                        0f at 3600
+                    },
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "sheet_progress",
+    )
 
     MockupPhoneFrame(palette = palette, modifier = modifier) {
         Column(
@@ -80,7 +80,8 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
-                    Modifier.width(40.dp)
+                    Modifier
+                        .width(40.dp)
                         .height(14.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .background(palette.maskStrong)
@@ -91,13 +92,17 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier) {
             Spacer(Modifier.height(8.dp))
 
             Column(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 repeat(3) { index ->
                     ProfileCardMock(
                         index = index,
-                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
                     )
                 }
             }
@@ -106,7 +111,8 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier) {
 
             Row(
                 modifier =
-                    Modifier.clip(RoundedCornerShape(50))
+                    Modifier
+                        .clip(RoundedCornerShape(50))
                         .background(colorScheme.surface)
                         .border(1.dp, palette.frameBorder, RoundedCornerShape(50))
                         .padding(horizontal = 10.dp, vertical = 5.dp),
@@ -114,7 +120,8 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier) {
             ) {
                 repeat(4) {
                     Box(
-                        Modifier.size(9.dp)
+                        Modifier
+                            .size(9.dp)
                             .clip(CircleShape)
                             .background(if (it == 2) colorScheme.primary else palette.mask)
                     )
@@ -122,16 +129,20 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier) {
             }
         }
 
-        Box(modifier = Modifier.matchParentSize().clip(RoundedCornerShape(15.dp))) {
+        Box(modifier = Modifier
+            .matchParentSize()
+            .clip(RoundedCornerShape(15.dp))) {
             Box(
                 modifier =
-                    Modifier.matchParentSize()
+                    Modifier
+                        .matchParentSize()
                         .background(Color.Black.copy(alpha = 0.40f * sheetProgress))
             )
 
             Box(
                 modifier =
-                    Modifier.align(Alignment.BottomCenter)
+                    Modifier
+                        .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .fillMaxHeight(0.62f)
                         .graphicsLayer { translationY = (1f - sheetProgress) * size.height }
@@ -150,7 +161,8 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier) {
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Box(
-                        Modifier.width(26.dp)
+                        Modifier
+                            .width(26.dp)
                             .height(4.dp)
                             .clip(RoundedCornerShape(2.dp))
                             .background(palette.mask)
@@ -161,24 +173,28 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(
-                            Modifier.size(11.dp)
+                            Modifier
+                                .size(11.dp)
                                 .clip(RoundedCornerShape(2.dp))
                                 .background(palette.maskStrong)
                         )
                         Box(
-                            Modifier.width(56.dp)
+                            Modifier
+                                .width(56.dp)
                                 .height(11.dp)
                                 .clip(RoundedCornerShape(3.dp))
                                 .background(palette.maskStrong)
                         )
                         Box(
-                            Modifier.size(11.dp)
+                            Modifier
+                                .size(11.dp)
                                 .clip(RoundedCornerShape(2.dp))
                                 .background(palette.maskStrong)
                         )
                     }
                     Box(
-                        Modifier.fillMaxWidth()
+                        Modifier
+                            .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .background(palette.surface)
                             .border(1.dp, palette.frameBorder, RoundedCornerShape(12.dp))
@@ -190,7 +206,8 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier) {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Box(
-                                Modifier.width(46.dp)
+                                Modifier
+                                    .width(46.dp)
                                     .height(10.dp)
                                     .clip(RoundedCornerShape(3.dp))
                                     .background(palette.maskStrong)
@@ -200,13 +217,15 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier) {
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Box(
-                                    Modifier.width(34.dp)
+                                    Modifier
+                                        .width(34.dp)
                                         .height(8.dp)
                                         .clip(RoundedCornerShape(3.dp))
                                         .background(palette.mask)
                                 )
                                 Box(
-                                    Modifier.width(7.dp)
+                                    Modifier
+                                        .width(7.dp)
                                         .height(11.dp)
                                         .clip(RoundedCornerShape(2.dp))
                                         .background(palette.mask)
@@ -217,7 +236,8 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier) {
                     repeat(3) { index ->
                         Box(
                             modifier =
-                                Modifier.fillMaxWidth()
+                                Modifier
+                                    .fillMaxWidth()
                                     .height(26.dp)
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(palette.recessed)
@@ -225,7 +245,8 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier) {
                             contentAlignment = Alignment.CenterStart,
                         ) {
                             Box(
-                                Modifier.fillMaxWidth(if (index == 2) 0.42f else 0.5f)
+                                Modifier
+                                    .fillMaxWidth(if (index == 2) 0.42f else 0.5f)
                                     .height(8.dp)
                                     .clip(RoundedCornerShape(3.dp))
                                     .background(palette.mask)
@@ -263,13 +284,15 @@ private fun ProfileCardMock(index: Int, modifier: Modifier = Modifier) {
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Box(
-                        Modifier.width(40.dp)
+                        Modifier
+                            .width(40.dp)
                             .height(9.dp)
                             .clip(RoundedCornerShape(3.dp))
                             .background(palette.maskStrong)
                     )
                     Box(
-                        Modifier.width(26.dp)
+                        Modifier
+                            .width(26.dp)
                             .height(6.dp)
                             .clip(RoundedCornerShape(3.dp))
                             .background(palette.maskStrong)
@@ -277,30 +300,38 @@ private fun ProfileCardMock(index: Int, modifier: Modifier = Modifier) {
                 }
                 Box(
                     modifier =
-                        Modifier.width(22.dp)
+                        Modifier
+                            .width(22.dp)
                             .height(12.dp)
                             .clip(RoundedCornerShape(50))
                             .background(if (index == 0) colorScheme.primary else palette.maskStrong)
                 ) {
                     Box(
-                        modifier = Modifier.fillMaxSize().padding(1.5.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(1.5.dp),
                         contentAlignment =
                             if (index == 0) Alignment.CenterEnd else Alignment.CenterStart,
                     ) {
-                        Box(Modifier.size(9.dp).clip(CircleShape).background(colorScheme.surface))
+                        Box(Modifier
+                            .size(9.dp)
+                            .clip(CircleShape)
+                            .background(colorScheme.surface))
                     }
                 }
             }
 
             if (index > 0) {
                 Box(
-                    Modifier.fillMaxWidth(0.85f)
+                    Modifier
+                        .fillMaxWidth(0.85f)
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp))
                         .background(palette.maskStrong)
                 )
                 Box(
-                    Modifier.fillMaxWidth(0.7f)
+                    Modifier
+                        .fillMaxWidth(0.7f)
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp))
                         .background(palette.maskStrong)
@@ -310,7 +341,8 @@ private fun ProfileCardMock(index: Int, modifier: Modifier = Modifier) {
             Spacer(Modifier.weight(1f))
 
             Box(
-                Modifier.fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .height(1.dp)
                     .background(colorScheme.onSurface.copy(alpha = opacity.surfaceSoft))
             )
@@ -321,20 +353,28 @@ private fun ProfileCardMock(index: Int, modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Box(Modifier.size(14.dp).clip(CircleShape).background(palette.maskStrong))
-                    Box(Modifier.size(14.dp).clip(CircleShape).background(palette.maskStrong))
+                    Box(Modifier
+                        .size(14.dp)
+                        .clip(CircleShape)
+                        .background(palette.maskStrong))
+                    Box(Modifier
+                        .size(14.dp)
+                        .clip(CircleShape)
+                        .background(palette.maskStrong))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (index > 0) {
                         Box(
-                            Modifier.width(26.dp)
+                            Modifier
+                                .width(26.dp)
                                 .height(12.dp)
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(colorScheme.primary.copy(alpha = opacity.subtleStrong))
                         )
                     }
                     Box(
-                        Modifier.width(26.dp)
+                        Modifier
+                            .width(26.dp)
                             .height(12.dp)
                             .clip(RoundedCornerShape(6.dp))
                             .background(palette.maskStrong)
@@ -351,51 +391,52 @@ private fun AddButtonGlyph(modifier: Modifier = Modifier) {
 
     val transition = rememberInfiniteTransition(label = "add_button")
     val tapScale by
-        transition.animateFloat(
-            initialValue = 1f,
-            targetValue = 1f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation =
-                        keyframes {
-                            durationMillis = 3600
-                            1f at 0
-                            1f at 700
-                            0.85f at 850 using FastOutSlowInEasing
-                            1f at 1000
-                            1f at 3600
-                        },
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "add_tap_scale",
-        )
+    transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    keyframes {
+                        durationMillis = 3600
+                        1f at 0
+                        1f at 700
+                        0.85f at 850 using FastOutSlowInEasing
+                        1f at 1000
+                        1f at 3600
+                    },
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "add_tap_scale",
+    )
     val rippleScale by
-        transition.animateFloat(
-            initialValue = 0.6f,
-            targetValue = 2.2f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 3600, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "add_ripple_scale",
-        )
+    transition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 2.2f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 3600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "add_ripple_scale",
+    )
     val rippleAlpha by
-        transition.animateFloat(
-            initialValue = 0.5f,
-            targetValue = 0f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 3600, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "add_ripple_alpha",
-        )
+    transition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 0f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 3600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "add_ripple_alpha",
+    )
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Box(
             modifier =
-                Modifier.graphicsLayer {
+                Modifier
+                    .graphicsLayer {
                         scaleX = rippleScale
                         scaleY = rippleScale
                         alpha = rippleAlpha
@@ -407,7 +448,8 @@ private fun AddButtonGlyph(modifier: Modifier = Modifier) {
 
         Box(
             modifier =
-                Modifier.graphicsLayer {
+                Modifier
+                    .graphicsLayer {
                         scaleX = tapScale
                         scaleY = tapScale
                     }
@@ -416,8 +458,14 @@ private fun AddButtonGlyph(modifier: Modifier = Modifier) {
                     .background(colorScheme.primary),
             contentAlignment = Alignment.Center,
         ) {
-            Box(Modifier.width(8.dp).height(2.dp).background(colorScheme.onPrimary))
-            Box(Modifier.width(2.dp).height(8.dp).background(colorScheme.onPrimary))
+            Box(Modifier
+                .width(8.dp)
+                .height(2.dp)
+                .background(colorScheme.onPrimary))
+            Box(Modifier
+                .width(2.dp)
+                .height(8.dp)
+                .background(colorScheme.onPrimary))
         }
     }
 }

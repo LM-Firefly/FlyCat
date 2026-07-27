@@ -39,12 +39,12 @@ val Yume.Close: ImageVector
         }
         closeVector =
             ImageVector.Builder(
-                    name = "X",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "X",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -70,4 +70,5 @@ val Yume.Close: ImageVector
         return closeVector!!
     }
 
-@Suppress("ObjectPropertyName") private var closeVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var closeVector: ImageVector? = null

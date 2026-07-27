@@ -102,23 +102,26 @@ internal fun MoeHomeLayout(state: MoeHomeLayoutState) {
             (maxHeight - state.statusBarTop).coerceAtLeast(UiDp.dp0) * MoeUi.Hero.heightFraction
         // Haze blur works from API 31; skip the effect while the rail is fully collapsed.
         val blurReady by
-            remember(sidebar) {
-                derivedStateOf { sidebar > 0.03f }
-            }
+        remember(sidebar) {
+            derivedStateOf { sidebar > 0.03f }
+        }
         MoeWallpaperBackground(
             wallpaperUri = state.wallpaperUri,
             wallpaperZoom = state.wallpaperZoom,
             wallpaperBiasX = state.wallpaperBiasX,
             wallpaperBiasY = state.wallpaperBiasY,
             qualityMode = MoeWallpaperQualityMode.BackgroundBlur,
-            modifier = Modifier.matchParentSize().hazeSource(state = sidebarHazeState),
+            modifier = Modifier
+                .matchParentSize()
+                .hazeSource(state = sidebarHazeState),
         )
         MoeSidebarDecoration(
             hazeState = sidebarHazeState,
             blurEnabled = blurReady,
             blurProgress = sidebar,
             modifier =
-                Modifier.align(Alignment.CenterStart)
+                Modifier
+                    .align(Alignment.CenterStart)
                     .width(sidebarDecorationWidth)
                     .fillMaxHeight()
                     .graphicsLayer {
@@ -157,7 +160,8 @@ private fun MoeHomePanel(
                 FastOutSlowInEasing.transform(1f - state.pageProgress.coerceIn(0f, 1f)),
             )
     Box(
-        Modifier.fillMaxSize()
+        Modifier
+            .fillMaxSize()
             .padding(start = lerpDp(UiDp.dp0, contentStart, sidebar))
             .graphicsLayer {
                 shape =
@@ -178,7 +182,8 @@ private fun MoeHomePanel(
 context(actions: MoeHomeActions)
 private fun BoxScope.MoeHero(state: MoeHomeLayoutState, scale: Float) {
     Box(
-        Modifier.align(Alignment.TopStart)
+        Modifier
+            .align(Alignment.TopStart)
             .fillMaxWidth()
             .padding(
                 start = MoeUi.Hero.containerHorizontalInset,
@@ -209,7 +214,8 @@ private fun BoxScope.MoeHero(state: MoeHomeLayoutState, scale: Float) {
             modifier = Modifier.matchParentSize(),
         )
         Box(
-            Modifier.matchParentSize()
+            Modifier
+                .matchParentSize()
                 .background(
                     Brush.verticalGradient(
                         0f to Color.Transparent,
@@ -222,7 +228,8 @@ private fun BoxScope.MoeHero(state: MoeHomeLayoutState, scale: Float) {
         AnimatedVisibility(
             visible = state.isRunning,
             modifier =
-                Modifier.align(Alignment.BottomStart)
+                Modifier
+                    .align(Alignment.BottomStart)
                     .fillMaxWidth()
                     .padding(
                         start = MoeUi.Hero.contentHorizontalInset,
@@ -249,7 +256,8 @@ context(actions: MoeHomeActions)
 private fun BoxScope.MoeHomeCopy(state: MoeHomeLayoutState, heroHeight: Dp) {
     Column(
         modifier =
-            Modifier.align(Alignment.TopStart)
+            Modifier
+                .align(Alignment.TopStart)
                 .fillMaxWidth()
                 .padding(
                     start = MoeUi.Hero.containerHorizontalInset + MoeUi.Hero.contentHorizontalInset,
@@ -292,10 +300,13 @@ private fun MoeTabletHomeLayout(
     val heroHeightFraction = if (shortHeight) 0.50f else MoeUi.Hero.heightFraction
     val heroHeight = (maxHeight - state.statusBarTop).coerceAtLeast(UiDp.dp0) * heroHeightFraction
 
-    Box(Modifier.fillMaxSize().background(state.contentSurface)) {
+    Box(Modifier
+        .fillMaxSize()
+        .background(state.contentSurface)) {
         Column(
             modifier =
-                Modifier.fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .then(if (shortHeight) Modifier else Modifier.fillMaxHeight())
                     .padding(horizontal = horizontalGutter)
                     .then(
@@ -307,7 +318,8 @@ private fun MoeTabletHomeLayout(
                     )
         ) {
             Box(
-                Modifier.fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .padding(
                         start = MoeUi.Hero.containerHorizontalInset,
                         end = MoeUi.Hero.containerHorizontalInset,
@@ -331,7 +343,8 @@ private fun MoeTabletHomeLayout(
                     modifier = Modifier.matchParentSize(),
                 )
                 Box(
-                    Modifier.matchParentSize()
+                    Modifier
+                        .matchParentSize()
                         .background(
                             Brush.verticalGradient(
                                 0f to Color.Transparent,
@@ -343,7 +356,8 @@ private fun MoeTabletHomeLayout(
                 )
                 Row(
                     modifier =
-                        Modifier.align(Alignment.TopStart)
+                        Modifier
+                            .align(Alignment.TopStart)
                             .fillMaxWidth()
                             .padding(start = UiDp.dp16, end = UiDp.dp16, top = UiDp.dp14),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -364,7 +378,8 @@ private fun MoeTabletHomeLayout(
                 }
                 Box(
                     modifier =
-                        Modifier.align(Alignment.BottomStart)
+                        Modifier
+                            .align(Alignment.BottomStart)
                             .fillMaxWidth()
                             .padding(
                                 start = MoeUi.Hero.contentHorizontalInset,
@@ -393,15 +408,16 @@ private fun MoeTabletHomeLayout(
 
             Column(
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
                         .then(if (shortHeight) Modifier else Modifier.weight(1f, fill = true))
                         .padding(
                             start =
                                 MoeUi.Hero.containerHorizontalInset +
-                                    MoeUi.Hero.contentHorizontalInset,
+                                        MoeUi.Hero.contentHorizontalInset,
                             end =
                                 MoeUi.Hero.containerHorizontalInset +
-                                    MoeUi.Hero.contentHorizontalInset,
+                                        MoeUi.Hero.contentHorizontalInset,
                             top = MoeUi.Hero.belowHeroTopGap,
                             bottom = UiDp.dp12,
                         ),

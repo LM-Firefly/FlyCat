@@ -66,94 +66,97 @@ internal fun MoeHomeSkeletonMockup(
     // The wallpaper demo drives a single looped cycle: long-press the hero, then raise the picker.
     val transition = rememberInfiniteTransition(label = "home_wallpaper")
     val sheetProgress by
-        transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 0f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation =
-                        keyframes {
-                            durationMillis = 4200
-                            0f at 0
-                            0f at 1500
-                            1f at 1900 using FastOutSlowInEasing
-                            1f at 3500
-                            0f at 3900 using FastOutSlowInEasing
-                            0f at 4200
-                        },
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "wallpaper_sheet_progress",
-        )
+    transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 0f,
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    keyframes {
+                        durationMillis = 4200
+                        0f at 0
+                        0f at 1500
+                        1f at 1900 using FastOutSlowInEasing
+                        1f at 3500
+                        0f at 3900 using FastOutSlowInEasing
+                        0f at 4200
+                    },
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "wallpaper_sheet_progress",
+    )
     val heroLongPressScale by
-        transition.animateFloat(
-            initialValue = 1f,
-            targetValue = 1f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation =
-                        keyframes {
-                            durationMillis = 4200
-                            1f at 0
-                            1f at 500
-                            0.82f at 760 using FastOutSlowInEasing
-                            0.82f at 1450
-                            1f at 1680 using FastOutSlowInEasing
-                            1f at 4200
-                        },
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "wallpaper_hero_long_press_scale",
-        )
+    transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    keyframes {
+                        durationMillis = 4200
+                        1f at 0
+                        1f at 500
+                        0.82f at 760 using FastOutSlowInEasing
+                        0.82f at 1450
+                        1f at 1680 using FastOutSlowInEasing
+                        1f at 4200
+                    },
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "wallpaper_hero_long_press_scale",
+    )
     val heroRippleScale by
-        transition.animateFloat(
-            initialValue = 0.6f,
-            targetValue = 2.1f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation =
-                        keyframes {
-                            durationMillis = 4200
-                            0.6f at 0
-                            0.6f at 760
-                            2.1f at 1500 using FastOutSlowInEasing
-                            2.1f at 4200
-                        },
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "wallpaper_hero_ripple_scale",
-        )
+    transition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 2.1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    keyframes {
+                        durationMillis = 4200
+                        0.6f at 0
+                        0.6f at 760
+                        2.1f at 1500 using FastOutSlowInEasing
+                        2.1f at 4200
+                    },
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "wallpaper_hero_ripple_scale",
+    )
     val heroRippleAlpha by
-        transition.animateFloat(
-            initialValue = 0.5f,
-            targetValue = 0f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation =
-                        keyframes {
-                            durationMillis = 4200
-                            0f at 0
-                            0f at 650
-                            0.45f at 760
-                            0f at 1500 using FastOutSlowInEasing
-                            0f at 4200
-                        },
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "wallpaper_hero_ripple_alpha",
-        )
+    transition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 0f,
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    keyframes {
+                        durationMillis = 4200
+                        0f at 0
+                        0f at 650
+                        0.45f at 760
+                        0f at 1500 using FastOutSlowInEasing
+                        0f at 4200
+                    },
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "wallpaper_hero_ripple_alpha",
+    )
 
     MockupPhoneFrame(palette = palette, modifier = modifier) {
         Row(modifier = Modifier.fillMaxSize()) {
             // Left sidebar (~22%): vertical clock near the top, nav icon rail pinned to the bottom.
             Column(
-                modifier = Modifier.fillMaxHeight().weight(0.22f),
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(0.22f),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Spacer(Modifier.height(10.dp))
                 // Vertical clock: one continuous stroke ("一笔带过").
                 Box(
-                    Modifier.width(13.dp)
+                    Modifier
+                        .width(13.dp)
                         .height(72.dp)
                         .clip(RoundedCornerShape(6.dp))
                         .background(palette.maskStrong)
@@ -168,7 +171,8 @@ internal fun MoeHomeSkeletonMockup(
                 ) {
                     repeat(3) {
                         Box(
-                            Modifier.size(13.dp)
+                            Modifier
+                                .size(13.dp)
                                 .clip(RoundedCornerShape(4.dp))
                                 .background(palette.mask)
                         )
@@ -180,19 +184,25 @@ internal fun MoeHomeSkeletonMockup(
 
             // Right content (~78%): hero (traffic + node info) + quote + launch controls row.
             Column(
-                modifier = Modifier.fillMaxHeight().weight(0.78f),
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(0.78f),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Box(
                     modifier =
-                        Modifier.fillMaxWidth()
+                        Modifier
+                            .fillMaxWidth()
                             .weight(2f)
                             .clip(RoundedCornerShape(13.dp))
                             .background(palette.maskStrong)
                 ) {
                     Column(
                         modifier =
-                            Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(7.dp),
+                            Modifier
+                                .align(Alignment.BottomStart)
+                                .fillMaxWidth()
+                                .padding(7.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         // Traffic strip: UP on the left, DOWN on the right.
@@ -201,13 +211,15 @@ internal fun MoeHomeSkeletonMockup(
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Box(
-                                Modifier.width(30.dp)
+                                Modifier
+                                    .width(30.dp)
                                     .height(9.dp)
                                     .clip(RoundedCornerShape(3.dp))
                                     .background(palette.onHero)
                             )
                             Box(
-                                Modifier.width(30.dp)
+                                Modifier
+                                    .width(30.dp)
                                     .height(9.dp)
                                     .clip(RoundedCornerShape(3.dp))
                                     .background(palette.onHero)
@@ -224,19 +236,22 @@ internal fun MoeHomeSkeletonMockup(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Box(
-                                    Modifier.size(10.dp)
+                                    Modifier
+                                        .size(10.dp)
                                         .clip(CircleShape)
                                         .background(palette.onHero)
                                 )
                                 Box(
-                                    Modifier.width(46.dp)
+                                    Modifier
+                                        .width(46.dp)
                                         .height(7.dp)
                                         .clip(RoundedCornerShape(3.dp))
                                         .background(palette.onHero)
                                 )
                             }
                             Box(
-                                Modifier.width(20.dp)
+                                Modifier
+                                    .width(20.dp)
                                     .height(7.dp)
                                     .clip(RoundedCornerShape(3.dp))
                                     .background(palette.onHero)
@@ -252,7 +267,8 @@ internal fun MoeHomeSkeletonMockup(
                         ) {
                             Box(
                                 modifier =
-                                    Modifier.graphicsLayer {
+                                    Modifier
+                                        .graphicsLayer {
                                             scaleX = heroRippleScale
                                             scaleY = heroRippleScale
                                             alpha = heroRippleAlpha
@@ -263,7 +279,8 @@ internal fun MoeHomeSkeletonMockup(
                             )
                             Box(
                                 modifier =
-                                    Modifier.graphicsLayer {
+                                    Modifier
+                                        .graphicsLayer {
                                             scaleX = heroLongPressScale
                                             scaleY = heroLongPressScale
                                         }
@@ -278,7 +295,9 @@ internal fun MoeHomeSkeletonMockup(
 
                 // Bottom third: quote block + the launch controls row (config circle + capsule).
                 Column(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     // Quote block: three left-aligned lines + a right-aligned author line.
@@ -287,25 +306,29 @@ internal fun MoeHomeSkeletonMockup(
                         verticalArrangement = Arrangement.spacedBy(5.dp),
                     ) {
                         Box(
-                            Modifier.fillMaxWidth(0.92f)
+                            Modifier
+                                .fillMaxWidth(0.92f)
                                 .height(8.dp)
                                 .clip(RoundedCornerShape(3.dp))
                                 .background(palette.mask)
                         )
                         Box(
-                            Modifier.fillMaxWidth(0.8f)
+                            Modifier
+                                .fillMaxWidth(0.8f)
                                 .height(8.dp)
                                 .clip(RoundedCornerShape(3.dp))
                                 .background(palette.mask)
                         )
                         Box(
-                            Modifier.fillMaxWidth(0.5f)
+                            Modifier
+                                .fillMaxWidth(0.5f)
                                 .height(8.dp)
                                 .clip(RoundedCornerShape(3.dp))
                                 .background(palette.mask)
                         )
                         Box(
-                            Modifier.align(Alignment.End)
+                            Modifier
+                                .align(Alignment.End)
                                 .fillMaxWidth(0.3f)
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp))
@@ -325,10 +348,13 @@ internal fun MoeHomeSkeletonMockup(
         // Wallpaper demo: dim scrim + the photo-picker bottom sheet sliding up. Clipped to the
         // phone-frame's inner radius so they follow the rounded corners instead of sharp edges.
         if (wallpaper) {
-            Box(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(15.dp))) {
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(15.dp))) {
                 Box(
                     modifier =
-                        Modifier.matchParentSize()
+                        Modifier
+                            .matchParentSize()
                             .background(Color.Black.copy(alpha = 0.40f * sheetProgress))
                 )
                 PhotoPickerSheet(
@@ -348,46 +374,46 @@ private fun HighlightedLaunchRow(modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "start_chip")
     // A press that reads as a tap: hold, snap down, snap back, then rest until the next cycle.
     val pressScale by
-        transition.animateFloat(
-            initialValue = 1f,
-            targetValue = 1f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation =
-                        keyframes {
-                            durationMillis = 1500
-                            1f at 0
-                            1f at 200
-                            0.9f at 360 using FastOutSlowInEasing
-                            1f at 560
-                            1f at 1500
-                        },
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "press_scale",
-        )
+    transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    keyframes {
+                        durationMillis = 1500
+                        1f at 0
+                        1f at 200
+                        0.9f at 360 using FastOutSlowInEasing
+                        1f at 560
+                        1f at 1500
+                    },
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "press_scale",
+    )
     val rippleScale by
-        transition.animateFloat(
-            initialValue = 0.6f,
-            targetValue = 2.6f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "ripple_scale",
-        )
+    transition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 2.6f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "ripple_scale",
+    )
     val rippleAlpha by
-        transition.animateFloat(
-            initialValue = 0.5f,
-            targetValue = 0f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "ripple_alpha",
-        )
+    transition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 0f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "ripple_alpha",
+    )
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -397,20 +423,25 @@ private fun HighlightedLaunchRow(modifier: Modifier = Modifier) {
         // Config button: a bordered surface circle with an icon glyph in the middle.
         Box(
             modifier =
-                Modifier.size(22.dp)
+                Modifier
+                    .size(22.dp)
                     .clip(CircleShape)
                     .background(colorScheme.surface)
                     .border(1.dp, palette.frameBorder, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(palette.maskStrong))
+            Box(Modifier
+                .size(8.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(palette.maskStrong))
         }
 
         // Launch capsule filling the remaining width, pressing on each tap.
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
             Box(
                 modifier =
-                    Modifier.graphicsLayer {
+                    Modifier
+                        .graphicsLayer {
                             scaleX = rippleScale
                             scaleY = rippleScale
                             alpha = rippleAlpha
@@ -422,7 +453,8 @@ private fun HighlightedLaunchRow(modifier: Modifier = Modifier) {
 
             Box(
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
                         .graphicsLayer {
                             scaleX = pressScale
                             scaleY = pressScale
@@ -447,7 +479,8 @@ private fun HighlightedLaunchRow(modifier: Modifier = Modifier) {
             // Prominent touch dot over the capsule's center, pressing in sync with it.
             Box(
                 modifier =
-                    Modifier.offset(x = 4.dp, y = 4.dp)
+                    Modifier
+                        .offset(x = 4.dp, y = 4.dp)
                         .graphicsLayer {
                             scaleX = pressScale
                             scaleY = pressScale
@@ -474,19 +507,24 @@ private fun PlainLaunchRow(modifier: Modifier = Modifier) {
         // Config button: a bordered surface circle with an icon glyph in the middle.
         Box(
             modifier =
-                Modifier.size(22.dp)
+                Modifier
+                    .size(22.dp)
                     .clip(CircleShape)
                     .background(colorScheme.surface)
                     .border(1.dp, palette.frameBorder, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(palette.maskStrong))
+            Box(Modifier
+                .size(8.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(palette.maskStrong))
         }
 
         // Launch capsule filling the remaining width, without any tap animation.
         Box(
             modifier =
-                Modifier.weight(1f)
+                Modifier
+                    .weight(1f)
                     .height(22.dp)
                     .clip(RoundedCornerShape(50))
                     .background(colorScheme.surface)
@@ -528,7 +566,8 @@ private fun PhotoPickerSheet(sheetProgress: Float, modifier: Modifier = Modifier
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Box(
-                Modifier.width(22.dp)
+                Modifier
+                    .width(22.dp)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(palette.mask)
@@ -540,13 +579,15 @@ private fun PhotoPickerSheet(sheetProgress: Float, modifier: Modifier = Modifier
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Box(
-                    Modifier.weight(1f)
+                    Modifier
+                        .weight(1f)
                         .height(15.dp)
                         .clip(RoundedCornerShape(7.dp))
                         .background(colorScheme.primary.copy(alpha = opacity.subtleStrong))
                 )
                 Box(
-                    Modifier.weight(1f)
+                    Modifier
+                        .weight(1f)
                         .height(15.dp)
                         .clip(RoundedCornerShape(7.dp))
                         .background(palette.mask)
@@ -555,7 +596,8 @@ private fun PhotoPickerSheet(sheetProgress: Float, modifier: Modifier = Modifier
 
             // Notice bar.
             Box(
-                Modifier.fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .height(18.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(palette.mask)
@@ -568,14 +610,17 @@ private fun PhotoPickerSheet(sheetProgress: Float, modifier: Modifier = Modifier
             ) {
                 repeat(3) { row ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         repeat(3) { col ->
                             val isCamera = row == 0 && col == 0
                             Box(
                                 modifier =
-                                    Modifier.weight(1f)
+                                    Modifier
+                                        .weight(1f)
                                         .fillMaxHeight()
                                         .clip(RoundedCornerShape(5.dp))
                                         .background(
@@ -585,7 +630,8 @@ private fun PhotoPickerSheet(sheetProgress: Float, modifier: Modifier = Modifier
                             ) {
                                 if (isCamera) {
                                     Box(
-                                        Modifier.size(6.dp)
+                                        Modifier
+                                            .size(6.dp)
                                             .clip(CircleShape)
                                             .background(palette.maskStrong)
                                     )

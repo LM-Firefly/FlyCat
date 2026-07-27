@@ -23,16 +23,12 @@ package com.github.yumelira.yumebox.runtime.client
 import android.content.Context
 import android.content.Intent
 import com.github.yumelira.yumebox.core.data.RepositoryUtils.safeApiCall
-import com.github.yumelira.yumebox.runtime.api.FetchObserver
-import com.github.yumelira.yumebox.runtime.api.Intents
-import com.github.yumelira.yumebox.runtime.api.Profile
-import com.github.yumelira.yumebox.runtime.api.ProfileUpdateReport
-import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
+import com.github.yumelira.yumebox.runtime.api.*
 import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
-import java.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.util.*
 
 /** Profile CRUD via `RuntimeAccess` / `ProfileApi`. */
 class ProfilesRepository(private val context: Context) {

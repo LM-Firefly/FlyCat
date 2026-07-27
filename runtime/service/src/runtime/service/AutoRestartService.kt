@@ -40,9 +40,9 @@ import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 import com.github.yumelira.yumebox.runtime.service.profile.ProfileService
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
 import com.github.yumelira.yumebox.runtime.service.util.*
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.*
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicBoolean
 
 class AutoRestartService : Service() {
     companion object {

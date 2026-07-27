@@ -87,7 +87,8 @@ fun EditorListItem(
     Card(modifier = modifier.padding(vertical = UiDp.dp4)) {
         Row(
             modifier =
-                Modifier.fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .clickable(onClick = onClick)
                     .padding(horizontal = UiDp.dp16, vertical = UiDp.dp12),
             verticalAlignment = Alignment.CenterVertically,
@@ -99,7 +100,9 @@ fun EditorListItem(
                 modifier = Modifier.width(UiDp.dp40),
             )
             Column(
-                modifier = Modifier.weight(1f).padding(horizontal = UiDp.dp8),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = UiDp.dp8),
                 verticalArrangement = Arrangement.spacedBy(UiDp.dp4),
             ) {
                 Text(text = title, style = MiuixTheme.textStyles.body1)

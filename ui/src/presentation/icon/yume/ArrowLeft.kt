@@ -39,12 +39,12 @@ val Yume.ArrowLeft: ImageVector
         }
         arrowLeftVector =
             ImageVector.Builder(
-                    name = "ArrowLeft",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "ArrowLeft",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -71,4 +71,5 @@ val Yume.ArrowLeft: ImageVector
         return arrowLeftVector!!
     }
 
-@Suppress("ObjectPropertyName") private var arrowLeftVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var arrowLeftVector: ImageVector? = null

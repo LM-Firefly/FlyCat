@@ -26,13 +26,13 @@ import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.runtime.api.LogObserver
 import com.github.yumelira.yumebox.runtime.api.LogSubscription
-import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicLong
 
 internal class SessionRuntimeTelemetry(
     private val host: RuntimeHost,

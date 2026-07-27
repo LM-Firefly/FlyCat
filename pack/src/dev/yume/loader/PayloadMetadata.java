@@ -80,33 +80,9 @@ final class PayloadMetadata {
         );
     }
 
-    static final class DexEntry {
-        final String assetName;
-        final String outputName;
-        final long size;
-        final byte[] sha256;
-
-        DexEntry(String assetName, String outputName, long size, byte[] sha256) {
-            this.assetName = assetName;
-            this.outputName = outputName;
-            this.size = size;
-            this.sha256 = sha256;
-        }
+    record DexEntry(String assetName, String outputName, long size, byte[] sha256) {
     }
 
-    static final class NativeEntry {
-        final String abi;
-        final String assetName;
-        final String outputName;
-        final long size;
-        final byte[] sha256;
-
-        NativeEntry(String abi, String assetName, String outputName, long size, byte[] sha256) {
-            this.abi = abi;
-            this.assetName = assetName;
-            this.outputName = outputName;
-            this.size = size;
-            this.sha256 = sha256;
-        }
+    record NativeEntry(String abi, String assetName, String outputName, long size, byte[] sha256) {
     }
 }

@@ -23,14 +23,14 @@ package com.github.yumelira.yumebox.data.controller
 import android.content.Context
 import android.net.Uri
 import com.github.yumelira.yumebox.core.model.Provider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 class ProvidersController(
     private val context: Context,
@@ -82,8 +82,9 @@ class ProvidersController(
                 Result.success(Unit)
             } catch (
                 error:
-                    Exception) { // fault barrier: IO and path-validation failures both become
-                                 // Result.failure
+                Exception
+            ) { // fault barrier: IO and path-validation failures both become
+                // Result.failure
                 Result.failure(error)
             }
         }
@@ -144,10 +145,10 @@ class ProvidersController(
         val importedRoot = context.filesDir.resolve("imported").canonicalFile
         val inImportedProviders =
             targetFile.toPath().startsWith(importedRoot.toPath()) &&
-                targetFile
-                    .toRelativeString(importedRoot)
-                    .replace('\\', '/')
-                    .matches(Regex("""^[^/]+/providers/(rules|proxies)/.+"""))
+                    targetFile
+                        .toRelativeString(importedRoot)
+                        .replace('\\', '/')
+                        .matches(Regex("""^[^/]+/providers/(rules|proxies)/.+"""))
         if (!inImportedProviders) {
             throw IllegalStateException(
                 "Provider path must live under profile provider directories: ${provider.path}"

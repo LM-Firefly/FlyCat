@@ -59,6 +59,8 @@ data class TunConfig(
 
 @Serializable
 enum class TunDnsMode {
-    @SerialName("redir-host") RedirHost,
-    @SerialName("fake-ip") FakeIp,
+    @SerialName("redir-host")
+    RedirHost,
+    @SerialName("fake-ip")
+    FakeIp,
 }

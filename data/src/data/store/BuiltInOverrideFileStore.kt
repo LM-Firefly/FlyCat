@@ -21,10 +21,10 @@ package com.github.yumelira.yumebox.data.store
 
 import android.content.Context
 import com.github.yumelira.yumebox.data.model.BuiltInOverrideCatalog
+import timber.log.Timber
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
-import timber.log.Timber
 
 /** Keeps materialized built-ins byte-for-byte aligned with the APK assets. */
 class BuiltInOverrideFileStore(
@@ -37,27 +37,27 @@ class BuiltInOverrideFileStore(
         val definition = BuiltInOverrideCatalog.find(id) ?: return null
         return synchronized(lock) {
             runCatching {
-                    val assetBytes = context.assets.open(definition.assetPath).use { it.readBytes() }
-                    val assetHash = sha256(assetBytes)
-                    val target =
-                        configsDir.resolve("${definition.id}.${definition.contentType.extension}")
-                    extensions
-                        .filterNot { it == definition.contentType.extension }
-                        .forEach { extension ->
-                            configsDir.resolve("${definition.id}.$extension").delete()
-                        }
-                    val currentHash =
-                        target.takeIf(File::isFile)?.let { file ->
-                            runCatching { sha256(file.readBytes()) }.getOrNull()
-                        }
-                    if (currentHash == null || !currentHash.contentEquals(assetHash)) {
-                        OverrideMetadataIO.writeTextAtomic(
-                            target,
-                            String(assetBytes, StandardCharsets.UTF_8),
-                        )
+                val assetBytes = context.assets.open(definition.assetPath).use { it.readBytes() }
+                val assetHash = sha256(assetBytes)
+                val target =
+                    configsDir.resolve("${definition.id}.${definition.contentType.extension}")
+                extensions
+                    .filterNot { it == definition.contentType.extension }
+                    .forEach { extension ->
+                        configsDir.resolve("${definition.id}.$extension").delete()
                     }
-                    target
+                val currentHash =
+                    target.takeIf(File::isFile)?.let { file ->
+                        runCatching { sha256(file.readBytes()) }.getOrNull()
+                    }
+                if (currentHash == null || !currentHash.contentEquals(assetHash)) {
+                    OverrideMetadataIO.writeTextAtomic(
+                        target,
+                        String(assetBytes, StandardCharsets.UTF_8),
+                    )
                 }
+                target
+            }
                 .onFailure { error ->
                     Timber.w(error, "Failed to synchronize built-in override: %s", id)
                 }

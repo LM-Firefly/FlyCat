@@ -50,9 +50,9 @@ internal fun EditProfileNameDialog(
     onConfirm: (String) -> Unit,
 ) {
     var editName by
-        remember(show, currentName) {
-            mutableStateOf(TextFieldValue(currentName, TextRange(currentName.length)))
-        }
+    remember(show, currentName) {
+        mutableStateOf(TextFieldValue(currentName, TextRange(currentName.length)))
+    }
 
     AppTextFieldDialog(
         show = show,

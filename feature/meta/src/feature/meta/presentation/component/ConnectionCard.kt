@@ -182,7 +182,8 @@ private fun ConnectionTagChip(
         style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
         color = backgroundColor,
         modifier =
-            Modifier.clip(RoundedCornerShape(radii.full))
+            Modifier
+                .clip(RoundedCornerShape(radii.full))
                 .background(backgroundColor.copy(alpha = opacity.subtle))
                 .padding(horizontal = spacing.space4, vertical = spacing.space2),
     )
@@ -215,8 +216,9 @@ private fun formatRelativeTime(start: String): String {
         }
     } catch (
         _:
-            Exception) { // fault barrier: date parse or a malformed locale format string must not
-                         // crash UI
+        Exception
+    ) { // fault barrier: date parse or a malformed locale format string must not
+        // crash UI
         ""
     }
 }

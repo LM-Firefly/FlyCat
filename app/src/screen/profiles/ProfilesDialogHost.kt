@@ -220,7 +220,7 @@ private suspend fun saveProfileOverrides(
 
     val shouldApplyRuntime =
         (isRunning || profile.active) &&
-            (profile.active || homeViewModel.isCurrentProfile(profile.uuid))
+                (profile.active || homeViewModel.isCurrentProfile(profile.uuid))
     if (shouldApplyRuntime) {
         val applied = overrideService.applyOverride(profileId)
         if (!applied) {

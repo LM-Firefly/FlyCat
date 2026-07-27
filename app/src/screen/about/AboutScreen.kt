@@ -48,7 +48,6 @@ import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
-import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -59,6 +58,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.io.IOException
 
 private val AppNameGradient =
     listOf(
@@ -90,8 +90,7 @@ fun AboutScreen(navigator: Navigator) {
     // Core branch/hash are stamped into BuildConfig at configure time (see app/build.gradle.kts).
     val coreVersion = BuildConfig.CORE_VERSION
 
-    Scaffold(topBar = { TopBar(title = YumeTxt.About.Title, scrollBehavior = scrollBehavior) }) {
-        innerPadding ->
+    Scaffold(topBar = { TopBar(title = YumeTxt.About.Title, scrollBehavior = scrollBehavior) }) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
             scrollBehavior = scrollBehavior,
@@ -103,37 +102,41 @@ fun AboutScreen(navigator: Navigator) {
                 Card {
                     Box(
                         modifier =
-                            Modifier.fillMaxWidth().drawBehind {
-                                drawRect(
-                                    brush =
-                                        Brush.radialGradient(
-                                            colors =
-                                                listOf(
-                                                    AppNameGradient.first().copy(alpha = 0.06f),
-                                                    Color.Transparent,
-                                                ),
-                                            center = Offset(size.width * 0.08f, size.height * 0.1f),
-                                            radius = size.width * 0.45f,
-                                        )
-                                )
-                                drawRect(
-                                    brush =
-                                        Brush.radialGradient(
-                                            colors =
-                                                listOf(
-                                                    AppNameGradient.last().copy(alpha = 0.06f),
-                                                    Color.Transparent,
-                                                ),
-                                            center =
-                                                Offset(size.width * 0.92f, size.height * 0.95f),
-                                            radius = size.width * 0.5f,
-                                        )
-                                )
-                            },
+                            Modifier
+                                .fillMaxWidth()
+                                .drawBehind {
+                                    drawRect(
+                                        brush =
+                                            Brush.radialGradient(
+                                                colors =
+                                                    listOf(
+                                                        AppNameGradient.first().copy(alpha = 0.06f),
+                                                        Color.Transparent,
+                                                    ),
+                                                center = Offset(size.width * 0.08f, size.height * 0.1f),
+                                                radius = size.width * 0.45f,
+                                            )
+                                    )
+                                    drawRect(
+                                        brush =
+                                            Brush.radialGradient(
+                                                colors =
+                                                    listOf(
+                                                        AppNameGradient.last().copy(alpha = 0.06f),
+                                                        Color.Transparent,
+                                                    ),
+                                                center =
+                                                    Offset(size.width * 0.92f, size.height * 0.95f),
+                                                radius = size.width * 0.5f,
+                                            )
+                                    )
+                                },
                         contentAlignment = Alignment.Center,
                     ) {
                         Column(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = UiDp.dp64),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = UiDp.dp64),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Text(
@@ -236,7 +239,9 @@ fun AboutScreen(navigator: Navigator) {
 
             item {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(top = UiDp.dp32),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = UiDp.dp32),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(text = YumeTxt.About.Copyright, style = MiuixTheme.textStyles.footnote1)

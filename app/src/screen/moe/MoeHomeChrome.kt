@@ -54,7 +54,6 @@ import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.YumeHaze
 import com.github.yumelira.yumebox.screen.home.HomeProxyControlState
-import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.blurEffect
@@ -137,7 +136,9 @@ internal fun MoeSidebarContent(
     // this width, so adding horizontal decoration padding would push digits under the panel.
     val laneWidth = visibleWidth.coerceAtLeast(0.dp)
     Box(
-        modifier = Modifier.fillMaxHeight().width(laneWidth),
+        modifier = Modifier
+            .fillMaxHeight()
+            .width(laneWidth),
         contentAlignment = Alignment.TopCenter,
     ) {
         MoeSidebarRail(
@@ -195,17 +196,18 @@ private fun MoeLaunchConfigButton(surfaceColor: Color, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val pressScale by
-        animateFloatAsState(
-            targetValue = if (isPressed) MoeUi.Button.pressedScale else 1f,
-            animationSpec = spring(dampingRatio = 0.42f, stiffness = 520f),
-            label = "moe_launch_config_button_press_scale",
-        )
+    animateFloatAsState(
+        targetValue = if (isPressed) MoeUi.Button.pressedScale else 1f,
+        animationSpec = spring(dampingRatio = 0.42f, stiffness = 520f),
+        label = "moe_launch_config_button_press_scale",
+    )
     val contentColor = MiuixTheme.colorScheme.onBackground.copy(alpha = 0.62f)
     val borderColor = moeLaunchButtonBorderColor()
 
     Box(
         modifier =
-            Modifier.graphicsLayer {
+            Modifier
+                .graphicsLayer {
                     scaleX = pressScale
                     scaleY = pressScale
                 }
@@ -256,11 +258,11 @@ internal fun MoeLaunchButton(
         MiuixTheme.colorScheme.onBackground.copy(alpha = if (enabled) 0.72f else 0.34f)
     val borderColor = moeLaunchButtonBorderColor()
     val pressScale by
-        animateFloatAsState(
-            targetValue = if (isPressed && enabled) MoeUi.Button.pressedScale else 1f,
-            animationSpec = spring(dampingRatio = 0.42f, stiffness = 520f),
-            label = "moe_launch_button_press_scale",
-        )
+    animateFloatAsState(
+        targetValue = if (isPressed && enabled) MoeUi.Button.pressedScale else 1f,
+        animationSpec = spring(dampingRatio = 0.42f, stiffness = 520f),
+        label = "moe_launch_button_press_scale",
+    )
     val targetLabel =
         when {
             isRemoteController && isRunning -> "运行中"
@@ -321,7 +323,10 @@ internal fun MoeLaunchButton(
                 )
     ) {
         Box(
-            modifier = Modifier.align(Alignment.Center).height(22.dp).clipToBounds(),
+            modifier = Modifier
+                .align(Alignment.Center)
+                .height(22.dp)
+                .clipToBounds(),
             contentAlignment = Alignment.Center,
         ) {
             AnimatedContent(

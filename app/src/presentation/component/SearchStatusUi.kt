@@ -89,7 +89,8 @@ fun CollapsedSearchBar(
                 imageVector = MiuixIcons.Basic.Search,
                 contentDescription = label,
                 modifier =
-                    Modifier.size(AppTheme.sizes.searchIconTouchTarget)
+                    Modifier
+                        .size(AppTheme.sizes.searchIconTouchTarget)
                         .padding(start = spacing.space16, end = spacing.space8),
                 tint = colorScheme.onSurfaceVariantSummary,
             )
@@ -113,16 +114,19 @@ fun SearchStatus.TopAppBarAnim(
     content: @Composable () -> Unit,
 ) {
     val alpha by
-        animateFloatAsState(
-            targetValue = if (visible) 1f else 0f,
-            animationSpec = tween(if (visible) 550 else 0, easing = FastOutSlowInEasing),
-            label = "SearchTopBarAlpha",
-        )
+    animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(if (visible) 550 else 0, easing = FastOutSlowInEasing),
+        label = "SearchTopBarAlpha",
+    )
     Box(
         modifier =
-            modifier.fillMaxWidth().background(colorScheme.surface).graphicsLayer {
-                this.alpha = alpha
-            }
+            modifier
+                .fillMaxWidth()
+                .background(colorScheme.surface)
+                .graphicsLayer {
+                    this.alpha = alpha
+                }
     ) {
         content()
     }
@@ -163,23 +167,23 @@ fun SearchStatus.SearchPager(
     val isExpanded = searchStatus.isExpanded()
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
     val topPadding by
-        animateDpAsState(
-            targetValue =
-                if (searchStatus.shouldExpand()) {
-                    systemBarsPadding + componentSizes.listItemVerticalMinimal
-                } else {
-                    max(searchStatus.offsetY, spacing.space0)
-                },
-            animationSpec = tween(300, easing = LinearOutSlowInEasing),
-            label = "SearchTopPadding",
-            finishedListener = { onSearchStatusChange(searchStatus.onAnimationComplete()) },
-        )
+    animateDpAsState(
+        targetValue =
+            if (searchStatus.shouldExpand()) {
+                systemBarsPadding + componentSizes.listItemVerticalMinimal
+            } else {
+                max(searchStatus.offsetY, spacing.space0)
+            },
+        animationSpec = tween(300, easing = LinearOutSlowInEasing),
+        label = "SearchTopPadding",
+        finishedListener = { onSearchStatusChange(searchStatus.onAnimationComplete()) },
+    )
     val surfaceAlpha by
-        animateFloatAsState(
-            targetValue = if (searchStatus.shouldExpand()) 1f else 0f,
-            animationSpec = tween(300, easing = LinearOutSlowInEasing),
-            label = "SearchSurfaceAlpha",
-        )
+    animateFloatAsState(
+        targetValue = if (searchStatus.shouldExpand()) 1f else 0f,
+        animationSpec = tween(300, easing = LinearOutSlowInEasing),
+        label = "SearchSurfaceAlpha",
+    )
 
     BackHandler(enabled = active) {
         onSearchStatusChange(
@@ -192,7 +196,8 @@ fun SearchStatus.SearchPager(
     Column(
         modifier =
             if (active) {
-                Modifier.fillMaxSize()
+                Modifier
+                    .fillMaxSize()
                     .zIndex(5f)
                     .background(colorScheme.surface.copy(alpha = surfaceAlpha))
                     .pointerInput(searchStatus.current) {}
@@ -227,7 +232,10 @@ private fun SearchPagerTopRow(
 ) {
     Row(
         modifier =
-            Modifier.fillMaxWidth().padding(top = topPadding).background(colorScheme.surface),
+            Modifier
+                .fillMaxWidth()
+                .padding(top = topPadding)
+                .background(colorScheme.surface),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -263,7 +271,8 @@ private fun SearchPagerCancelButton(
             fontWeight = FontWeight.Bold,
             color = colorScheme.primary,
             modifier =
-                Modifier.padding(
+                Modifier
+                    .padding(
                         start = spacing.space4,
                         end = spacing.space16,
                         top = searchBarTopPadding,
@@ -295,7 +304,9 @@ private fun SearchPagerResultsLayer(
 ) {
     AnimatedVisibility(
         visible = isExpanded,
-        modifier = Modifier.fillMaxSize().zIndex(1f),
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(1f),
         enter = fadeIn(),
         exit = fadeOut(),
     ) {
@@ -382,7 +393,8 @@ private fun SearchBarLeadingIcon(componentSizes: Sizes, spacing: Spacing) {
         imageVector = MiuixIcons.Basic.Search,
         contentDescription = YumeTxt.Component.Editor.Action.Search,
         modifier =
-            Modifier.size(componentSizes.searchIconTouchTarget)
+            Modifier
+                .size(componentSizes.searchIconTouchTarget)
                 .padding(start = spacing.space16, end = spacing.space8),
         tint = colorScheme.onSurfaceVariantSummary,
     )
@@ -405,7 +417,8 @@ private fun SearchBarClearButton(
             contentDescription = YumeTxt.Component.Button.Clear,
             tint = colorScheme.onSurface,
             modifier =
-                Modifier.size(componentSizes.searchIconTouchTarget)
+                Modifier
+                    .size(componentSizes.searchIconTouchTarget)
                     .padding(start = spacing.space8, end = spacing.space16)
                     .clickable(interactionSource = null, indication = null) { onClear() },
         )

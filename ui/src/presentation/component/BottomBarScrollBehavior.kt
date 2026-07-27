@@ -135,11 +135,11 @@ fun rememberBottomBarScrollBehavior(autoHideEnabled: Boolean = true): BottomBarS
 @Composable
 fun BottomBarScrollBehavior.withLazyListState(listState: LazyListState): BottomBarScrollBehavior {
     val isAtTop by
-        remember(listState) {
-            derivedStateOf {
-                listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
-            }
+    remember(listState) {
+        derivedStateOf {
+            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
         }
+    }
 
     LaunchedEffect(isAtTop) {
         if (isAtTop) {

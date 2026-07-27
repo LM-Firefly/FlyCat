@@ -149,7 +149,7 @@ class RulesViewModel(private val appContext: Context) : ViewModel() {
 
     private fun RuntimeRule.matches(query: String): Boolean =
         payload.contains(query, ignoreCase = true) ||
-            type.contains(query, ignoreCase = true) ||
-            proxy.contains(query, ignoreCase = true) ||
-            index.toString().contains(query)
+                type.contains(query, ignoreCase = true) ||
+                proxy.contains(query, ignoreCase = true) ||
+                index.toString().contains(query)
 }

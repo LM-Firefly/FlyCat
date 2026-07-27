@@ -19,15 +19,14 @@
 
 package com.github.yumelira.yumebox.screen.profiles
 
-import androidx.core.net.toUri
-
 import android.net.Uri
+import androidx.core.net.toUri
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_FILE
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
 import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_URL
 import com.github.yumelira.yumebox.runtime.api.Profile
-import java.util.*
 import tf.gal.yumebox.locale.YumeTxt
+import java.util.*
 
 internal typealias AddProfile = (String, String, Profile.Type, Long, Uri?, String) -> Unit
 

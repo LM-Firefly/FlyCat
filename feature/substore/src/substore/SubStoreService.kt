@@ -49,7 +49,7 @@ class SubStoreService : Service() {
         return runCatching {
             if (
                 NetworkUtil.isPortInUse(request.frontendPort) ||
-                    NetworkUtil.isPortInUse(request.backendPort)
+                NetworkUtil.isPortInUse(request.backendPort)
             ) {
                 error("端口 ${request.frontendPort} 或 ${request.backendPort} 已被占用")
             }

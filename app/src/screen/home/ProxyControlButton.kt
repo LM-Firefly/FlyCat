@@ -110,7 +110,8 @@ fun ProxyControlButton(
             },
             enabled = isEnabled,
             modifier =
-                Modifier.fillMaxWidth(buttonWidthFraction)
+                Modifier
+                    .fillMaxWidth(buttonWidthFraction)
                     .scale(scaleAnim.value)
                     .shadow(
                         elevation = UiDp.dp1,
@@ -143,14 +144,14 @@ fun ProxyControlButton(
                                     easing = AnimationSpecs.EnterEasing,
                                 ),
                         ) +
-                            fadeIn(
-                                animationSpec =
-                                    tween(
-                                        ControlButtonIconEnterDurationMillis,
-                                        easing = AnimationSpecs.EnterEasing,
-                                    )
-                            ) +
-                            scaleIn(initialScale = 0.8f, animationSpec = iconTransition)
+                                fadeIn(
+                                    animationSpec =
+                                        tween(
+                                            ControlButtonIconEnterDurationMillis,
+                                            easing = AnimationSpecs.EnterEasing,
+                                        )
+                                ) +
+                                scaleIn(initialScale = 0.8f, animationSpec = iconTransition)
 
                     val exitTransition =
                         slideOutVertically(
@@ -161,14 +162,14 @@ fun ProxyControlButton(
                                     easing = AnimationSpecs.ExitEasing,
                                 ),
                         ) +
-                            fadeOut(
-                                animationSpec =
-                                    tween(
-                                        ControlButtonIconExitDurationMillis,
-                                        easing = AnimationSpecs.ExitEasing,
-                                    )
-                            ) +
-                            scaleOut(targetScale = 0.8f, animationSpec = iconTransition)
+                                fadeOut(
+                                    animationSpec =
+                                        tween(
+                                            ControlButtonIconExitDurationMillis,
+                                            easing = AnimationSpecs.ExitEasing,
+                                        )
+                                ) +
+                                scaleOut(targetScale = 0.8f, animationSpec = iconTransition)
 
                     enterTransition.togetherWith(exitTransition)
                 },

@@ -28,8 +28,8 @@ fun buildPresetTemplateYaml(selection: OverridePresetTemplateSelection): String 
     val selectedFallbackRegions = orderedRegions.filter { it in selection.fallbackRegions }
     val document =
         linkedMapOf<String, Any?>(
-                "rule-providers" to buildRuleProviders(normalizedEnabledItems),
-                "proxy-groups" to
+            "rule-providers" to buildRuleProviders(normalizedEnabledItems),
+            "proxy-groups" to
                     buildProxyGroups(
                         selectedUrlTestRegions = selectedUrlTestRegions,
                         selectedFallbackRegions = selectedFallbackRegions,
@@ -37,8 +37,8 @@ fun buildPresetTemplateYaml(selection: OverridePresetTemplateSelection): String 
                         enableUrlTestGroup = selection.enableUrlTestGroup,
                         enableFallbackGroup = selection.enableFallbackGroup,
                     ),
-                "rules" to buildRules(normalizedEnabledItems),
-            )
+            "rules" to buildRules(normalizedEnabledItems),
+        )
             .filterValues { value ->
                 when (value) {
                     is Collection<*> -> value.isNotEmpty()
@@ -219,11 +219,11 @@ private fun buildProxySelectGroup(
         "type" to "select",
         "icon" to OverridePresetItem.Proxy.icon.orEmpty(),
         "proxies" to
-            buildSelectableGroupNames(
-                regionNames = regionNames,
-                enableUrlTestGroup = enableUrlTestGroup,
-                enableFallbackGroup = enableFallbackGroup,
-            ),
+                buildSelectableGroupNames(
+                    regionNames = regionNames,
+                    enableUrlTestGroup = enableUrlTestGroup,
+                    enableFallbackGroup = enableFallbackGroup,
+                ),
         "include-all" to true,
     )
 

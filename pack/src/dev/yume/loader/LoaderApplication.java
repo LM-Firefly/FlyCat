@@ -1,10 +1,10 @@
 package dev.yume.loader;
 
-import androidx.annotation.NonNull;
-
 import android.app.Application;
 import android.content.Context;
 import android.content.res.Configuration;
+
+import androidx.annotation.NonNull;
 
 public final class LoaderApplication extends Application {
     private Application original;
@@ -19,8 +19,8 @@ public final class LoaderApplication extends Application {
         );
         original = ApplicationBridge.create(
                 base,
-                installation.classLoader,
-                installation.metadata.originalApplication
+                installation.classLoader(),
+                installation.metadata().originalApplication
         );
     }
 

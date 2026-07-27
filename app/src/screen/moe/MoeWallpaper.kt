@@ -13,13 +13,10 @@
 
 package com.github.yumelira.yumebox.screen.moe
 
-import androidx.core.net.toUri
-
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.core.net.toUri
 import com.github.panpf.sketch.cache.CachePolicy
 import com.github.panpf.sketch.fetch.newResourceUri
 import com.github.panpf.sketch.rememberAsyncImagePainter
@@ -41,9 +39,9 @@ import com.github.panpf.sketch.resize.Scale
 import com.github.panpf.sketch.util.Size
 import com.github.yumelira.yumebox.R
 import com.github.yumelira.yumebox.presentation.component.calculateWallpaperViewportLayout
-import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 
 @Composable
 internal fun MoeWallpaperBackground(
@@ -58,13 +56,13 @@ internal fun MoeWallpaperBackground(
     val density = LocalDensity.current
     val bundledWallpaper = newResourceUri(R.drawable.wallpaper)
     val model by
-        produceState(bundledWallpaper, wallpaperUri) {
-            value = withContext(Dispatchers.IO) { resolveWallpaperModel(context, wallpaperUri) }
-        }
+    produceState(bundledWallpaper, wallpaperUri) {
+        value = withContext(Dispatchers.IO) { resolveWallpaperModel(context, wallpaperUri) }
+    }
     val imageBounds by
-        produceState<Pair<Int, Int>?>(null, model) {
-            value = if (model == bundledWallpaper) null else readImageBounds(context, model)
-        }
+    produceState<Pair<Int, Int>?>(null, model) {
+        value = if (model == bundledWallpaper) null else readImageBounds(context, model)
+    }
 
     BoxWithConstraints(modifier = modifier) {
         val width = with(density) { maxWidth.toPx() }.coerceAtLeast(1f)
@@ -90,7 +88,9 @@ internal fun MoeWallpaperBackground(
             contentDescription = null,
             contentScale = ContentScale.Crop,
             alignment = BiasAlignment(layout.biasX, layout.biasY),
-            modifier = Modifier.align(Alignment.Center).fillMaxSize(),
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxSize(),
         )
     }
 }

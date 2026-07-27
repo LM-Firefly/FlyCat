@@ -85,8 +85,8 @@ class ConnectionViewModel(private val appContext: Context) : ViewModel() {
 
     val screenState: StateFlow<ConnectionScreenState> =
         combine(state, filteredConnections) { s, filtered ->
-                ConnectionScreenState(state = s, filteredConnections = filtered)
-            }
+            ConnectionScreenState(state = s, filteredConnections = filtered)
+        }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
@@ -107,7 +107,8 @@ class ConnectionViewModel(private val appContext: Context) : ViewModel() {
                 try {
                     refreshConnections(showRefreshing = true)
                 } catch (
-                    error: Exception) { // fault barrier: keep the polling loop alive on any failure
+                    error: Exception
+                ) { // fault barrier: keep the polling loop alive on any failure
                     Timber.w(error, "Failed to poll connections")
                     _state.update { it.copy(error = error.message, isRefreshing = false) }
                 }
@@ -139,16 +140,16 @@ class ConnectionViewModel(private val appContext: Context) : ViewModel() {
 
     suspend fun closeConnection(id: String): Boolean =
         withContext(Dispatchers.IO) {
-                runCatching {
-                        RuntimeAccess.connect(appContext)
-                        RuntimeAccess.core().closeConnection(id)
-                    }
-                    .onFailure { error ->
-                        Timber.w(error, "Failed to close connection: %s", id)
-                        _state.update { it.copy(error = error.message) }
-                    }
-                    .getOrDefault(false)
+            runCatching {
+                RuntimeAccess.connect(appContext)
+                RuntimeAccess.core().closeConnection(id)
             }
+                .onFailure { error ->
+                    Timber.w(error, "Failed to close connection: %s", id)
+                    _state.update { it.copy(error = error.message) }
+                }
+                .getOrDefault(false)
+        }
             .also { refreshConnections(showRefreshing = true) }
 
     @Suppress("TooGenericExceptionCaught")
@@ -170,7 +171,8 @@ class ConnectionViewModel(private val appContext: Context) : ViewModel() {
                     )
                 }
             } catch (
-                error: Exception) { // fault barrier: service IPC failure becomes UI error state
+                error: Exception
+            ) { // fault barrier: service IPC failure becomes UI error state
                 Timber.w(error, "Failed to query connections")
                 _state.update {
                     it.copy(error = error.message, isLoading = false, isRefreshing = false)
@@ -199,9 +201,9 @@ class ConnectionViewModel(private val appContext: Context) : ViewModel() {
                     val rule = conn.rule.lowercase()
 
                     host.contains(query) ||
-                        process.contains(query) ||
-                        chains.contains(query) ||
-                        rule.contains(query)
+                            process.contains(query) ||
+                            chains.contains(query) ||
+                            rule.contains(query)
                 }
             }
 

@@ -56,8 +56,8 @@ fun KeepLazyListTopAnchorOnReorder(
                     val topNow = listState.captureTopAnchor()
                     if (
                         topNow == null ||
-                            topNow.key != anchor.key ||
-                            abs(topNow.offset - anchor.offset) > 1
+                        topNow.key != anchor.key ||
+                        abs(topNow.offset - anchor.offset) > 1
                     ) {
                         listState.scrollToItem(targetIndex, anchor.offset)
                     }

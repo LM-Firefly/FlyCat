@@ -23,21 +23,22 @@
 package com.github.yumelira.yumebox.common.util
 
 import android.annotation.SuppressLint
-
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import com.github.yumelira.yumebox.data.model.AppLanguage
-import java.util.*
 import tf.gal.shirosu.fyl.fytxt.FYTxtConfig
+import java.util.*
 
 @SuppressLint("AppBundleLocaleChanges")
 object AppLanguageManager {
-    @Volatile private var activeLanguage: AppLanguage = AppLanguage.System
+    @Volatile
+    private var activeLanguage: AppLanguage = AppLanguage.System
 
-    @Volatile private var activeLocale: Locale = Locale.getDefault()
+    @Volatile
+    private var activeLocale: Locale = Locale.getDefault()
 
     fun apply(language: AppLanguage) {
         activeLanguage = language

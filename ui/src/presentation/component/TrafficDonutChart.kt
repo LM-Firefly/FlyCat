@@ -107,31 +107,33 @@ fun TrafficDonutChart(
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Canvas(
             modifier =
-                Modifier.fillMaxSize().pointerInput(interactiveSlices, selectedKey) {
-                    detectTapGestures { offset ->
-                        if (interactiveSlices.isEmpty()) {
-                            onSliceClick(null)
-                            return@detectTapGestures
-                        }
+                Modifier
+                    .fillMaxSize()
+                    .pointerInput(interactiveSlices, selectedKey) {
+                        detectTapGestures { offset ->
+                            if (interactiveSlices.isEmpty()) {
+                                onSliceClick(null)
+                                return@detectTapGestures
+                            }
 
-                        val center = Offset(size.width / 2f, size.height / 2f)
-                        val dx = offset.x - center.x
-                        val dy = offset.y - center.y
-                        val radius = min(size.width, size.height) / 2f
-                        val innerRadius = (radius - strokeWidth.toPx()).coerceAtLeast(0f)
-                        val distance = sqrt(dx.pow(2) + dy.pow(2))
-                        if (distance !in innerRadius..radius) {
-                            onSliceClick(null)
-                            return@detectTapGestures
-                        }
+                            val center = Offset(size.width / 2f, size.height / 2f)
+                            val dx = offset.x - center.x
+                            val dy = offset.y - center.y
+                            val radius = min(size.width, size.height) / 2f
+                            val innerRadius = (radius - strokeWidth.toPx()).coerceAtLeast(0f)
+                            val distance = sqrt(dx.pow(2) + dy.pow(2))
+                            if (distance !in innerRadius..radius) {
+                                onSliceClick(null)
+                                return@detectTapGestures
+                            }
 
-                        val angle = ((atan2(dy, dx) * 180f / PI.toFloat()) + 450f) % 360f
-                        val tapped = interactiveSlices.firstOrNull {
-                            angle >= it.startAngle && angle < it.endAngle
+                            val angle = ((atan2(dy, dx) * 180f / PI.toFloat()) + 450f) % 360f
+                            val tapped = interactiveSlices.firstOrNull {
+                                angle >= it.startAngle && angle < it.endAngle
+                            }
+                            onSliceClick(tapped?.key)
                         }
-                        onSliceClick(tapped?.key)
                     }
-                }
         ) {
             val stroke = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Butt)
             val canvasSize = Size(size.width, size.height)

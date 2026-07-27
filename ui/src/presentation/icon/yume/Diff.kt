@@ -39,12 +39,12 @@ val Yume.Diff: ImageVector
         }
         diffVector =
             ImageVector.Builder(
-                    name = "Diff",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "Diff",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -79,4 +79,5 @@ val Yume.Diff: ImageVector
         return diffVector!!
     }
 
-@Suppress("ObjectPropertyName") private var diffVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var diffVector: ImageVector? = null

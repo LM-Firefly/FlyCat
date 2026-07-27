@@ -29,14 +29,13 @@ import com.github.yumelira.yumebox.runtime.client.ProxyFacade
 import com.github.yumelira.yumebox.runtime.service.util.importedDir
 import com.github.yumelira.yumebox.substore.SubStorePaths
 import com.github.yumelira.yumebox.substore.SubStoreServiceController
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import java.util.*
 
 class BackupRepository internal constructor(
     private val application: Application,
@@ -59,7 +58,7 @@ class BackupRepository internal constructor(
                 val extracted = archiveManager.readArchive(input, extractDir)
                 require(
                     extracted.manifest.appId.isBlank() ||
-                        extracted.manifest.appId == application.packageName
+                            extracted.manifest.appId == application.packageName
                 ) {
                     "Backup belongs to ${extracted.manifest.appId}"
                 }

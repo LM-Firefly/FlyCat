@@ -20,12 +20,12 @@
 
 package com.github.yumelira.yumebox.core.util
 
-import java.net.InetAddress
-import java.net.NetworkInterface
-import java.net.SocketException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.net.InetAddress
+import java.net.NetworkInterface
+import java.net.SocketException
 
 object NetworkInterfaces {
     suspend fun getLocalIpAddress(): String? =

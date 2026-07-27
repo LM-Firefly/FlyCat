@@ -22,11 +22,8 @@
 
 package com.github.yumelira.yumebox.screen.settings
 
-import androidx.core.net.toUri
-
 
 import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -42,6 +39,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.core.net.toUri
 import com.github.panpf.sketch.rememberAsyncImagePainter
 import com.github.panpf.sketch.request.ImageRequest
 import com.github.panpf.sketch.resize.Precision
@@ -72,9 +70,9 @@ fun MoeWallpaperCropScreen(
     val viewModel = koinViewModel<AppSettingsViewModel>()
     val context = LocalContext.current
     var biasX by
-        remember(wallpaperUri, initialBiasX) { mutableFloatStateOf(initialBiasX.coerceIn(-1f, 1f)) }
+    remember(wallpaperUri, initialBiasX) { mutableFloatStateOf(initialBiasX.coerceIn(-1f, 1f)) }
     var biasY by
-        remember(wallpaperUri, initialBiasY) { mutableFloatStateOf(initialBiasY.coerceIn(-1f, 1f)) }
+    remember(wallpaperUri, initialBiasY) { mutableFloatStateOf(initialBiasY.coerceIn(-1f, 1f)) }
     val painter =
         rememberAsyncImagePainter(
             request =
@@ -89,28 +87,29 @@ fun MoeWallpaperCropScreen(
         )
     val density = LocalDensity.current
     val imageBounds by
-        produceState<Pair<Int, Int>?>(initialValue = null, wallpaperUri) {
-            value =
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                        context.contentResolver.openInputStream(wallpaperUri.toUri())?.use {
-                            input ->
-                            val options =
-                                BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                            BitmapFactory.decodeStream(input, null, options)
-                            if (options.outWidth > 0 && options.outHeight > 0) {
-                                options.outWidth to options.outHeight
-                            } else {
-                                null
-                            }
+    produceState<Pair<Int, Int>?>(initialValue = null, wallpaperUri) {
+        value =
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(wallpaperUri.toUri())?.use { input ->
+                        val options =
+                            BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                        BitmapFactory.decodeStream(input, null, options)
+                        if (options.outWidth > 0 && options.outHeight > 0) {
+                            options.outWidth to options.outHeight
+                        } else {
+                            null
                         }
                     }
-                        .getOrNull()
                 }
-        }
+                    .getOrNull()
+            }
+    }
 
     Scaffold { innerPadding ->
-        BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        BoxWithConstraints(modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)) {
             val containerWidthPx = with(density) { maxWidth.toPx() }.coerceAtLeast(1f)
             val containerHeightPx = with(density) { maxHeight.toPx() }.coerceAtLeast(1f)
             val painterIntrinsic = painter.intrinsicSize
@@ -133,61 +132,66 @@ fun MoeWallpaperCropScreen(
 
             Box(
                 modifier =
-                    Modifier.fillMaxSize().pointerInput(
-                        viewportLayout.maxShiftX,
-                        viewportLayout.maxShiftY,
-                    ) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            if (viewportLayout.maxShiftX > 0.5f) {
-                                val currentTranslationX =
-                                    biasX.coerceIn(-1f, 1f) * viewportLayout.maxShiftX
-                                val nextTranslationX =
-                                    (currentTranslationX - dragAmount.x).coerceIn(
-                                        -viewportLayout.maxShiftX,
-                                        viewportLayout.maxShiftX,
-                                    )
-                                biasX =
-                                    (nextTranslationX / viewportLayout.maxShiftX).coerceIn(-1f, 1f)
-                            } else {
-                                biasX = 0f
-                            }
-                            if (viewportLayout.maxShiftY > 0.5f) {
-                                val currentTranslationY =
-                                    biasY.coerceIn(-1f, 1f) * viewportLayout.maxShiftY
-                                val nextTranslationY =
-                                    (currentTranslationY - dragAmount.y).coerceIn(
-                                        -viewportLayout.maxShiftY,
-                                        viewportLayout.maxShiftY,
-                                    )
-                                biasY =
-                                    (nextTranslationY / viewportLayout.maxShiftY).coerceIn(-1f, 1f)
-                            } else {
-                                biasY = 0f
+                    Modifier
+                        .fillMaxSize()
+                        .pointerInput(
+                            viewportLayout.maxShiftX,
+                            viewportLayout.maxShiftY,
+                        ) {
+                            detectDragGestures { change, dragAmount ->
+                                change.consume()
+                                if (viewportLayout.maxShiftX > 0.5f) {
+                                    val currentTranslationX =
+                                        biasX.coerceIn(-1f, 1f) * viewportLayout.maxShiftX
+                                    val nextTranslationX =
+                                        (currentTranslationX - dragAmount.x).coerceIn(
+                                            -viewportLayout.maxShiftX,
+                                            viewportLayout.maxShiftX,
+                                        )
+                                    biasX =
+                                        (nextTranslationX / viewportLayout.maxShiftX).coerceIn(-1f, 1f)
+                                } else {
+                                    biasX = 0f
+                                }
+                                if (viewportLayout.maxShiftY > 0.5f) {
+                                    val currentTranslationY =
+                                        biasY.coerceIn(-1f, 1f) * viewportLayout.maxShiftY
+                                    val nextTranslationY =
+                                        (currentTranslationY - dragAmount.y).coerceIn(
+                                            -viewportLayout.maxShiftY,
+                                            viewportLayout.maxShiftY,
+                                        )
+                                    biasY =
+                                        (nextTranslationY / viewportLayout.maxShiftY).coerceIn(-1f, 1f)
+                                } else {
+                                    biasY = 0f
+                                }
                             }
                         }
-                    }
             ) {
                 Image(
                     painter = painter,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     alignment = BiasAlignment(viewportLayout.biasX, viewportLayout.biasY),
-                    modifier = Modifier.align(Alignment.Center).fillMaxSize(),
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .fillMaxSize(),
                 )
             }
 
             val bottomInsetPx =
                 with(density) {
                     max(
-                            WindowInsets.navigationBars.getBottom(this),
-                            WindowInsets.systemGestures.getBottom(this),
-                        )
+                        WindowInsets.navigationBars.getBottom(this),
+                        WindowInsets.systemGestures.getBottom(this),
+                    )
                         .toFloat()
                 }
             Button(
                 modifier =
-                    Modifier.align(Alignment.BottomCenter)
+                    Modifier
+                        .align(Alignment.BottomCenter)
                         .padding(
                             start = UiDp.dp16,
                             end = UiDp.dp16,

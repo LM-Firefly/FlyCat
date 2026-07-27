@@ -49,7 +49,9 @@ fun CenteredText(
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier.widthIn(max = UiDp.dp360).fillMaxWidth(),
+            modifier = Modifier
+                .widthIn(max = UiDp.dp360)
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {

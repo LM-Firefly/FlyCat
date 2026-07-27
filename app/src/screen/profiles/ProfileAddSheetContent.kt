@@ -65,7 +65,8 @@ internal fun DownloadProgressContent(
     val isCompleted = downloadProgress?.isCompleted == true
     Column(
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .height(
                     if (isCompleted) {
                         downloadCompleteSheetContentHeight
@@ -93,7 +94,8 @@ internal fun DownloadProgressContent(
                     contentDescription = "Complete",
                     tint = MiuixTheme.colorScheme.onPrimary,
                     modifier =
-                        Modifier.fillMaxSize()
+                        Modifier
+                            .fillMaxSize()
                             .clip(RoundedCornerShape(UiDp.dp16))
                             .background(MiuixTheme.colorScheme.primary)
                             .padding(UiDp.dp10),
@@ -147,7 +149,9 @@ internal fun ProfileFormContent(
     onQrScanned: (String) -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().onSizeChanged(onContainerMeasured),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onSizeChanged(onContainerMeasured),
         verticalArrangement = Arrangement.spacedBy(UiDp.dp16),
     ) {
         ProfileTypeSelectorCard(
@@ -198,7 +202,8 @@ private fun ProfileTypeSelectorCard(
     top.yukonga.miuix.kmp.basic.Card {
         Box(
             modifier =
-                Modifier.alpha(if (profileLocked) 0.5f else 1f)
+                Modifier
+                    .alpha(if (profileLocked) 0.5f else 1f)
                     .clickable(
                         enabled = profileLocked,
                         indication = null,
@@ -234,7 +239,8 @@ private fun QrScannerContent(
     ) {
         Column(
             modifier =
-                Modifier.fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .height(UiDp.dp200)
                     .clip(RoundedCornerShape(UiDp.dp12))
                     .background(MiuixTheme.colorScheme.surfaceVariant),
@@ -304,7 +310,8 @@ private fun ManualProfileContent(
                 readOnly = true,
                 enabled = false,
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },

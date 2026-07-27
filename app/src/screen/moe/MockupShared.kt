@@ -87,7 +87,8 @@ internal fun MockupPhoneFrame(
         val frameWidth = frameHeight * 0.46f
         Box(
             modifier =
-                Modifier.width(frameWidth)
+                Modifier
+                    .width(frameWidth)
                     .height(frameHeight)
                     .clip(RoundedCornerShape(22.dp))
                     .background(palette.surface)

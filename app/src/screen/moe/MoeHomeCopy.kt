@@ -19,9 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import java.util.*
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.util.*
 
 @Composable
 internal fun MoeHomeCopyBlock(
@@ -54,7 +54,9 @@ internal fun MoeHomeCopyBlock(
             overflow = TextOverflow.Clip,
         )
         launchContent?.let { content ->
-            Box(Modifier.fillMaxWidth().padding(top = MoeUi.Hero.launchTopGap)) { content() }
+            Box(Modifier
+                .fillMaxWidth()
+                .padding(top = MoeUi.Hero.launchTopGap)) { content() }
         }
     }
 }

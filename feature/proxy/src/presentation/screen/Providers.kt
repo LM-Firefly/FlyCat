@@ -43,8 +43,6 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.CircleFadingArrowUp
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.viewmodel.ProvidersViewModel
-import java.text.SimpleDateFormat
-import java.util.*
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.DropdownImpl
@@ -60,6 +58,8 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowListPopup
+import java.text.SimpleDateFormat
+import java.util.*
 
 private fun Provider.VehicleType.localizedDisplayName(): String =
     when (this) {
@@ -199,15 +199,16 @@ private fun ProviderCard(
     val updateTint = remember(colorScheme) { colorScheme.primary }
 
     val filePicker =
-        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) {
-            uri: Uri? ->
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri? ->
             uri?.let { onUpload(it) }
         }
 
     Card(modifier = Modifier.padding(vertical = UiDp.dp4)) {
         Row(
             modifier =
-                Modifier.fillMaxWidth().padding(horizontal = UiDp.dp16, vertical = UiDp.dp12),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = UiDp.dp16, vertical = UiDp.dp12),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -249,7 +250,7 @@ private fun ProviderCard(
             // path is known (local import path). Inline/Compatible have no actions.
             val canUpdate =
                 provider.vehicleType == Provider.VehicleType.HTTP ||
-                    provider.vehicleType == Provider.VehicleType.File
+                        provider.vehicleType == Provider.VehicleType.File
             val canUpload =
                 provider.vehicleType == Provider.VehicleType.File && provider.path.isNotBlank()
 

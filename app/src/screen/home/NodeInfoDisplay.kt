@@ -52,7 +52,9 @@ fun NodeInfoDisplay(serverName: String?, serverPing: Int?, modifier: Modifier = 
     ) {
         Column(
             horizontalAlignment = Alignment.Start,
-            modifier = Modifier.weight(1f).padding(end = spacing.space16),
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = spacing.space16),
         ) {
             Text(
                 text = YumeTxt.Home.NodeInfo.Node,
@@ -63,7 +65,9 @@ fun NodeInfoDisplay(serverName: String?, serverPing: Int?, modifier: Modifier = 
             if (hasKnownNode) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth().height(infoTextHeight),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(infoTextHeight),
                 ) {
                     val countryCode = flagged?.countryCode
                     if (countryCode != null) {

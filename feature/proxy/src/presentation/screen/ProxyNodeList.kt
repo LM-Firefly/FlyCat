@@ -20,11 +20,7 @@
 
 package com.github.yumelira.yumebox.presentation.screen
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
@@ -45,7 +41,9 @@ import com.github.yumelira.yumebox.presentation.component.PaneWidths
 import com.github.yumelira.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumelira.yumebox.presentation.screen.node.NodeCard
 import com.github.yumelira.yumebox.presentation.screen.node.nodeGridItems
-import com.github.yumelira.yumebox.presentation.theme.*
+import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
+import com.github.yumelira.yumebox.presentation.theme.LocalSpacing
+import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.util.KeepLazyListTopAnchorOnReorder
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
@@ -150,7 +148,9 @@ internal fun NodeListPage(
             latestScrollDirectionCallback(false)
             lastHiddenState = false
         }
-        Box(Modifier.fillMaxSize().nestedScroll(fabScrollObserver)) {
+        Box(Modifier
+            .fillMaxSize()
+            .nestedScroll(fabScrollObserver)) {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = PaneWidths.NodeGridAdaptiveMin),
                 state = resolvedGridState,
@@ -171,13 +171,13 @@ internal fun NodeListPage(
                                     ),
                                 expandFrom = Alignment.Top,
                             ) +
-                                fadeIn(
-                                    animationSpec =
-                                        tween(
-                                            durationMillis =
-                                                AnimationSpecs.Proxy.RefreshIndicatorFadeDuration
-                                        )
-                                ),
+                                    fadeIn(
+                                        animationSpec =
+                                            tween(
+                                                durationMillis =
+                                                    AnimationSpecs.Proxy.RefreshIndicatorFadeDuration
+                                            )
+                                    ),
                         exit =
                             shrinkVertically(
                                 animationSpec =
@@ -187,16 +187,18 @@ internal fun NodeListPage(
                                     ),
                                 shrinkTowards = Alignment.Top,
                             ) +
-                                fadeOut(
-                                    animationSpec =
-                                        tween(
-                                            durationMillis =
-                                                AnimationSpecs.Proxy.RefreshIndicatorFadeDuration
-                                        )
-                                ),
+                                    fadeOut(
+                                        animationSpec =
+                                            tween(
+                                                durationMillis =
+                                                    AnimationSpecs.Proxy.RefreshIndicatorFadeDuration
+                                            )
+                                    ),
                     ) {
                         Column(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = UiDp.dp12),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = UiDp.dp12),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(UiDp.dp6),
                         ) {
@@ -250,29 +252,31 @@ internal fun NodeListPage(
                             tween(durationMillis = AnimationSpecs.Proxy.RefreshIndicatorDuration),
                         expandFrom = Alignment.Top,
                     ) +
-                        fadeIn(
-                            animationSpec =
-                                tween(
-                                    durationMillis =
-                                        AnimationSpecs.Proxy.RefreshIndicatorFadeDuration
-                                )
-                        ),
+                            fadeIn(
+                                animationSpec =
+                                    tween(
+                                        durationMillis =
+                                            AnimationSpecs.Proxy.RefreshIndicatorFadeDuration
+                                    )
+                            ),
                 exit =
                     shrinkVertically(
                         animationSpec =
                             tween(durationMillis = AnimationSpecs.Proxy.RefreshIndicatorDuration),
                         shrinkTowards = Alignment.Top,
                     ) +
-                        fadeOut(
-                            animationSpec =
-                                tween(
-                                    durationMillis =
-                                        AnimationSpecs.Proxy.RefreshIndicatorFadeDuration
-                                )
-                        ),
+                            fadeOut(
+                                animationSpec =
+                                    tween(
+                                        durationMillis =
+                                            AnimationSpecs.Proxy.RefreshIndicatorFadeDuration
+                                    )
+                            ),
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = UiDp.dp12),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = UiDp.dp12),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(UiDp.dp6),
                 ) {

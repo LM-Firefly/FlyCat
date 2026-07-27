@@ -110,7 +110,10 @@ fun ConnectionDetailScreen(navigator: Navigator, connectionId: String) {
         val info = connection
         if (info == null) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(combinedPadding).padding(spacing.space32),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(combinedPadding)
+                    .padding(spacing.space32),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -136,9 +139,9 @@ fun ConnectionDetailScreen(navigator: Navigator, connectionId: String) {
                                 val closed =
                                     withContext(Dispatchers.IO) {
                                         runCatching {
-                                                RuntimeAccess.connect(context)
-                                                RuntimeAccess.core().closeConnection(info.id)
-                                            }
+                                            RuntimeAccess.connect(context)
+                                            RuntimeAccess.core().closeConnection(info.id)
+                                        }
                                             .getOrDefault(false)
                                     }
                                 isInterrupting = false

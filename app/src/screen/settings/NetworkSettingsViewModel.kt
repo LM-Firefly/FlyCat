@@ -81,18 +81,18 @@ class NetworkSettingsViewModel(
 
     val networkScreenState: StateFlow<NetworkSettingsScreenState> =
         combine(
-                runMode.state,
-                disableAllOverride.state,
-                accessControlMode.state,
-                rootAvailable,
-            ) { mode, disableOverride, accessMode, root ->
-                NetworkSettingsScreenState(
-                    runMode = mode,
-                    disableAllOverride = disableOverride,
-                    accessControlMode = accessMode,
-                    rootAvailable = root,
-                )
-            }
+            runMode.state,
+            disableAllOverride.state,
+            accessControlMode.state,
+            rootAvailable,
+        ) { mode, disableOverride, accessMode, root ->
+            NetworkSettingsScreenState(
+                runMode = mode,
+                disableAllOverride = disableOverride,
+                accessControlMode = accessMode,
+                rootAvailable = root,
+            )
+        }
             .stateInWhileSubscribed(
                 viewModelScope,
                 NetworkSettingsScreenState(
@@ -116,34 +116,33 @@ class NetworkSettingsViewModel(
 
     val tunOptionsScreenState: StateFlow<TunOptionsScreenState> =
         combine(
-                combine(
-                    tunIfName.state,
-                    tunMtu.state,
-                    tunStack.state,
-                    tunAutoRoute.state,
-                    tunStrictRoute.state,
-                ) { ifName, mtu, stack, autoRoute, strictRoute ->
-                    TunOptionsScreenState(
-                        ifName = ifName,
-                        mtu = mtu,
-                        stack = stack,
-                        autoRoute = autoRoute,
-                        strictRoute = strictRoute,
-                    )
-                },
-                combine(tunAutoRedirect.state, tunDnsMode.state, enableIPv6.state) {
-                    autoRedirect,
-                    dnsMode,
-                    ipv6 ->
-                    Triple(autoRedirect, dnsMode, ipv6)
-                },
-            ) { base, extra ->
-                base.copy(
-                    autoRedirect = extra.first,
-                    dnsMode = extra.second,
-                    enableIPv6 = extra.third,
+            combine(
+                tunIfName.state,
+                tunMtu.state,
+                tunStack.state,
+                tunAutoRoute.state,
+                tunStrictRoute.state,
+            ) { ifName, mtu, stack, autoRoute, strictRoute ->
+                TunOptionsScreenState(
+                    ifName = ifName,
+                    mtu = mtu,
+                    stack = stack,
+                    autoRoute = autoRoute,
+                    strictRoute = strictRoute,
                 )
-            }
+            },
+            combine(tunAutoRedirect.state, tunDnsMode.state, enableIPv6.state) { autoRedirect,
+                                                                                 dnsMode,
+                                                                                 ipv6 ->
+                Triple(autoRedirect, dnsMode, ipv6)
+            },
+        ) { base, extra ->
+            base.copy(
+                autoRedirect = extra.first,
+                dnsMode = extra.second,
+                enableIPv6 = extra.third,
+            )
+        }
             .stateInWhileSubscribed(
                 viewModelScope,
                 TunOptionsScreenState(
@@ -172,23 +171,23 @@ class NetworkSettingsViewModel(
 
     val tunServiceOptionsUiState: StateFlow<TunServiceOptionsUiState> =
         combine(
-                bypassPrivateNetwork.state,
-                dnsHijack.state,
-                enableIPv6.state,
-                allowBypass.state,
-                systemProxy.state,
-            ) { bypassPrivateNetwork, dnsHijack, enableIPv6, allowBypass, systemProxy ->
-                TunServiceOptionsUiState(
-                    common =
-                        CommonTunOptionsUiState(
-                            bypassPrivateNetwork = bypassPrivateNetwork,
-                            dnsHijack = dnsHijack,
-                            enableIPv6 = enableIPv6,
-                        ),
-                    allowBypass = allowBypass,
-                    systemProxy = systemProxy,
-                )
-            }
+            bypassPrivateNetwork.state,
+            dnsHijack.state,
+            enableIPv6.state,
+            allowBypass.state,
+            systemProxy.state,
+        ) { bypassPrivateNetwork, dnsHijack, enableIPv6, allowBypass, systemProxy ->
+            TunServiceOptionsUiState(
+                common =
+                    CommonTunOptionsUiState(
+                        bypassPrivateNetwork = bypassPrivateNetwork,
+                        dnsHijack = dnsHijack,
+                        enableIPv6 = enableIPv6,
+                    ),
+                allowBypass = allowBypass,
+                systemProxy = systemProxy,
+            )
+        }
             .stateInWhileSubscribed(
                 viewModelScope,
                 TunServiceOptionsUiState(
@@ -220,8 +219,8 @@ class NetworkSettingsViewModel(
 
     val tproxyOptionsScreenState: StateFlow<TproxyOptionsScreenState> =
         combine(tproxyPort.state, tunDnsMode.state, enableIPv6.state) { port, dns, ipv6 ->
-                TproxyOptionsScreenState(port = port, dnsMode = dns, enableIPv6 = ipv6)
-            }
+            TproxyOptionsScreenState(port = port, dnsMode = dns, enableIPv6 = ipv6)
+        }
             .stateInWhileSubscribed(
                 viewModelScope,
                 TproxyOptionsScreenState(

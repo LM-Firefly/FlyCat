@@ -46,62 +46,69 @@ internal fun HomeToNodeSwipeMockup(modifier: Modifier = Modifier) {
 
     val transition = rememberInfiniteTransition(label = "home_to_node_swipe")
     val swipeProgress by
-        transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 0f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation =
-                        keyframes {
-                            durationMillis = 3600
-                            0f at 0
-                            0f at 620
-                            1f at 1320 using FastOutSlowInEasing
-                            1f at 2380
-                            0f at 3100 using FastOutSlowInEasing
-                            0f at 3600
-                        },
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "home_to_node_swipe_progress",
-        )
+    transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 0f,
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    keyframes {
+                        durationMillis = 3600
+                        0f at 0
+                        0f at 620
+                        1f at 1320 using FastOutSlowInEasing
+                        1f at 2380
+                        0f at 3100 using FastOutSlowInEasing
+                        0f at 3600
+                    },
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "home_to_node_swipe_progress",
+    )
     val touchScale by
-        transition.animateFloat(
-            initialValue = 1f,
-            targetValue = 1f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation =
-                        keyframes {
-                            durationMillis = 3600
-                            1f at 0
-                            1f at 520
-                            0.86f at 680 using FastOutSlowInEasing
-                            1f at 900
-                            1f at 3600
-                        },
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "home_to_node_touch_scale",
-        )
+    transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    keyframes {
+                        durationMillis = 3600
+                        1f at 0
+                        1f at 520
+                        0.86f at 680 using FastOutSlowInEasing
+                        1f at 900
+                        1f at 3600
+                    },
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "home_to_node_touch_scale",
+    )
 
     MockupPhoneFrame(palette = palette, modifier = modifier) {
-        Box(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(15.dp))) {
-            Box(Modifier.matchParentSize().background(colorScheme.surface))
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .clip(RoundedCornerShape(15.dp))) {
+            Box(Modifier
+                .matchParentSize()
+                .background(colorScheme.surface))
 
             NodePagePreview(
                 palette = palette,
                 modifier =
-                    Modifier.fillMaxSize().graphicsLayer {
-                        translationX = (1f - swipeProgress) * size.width
-                        alpha = 0.7f + 0.3f * swipeProgress
-                    },
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            translationX = (1f - swipeProgress) * size.width
+                            alpha = 0.7f + 0.3f * swipeProgress
+                        },
             )
 
             HomePagePreview(
                 palette = palette,
                 modifier =
-                    Modifier.fillMaxSize()
+                    Modifier
+                        .fillMaxSize()
                         .graphicsLayer {
                             translationX = -swipeProgress * size.width
                             val scale = 1f - 0.025f * swipeProgress
@@ -113,14 +120,17 @@ internal fun HomeToNodeSwipeMockup(modifier: Modifier = Modifier) {
 
             Box(
                 modifier =
-                    Modifier.matchParentSize().graphicsLayer {
-                        translationX = (0.22f - 0.32f * swipeProgress) * size.width
-                    },
+                    Modifier
+                        .matchParentSize()
+                        .graphicsLayer {
+                            translationX = (0.22f - 0.32f * swipeProgress) * size.width
+                        },
                 contentAlignment = Alignment.Center,
             ) {
                 Box(
                     modifier =
-                        Modifier.graphicsLayer {
+                        Modifier
+                            .graphicsLayer {
                                 scaleX = touchScale
                                 scaleY = touchScale
                             }
@@ -148,12 +158,15 @@ private fun HomePagePreview(palette: MockupPalette, modifier: Modifier = Modifie
                 .padding(7.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxHeight().weight(0.22f),
+            modifier = Modifier
+                .fillMaxHeight()
+                .weight(0.22f),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.height(10.dp))
             Box(
-                Modifier.width(12.dp)
+                Modifier
+                    .width(12.dp)
                     .height(52.dp)
                     .clip(RoundedCornerShape(6.dp))
                     .background(palette.maskStrong)
@@ -161,7 +174,8 @@ private fun HomePagePreview(palette: MockupPalette, modifier: Modifier = Modifie
             Spacer(Modifier.weight(1f))
             repeat(3) { index ->
                 Box(
-                    Modifier.size(13.dp)
+                    Modifier
+                        .size(13.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .background(if (index == 0) colorScheme.primary else palette.mask)
                 )
@@ -171,17 +185,21 @@ private fun HomePagePreview(palette: MockupPalette, modifier: Modifier = Modifie
         }
 
         Column(
-            modifier = Modifier.fillMaxHeight().weight(0.78f),
+            modifier = Modifier
+                .fillMaxHeight()
+                .weight(0.78f),
             verticalArrangement = Arrangement.spacedBy(7.dp),
         ) {
             Box(
-                Modifier.fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .weight(2f)
                     .clip(RoundedCornerShape(13.dp))
                     .background(palette.maskStrong)
             ) {
                 Box(
-                    Modifier.align(Alignment.BottomStart)
+                    Modifier
+                        .align(Alignment.BottomStart)
                         .fillMaxWidth(0.64f)
                         .padding(8.dp)
                         .height(9.dp)
@@ -190,12 +208,15 @@ private fun HomePagePreview(palette: MockupPalette, modifier: Modifier = Modifie
                 )
             }
             Column(
-                modifier = Modifier.fillMaxWidth().weight(1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 listOf(0.92f, 0.76f, 0.48f).forEach { lineWidth ->
                     Box(
-                        Modifier.fillMaxWidth(lineWidth)
+                        Modifier
+                            .fillMaxWidth(lineWidth)
                             .height(8.dp)
                             .clip(RoundedCornerShape(3.dp))
                             .background(palette.mask)
@@ -208,7 +229,8 @@ private fun HomePagePreview(palette: MockupPalette, modifier: Modifier = Modifie
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Box(
-                        Modifier.size(18.dp)
+                        Modifier
+                            .size(18.dp)
                             .clip(CircleShape)
                             .background(
                                 colorScheme.surfaceVariant.copy(alpha = opacity.surfaceVariant)
@@ -216,7 +238,8 @@ private fun HomePagePreview(palette: MockupPalette, modifier: Modifier = Modifie
                             .border(1.dp, palette.frameBorder, CircleShape)
                     )
                     Box(
-                        Modifier.weight(1f)
+                        Modifier
+                            .weight(1f)
                             .height(18.dp)
                             .clip(RoundedCornerShape(50))
                             .background(
@@ -251,14 +274,18 @@ private fun NodePagePreview(palette: MockupPalette, modifier: Modifier = Modifie
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                Modifier.width(38.dp)
+                Modifier
+                    .width(38.dp)
                     .height(13.dp)
                     .clip(RoundedCornerShape(4.dp))
                     .background(palette.maskStrong)
             )
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 repeat(2) {
-                    Box(Modifier.size(13.dp).clip(CircleShape).background(palette.mask))
+                    Box(Modifier
+                        .size(13.dp)
+                        .clip(CircleShape)
+                        .background(palette.mask))
                 }
             }
         }
@@ -269,7 +296,8 @@ private fun NodePagePreview(palette: MockupPalette, modifier: Modifier = Modifie
         ) {
             repeat(3) { index ->
                 Box(
-                    Modifier.weight(if (index == 0) 1.25f else 1f)
+                    Modifier
+                        .weight(if (index == 0) 1.25f else 1f)
                         .height(16.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(if (index == 0) colorScheme.primary else palette.mask)
@@ -285,7 +313,9 @@ private fun NodePagePreview(palette: MockupPalette, modifier: Modifier = Modifie
                 NodePreviewCard(
                     selected = index == 0,
                     palette = palette,
-                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                 )
             }
         }
@@ -317,7 +347,8 @@ private fun NodePreviewCard(
         horizontalArrangement = Arrangement.spacedBy(7.dp),
     ) {
         Box(
-            Modifier.size(20.dp)
+            Modifier
+                .size(20.dp)
                 .clip(RoundedCornerShape(6.dp))
                 .background(if (selected) colorScheme.primary else palette.maskStrong)
         )
@@ -326,7 +357,8 @@ private fun NodePreviewCard(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Box(
-                Modifier.fillMaxWidth(if (selected) 0.74f else 0.58f)
+                Modifier
+                    .fillMaxWidth(if (selected) 0.74f else 0.58f)
                     .height(8.dp)
                     .clip(RoundedCornerShape(3.dp))
                     .background(palette.maskStrong)
@@ -334,7 +366,8 @@ private fun NodePreviewCard(
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 repeat(2) {
                     Box(
-                        Modifier.width(18.dp)
+                        Modifier
+                            .width(18.dp)
                             .height(7.dp)
                             .clip(RoundedCornerShape(4.dp))
                             .background(palette.mask)
@@ -343,7 +376,8 @@ private fun NodePreviewCard(
             }
         }
         Box(
-            Modifier.width(26.dp)
+            Modifier
+                .width(26.dp)
                 .height(8.dp)
                 .clip(RoundedCornerShape(3.dp))
                 .background(if (selected) colorScheme.primary else palette.mask)

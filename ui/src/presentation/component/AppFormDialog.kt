@@ -63,7 +63,9 @@ fun AppFormDialog(
         val contentModifier =
             Modifier.fillMaxWidth().let {
                 if (scrollable) {
-                    it.heightIn(max = UiDp.dp420).verticalScroll(rememberScrollState())
+                    it
+                        .heightIn(max = UiDp.dp420)
+                        .verticalScroll(rememberScrollState())
                 } else {
                     it
                 }

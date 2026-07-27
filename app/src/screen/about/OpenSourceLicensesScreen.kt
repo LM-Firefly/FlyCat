@@ -110,7 +110,8 @@ private fun LibraryItem(library: Library, onClick: () -> Unit) {
     ) {
         Column(
             modifier =
-                Modifier.fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .then(
                         if (hasUrl) {
                             Modifier.clickable(onClick = onClick)
@@ -172,7 +173,8 @@ private fun LicenseChip(licenseName: String) {
 
     Box(
         modifier =
-            Modifier.clip(RoundedCornerShape(radii.radius12))
+            Modifier
+                .clip(RoundedCornerShape(radii.radius12))
                 .background(MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtle))
                 .padding(horizontal = spacing.space10, vertical = spacing.space4)
     ) {

@@ -56,11 +56,11 @@ internal fun rememberProfileImportLaunchers(
                 return@rememberLauncherForActivityResult
             }
             runCatching {
-                    context.contentResolver.takePersistableUriPermission(
-                        uri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                    )
-                }
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }
                 .onFailure { error ->
                     Timber.w(error, "Persist profile source permission failed: %s", uri)
                 }

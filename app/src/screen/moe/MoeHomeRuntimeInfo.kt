@@ -95,21 +95,27 @@ internal fun MoeHomeInfoPanel(
             ?.takeIf { it in 1..1000 }
             ?.let { value -> YumeTxt.Home.NodeInfo.DelayValue.format(value) }
     Row(
-        modifier = modifier.fillMaxWidth().heightIn(min = MoeUi.Hero.infoRowMinHeight),
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = MoeUi.Hero.infoRowMinHeight),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (name.isNotBlank()) {
             MoeInfoBlock(
                 value = name,
-                modifier = Modifier.weight(1f).padding(end = MoeUi.Info.trailingPadding),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = MoeUi.Info.trailingPadding),
                 leading = {
                     node?.countryCode?.let { code ->
                         CountryFlagCircle(countryCode = code, size = AppTheme.spacing.space16)
                     }
                 },
             )
-        } else Spacer(Modifier.weight(1f).padding(end = MoeUi.Info.trailingPadding))
+        } else Spacer(Modifier
+            .weight(1f)
+            .padding(end = MoeUi.Info.trailingPadding))
         if (ping != null) {
             MoeInfoBlock(
                 value = ping,

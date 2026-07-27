@@ -45,11 +45,11 @@ class ProfileLinksStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exte
     val linkOpenMode by enumFlow(LinkOpenMode.IN_APP)
 
     val links by
-        jsonListFlow(
-            default = emptyList(),
-            decode = { str -> decodeFromString<List<ProfileLink>>(str) },
-            encode = { value -> encodeToString(value) },
-        )
+    jsonListFlow(
+        default = emptyList(),
+        decode = { str -> decodeFromString<List<ProfileLink>>(str) },
+        encode = { value -> encodeToString(value) },
+    )
 
     val defaultLinkId by strFlow(default = "")
 }

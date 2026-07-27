@@ -25,12 +25,12 @@ package com.github.yumelira.yumebox.data.store
 
 import com.github.yumelira.yumebox.core.util.enumByNameOrNull
 import com.tencent.mmkv.MMKV
-import kotlin.properties.ReadOnlyProperty
-import kotlin.reflect.KProperty
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
 
 /**
  * Base class for MMKV-based preference storage with process-local reactive StateFlow support.
@@ -373,21 +373,21 @@ abstract class MMKVPreference(
                     val initialValue = getter(key, default)
                     val flow = MutableStateFlow(initialValue)
                     Preference(
-                            state = flow.asStateFlow(),
-                            update = { value ->
-                                if (skipEqualityCheck || value != flow.value) {
-                                    setter(key, value)
-                                    flow.value = value
-                                }
-                            },
-                            get = { getter(key, default) },
-                            refreshState = {
-                                val latest = getter(key, default)
-                                if (skipEqualityCheck || latest != flow.value) {
-                                    flow.value = latest
-                                }
-                            },
-                        )
+                        state = flow.asStateFlow(),
+                        update = { value ->
+                            if (skipEqualityCheck || value != flow.value) {
+                                setter(key, value)
+                                flow.value = value
+                            }
+                        },
+                        get = { getter(key, default) },
+                        refreshState = {
+                            val latest = getter(key, default)
+                            if (skipEqualityCheck || latest != flow.value) {
+                                flow.value = latest
+                            }
+                        },
+                    )
                         .also { cached = it }
                 }
     }

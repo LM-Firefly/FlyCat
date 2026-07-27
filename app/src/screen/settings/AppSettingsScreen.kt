@@ -23,9 +23,6 @@
 package com.github.yumelira.yumebox.screen.settings
 
 import android.annotation.SuppressLint
-
-import kotlin.time.Duration.Companion.milliseconds
-
 import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
@@ -64,6 +61,7 @@ import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun AppSettingsScreen() {
@@ -481,7 +479,7 @@ private fun PageScaleDialog(
     onDismissRequest: () -> Unit,
 ) {
     var scaleText by
-        remember(show, pageScale) { mutableStateOf((pageScale * 100).toInt().toString()) }
+    remember(show, pageScale) { mutableStateOf((pageScale * 100).toInt().toString()) }
 
     AppTextFieldDialog(
         show = show,

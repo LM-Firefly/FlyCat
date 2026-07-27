@@ -26,7 +26,6 @@ import android.content.Context
 import com.github.yumelira.yumebox.data.model.MetadataIndex
 import com.github.yumelira.yumebox.data.model.OverrideMetadata
 import com.github.yumelira.yumebox.data.model.ProfileBinding
-import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +33,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.File
 
 class ProfileBindingStore(context: Context) : ProfileBindingProvider {
     private val metadataFile = File(context.filesDir, "overrides/metadata.yaml")
@@ -185,7 +185,8 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
             // Read-only path: corrupt metadata degrades to empty without wiping the file.
             loadMetadataIndexForRead().profileChains
         } catch (
-            error: Exception) { // fault barrier: any metadata read/decode failure degrades to empty
+            error: Exception
+        ) { // fault barrier: any metadata read/decode failure degrades to empty
             Timber.w(error, "Failed to load bindings from metadata.yaml, returning empty map")
             emptyMap()
         }
@@ -201,6 +202,7 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
                     }
                     sanitized
                 }
+
                 MetadataIndexLoad.Missing,
                 is MetadataIndexLoad.Corrupt -> MetadataIndex()
             }
@@ -250,8 +252,8 @@ class ProfileBindingStore(context: Context) : ProfileBindingProvider {
             overrideIds =
                 binding.overrideIds.filterNot { overrideId ->
                     isLegacyPresetOverrideId(overrideId) ||
-                        (overrideId.startsWith(OverrideMetadata.ID_PREFIX) &&
-                            overrideId !in index.configs)
+                            (overrideId.startsWith(OverrideMetadata.ID_PREFIX) &&
+                                    overrideId !in index.configs)
                 }
         )
 

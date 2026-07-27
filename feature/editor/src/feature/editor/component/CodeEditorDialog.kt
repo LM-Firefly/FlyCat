@@ -66,7 +66,9 @@ fun CodeEditorDialog(
 
                 CodeEditor(
                     state = editorState,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = UiDp.dp280, max = UiDp.dp400),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = UiDp.dp280, max = UiDp.dp400),
                     onTextChange = {},
                 )
 

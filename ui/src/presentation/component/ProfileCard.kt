@@ -42,10 +42,10 @@ import com.github.yumelira.yumebox.presentation.icon.yume.Share
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.util.*
 import com.github.yumelira.yumebox.runtime.api.Profile
-import java.io.File
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.io.File
 
 @Composable
 fun ProfileCard(
@@ -82,14 +82,18 @@ fun ProfileCard(
     val updateTint = remember(colorScheme) { colorScheme.primary }
 
     Card(
-        modifier = modifier.fillMaxWidth().padding(bottom = spacing.space12),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = spacing.space12),
         insideMargin = PaddingValues(spacing.space16),
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(spacing.space8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f).padding(end = spacing.space4)) {
+            Column(modifier = Modifier
+                .weight(1f)
+                .padding(end = spacing.space4)) {
                 Text(
                     text = profile.name,
                     fontSize = 17.sp,
@@ -193,7 +197,8 @@ fun ProfileCard(
             ) {
                 Icon(
                     modifier =
-                        Modifier.size(spacing.space20)
+                        Modifier
+                            .size(spacing.space20)
                             .alpha(if (isConfigSaved) 1f else opacity.disabledSecondary),
                     imageVector = Yume.Share,
                     tint =

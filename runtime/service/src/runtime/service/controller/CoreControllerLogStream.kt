@@ -23,24 +23,18 @@ package com.github.yumelira.yumebox.runtime.service.controller
 import com.github.yumelira.yumebox.core.model.LogMessage
 import com.github.yumelira.yumebox.runtime.api.LogObserver
 import com.github.yumelira.yumebox.runtime.api.LogSubscription
-import io.ktor.client.HttpClient
+import io.ktor.client.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.client.plugins.*
 import io.ktor.utils.io.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 import java.io.IOException
-import java.util.Date
+import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 
 /** Owns the single REST log-stream subscription for one controller endpoint. */

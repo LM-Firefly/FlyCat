@@ -97,7 +97,8 @@ fun PanelShortcutDialog(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier =
-                    Modifier.padding(vertical = spacing.space16)
+                    Modifier
+                        .padding(vertical = spacing.space16)
                         .size(100.dp)
                         .clip(RoundedCornerShape(25.dp))
                         .background(Color.White),

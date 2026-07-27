@@ -150,8 +150,8 @@ fun combinePaddingValues(localPadding: PaddingValues, mainPadding: PaddingValues
         top = localPadding.calculateTopPadding(),
         bottom =
             localPadding.calculateBottomPadding() +
-                mainPadding.calculateBottomPadding() +
-                LocalSpacing.current.space12,
+                    mainPadding.calculateBottomPadding() +
+                    LocalSpacing.current.space12,
         start = localPadding.calculateStartPadding(LayoutDirection.Ltr),
         end = localPadding.calculateEndPadding(LayoutDirection.Ltr),
     )

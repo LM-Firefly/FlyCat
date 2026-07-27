@@ -183,7 +183,8 @@ fun AccessControlScreen(navigator: Navigator) {
                         bottomContent = {
                             Box(
                                 modifier =
-                                    Modifier.alpha(
+                                    Modifier
+                                        .alpha(
                                             if (currentSearchStatus.isCollapsed()) 1f else 0f
                                         )
                                         .onGloballyPositioned { coordinates ->
@@ -192,7 +193,7 @@ fun AccessControlScreen(navigator: Navigator) {
                                                     coordinates.positionInWindow().y.toDp()
                                                 if (
                                                     currentSearchStatus.offsetY !=
-                                                        collapsedBarOffset
+                                                    collapsedBarOffset
                                                 ) {
                                                     searchStatus =
                                                         currentSearchStatus.copy(
@@ -235,7 +236,8 @@ fun AccessControlScreen(navigator: Navigator) {
             if (uiState.isLoading) {
                 Column(
                     modifier =
-                        Modifier.fillMaxSize()
+                        Modifier
+                            .fillMaxSize()
                             .padding(
                                 top = combinedInnerPadding.calculateTopPadding(),
                                 start = listStartPadding,
@@ -327,13 +329,15 @@ private fun AccessControlCollapsedSearchBar(
                 imageVector = MiuixIcons.Basic.Search,
                 contentDescription = YumeTxt.Component.Editor.Action.Search,
                 modifier =
-                    Modifier.size(AppTheme.sizes.searchIconTouchTarget)
+                    Modifier
+                        .size(AppTheme.sizes.searchIconTouchTarget)
                         .padding(start = spacing.space16, end = spacing.space8),
                 tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
         },
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .padding(start = startPadding, end = endPadding)
                 .padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding),
         onSearch = {},

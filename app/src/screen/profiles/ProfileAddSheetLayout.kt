@@ -110,7 +110,8 @@ internal fun ProfileAddSheetContent(
     ) {
         Column(
             modifier =
-                Modifier.fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .wrapContentHeight()
                     .animateContentSize(animationSpec = tween(300, easing = FastOutSlowInEasing))
                     .padding(bottom = UiDp.dp16)
@@ -120,20 +121,20 @@ internal fun ProfileAddSheetContent(
                 transitionSpec = {
                     if (targetState) {
                         (slideInHorizontally(animationSpec = tween(260), initialOffsetX = { it }) +
-                            fadeIn()) togetherWith
-                            (slideOutHorizontally(
-                                animationSpec = tween(220),
-                                targetOffsetX = { -it / 3 },
-                            ) + fadeOut())
+                                fadeIn()) togetherWith
+                                (slideOutHorizontally(
+                                    animationSpec = tween(220),
+                                    targetOffsetX = { -it / 3 },
+                                ) + fadeOut())
                     } else {
                         (slideInHorizontally(
                             animationSpec = tween(220),
                             initialOffsetX = { -it / 3 },
                         ) + fadeIn()) togetherWith
-                            (slideOutHorizontally(
-                                animationSpec = tween(260),
-                                targetOffsetX = { it },
-                            ) + fadeOut())
+                                (slideOutHorizontally(
+                                    animationSpec = tween(260),
+                                    targetOffsetX = { it },
+                                ) + fadeOut())
                     }
                 },
                 label = "ProfileImportContentSwitch",

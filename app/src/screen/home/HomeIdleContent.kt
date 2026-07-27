@@ -60,7 +60,9 @@ fun HomeIdleContent(oneWord: String, author: String, modifier: Modifier = Modifi
         Box(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier =
-                    Modifier.fillMaxWidth().padding(top = spacing.space18, start = spacing.space8)
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = spacing.space18, start = spacing.space8)
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(spacing.space12),
@@ -68,7 +70,8 @@ fun HomeIdleContent(oneWord: String, author: String, modifier: Modifier = Modifi
                 ) {
                     Box(
                         modifier =
-                            Modifier.padding(top = spacing.space12)
+                            Modifier
+                                .padding(top = spacing.space12)
                                 .width(componentSizes.homeIdleAccentLineWidth)
                                 .height(componentSizes.homeIdleAccentLineHeight)
                                 .background(
@@ -105,7 +108,8 @@ fun HomeIdleContent(oneWord: String, author: String, modifier: Modifier = Modifi
         ) {
             Box(
                 modifier =
-                    Modifier.width(componentSizes.homeIdleAuthorDividerWidth)
+                    Modifier
+                        .width(componentSizes.homeIdleAuthorDividerWidth)
                         .height(componentSizes.homeIdleAuthorDividerHeight)
                         .background(authorColor.copy(alpha = opacity.muted))
             )

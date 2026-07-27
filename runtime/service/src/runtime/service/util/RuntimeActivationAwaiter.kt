@@ -22,13 +22,12 @@
 
 package com.github.yumelira.yumebox.runtime.service.util
 
-import kotlin.time.Duration.Companion.milliseconds
-
 import android.os.SystemClock
 import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import kotlinx.coroutines.delay
 import kotlin.math.min
+import kotlin.time.Duration.Companion.milliseconds
 
 data class RuntimeActivationState(
     val phase: RuntimePhase,

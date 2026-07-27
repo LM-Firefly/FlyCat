@@ -99,7 +99,9 @@ private fun IpInfoRow(
     ) {
         Column(
             horizontalAlignment = Alignment.Start,
-            modifier = Modifier.weight(1f).padding(end = UiDp.dp16),
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = UiDp.dp16),
         ) {
             Text(
                 text = label,
@@ -116,7 +118,8 @@ private fun IpInfoRow(
                 overflow = TextOverflow.Ellipsis,
                 modifier =
                     if (isRevealable) {
-                        Modifier.widthIn(max = infoValueMaxWidth)
+                        Modifier
+                            .widthIn(max = infoValueMaxWidth)
                             .height(infoTextHeight)
                             .clip(infoValueCornerRadius)
                             .clickable(onClick = onToggleVisibility)

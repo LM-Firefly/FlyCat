@@ -24,8 +24,8 @@ package com.github.yumelira.yumebox.presentation.util
 
 import com.github.yumelira.yumebox.common.util.ByteFormatter
 import com.github.yumelira.yumebox.runtime.api.Profile
-import java.io.File
 import tf.gal.yumebox.locale.YumeTxt
+import java.io.File
 
 val Profile.enabled: Boolean
     get() = active

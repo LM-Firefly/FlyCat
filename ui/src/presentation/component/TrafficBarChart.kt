@@ -85,7 +85,7 @@ fun TrafficBarChart(
     val slotCount = displayItems.size
     val safeMaxValue =
         (maxDisplayValue
-                ?: maxOf(displayItems.maxOfOrNull(BarChartItem::value) ?: 0L, averageValue ?: 0L))
+            ?: maxOf(displayItems.maxOfOrNull(BarChartItem::value) ?: 0L, averageValue ?: 0L))
             .coerceAtLeast(1L)
     val hasTraffic = displayItems.any { it.value > 0L }
 
@@ -106,7 +106,7 @@ fun TrafficBarChart(
         displayItems.indexOfFirst(BarChartItem::isHighlighted).takeIf { it >= 0 }
             ?: displayItems.lastIndex
     var internalSelectedIndex by
-        remember(animationKey, slotCount) { mutableIntStateOf(defaultIndex) }
+    remember(animationKey, slotCount) { mutableIntStateOf(defaultIndex) }
     val activeIndex =
         selectedIndex.takeIf { it in displayItems.indices }
             ?: internalSelectedIndex.takeIf { it in displayItems.indices }
@@ -126,7 +126,9 @@ fun TrafficBarChart(
     val scaleWidth = 60.dp
 
     Column(modifier = modifier.fillMaxWidth()) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(chartHeight)) {
+        BoxWithConstraints(modifier = Modifier
+            .fillMaxWidth()
+            .height(chartHeight)) {
             val plotWidth = (maxWidth - scaleWidth).coerceAtLeast(1.dp)
             val plotHeight = (chartHeight - tipHeight).coerceAtLeast(1.dp)
             val slotWidth = plotWidth / slotCount
@@ -134,7 +136,9 @@ fun TrafficBarChart(
 
             if (showSelectionTip && activeIndex in displayItems.indices) {
                 val selectedCenter = slotWidth * (activeIndex + 0.5f)
-                Canvas(modifier = Modifier.width(plotWidth).fillMaxHeight()) {
+                Canvas(modifier = Modifier
+                    .width(plotWidth)
+                    .fillMaxHeight()) {
                     drawLine(
                         color = guideColor,
                         start = Offset(selectedCenter.toPx(), tipBubbleHeight.toPx()),
@@ -145,7 +149,10 @@ fun TrafficBarChart(
             }
 
             Box(
-                modifier = Modifier.width(plotWidth).height(plotHeight).align(Alignment.BottomStart)
+                modifier = Modifier
+                    .width(plotWidth)
+                    .height(plotHeight)
+                    .align(Alignment.BottomStart)
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val thinStroke = 0.5.dp.toPx()
@@ -200,20 +207,24 @@ fun TrafficBarChart(
                         val heightFraction = targetFraction * growth.value
                         Box(
                             modifier =
-                                Modifier.weight(1f).fillMaxHeight().clickable(
-                                    enabled = showSelectionTip,
-                                    indication = null,
-                                    interactionSource = remember { MutableInteractionSource() },
-                                ) {
-                                    internalSelectedIndex = index
-                                    onItemClick?.invoke(index)
-                                },
+                                Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clickable(
+                                        enabled = showSelectionTip,
+                                        indication = null,
+                                        interactionSource = remember { MutableInteractionSource() },
+                                    ) {
+                                        internalSelectedIndex = index
+                                        onItemClick?.invoke(index)
+                                    },
                             contentAlignment = Alignment.BottomCenter,
                         ) {
                             if (heightFraction > 0f) {
                                 Spacer(
                                     modifier =
-                                        Modifier.width(actualBarWidth)
+                                        Modifier
+                                            .width(actualBarWidth)
                                             .fillMaxHeight(heightFraction)
                                             .clip(
                                                 RoundedCornerShape(
@@ -237,7 +248,8 @@ fun TrafficBarChart(
 
             Box(
                 modifier =
-                    Modifier.width(scaleWidth)
+                    Modifier
+                        .width(scaleWidth)
                         .height(plotHeight)
                         .align(Alignment.BottomEnd)
                         .padding(start = spacing.space8)
@@ -275,7 +287,8 @@ fun TrafficBarChart(
                     )
                 Box(
                     modifier =
-                        Modifier.offset(x = bubbleLeft)
+                        Modifier
+                            .offset(x = bubbleLeft)
                             .width(bubbleWidth)
                             .height(tipBubbleHeight)
                             .clip(RoundedCornerShape(radii.radius14))
@@ -303,7 +316,9 @@ fun TrafficBarChart(
 
         Spacer(modifier = Modifier.height(spacing.space8))
 
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(sizes.trafficBarLabelHeight)) {
+        BoxWithConstraints(modifier = Modifier
+            .fillMaxWidth()
+            .height(sizes.trafficBarLabelHeight)) {
             val plotWidth = (maxWidth - scaleWidth).coerceAtLeast(1.dp)
             val slotWidth = plotWidth / slotCount
             val labelWidth = if (slotCount == 24) 44.dp else slotWidth
@@ -317,7 +332,9 @@ fun TrafficBarChart(
                     )
                 Text(
                     text = item.label,
-                    modifier = Modifier.offset(x = left).width(labelWidth),
+                    modifier = Modifier
+                        .offset(x = left)
+                        .width(labelWidth),
                     style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
                     color =
                         if (showSelectionTip && index == activeIndex) {

@@ -39,12 +39,12 @@ val Yume.Save: ImageVector
         }
         saveVector =
             ImageVector.Builder(
-                    name = "IconName",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "IconName",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -120,4 +120,5 @@ val Yume.Save: ImageVector
         return saveVector!!
     }
 
-@Suppress("ObjectPropertyName") private var saveVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var saveVector: ImageVector? = null

@@ -36,7 +36,10 @@ import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.data.model.OverrideConfig
 import com.github.yumelira.yumebox.data.model.OverrideContentType
-import com.github.yumelira.yumebox.presentation.component.*
+import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
+import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
+import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
+import com.github.yumelira.yumebox.presentation.component.AppDialog
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
 import kotlinx.coroutines.launch
@@ -87,31 +90,31 @@ internal fun CreateConfigDialog(
             selectedImportUri = uri
             selectedImportFileName =
                 uri?.let { selectedUri ->
-                        context.contentResolver
-                            .query(
-                                selectedUri,
-                                arrayOf(OpenableColumns.DISPLAY_NAME),
-                                null,
-                                null,
-                                null,
-                            )
-                            ?.use { cursor ->
-                                val columnIndex =
-                                    cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                                if (cursor.moveToFirst() && columnIndex >= 0) {
-                                    cursor.getString(columnIndex)
-                                } else {
-                                    ""
-                                }
+                    context.contentResolver
+                        .query(
+                            selectedUri,
+                            arrayOf(OpenableColumns.DISPLAY_NAME),
+                            null,
+                            null,
+                            null,
+                        )
+                        ?.use { cursor ->
+                            val columnIndex =
+                                cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                            if (cursor.moveToFirst() && columnIndex >= 0) {
+                                cursor.getString(columnIndex)
+                            } else {
+                                ""
                             }
-                            .orEmpty()
-                            .ifBlank {
-                                selectedUri.lastPathSegment
-                                    ?.substringAfterLast('/')
-                                    ?.substringAfterLast('\\')
-                                    .orEmpty()
-                            }
-                    }
+                        }
+                        .orEmpty()
+                        .ifBlank {
+                            selectedUri.lastPathSegment
+                                ?.substringAfterLast('/')
+                                ?.substringAfterLast('\\')
+                                .orEmpty()
+                        }
+                }
                     .orEmpty()
         }
 
@@ -185,7 +188,8 @@ internal fun CreateConfigDialog(
     ) {
         Column(
             modifier =
-                Modifier.fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .wrapContentHeight()
                     .animateContentSize(animationSpec = tween(200, easing = FastOutSlowInEasing))
                     .padding(bottom = UiDp.dp16),

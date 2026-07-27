@@ -172,7 +172,10 @@ internal fun ThemeColorPickerSheet(
             AppBottomSheetConfirmAction(onClick = { onConfirm(colorToArgbLong(pickerColor.value)) })
         },
         content = {
-            Column(modifier = Modifier.fillMaxWidth().navigationBarsPadding().imePadding()) {
+            Column(modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding()) {
                 ColorPicker(
                     color = pickerColor.value,
                     onColorChanged = { color ->
@@ -190,7 +193,9 @@ internal fun ThemeColorPickerSheet(
                         parseThemeHexColorOrNull(upper.text)?.let { pickerColor.value = it }
                     },
                     label = YumeTxt.AppSettings.Interface.ColorThemeCodeLabel,
-                    modifier = Modifier.fillMaxWidth().padding(top = UiDp.dp8),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = UiDp.dp8),
                 )
             }
         },

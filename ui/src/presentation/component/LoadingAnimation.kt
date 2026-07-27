@@ -53,40 +53,40 @@ fun PulseRippleLoadingAnimation(
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
 
     val ripple1 by
-        infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(2000, easing = LinearOutSlowInEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "ripple1",
-        )
+    infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(2000, easing = LinearOutSlowInEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "ripple1",
+    )
 
     val ripple2 by
-        infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(2000, easing = LinearOutSlowInEasing, delayMillis = 1000),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "ripple2",
-        )
+    infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(2000, easing = LinearOutSlowInEasing, delayMillis = 1000),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "ripple2",
+    )
 
     val breathe by
-        infiniteTransition.animateFloat(
-            initialValue = 0.5f,
-            targetValue = 1f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(1400, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse,
-                ),
-            label = "breathe",
-        )
+    infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(1400, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "breathe",
+    )
 
     Canvas(modifier = modifier.size(UiDp.dp180)) {
         val centerX = size.width / 2
@@ -134,11 +134,11 @@ fun StartupLoadingOverlay(isVisible: Boolean, loadingText: String?, modifier: Mo
                 animationSpec =
                     tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.EnterEasing)
             ) +
-                scaleIn(
-                    initialScale = 0.9f,
-                    animationSpec =
-                        tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.StandardEasing),
-                ),
+                    scaleIn(
+                        initialScale = 0.9f,
+                        animationSpec =
+                            tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.StandardEasing),
+                    ),
         exit =
             fadeOut(
                 animationSpec =
@@ -147,7 +147,9 @@ fun StartupLoadingOverlay(isVisible: Boolean, loadingText: String?, modifier: Mo
         modifier = modifier,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = UiDp.dp60),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = UiDp.dp60),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -165,13 +167,13 @@ fun StartupLoadingOverlay(isVisible: Boolean, loadingText: String?, modifier: Mo
                                 easing = AnimationSpecs.EnterEasing,
                             )
                     ) togetherWith
-                        fadeOut(
-                            animationSpec =
-                                tween(
-                                    AnimationSpecs.DURATION_INSTANT,
-                                    easing = AnimationSpecs.ExitEasing,
-                                )
-                        )
+                            fadeOut(
+                                animationSpec =
+                                    tween(
+                                        AnimationSpecs.DURATION_INSTANT,
+                                        easing = AnimationSpecs.ExitEasing,
+                                    )
+                            )
                 },
                 label = "loadingText",
             ) { text ->

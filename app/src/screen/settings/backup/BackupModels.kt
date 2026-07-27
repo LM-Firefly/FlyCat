@@ -28,8 +28,8 @@ import com.github.yumelira.yumebox.data.store.LinkOpenMode
 import com.github.yumelira.yumebox.data.store.ProfileLink
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.service.profile.Imported
-import java.util.*
 import kotlinx.serialization.Serializable
+import java.util.*
 
 const val BACKUP_FORMAT_VERSION = 1
 
@@ -197,4 +197,5 @@ data class ImportedBackup(
     }
 }
 
-@Serializable data class ServiceBackup(val activeProfile: String? = null)
+@Serializable
+data class ServiceBackup(val activeProfile: String? = null)

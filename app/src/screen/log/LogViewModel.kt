@@ -74,20 +74,21 @@ class LogViewModel(private val appContext: Context) : ViewModel() {
     private val _levelFilter = MutableStateFlow(LogLevelFilter.All)
     private val _searchQuery = MutableStateFlow("")
     private val _connectionState = MutableStateFlow(LogConnectionState.Connecting)
-    @Volatile private var logSubscription: LogSubscription? = null
+    @Volatile
+    private var logSubscription: LogSubscription? = null
     private var connectJob: Job? = null
 
     val levelFilter: StateFlow<LogLevelFilter> = _levelFilter.asStateFlow()
     val connectionState: StateFlow<LogConnectionState> = _connectionState.asStateFlow()
     val filteredLogEntries: StateFlow<List<LiveLogEntry>> =
         combine(_entries, _levelFilter, _searchQuery) { entries, filter, query ->
-                entries.filter { entry ->
-                    entry.level.passes(filter) &&
+            entries.filter { entry ->
+                entry.level.passes(filter) &&
                         (query.isBlank() ||
-                            entry.message.contains(query, ignoreCase = true) ||
-                            entry.level.name.contains(query, ignoreCase = true))
-                }
+                                entry.message.contains(query, ignoreCase = true) ||
+                                entry.level.name.contains(query, ignoreCase = true))
             }
+        }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
@@ -148,12 +149,12 @@ class LogViewModel(private val appContext: Context) : ViewModel() {
 
     val screenState: StateFlow<LogScreenState> =
         combine(filteredLogEntries, levelFilter, connectionState) { entries, filter, connection ->
-                LogScreenState(
-                    filteredEntries = entries,
-                    levelFilter = filter,
-                    connectionState = connection,
-                )
-            }
+            LogScreenState(
+                filteredEntries = entries,
+                levelFilter = filter,
+                connectionState = connection,
+            )
+        }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5_000),

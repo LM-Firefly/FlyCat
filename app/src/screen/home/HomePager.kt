@@ -94,15 +94,16 @@ fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
             screen.profilesLoaded && screen.profiles.isNotEmpty() && screen.controlState.canInteract
         }
 
-    Scaffold(topBar = { TopBar(title = YumeTxt.Home.Title, scrollBehavior = scrollBehavior) }) {
-        innerPadding ->
+    Scaffold(topBar = { TopBar(title = YumeTxt.Home.Title, scrollBehavior = scrollBehavior) }) { innerPadding ->
         ScreenLazyColumn(
             scrollBehavior = scrollBehavior,
             innerPadding = combinePaddingValues(innerPadding, mainInnerPadding),
         ) {
             item {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = UiDp.dp24),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = UiDp.dp24),
                     horizontalAlignment = Alignment.Start,
                     verticalArrangement = Arrangement.spacedBy(UiDp.dp24),
                 ) {

@@ -63,8 +63,10 @@ class UnixSocket private constructor(private val descriptor: ParcelFileDescripto
         @JvmStatic
         private external fun nativeConnectUnixSocket(path: String, timeoutMs: Int): Int
 
-        @JvmStatic private external fun nativeSetSoTimeout(fd: Int, timeoutMs: Int)
+        @JvmStatic
+        private external fun nativeSetSoTimeout(fd: Int, timeoutMs: Int)
 
-        @JvmStatic private external fun nativeGetSoTimeout(fd: Int): Int
+        @JvmStatic
+        private external fun nativeGetSoTimeout(fd: Int): Int
     }
 }

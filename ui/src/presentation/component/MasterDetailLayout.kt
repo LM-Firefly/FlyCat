@@ -45,7 +45,9 @@ fun PaneWidth(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    Box(modifier = modifier.widthIn(min = min, max = max).fillMaxHeight()) {
+    Box(modifier = modifier
+        .widthIn(min = min, max = max)
+        .fillMaxHeight()) {
         content()
     }
 }

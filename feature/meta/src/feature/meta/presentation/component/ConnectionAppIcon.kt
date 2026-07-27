@@ -72,16 +72,16 @@ internal fun ConnectionLeadingIcon(
             "${identity.appKey}|${identity.packageName.orEmpty()}|$bitmapSize"
         }
     val iconBitmap by
-        produceState<ImageBitmap?>(initialValue = null, key1 = iconKey) {
-            value =
-                withContext(Dispatchers.IO) {
-                    ConnectionAppIconResolver.resolveIcon(
-                        context = context,
-                        packageName = identity.packageName,
-                        bitmapSize = bitmapSize,
-                    )
-                }
-        }
+    produceState<ImageBitmap?>(initialValue = null, key1 = iconKey) {
+        value =
+            withContext(Dispatchers.IO) {
+                ConnectionAppIconResolver.resolveIcon(
+                    context = context,
+                    packageName = identity.packageName,
+                    bitmapSize = bitmapSize,
+                )
+            }
+    }
 
     val bitmap = iconBitmap
     if (bitmap != null) {

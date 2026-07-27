@@ -25,11 +25,11 @@ package com.github.yumelira.yumebox.data.controller
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import java.util.concurrent.ConcurrentHashMap
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import java.util.concurrent.ConcurrentHashMap
 
 data class AppIdentity(
     val appKey: String,
@@ -44,7 +44,8 @@ class AppIdentityResolver(context: Context) {
     private val labelCache = ConcurrentHashMap<String, String>()
     private val uidCache = ConcurrentHashMap<Int, String?>()
 
-    @Volatile private var installedAppsCache: List<InstalledAppIdentity>? = null
+    @Volatile
+    private var installedAppsCache: List<InstalledAppIdentity>? = null
 
     fun resolve(metadata: JsonObject): AppIdentity {
         val explicitPackageName =
@@ -139,10 +140,10 @@ class AppIdentityResolver(context: Context) {
             .firstOrNull { app ->
                 candidates.any { candidate ->
                     candidate.equals(app.packageName, ignoreCase = true) ||
-                        candidate.equals(app.processName, ignoreCase = true) ||
-                        candidate.equals(app.label, ignoreCase = true) ||
-                        candidate.startsWith("${app.packageName}:", ignoreCase = true) ||
-                        candidate.startsWith("${app.processName}:", ignoreCase = true)
+                            candidate.equals(app.processName, ignoreCase = true) ||
+                            candidate.equals(app.label, ignoreCase = true) ||
+                            candidate.startsWith("${app.packageName}:", ignoreCase = true) ||
+                            candidate.startsWith("${app.processName}:", ignoreCase = true)
                 }
             }
             ?.packageName
@@ -181,9 +182,9 @@ class AppIdentityResolver(context: Context) {
     private fun resolveLabel(packageName: String): String =
         labelCache.getOrPut(packageName) {
             runCatching {
-                    val info = packageManager.getApplicationInfo(packageName, 0)
-                    packageManager.getApplicationLabel(info).toString().trim()
-                }
+                val info = packageManager.getApplicationInfo(packageName, 0)
+                packageManager.getApplicationLabel(info).toString().trim()
+            }
                 .getOrDefault(packageName)
         }
 

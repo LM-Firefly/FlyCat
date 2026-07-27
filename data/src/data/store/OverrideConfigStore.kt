@@ -26,13 +26,13 @@ package com.github.yumelira.yumebox.data.store
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
 import com.github.yumelira.yumebox.data.model.*
-import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.File
 
 class OverrideConfigStore(
     private val context: Context,
@@ -251,10 +251,7 @@ class OverrideConfigStore(
     }
 
     fun saveConfigContent(id: String, content: String): Boolean {
-        if (BuiltInOverrideCatalog.isBuiltIn(id)) {
-            return false
-        }
-        return synchronized(OverrideMetadataFileLock.monitor) {
+        return !BuiltInOverrideCatalog.isBuiltIn(id) && synchronized(OverrideMetadataFileLock.monitor) {
             val index = loadMetadataIndexForMutation()
             val metadata = index.getById(id) ?: return@synchronized false
             runCatching {
@@ -332,7 +329,7 @@ class OverrideConfigStore(
         return loadMetadataIndex().sortedUserMetadata().mapNotNull { metadata ->
             if (
                 isInternalRuntimeConfig(metadata.id) ||
-                    BuiltInOverrideCatalog.isBuiltIn(metadata.id)
+                BuiltInOverrideCatalog.isBuiltIn(metadata.id)
             ) {
                 return@mapNotNull null
             }
@@ -342,8 +339,8 @@ class OverrideConfigStore(
 
     private fun isUserOwnedConfig(config: OverrideConfig): Boolean =
         config.id != OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID &&
-            !BuiltInOverrideCatalog.isBuiltIn(config.id) &&
-            !isInternalRuntimeConfig(config.id)
+                !BuiltInOverrideCatalog.isBuiltIn(config.id) &&
+                !isInternalRuntimeConfig(config.id)
 
     private fun loadBuiltInConfig(id: String): OverrideConfig? {
         val def = BuiltInOverrideCatalog.find(id) ?: return null
@@ -402,6 +399,7 @@ class OverrideConfigStore(
                     // Never normalize-write an empty shell over a non-empty corrupt file.
                     MetadataIndex()
                 }
+
                 MetadataIndexLoad.Missing -> MetadataIndex()
                 is MetadataIndexLoad.Ok -> {
                     val sanitizedIndex = sanitizeMetadataIndex(loaded.index)
@@ -459,7 +457,7 @@ class OverrideConfigStore(
         val sanitizedConfigs =
             index.configs.filterValues { metadata ->
                 !isLegacySystemPresetId(metadata.id) &&
-                    !BuiltInOverrideCatalog.isBuiltIn(metadata.id)
+                        !BuiltInOverrideCatalog.isBuiltIn(metadata.id)
             }
         val sanitizedProfileChains =
             index.profileChains.mapValues { (_, binding) ->
@@ -467,8 +465,8 @@ class OverrideConfigStore(
                     overrideIds =
                         binding.overrideIds.filterNot { id ->
                             isLegacySystemPresetId(id) ||
-                                (id.startsWith(OverrideMetadata.ID_PREFIX) &&
-                                    id !in sanitizedConfigs)
+                                    (id.startsWith(OverrideMetadata.ID_PREFIX) &&
+                                            id !in sanitizedConfigs)
                         }
                 )
             }

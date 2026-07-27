@@ -156,24 +156,24 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
                             ),
                         initialOffsetX = initialOffset,
                     ) +
-                        fadeIn(
-                            animationSpec =
-                                tween(durationMillis = AnimationSpecs.Proxy.SheetFadeInDuration)
-                        )) togetherWith
-                        (slideOutHorizontally(
-                            animationSpec =
-                                tween(
-                                    durationMillis = AnimationSpecs.Proxy.SheetSlideOutDuration,
-                                    easing = AnimationSpecs.Legacy,
-                                ),
-                            targetOffsetX = targetOffset,
-                        ) +
-                            fadeOut(
+                            fadeIn(
+                                animationSpec =
+                                    tween(durationMillis = AnimationSpecs.Proxy.SheetFadeInDuration)
+                            )) togetherWith
+                            (slideOutHorizontally(
                                 animationSpec =
                                     tween(
-                                        durationMillis = AnimationSpecs.Proxy.SheetFadeOutDuration
-                                    )
-                            ))
+                                        durationMillis = AnimationSpecs.Proxy.SheetSlideOutDuration,
+                                        easing = AnimationSpecs.Legacy,
+                                    ),
+                                targetOffsetX = targetOffset,
+                            ) +
+                                    fadeOut(
+                                        animationSpec =
+                                            tween(
+                                                durationMillis = AnimationSpecs.Proxy.SheetFadeOutDuration
+                                            )
+                                    ))
                 },
                 label = "notification_node_sheet_start_action",
             ) { showBackAction ->
@@ -240,24 +240,24 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
                             ),
                         initialOffsetX = { it },
                     ) +
-                        fadeIn(
-                            animationSpec =
-                                tween(durationMillis = AnimationSpecs.Proxy.SheetFadeInDuration)
-                        )) togetherWith
-                        (slideOutHorizontally(
-                            animationSpec =
-                                tween(
-                                    durationMillis = AnimationSpecs.Proxy.SheetSlideOutDuration,
-                                    easing = AnimationSpecs.Legacy,
-                                ),
-                            targetOffsetX = { -it / 3 },
-                        ) +
-                            fadeOut(
+                            fadeIn(
+                                animationSpec =
+                                    tween(durationMillis = AnimationSpecs.Proxy.SheetFadeInDuration)
+                            )) togetherWith
+                            (slideOutHorizontally(
                                 animationSpec =
                                     tween(
-                                        durationMillis = AnimationSpecs.Proxy.SheetFadeOutDuration
-                                    )
-                            ))
+                                        durationMillis = AnimationSpecs.Proxy.SheetSlideOutDuration,
+                                        easing = AnimationSpecs.Legacy,
+                                    ),
+                                targetOffsetX = { -it / 3 },
+                            ) +
+                                    fadeOut(
+                                        animationSpec =
+                                            tween(
+                                                durationMillis = AnimationSpecs.Proxy.SheetFadeOutDuration
+                                            )
+                                    ))
                 } else {
                     (slideInHorizontally(
                         animationSpec =
@@ -267,26 +267,26 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
                             ),
                         initialOffsetX = { -it / 3 },
                     ) +
-                        fadeIn(
-                            animationSpec =
-                                tween(
-                                    durationMillis = AnimationSpecs.Proxy.SheetFadeInDuration - 20
-                                )
-                        )) togetherWith
-                        (slideOutHorizontally(
-                            animationSpec =
-                                tween(
-                                    durationMillis = AnimationSpecs.Proxy.SheetSlideInDuration - 20,
-                                    easing = AnimationSpecs.Legacy,
-                                ),
-                            targetOffsetX = { it },
-                        ) +
-                            fadeOut(
+                            fadeIn(
                                 animationSpec =
                                     tween(
-                                        durationMillis = AnimationSpecs.Proxy.SheetFadeOutDuration
+                                        durationMillis = AnimationSpecs.Proxy.SheetFadeInDuration - 20
                                     )
-                            ))
+                            )) togetherWith
+                            (slideOutHorizontally(
+                                animationSpec =
+                                    tween(
+                                        durationMillis = AnimationSpecs.Proxy.SheetSlideInDuration - 20,
+                                        easing = AnimationSpecs.Legacy,
+                                    ),
+                                targetOffsetX = { it },
+                            ) +
+                                    fadeOut(
+                                        animationSpec =
+                                            tween(
+                                                durationMillis = AnimationSpecs.Proxy.SheetFadeOutDuration
+                                            )
+                                    ))
                 }
             },
             label = "notification_node_sheet_content",
@@ -326,27 +326,27 @@ private fun ProxySheetNodeContent(
 ) {
     val groupProxyNames = remember(group.proxies) { group.proxies.mapTo(linkedSetOf()) { it.name } }
     val isDelayTesting by
-        remember(group.name, proxyViewModel) {
-                proxyViewModel.testingGroupNames
-                    .map { testingGroupNames -> testingGroupNames.contains(group.name) }
-                    .distinctUntilChanged()
-            }
-            .collectAsState(initial = false)
+    remember(group.name, proxyViewModel) {
+        proxyViewModel.testingGroupNames
+            .map { testingGroupNames -> testingGroupNames.contains(group.name) }
+            .distinctUntilChanged()
+    }
+        .collectAsState(initial = false)
     val testingProxyNames by
-        remember(group.name, groupProxyNames, proxyViewModel) {
-                if (groupProxyNames.isEmpty()) {
-                    flowOf(emptySet<String>())
-                } else {
-                    proxyViewModel.testingProxyNames
-                        .map { names ->
-                            names.filterTo(linkedSetOf()) { proxyName ->
-                                proxyName in groupProxyNames
-                            }
-                        }
-                        .distinctUntilChanged()
+    remember(group.name, groupProxyNames, proxyViewModel) {
+        if (groupProxyNames.isEmpty()) {
+            flowOf(emptySet<String>())
+        } else {
+            proxyViewModel.testingProxyNames
+                .map { names ->
+                    names.filterTo(linkedSetOf()) { proxyName ->
+                        proxyName in groupProxyNames
+                    }
                 }
-            }
-            .collectAsState(initial = emptySet())
+                .distinctUntilChanged()
+        }
+    }
+        .collectAsState(initial = emptySet())
     val onSelectProxy =
         remember(group.name, group.type, proxyViewModel, onTestDelay) {
             { proxyName: String ->

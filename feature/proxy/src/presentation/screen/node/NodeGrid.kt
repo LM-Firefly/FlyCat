@@ -85,7 +85,9 @@ internal fun NodeGrid(
 ) {
     val listState = rememberSaveable(listStateKey, saver = LazyListState.Saver) { LazyListState() }
     LazyColumn(
-        modifier = modifier.scrollEndHaptic().overScrollVertical(),
+        modifier = modifier
+            .scrollEndHaptic()
+            .overScrollVertical(),
         state = listState,
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(UiDp.dp12),

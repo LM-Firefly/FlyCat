@@ -161,7 +161,8 @@ abstract class TrafficStatisticsDao {
         downloadDelta: Long,
     ): Int
 
-    @Insert protected abstract suspend fun insertHourly(entity: TrafficHourlyEntity)
+    @Insert
+    protected abstract suspend fun insertHourly(entity: TrafficHourlyEntity)
 
     @Query(
         """
@@ -184,7 +185,8 @@ abstract class TrafficStatisticsDao {
         lastActiveAt: Long,
     ): Int
 
-    @Insert protected abstract suspend fun insertApp(entity: AppTrafficDailyEntity)
+    @Insert
+    protected abstract suspend fun insertApp(entity: AppTrafficDailyEntity)
 
     @Query(
         """
@@ -206,7 +208,8 @@ abstract class TrafficStatisticsDao {
         lastActiveAt: Long,
     ): Int
 
-    @Insert protected abstract suspend fun insertRoute(entity: RouteTrafficDailyEntity)
+    @Insert
+    protected abstract suspend fun insertRoute(entity: RouteTrafficDailyEntity)
 
     // endregion
 
@@ -337,11 +340,14 @@ abstract class TrafficStatisticsDao {
         clearAllHourly()
     }
 
-    @Query("DELETE FROM app_traffic_daily") protected abstract suspend fun clearAllApp()
+    @Query("DELETE FROM app_traffic_daily")
+    protected abstract suspend fun clearAllApp()
 
-    @Query("DELETE FROM route_traffic_daily") protected abstract suspend fun clearAllRoute()
+    @Query("DELETE FROM route_traffic_daily")
+    protected abstract suspend fun clearAllRoute()
 
-    @Query("DELETE FROM traffic_hourly") protected abstract suspend fun clearAllHourly()
+    @Query("DELETE FROM traffic_hourly")
+    protected abstract suspend fun clearAllHourly()
 
     // endregion
 }

@@ -39,12 +39,12 @@ val Yume.ListCollapse: ImageVector
         }
         listCollapseVector =
             ImageVector.Builder(
-                    name = "ListCollapse",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "ListCollapse",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -99,4 +99,5 @@ val Yume.ListCollapse: ImageVector
         return listCollapseVector!!
     }
 
-@Suppress("ObjectPropertyName") private var listCollapseVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var listCollapseVector: ImageVector? = null

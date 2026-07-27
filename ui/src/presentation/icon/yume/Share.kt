@@ -39,12 +39,12 @@ val Yume.Share: ImageVector
         }
         shareVector =
             ImageVector.Builder(
-                    name = "Share",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "Share",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -100,4 +100,5 @@ val Yume.Share: ImageVector
         return shareVector!!
     }
 
-@Suppress("ObjectPropertyName") private var shareVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var shareVector: ImageVector? = null

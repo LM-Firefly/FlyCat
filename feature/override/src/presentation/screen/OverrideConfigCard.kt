@@ -118,7 +118,8 @@ private fun OverrideConfigCardContent(
 
     Card(
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .padding(vertical = overrideConfigItemGap / 2)
                 .then(modifier)
                 .alpha(if (isDragging) 0.92f else 1f),

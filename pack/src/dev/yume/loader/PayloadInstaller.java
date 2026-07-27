@@ -14,16 +14,15 @@ import java.util.zip.ZipFile;
 import dalvik.system.DexClassLoader;
 
 final class PayloadInstaller {
+    private static final String CACHE_MARKER = ".complete";
+    private static volatile Installation installedPayload;
+    private PayloadInstaller() {
+    }
+
     private static void deleteQuietly(File file) {
         if (file != null && file.exists() && !file.delete()) {
             // Best-effort cleanup of temp payload artifacts.
         }
-    }
-
-    private static final String CACHE_MARKER = ".complete";
-    private static volatile Installation installedPayload;
-
-    private PayloadInstaller() {
     }
 
     static Installation install(ApplicationInfo appInfo, ClassLoader parentLoader, Object loadedApk) {
@@ -49,7 +48,7 @@ final class PayloadInstaller {
                     List<PayloadMetadata.NativeEntry> nativeEntries = selectNativeEntries(metadata.nativeEntries);
                     File nativeDir = null;
                     if (!nativeEntries.isEmpty()) {
-                        nativeDir = safeChild(new File(payloadDir, "lib"), nativeEntries.get(0).abi, "ABI");
+                        nativeDir = safeChild(new File(payloadDir, "lib"), nativeEntries.get(0).abi(), "ABI");
                         ensureDirectory(nativeDir);
                     }
                     File completeMarker = new File(payloadDir, CACHE_MARKER);
@@ -63,18 +62,18 @@ final class PayloadInstaller {
                     List<File> dexFiles = new ArrayList<>(metadata.dexEntries.size());
                     try {
                         for (PayloadMetadata.DexEntry entry : metadata.dexEntries) {
-                            File target = safeChild(dexDir, entry.outputName, "dex output name");
-                            if (!cacheComplete && !isValid(target, entry.size, entry.sha256)) {
-                                extract(archive, entry.assetName, entry.size, entry.sha256, target);
+                            File target = safeChild(dexDir, entry.outputName(), "dex output name");
+                            if (!cacheComplete && !isValid(target, entry.size(), entry.sha256())) {
+                                extract(archive, entry.assetName(), entry.size(), entry.sha256(), target);
                             }
                             makeReadOnly(target);
                             dexFiles.add(target);
                         }
                         if (!nativeEntries.isEmpty()) {
                             for (PayloadMetadata.NativeEntry entry : nativeEntries) {
-                                File target = safeChild(nativeDir, entry.outputName, "native output name");
-                                if (!cacheComplete && !isValid(target, entry.size, entry.sha256)) {
-                                    extract(archive, entry.assetName, entry.size, entry.sha256, target);
+                                File target = safeChild(nativeDir, entry.outputName(), "native output name");
+                                if (!cacheComplete && !isValid(target, entry.size(), entry.sha256())) {
+                                    extract(archive, entry.assetName(), entry.size(), entry.sha256(), target);
                                 }
                                 makeReadOnly(target);
                             }
@@ -191,12 +190,12 @@ final class PayloadInstaller {
     ) {
         try {
             for (PayloadMetadata.DexEntry entry : dexEntries) {
-                if (!isValid(safeChild(dexDir, entry.outputName, "dex output name"), entry.size, entry.sha256)) {
+                if (!isValid(safeChild(dexDir, entry.outputName(), "dex output name"), entry.size(), entry.sha256())) {
                     return false;
                 }
             }
             for (PayloadMetadata.NativeEntry entry : nativeEntries) {
-                if (!isValid(safeChild(nativeDir, entry.outputName, "native output name"), entry.size, entry.sha256)) {
+                if (!isValid(safeChild(nativeDir, entry.outputName(), "native output name"), entry.size(), entry.sha256())) {
                     return false;
                 }
             }
@@ -281,7 +280,7 @@ final class PayloadInstaller {
         for (String abi : Build.SUPPORTED_ABIS) {
             List<PayloadMetadata.NativeEntry> selected = new ArrayList<>();
             for (PayloadMetadata.NativeEntry entry : entries) {
-                if (abi.equals(entry.abi)) {
+                if (abi.equals(entry.abi())) {
                     selected.add(entry);
                 }
             }
@@ -306,13 +305,6 @@ final class PayloadInstaller {
         }
     }
 
-    static final class Installation {
-        final PayloadMetadata metadata;
-        final ClassLoader classLoader;
-
-        Installation(PayloadMetadata metadata, ClassLoader classLoader) {
-            this.metadata = metadata;
-            this.classLoader = classLoader;
-        }
+    record Installation(PayloadMetadata metadata, ClassLoader classLoader) {
     }
 }

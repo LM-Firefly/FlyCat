@@ -22,13 +22,13 @@ package com.github.yumelira.yumebox.data.store
 
 import com.github.yumelira.yumebox.core.util.YamlCodec
 import com.github.yumelira.yumebox.data.model.MetadataIndex
+import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import timber.log.Timber
 
 /** Shared monitor for the two stores that read and rewrite overrides/metadata.yaml. */
 internal object OverrideMetadataFileLock {
@@ -55,10 +55,10 @@ internal object OverrideMetadataIO {
             return MetadataIndexLoad.Missing
         }
         return runCatching {
-                MetadataIndexLoad.Ok(
-                    YamlCodec.decode(MetadataIndex.serializer(), file.readText())
-                )
-            }
+            MetadataIndexLoad.Ok(
+                YamlCodec.decode(MetadataIndex.serializer(), file.readText())
+            )
+        }
             .getOrElse { error ->
                 Timber.w(error, "Failed to decode override metadata: %s", file.absolutePath)
                 MetadataIndexLoad.Corrupt(error)

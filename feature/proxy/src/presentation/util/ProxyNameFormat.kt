@@ -35,12 +35,12 @@ private fun isRegionalIndicator(codePoint: Int): Boolean =
 
 private fun Char.isNameSeparator(): Boolean =
     this.isWhitespace() ||
-        this == '-' ||
-        this == '|' ||
-        this == '·' ||
-        this == '•' ||
-        this == '—' ||
-        this == ':'
+            this == '-' ||
+            this == '|' ||
+            this == '·' ||
+            this == '•' ||
+            this == '—' ||
+            this == ':'
 
 private val countryNameToCode =
     mapOf(

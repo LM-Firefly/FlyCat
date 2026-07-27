@@ -92,7 +92,7 @@ class BackupArchiveManager(
                 val target = canonicalRoot.resolve(entry.name).canonicalFile
                 require(
                     target.path == canonicalRoot.path ||
-                        target.path.startsWith(canonicalRoot.path + File.separator)
+                            target.path.startsWith(canonicalRoot.path + File.separator)
                 ) {
                     "Backup contains an unsafe path: ${entry.name}"
                 }

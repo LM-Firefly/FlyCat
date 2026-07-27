@@ -71,8 +71,7 @@ fun FeatureContent(
 
     LaunchedEffect(Unit) { viewModel.initializeSubStoreStatus() }
 
-    Scaffold(topBar = { TopBar(title = YumeTxt.Feature.Title, scrollBehavior = scrollBehavior) }) {
-        innerPadding ->
+    Scaffold(topBar = { TopBar(title = YumeTxt.Feature.Title, scrollBehavior = scrollBehavior) }) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
             scrollBehavior = scrollBehavior,

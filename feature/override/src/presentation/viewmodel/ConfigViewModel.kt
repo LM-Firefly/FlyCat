@@ -34,12 +34,6 @@ import com.github.yumelira.yumebox.data.store.OverrideConfigStore
 import com.github.yumelira.yumebox.data.store.ProfileBindingProvider
 import com.github.yumelira.yumebox.runtime.api.Profile
 import com.github.yumelira.yumebox.runtime.client.ProfilesRepository
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLDecoder
-import java.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,6 +45,12 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLDecoder
+import java.util.*
 
 class OverrideConfigViewModel(
     private val configRepo: OverrideConfigStore,
@@ -138,8 +138,9 @@ class OverrideConfigViewModel(
                 loadUsageCounts()
             } catch (
                 error:
-                    Exception) { // fault barrier: top-level ViewModel load handler, log and reset
-                                 // loading
+                Exception
+            ) { // fault barrier: top-level ViewModel load handler, log and reset
+                // loading
                 Timber.tag(TAG).e(error, "Failed to load overrides")
             } finally {
                 _isLoading.value = false
@@ -212,14 +213,14 @@ class OverrideConfigViewModel(
                     if (isBuiltInConfig(id)) {
                         val now = System.currentTimeMillis()
                         OverrideConfig(
-                                id = OverrideMetadata.generateId(),
-                                name = YumeTxt.Override.BuiltIn.CopyName.format(source.name),
-                                description = source.description,
-                                contentType = source.contentType,
-                                content = source.content,
-                                createdAt = now,
-                                updatedAt = now,
-                            )
+                            id = OverrideMetadata.generateId(),
+                            name = YumeTxt.Override.BuiltIn.CopyName.format(source.name),
+                            description = source.description,
+                            contentType = source.contentType,
+                            content = source.content,
+                            createdAt = now,
+                            updatedAt = now,
+                        )
                             .also { configRepo.save(it) }
                     } else {
                         configRepo.duplicate(id)
@@ -308,63 +309,63 @@ class OverrideConfigViewModel(
     suspend fun importConfigFromUrl(rawUrl: String): Result<OverrideConfig> =
         withContext(Dispatchers.IO) {
             runCatching {
-                    val url = URL(rawUrl.trim())
-                    require(
-                        url.protocol.equals("http", ignoreCase = true) ||
+                val url = URL(rawUrl.trim())
+                require(
+                    url.protocol.equals("http", ignoreCase = true) ||
                             url.protocol.equals("https", ignoreCase = true)
-                    ) {
-                        YumeTxt.Override.Import.InvalidUrl
-                    }
-
-                    val connection =
-                        (url.openConnection() as HttpURLConnection).apply {
-                            connectTimeout = NETWORK_IMPORT_CONNECT_TIMEOUT_MS
-                            readTimeout = NETWORK_IMPORT_READ_TIMEOUT_MS
-                            instanceFollowRedirects = true
-                            requestMethod = "GET"
-                        }
-
-                    try {
-                        val responseCode = connection.responseCode
-                        require(responseCode in 200..299) {
-                            YumeTxt.Override.Import.HttpError.format(responseCode)
-                        }
-
-                        require(
-                            connection.contentLengthLong < 0L ||
-                                connection.contentLengthLong <= NETWORK_IMPORT_MAX_BYTES
-                        ) {
-                            "远程配置超过 ${NETWORK_IMPORT_MAX_BYTES / (1024 * 1024)}MB 限制"
-                        }
-
-                        val contentTypeHeader = connection.contentType.orEmpty()
-                        val sourceName =
-                            resolveNetworkImportSourceName(
-                                url = url,
-                                contentDisposition =
-                                    connection.getHeaderField("Content-Disposition"),
-                                contentType = contentTypeHeader,
-                            )
-                        val content =
-                            connection.inputStream.use { input ->
-                                readUtf8TextLimited(input, NETWORK_IMPORT_MAX_BYTES)
-                            }
-                        val inferredContentType =
-                            OverrideContentType.fromFileName(sourceName)
-                                ?: inferContentTypeFromHeader(contentTypeHeader)
-                                ?: inferContentTypeFromContent(content)
-                        val normalizedSourceName =
-                            ensureSourceNameExtension(sourceName, inferredContentType)
-                        importConfig(
-                                content = content,
-                                sourceName = normalizedSourceName,
-                                fallbackContentType = inferredContentType,
-                            )
-                            .getOrThrow()
-                    } finally {
-                        connection.disconnect()
-                    }
+                ) {
+                    YumeTxt.Override.Import.InvalidUrl
                 }
+
+                val connection =
+                    (url.openConnection() as HttpURLConnection).apply {
+                        connectTimeout = NETWORK_IMPORT_CONNECT_TIMEOUT_MS
+                        readTimeout = NETWORK_IMPORT_READ_TIMEOUT_MS
+                        instanceFollowRedirects = true
+                        requestMethod = "GET"
+                    }
+
+                try {
+                    val responseCode = connection.responseCode
+                    require(responseCode in 200..299) {
+                        YumeTxt.Override.Import.HttpError.format(responseCode)
+                    }
+
+                    require(
+                        connection.contentLengthLong < 0L ||
+                                connection.contentLengthLong <= NETWORK_IMPORT_MAX_BYTES
+                    ) {
+                        "远程配置超过 ${NETWORK_IMPORT_MAX_BYTES / (1024 * 1024)}MB 限制"
+                    }
+
+                    val contentTypeHeader = connection.contentType.orEmpty()
+                    val sourceName =
+                        resolveNetworkImportSourceName(
+                            url = url,
+                            contentDisposition =
+                                connection.getHeaderField("Content-Disposition"),
+                            contentType = contentTypeHeader,
+                        )
+                    val content =
+                        connection.inputStream.use { input ->
+                            readUtf8TextLimited(input, NETWORK_IMPORT_MAX_BYTES)
+                        }
+                    val inferredContentType =
+                        OverrideContentType.fromFileName(sourceName)
+                            ?: inferContentTypeFromHeader(contentTypeHeader)
+                            ?: inferContentTypeFromContent(content)
+                    val normalizedSourceName =
+                        ensureSourceNameExtension(sourceName, inferredContentType)
+                    importConfig(
+                        content = content,
+                        sourceName = normalizedSourceName,
+                        fallbackContentType = inferredContentType,
+                    )
+                        .getOrThrow()
+                } finally {
+                    connection.disconnect()
+                }
+            }
                 .fold(
                     onSuccess = { Result.success(it) },
                     onFailure = { Result.failure(it) },
@@ -384,7 +385,7 @@ class OverrideConfigViewModel(
                     val profileId = profile.uuid.toString()
                     val isBound =
                         bindingProvider.getBinding(profileId)?.overrideIds?.contains(overrideId) ==
-                            true
+                                true
                     if (isBound) {
                         selectedProfileIds += profileId
                     }
@@ -582,7 +583,7 @@ internal fun normalizeImportedConfigSourceName(sourceName: String?): String? {
         val matchedSuffix =
             removableSuffixes.firstOrNull { suffix ->
                 normalizedName.length > suffix.length &&
-                    normalizedName.endsWith(suffix, ignoreCase = true)
+                        normalizedName.endsWith(suffix, ignoreCase = true)
             } ?: break
         normalizedName = normalizedName.dropLast(matchedSuffix.length).trimEnd()
     }

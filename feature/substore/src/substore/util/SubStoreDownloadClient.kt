@@ -31,14 +31,14 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.utils.io.jvm.javaio.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 import java.io.File
 import java.net.URLDecoder
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.util.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import timber.log.Timber
 
 data class DownloadProgress(
     val progress: Int,
@@ -152,7 +152,8 @@ class SubStoreDownloadClient(
                     }
             } catch (
                 error:
-                    Exception) { // fault barrier: ktor/IO/URL failures all map to download-failed
+                Exception
+            ) { // fault barrier: ktor/IO/URL failures all map to download-failed
                 Timber.e(error, "Download failed: %s", url)
                 if (targetFile.exists()) targetFile.delete()
                 Pair(false, null)
@@ -350,25 +351,25 @@ class SubStoreDownloadClient(
             headers["Content-Disposition"] ?: fallbackContentDisposition ?: return null
         return runCatching {
             if (contentDisposition.contains("filename*=", ignoreCase = true)) {
-                    val regex =
-                        """filename\*=([^']*)'([^']*)'([^;]+)""".toRegex(RegexOption.IGNORE_CASE)
-                    regex.find(contentDisposition)?.let { match ->
-                        val charset = match.groupValues[1].ifBlank { "UTF-8" }
-                        val encodedFilename = match.groupValues[3].trim().trim('"', '\'')
-                        val safeCharset = runCatching {
-                            Charset.forName(charset).name()
-                        }.getOrDefault("UTF-8")
-                        URLDecoder.decode(encodedFilename, safeCharset).trim()
-                    }
-                } else {
-                    val regex = """filename=([^;]+)""".toRegex(RegexOption.IGNORE_CASE)
-                    regex
-                        .find(contentDisposition)
-                        ?.groupValues
-                        ?.getOrNull(1)
-                        ?.trim()
-                        ?.trim('"', '\'')
+                val regex =
+                    """filename\*=([^']*)'([^']*)'([^;]+)""".toRegex(RegexOption.IGNORE_CASE)
+                regex.find(contentDisposition)?.let { match ->
+                    val charset = match.groupValues[1].ifBlank { "UTF-8" }
+                    val encodedFilename = match.groupValues[3].trim().trim('"', '\'')
+                    val safeCharset = runCatching {
+                        Charset.forName(charset).name()
+                    }.getOrDefault("UTF-8")
+                    URLDecoder.decode(encodedFilename, safeCharset).trim()
                 }
+            } else {
+                val regex = """filename=([^;]+)""".toRegex(RegexOption.IGNORE_CASE)
+                regex
+                    .find(contentDisposition)
+                    ?.groupValues
+                    ?.getOrNull(1)
+                    ?.trim()
+                    ?.trim('"', '\'')
+            }
                 ?.takeIf { it.isNotBlank() }
         }
             .getOrNull()

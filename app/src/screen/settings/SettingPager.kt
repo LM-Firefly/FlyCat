@@ -79,7 +79,8 @@ private fun CircularIcon(
     ) {
         Box(
             modifier =
-                Modifier.layout { measurable, _ ->
+                Modifier
+                    .layout { measurable, _ ->
                         val containerSize = componentSizes.settingsIconContainerSize.roundToPx()
                         val parentSize = componentSizes.settingsIconSlotSize.roundToPx()
                         val offset = (containerSize - parentSize) / 2
@@ -103,7 +104,8 @@ private fun CircularIcon(
                 contentDescription = contentDescription,
                 tint = MiuixTheme.colorScheme.onPrimary,
                 modifier =
-                    Modifier.size(componentSizes.settingsIconGlyphSize)
+                    Modifier
+                        .size(componentSizes.settingsIconGlyphSize)
                         .graphicsLayer(
                             scaleX = iconSize,
                             scaleY = iconSize,
@@ -252,7 +254,9 @@ private fun VersionBadge(versionInfo: String) {
         color = MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtle),
         shape = RoundedCornerShape(50),
         modifier =
-            Modifier.height(componentSizes.versionBadgeHeight).padding(end = spacing.space12),
+            Modifier
+                .height(componentSizes.versionBadgeHeight)
+                .padding(end = spacing.space12),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

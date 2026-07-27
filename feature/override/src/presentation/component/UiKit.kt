@@ -103,7 +103,9 @@ fun OverrideFormFieldColumn(modifier: Modifier = Modifier, content: @Composable 
     val spacing = AppTheme.spacing
 
     Column(
-        modifier = modifier.fillMaxWidth().padding(horizontal = spacing.space12),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = spacing.space12),
         verticalArrangement = Arrangement.spacedBy(spacing.space12),
     ) {
         content()
@@ -180,7 +182,9 @@ fun OverrideSectionCardHeader(
     BasicComponent(
         title = title,
         summary = summary.orEmpty(),
-        modifier = Modifier.fillMaxWidth().heightIn(min = sizes.sectionHeaderMinHeight),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = sizes.sectionHeaderMinHeight),
         endActions = {
             if (showIndicator) {
                 Icon(
@@ -236,7 +240,8 @@ fun OverrideAdvancedCard(
         OverrideSectionVisibility(visible = expanded) {
             Column(
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
                         .padding(
                             start = spacing.space16,
                             end = spacing.space16,
@@ -265,17 +270,17 @@ fun OverrideCardActionIconButton(
         when (tone) {
             OverrideActionTone.Neutral -> {
                 colorScheme.secondaryContainer.copy(alpha = 0.78f) to
-                    colorScheme.onSurface.copy(alpha = if (enabled) 0.85f else 0.45f)
+                        colorScheme.onSurface.copy(alpha = if (enabled) 0.85f else 0.45f)
             }
 
             OverrideActionTone.Primary -> {
                 colorScheme.primary.copy(alpha = 0.1f) to
-                    colorScheme.primary.copy(alpha = if (enabled) 1f else 0.45f)
+                        colorScheme.primary.copy(alpha = if (enabled) 1f else 0.45f)
             }
 
             OverrideActionTone.Danger -> {
                 colorScheme.error.copy(alpha = 0.1f) to
-                    colorScheme.error.copy(alpha = if (enabled) 1f else 0.45f)
+                        colorScheme.error.copy(alpha = if (enabled) 1f else 0.45f)
             }
         }
 

@@ -37,7 +37,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
-import com.github.panpf.sketch.AsyncImage as SketchAsyncImage
 import com.github.panpf.sketch.request.ImageRequest
 import com.github.panpf.sketch.state.IntColorDrawableStateImage
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
@@ -45,6 +44,7 @@ import com.github.yumelira.yumebox.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.github.panpf.sketch.AsyncImage as SketchAsyncImage
 
 @Composable
 fun <T> RoutingSwitchCard(
@@ -110,7 +110,8 @@ private fun RoutingSwitchRow(
     val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .padding(contentPadding)
                 .clickable(
                     interactionSource = interactionSource,
@@ -157,6 +158,8 @@ private fun RoutingIcon(iconUrl: String?, size: Dp) {
         request = request,
         contentDescription = null,
         contentScale = ContentScale.Crop,
-        modifier = Modifier.size(size).clip(RoundedCornerShape(spacing.space14)),
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(spacing.space14)),
     )
 }

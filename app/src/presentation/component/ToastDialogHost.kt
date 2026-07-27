@@ -84,7 +84,8 @@ fun ToastDialogHost() {
             content = {
                 Box(
                     modifier =
-                        Modifier.fillMaxWidth()
+                        Modifier
+                            .fillMaxWidth()
                             .background(
                                 color =
                                     MiuixTheme.colorScheme.primary.copy(
@@ -95,7 +96,7 @@ fun ToastDialogHost() {
                             .clickable {
                                 val clipboardManager =
                                     context.getSystemService(Context.CLIPBOARD_SERVICE)
-                                        as ClipboardManager
+                                            as ClipboardManager
                                 val textToCopy = snapshot.message.ifBlank { snapshot.title }
                                 clipboardManager.setPrimaryClip(
                                     ClipData.newPlainText(snapshot.title, textToCopy)

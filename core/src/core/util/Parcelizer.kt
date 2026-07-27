@@ -36,7 +36,8 @@ object Parcelizer {
     private class ParcelDecoder(private val parcel: Parcel) : Decoder, CompositeDecoder {
         override val serializersModule: SerializersModule = SerializersModule {}
 
-        @ExperimentalSerializationApi override fun decodeSequentially(): Boolean = true
+        @ExperimentalSerializationApi
+        override fun decodeSequentially(): Boolean = true
 
         override fun decodeByteElement(descriptor: SerialDescriptor, index: Int) = decodeByte()
 
@@ -102,9 +103,11 @@ object Parcelizer {
 
         override fun decodeLong(): Long = parcel.readLong()
 
-        @ExperimentalSerializationApi override fun decodeNotNullMark(): Boolean = decodeBoolean()
+        @ExperimentalSerializationApi
+        override fun decodeNotNullMark(): Boolean = decodeBoolean()
 
-        @ExperimentalSerializationApi override fun decodeNull(): Nothing? = null
+        @ExperimentalSerializationApi
+        override fun decodeNull(): Nothing? = null
 
         override fun decodeShort(): Short = decodeInt().toShort()
 

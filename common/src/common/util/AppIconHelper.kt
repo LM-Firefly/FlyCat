@@ -50,7 +50,7 @@ object AppIconHelper {
             val current = pm.getComponentEnabledSetting(alias)
             val unchanged =
                 current == target ||
-                    (!hide && current == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT)
+                        (!hide && current == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT)
             if (unchanged) return
 
             val main =

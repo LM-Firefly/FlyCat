@@ -23,7 +23,6 @@
 package com.github.yumelira.yumebox.presentation.component
 
 
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateBounds
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -69,8 +68,6 @@ import com.github.yumelira.yumebox.presentation.theme.YumeHaze.chromeEffect
 import com.kyant.shapes.Capsule
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
-import kotlin.math.max
-import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
@@ -78,6 +75,8 @@ import kotlinx.coroutines.launch
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.max
+import kotlin.math.roundToInt
 
 private const val BottomBarLayoutAnimationDurationMillis = 380
 private const val ProxyDestinationRevealDurationMillis = 300
@@ -186,9 +185,9 @@ fun rememberBottomBarReservedHeight(): Dp {
     val systemBottomInset =
         with(density) {
             max(
-                    WindowInsets.navigationBars.getBottom(this),
-                    WindowInsets.systemGestures.getBottom(this),
-                )
+                WindowInsets.navigationBars.getBottom(this),
+                WindowInsets.systemGestures.getBottom(this),
+            )
                 .toDp()
         }
     return remember(systemBottomInset) {
@@ -225,14 +224,14 @@ private fun FloatingBottomBarContent(
     // indicator was still parked on the old page.
     val page by remember(pagerState) { derivedStateOf { pagerState.currentPage } }
     val indicatorProgress by
-        remember(pagerState, destinations.size) {
-            derivedStateOf {
-                (pagerState.currentPage.toFloat() + pagerState.currentPageOffsetFraction).coerceIn(
-                    0f,
-                    (destinations.size - 1).toFloat(),
-                )
-            }
+    remember(pagerState, destinations.size) {
+        derivedStateOf {
+            (pagerState.currentPage.toFloat() + pagerState.currentPageOffsetFraction).coerceIn(
+                0f,
+                (destinations.size - 1).toFloat(),
+            )
         }
+    }
     val bottomBarVisible = isVisible && (bottomBarScrollBehavior?.isBottomBarVisible ?: true)
     val showProxyDestination = BottomBarDestination.Proxy in destinations
     var revealProxyDestination by remember { mutableStateOf(false) }
@@ -243,20 +242,20 @@ private fun FloatingBottomBarContent(
         remember(density) { with(density) { MainBottomBarDefaults.ExitOffset.toPx() } }
     val animatedTranslationY = remember { Animatable(if (bottomBarVisible) 0f else exitOffsetPx) }
     val animatedAlpha by
-        animateFloatAsState(
-            targetValue = if (bottomBarVisible) 1f else 0f,
-            animationSpec =
-                tween(
-                    durationMillis = 180,
-                    easing =
-                        if (bottomBarVisible) {
-                            AnimationSpecs.EmphasizedDecelerate
-                        } else {
-                            AnimationSpecs.EmphasizedAccelerate
-                        },
-                ),
-            label = "legacy_bottom_bar_alpha",
-        )
+    animateFloatAsState(
+        targetValue = if (bottomBarVisible) 1f else 0f,
+        animationSpec =
+            tween(
+                durationMillis = 180,
+                easing =
+                    if (bottomBarVisible) {
+                        AnimationSpecs.EmphasizedDecelerate
+                    } else {
+                        AnimationSpecs.EmphasizedAccelerate
+                    },
+            ),
+        label = "legacy_bottom_bar_alpha",
+    )
 
     LaunchedEffect(bottomBarVisible, exitOffsetPx) {
         if (bottomBarVisible) {
@@ -299,7 +298,8 @@ private fun FloatingBottomBarContent(
         containerColor = containerColor,
         indicatorContainerColor = indicatorContainerColor,
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .padding(
                     start = MainBottomBarDefaults.HorizontalPadding,
                     end = MainBottomBarDefaults.HorizontalPadding,
@@ -313,17 +313,17 @@ private fun FloatingBottomBarContent(
     ) { lookaheadScope ->
         destinations.forEach { destination ->
             val proxyItemAlpha by
-                animateFloatAsState(
-                    targetValue =
-                        if (destination != BottomBarDestination.Proxy || revealProxyDestination) 1f
-                        else 0f,
-                    animationSpec =
-                        tween(
-                            durationMillis = ProxyDestinationRevealDurationMillis,
-                            easing = AnimationSpecs.EmphasizedDecelerate,
-                        ),
-                    label = "bottom_bar_proxy_item_alpha",
-                )
+            animateFloatAsState(
+                targetValue =
+                    if (destination != BottomBarDestination.Proxy || revealProxyDestination) 1f
+                    else 0f,
+                animationSpec =
+                    tween(
+                        durationMillis = ProxyDestinationRevealDurationMillis,
+                        easing = AnimationSpecs.EmphasizedDecelerate,
+                    ),
+                label = "bottom_bar_proxy_item_alpha",
+            )
             BottomBarTab(
                 destination = destination,
                 selected = destinations.getOrNull(page) == destination,
@@ -332,7 +332,8 @@ private fun FloatingBottomBarContent(
                 unselectedColor = unselectedColor,
                 onClick = { onItemClick(destination) },
                 modifier =
-                    Modifier.weight(1f)
+                    Modifier
+                        .weight(1f)
                         .graphicsLayer {
                             alpha = proxyItemAlpha
                             scaleX =
@@ -458,7 +459,9 @@ private fun LegacyBottomNavigationBar(
     ) {
         if (tabWidthPx > 0f) {
             LegacyBottomNavigationIndicator(
-                modifier = Modifier.padding(UiDp.dp4).align(Alignment.CenterStart),
+                modifier = Modifier
+                    .padding(UiDp.dp4)
+                    .align(Alignment.CenterStart),
                 indicatorOffsetPx = indicatorOffsetPx,
                 indicatorWidthPx = tabWidthPx,
                 indicatorContainerColor = indicatorContainerColor,
@@ -468,7 +471,8 @@ private fun LegacyBottomNavigationBar(
         LookaheadScope {
             Row(
                 modifier =
-                    Modifier.padding(UiDp.dp4)
+                    Modifier
+                        .padding(UiDp.dp4)
                         .height(UiDp.dp48)
                         .fillMaxWidth()
                         .align(Alignment.CenterStart),
@@ -510,13 +514,15 @@ private fun BoxScope.LegacyBottomNavigationBorders(
 ) {
     Box(
         modifier =
-            Modifier.matchParentSize()
+            Modifier
+                .matchParentSize()
                 .border(width = UiDp.dp0_3, color = outerBorderColor, shape = Capsule())
     )
 
     Box(
         modifier =
-            Modifier.matchParentSize()
+            Modifier
+                .matchParentSize()
                 .padding(UiDp.dp1)
                 .border(width = UiDp.dp0_2, color = innerBorderColor, shape = Capsule())
     )

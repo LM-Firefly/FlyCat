@@ -43,11 +43,11 @@ class RemoteControllerStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = 
 
     /** All saved backends. Secrets are encrypted at this persistence boundary. */
     val backends by
-        jsonListFlow(
-            default = emptyList<RemoteBackend>(),
-            decode = { str -> backendCodec.decode(this, str) },
-            encode = { value -> backendCodec.encode(this, value) },
-        )
+    jsonListFlow(
+        default = emptyList<RemoteBackend>(),
+        decode = { str -> backendCodec.decode(this, str) },
+        encode = { value -> backendCodec.encode(this, value) },
+    )
 
     init {
         val persisted = mmkv.decodeString("backends").orEmpty()

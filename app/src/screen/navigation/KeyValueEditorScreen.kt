@@ -24,30 +24,22 @@ package com.github.yumelira.yumebox.screen.navigation
 
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.BadgePlus
 import dev.chrisbanes.haze.hazeSource
-import java.util.*
 import tf.gal.yumebox.locale.YumeTxt
-import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.AddCircle
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Reset
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
+import java.util.*
 
 object EditorDataHolder {
     var listEditorTitle: String = ""
@@ -198,7 +190,8 @@ fun StringListEditorScreen(navigator: Navigator) {
                 title = YumeTxt.Component.Editor.Empty.Title,
                 hint = YumeTxt.Component.Editor.Empty.Hint,
                 modifier =
-                    Modifier.fillMaxSize()
+                    Modifier
+                        .fillMaxSize()
                         .let { mod ->
                             if (topBarHazeState != null) mod.hazeSource(topBarHazeState) else mod
                         }
@@ -347,7 +340,8 @@ fun KeyValueEditorScreen(navigator: Navigator) {
                 title = YumeTxt.Component.Editor.Empty.Title,
                 hint = YumeTxt.Component.Editor.Empty.Hint,
                 modifier =
-                    Modifier.fillMaxSize()
+                    Modifier
+                        .fillMaxSize()
                         .let { mod ->
                             if (topBarHazeState != null) mod.hazeSource(topBarHazeState) else mod
                         }

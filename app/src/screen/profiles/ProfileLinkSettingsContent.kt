@@ -55,7 +55,9 @@ internal fun LinkSettingsContent(
 ) {
     val spacing = AppTheme.spacing
     Column(
-        modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space16),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = spacing.space16),
         verticalArrangement = Arrangement.spacedBy(UiDp.dp12),
     ) {
         LinkOpenModeSection(linkOpenMode, onOpenModeChange)
@@ -118,7 +120,8 @@ private fun ProfileLinkList(
             links.forEachIndexed { index, link ->
                 Row(
                     modifier =
-                        Modifier.fillMaxWidth()
+                        Modifier
+                            .fillMaxWidth()
                             .clickable { onOpen(link) }
                             .padding(horizontal = spacing.space16, vertical = spacing.space12),
                     horizontalArrangement = Arrangement.SpaceBetween,

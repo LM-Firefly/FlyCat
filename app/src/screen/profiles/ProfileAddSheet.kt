@@ -37,10 +37,10 @@ import androidx.core.content.ContextCompat
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.presentation.util.*
 import com.github.yumelira.yumebox.runtime.api.Profile
-import java.util.*
-import kotlin.math.max
 import kotlinx.coroutines.delay
 import tf.gal.yumebox.locale.YumeTxt
+import java.util.*
+import kotlin.math.max
 
 @Composable
 internal fun AddProfileSheet(
@@ -49,13 +49,13 @@ internal fun AddProfileSheet(
     importUrl: String? = null,
     onAddProfile:
         (
-            name: String,
-            source: String,
-            type: Profile.Type,
-            interval: Long,
-            fileUri: android.net.Uri?,
-            ageSecretKey: String,
-        ) -> Unit,
+        name: String,
+        source: String,
+        type: Profile.Type,
+        interval: Long,
+        fileUri: android.net.Uri?,
+        ageSecretKey: String,
+    ) -> Unit,
     onUpdateProfile: (uuid: UUID, name: String, source: String, interval: Long) -> Unit,
     onDownloadComplete: () -> Unit,
     profilesViewModel: ProfilesViewModel,
@@ -103,13 +103,12 @@ internal fun AddProfileSheet(
     var hasCameraPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
-                PackageManager.PERMISSION_GRANTED
+                    PackageManager.PERMISSION_GRANTED
         )
     }
 
     val cameraPermissionLauncher =
-        rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {
-            isGranted ->
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) { isGranted ->
             hasCameraPermission = isGranted
             if (!isGranted) {
                 context.toast(YumeTxt.ProfilesPage.QrScanner.NeedCamera, Toast.LENGTH_LONG)
@@ -124,14 +123,14 @@ internal fun AddProfileSheet(
     }
 
     val showCameraPreview by
-        remember(show.value, selectedTypeIndex, isDownloading, hasCameraPermission) {
-            derivedStateOf {
-                show.value &&
+    remember(show.value, selectedTypeIndex, isDownloading, hasCameraPermission) {
+        derivedStateOf {
+            show.value &&
                     selectedTypeIndex == PROFILE_IMPORT_TYPE_QR &&
                     !isDownloading &&
                     hasCameraPermission
-            }
         }
+    }
 
     DisposableEffect(show.value, profileToEdit, importUrl) {
         if (show.value) {
@@ -181,9 +180,9 @@ internal fun AddProfileSheet(
     LaunchedEffect(uiState.message) {
         if (
             profileToEdit != null &&
-                uiState.message != null &&
-                isDownloading &&
-                !hasShownCompleteAnimation
+            uiState.message != null &&
+            isDownloading &&
+            !hasShownCompleteAnimation
         ) {
             hasShownCompleteAnimation = true
             delay(DOWNLOAD_COMPLETE_DISPLAY_MILLIS)

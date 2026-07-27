@@ -62,7 +62,8 @@ class OverrideService(
 
             true
         } catch (
-            error: Exception) { // fault barrier: any resolver/broadcast failure degrades to false
+            error: Exception
+        ) { // fault barrier: any resolver/broadcast failure degrades to false
             Timber.e(error, "Failed to apply override for profile: %s", profileId)
             false
         }

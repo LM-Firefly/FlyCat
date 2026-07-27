@@ -39,12 +39,12 @@ val Yume.List: ImageVector
         }
         listVector =
             ImageVector.Builder(
-                    name = "IconName",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "IconName",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -79,4 +79,5 @@ val Yume.List: ImageVector
         return listVector!!
     }
 
-@Suppress("ObjectPropertyName") private var listVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var listVector: ImageVector? = null

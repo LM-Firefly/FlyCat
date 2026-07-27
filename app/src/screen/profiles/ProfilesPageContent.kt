@@ -201,7 +201,9 @@ private fun ProfilesList(
                     workDir = importedDir,
                     isDownloading = isDownloading,
                     modifier =
-                        Modifier.longPressDraggableHandle().alpha(if (isDragging) 0.9f else 1f),
+                        Modifier
+                            .longPressDraggableHandle()
+                            .alpha(if (isDragging) 0.9f else 1f),
                     onExport = { onShareProfile(it) },
                     onUpdate = { onUpdateProfile(it) },
                     onDelete = { onDeleteProfile(it) },

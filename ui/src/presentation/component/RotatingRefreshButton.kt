@@ -42,13 +42,13 @@ fun RotatingRefreshButton(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "refresh_rotation")
     val rotation by
-        infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec =
-                infiniteRepeatable(animation = tween(durationMillis = 1000, easing = LinearEasing)),
-            label = "rotation",
-        )
+    infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec =
+            infiniteRepeatable(animation = tween(durationMillis = 1000, easing = LinearEasing)),
+        label = "rotation",
+    )
 
     IconButton(modifier = modifier, onClick = onClick, enabled = !isRotating) {
         Icon(

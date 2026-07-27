@@ -25,7 +25,8 @@ import java.util.*
 object LocaleUtil {
     private val normalizedRegionCodes = setOf("TW")
 
-    @Volatile private var override: Locale? = null
+    @Volatile
+    private var override: Locale? = null
 
     fun setCurrentLocale(locale: Locale?) {
         override = locale

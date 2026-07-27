@@ -55,11 +55,11 @@ fun NavigationBackIcon(
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by
-        animateFloatAsState(
-            targetValue = if (pressed) 0.92f else 1f,
-            animationSpec = AnimationSpecs.ButtonPress,
-            label = "back_icon_scale",
-        )
+    animateFloatAsState(
+        targetValue = if (pressed) 0.92f else 1f,
+        animationSpec = AnimationSpecs.ButtonPress,
+        label = "back_icon_scale",
+    )
 
     Box(
         modifier =

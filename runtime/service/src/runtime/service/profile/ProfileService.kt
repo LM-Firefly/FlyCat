@@ -32,12 +32,12 @@ import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.util.directoryLastModified
 import com.github.yumelira.yumebox.runtime.service.util.importedDir
 import com.github.yumelira.yumebox.runtime.service.util.sendProfileChanged
-import java.io.FileNotFoundException
-import java.util.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.FileNotFoundException
+import java.util.*
 
 class ProfileService(private val context: Context) :
     ProfileApi, CoroutineScope by CoroutineScope(Dispatchers.IO) {

@@ -120,7 +120,8 @@ fun RulesScreen(navigator: Navigator) {
                         bottomContent = {
                             Box(
                                 modifier =
-                                    Modifier.alpha(
+                                    Modifier
+                                        .alpha(
                                             if (currentSearchStatus.isCollapsed()) 1f else 0f
                                         )
                                         .onGloballyPositioned { coordinates ->
@@ -272,7 +273,8 @@ private fun RuleCard(
     Card(modifier = Modifier.padding(vertical = spacing.space4)) {
         Column(
             modifier =
-                Modifier.fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .padding(horizontal = spacing.space16, vertical = spacing.space12)
         ) {
             Row(

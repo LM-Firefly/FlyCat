@@ -26,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
-import com.github.yumelira.yumebox.presentation.component.*
+import com.github.yumelira.yumebox.presentation.component.AppFormDialog
+import com.github.yumelira.yumebox.presentation.component.AppTextFieldDialog
+import com.github.yumelira.yumebox.presentation.component.PreferenceValueItem
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Switch
@@ -87,11 +89,11 @@ internal fun SimpleTextEditorDialog(
     onConfirm: (String) -> Unit,
 ) {
     var textFieldValue by
-        remember(initialValue) {
-            mutableStateOf(
-                TextFieldValue(text = initialValue, selection = TextRange(initialValue.length))
-            )
-        }
+    remember(initialValue) {
+        mutableStateOf(
+            TextFieldValue(text = initialValue, selection = TextRange(initialValue.length))
+        )
+    }
     AppTextFieldDialog(
         show = true,
         title = title,
@@ -123,17 +125,17 @@ internal fun KeyValueFormDialog(
     currentEditingKey: String? = null,
 ) {
     var keyTextFieldValue by
-        remember(initialKey) {
-            mutableStateOf(
-                TextFieldValue(text = initialKey, selection = TextRange(initialKey.length))
-            )
-        }
+    remember(initialKey) {
+        mutableStateOf(
+            TextFieldValue(text = initialKey, selection = TextRange(initialKey.length))
+        )
+    }
     var valueTextFieldValue by
-        remember(initialValue) {
-            mutableStateOf(
-                TextFieldValue(text = initialValue, selection = TextRange(initialValue.length))
-            )
-        }
+    remember(initialValue) {
+        mutableStateOf(
+            TextFieldValue(text = initialValue, selection = TextRange(initialValue.length))
+        )
+    }
     var error by remember { mutableStateOf<String?>(null) }
 
     AppFormDialog(
@@ -223,14 +225,14 @@ internal fun RuleEditorDialog(
                     "MATCH"
                 } else {
                     buildList {
-                            add(normalizedType)
-                            add(normalizedPayload)
-                            add(target)
-                            if (supportsRuleExtra(normalizedType)) {
-                                if (useSrc) add("src")
-                                if (useNoResolve) add("no-resolve")
-                            }
+                        add(normalizedType)
+                        add(normalizedPayload)
+                        add(target)
+                        if (supportsRuleExtra(normalizedType)) {
+                            if (useSrc) add("src")
+                            if (useNoResolve) add("no-resolve")
                         }
+                    }
                         .joinToString(",")
                 }
             onConfirm(result)

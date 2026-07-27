@@ -1,7 +1,5 @@
 package dev.yume.loader;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import android.app.Activity;
 import android.app.AppComponentFactory;
 import android.app.Application;
@@ -11,6 +9,9 @@ import android.content.ContentProvider;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.os.Build;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import java.lang.reflect.InvocationTargetException;
 
@@ -34,9 +35,9 @@ public final class LoaderComponentFactory extends AppComponentFactory {
     public @NonNull Application instantiateApplication(@NonNull ClassLoader classLoader, @NonNull String className)
             throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         PayloadInstaller.Installation installation = prepare(classLoader);
-        return delegate(installation.metadata).instantiateApplication(
-                installation.classLoader,
-                installation.metadata.originalApplication
+        return delegate(installation.metadata()).instantiateApplication(
+                installation.classLoader(),
+                installation.metadata().originalApplication
         );
     }
 
@@ -44,28 +45,28 @@ public final class LoaderComponentFactory extends AppComponentFactory {
     public @NonNull Activity instantiateActivity(@NonNull ClassLoader classLoader, @NonNull String className, Intent intent)
             throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         PayloadInstaller.Installation installation = prepare(classLoader);
-        return delegate(installation.metadata).instantiateActivity(installation.classLoader, className, intent);
+        return delegate(installation.metadata()).instantiateActivity(installation.classLoader(), className, intent);
     }
 
     @Override
     public @NonNull Service instantiateService(@NonNull ClassLoader classLoader, @NonNull String className, Intent intent)
             throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         PayloadInstaller.Installation installation = prepare(classLoader);
-        return delegate(installation.metadata).instantiateService(installation.classLoader, className, intent);
+        return delegate(installation.metadata()).instantiateService(installation.classLoader(), className, intent);
     }
 
     @Override
     public @NonNull BroadcastReceiver instantiateReceiver(@NonNull ClassLoader classLoader, @NonNull String className, Intent intent)
             throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         PayloadInstaller.Installation installation = prepare(classLoader);
-        return delegate(installation.metadata).instantiateReceiver(installation.classLoader, className, intent);
+        return delegate(installation.metadata()).instantiateReceiver(installation.classLoader(), className, intent);
     }
 
     @Override
     public @NonNull ContentProvider instantiateProvider(@NonNull ClassLoader classLoader, @NonNull String className)
             throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         PayloadInstaller.Installation installation = prepare(classLoader);
-        return delegate(installation.metadata).instantiateProvider(installation.classLoader, className);
+        return delegate(installation.metadata()).instantiateProvider(installation.classLoader(), className);
     }
 
     private PayloadInstaller.Installation prepare(ClassLoader classLoader) {
@@ -75,7 +76,7 @@ public final class LoaderComponentFactory extends AppComponentFactory {
                 classLoader,
                 RuntimeBootstrap.currentLoadedApk()
         );
-        payloadLoader = installation.classLoader;
+        payloadLoader = installation.classLoader();
         return installation;
     }
 

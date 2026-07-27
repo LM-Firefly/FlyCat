@@ -139,13 +139,13 @@ internal fun RotatingCircleGauge(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "circle_gauge_rotation")
     val rotation by
-        infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec =
-                infiniteRepeatable(animation = tween(durationMillis = 1000, easing = LinearEasing)),
-            label = "circle_gauge_rotation_value",
-        )
+    infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec =
+            infiniteRepeatable(animation = tween(durationMillis = 1000, easing = LinearEasing)),
+        label = "circle_gauge_rotation_value",
+    )
 
     Icon(
         imageVector = Yume.CircleGauge,
@@ -172,12 +172,12 @@ internal fun NodeSelectableCard(
     val backgroundColor = MiuixTheme.colorScheme.background
     val transition = updateTransition(targetState = isSelected, label = "node_card_selection")
     val borderColor by
-        transition.animateColor(
-            transitionSpec = { tween(durationMillis = 220, easing = FastOutSlowInEasing) },
-            label = "node_card_border_color",
-        ) { selected ->
-            if (selected) primary.copy(alpha = opacity.disabled) else Color.Transparent
-        }
+    transition.animateColor(
+        transitionSpec = { tween(durationMillis = 220, easing = FastOutSlowInEasing) },
+        label = "node_card_border_color",
+    ) { selected ->
+        if (selected) primary.copy(alpha = opacity.disabled) else Color.Transparent
+    }
 
     Box(
         modifier =
@@ -299,8 +299,7 @@ internal fun NodeCard(
                                 maxLines = 1,
                                 textAlign = TextAlign.End,
                                 modifier =
-                                    Modifier.padding(start = sizes.nodeCardTrailingGap).let {
-                                        modifier ->
+                                    Modifier.padding(start = sizes.nodeCardTrailingGap).let { modifier ->
                                         if (onNodeTestClick != null && singleNodeTestEnabled) {
                                             modifier.clickable(
                                                 interactionSource = delayInteractionSource,
@@ -319,7 +318,8 @@ internal fun NodeCard(
                                 RotatingCircleGauge(
                                     isRotating = true,
                                     modifier =
-                                        Modifier.padding(start = sizes.nodeCardTrailingGap)
+                                        Modifier
+                                            .padding(start = sizes.nodeCardTrailingGap)
                                             .size(sizes.nodeCardTrailingGap * 2),
                                     tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
@@ -329,7 +329,8 @@ internal fun NodeCard(
                                     contentDescription = YumeTxt.Proxy.Action.Test,
                                     tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                     modifier =
-                                        Modifier.padding(start = sizes.nodeCardTrailingGap)
+                                        Modifier
+                                            .padding(start = sizes.nodeCardTrailingGap)
                                             .size(sizes.nodeCardTrailingGap * 2)
                                             .clickable(
                                                 interactionSource = iconInteractionSource,
@@ -382,7 +383,8 @@ private fun NodeTagChip(label: String) {
         style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
         color = primary,
         modifier =
-            Modifier.clip(RoundedCornerShape(radii.full))
+            Modifier
+                .clip(RoundedCornerShape(radii.full))
                 .background(primary.copy(alpha = opacity.subtle))
                 .padding(horizontal = spacing.space4, vertical = spacing.space2),
     )
@@ -409,7 +411,8 @@ private fun NodeMultiplierChip(multiplier: Float) {
 
     Row(
         modifier =
-            Modifier.clip(RoundedCornerShape(radii.full))
+            Modifier
+                .clip(RoundedCornerShape(radii.full))
                 .background(chipBg)
                 .padding(horizontal = spacing.space4, vertical = spacing.space2),
         verticalAlignment = Alignment.CenterVertically,

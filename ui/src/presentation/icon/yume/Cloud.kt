@@ -39,12 +39,12 @@ val Yume.Cloud: ImageVector
         }
         cloudVector =
             ImageVector.Builder(
-                    name = "Cloud",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "Cloud",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.White),
@@ -81,4 +81,5 @@ val Yume.Cloud: ImageVector
         return cloudVector!!
     }
 
-@Suppress("ObjectPropertyName") private var cloudVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var cloudVector: ImageVector? = null

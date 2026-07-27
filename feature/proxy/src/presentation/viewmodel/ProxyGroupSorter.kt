@@ -49,8 +49,8 @@ internal class ProxyGroupSorter {
         sortMode: StateFlow<ProxySortMode>,
     ): StateFlow<List<ProxyGroupInfo>> =
         combine(proxyGroups, sortMode, groupOriginalOrder) { groups, mode, originalOrderCache ->
-                buildSortedProxyGroups(groups, mode, originalOrderCache)
-            }
+            buildSortedProxyGroups(groups, mode, originalOrderCache)
+        }
             .stateIn(
                 scope = scope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -135,8 +135,8 @@ internal class ProxyGroupSorter {
             val cached =
                 previousCache[group.name]?.takeIf { entry ->
                     entry.sourceGroup == group &&
-                        entry.sortMode == mode &&
-                        entry.originalOrder == originalOrder
+                            entry.sortMode == mode &&
+                            entry.originalOrder == originalOrder
                 }
             if (cached != null) {
                 nextCache[group.name] = cached
@@ -155,11 +155,11 @@ internal class ProxyGroupSorter {
                         group.copy(proxies = sortedProxies)
                     }
                 SortedGroupCacheEntry(
-                        sourceGroup = group,
-                        sortMode = mode,
-                        originalOrder = originalOrder,
-                        result = result,
-                    )
+                    sourceGroup = group,
+                    sortMode = mode,
+                    originalOrder = originalOrder,
+                    result = result,
+                )
                     .also { nextCache[group.name] = it }
                     .result
             }

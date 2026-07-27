@@ -146,7 +146,9 @@ fun ConnectionDetailContent(
             InterruptConnectionButton(
                 isInterrupting = isInterrupting,
                 onInterrupt = onInterrupt,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.screenHorizontal),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = spacing.screenHorizontal),
             )
             Spacer(modifier = Modifier.height(spacing.space12))
         }
@@ -159,7 +161,8 @@ private fun ConnectionHeaderRow(state: ConnectionDetailState) {
     val sizes = AppTheme.sizes
     Row(
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .padding(horizontal = spacing.space16, vertical = spacing.space12),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.space12),
@@ -276,7 +279,8 @@ private fun ChainNode(name: String, isActive: Boolean) {
 
     Row(
         modifier =
-            Modifier.clip(RoundedCornerShape(radii.radius8))
+            Modifier
+                .clip(RoundedCornerShape(radii.radius8))
                 .background(backgroundColor)
                 .padding(
                     horizontal = sizes.nodeChainNodeHorizontalPadding,
@@ -288,7 +292,8 @@ private fun ChainNode(name: String, isActive: Boolean) {
         if (isActive) {
             Box(
                 modifier =
-                    Modifier.size(sizes.nodeChainIndicatorSize)
+                    Modifier
+                        .size(sizes.nodeChainIndicatorSize)
                         .clip(CircleShape)
                         .background(appColors.connection.chainActive)
             )

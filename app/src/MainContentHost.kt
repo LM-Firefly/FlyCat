@@ -75,11 +75,11 @@ internal fun MainContentHost(
     val layoutDirection = LocalLayoutDirection.current
     val visibleBottomBarReservedHeight = rememberBottomBarReservedHeight()
     val bottomBarReservedHeight by
-        animateDpAsState(
-            targetValue = if (bottomBarVisible) visibleBottomBarReservedHeight else UiDp.dp0,
-            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-            label = "main_bottom_bar_reserved_height",
-        )
+    animateDpAsState(
+        targetValue = if (bottomBarVisible) visibleBottomBarReservedHeight else UiDp.dp0,
+        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+        label = "main_bottom_bar_reserved_height",
+    )
     val pagerFlingBehavior = rememberMainPagerFlingBehavior(mainPagerState.pagerState)
     val leftLayoutMode = WindowLayoutMode.Compact
 
@@ -129,7 +129,7 @@ internal fun MainContentHost(
                     val rightInnerPadding = paneInnerPadding(rightPadding, reserveBottomBar = false)
                     val showProxyNodes =
                         settledDestination == BottomBarDestination.Proxy &&
-                            detailBackStack.lastOrNull() !is Route.Providers
+                                detailBackStack.lastOrNull() !is Route.Providers
                     AnimatedContent(
                         targetState = showProxyNodes,
                         modifier = Modifier.fillMaxSize(),
@@ -240,7 +240,7 @@ private fun MainPagerHost(
             val destination =
                 if (
                     previousDestinations != visibleDestinations &&
-                        page == mainPagerState.pagerState.currentPage
+                    page == mainPagerState.pagerState.currentPage
                 ) {
                     previousDestinations.getOrNull(page) ?: settledDestination
                 } else {
@@ -286,15 +286,16 @@ private fun MainPagerHost(
 @Composable
 private fun BoxScope.BottomEdgeScrim(color: Color, visible: Boolean, height: Dp) {
     val alpha by
-        animateFloatAsState(
-            targetValue = if (visible) 1f else 0f,
-            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-            label = "main_bottom_edge_scrim",
-        )
+    animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+        label = "main_bottom_edge_scrim",
+    )
     if (alpha <= 0f) return
     Box(
         modifier =
-            Modifier.align(Alignment.BottomCenter)
+            Modifier
+                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .height(height)
                 .graphicsLayer { this.alpha = alpha }

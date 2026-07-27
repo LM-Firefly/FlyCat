@@ -43,7 +43,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
-import com.github.panpf.sketch.AsyncImage as SketchAsyncImage
 import com.github.panpf.sketch.request.ImageRequest
 import com.github.panpf.sketch.state.IntColorDrawableStateImage
 import com.github.yumelira.yumebox.core.model.Proxy
@@ -59,6 +58,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
+import com.github.panpf.sketch.AsyncImage as SketchAsyncImage
 
 private data class GroupBadge(val label: String)
 
@@ -79,7 +79,9 @@ internal fun LazyListScope.nodeGroupItems(
             group = group,
             isDelayTesting = testingGroupNames.contains(group.name),
             onClick = onGroupClick,
-            modifier = Modifier.fillMaxWidth().padding(vertical = itemVerticalPadding),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = itemVerticalPadding),
         )
     }
 }
@@ -145,7 +147,9 @@ internal fun NodeGroupCard(
             if (iconUri != null) {
                 NodeGroupIcon(
                     iconUri = iconUri,
-                    modifier = Modifier.size(UiDp.dp44).clip(RoundedCornerShape(UiDp.dp14)),
+                    modifier = Modifier
+                        .size(UiDp.dp44)
+                        .clip(RoundedCornerShape(UiDp.dp14)),
                 )
             }
 
@@ -178,7 +182,8 @@ internal fun NodeGroupCard(
                             style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
                             color = primary,
                             modifier =
-                                Modifier.clip(RoundedCornerShape(UiDp.dp100))
+                                Modifier
+                                    .clip(RoundedCornerShape(UiDp.dp100))
                                     .background(primary.copy(alpha = 0.1f))
                                     .padding(horizontal = UiDp.dp8, vertical = UiDp.dp3),
                         )

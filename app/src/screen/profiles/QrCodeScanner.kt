@@ -44,11 +44,11 @@ import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
-import java.util.concurrent.Executors
-import kotlin.coroutines.resume
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
+import java.util.concurrent.Executors
+import kotlin.coroutines.resume
 
 @Composable
 internal fun StableQrScanner(onScanned: (String) -> Unit) {
@@ -67,7 +67,9 @@ internal fun StableQrScanner(onScanned: (String) -> Unit) {
     DisposableEffect(cameraExecutor) { onDispose { cameraExecutor.shutdown() } }
 
     AndroidView(
-        modifier = Modifier.fillMaxSize().clipToBounds(),
+        modifier = Modifier
+            .fillMaxSize()
+            .clipToBounds(),
         factory = { context ->
             val previewView =
                 PreviewView(context).apply {
@@ -126,9 +128,9 @@ internal fun StableQrScanner(onScanned: (String) -> Unit) {
         },
         onRelease = { previewView ->
             runCatching {
-                    val context = previewView.context
-                    ProcessCameraProvider.getInstance(context).get().unbindAll()
-                }
+                val context = previewView.context
+                ProcessCameraProvider.getInstance(context).get().unbindAll()
+            }
                 .onFailure { Timber.w(it, "Failed to release camera lifecycle") }
         },
     )

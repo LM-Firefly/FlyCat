@@ -85,16 +85,17 @@ fun TabRowWithContour(
                 (tabWidth + indicatorGap) * clampedSelectedTabIndex
             }
         val indicatorOffset by
-            animateDpAsState(
-                targetValue = targetOffset,
-                animationSpec = indicatorAnimationSpec,
-                label = "tab_row_indicator_offset",
-            )
+        animateDpAsState(
+            targetValue = targetOffset,
+            animationSpec = indicatorAnimationSpec,
+            label = "tab_row_indicator_offset",
+        )
 
         Box(modifier = Modifier.matchParentSize()) {
             Box(
                 modifier =
-                    Modifier.offset(x = indicatorOffset)
+                    Modifier
+                        .offset(x = indicatorOffset)
                         .width(tabWidth)
                         .fillMaxHeight()
                         .clip(shape)
@@ -109,20 +110,21 @@ fun TabRowWithContour(
             tabs.forEachIndexed { index, tab ->
                 val isSelected = clampedSelectedTabIndex == index
                 val textColor by
-                    animateColorAsState(
-                        targetValue =
-                            if (isSelected) {
-                                MiuixTheme.colorScheme.onPrimary
-                            } else {
-                                MiuixTheme.colorScheme.onSurface
-                            },
-                        animationSpec = textAnimationSpec,
-                        label = "tab_row_text_color_$index",
-                    )
+                animateColorAsState(
+                    targetValue =
+                        if (isSelected) {
+                            MiuixTheme.colorScheme.onPrimary
+                        } else {
+                            MiuixTheme.colorScheme.onSurface
+                        },
+                    animationSpec = textAnimationSpec,
+                    label = "tab_row_text_color_$index",
+                )
 
                 Box(
                     modifier =
-                        Modifier.weight(1f)
+                        Modifier
+                            .weight(1f)
                             .clip(shape)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },

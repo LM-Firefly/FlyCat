@@ -68,12 +68,12 @@ class RemoteControllerViewModel(
 
     val sectionState: StateFlow<SectionState> =
         combine(controllerEnabled, backends, activeBackendId) { enabled, list, activeId ->
-                SectionState(
-                    controllerEnabled = enabled,
-                    backends = list,
-                    activeBackendId = activeId,
-                )
-            }
+            SectionState(
+                controllerEnabled = enabled,
+                backends = list,
+                activeBackendId = activeId,
+            )
+        }
             .stateInWhileSubscribed(
                 viewModelScope,
                 SectionState(

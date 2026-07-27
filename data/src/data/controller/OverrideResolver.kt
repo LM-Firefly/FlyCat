@@ -85,7 +85,7 @@ class OverrideResolver(
             .asSequence()
             .filterNot { overrideId ->
                 isLegacyPresetOverrideId(overrideId) ||
-                    OverrideConfigStore.isInternalRuntimeConfig(overrideId)
+                        OverrideConfigStore.isInternalRuntimeConfig(overrideId)
             }
             .distinct()
             .toList()

@@ -110,45 +110,45 @@ class FeatureViewModel(
 
     val screenState: StateFlow<FeatureScreenState> =
         combine(
-                combine(
-                    serviceRunningState,
-                    allowLanAccess.state,
-                    frontendPort.state,
-                    backendPort.state,
-                    autoCloseMode,
-                ) { running, lan, front, back, autoClose ->
-                    FeatureScreenState(
-                        isServiceRunning = running,
-                        allowLanAccess = lan,
-                        frontendPort = front,
-                        backendPort = back,
-                        autoCloseMode = autoClose,
-                    )
-                },
-                combine(
-                    isDownloadingSubStoreFrontend,
-                    isDownloadingSubStoreBackend,
-                    isExtensionInstalled,
-                    isJavetLoaded,
-                    selectedPanelType.state,
-                ) { dlFront, dlBack, ext, javet, panel ->
-                    FeatureScreenState(
-                        isDownloadingSubStoreFrontend = dlFront,
-                        isDownloadingSubStoreBackend = dlBack,
-                        isExtensionInstalled = ext,
-                        isJavetLoaded = javet,
-                        selectedPanelType = panel,
-                    )
-                },
-            ) { base, extra ->
-                base.copy(
-                    isDownloadingSubStoreFrontend = extra.isDownloadingSubStoreFrontend,
-                    isDownloadingSubStoreBackend = extra.isDownloadingSubStoreBackend,
-                    isExtensionInstalled = extra.isExtensionInstalled,
-                    isJavetLoaded = extra.isJavetLoaded,
-                    selectedPanelType = extra.selectedPanelType,
+            combine(
+                serviceRunningState,
+                allowLanAccess.state,
+                frontendPort.state,
+                backendPort.state,
+                autoCloseMode,
+            ) { running, lan, front, back, autoClose ->
+                FeatureScreenState(
+                    isServiceRunning = running,
+                    allowLanAccess = lan,
+                    frontendPort = front,
+                    backendPort = back,
+                    autoCloseMode = autoClose,
                 )
-            }
+            },
+            combine(
+                isDownloadingSubStoreFrontend,
+                isDownloadingSubStoreBackend,
+                isExtensionInstalled,
+                isJavetLoaded,
+                selectedPanelType.state,
+            ) { dlFront, dlBack, ext, javet, panel ->
+                FeatureScreenState(
+                    isDownloadingSubStoreFrontend = dlFront,
+                    isDownloadingSubStoreBackend = dlBack,
+                    isExtensionInstalled = ext,
+                    isJavetLoaded = javet,
+                    selectedPanelType = panel,
+                )
+            },
+        ) { base, extra ->
+            base.copy(
+                isDownloadingSubStoreFrontend = extra.isDownloadingSubStoreFrontend,
+                isDownloadingSubStoreBackend = extra.isDownloadingSubStoreBackend,
+                isExtensionInstalled = extra.isExtensionInstalled,
+                isJavetLoaded = extra.isJavetLoaded,
+                selectedPanelType = extra.selectedPanelType,
+            )
+        }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -246,7 +246,7 @@ class FeatureViewModel(
         NativeLibraryManager.initialize(application)
         _isJavetLoaded.value =
             NativeLibraryManager.isLibraryAvailable(JAVET_LIB_NAME) ||
-                NativeLibraryManager.extractAllLibraries()[JAVET_LIB_NAME] == true
+                    NativeLibraryManager.extractAllLibraries()[JAVET_LIB_NAME] == true
     }
 
     fun refreshExtensionStatus() {

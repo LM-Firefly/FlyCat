@@ -54,8 +54,9 @@ object CodeFormatter {
             content.lines().map { it.trimEnd() }.joinToString("\n").replace(Regex("\n{3,}"), "\n\n")
         } catch (
             _:
-                Exception) { // fault barrier: formatter must return null instead of crashing the
-                             // editor
+            Exception
+        ) { // fault barrier: formatter must return null instead of crashing the
+            // editor
             null
         }
 }

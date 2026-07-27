@@ -88,17 +88,17 @@ class MainActivity : FragmentActivity() {
     }
 
     private val appSettingsStorage: com.github.yumelira.yumebox.data.store.AppSettingsStore by
-        inject()
+    inject()
     private val featureStore: FeatureStore by inject()
     private val networkSettingsStorage:
-        com.github.yumelira.yumebox.data.store.NetworkSettingsStore by
-        inject()
+            com.github.yumelira.yumebox.data.store.NetworkSettingsStore by
+    inject()
     private val profilesRepository: com.github.yumelira.yumebox.runtime.client.ProfilesRepository by
-        inject()
+    inject()
     private val proxyFacade: com.github.yumelira.yumebox.runtime.client.ProxyFacade by inject()
     private val serviceCache: MMKV by inject(qualifier = named("service_cache"))
     private val applicationScope: CoroutineScope by
-        inject(qualifier = named(APPLICATION_SCOPE_NAME))
+    inject(qualifier = named(APPLICATION_SCOPE_NAME))
 
     private lateinit var intentController: IntentController
 
@@ -158,9 +158,9 @@ class MainActivity : FragmentActivity() {
                         val topBarHazeStyle = YumeHaze.topBarStyle(topBarBackground)
                         CompositionLocalProvider(
                             LocalTopBarHazeState provides
-                                if (topBarBlurEnabled) topBarHazeState else null,
+                                    if (topBarBlurEnabled) topBarHazeState else null,
                             LocalTopBarHazeStyle provides
-                                if (topBarBlurEnabled) topBarHazeStyle else null,
+                                    if (topBarBlurEnabled) topBarHazeStyle else null,
                         ) {
                             Surface(
                                 modifier = Modifier.fillMaxSize(),
@@ -266,15 +266,15 @@ class MainActivity : FragmentActivity() {
         val permissions = buildList {
             if (
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                    checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
-                        android.content.pm.PackageManager.PERMISSION_GRANTED
+                checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED
             ) {
                 add(android.Manifest.permission.POST_NOTIFICATIONS)
             }
             if (
                 isMiuiGetInstalledAppsDynamicSupported() &&
-                    checkSelfPermission(MIUI_GET_INSTALLED_APPS_PERMISSION) !=
-                        android.content.pm.PackageManager.PERMISSION_GRANTED
+                checkSelfPermission(MIUI_GET_INSTALLED_APPS_PERMISSION) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED
             ) {
                 add(MIUI_GET_INSTALLED_APPS_PERMISSION)
             }
@@ -286,7 +286,7 @@ class MainActivity : FragmentActivity() {
 
     private fun isMiuiGetInstalledAppsDynamicSupported(): Boolean = runCatching {
         packageManager.getPermissionInfo(MIUI_GET_INSTALLED_APPS_PERMISSION, 0).packageName ==
-            "com.lbe.security.miui"
+                "com.lbe.security.miui"
     }
         .getOrDefault(false)
 

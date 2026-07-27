@@ -36,8 +36,8 @@ import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 import com.github.yumelira.yumebox.runtime.service.util.buildIncludedRoutesFromExcludedCidrs
 import com.github.yumelira.yumebox.runtime.service.util.parseCIDR
-import java.net.InetAddress
 import kotlinx.coroutines.runBlocking
+import java.net.InetAddress
 
 class VpnTunTransport(
     private val vpnService: VpnService,

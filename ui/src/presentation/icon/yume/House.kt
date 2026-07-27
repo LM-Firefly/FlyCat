@@ -41,12 +41,12 @@ val Yume.House: ImageVector
         }
         houseVector =
             Builder(
-                    name = "House",
-                    defaultWidth = 24.0.dp,
-                    defaultHeight = 24.0.dp,
-                    viewportWidth = 24.0f,
-                    viewportHeight = 24.0f,
-                )
+                name = "House",
+                defaultWidth = 24.0.dp,
+                defaultHeight = 24.0.dp,
+                viewportWidth = 24.0f,
+                viewportHeight = 24.0f,
+            )
                 .apply {
                     path(
                         fill = SolidColor(Color(0x00000000)),

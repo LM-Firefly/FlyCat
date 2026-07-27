@@ -40,9 +40,9 @@ internal fun MoeHomeSettingsSheet(
     val spacing = AppTheme.spacing
     var draftQuote by remember(show, quote) { mutableStateOf(quote) }
     var draftClassicHomeEnabled by
-        remember(show, classicHomeEnabled) {
-            mutableStateOf(classicHomeEnabled)
-        }
+    remember(show, classicHomeEnabled) {
+        mutableStateOf(classicHomeEnabled)
+    }
     var draftSidebarExpanded by remember(show, sidebarExpanded) { mutableStateOf(sidebarExpanded) }
     val save = {
         onQuoteChange(draftQuote)
@@ -59,7 +59,9 @@ internal fun MoeHomeSettingsSheet(
         onDismissRequest = onDismiss,
         enableNestedScroll = true,
     ) {
-        LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space16)) {
+        LazyColumn(modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = spacing.space16)) {
             item {
                 TextField(
                     value = draftQuote,
@@ -67,11 +69,15 @@ internal fun MoeHomeSettingsSheet(
                     label = "一言",
                     useLabelAsPlaceholder = true,
                     maxLines = 2,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = spacing.space12),
                 )
             }
             item {
-                Card(modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12)) {
+                Card(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = spacing.space12)) {
                     Column {
                         PreferenceSwitchItem(
                             title = "回退经典首页",

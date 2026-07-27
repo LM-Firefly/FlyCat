@@ -117,6 +117,7 @@ internal fun AddLinkDialog(
 
                     currentUrl.text.isBlank() ->
                         YumeTxt.ProfilesPage.LinkSettings.Validation.EnterUrl
+
                     !currentUrl.text.startsWith("http", ignoreCase = true) ->
                         YumeTxt.ProfilesPage.LinkSettings.Validation.InvalidUrl
 

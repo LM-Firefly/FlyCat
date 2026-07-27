@@ -41,16 +41,16 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 typealias OpenStringListModifiersEditor =
-    (
-        title: String,
-        placeholder: String,
-        replaceValue: List<String>?,
-        startValue: List<String>?,
-        endValue: List<String>?,
-        onReplaceChange: (List<String>?) -> Unit,
-        onStartChange: (List<String>?) -> Unit,
-        onEndChange: (List<String>?) -> Unit,
-    ) -> Unit
+            (
+            title: String,
+            placeholder: String,
+            replaceValue: List<String>?,
+            startValue: List<String>?,
+            endValue: List<String>?,
+            onReplaceChange: (List<String>?) -> Unit,
+            onStartChange: (List<String>?) -> Unit,
+            onEndChange: (List<String>?) -> Unit,
+        ) -> Unit
 
 @Composable
 fun PortInputContent(title: String, value: Int?, onValueChange: (Int?) -> Unit) {
@@ -160,7 +160,9 @@ private fun ConfigTextInputDialog(
         },
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = UiDp.dp8),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = UiDp.dp8),
             verticalArrangement = Arrangement.spacedBy(UiDp.dp16),
         ) {
             TextField(
@@ -200,10 +202,10 @@ fun StringListWithModifiersInput(
     val summary =
         remember(replaceValue, startValue, endValue) {
             buildList {
-                    replaceValue?.takeIf { it.isNotEmpty() }?.let { add("Replace ${it.size}") }
-                    startValue?.takeIf { it.isNotEmpty() }?.let { add("Prepend ${it.size}") }
-                    endValue?.takeIf { it.isNotEmpty() }?.let { add("Append ${it.size}") }
-                }
+                replaceValue?.takeIf { it.isNotEmpty() }?.let { add("Replace ${it.size}") }
+                startValue?.takeIf { it.isNotEmpty() }?.let { add("Prepend ${it.size}") }
+                endValue?.takeIf { it.isNotEmpty() }?.let { add("Append ${it.size}") }
+            }
                 .joinToString(" · ")
                 .ifEmpty { YumeTxt.Component.Selector.NotModify }
         }
@@ -237,22 +239,22 @@ fun StringMapWithModifiersInput(
     onMergeChange: (Map<String, String>?) -> Unit,
     onEditMap:
         (
-            mode: MapMergeStrategy,
-            title: String,
-            keyPlaceholder: String,
-            valuePlaceholder: String,
-            value: Map<String, String>?,
-            onValueChange: (Map<String, String>?) -> Unit,
-        ) -> Unit,
+        mode: MapMergeStrategy,
+        title: String,
+        keyPlaceholder: String,
+        valuePlaceholder: String,
+        value: Map<String, String>?,
+        onValueChange: (Map<String, String>?) -> Unit,
+    ) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     val summary =
         remember(replaceValue, mergeValue) {
             buildList {
-                    replaceValue?.takeIf { it.isNotEmpty() }?.let { add("Replace ${it.size}") }
-                    mergeValue?.takeIf { it.isNotEmpty() }?.let { add("Merge ${it.size}") }
-                }
+                replaceValue?.takeIf { it.isNotEmpty() }?.let { add("Replace ${it.size}") }
+                mergeValue?.takeIf { it.isNotEmpty() }?.let { add("Merge ${it.size}") }
+            }
                 .joinToString(" · ")
                 .ifEmpty { YumeTxt.Component.Selector.NotModify }
         }

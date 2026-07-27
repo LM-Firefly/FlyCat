@@ -49,9 +49,9 @@ class AccessControlViewModel(
     private val controller: AccessControlController,
 ) :
     AndroidContractStateViewModel<
-        AccessControlViewModel.UiState,
-        AccessControlViewModel.AccessControlUiEffect,
-    >(
+            AccessControlViewModel.UiState,
+            AccessControlViewModel.AccessControlUiEffect,
+            >(
         application,
         UiState(
             showSystemApps = settings.accessControlShowSystemApps.value,
@@ -129,7 +129,7 @@ class AccessControlViewModel(
 
         val hasPermission =
             ContextCompat.checkSelfPermission(context, permission) ==
-                PackageManager.PERMISSION_GRANTED
+                    PackageManager.PERMISSION_GRANTED
         if (hasPermission) {
             loadApps()
             return
@@ -241,8 +241,8 @@ class AccessControlViewModel(
         val filtered = apps.filter { app ->
             val matchesQuery =
                 query.isEmpty() ||
-                    app.label.contains(query, ignoreCase = true) ||
-                    app.packageName.contains(query, ignoreCase = true)
+                        app.label.contains(query, ignoreCase = true) ||
+                        app.packageName.contains(query, ignoreCase = true)
             val matchesSystemFilter = showSystemApps || !app.isSystemApp
             matchesQuery && matchesSystemFilter
         }

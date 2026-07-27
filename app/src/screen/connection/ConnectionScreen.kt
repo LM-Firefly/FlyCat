@@ -80,14 +80,14 @@ fun ConnectionScreen(navigator: Navigator) {
 
     val tabs = listOf(YumeTxt.Connection.Tab.Active, YumeTxt.Connection.Tab.Closed)
     var selectedTabIndex by
-        rememberSaveable(state.selectedTab) {
-            mutableIntStateOf(
-                when (state.selectedTab) {
-                    ConnectionTab.ACTIVE -> 0
-                    ConnectionTab.CLOSED -> 1
-                }
-            )
-        }
+    rememberSaveable(state.selectedTab) {
+        mutableIntStateOf(
+            when (state.selectedTab) {
+                ConnectionTab.ACTIVE -> 0
+                ConnectionTab.CLOSED -> 1
+            }
+        )
+    }
     val selectedSortIndex =
         remember(state.sortBy) { SortModes.indexOf(state.sortBy).coerceAtLeast(0) }
     val emptyStateText =
@@ -213,7 +213,8 @@ fun ConnectionScreen(navigator: Navigator) {
                         bottomContent = {
                             Box(
                                 modifier =
-                                    Modifier.alpha(
+                                    Modifier
+                                        .alpha(
                                             if (currentSearchStatus.isCollapsed()) 1f else 0f
                                         )
                                         .onGloballyPositioned { coordinates ->
@@ -222,7 +223,7 @@ fun ConnectionScreen(navigator: Navigator) {
                                                     coordinates.positionInWindow().y.toDp()
                                                 if (
                                                     currentSearchStatus.offsetY !=
-                                                        collapsedBarOffset
+                                                    collapsedBarOffset
                                                 ) {
                                                     searchStatus =
                                                         currentSearchStatus.copy(
@@ -286,7 +287,9 @@ fun ConnectionScreen(navigator: Navigator) {
                     if (filteredConnections.isEmpty()) {
                         item {
                             Box(
-                                modifier = Modifier.fillMaxWidth().padding(spacing.space32),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(spacing.space32),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
@@ -371,7 +374,9 @@ fun ConnectionScreen(navigator: Navigator) {
 @Composable
 private fun ConnectionSearchEmptyState(text: String, modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier.fillMaxSize().padding(AppTheme.spacing.space32),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(AppTheme.spacing.space32),
         contentAlignment = Alignment.Center,
     ) {
         Text(

@@ -26,7 +26,8 @@ import timber.log.Timber
 object StartupTaskCoordinator {
     private val fallback = CompletableDeferred(Unit)
 
-    @Volatile private var warmup: Deferred<Unit>? = null
+    @Volatile
+    private var warmup: Deferred<Unit>? = null
 
     @Suppress("TooGenericExceptionCaught")
     fun startWarmup(scope: CoroutineScope, block: suspend () -> Unit) {
@@ -37,7 +38,8 @@ object StartupTaskCoordinator {
                 try {
                     block()
                 } catch (
-                    error: Throwable) { // fault barrier: log any warmup failure before rethrowing
+                    error: Throwable
+                ) { // fault barrier: log any warmup failure before rethrowing
                     if (error is CancellationException) throw error
                     Timber.e(error, "Runtime warmup failed")
                     throw error

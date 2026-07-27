@@ -39,12 +39,12 @@ val Yume.Message: ImageVector
         }
         messageVector =
             ImageVector.Builder(
-                    name = "MessageCircleQuestionMark",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "MessageCircleQuestionMark",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -125,4 +125,5 @@ val Yume.Message: ImageVector
         return messageVector!!
     }
 
-@Suppress("ObjectPropertyName") private var messageVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var messageVector: ImageVector? = null

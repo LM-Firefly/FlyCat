@@ -22,12 +22,11 @@
 
 package com.github.yumelira.yumebox.core.util
 
-import kotlin.time.Duration.Companion.milliseconds
-
 import android.os.SystemClock
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.milliseconds
 
 data class PollingTimerSpec(
     val name: String,

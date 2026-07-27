@@ -94,7 +94,8 @@ internal fun NodeTabs(groups: List<ProxyGroupInfo>, selectedIndex: Int, onSelect
     LazyRow(
         state = listState,
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .nodeTabHaze(hazeState, hazeStyle)
                 .background(MiuixTheme.colorScheme.surface)
                 .overScrollHorizontal(),
@@ -120,7 +121,8 @@ internal fun NodeTabs(groups: List<ProxyGroupInfo>, selectedIndex: Int, onSelect
 
             Box(
                 modifier =
-                    Modifier.clip(RoundedCornerShape(UiDp.dp999))
+                    Modifier
+                        .clip(RoundedCornerShape(UiDp.dp999))
                         .background(background)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -160,7 +162,10 @@ internal fun NodeGroupSheetContent(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxWidth().height(sheetHeight).overScrollVertical(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(sheetHeight)
+            .overScrollVertical(),
         state = listState,
         verticalArrangement = Arrangement.spacedBy(UiDp.dp12),
         contentPadding = NodeSheetContentPadding,
@@ -196,7 +201,10 @@ fun NodeSheetContent(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxWidth().height(sheetHeight).overScrollVertical(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(sheetHeight)
+            .overScrollVertical(),
         state = listState,
         verticalArrangement = Arrangement.spacedBy(UiDp.dp12),
         contentPadding = NodeSheetContentPadding,
@@ -217,7 +225,9 @@ fun NodeSheetContent(
                     ) + fadeOut(animationSpec = tween(durationMillis = 150)),
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = UiDp.dp12),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = UiDp.dp12),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(UiDp.dp6),
                 ) {

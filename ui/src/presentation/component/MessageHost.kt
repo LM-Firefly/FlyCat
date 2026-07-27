@@ -69,7 +69,9 @@ fun MessageHost(message: Message?, onDismiss: () -> Unit) {
             onDismissRequest = dismissDialog,
         ) {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(UiDp.dp16),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(UiDp.dp16),
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 ArrowPreference(title = YumeTxt.Component.Message.Confirm, onClick = dismissDialog)

@@ -38,11 +38,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.yumelira.yumebox.presentation.theme.*
-import java.util.*
-import kotlin.math.abs
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.util.*
+import kotlin.math.abs
 
 private val moeSpacing = Spacing()
 private val moeRadii = Radii()
@@ -172,7 +172,8 @@ private fun MoeSidebarValueStack(
         MoeSidebarTimeValue(value = topValue)
         Box(
             modifier =
-                Modifier.width(MoeUi.Sidebar.dividerWidth)
+                Modifier
+                    .width(MoeUi.Sidebar.dividerWidth)
                     .height(MoeUi.Sidebar.dividerHeight)
                     .background(Color.White.copy(alpha = MoeUi.Sidebar.dividerAlpha))
         )
@@ -197,7 +198,8 @@ private fun MoeSidebarIconRail(icons: List<MoeSidebarIconItem>) {
 private fun MoeSidebarIconItemView(item: MoeSidebarIconItem) {
     Box(
         modifier =
-            Modifier.size(MoeUi.Sidebar.iconHitSize)
+            Modifier
+                .size(MoeUi.Sidebar.iconHitSize)
                 .clickable(
                     interactionSource =
                         remember {
@@ -260,7 +262,8 @@ private fun MoeBatteryCapsule(percent: Int?) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier =
-                Modifier.width(MoeUi.Sidebar.batteryWidth)
+                Modifier
+                    .width(MoeUi.Sidebar.batteryWidth)
                     .height(MoeUi.Sidebar.batteryHeight)
                     .clip(RoundedCornerShape(moeRadii.full))
                     .background(Color.White.copy(alpha = 0.36f))
@@ -269,7 +272,8 @@ private fun MoeBatteryCapsule(percent: Int?) {
         ) {
             Box(
                 modifier =
-                    Modifier.fillMaxWidth(fillFraction)
+                    Modifier
+                        .fillMaxWidth(fillFraction)
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(moeRadii.full))
                         .background(Color.White.copy(alpha = 0.86f))
@@ -277,7 +281,8 @@ private fun MoeBatteryCapsule(percent: Int?) {
         }
         Box(
             modifier =
-                Modifier.width(MoeUi.Sidebar.batteryKnobWidth)
+                Modifier
+                    .width(MoeUi.Sidebar.batteryKnobWidth)
                     .height(MoeUi.Sidebar.batteryHeight * 0.46f)
                     .clip(RoundedCornerShape(moeRadii.full))
                     .background(Color.White.copy(alpha = 0.54f))
@@ -289,7 +294,8 @@ private fun MoeBatteryCapsule(percent: Int?) {
 private fun MoeSidebarDivider() {
     Box(
         modifier =
-            Modifier.width(MoeUi.Sidebar.dividerWidth)
+            Modifier
+                .width(MoeUi.Sidebar.dividerWidth)
                 .height(MoeUi.Sidebar.dividerHeight)
                 .background(Color.White.copy(alpha = MoeUi.Sidebar.dividerAlpha))
     )

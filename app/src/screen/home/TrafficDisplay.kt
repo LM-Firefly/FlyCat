@@ -107,7 +107,9 @@ private fun DownloadSection(
 
     Column(horizontalAlignment = Alignment.Start) {
         Row(
-            modifier = Modifier.fillMaxWidth().heightIn(min = componentSizes.statusCapsuleHeight),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = componentSizes.statusCapsuleHeight),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -154,7 +156,8 @@ private fun ProfileModeBadge(profileName: String?, tunnelMode: TunnelState.Mode?
 
             Box(
                 modifier =
-                    Modifier.size(spacing.space4)
+                    Modifier
+                        .size(spacing.space4)
                         .background(MiuixTheme.colorScheme.primary, CircleShape)
             )
 
@@ -255,9 +258,9 @@ private fun UploadSection(
                                 easing = AnimationSpecs.EmphasizedDecelerate,
                             ),
                     ) +
-                        fadeIn(
-                            tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.EnterEasing)
-                        ),
+                            fadeIn(
+                                tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.EnterEasing)
+                            ),
                 exit =
                     slideOutHorizontally(
                         targetOffsetX = { it },
@@ -267,12 +270,12 @@ private fun UploadSection(
                                 easing = AnimationSpecs.EmphasizedAccelerate,
                             ),
                     ) +
-                        fadeOut(
-                            tween(
-                                AnimationSpecs.DURATION_INSTANT,
-                                easing = AnimationSpecs.ExitEasing,
-                            )
-                        ),
+                            fadeOut(
+                                tween(
+                                    AnimationSpecs.DURATION_INSTANT,
+                                    easing = AnimationSpecs.ExitEasing,
+                                )
+                            ),
             ) {
                 ProxyTypeCapsule(proxyMode = proxyMode)
             }
@@ -337,7 +340,8 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState, isRemoteCont
         color = primary.copy(alpha = opacity.subtle),
         shape = RoundedCornerShape(50),
         modifier =
-            Modifier.height(componentSizes.statusCapsuleHeight)
+            Modifier
+                .height(componentSizes.statusCapsuleHeight)
                 .animateContentSize(
                     tween(
                         AnimationSpecs.DURATION_FAST,
@@ -349,13 +353,13 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState, isRemoteCont
             targetState = controlState,
             transitionSpec = {
                 (slideInHorizontally(
-                        initialOffsetX = { it / 2 },
-                        animationSpec =
-                            tween(
-                                AnimationSpecs.DURATION_FAST,
-                                easing = AnimationSpecs.EmphasizedDecelerate,
-                            ),
-                    ) +
+                    initialOffsetX = { it / 2 },
+                    animationSpec =
+                        tween(
+                            AnimationSpecs.DURATION_FAST,
+                            easing = AnimationSpecs.EmphasizedDecelerate,
+                        ),
+                ) +
                         fadeIn(
                             tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.EnterEasing)
                         ))
@@ -368,12 +372,12 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState, isRemoteCont
                                     easing = AnimationSpecs.EmphasizedAccelerate,
                                 ),
                         ) +
-                            fadeOut(
-                                tween(
-                                    AnimationSpecs.DURATION_INSTANT,
-                                    easing = AnimationSpecs.ExitEasing,
+                                fadeOut(
+                                    tween(
+                                        AnimationSpecs.DURATION_INSTANT,
+                                        easing = AnimationSpecs.ExitEasing,
+                                    )
                                 )
-                            )
                     )
             },
             label = "CapsuleStateTransition",

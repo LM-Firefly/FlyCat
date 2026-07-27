@@ -39,12 +39,12 @@ val Yume.CircleGauge: ImageVector
         }
         circleGaugeVector =
             ImageVector.Builder(
-                    name = "CircleGauge",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "CircleGauge",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.White),
@@ -105,4 +105,5 @@ val Yume.CircleGauge: ImageVector
         return circleGaugeVector!!
     }
 
-@Suppress("ObjectPropertyName") private var circleGaugeVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var circleGaugeVector: ImageVector? = null

@@ -48,7 +48,9 @@ fun HomeRunningContent(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth().padding(vertical = UiDp.dp24),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = UiDp.dp24),
         verticalArrangement = Arrangement.spacedBy(UiDp.dp32),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp16)) {

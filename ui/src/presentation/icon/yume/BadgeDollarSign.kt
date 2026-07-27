@@ -39,12 +39,12 @@ val Yume.BadgeDollarSign: ImageVector
         }
         badgeDollarSignVector =
             ImageVector.Builder(
-                    name = "BadgeDollarSign",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
-                )
+                name = "BadgeDollarSign",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
                 .apply {
                     path(
                         stroke = SolidColor(Color.Black),
@@ -171,4 +171,5 @@ val Yume.BadgeDollarSign: ImageVector
         return badgeDollarSignVector!!
     }
 
-@Suppress("ObjectPropertyName") private var badgeDollarSignVector: ImageVector? = null
+@Suppress("ObjectPropertyName")
+private var badgeDollarSignVector: ImageVector? = null

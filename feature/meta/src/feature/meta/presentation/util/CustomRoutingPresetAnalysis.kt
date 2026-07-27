@@ -77,9 +77,9 @@ private fun inferPresetTemplateSelection(
 
     val hasTemplateSignals =
         providerKeys.any(templateProviderIds::contains) ||
-            groupNames.any(serviceGroupNames::contains) ||
-            groupNames.any(regionGroupNames::contains) ||
-            rules.any(::isOfficialMrsTemplateRule)
+                groupNames.any(serviceGroupNames::contains) ||
+                groupNames.any(regionGroupNames::contains) ||
+                rules.any(::isOfficialMrsTemplateRule)
 
     if (!hasTemplateSignals) {
         return null
@@ -108,10 +108,10 @@ private fun inferPresetTemplateSelection(
         enabledItems = inferredEnabledItems,
         enableUrlTestGroup =
             OFFICIAL_MRS_AUTO_GROUP_NAME in groupNames ||
-                orderedRegions.any { it.groupName in groupNames },
+                    orderedRegions.any { it.groupName in groupNames },
         enableFallbackGroup =
             OFFICIAL_MRS_FALLBACK_GROUP_NAME in groupNames ||
-                orderedRegions.any { it.fallbackGroupName in groupNames },
+                    orderedRegions.any { it.fallbackGroupName in groupNames },
     )
 }
 
@@ -126,15 +126,15 @@ private fun isOfficialMrsItemEnabledInConfig(
         "match" -> rules.any { rule -> rule.trim() == "MATCH,Proxy" }
         else ->
             providerIds.any(providerKeys::contains) ||
-                item.detectionRules.any(rules::contains) ||
-                (item.groupName != null && item.groupName in groupNames)
+                    item.detectionRules.any(rules::contains) ||
+                    (item.groupName != null && item.groupName in groupNames)
     }
 }
 
 private fun isOfficialMrsTemplateRule(rule: String): Boolean {
     val normalizedRule = rule.trim()
     return normalizedRule in templateRules ||
-        templateProviderIds.any { providerId -> normalizedRule.contains(providerId) }
+            templateProviderIds.any { providerId -> normalizedRule.contains(providerId) }
 }
 
 private fun Map<String, Any?>.stringKeyedMap(key: String): Map<String, Any?> =

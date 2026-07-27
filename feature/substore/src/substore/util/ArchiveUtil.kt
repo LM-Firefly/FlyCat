@@ -22,35 +22,35 @@
 
 package com.github.yumelira.yumebox.substore.util
 
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.zip.ZipInputStream
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 
 object ArchiveUtil {
     fun unzipZip(zipFile: File, destination: File): Boolean {
         if (!zipFile.isFile) return false
 
         return runCatching {
-                prepareDestination(destination)
+            prepareDestination(destination)
 
-                ZipInputStream(FileInputStream(zipFile)).use { zis ->
-                    generateSequence { zis.nextEntry }
-                        .forEach { entry ->
-                            val outFile = resolveEntryTarget(destination, entry.name)
+            ZipInputStream(FileInputStream(zipFile)).use { zis ->
+                generateSequence { zis.nextEntry }
+                    .forEach { entry ->
+                        val outFile = resolveEntryTarget(destination, entry.name)
 
-                            if (entry.isDirectory) {
-                                ensureDirectory(outFile)
-                            } else {
-                                writeEntry(zis, outFile)
-                            }
+                        if (entry.isDirectory) {
+                            ensureDirectory(outFile)
+                        } else {
+                            writeEntry(zis, outFile)
                         }
-                }
-                true
+                    }
             }
+            true
+        }
             .getOrDefault(false)
     }
 
@@ -58,24 +58,24 @@ object ArchiveUtil {
         if (!tarFile.isFile) return false
 
         return runCatching {
-                prepareDestination(destination)
+            prepareDestination(destination)
 
-                TarArchiveInputStream(FileInputStream(tarFile)).use { tis ->
-                    var entry = tis.nextEntry
-                    while (entry != null) {
-                        val outFile = resolveEntryTarget(destination, entry.name)
+            TarArchiveInputStream(FileInputStream(tarFile)).use { tis ->
+                var entry = tis.nextEntry
+                while (entry != null) {
+                    val outFile = resolveEntryTarget(destination, entry.name)
 
-                        if (entry.isDirectory) {
-                            ensureDirectory(outFile)
-                        } else {
-                            writeEntry(tis, outFile)
-                        }
-
-                        entry = tis.nextEntry
+                    if (entry.isDirectory) {
+                        ensureDirectory(outFile)
+                    } else {
+                        writeEntry(tis, outFile)
                     }
+
+                    entry = tis.nextEntry
                 }
-                true
             }
+            true
+        }
             .getOrDefault(false)
     }
 
@@ -83,28 +83,28 @@ object ArchiveUtil {
         if (!tarGzFile.isFile) return false
 
         return runCatching {
-                prepareDestination(destination)
+            prepareDestination(destination)
 
-                FileInputStream(tarGzFile).use { fis ->
-                    GzipCompressorInputStream(fis).use { gzip ->
-                        TarArchiveInputStream(gzip).use { tis ->
-                            var entry = tis.nextEntry
-                            while (entry != null) {
-                                val outFile = resolveEntryTarget(destination, entry.name)
+            FileInputStream(tarGzFile).use { fis ->
+                GzipCompressorInputStream(fis).use { gzip ->
+                    TarArchiveInputStream(gzip).use { tis ->
+                        var entry = tis.nextEntry
+                        while (entry != null) {
+                            val outFile = resolveEntryTarget(destination, entry.name)
 
-                                if (entry.isDirectory) {
-                                    ensureDirectory(outFile)
-                                } else {
-                                    writeEntry(tis, outFile)
-                                }
-
-                                entry = tis.nextEntry
+                            if (entry.isDirectory) {
+                                ensureDirectory(outFile)
+                            } else {
+                                writeEntry(tis, outFile)
                             }
+
+                            entry = tis.nextEntry
                         }
                     }
                 }
-                true
             }
+            true
+        }
             .getOrDefault(false)
     }
 

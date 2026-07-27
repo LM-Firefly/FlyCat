@@ -20,28 +20,21 @@
 
 package com.github.yumelira.yumebox.runtime.service.session
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.os.SystemClock
-import androidx.core.content.ContextCompat
-import com.github.yumelira.yumebox.core.model.*
+import com.github.yumelira.yumebox.core.model.ProxyGroup
+import com.github.yumelira.yumebox.core.model.UiConfiguration
 import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
+import kotlinx.coroutines.*
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
-import kotlinx.coroutines.*
 
-// Established runtime session seam (owner-token lifecycle + snapshot + core control); splitting
-// is tracked separately.
-@Suppress("LargeClass")
 class SessionRuntime(
     private val host: RuntimeHost,
     private val transport: RuntimeTransport,
@@ -49,7 +42,6 @@ class SessionRuntime(
 ) {
     private val compiledConfigPipeline = CompiledConfigPipeline(host.context.appContextOrSelf)
 
-    /** Drives the running local core over REST-over-unix (traffic/groups/connections/…). */
     private val rest
         get() =
             com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(
@@ -65,8 +57,7 @@ class SessionRuntime(
     @Volatile private var interruptReason: String? = null
     @Volatile private var currentSpec: RuntimeSpec? = null
     @Volatile private var currentSnapshot: RuntimeSnapshot = RuntimeSnapshot(runMode = host.mode)
-    private var networkObserver: ServiceNetworkObserver? = null
-    private var timeZoneReceiver: BroadcastReceiver? = null
+    private val observers = SessionRuntimeObservers(host.context, transport)
     @Volatile private var snapshotRefreshJob: Job? = null
     @Volatile private var coreWatchJob: Job? = null
     private val failureReported = AtomicBoolean(false)
@@ -165,8 +156,7 @@ class SessionRuntime(
         currentSpec?.let { startupLog(it, "stop requested") }
         snapshotRefreshJob?.cancel()
         if (currentSnapshot.owner == RuntimeOwner.VpnService) {
-            // Drop the child and its TUN fd without waiting for the lifecycle lock.
-            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.killRunning()
+        com.github.yumelira.yumebox.runtime.service.core.CoreProcess.killRunning()
         }
         interruptSignal.release()
     }
@@ -185,7 +175,6 @@ class SessionRuntime(
     private fun startInternal(spec: RuntimeSpec) {
         val startedAt = System.currentTimeMillis()
         val startedAtNanos = SystemClock.elapsedRealtimeNanos()
-        // One nativeCompile for the whole start path: transport handoff + expected group names.
         val prepared = prepareCompiledSpec(spec)
         startupLog(prepared, "compiled elapsedMs=${elapsedMillis(startedAtNanos)}")
         currentSpec = prepared
@@ -207,7 +196,6 @@ class SessionRuntime(
         claimCoreAndTeardownPrevious()
         ensureNotInterrupted(prepared)
         startObservers()
-        notifyCurrentTimeZone()
         startConnectionTracking()
         ensureNotInterrupted(prepared)
 
@@ -263,9 +251,6 @@ class SessionRuntime(
             )
         }
 
-        // Config reload for the out-of-process core is applied by restarting the transport (the
-        // core
-        // reads its config at launch); re-verify groups afterwards.
         stopCoreWatch()
         stopLogStream()
         runCatching { transport.stop() }
@@ -370,8 +355,6 @@ class SessionRuntime(
         teardownTransportAndCore()
         currentSpec = null
         queryCache.clear()
-        // A stop that carries a reason (user request, VPN revoke) is still a stop, not a
-        // failure; only the rollback path publishes Failed.
         publishSnapshot(
             RuntimeSnapshot(
                 owner = RuntimeOwner.None,
@@ -483,7 +466,6 @@ class SessionRuntime(
         repeat(PROXY_GROUP_READY_RETRY_COUNT) { attempt ->
             ensureNotInterrupted(spec)
 
-            // Dead core cannot create the controller; fail fast with core.log instead of spinning.
             if (
                 spec.owner == RuntimeOwner.VpnService &&
                     !com.github.yumelira.yumebox.runtime.service.core.CoreProcess.isLocalCoreAlive()
@@ -518,13 +500,10 @@ class SessionRuntime(
                     lastControllerError = error.message ?: error::class.simpleName
                 }
                 .getOrDefault(false)
-            // Controller answered: if the compiled profile exposes no groups to verify, startup is
-            // ready even though the live group list is empty.
             if (tunnelOk && expectedGroups.isEmpty()) {
                 verifyLog(spec, "success: controller ok with 0 expected groups")
                 return emptyList()
             }
-            // Only log the first miss and the final attempt — intermediate retries are noise.
             if (attempt == 0 || attempt == PROXY_GROUP_READY_RETRY_COUNT - 1) {
                 verifyWarn(
                     spec,
@@ -572,7 +551,6 @@ class SessionRuntime(
         if (spec.compiledFinalYaml.isNotBlank()) {
             return compiledConfigPipeline.extractProxyGroupNames(spec.compiledFinalYaml)
         }
-        // Last resort only: should be rare once start/reload always prepare the compiled YAML.
         return runCatching { proxyGroupResolver.expectedGroupNames(spec, false) }
             .getOrElse { error ->
                 verifyWarn(spec, "expected group inspect failed: ${error.message}")
@@ -610,46 +588,9 @@ class SessionRuntime(
         }
     }
 
-    private fun startObservers() {
-        val appContext = host.context.appContextOrSelf
-        if (networkObserver == null) {
-            networkObserver =
-                ServiceNetworkObserver(appContext) {
-                        transport.onNetworkChanged()
-                    }
-                    .also { it.start() }
-        }
-        if (timeZoneReceiver == null) {
-            val receiver =
-                object : BroadcastReceiver() {
-                    override fun onReceive(context: Context?, intent: Intent?) {
-                        if (intent?.action == Intent.ACTION_TIMEZONE_CHANGED) {
-                            runCatching { notifyCurrentTimeZone() }
-                        }
-                    }
-                }
-            ContextCompat.registerReceiver(
-                appContext,
-                receiver,
-                IntentFilter(Intent.ACTION_TIMEZONE_CHANGED),
-                ContextCompat.RECEIVER_NOT_EXPORTED,
-            )
-            timeZoneReceiver = receiver
-        }
-    }
+    private fun startObservers() = observers.start()
 
-    private fun stopObservers() {
-        runCatching { networkObserver?.stop() }
-        networkObserver = null
-        timeZoneReceiver?.let { receiver ->
-            runCatching { host.context.appContextOrSelf.unregisterReceiver(receiver) }
-        }
-        timeZoneReceiver = null
-    }
-
-    private fun notifyCurrentTimeZone() {
-        // The out-of-process core reads the device time zone itself; no push needed.
-    }
+    private fun stopObservers() = observers.stop()
 
     private fun claimCoreAndTeardownPrevious() {
         coreOwner = this
@@ -662,17 +603,10 @@ class SessionRuntime(
     }
 
     private fun teardownCore() {
-        // The Go core is process-wide but SessionRuntime instances are per-service. During a
-        // service handover the replacement session claims ownership first; a late teardown
-        // from the outgoing session (async destroy) must not kill the live core underneath it.
         val owner = coreOwner
         if (owner !== this && owner != null) return
         coreOwner = null
-        // The compiled tun package lists mirror the loaded config; drop them with the core so a
-        // stale profile's lists never drive per-app routing in the next session.
         CompiledTunPackages.clear()
-        // The core process is torn down by the transport (CoreProcess.stop kills it); nothing to do
-        // in-process here now that there is no embedded core.
     }
 
     private fun refreshRuntimeSnapshot(expectedSpec: RuntimeSpec? = currentSpec) {

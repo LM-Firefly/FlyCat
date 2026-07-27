@@ -53,11 +53,7 @@ import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import tf.gal.yumebox.locale.YumeTxt
-import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
 
@@ -114,11 +110,11 @@ internal fun ProfileSettingsDialog(
         remember(selectableConfigs, pendingSelectedOverrideIds, visibleSelectedOverrideIds) {
             val selectedIds = pendingSelectedOverrideIds.toSet()
             visibleSelectedOverrideIds +
-                selectableConfigs
-                    .asSequence()
-                    .map(OverrideConfig::id)
-                    .filterNot(selectedIds::contains)
-                    .toList()
+                    selectableConfigs
+                        .asSequence()
+                        .map(OverrideConfig::id)
+                        .filterNot(selectedIds::contains)
+                        .toList()
         }
     val currentVisibleSelectedOverrideIds by rememberUpdatedState(visibleSelectedOverrideIds)
     val selectedOverrideListState = rememberLazyListState()
@@ -186,8 +182,8 @@ internal fun ProfileSettingsDialog(
                         }
                     val hasMetaChanges =
                         trimmedName != profile.name ||
-                            targetSource != profile.source ||
-                            ageSecretKeyEdited
+                                targetSource != profile.source ||
+                                ageSecretKeyEdited
                     if (trimmedName.isNotEmpty() && targetSource.isNotEmpty() && hasMetaChanges) {
                         onSaveProfileMeta(
                             ProfileMetaUpdate(
@@ -241,7 +237,8 @@ internal fun ProfileSettingsDialog(
         // Do NOT force a min/max fraction of the screen — that freezes height and kills animation.
         Column(
             modifier =
-                Modifier.fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .wrapContentHeight()
                     .animateContentSize(animationSpec = tween(300, easing = FastOutSlowInEasing))
                     .padding(bottom = UiDp.dp16),
@@ -341,7 +338,8 @@ internal fun ProfileSettingsDialog(
                                     LazyColumn(
                                         state = selectedOverrideListState,
                                         modifier =
-                                            Modifier.fillMaxWidth()
+                                            Modifier
+                                                .fillMaxWidth()
                                                 .heightIn(
                                                     max =
                                                         componentSizes
@@ -356,7 +354,8 @@ internal fun ProfileSettingsDialog(
                                             val isSelected = id in pendingSelectedOverrideIds
                                             Box(
                                                 modifier =
-                                                    Modifier.fillMaxWidth()
+                                                    Modifier
+                                                        .fillMaxWidth()
                                                         .animateItem(
                                                             fadeInSpec = tween(160),
                                                             fadeOutSpec = tween(120),
@@ -375,7 +374,8 @@ internal fun ProfileSettingsDialog(
                                                         BasicComponent(
                                                             title = config.name,
                                                             modifier =
-                                                                Modifier.longPressDraggableHandle()
+                                                                Modifier
+                                                                    .longPressDraggableHandle()
                                                                     .alpha(
                                                                         if (isDragging) 0.9f else 1f
                                                                     ),
@@ -387,7 +387,7 @@ internal fun ProfileSettingsDialog(
                                                                             true
                                                                         pendingSelectedOverrideIds =
                                                                             pendingSelectedOverrideIds -
-                                                                                id
+                                                                                    id
                                                                     },
                                                                 )
                                                             },

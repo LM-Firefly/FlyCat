@@ -95,27 +95,27 @@ class HomeViewModel(
             )
     val isRemoteControllerMode: StateFlow<Boolean> =
         combine(
-                remoteControllerStore.controllerEnabled.state,
-                remoteControllerStore.activeBackendId.state,
-                remoteControllerStore.backends.state,
-            ) { enabled, activeBackendId, backends ->
-                enabled && backends.any { it.id == activeBackendId }
-            }
+            remoteControllerStore.controllerEnabled.state,
+            remoteControllerStore.activeBackendId.state,
+            remoteControllerStore.backends.state,
+        ) { enabled, activeBackendId, backends ->
+            enabled && backends.any { it.id == activeBackendId }
+        }
             .stateInWhileSubscribed(
                 viewModelScope,
                 remoteControllerStore.controllerEnabled.value &&
-                    remoteControllerStore.activeBackend() != null,
+                        remoteControllerStore.activeBackend() != null,
             )
     val isConfigReloading: StateFlow<Boolean> = proxyFacade.isConfigReloading
     val controllerBackendName: StateFlow<String?> =
         combine(
-                remoteControllerStore.activeBackendId.state,
-                remoteControllerStore.backends.state,
-            ) { id, list ->
-                list
-                    .firstOrNull { it.id == id }
-                    ?.let { it.name.ifBlank { "${it.host}:${it.port}" } }
-            }
+            remoteControllerStore.activeBackendId.state,
+            remoteControllerStore.backends.state,
+        ) { id, list ->
+            list
+                .firstOrNull { it.id == id }
+                ?.let { it.name.ifBlank { "${it.host}:${it.port}" } }
+        }
             .stateInWhileSubscribed(viewModelScope, null)
     val currentProfile = proxyFacade.currentProfile
     val trafficNow = proxyFacade.trafficNow
@@ -137,8 +137,8 @@ class HomeViewModel(
 
     val controlState: StateFlow<HomeProxyControlState> =
         combine(runtimeSnapshot, _pendingTransition) { snapshot, pendingTransition ->
-                resolveHomeControlState(snapshot.owner, snapshot.phase, pendingTransition)
-            }
+            resolveHomeControlState(snapshot.owner, snapshot.phase, pendingTransition)
+        }
             .stateInWhileSubscribed(
                 viewModelScope,
                 resolveHomeControlState(
@@ -181,65 +181,64 @@ class HomeViewModel(
 
     val screenState: StateFlow<HomeScreenState> =
         combine(
-                combine(controlState, trafficNow, profiles, profilesLoaded, hasEnabledProfile) {
-                    control,
-                    traffic,
-                    profileList,
-                    loaded,
-                    hasEnabled ->
-                    HomeScreenState(
-                        controlState = control,
-                        trafficNow = traffic,
-                        profiles = profileList,
-                        profilesLoaded = loaded,
-                        hasEnabledProfile = hasEnabled,
-                    )
-                },
-                combine(
-                    recommendedProfile,
-                    currentProfile,
-                    selectedServerName,
-                    selectedServerPing,
-                    speedHistory,
-                ) { recommended, current, serverName, serverPing, history ->
-                    HomeProfileSummary(
-                        recommendedProfile = recommended,
-                        currentProfile = current,
-                        selectedServerName = serverName,
-                        selectedServerPing = serverPing,
-                        speedHistory = history,
-                    )
-                },
-                combine(
-                    proxyMode,
-                    isRemoteController,
-                    controllerBackendName,
-                    ipMonitoringState,
-                    uiState,
-                ) { mode, remote, backendName, ipState, ui ->
-                    HomeRuntimeSummary(
-                        proxyMode = mode,
-                        isRemoteController = remote,
-                        controllerBackendName = backendName,
-                        ipMonitoringState = ipState,
-                        uiState = ui,
-                    )
-                },
-            ) { base, profile, runtime ->
-                base.copy(
-                    recommendedProfile = profile.recommendedProfile,
-                    currentProfile = profile.currentProfile,
-                    selectedServerName = profile.selectedServerName,
-                    selectedServerPing = profile.selectedServerPing,
-                    speedHistory = profile.speedHistory,
-                    proxyMode = runtime.proxyMode,
-                    isRemoteController = runtime.isRemoteController,
-                    controllerBackendName = runtime.controllerBackendName,
-                    ipMonitoringState = runtime.ipMonitoringState,
-                    uiMessage = runtime.uiState.message,
-                    uiError = runtime.uiState.error,
+            combine(controlState, trafficNow, profiles, profilesLoaded, hasEnabledProfile) { control,
+                                                                                             traffic,
+                                                                                             profileList,
+                                                                                             loaded,
+                                                                                             hasEnabled ->
+                HomeScreenState(
+                    controlState = control,
+                    trafficNow = traffic,
+                    profiles = profileList,
+                    profilesLoaded = loaded,
+                    hasEnabledProfile = hasEnabled,
                 )
-            }
+            },
+            combine(
+                recommendedProfile,
+                currentProfile,
+                selectedServerName,
+                selectedServerPing,
+                speedHistory,
+            ) { recommended, current, serverName, serverPing, history ->
+                HomeProfileSummary(
+                    recommendedProfile = recommended,
+                    currentProfile = current,
+                    selectedServerName = serverName,
+                    selectedServerPing = serverPing,
+                    speedHistory = history,
+                )
+            },
+            combine(
+                proxyMode,
+                isRemoteController,
+                controllerBackendName,
+                ipMonitoringState,
+                uiState,
+            ) { mode, remote, backendName, ipState, ui ->
+                HomeRuntimeSummary(
+                    proxyMode = mode,
+                    isRemoteController = remote,
+                    controllerBackendName = backendName,
+                    ipMonitoringState = ipState,
+                    uiState = ui,
+                )
+            },
+        ) { base, profile, runtime ->
+            base.copy(
+                recommendedProfile = profile.recommendedProfile,
+                currentProfile = profile.currentProfile,
+                selectedServerName = profile.selectedServerName,
+                selectedServerPing = profile.selectedServerPing,
+                speedHistory = profile.speedHistory,
+                proxyMode = runtime.proxyMode,
+                isRemoteController = runtime.isRemoteController,
+                controllerBackendName = runtime.controllerBackendName,
+                ipMonitoringState = runtime.ipMonitoringState,
+                uiMessage = runtime.uiState.message,
+                uiError = runtime.uiState.error,
+            )
+        }
             .combine(runtimeSnapshot) { screen, snapshot ->
                 screen.copy(runtimeStartedAt = snapshot.startedAt)
             }
@@ -315,7 +314,7 @@ class HomeViewModel(
                             clearPendingStart()
                             if (
                                 _pendingTransition.value == PendingTransition.AwaitingPermission ||
-                                    _pendingTransition.value == PendingTransition.Starting
+                                _pendingTransition.value == PendingTransition.Starting
                             ) {
                                 _pendingTransition.value = PendingTransition.None
                             }
@@ -325,7 +324,7 @@ class HomeViewModel(
                             clearPendingStart()
                             if (
                                 _pendingTransition.value == PendingTransition.Starting ||
-                                    _pendingTransition.value == PendingTransition.AwaitingPermission
+                                _pendingTransition.value == PendingTransition.AwaitingPermission
                             ) {
                                 _pendingTransition.value = PendingTransition.None
                             }
@@ -508,7 +507,7 @@ class HomeViewModel(
                 val sample =
                     when {
                         snapshot.phase == RuntimePhase.Idle ||
-                            snapshot.phase == RuntimePhase.Failed -> 0L
+                                snapshot.phase == RuntimePhase.Failed -> 0L
 
                         snapshot.phase.running -> {
                             val t = proxyFacade.trafficNow.value

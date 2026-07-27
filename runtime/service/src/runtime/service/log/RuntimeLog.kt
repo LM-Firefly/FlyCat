@@ -23,12 +23,13 @@ package com.github.yumelira.yumebox.runtime.service.log
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
+import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog.lock
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.util.*
 
 /**
  * Runtime diagnostics for the current app process.

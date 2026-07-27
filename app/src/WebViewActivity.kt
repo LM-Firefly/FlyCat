@@ -92,7 +92,7 @@ class WebViewActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val isDarkMode =
             (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                Configuration.UI_MODE_NIGHT_YES
+                    Configuration.UI_MODE_NIGHT_YES
         val useLightNavigationBarIcons = !isDarkMode
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.setSystemBarsAppearance(

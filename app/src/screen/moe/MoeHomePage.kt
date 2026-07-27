@@ -130,11 +130,11 @@ fun MoeHomePage(
     // Tick once a second whether running or idle: running drives the elapsed timer, idle drives the
     // wall-clock shown in the rail so it always reflects the real time instead of a frozen 00:00.
     val now by
-        produceState(initialValue = System.currentTimeMillis()) {
-            PollingTimers.ticks(PollingTimerSpecs.MoeElapsedClock).collect {
-                value = System.currentTimeMillis()
-            }
+    produceState(initialValue = System.currentTimeMillis()) {
+        PollingTimers.ticks(PollingTimerSpecs.MoeElapsedClock).collect {
+            value = System.currentTimeMillis()
         }
+    }
     val startedAt = screen.runtimeStartedAt
     val isRunning = visualControlState == HomeProxyControlState.Running
     val elapsedMillis =
@@ -173,20 +173,20 @@ fun MoeHomePage(
     }
     val quoteText = moeHomeQuote.ifBlank { YumeTxt.AppSettings.Interface.HomeQuoteDefault }
     val animatedSidebarToggleProgress by
-        animateFloatAsState(
-            targetValue = if (sidebarExpanded) 1f else 0f,
-            animationSpec =
-                tween(
-                    durationMillis = if (sidebarExpanded) 420 else 320,
-                    easing =
-                        if (sidebarExpanded) {
-                            AnimationSpecs.EmphasizedDecelerate
-                        } else {
-                            AnimationSpecs.EmphasizedAccelerate
-                        },
-                ),
-            label = "moe_sidebar_toggle",
-        )
+    animateFloatAsState(
+        targetValue = if (sidebarExpanded) 1f else 0f,
+        animationSpec =
+            tween(
+                durationMillis = if (sidebarExpanded) 420 else 320,
+                easing =
+                    if (sidebarExpanded) {
+                        AnimationSpecs.EmphasizedDecelerate
+                    } else {
+                        AnimationSpecs.EmphasizedAccelerate
+                    },
+            ),
+        label = "moe_sidebar_toggle",
+    )
 
     val handleProxyAction: () -> Unit = {
         if (isRemoteController) {
@@ -288,17 +288,17 @@ fun MoeHomePage(
 @Composable
 private fun rememberMoeBatteryPercent(context: Context): Int? {
     val percent by
-        produceState<Int?>(initialValue = null, context) {
-            val batteryIntent =
-                context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-            val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
-            val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
-            value =
-                if (level >= 0 && scale > 0) {
-                    ((level / scale.toFloat()) * 100).toInt().coerceIn(0, 100)
-                } else {
-                    null
-                }
-        }
+    produceState<Int?>(initialValue = null, context) {
+        val batteryIntent =
+            context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+        value =
+            if (level >= 0 && scale > 0) {
+                ((level / scale.toFloat()) * 100).toInt().coerceIn(0, 100)
+            } else {
+                null
+            }
+    }
     return percent
 }
