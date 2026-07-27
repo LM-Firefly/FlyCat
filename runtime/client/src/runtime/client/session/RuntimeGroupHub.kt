@@ -224,8 +224,6 @@ internal class RuntimeGroupHub(
         if (activeProfile == null) {
             return emptyList()
         }
-        return RuntimeAccess.core()
-            .queryProfileProxyGroups(excludeNotSelectable = false)
-            .map(groupStore::toInfo)
+        return coreOps.queryAllProxyGroups(excludeNotSelectable = false).map(groupStore::toInfo)
     }
 }

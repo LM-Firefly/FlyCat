@@ -28,8 +28,6 @@ import com.github.yumelira.yumebox.core.util.encodeTrafficValue
 import com.github.yumelira.yumebox.data.model.RemoteBackend
 import com.github.yumelira.yumebox.runtime.api.CoreApi
 import com.github.yumelira.yumebox.runtime.api.CoreAsyncQueries
-import com.github.yumelira.yumebox.runtime.api.LogObserver
-import com.github.yumelira.yumebox.runtime.api.LogSubscription
 import io.ktor.client.*
 import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.*
@@ -41,14 +39,9 @@ import io.ktor.http.content.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import timber.log.Timber
-import java.io.IOException
 import java.time.Instant
-import java.util.*
-import java.util.concurrent.atomic.AtomicReference
 
 /** [CoreApi] over mihomo REST: local unix socket and/or remote TCP backend. */
 class CoreController(
@@ -61,9 +54,6 @@ class CoreController(
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    private val logScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val logSink = AtomicReference<LogSink?>(null)
-    @Volatile private var logJob: Job? = null
     @Volatile private var trafficSampleCache: TimedTrafficSample? = null
 
     /** Off-critical-path refreshes (see [providerSnapshot]); never joined by a request path. */
@@ -86,6 +76,15 @@ class CoreController(
                 engine { config { socketFactory(UnixSocketFactory(target.socketPath)) } }
             }
         }
+    }
+
+    private val logStream by lazy {
+        CoreControllerLogStream(
+            client = client,
+            json = json,
+            logUrl = { buildUrl("logs", query = LOG_QUERY) },
+            applyAuth = { applyAuth() },
+        )
     }
 
     /** Active target secret (local token or remote backend). */
@@ -228,15 +227,6 @@ class CoreController(
                         ?: error("connections stream ended before the first snapshot")
                 json.decodeFromString<ConnectionSnapshot>(line)
             }
-
-    // Profile-local preview is not available over pure REST.
-
-    override suspend fun queryProfileProxyGroupsAsync(
-        excludeNotSelectable: Boolean
-    ): List<ProxyGroup> = emptyList()
-
-    override fun queryProfileProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
-        emptyList()
 
     // ---- Proxy groups ----------------------------------------------------
 
@@ -564,78 +554,8 @@ class CoreController(
         // No-op: we don't own the remote core, so there is nothing to stop.
     }
 
-    @Synchronized
-    override fun subscribeLogs(observer: LogObserver): LogSubscription {
-        val sink = LogSink(observer = observer)
-        logSink.set(sink)
-        logJob?.cancel()
-        logJob = logScope.launch {
-            while (isActive && logSink.get() === sink) {
-                try {
-                    streamLogsOnce(sink)
-                    if (logSink.get() === sink) {
-                        sink.observer.onError(IOException("log stream ended"))
-                    }
-                } catch (error: CancellationException) {
-                    throw error
-                } catch (error: Throwable) {
-                    if (logSink.get() === sink) sink.observer.onError(error)
-                    Timber.w(error, "log stream failed; retrying")
-                }
-                delay(LOG_STREAM_RETRY_MS)
-            }
-        }
-        return LogSubscription {
-            synchronized(this@CoreController) {
-                if (logSink.compareAndSet(sink, null)) {
-                    logJob?.cancel()
-                    logJob = null
-                }
-            }
-        }
-    }
-
-    /** Stream `GET /logs` until closed or the observer is cleared. */
-    private suspend fun streamLogsOnce(sink: LogSink) {
-        client
-            .prepareGet(buildUrl("logs", query = LOG_QUERY)) {
-                applyAuth()
-                timeout {
-                    requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
-                    socketTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
-                }
-            }
-            .execute { response ->
-                if (logSink.get() !== sink) return@execute
-                sink.observer.onConnected()
-                val channel = response.bodyAsChannel()
-                while (logSink.get() === sink && !channel.isClosedForRead) {
-                    val line = channel.readLine() ?: break
-                    if (line.isBlank()) continue
-                    val entry =
-                        runCatching { json.decodeFromString<RawLogLine>(line) }.getOrNull()
-                            ?: continue
-                    val message =
-                        LogMessage(
-                            level = parseLogLevel(entry.type),
-                            message = entry.payload,
-                            time = Date(),
-                        )
-                    sink.observer.newItem(message)
-                }
-            }
-    }
-
-    private fun parseLogLevel(raw: String): LogMessage.Level =
-        when (raw.trim().lowercase()) {
-            "debug" -> LogMessage.Level.Debug
-            "info" -> LogMessage.Level.Info
-            "warning",
-            "warn" -> LogMessage.Level.Warning
-            "error" -> LogMessage.Level.Error
-            "silent" -> LogMessage.Level.Silent
-            else -> LogMessage.Level.Unknown
-        }
+    override fun subscribeLogs(observer: com.github.yumelira.yumebox.runtime.api.LogObserver):
+        com.github.yumelira.yumebox.runtime.api.LogSubscription = logStream.subscribe(observer)
 
     private fun RawRule.toRuntimeRule(): RuntimeRule =
         RuntimeRule(
@@ -698,99 +618,6 @@ class CoreController(
         )
     }
 
-    // ---- DTOs ------------------------------------------------------------
-
-    @Serializable
-    private data class RawProvidersResponse(val providers: Map<String, RawProvider> = emptyMap())
-
-    @Serializable
-    private data class RawProvider(
-        val name: String = "",
-        val vehicleType: String = "",
-        val updatedAt: String? = null,
-        val proxies: List<RawProxy> = emptyList(),
-    )
-
-    @Serializable
-    private data class RawProxiesResponse(val proxies: Map<String, RawProxy> = emptyMap())
-
-    @Serializable private data class RawGroupResponse(val proxies: List<RawProxy> = emptyList())
-
-    @Serializable
-    private data class RawProxy(
-        val name: String,
-        val type: String,
-        val now: String = "",
-        val all: List<String> = emptyList(),
-        val history: List<RawDelay> = emptyList(),
-        val hidden: Boolean = false,
-        val icon: String? = null,
-        val udp: Boolean = false,
-    )
-
-    @Serializable private data class RawDelay(val delay: Int = 0)
-
-    @Serializable private data class RawDelayResult(val delay: Int = 0)
-
-    @Serializable private data class RawConfigs(val mode: TunnelState.Mode = TunnelState.Mode.Rule)
-
-    @Serializable
-    private data class RawTraffic(
-        val up: Long = 0,
-        val down: Long = 0,
-        val upTotal: Long = 0,
-        val downTotal: Long = 0,
-    )
-
-    @Serializable private data class SelectBody(val name: String)
-
-    @Serializable private data class RawRulesResponse(val rules: List<RawRule> = emptyList())
-
-    @Serializable
-    private data class RawRule(
-        val index: Int = 0,
-        val type: String = "",
-        val payload: String = "",
-        val proxy: String = "",
-        val size: Int = -1,
-        val extra: RawRuleExtra? = null,
-    )
-
-    @Serializable
-    private data class RawRuleExtra(
-        val disabled: Boolean = false,
-        val hitCount: Long = 0L,
-        val missCount: Long = 0L,
-    )
-
-    @Serializable
-    private data class RawLogLine(
-        val type: String = "info",
-        val payload: String = "",
-    )
-
-    private data class LogSink(val observer: LogObserver)
-
-    private data class TimedTrafficSample(
-        val sample: RawTraffic,
-        val capturedAtNanos: Long,
-    )
-
-    /** Nodes contributed by proxy providers, plus the provider each node belongs to. */
-    private data class ProviderSnapshot(
-        val nodes: Map<String, RawProxy>,
-        val owners: Map<String, String>,
-    ) {
-        companion object {
-            val Empty = ProviderSnapshot(emptyMap(), emptyMap())
-        }
-    }
-
-    private data class TimedProviderSnapshot(
-        val snapshot: ProviderSnapshot,
-        val capturedAtNanos: Long,
-    )
-
     private companion object {
         const val CONNECT_TIMEOUT_MS = 5_000L
         const val REQUEST_TIMEOUT_MS = 10_000L
@@ -801,8 +628,6 @@ class CoreController(
         // group query time out; the refresh outlives the wait and warms the cache regardless.
         const val PROVIDER_SNAPSHOT_WAIT_MS = 400L
         const val PROVIDER_SNAPSHOT_CACHE_NS = 5_000_000_000L
-        const val LOG_STREAM_RETRY_MS = 1_500L
-
         // Dummy host; UnixSocketFactory ignores host/port.
         const val LOCAL_BASE_URL = "http://localhost"
 

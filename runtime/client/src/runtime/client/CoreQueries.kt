@@ -18,10 +18,7 @@
  *
  */
 
-@file:Suppress("UnusedSymbol")
-
 package com.github.yumelira.yumebox.runtime.client
-
 
 import com.github.yumelira.yumebox.core.model.*
 import com.github.yumelira.yumebox.runtime.api.CoreApi
@@ -64,16 +61,6 @@ object CoreQueries {
             api,
             { queryAllProxyGroupsAsync(excludeNotSelectable) },
             { queryAllProxyGroups(excludeNotSelectable) },
-        )
-
-    suspend fun queryProfileProxyGroups(
-        api: CoreApi,
-        excludeNotSelectable: Boolean,
-    ): List<ProxyGroup> =
-        query(
-            api,
-            { queryProfileProxyGroupsAsync(excludeNotSelectable) },
-            { queryProfileProxyGroups(excludeNotSelectable) },
         )
 
     suspend fun queryProxyGroup(api: CoreApi, name: String, sort: ProxySort): ProxyGroup =

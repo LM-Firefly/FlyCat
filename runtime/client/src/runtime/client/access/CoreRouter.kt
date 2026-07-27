@@ -63,14 +63,6 @@ class CoreRouter(
     override suspend fun queryConnectionsAsync(): ConnectionSnapshot =
         routeAsync({ queryConnectionsAsync() }, { queryConnections() })
 
-    override suspend fun queryProfileProxyGroupsAsync(
-        excludeNotSelectable: Boolean
-    ): List<ProxyGroup> =
-        routeAsync(
-            { queryProfileProxyGroupsAsync(excludeNotSelectable) },
-            { queryProfileProxyGroups(excludeNotSelectable) },
-        )
-
     override suspend fun queryAllProxyGroupsAsync(excludeNotSelectable: Boolean): List<ProxyGroup> =
         routeAsync(
             { queryAllProxyGroupsAsync(excludeNotSelectable) },
@@ -111,9 +103,6 @@ class CoreRouter(
     override fun queryTrafficTotal(): Long = pick().queryTrafficTotal()
 
     override fun queryConnections(): ConnectionSnapshot = pick().queryConnections()
-
-    override fun queryProfileProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
-        pick().queryProfileProxyGroups(excludeNotSelectable)
 
     override fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
         pick().queryAllProxyGroups(excludeNotSelectable)

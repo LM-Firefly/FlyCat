@@ -35,8 +35,6 @@ interface CoreAsyncQueries {
 
     suspend fun queryConnectionsAsync(): ConnectionSnapshot
 
-    suspend fun queryProfileProxyGroupsAsync(excludeNotSelectable: Boolean): List<ProxyGroup>
-
     suspend fun queryAllProxyGroupsAsync(excludeNotSelectable: Boolean): List<ProxyGroup>
 
     suspend fun queryProxyGroupNamesAsync(excludeNotSelectable: Boolean): List<String>

@@ -31,8 +31,6 @@ interface CoreApi {
 
     fun queryConnections(): ConnectionSnapshot
 
-    fun queryProfileProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup>
-
     fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup>
 
     fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String>
