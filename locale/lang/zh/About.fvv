@@ -3,6 +3,7 @@ About = {
     Title = "關於"
 
     App = {
+        Description = "基於 mihomo 的開源 Android 用戶端"
         VersionLoading = "載入中..."
         VersionFailed = "載入失敗"
     }

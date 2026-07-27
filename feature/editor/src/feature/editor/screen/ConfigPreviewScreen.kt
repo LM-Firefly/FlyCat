@@ -41,6 +41,7 @@ import com.github.yumelira.yumebox.presentation.icon.yume.ListCollapse
 import com.github.yumelira.yumebox.presentation.icon.yume.Save
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import kotlinx.coroutines.launch
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -49,7 +50,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 @Composable
 fun ConfigPreviewScreen(
     navigator: Navigator,
-    title: String = "配置预览",
+    title: String = YumeTxt.Editor.Title.Preview,
     initialContent: String = "",
     language: LanguageScope = LanguageScope.Yaml,
     onSave: (suspend (String) -> Unit)? = null,
@@ -101,7 +102,10 @@ fun ConfigPreviewScreen(
                         modifier = Modifier.padding(end = UiDp.dp12),
                         onClick = { editorState.format() },
                     ) {
-                        Icon(Yume.ListCollapse, contentDescription = "Format")
+                        Icon(
+                            Yume.ListCollapse,
+                            contentDescription = YumeTxt.Editor.Action.Format,
+                        )
                     }
                     IconButton(
                         onClick = {
@@ -113,13 +117,17 @@ fun ConfigPreviewScreen(
                                         editorState.resetModified()
                                         navigator.navigateUp()
                                     }
-                                    .onFailure { context.toast(it.message ?: "保存失败") }
+                                    .onFailure {
+                                        context.toast(
+                                            it.message ?: YumeTxt.Editor.Message.SaveFailed
+                                        )
+                                    }
                                 isSaving = false
                             }
                         },
                         enabled = onSave != null && editorState.isModified && !isSaving,
                     ) {
-                        Icon(Yume.Save, contentDescription = "Save")
+                        Icon(Yume.Save, contentDescription = YumeTxt.Editor.Action.Save)
                     }
                 },
             )

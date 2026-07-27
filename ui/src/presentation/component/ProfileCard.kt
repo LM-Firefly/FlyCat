@@ -205,7 +205,7 @@ fun ProfileCard(
                         actionIconTint.copy(
                             alpha = if (isConfigSaved) 1f else opacity.disabledSecondary
                         ),
-                    contentDescription = "Export",
+                    contentDescription = YumeTxt.Component.ProfileCard.Export,
                 )
             }
 
@@ -222,7 +222,7 @@ fun ProfileCard(
                     modifier = Modifier.size(spacing.space20),
                     imageVector = Yume.Delete,
                     tint = actionIconTint,
-                    contentDescription = "Delete",
+                    contentDescription = YumeTxt.Component.ProfileCard.Delete,
                 )
             }
 
@@ -246,7 +246,7 @@ fun ProfileCard(
                             modifier = Modifier.size(spacing.space20),
                             imageVector = Yume.CircleFadingArrowUp,
                             tint = updateTint,
-                            contentDescription = "Update",
+                            contentDescription = YumeTxt.Component.ProfileCard.Update,
                         )
                         Text(
                             modifier =
@@ -275,7 +275,7 @@ fun ProfileCard(
                         modifier = Modifier.size(spacing.space20),
                         imageVector = Yume.Edit,
                         tint = actionIconTint,
-                        contentDescription = "Edit",
+                        contentDescription = YumeTxt.Component.ProfileCard.Edit,
                     )
                     Text(
                         modifier =

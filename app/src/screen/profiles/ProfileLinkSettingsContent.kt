@@ -143,7 +143,7 @@ private fun ProfileLinkList(
                     IconButton(onClick = { onDelete(link.id) }) {
                         Icon(
                             imageVector = MiuixIcons.Delete,
-                            contentDescription = "Delete",
+                            contentDescription = YumeTxt.Component.ProfileCard.Delete,
                             tint = MiuixTheme.colorScheme.error,
                         )
                     }

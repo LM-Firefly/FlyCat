@@ -25,6 +25,8 @@ Home = {
     Traffic = {
         UpShort = "UP"
         DownShort = "DOWN"
+        Upload = "UPLOAD"
+        Download = "DOWNLOAD"
         NoProfile = "No Profile"
     }
 
@@ -36,7 +38,16 @@ Home = {
         Connecting = "Connecting"
         Disconnecting = "Disconnecting"
         Running = "Running"
+        Lost = "Disconnected"
         TapToStart = "Tap to start"
+    }
+
+    Settings = {
+        Title = "Home settings"
+        Quote = "Quote"
+        ClassicHome = "Use classic Home"
+        ExpandSidebar = "Expand sidebar"
+        ChangeWallpaper = "Change wallpaper"
     }
 
     Control = {

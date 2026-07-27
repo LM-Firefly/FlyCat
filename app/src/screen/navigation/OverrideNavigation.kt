@@ -33,6 +33,7 @@ import com.github.yumelira.yumebox.presentation.screen.OverrideListScreen
 import com.github.yumelira.yumebox.presentation.util.OverrideEditorStore
 import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 
 @Composable
 fun OverrideScreen(navigator: Navigator) {
@@ -53,7 +54,7 @@ fun OverrideScreen(navigator: Navigator) {
                     } else {
                         { content ->
                             if (!overrideConfigViewModel.saveConfigContent(config.id, content)) {
-                                error("保存覆写失败")
+                                error(YumeTxt.Override.Save.Failed)
                             }
                         }
                     }

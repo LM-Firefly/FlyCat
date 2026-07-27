@@ -166,12 +166,12 @@ fun StringListEditorScreen(navigator: Navigator) {
             listOf(
                 EditorAction(
                     icon = MiuixIcons.Reset,
-                    contentDescription = "Reset",
+                    contentDescription = YumeTxt.Component.Editor.Dialog.ResetTitle,
                     onClick = { dialogState = StringListDialogState.Reset },
                 ),
                 EditorAction(
                     icon = Yume.BadgePlus,
-                    contentDescription = "Add",
+                    contentDescription = YumeTxt.Component.Editor.Dialog.AddTitle,
                     onClick = {
                         dialogState =
                             if (isOverrideRuleEditor) {
@@ -323,12 +323,12 @@ fun KeyValueEditorScreen(navigator: Navigator) {
             listOf(
                 EditorAction(
                     icon = MiuixIcons.Reset,
-                    contentDescription = "Reset",
+                    contentDescription = YumeTxt.Component.Editor.Dialog.ResetTitle,
                     onClick = { dialogState = KeyValueDialogState.Reset },
                 ),
                 EditorAction(
                     icon = MiuixIcons.AddCircle,
-                    contentDescription = "Add",
+                    contentDescription = YumeTxt.Component.Editor.Dialog.AddTitle,
                     onClick = { dialogState = KeyValueDialogState.Add },
                 ),
             ),

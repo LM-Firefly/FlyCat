@@ -37,6 +37,8 @@ Feature = {
         Port = "連接埠"
         Secret = "密鑰（可留空）"
         PortRangeError = "連接埠範圍必須是 1-65535"
+        Connected = "連線成功：模式 %s"
+        ConnectionFailed = "連線失敗：%s"
         Delete = "刪除"
     }
 

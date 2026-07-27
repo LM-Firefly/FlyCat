@@ -15,6 +15,7 @@ ProfilesPage = {
     Sheet = {
         AddTitle = "Добавить профиль"
         EditTitle = "Изменить профиль"
+        Complete = "Готово"
     }
 
     Type = {

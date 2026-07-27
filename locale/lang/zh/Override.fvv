@@ -104,6 +104,7 @@ Override = {
 
     Save = {
         ImportDefaultName = "匯入的覆寫設定"
+        Failed = "儲存覆寫失敗"
     }
 
 

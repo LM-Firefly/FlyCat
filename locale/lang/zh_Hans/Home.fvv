@@ -25,6 +25,8 @@ Home = {
     Traffic = {
         UpShort = "UP"
         DownShort = "DOWN"
+        Upload = "上传"
+        Download = "下载"
         NoProfile = "无配置"
     }
 
@@ -36,7 +38,16 @@ Home = {
         Connecting = "连接中"
         Disconnecting = "断开中"
         Running = "运行中"
+        Lost = "失联"
         TapToStart = "轻触启动"
+    }
+
+    Settings = {
+        Title = "首页设置"
+        Quote = "一言"
+        ClassicHome = "回退经典首页"
+        ExpandSidebar = "展开侧边栏"
+        ChangeWallpaper = "更换壁纸"
     }
 
     Control = {

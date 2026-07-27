@@ -105,7 +105,9 @@ fun CustomRoutingScreen(
                     isDirty = false
                     onNavigateBack()
                 }
-                .onFailure { error -> context.toast(error.message ?: "保存失败") }
+                .onFailure { error ->
+                    context.toast(error.message ?: YumeTxt.Override.Save.Failed)
+                }
             isSaving = false
         }
     }
@@ -152,14 +154,19 @@ fun CustomRoutingScreen(
                                                 openEditor(viewModel.customRoutingContent.value)
                                             }
                                             .onFailure { error ->
-                                                context.toast(error.message ?: "保存失败")
+                                                context.toast(
+                                                    error.message ?: YumeTxt.Override.Save.Failed
+                                                )
                                             }
                                         isSaving = false
                                     }
                             }
                         },
                     ) {
-                        Icon(imageVector = Yume.Edit, contentDescription = "Edit")
+                        Icon(
+                            imageVector = Yume.Edit,
+                            contentDescription = YumeTxt.MetaFeature.CustomRouting.EditYaml,
+                        )
                     }
                 },
             )
@@ -201,7 +208,7 @@ fun CustomRoutingScreen(
                     title = YumeTxt.MetaFeature.CustomRouting.UrlTestRegionGroupTitle,
                     items = orderedPresetRegions(),
                     iconUrl = OverridePresetRegion::icon,
-                    itemTitle = OverridePresetRegion::displayName,
+                    itemTitle = OverridePresetRegion::localizedTitle,
                     isChecked = { region -> region in selectedUrlTestRegions },
                     onCheckedChange = { region, checked ->
                         toggleSelection(selectedUrlTestRegions, region, checked)
@@ -215,7 +222,7 @@ fun CustomRoutingScreen(
                     title = YumeTxt.MetaFeature.CustomRouting.FallbackRegionGroupTitle,
                     items = orderedPresetRegions(),
                     iconUrl = OverridePresetRegion::icon,
-                    itemTitle = OverridePresetRegion::displayName,
+                    itemTitle = OverridePresetRegion::localizedTitle,
                     isChecked = { region -> region in selectedFallbackRegions },
                     onCheckedChange = { region, checked ->
                         toggleSelection(selectedFallbackRegions, region, checked)
@@ -229,7 +236,7 @@ fun CustomRoutingScreen(
                     title = YumeTxt.Override.Draft.BasicRouting,
                     items = orderedBasePresetItems(),
                     iconUrl = OverridePresetItem::icon,
-                    itemTitle = OverridePresetItem::title,
+                    itemTitle = OverridePresetItem::localizedTitle,
                     isChecked = { item -> item in enabledItems },
                     onCheckedChange = { item, checked ->
                         toggleSelection(enabledItems, item, checked)
@@ -243,7 +250,7 @@ fun CustomRoutingScreen(
                     title = YumeTxt.Override.Draft.ServiceRouting,
                     items = orderedServicePresetItems(),
                     iconUrl = OverridePresetItem::icon,
-                    itemTitle = OverridePresetItem::title,
+                    itemTitle = OverridePresetItem::localizedTitle,
                     isChecked = { item -> item in enabledItems },
                     onCheckedChange = { item, checked ->
                         toggleSelection(enabledItems, item, checked)
@@ -254,6 +261,26 @@ fun CustomRoutingScreen(
         }
     }
 }
+
+private fun OverridePresetRegion.localizedTitle(): String =
+    when (this) {
+        OverridePresetRegion.HK -> YumeTxt.MetaFeature.CustomRouting.Region.HongKong
+        OverridePresetRegion.TW -> YumeTxt.MetaFeature.CustomRouting.Region.Taiwan
+        OverridePresetRegion.JP -> YumeTxt.MetaFeature.CustomRouting.Region.Japan
+        OverridePresetRegion.SG -> YumeTxt.MetaFeature.CustomRouting.Region.Singapore
+        OverridePresetRegion.US -> YumeTxt.MetaFeature.CustomRouting.Region.UnitedStates
+        OverridePresetRegion.Other -> YumeTxt.MetaFeature.CustomRouting.Region.Other
+    }
+
+private fun OverridePresetItem.localizedTitle(): String =
+    when (this) {
+        OverridePresetItem.Proxy -> YumeTxt.MetaFeature.CustomRouting.Item.Proxy
+        OverridePresetItem.Ads -> YumeTxt.MetaFeature.CustomRouting.Item.Ads
+        OverridePresetItem.Cn -> YumeTxt.MetaFeature.CustomRouting.Item.China
+        OverridePresetItem.GeolocationNotCn -> YumeTxt.MetaFeature.CustomRouting.Item.Global
+        OverridePresetItem.Match -> YumeTxt.MetaFeature.CustomRouting.Item.Match
+        else -> title
+    }
 
 private fun <T> toggleSelection(items: MutableList<T>, item: T, checked: Boolean) {
     if (checked) {

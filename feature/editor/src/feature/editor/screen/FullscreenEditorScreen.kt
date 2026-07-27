@@ -42,6 +42,7 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Atom
 import com.github.yumelira.yumebox.presentation.icon.yume.Save
 import com.github.yumelira.yumebox.presentation.theme.UiDp
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -50,7 +51,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 @Composable
 fun FullscreenEditorScreen(
     navigator: Navigator,
-    title: String = "编辑配置",
+    title: String = YumeTxt.Editor.Title.Config,
     initialContent: String = "",
     language: LanguageScope = LanguageScope.Yaml,
     onSave: (String) -> Unit = {},
@@ -86,13 +87,16 @@ fun FullscreenEditorScreen(
                         modifier = Modifier.padding(end = UiDp.dp12),
                         onClick = {
                             if (editorState.format()) {
-                                context.toast("格式化成功")
+                                context.toast(YumeTxt.Editor.Message.FormatSuccess)
                             } else {
-                                context.toast("格式化失败或无需格式化")
+                                context.toast(YumeTxt.Editor.Message.FormatSkipped)
                             }
                         },
                     ) {
-                        Icon(imageVector = Yume.Atom, contentDescription = "Format")
+                        Icon(
+                            imageVector = Yume.Atom,
+                            contentDescription = YumeTxt.Editor.Action.Format,
+                        )
                     }
 
                     IconButton(
@@ -102,7 +106,10 @@ fun FullscreenEditorScreen(
                             navigator.navigateUp()
                         }
                     ) {
-                        Icon(imageVector = Yume.Save, contentDescription = "Save")
+                        Icon(
+                            imageVector = Yume.Save,
+                            contentDescription = YumeTxt.Editor.Action.Save,
+                        )
                     }
                 },
             )
@@ -126,8 +133,8 @@ fun FullscreenEditorScreen(
 
     AppDialog(
         show = showDiscardDialog.value,
-        title = "未保存的修改",
-        summary = "当前有未保存的修改，确定要放弃吗？",
+        title = YumeTxt.Editor.Discard.Title,
+        summary = YumeTxt.Editor.Discard.Summary,
         onDismissRequest = { showDiscardDialog.value = false },
     ) {
         DialogButtonRow(
@@ -136,8 +143,8 @@ fun FullscreenEditorScreen(
                 showDiscardDialog.value = false
                 navigator.navigateUp()
             },
-            cancelText = "取消",
-            confirmText = "放弃",
+            cancelText = YumeTxt.Component.Button.Cancel,
+            confirmText = YumeTxt.Editor.Discard.Confirm,
         )
     }
 }

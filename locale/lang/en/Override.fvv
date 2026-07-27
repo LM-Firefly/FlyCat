@@ -104,6 +104,7 @@ Override = {
 
     Save = {
         ImportDefaultName = "Imported Override Config"
+        Failed = "Failed to save override"
     }
 
 

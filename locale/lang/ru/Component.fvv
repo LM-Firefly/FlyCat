@@ -2,6 +2,7 @@
 Component = {
     ProfileCard = {
         Update = "Обновить"
+        Export = "Экспорт"
         Edit = "Изменить"
         Delete = "Удалить"
         RemoteSubscription = "Удалённая подписка"

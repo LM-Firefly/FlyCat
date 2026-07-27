@@ -22,6 +22,21 @@ MetaFeature = {
         GroupTypeFallback = "Fallback"
         UrlTestRegionGroupTitle = "UrlTest Region Groups"
         FallbackRegionGroupTitle = "Fallback Region Groups"
+        Region = {
+            HongKong = "Hong Kong Auto"
+            Taiwan = "Taiwan Auto"
+            Japan = "Japan Auto"
+            Singapore = "Singapore Auto"
+            UnitedStates = "United States Auto"
+            Other = "Other Regions Auto"
+        }
+        Item = {
+            Proxy = "Proxy Rules"
+            Ads = "Ad Blocking"
+            China = "Mainland China Direct"
+            Global = "Non-China Geo Rules"
+            Match = "Fallback MATCH"
+        }
     }
 
     RuntimeRules = {

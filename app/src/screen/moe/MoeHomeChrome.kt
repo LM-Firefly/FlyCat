@@ -265,16 +265,17 @@ internal fun MoeLaunchButton(
     )
     val targetLabel =
         when {
-            isRemoteController && isRunning -> "运行中"
+            isRemoteController && isRunning -> YumeTxt.Home.Status.Running
             !enabled && controlState == HomeProxyControlState.Idle -> YumeTxt.Home.Traffic.NoProfile
             else ->
                 when (controlState) {
                     HomeProxyControlState.Idle -> YumeTxt.Home.Control.Start
                     HomeProxyControlState.Connecting -> YumeTxt.Home.Status.Connecting
                     HomeProxyControlState.Running ->
-                        if (isRemoteController) "运行中" else YumeTxt.Home.Control.Stop
+                        if (isRemoteController) YumeTxt.Home.Status.Running
+                        else YumeTxt.Home.Control.Stop
 
-                    HomeProxyControlState.Lost -> "失联"
+                    HomeProxyControlState.Lost -> YumeTxt.Home.Status.Lost
                     HomeProxyControlState.Disconnecting -> YumeTxt.Home.Status.Disconnecting
                 }
         }

@@ -31,6 +31,7 @@ import com.github.yumelira.yumebox.feature.editor.language.LanguageScope
 import com.github.yumelira.yumebox.presentation.component.AppDialog
 import com.github.yumelira.yumebox.presentation.component.DialogButtonRow
 import com.github.yumelira.yumebox.presentation.theme.UiDp
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -80,8 +81,8 @@ fun CodeEditorDialog(
                         onValueChange(editorState.content.takeIf { it.isNotBlank() })
                         onDismiss()
                     },
-                    cancelText = "取消",
-                    confirmText = "确定",
+                    cancelText = YumeTxt.Component.Button.Cancel,
+                    confirmText = YumeTxt.Component.Button.Confirm,
                 )
             }
         }
@@ -112,7 +113,7 @@ fun YamlEditorDialog(
 fun JsonEditorDialog(
     show: Boolean,
     title: String,
-    subtitle: String? = "使用 JSON 格式编辑",
+    subtitle: String? = YumeTxt.Editor.JsonSubtitle,
     value: String?,
     onValueChange: (String?) -> Unit,
     onDismiss: () -> Unit = {},

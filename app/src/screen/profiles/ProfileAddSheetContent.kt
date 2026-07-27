@@ -91,7 +91,7 @@ internal fun DownloadProgressContent(
             if (complete) {
                 Icon(
                     imageVector = Yume.PackageCheck,
-                    contentDescription = "Complete",
+                    contentDescription = YumeTxt.ProfilesPage.Sheet.Complete,
                     tint = MiuixTheme.colorScheme.onPrimary,
                     modifier =
                         Modifier

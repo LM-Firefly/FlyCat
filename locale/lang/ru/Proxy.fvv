@@ -10,6 +10,7 @@ Proxy = {
         Panel = "Панель"
         Test = "Тест"
         Sort = "Сортировка"
+        LocateCurrent = "Найти текущий узел"
     }
 
     Node = {

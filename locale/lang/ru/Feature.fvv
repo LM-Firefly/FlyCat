@@ -37,6 +37,8 @@ Feature = {
         Port = "Порт"
         Secret = "Секрет (необязательно)"
         PortRangeError = "Порт должен быть в диапазоне 1-65535"
+        Connected = "Подключено: режим %s"
+        ConnectionFailed = "Ошибка подключения: %s"
         Delete = "Удалить"
     }
 

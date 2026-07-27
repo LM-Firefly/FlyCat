@@ -3,8 +3,9 @@ About = {
     Title = "关于"
 
     App = {
-        VersionLoading = "Loading..."
-        VersionFailed = "Failed to load"
+        Description = "基于 mihomo 的开源 Android 客户端"
+        VersionLoading = "加载中..."
+        VersionFailed = "加载失败"
     }
 
     Section = {
@@ -28,9 +29,9 @@ About = {
 
     License = {
         Libraries = "引用库"
-        LibrariesSummary = "View all third-party libraries used in this app"
+        LibrariesSummary = "查看本应用使用的所有第三方库"
         AgplName = "GNU Affero General Public License v3.0"
-        AgplDescription = "This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License."
+        AgplDescription = "本程序是自由软件：你可以根据 GNU Affero 通用公共许可证的条款重新分发和修改。"
     }
 
     Copyright = "© 2025 – 至今 YumeYucca"

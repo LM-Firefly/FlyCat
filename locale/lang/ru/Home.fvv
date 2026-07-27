@@ -25,6 +25,8 @@ Home = {
     Traffic = {
         UpShort = "UP"
         DownShort = "DOWN"
+        Upload = "ОТПРАВКА"
+        Download = "СКАЧИВАНИЕ"
         NoProfile = "Нет профиля"
     }
 
@@ -36,7 +38,16 @@ Home = {
         Connecting = "Подключение"
         Disconnecting = "Отключение"
         Running = "Работает"
+        Lost = "Связь потеряна"
         TapToStart = "Нажмите, чтобы запустить"
+    }
+
+    Settings = {
+        Title = "Настройки главной"
+        Quote = "Цитата"
+        ClassicHome = "Использовать классическую главную"
+        ExpandSidebar = "Развернуть боковую панель"
+        ChangeWallpaper = "Сменить обои"
     }
 
     Control = {

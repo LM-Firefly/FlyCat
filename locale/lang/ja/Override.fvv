@@ -104,6 +104,7 @@ Override = {
 
     Save = {
         ImportDefaultName = "インポートした上書き設定"
+        Failed = "上書き設定の保存に失敗しました"
     }
 
 

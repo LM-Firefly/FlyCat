@@ -10,6 +10,7 @@ Proxy = {
         Panel = "パネル"
         Test = "テスト"
         Sort = "並び替え"
+        LocateCurrent = "現在のノードを表示"
     }
 
     Node = {

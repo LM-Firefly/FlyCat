@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -181,6 +182,8 @@ private fun MoeHomePanel(
 @Composable
 context(actions: MoeHomeActions)
 private fun BoxScope.MoeHero(state: MoeHomeLayoutState, scale: Float) {
+    val toggleSidebar by rememberUpdatedState(actions.toggleSidebar)
+    val pickWallpaper by rememberUpdatedState(actions.pickWallpaper)
     Box(
         Modifier
             .align(Alignment.TopStart)
@@ -193,8 +196,8 @@ private fun BoxScope.MoeHero(state: MoeHomeLayoutState, scale: Float) {
             .fillMaxHeight(MoeUi.Hero.heightFraction)
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onDoubleTap = { actions.toggleSidebar() },
-                    onLongPress = { actions.pickWallpaper() },
+                    onDoubleTap = { toggleSidebar() },
+                    onLongPress = { pickWallpaper() },
                 )
             }
             .graphicsLayer {
@@ -293,6 +296,7 @@ private fun MoeTabletHomeLayout(
     maxWidth: Dp,
     maxHeight: Dp,
 ) {
+    val pickWallpaper by rememberUpdatedState(actions.pickWallpaper)
     val shortHeight = maxHeight < UiDp.dp560
     // Keep the Moe panel readable on ultra-wide screens without a right-side config pane.
     val contentMaxWidth = minOf(maxWidth, UiDp.dp560)
@@ -327,7 +331,7 @@ private fun MoeTabletHomeLayout(
                     )
                     .height(heroHeight)
                     .pointerInput(Unit) {
-                        detectTapGestures(onLongPress = { actions.pickWallpaper() })
+                        detectTapGestures(onLongPress = { pickWallpaper() })
                     }
                     .graphicsLayer {
                         shape = MoeUi.Shape.hero

@@ -290,7 +290,7 @@ fun StringMapWithModifiersInput(
                 ) {
                     ModifierModeCard(
                         modifier = Modifier.weight(1f),
-                        title = "Replace",
+                        title = YumeTxt.Component.Selector.Replace,
                         summary = buildMapModeSummary(replaceValue),
                         helperText = "Replace entire dictionary",
                         onEdit = {
@@ -312,7 +312,7 @@ fun StringMapWithModifiersInput(
                     )
                     ModifierModeCard(
                         modifier = Modifier.weight(1f),
-                        title = "Merge",
+                        title = YumeTxt.Component.Selector.Merge,
                         summary = buildMapModeSummary(mergeValue),
                         helperText = "Overwrites values for matching keys",
                         onEdit = {

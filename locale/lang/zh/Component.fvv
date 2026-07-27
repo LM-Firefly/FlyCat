@@ -2,6 +2,7 @@
 Component = {
     ProfileCard = {
         Update = "更新"
+        Export = "匯出"
         Edit = "編輯"
         Delete = "刪除"
         RemoteSubscription = "遠端訂閱"

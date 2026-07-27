@@ -408,12 +408,12 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState, isRemoteCont
                             HomeProxyControlState.Connecting -> YumeTxt.Home.Status.Connecting
                             HomeProxyControlState.Running ->
                                 if (isRemoteController) {
-                                    "运行中"
+                                    YumeTxt.Home.Status.Running
                                 } else {
                                     YumeTxt.Home.Status.Running
                                 }
 
-                            HomeProxyControlState.Lost -> "失联"
+                            HomeProxyControlState.Lost -> YumeTxt.Home.Status.Lost
                             HomeProxyControlState.Disconnecting -> YumeTxt.Home.Status.Disconnecting
                         },
                     style =

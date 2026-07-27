@@ -95,13 +95,16 @@ internal fun ProfileAddSheetContent(
             else YumeTxt.ProfilesPage.Sheet.AddTitle,
         startAction = {
             if (!downloading) {
-                AppBottomSheetCloseAction(contentDescription = "Cancel", onClick = actions.dismiss)
+                AppBottomSheetCloseAction(
+                    contentDescription = YumeTxt.Component.Button.Cancel,
+                    onClick = actions.dismiss,
+                )
             }
         },
         endAction = {
             if (!downloading && typeIndex != PROFILE_IMPORT_TYPE_QR) {
                 AppBottomSheetConfirmAction(
-                    contentDescription = "Confirm",
+                    contentDescription = YumeTxt.Component.Button.Confirm,
                     onClick = actions.submit,
                 )
             }

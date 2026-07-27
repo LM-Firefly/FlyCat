@@ -3,6 +3,7 @@ About = {
     Title = "About"
 
     App = {
+        Description = "An open-source Android client based on mihomo"
         VersionLoading = "Loading..."
         VersionFailed = "Failed to load"
     }

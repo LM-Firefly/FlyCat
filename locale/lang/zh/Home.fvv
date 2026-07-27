@@ -25,6 +25,8 @@ Home = {
     Traffic = {
         UpShort = "UP"
         DownShort = "DOWN"
+        Upload = "上傳"
+        Download = "下載"
         NoProfile = "無設定檔"
     }
 
@@ -36,7 +38,16 @@ Home = {
         Connecting = "連線中"
         Disconnecting = "斷線中"
         Running = "執行中"
+        Lost = "失聯"
         TapToStart = "輕觸啟動"
+    }
+
+    Settings = {
+        Title = "首頁設定"
+        Quote = "一言"
+        ClassicHome = "使用經典首頁"
+        ExpandSidebar = "展開側邊欄"
+        ChangeWallpaper = "更換桌布"
     }
 
     Control = {

@@ -3,6 +3,7 @@ About = {
     Title = "О приложении"
 
     App = {
+        Description = "Android-клиент с открытым исходным кодом на базе mihomo"
         VersionLoading = "Загрузка..."
         VersionFailed = "Не удалось загрузить"
     }

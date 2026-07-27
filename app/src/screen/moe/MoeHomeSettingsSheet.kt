@@ -13,7 +13,6 @@
 
 package com.github.yumelira.yumebox.screen.moe
 
-
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.TextField
 
@@ -53,7 +53,7 @@ internal fun MoeHomeSettingsSheet(
 
     AppActionBottomSheet(
         show = show,
-        title = "首页设置",
+        title = YumeTxt.Home.Settings.Title,
         startAction = { AppBottomSheetCloseAction(onClick = onDismiss) },
         endAction = { AppBottomSheetConfirmAction(onClick = save) },
         onDismissRequest = onDismiss,
@@ -66,7 +66,7 @@ internal fun MoeHomeSettingsSheet(
                 TextField(
                     value = draftQuote,
                     onValueChange = { draftQuote = it },
-                    label = "一言",
+                    label = YumeTxt.Home.Settings.Quote,
                     useLabelAsPlaceholder = true,
                     maxLines = 2,
                     modifier = Modifier
@@ -80,16 +80,19 @@ internal fun MoeHomeSettingsSheet(
                     .padding(bottom = spacing.space12)) {
                     Column {
                         PreferenceSwitchItem(
-                            title = "回退经典首页",
+                            title = YumeTxt.Home.Settings.ClassicHome,
                             checked = draftClassicHomeEnabled,
                             onCheckedChange = { draftClassicHomeEnabled = it },
                         )
                         PreferenceSwitchItem(
-                            title = "展开侧边栏",
+                            title = YumeTxt.Home.Settings.ExpandSidebar,
                             checked = draftSidebarExpanded,
                             onCheckedChange = { draftSidebarExpanded = it },
                         )
-                        PreferenceValueItem(title = "更换壁纸", onClick = onChangeWallpaper)
+                        PreferenceValueItem(
+                            title = YumeTxt.Home.Settings.ChangeWallpaper,
+                            onClick = onChangeWallpaper,
+                        )
                     }
                 }
             }

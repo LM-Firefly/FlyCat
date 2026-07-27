@@ -37,6 +37,8 @@ Feature = {
         Port = "ポート"
         Secret = "シークレット（任意）"
         PortRangeError = "ポートは 1-65535 の範囲である必要があります"
+        Connected = "接続しました：モード %s"
+        ConnectionFailed = "接続に失敗しました：%s"
         Delete = "削除"
     }
 

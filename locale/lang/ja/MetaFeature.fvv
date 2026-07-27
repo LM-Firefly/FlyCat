@@ -22,6 +22,21 @@ MetaFeature = {
         GroupTypeFallback = "Fallback"
         UrlTestRegionGroupTitle = "UrlTest 地域グループ"
         FallbackRegionGroupTitle = "Fallback 地域グループ"
+        Region = {
+            HongKong = "香港自動グループ"
+            Taiwan = "台湾自動グループ"
+            Japan = "日本自動グループ"
+            Singapore = "シンガポール自動グループ"
+            UnitedStates = "米国自動グループ"
+            Other = "その他の地域自動グループ"
+        }
+        Item = {
+            Proxy = "プロキシルール"
+            Ads = "広告ブロック"
+            China = "中国本土を直接接続"
+            Global = "中国国外の地域ルール"
+            Match = "最終 MATCH"
+        }
     }
 
     RuntimeRules = {

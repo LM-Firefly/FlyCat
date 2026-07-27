@@ -38,6 +38,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import tf.gal.yumebox.locale.YumeTxt
 
 class RemoteControllerViewModel(
     application: Application,
@@ -139,9 +140,15 @@ class RemoteControllerViewModel(
                     }
                 }
             result
-                .onSuccess { state -> _messages.tryEmit("连接成功：模式 ${state.mode}") }
+                .onSuccess { state ->
+                    _messages.tryEmit(YumeTxt.Feature.RemoteController.Connected.format(state.mode))
+                }
                 .onFailure { error ->
-                    _messages.tryEmit("连接失败：${error.message ?: error::class.simpleName}")
+                    _messages.tryEmit(
+                        YumeTxt.Feature.RemoteController.ConnectionFailed.format(
+                            error.message ?: error::class.simpleName
+                        )
+                    )
                 }
         }
     }

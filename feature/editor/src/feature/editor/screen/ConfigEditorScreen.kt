@@ -37,6 +37,7 @@ import com.github.yumelira.yumebox.presentation.component.DialogButtonRow
 import com.github.yumelira.yumebox.presentation.component.Navigator
 import com.github.yumelira.yumebox.presentation.component.TopBar
 import org.koin.androidx.compose.koinViewModel
+import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 
@@ -86,8 +87,8 @@ fun ConfigEditorScreen(
             TopBar(
                 title =
                     when (configType) {
-                        ConfigType.Override -> "编辑覆写配置"
-                        ConfigType.Profile -> "编辑订阅配置"
+                        ConfigType.Override -> YumeTxt.Editor.Title.Override
+                        ConfigType.Profile -> YumeTxt.Editor.Title.Profile
                     },
                 scrollBehavior = scrollBehavior,
             )
@@ -110,8 +111,8 @@ fun ConfigEditorScreen(
 
         AppDialog(
             show = showDiscardDialog.value,
-            title = "放弃修改",
-            summary = "当前有未保存的修改，确定要放弃吗？",
+            title = YumeTxt.Editor.Discard.Title,
+            summary = YumeTxt.Editor.Discard.Summary,
             onDismissRequest = { showDiscardDialog.value = false },
         ) {
             DialogButtonRow(
@@ -121,8 +122,8 @@ fun ConfigEditorScreen(
                     viewModel.discardDraft()
                     navigator.navigateUp()
                 },
-                cancelText = "取消",
-                confirmText = "放弃",
+                cancelText = YumeTxt.Component.Button.Cancel,
+                confirmText = YumeTxt.Editor.Discard.Confirm,
             )
         }
     }

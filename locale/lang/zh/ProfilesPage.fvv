@@ -15,6 +15,7 @@ ProfilesPage = {
     Sheet = {
         AddTitle = "新增設定檔"
         EditTitle = "編輯設定檔"
+        Complete = "完成"
     }
 
     Type = {

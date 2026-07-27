@@ -25,6 +25,8 @@ Home = {
     Traffic = {
         UpShort = "UP"
         DownShort = "DOWN"
+        Upload = "アップロード"
+        Download = "ダウンロード"
         NoProfile = "プロファイルなし"
     }
 
@@ -36,7 +38,16 @@ Home = {
         Connecting = "接続中"
         Disconnecting = "切断中"
         Running = "実行中"
+        Lost = "切断されました"
         TapToStart = "タップして開始"
+    }
+
+    Settings = {
+        Title = "ホーム設定"
+        Quote = "一言"
+        ClassicHome = "クラシックホームを使用"
+        ExpandSidebar = "サイドバーを展開"
+        ChangeWallpaper = "壁紙を変更"
     }
 
     Control = {

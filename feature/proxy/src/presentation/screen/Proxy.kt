@@ -550,7 +550,7 @@ private fun ProxyTopBar(
                     modifier = Modifier.padding(end = spacing.space12),
                     onClick = onLocateCurrentProxy,
                 ) {
-                    Icon(Yume.Eye, contentDescription = "Eye current proxy")
+                    Icon(Yume.Eye, contentDescription = YumeTxt.Proxy.Action.LocateCurrent)
                 }
             }
             Box {
