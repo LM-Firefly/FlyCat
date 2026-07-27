@@ -8,6 +8,63 @@ icon: clock
 
 <Card title="GitHub Releases" icon="download" horizontal href="https://github.com/YumeYucca/YumeBox/releases" />
 
+<Update label="2026-7-27" tags={["Features", "Improvements", "Fixes"]} description="v0.6.0">
+  ## Changes
+
+  - **Reworked and aggressively minimized the application shell**, compressing application Dex and native payloads to significantly reduce APK size
+  - **Added a dedicated package module and custom APK packer** for payload compression, ABI packaging, integrity checks, dynamic loading, alignment, and signing
+  - **Completely rewrote Core API communication**, removing the old JNI business bridge and using the mihomo REST API for both local and remote controllers
+  - **Removed proxy-only mode and switched routing to VPN Service Tun and transparent proxying; transparent proxy support remains incomplete and is currently limited**
+  - Reworked runtime API, client, and service boundaries, moved the core out of process, and strengthened session, process, and state management
+  - Removed old Go/C bridges, JNI helpers, and obsolete native APIs while restructuring the Go entry point and Rust override compiler
+  - Added master/detail layouts for tablets and large screens, with adaptive proxy-node grids and a dedicated detail pane
+  - Added current-proxy location and improved list/grid scrolling and Proxy-page stability
+  - Added a connection-detail screen with new labels and navigation
+  - Added runtime-rule search, filtering, and temporary enable/disable actions
+  - Added hourly traffic statistics and improved persistence and display
+  - Added an Apply to Profiles interface for viewing and editing override bindings across subscriptions
+  - Custom-routing configurations can now skip default runtime patches to prevent automatic changes to advanced configurations
+  - Added external HTTP Provider prefetch into each profile directory
+  - Subscription downloads now decode headers, follow redirects, support a custom User-Agent, and display progress
+  - Added Traditional Chinese and Japanese translations and localized built-in configuration names
+  - Fixed missing translations in Home settings, editors, custom routing, remote controllers, and accessibility actions
+  - Added core diagnostics export and consolidated runtime, core, and config-test output into one timestamped `runtime.log`
+  - Logs are no longer truncated on every start, preserve complete cause chains, and are size-bounded
+  - Added mihomo branch hashes and core-version stamps to build information
+  - Kept the Proxy destination and current target visible during configuration reloads and remote-controller mode
+  - Improved profile-list sections, bottom actions, and built-in/imported profile presentation
+  - Open-source licenses now open project URLs directly without an intermediate sheet
+  - Moved heavy startup work off the main thread and improved auto-start, session tracking, and runtime restoration
+  - Improved local and Root lifecycle handling to prevent stale sessions, duplicate failure reporting, and consecutive-start races
+  - Added bounded, interruptible proxy-group startup verification with core liveness checks and log-tail diagnostics
+  - Reused JavaScript runtimes for override chains, skipped empty chains, and removed runtime reloads from the apply critical path
+  - Improved built-in override materialization, metadata repair, and configuration handling; DNS-leak prevention is now a YAML asset
+  - Improved system-bar and IME insets in the configuration editor
+  - Improved sidebars and dual-pane animations, corners, and blur rendering using Haze
+  - Fixed Provider-backed nodes appearing as Unknown, missing latency, and always timing out during individual tests
+  - Fixed the default DNS patch appending an unusable `system://` resolver to every query
+  - Fixed consecutive Root starts racing with old-daemon teardown and fixed replacement of mihomo's own socket path
+  - Fixed exited core children remaining as zombie processes
+  - Fixed interrupted socket-owner sends and connected Unix-socket handling
+  - Fixed controller secrets being exposed through process command lines
+  - Fixed the Quick Settings tile failing to stop the service, showing stale state, or failing to recover from errors
+  - Fixed headless auto-start failing to restore the runtime and stop paths leaving local state behind
+  - Hardened blank and malformed subscription imports and image size/type validation
+  - Fixed Sub-Store startup crashes caused by R8 removing required Javet classes
+  - Fixed stale proxy-sheet title actions after returning from the background
+  - Fixed the Home double-tap gesture so the sidebar can collapse again after being expanded
+  - Fixed Home and Proxy polling continuing after their ViewModels were cleared
+  - Added arm64-v8a and universal APKs in Geo and NoGeo variants with consistent artifact names
+  - Local builds now default to arm64-v8a, with switches for all ABIs and bundled Geo assets
+  - CI now builds Geo/NoGeo together and publishes universal artifacts with explicit variant names
+  - Packed APKs are realigned for 16 KiB pages, integrity-checked, and re-signed
+  - Migrated Android builds to AGP 9 and adopted commit-count-based version codes
+
+  **Full Changelog**: [https://github.com/YumeYucca/YumeBox/compare/v0.5.3...v0.6.0](https://github.com/YumeYucca/YumeBox/compare/v0.5.3...v0.6.0)
+
+  [Download](https://github.com/YumeYucca/YumeBox/releases/tag/v0.6.0)
+</Update>
+
 <Update label="2026-7-7" tags={["Features", "Improvements", "Fixes"]} description="v0.5.3">
   ## Changes
 
