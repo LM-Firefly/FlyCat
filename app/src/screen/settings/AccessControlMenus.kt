@@ -169,9 +169,11 @@ internal fun AccessControlOperationsMenu(
                                     DropdownItem(
                                         text = settings.Export,
                                         onClick = {
-                                            clipboardManager.primaryClip = ClipData.newPlainText(
-                                                "packages",
-                                                actions.onExportPackages(),
+                                            clipboardManager.setPrimaryClip(
+                                                ClipData.newPlainText(
+                                                    "packages",
+                                                    actions.onExportPackages(),
+                                                ),
                                             )
                                         },
                                     ),

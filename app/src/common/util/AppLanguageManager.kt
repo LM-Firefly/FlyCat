@@ -87,7 +87,7 @@ object AppLanguageManager {
             AppLanguage.ZhHant -> Locale.TRADITIONAL_CHINESE
             AppLanguage.En -> Locale.ENGLISH
             AppLanguage.Ja -> Locale.JAPANESE
-            AppLanguage.Ru -> Locale("ru")
+            AppLanguage.Ru -> Locale.forLanguageTag("ru")
         }
 
     private fun systemLocale(): Locale {
