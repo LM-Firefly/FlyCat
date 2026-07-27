@@ -48,7 +48,7 @@ class VpnTunTransport(
     private val core = CoreProcess(vpnService)
 
     override fun start(spec: RuntimeSpec) {
-        log.i("transport", "start begin")
+        log.i(RuntimeLog.Type.Transport, "start begin")
         // Prefer the precompiled YAML attached to the spec (single compile on the start path).
         // Fall back to a local compile only for callers that have not prepared the spec yet.
         val config =
@@ -132,7 +132,7 @@ class VpnTunTransport(
             dns = device.dns,
             config = config,
         )
-        log.i("transport", "success: tun attached and core launched")
+        log.i(RuntimeLog.Type.Transport, "success: tun attached and core launched")
     }
 
     /**
@@ -207,7 +207,7 @@ class VpnTunTransport(
     private fun VpnService.Builder.configurePerAppRouting() {
         val self = vpnService.packageName
         log.i(
-            "transport",
+            RuntimeLog.Type.Transport,
             "per-app routing: ui mode=${store.accessControlMode} (self excluded)",
         )
         when (store.accessControlMode) {

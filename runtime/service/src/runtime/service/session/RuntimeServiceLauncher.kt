@@ -51,10 +51,9 @@ object RuntimeServiceLauncher {
     ) {
         val appContext = context.appContextOrSelf
         val log = RuntimeLog.writer(appContext, mode)
-        log.beginSession("launcher", "request start source=$source mode=${mode.name}")
 
         if (RemoteControllerStore.isActive()) {
-            log.i("launcher", "skipped: remote controller active")
+            log.i(RuntimeLog.Type.Launcher, "skipped: remote controller active")
             return
         }
 
@@ -62,12 +61,12 @@ object RuntimeServiceLauncher {
         // phase as Starting with nothing to flip it back to Running afterwards.
         val currentPhase = StatusProvider.queryRuntimePhase(mode)
         if (currentPhase == RuntimePhase.Running) {
-            log.i("launcher", "skipped: already running")
+            log.i(RuntimeLog.Type.Launcher, "skipped: already running")
             return
         }
 
         if (StatusProvider.isRuntimeStartingWithinGrace(mode)) {
-            log.i("launcher", "skipped: already starting")
+            log.i(RuntimeLog.Type.Launcher, "skipped: already starting")
             return
         }
 
@@ -79,7 +78,7 @@ object RuntimeServiceLauncher {
             StatusProvider.queryRuntimePhase(mode) == RuntimePhase.Starting &&
                 StatusProvider.isLocalRuntimeServiceAlive(mode)
         ) {
-            log.w("launcher", "stopping stale ${mode.name} runtime before restart")
+            log.w(RuntimeLog.Type.Launcher, "stopping stale ${mode.name} runtime before restart")
             appContext.sendBroadcast(
                 Intent(Intents.ACTION_RUNTIME_REQUEST_STOP)
                     .setPackage(appContext.packageName)
@@ -89,16 +88,20 @@ object RuntimeServiceLauncher {
             return
         }
 
+        log.beginSession(
+            RuntimeLog.Type.Launcher,
+            "request start source=$source mode=${mode.name}",
+        )
         val sessionToken = StatusProvider.beginRuntimeSession(mode)
 
         val intent =
             Intent(appContext, TunService::class.java).putExtra(EXTRA_REQUEST_SOURCE, source)
 
         runCatching { appContext.startForegroundService(intent) }
-            .onSuccess { log.i("launcher", "service start requested") }
+            .onSuccess { log.i(RuntimeLog.Type.Launcher, "service start requested") }
             .onFailure { error ->
                 StatusProvider.markRuntimeIdle(mode, sessionToken)
-                log.e("launcher", "service start request failed", error)
+                log.e(RuntimeLog.Type.Launcher, "service start request failed", error)
                 throw error
             }
     }

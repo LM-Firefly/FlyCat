@@ -46,7 +46,6 @@ import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
@@ -247,23 +246,14 @@ fun AboutScreen(navigator: Navigator) {
     }
 }
 
-/**
- * One plain-text file, not a zip of partial ones: the unified log already interleaves every source
- * in timestamp order, and the core's own log is appended so nothing lives outside it.
- */
+/** Exports only the current startup's runtime log. */
 private fun exportStartupLogs(context: Context, targetUri: Uri): Boolean {
     val runtimeLog = RuntimeLog.snapshot(context)
-    val coreLog = runCatching { CoreProcess.coreDiagnosticLog(context) }.getOrDefault("")
     val export = buildString {
         appendLine("# YumeBox runtime log")
         appendLine("# app=${BuildConfig.VERSION_NAME} core=${BuildConfig.CORE_VERSION}")
         appendLine()
         append(runtimeLog.ifBlank { "(no runtime entries recorded)\n" })
-        if (coreLog.isNotBlank()) {
-            appendLine()
-            appendLine("--- current core.log (verbatim) ---")
-            appendLine(coreLog)
-        }
     }
     return try {
         context.contentResolver.openOutputStream(targetUri)?.use { output ->

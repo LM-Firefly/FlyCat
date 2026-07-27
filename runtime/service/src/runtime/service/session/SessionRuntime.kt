@@ -468,7 +468,6 @@ class SessionRuntime(
             )
         )
         startupError(spec, "start failed: $reason", error)
-        appendCoreDiagnostics(spec)
         host.reportFailure(reason)
     }
 
@@ -568,15 +567,6 @@ class SessionRuntime(
             scope.launch(Dispatchers.IO) {
                 refreshRuntimeSnapshot(spec)
             }
-    }
-
-    private fun appendCoreDiagnostics(spec: RuntimeSpec) {
-        val writer = logWriter(spec) ?: return
-        writer.coreDiagnostics(
-            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.coreDiagnosticLog(
-                host.context.appContextOrSelf
-            )
-        )
     }
 
     private fun readExpectedGroupNames(spec: RuntimeSpec): List<String> {
@@ -794,19 +784,19 @@ class SessionRuntime(
     }
 
     private fun startupLog(spec: RuntimeSpec, message: String) {
-        logWriter(spec)?.i("session", message)
+        logWriter(spec)?.i(RuntimeLog.Type.Session, message)
     }
 
     private fun startupError(spec: RuntimeSpec, message: String, error: Throwable? = null) {
-        logWriter(spec)?.e("session", message, error)
+        logWriter(spec)?.e(RuntimeLog.Type.Session, message, error)
     }
 
     private fun verifyLog(spec: RuntimeSpec, message: String) {
-        logWriter(spec)?.i("verify", message)
+        logWriter(spec)?.i(RuntimeLog.Type.Verify, message)
     }
 
     private fun verifyWarn(spec: RuntimeSpec, message: String) {
-        logWriter(spec)?.w("verify", message)
+        logWriter(spec)?.w(RuntimeLog.Type.Verify, message)
     }
 
     private fun elapsedMillis(startedAtNanos: Long): Long =

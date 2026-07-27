@@ -46,7 +46,7 @@ object RootSessionLauncher {
         }
         val appContext = context.appContextOrSelf
         val log = RuntimeLog.writer(appContext, mode)
-        log.beginSession("launcher", "root start mode=${mode.name}")
+        log.beginSession(RuntimeLog.Type.Launcher, "root start mode=${mode.name}")
 
         RootForegroundService.start(appContext)
         try {
@@ -54,11 +54,11 @@ object RootSessionLauncher {
             StartupTaskCoordinator.awaitWarmup()
             val spec = SessionRuntimeSpecFactory(appContext).createRootSpec(mode)
             log.i(
-                "launcher",
+                RuntimeLog.Type.Launcher,
                 "profile=${spec.profileName} overrides=${spec.overrideSpecs.size}",
             )
             val compiled = CompiledConfigPipeline(appContext).compileDetailed(spec)
-            log.i("launcher", "compiled groups=${compiled.proxyGroupNames.size}")
+            log.i(RuntimeLog.Type.Launcher, "compiled groups=${compiled.proxyGroupNames.size}")
             CoreProcess(appContext).startRoot(mode.coreArg, compiled.finalYaml)
 
             // The fork succeeding proves nothing: a rejected config kills the core moments later
@@ -93,17 +93,16 @@ object RootSessionLauncher {
                         error,
                     )
                 }
-            log.i("launcher", "controller ready")
+            log.i(RuntimeLog.Type.Launcher, "controller ready")
 
             StatusProvider.markRuntimeRunning(mode)
             broadcast(appContext, Intents.actionRuntimeStarted(appContext.packageName))
-            log.i("launcher", "success: root daemon running mode=${mode.name}")
+            log.i(RuntimeLog.Type.Launcher, "success: root daemon running mode=${mode.name}")
         } catch (error: Throwable) {
             runCatching { CoreProcess.stopRoot() }
             StatusProvider.markRuntimeFailed(mode, error.message)
             RootForegroundService.stop(appContext)
-            log.e("launcher", "root start failed", error)
-            log.coreDiagnostics(CoreProcess.coreDiagnosticLog(appContext))
+            log.e(RuntimeLog.Type.Launcher, "root start failed", error)
             throw error
         }
     }

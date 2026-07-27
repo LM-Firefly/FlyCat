@@ -119,14 +119,14 @@ class RuntimeForegroundController(
         // services share this process). Set first so it holds even if the start below fails.
         StatusProvider.setServiceAlive(mode, true)
         runCatching {
-            runtimeLog.i("service", "onCreate begin mode=${mode.name}")
+            runtimeLog.i(RuntimeLog.Type.Service, "onCreate begin mode=${mode.name}")
 
             notificationManager.createChannel()
             service.startForeground(
                 notificationConfig.notificationId,
                 notificationManager.createInitialNotification(),
             )
-            runtimeLog.i("service", "startForeground done")
+            runtimeLog.i(RuntimeLog.Type.Service, "startForeground done")
 
             StatusProvider.clearLegacyStateFiles()
             sessionToken = StatusProvider.adoptOrBeginRuntimeSession(mode)
@@ -170,7 +170,10 @@ class RuntimeForegroundController(
 
                             override fun reportFailure(error: String) {
                                 reason = error
-                                runtimeLog.e("session", "runtime reported failure: $error")
+                                runtimeLog.e(
+                                    RuntimeLog.Type.Session,
+                                    "runtime reported failure: $error",
+                                )
                                 markFailed(error)
                                 service.sendRuntimeStopped(error)
                                 Timber.e("$label runtime failed: $error")
@@ -182,13 +185,13 @@ class RuntimeForegroundController(
                 )
 
             registerRuntimeReceiver()
-            runtimeLog.i("service", "receiver registered")
+            runtimeLog.i(RuntimeLog.Type.Service, "receiver registered")
             scope.launch {
                 runCatching {
-                    runtimeLog.i("spec", "create begin")
+                    runtimeLog.i(RuntimeLog.Type.Spec, "create begin")
                     val spec = createSpec()
                     runtimeLog.i(
-                        "spec",
+                        RuntimeLog.Type.Spec,
                         "create done profile=${spec.profileUuid} " +
                             "overrides=${spec.overrideSpecs.size}",
                     )
@@ -209,7 +212,7 @@ class RuntimeForegroundController(
     /** [error] carries the cause chain the persisted status message alone would lose. */
     private fun failStartup(message: String, error: Throwable? = null) {
         reason = message
-        runtimeLog.e("service", "startup failed: $message", error)
+        runtimeLog.e(RuntimeLog.Type.Service, "startup failed: $message", error)
         markFailed(message)
         service.sendRuntimeStopped(message)
         service.stopSelf()
@@ -270,15 +273,17 @@ class RuntimeForegroundController(
         // must stay readable after the service is gone).
         StatusProvider.markRuntimeIdle(mode, sessionToken)
         service.sendRuntimeStopped(reason)
-        runtimeLog.i("service", "destroyed reason=${reason ?: "normal stop"}")
+        runtimeLog.i(RuntimeLog.Type.Service, "destroyed reason=${reason ?: "normal stop"}")
         Timber.i("${service.javaClass.simpleName} destroyed: ${reason ?: "successfully"}")
 
         // A start command can land on a dying instance, and a stale session may explicitly
         // request a handoff. Both cases must wait until this instance releases its token.
         if (restartAfterStop || (stopRequested && lastStartId != stopCommandStartId)) {
-            runtimeLog.i("service", "relaunching after stop")
+            runtimeLog.i(RuntimeLog.Type.Service, "relaunching after stop")
             runCatching { service.startForegroundService(Intent(service, service.javaClass)) }
-                .onFailure { error -> runtimeLog.e("service", "relaunch failed", error) }
+                .onFailure { error ->
+                    runtimeLog.e(RuntimeLog.Type.Service, "relaunch failed", error)
+                }
         }
     }
 
@@ -355,29 +360,29 @@ class RuntimeForegroundController(
     private fun scheduleReload() {
         reloadJob?.cancel()
         reloadJob = scope.launch {
-            runtimeLog.i("reload", "spec create begin")
+            runtimeLog.i(RuntimeLog.Type.Reload, "spec create begin")
             val spec = runCatching {
                 createSpec()
             }
                 .getOrElse { error ->
                     reason = error.message
-                    runtimeLog.e("reload", "spec refresh failed", error)
+                    runtimeLog.e(RuntimeLog.Type.Reload, "spec refresh failed", error)
                     Timber.w("$label runtime spec refresh failed: ${error.message}")
                     return@launch
                 }
             runtimeLog.i(
-                "reload",
+                RuntimeLog.Type.Reload,
                 "spec create done profile=${spec.profileUuid} " +
                     "overrides=${spec.overrideSpecs.size}",
             )
 
             val result = runtime!!.reload(spec)
             if (result.success) {
-                runtimeLog.i("reload", "success profile=${spec.profileUuid}")
+                runtimeLog.i(RuntimeLog.Type.Reload, "success profile=${spec.profileUuid}")
             } else {
                 reason = result.error
                 runtimeLog.e(
-                    "reload",
+                    RuntimeLog.Type.Reload,
                     "failed: ${result.error ?: "${label.lowercase()} runtime reload failed"}",
                 )
                 Timber.w("$label runtime reload failed: ${result.error}")

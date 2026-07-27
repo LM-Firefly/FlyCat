@@ -187,7 +187,10 @@ class AutoRestartService : Service() {
         val log = RuntimeLog.writer(this, runMode)
         when (activationResult) {
             is RuntimeActivationResult.Running -> {
-                log.i("auto-start", "success: running reason=$reason mode=$runMode")
+                log.i(
+                    RuntimeLog.Type.AutoStart,
+                    "success: running reason=$reason mode=$runMode",
+                )
                 Timber.tag(TAG)
                     .i(
                         "Auto start active: reason=$reason profile=${activeProfile.name}, " +
@@ -198,7 +201,7 @@ class AutoRestartService : Service() {
             is RuntimeActivationResult.Failed -> {
                 cleanupIncompleteRuntime(runMode)
                 val message = activationResult.error ?: "runtime entered Failed"
-                log.e("auto-start", "failed reason=$reason error=$message")
+                log.e(RuntimeLog.Type.AutoStart, "failed reason=$reason error=$message")
                 error(message)
             }
 
@@ -208,7 +211,7 @@ class AutoRestartService : Service() {
                     "runtime activation timed out in ${activationResult.lastState.phase}" +
                         activationResult.lastState.error?.let { ": $it" }.orEmpty()
                 log.e(
-                    "auto-start",
+                    RuntimeLog.Type.AutoStart,
                     "timeout reason=$reason phase=${activationResult.lastState.phase} " +
                         "error=${activationResult.lastState.error}",
                 )
