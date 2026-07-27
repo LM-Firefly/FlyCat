@@ -31,10 +31,10 @@ import com.github.yumelira.yumebox.core.model.LogMessage
 import com.github.yumelira.yumebox.data.model.RunMode
 import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
+import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 import com.github.yumelira.yumebox.runtime.service.notification.ServiceNotificationManager
 import com.github.yumelira.yumebox.runtime.service.session.*
-import com.github.yumelira.yumebox.runtime.service.util.CoreRuntimeConfig
 import com.github.yumelira.yumebox.runtime.service.util.sendProfileLoaded
 import com.github.yumelira.yumebox.runtime.service.util.sendRuntimeStarted
 import com.github.yumelira.yumebox.runtime.service.util.sendRuntimeStopped
@@ -130,8 +130,6 @@ class RuntimeForegroundController(
 
             StatusProvider.clearLegacyStateFiles()
             sessionToken = StatusProvider.adoptOrBeginRuntimeSession(mode)
-            CoreRuntimeConfig.applyCustomUserAgentIfPresent(service)
-
             runtime =
                 SessionRuntime(
                     host =
@@ -160,6 +158,14 @@ class RuntimeForegroundController(
 
                             override fun onProfileLoaded(profileUuid: String) {
                                 service.sendProfileLoaded(UUID.fromString(profileUuid))
+                            }
+
+                            override fun restoreActiveProfile(
+                                profileUuid: String,
+                                profileName: String,
+                            ) {
+                                ServiceStore().activeProfile = UUID.fromString(profileUuid)
+                                StatusProvider.currentProfile = profileName
                             }
 
                             override fun onSnapshotChanged(snapshot: RuntimeSnapshot) = Unit

@@ -27,6 +27,7 @@ import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
 import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -118,8 +119,9 @@ internal class RuntimeGroupHub(
                         coreOps
                             .queryAllProxyGroups(excludeNotSelectable = false)
                             .map(groupStore::toInfo)
-                    }
+                        }
                         .getOrElse { error ->
+                            if (error is CancellationException) throw error
                             Timber.e(error, "Failed to refresh proxy groups")
                             missingLocalRuntime = session.isMissingLocalRuntime(snapshot)
                             null
@@ -127,22 +129,18 @@ internal class RuntimeGroupHub(
                 }
 
             if (groups != null) {
-                if (snapshot.owner == RuntimeOwner.RemoteController) {
-                    session.markRemoteOnline()
-                }
                 groupStore.publish(groups)
             } else if (missingLocalRuntime) {
                 session.handleMissingLocalRuntime(snapshot, "runtime backend unavailable")
                 runCatching { queryPreviewProxyGroups() }
                     .onSuccess { preview -> groupStore.publish(preview) }
                     .onFailure { error ->
+                        if (error is CancellationException) throw error
                         Timber.d(
                             error,
                             "Fallback preview refresh skipped after stale runtime reset",
                         )
                     }
-            } else if (snapshot.owner == RuntimeOwner.RemoteController) {
-                session.markRemoteLost(IllegalStateException("remote backend unavailable"))
             }
         }
     }
@@ -159,6 +157,7 @@ internal class RuntimeGroupHub(
                 withContext(Dispatchers.IO) {
                     runCatching { groupStore.toInfo(coreOps.queryProxyGroup(name, sort)) }
                         .getOrElse { error ->
+                            if (error is CancellationException) throw error
                             Timber.e(error, "Failed to refresh proxy group: %s", name)
                             null
                         }
@@ -177,9 +176,7 @@ internal class RuntimeGroupHub(
         }
         runCatching { refreshProxyGroups() }
             .onFailure { error ->
-                if (snapshot.owner == RuntimeOwner.RemoteController) {
-                    session.markRemoteLost(error)
-                }
+                if (error is CancellationException) throw error
                 Timber.d(error, "Runtime proxy group sync skipped")
             }
     }
@@ -190,6 +187,7 @@ internal class RuntimeGroupHub(
             awaitDelay(delayMillis, "runtime_proxy_group_refresh_$groupName")
             runCatching { refreshProxyGroup(groupName) }
                 .onFailure { error ->
+                    if (error is CancellationException) throw error
                     Timber.d(error, "Deferred proxy group refresh skipped: %s", groupName)
                 }
         }

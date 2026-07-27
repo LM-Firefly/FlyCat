@@ -37,6 +37,8 @@ interface RuntimeHost {
 
     fun onProfileLoaded(profileUuid: String)
 
+    fun restoreActiveProfile(profileUuid: String, profileName: String)
+
     fun onSnapshotChanged(snapshot: RuntimeSnapshot)
 
     fun onLogReady(ready: Boolean)

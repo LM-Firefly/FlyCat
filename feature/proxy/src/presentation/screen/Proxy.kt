@@ -51,6 +51,7 @@ import com.github.yumelira.yumebox.presentation.icon.yume.Eye
 import com.github.yumelira.yumebox.presentation.icon.yume.Folders
 import com.github.yumelira.yumebox.presentation.icon.yume.ListChevronsUpDown
 import com.github.yumelira.yumebox.presentation.icon.yume.Speed
+import com.github.yumelira.yumebox.presentation.icon.yume.Zashboard
 import com.github.yumelira.yumebox.presentation.screen.node.NodeCard
 import com.github.yumelira.yumebox.presentation.screen.node.NodeSortPopup
 import com.github.yumelira.yumebox.presentation.screen.node.nodeGridItems
@@ -108,6 +109,7 @@ private fun rememberProxyScreenVmState(proxyViewModel: ProxyViewModel): ProxyScr
 fun ProxyPager(
     mainInnerPadding: PaddingValues,
     onNavigateToProviders: (() -> Unit)?,
+    onOpenPanel: (() -> Unit)?,
     isActive: Boolean,
     @Suppress("UNUSED_PARAMETER") windowLayoutMode: WindowLayoutMode = WindowLayoutMode.Compact,
 ) {
@@ -233,6 +235,7 @@ fun ProxyPager(
                 showBack = false,
                 onBack = {},
                 onNavigateToProviders = onNavigateToProviders,
+                onOpenPanel = onOpenPanel,
                 onLocateCurrentProxy = locateCurrentProxy,
                 showSortPopup = showSortPopup,
                 onShowSortPopupChange = { showSortPopup = it },
@@ -352,6 +355,7 @@ fun ProxyPager(
 fun ProxyShellNodeDetail(
     mainInnerPadding: PaddingValues,
     onNavigateToProviders: (() -> Unit)? = null,
+    onOpenPanel: (() -> Unit)? = null,
 ) {
     val proxyViewModel = koinViewModel<ProxyViewModel>()
     val screen = rememberProxyScreenVmState(proxyViewModel)
@@ -478,6 +482,7 @@ fun ProxyShellNodeDetail(
                     showBack = false,
                     onBack = {},
                     onNavigateToProviders = onNavigateToProviders,
+                    onOpenPanel = onOpenPanel,
                     onLocateCurrentProxy = locateCurrentProxy,
                     showSortPopup = showSortPopup,
                     onShowSortPopupChange = { showSortPopup = it },
@@ -528,6 +533,7 @@ private fun ProxyTopBar(
     showBack: Boolean,
     onBack: () -> Unit,
     onNavigateToProviders: (() -> Unit)?,
+    onOpenPanel: (() -> Unit)?,
     onLocateCurrentProxy: (() -> Unit)?,
     showSortPopup: Boolean,
     onShowSortPopupChange: (Boolean) -> Unit,
@@ -554,6 +560,14 @@ private fun ProxyTopBar(
                     if (onNavigateToProviders != null) {
                         IconButton(onClick = onNavigateToProviders) {
                             Icon(Yume.Folders, contentDescription = YumeTxt.Providers.Title)
+                        }
+                    }
+                    if (onOpenPanel != null) {
+                        IconButton(onClick = onOpenPanel) {
+                            Icon(
+                                Yume.Zashboard,
+                                contentDescription = YumeTxt.Proxy.Action.Panel,
+                            )
                         }
                     }
                 }

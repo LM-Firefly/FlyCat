@@ -29,7 +29,6 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import java.util.concurrent.Executors
 
 /**
  * Runtime diagnostics for the current app process.
@@ -49,7 +48,8 @@ import java.util.concurrent.Executors
  * `<month-day time> <level> [<source>/<type>] <message>[ | <cause chain>]`. The source and type are
  * declared values rather than arbitrary strings, so tags remain stable and searchable.
  *
- * Writes are appended off the caller's thread, so logging never sits on a startup path.
+ * Writes are serialized and completed before returning so a process failure cannot discard queued
+ * startup diagnostics.
  */
 object RuntimeLog {
 
@@ -124,14 +124,12 @@ object RuntimeLog {
 
     private fun startNewFile(context: Context) {
         val appContext = context.appContextOrSelf
-        ioExecutor.execute {
-            synchronized(lock) {
-                runCatching {
-                    clearPreviousLogs(appContext)
-                    val file = file(appContext)
-                    file.parentFile?.mkdirs()
-                    file.createNewFile()
-                }
+        synchronized(lock) {
+            runCatching {
+                clearPreviousLogs(appContext)
+                val file = file(appContext)
+                file.parentFile?.mkdirs()
+                file.createNewFile()
             }
         }
     }
@@ -151,14 +149,10 @@ object RuntimeLog {
     /** The whole log, oldest first. Used by the About screen's export. */
     fun snapshot(context: Context): String =
         runCatching {
-                ioExecutor
-                    .submit<String> {
-                        synchronized(lock) {
-                            val file = file(context)
-                            if (file.exists()) file.readText(StandardCharsets.UTF_8) else ""
-                        }
-                    }
-                    .get()
+                synchronized(lock) {
+                    val file = file(context)
+                    if (file.exists()) file.readText(StandardCharsets.UTF_8) else ""
+                }
             }
             .getOrDefault("")
 
@@ -209,13 +203,11 @@ object RuntimeLog {
     private fun append(context: Context, line: String) {
         val appContext = context.appContextOrSelf
         val normalized = "${line.trimEnd()}\n"
-        ioExecutor.execute {
-            synchronized(lock) {
-                runCatching {
-                    val file = file(appContext)
-                    file.parentFile?.mkdirs()
-                    file.appendText(normalized, StandardCharsets.UTF_8)
-                }
+        synchronized(lock) {
+            runCatching {
+                val file = file(appContext)
+                file.parentFile?.mkdirs()
+                file.appendText(normalized, StandardCharsets.UTF_8)
             }
         }
     }
@@ -251,8 +243,4 @@ object RuntimeLog {
     private val TIMESTAMP: DateTimeFormatter =
         DateTimeFormatter.ofPattern("MM-dd HH:mm:ss", Locale.ROOT)
     private val lock = Any()
-    private val ioExecutor =
-        Executors.newSingleThreadExecutor { runnable ->
-            Thread(runnable, "runtime-log").apply { isDaemon = true }
-        }
 }

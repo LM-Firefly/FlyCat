@@ -31,15 +31,20 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.github.yumelira.yumebox.presentation.component.*
+import com.github.yumelira.yumebox.common.util.openUrl
+import com.github.yumelira.yumebox.data.store.FeatureStore
+import com.github.yumelira.yumebox.data.store.LinkOpenMode
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.screen.ProxyPager
 import com.github.yumelira.yumebox.presentation.theme.YumeHaze
+import com.github.yumelira.yumebox.presentation.webview.WebViewUtils
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.screen.home.HomePager
 import com.github.yumelira.yumebox.screen.home.HomeViewModel
@@ -50,13 +55,16 @@ import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
 import com.github.yumelira.yumebox.screen.settings.SettingPager
 import dev.chrisbanes.haze.HazeState
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
+    val context = LocalContext.current
     val windowLayoutMode = rememberWindowLayoutMode()
     val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
     val homeViewModel = koinViewModel<HomeViewModel>()
+    val featureStore = koinInject<FeatureStore>()
     val runtimeSnapshot by homeViewModel.runtimeSnapshot.collectAsState()
     val isConfigReloading by homeViewModel.isConfigReloading.collectAsState()
     val isRemoteControllerMode by homeViewModel.isRemoteControllerMode.collectAsState()
@@ -94,6 +102,17 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val moeWallpaperZoom by appSettingsViewModel.moeWallpaperZoom.state.collectAsState()
     val moeWallpaperBiasX by appSettingsViewModel.moeWallpaperBiasX.state.collectAsState()
     val moeWallpaperBiasY by appSettingsViewModel.moeWallpaperBiasY.state.collectAsState()
+    val selectedPanelType by featureStore.selectedPanelType.state.collectAsState()
+    val panelOpenMode by featureStore.panelOpenMode.state.collectAsState()
+    val panelUrl = remember(selectedPanelType) { WebViewUtils.getPanelUrl(selectedPanelType) }
+    val openNetworkPanel: () -> Unit = {
+        if (panelUrl.isNotBlank()) {
+            when (panelOpenMode) {
+                LinkOpenMode.IN_APP -> WebViewActivity.start(context, panelUrl)
+                LinkOpenMode.EXTERNAL_BROWSER -> openUrl(context, panelUrl)
+            }
+        }
+    }
     val bottomBarScrollBehavior =
         rememberBottomBarScrollBehavior(autoHideEnabled = bottomBarAutoHideEnabled)
     val selectedDestination by
@@ -287,6 +306,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
             navigator = navigator,
             detailBackStack = detailBackStack,
             detailNavigator = detailNavigator,
+            onOpenPanel = openNetworkPanel,
         )
     }
 }
@@ -317,6 +337,7 @@ internal fun MainRootPageContent(
     homePageProgress: Float,
     selectedDestination: BottomBarDestination,
     windowLayoutMode: WindowLayoutMode,
+    onOpenPanel: () -> Unit,
 ) {
     val detailNavigator = LocalDetailNavigator.current
     val openSecondary: (Route) -> Unit = { route ->
@@ -353,6 +374,7 @@ internal fun MainRootPageContent(
                 onNavigateToProviders = {
                     openSecondary(Route.Providers)
                 },
+                onOpenPanel = onOpenPanel,
                 isActive = selectedDestination == BottomBarDestination.Proxy,
                 windowLayoutMode = windowLayoutMode,
             )

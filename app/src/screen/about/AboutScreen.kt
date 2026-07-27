@@ -46,6 +46,7 @@ import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
@@ -204,7 +205,7 @@ fun AboutScreen(navigator: Navigator) {
                         title = YumeTxt.About.Support.ExportLogs,
                         onClick = {
                             exportLogsLauncher.launch(
-                                "yumebox_runtime_${System.currentTimeMillis()}.log"
+                                "yumebox_diagnostics_${System.currentTimeMillis()}.log"
                             )
                         },
                     )
@@ -246,14 +247,20 @@ fun AboutScreen(navigator: Navigator) {
     }
 }
 
-/** Exports only the current startup's runtime log. */
+/** Exports both logs without folding the core's raw output into runtime.log on disk. */
 private fun exportStartupLogs(context: Context, targetUri: Uri): Boolean {
     val runtimeLog = RuntimeLog.snapshot(context)
+    val coreLog = CoreProcess.coreDiagnosticLog(context)
     val export = buildString {
-        appendLine("# YumeBox runtime log")
+        appendLine("# YumeBox runtime diagnostics")
         appendLine("# app=${BuildConfig.VERSION_NAME} core=${BuildConfig.CORE_VERSION}")
         appendLine()
+        appendLine("# runtime.log")
         append(runtimeLog.ifBlank { "(no runtime entries recorded)\n" })
+        if (isNotEmpty() && last() != '\n') appendLine()
+        appendLine()
+        appendLine("# core.log")
+        append(coreLog.ifBlank { "(no core entries recorded)\n" })
     }
     return try {
         context.contentResolver.openOutputStream(targetUri)?.use { output ->

@@ -30,6 +30,7 @@ import com.github.yumelira.yumebox.runtime.client.RuntimeStartRequest
 import com.github.yumelira.yumebox.runtime.client.RuntimeStateMapper
 import com.github.yumelira.yumebox.runtime.client.RuntimeStopRequest
 import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -131,7 +132,10 @@ internal class RuntimeSession(private val deps: RuntimeSessionDeps) {
                         queryTrafficTotal(queryTrafficTotalAction)
                     }
                 }
-                    .onFailure { error -> Timber.d(error, "Traffic polling skipped") }
+                    .onFailure { error ->
+                        if (error is CancellationException) throw error
+                        Timber.d(error, "Traffic polling skipped")
+                    }
                 onTrafficTickExtra(tick)
             },
             onGroupTick = { onGroupTick() },
@@ -221,19 +225,6 @@ internal class RuntimeSession(private val deps: RuntimeSessionDeps) {
         }
     }
 
-    fun markRemoteLost(error: Throwable) {
-        val snapshot = _runtimeSnapshot.value
-        if (snapshot.owner != RuntimeOwner.RemoteController) return
-        publishSnapshot(ownership.markRemoteLost(snapshot, error, nextGeneration()))
-        _trafficNow.value = 0L
-        _trafficTotal.value = 0L
-    }
-
-    fun markRemoteOnline() {
-        val snapshot = _runtimeSnapshot.value
-        ownership.markRemoteOnline(snapshot, nextGeneration())?.let(::publishSnapshot)
-    }
-
     fun applyRemoteControllerState() {
         scope.launch { controllerSwitchMutex.withLock { applyRemoteControllerStateLocked() } }
     }
@@ -271,6 +262,7 @@ internal class RuntimeSession(private val deps: RuntimeSessionDeps) {
             }
         }
             .onFailure { error ->
+                if (error is CancellationException) throw error
                 Timber.w(error, "Failed to stop local runtime on controller switch")
             }
     }
@@ -572,21 +564,9 @@ internal class RuntimeSession(private val deps: RuntimeSessionDeps) {
             _trafficTotal.value = 0L
             return 0L
         }
-        val snapshot = _runtimeSnapshot.value
-        val traffic = runCatching {
-            query()
-        }
-            .getOrElse { error ->
-                if (snapshot.owner == RuntimeOwner.RemoteController) {
-                    markRemoteLost(error)
-                }
-                throw error
-            }
+        val traffic = query()
         _trafficTotal.value = traffic
         updateTrafficReady()
-        if (snapshot.owner == RuntimeOwner.RemoteController) {
-            markRemoteOnline()
-        }
         return traffic
     }
 
@@ -595,21 +575,9 @@ internal class RuntimeSession(private val deps: RuntimeSessionDeps) {
             _trafficNow.value = 0L
             return 0L
         }
-        val snapshot = _runtimeSnapshot.value
-        val traffic = runCatching {
-            query()
-        }
-            .getOrElse { error ->
-                if (snapshot.owner == RuntimeOwner.RemoteController) {
-                    markRemoteLost(error)
-                }
-                throw error
-            }
+        val traffic = query()
         _trafficNow.value = traffic
         updateTrafficReady()
-        if (snapshot.owner == RuntimeOwner.RemoteController) {
-            markRemoteOnline()
-        }
         return traffic
     }
 

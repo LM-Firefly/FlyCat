@@ -70,6 +70,7 @@ internal fun MainContentHost(
     navigator: Navigator,
     detailBackStack: MutableList<NavKey>,
     detailNavigator: Navigator,
+    onOpenPanel: () -> Unit,
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val visibleBottomBarReservedHeight = rememberBottomBarReservedHeight()
@@ -119,6 +120,7 @@ internal fun MainContentHost(
                         moeWallpaperBiasY = moeWallpaperBiasY,
                         homeVisibility = homeVisibility,
                         navigator = navigator,
+                        onOpenPanel = onOpenPanel,
                     )
                 }
             },
@@ -142,6 +144,7 @@ internal fun MainContentHost(
                                 onNavigateToProviders = {
                                     detailNavigator.replaceAll(listOf(Route.Providers))
                                 },
+                                onOpenPanel = onOpenPanel,
                             )
                         } else {
                             SecondaryDetailHost(
@@ -182,6 +185,7 @@ internal fun MainContentHost(
                 moeWallpaperBiasY = moeWallpaperBiasY,
                 homeVisibility = homeVisibility,
                 navigator = navigator,
+                onOpenPanel = onOpenPanel,
             )
         }
     }
@@ -209,6 +213,7 @@ private fun MainPagerHost(
     moeWallpaperBiasY: Float,
     homeVisibility: Float,
     navigator: Navigator,
+    onOpenPanel: () -> Unit,
 ) {
     val bottomBarScrollBehavior = LocalBottomBarScrollBehavior.current
     Box(Modifier.fillMaxSize()) {
@@ -255,6 +260,7 @@ private fun MainPagerHost(
                 homePageProgress = homeVisibility,
                 selectedDestination = settledDestination,
                 windowLayoutMode = layoutMode,
+                onOpenPanel = onOpenPanel,
             )
         }
 

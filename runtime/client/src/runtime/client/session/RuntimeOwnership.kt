@@ -154,30 +154,4 @@ internal class RuntimeOwnership(
             startedAt = startedAt,
         )
 
-    fun markRemoteLost(
-        snapshot: RuntimeSnapshot,
-        error: Throwable,
-        generation: Long,
-    ): RuntimeSnapshot =
-        snapshot.copy(
-            phase = RuntimePhase.Failed,
-            trafficReady = false,
-            lastError = error.message ?: error::class.simpleName ?: "remote backend lost",
-            generation = generation,
-        )
-
-    fun markRemoteOnline(snapshot: RuntimeSnapshot, generation: Long): RuntimeSnapshot? {
-        if (
-            snapshot.owner != RuntimeOwner.RemoteController ||
-                snapshot.phase == RuntimePhase.Running
-        ) {
-            return null
-        }
-        return snapshot.copy(
-            phase = RuntimePhase.Running,
-            lastError = null,
-            generation = generation,
-            startedAt = snapshot.startedAt ?: System.currentTimeMillis(),
-        )
-    }
 }

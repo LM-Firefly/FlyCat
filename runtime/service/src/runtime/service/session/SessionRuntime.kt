@@ -18,10 +18,7 @@
  *
  */
 
-@file:Suppress("UnusedSymbol")
-
 package com.github.yumelira.yumebox.runtime.service.session
-
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -34,10 +31,13 @@ import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.RuntimePhase
 import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
+import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
+import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 import kotlinx.coroutines.*
-import timber.log.Timber
 
 // Established runtime session seam (owner-token lifecycle + snapshot + core control); splitting
 // is tracked separately.
@@ -59,7 +59,7 @@ class SessionRuntime(
     private val proxyGroupResolver =
         RuntimeProxyGroupResolver(compiledConfigPipeline, host.context.appContextOrSelf)
     private val lock = Any()
-    private val interruptMonitor = Object()
+    private val interruptSignal = Semaphore(0)
     private val snapshotLock = Any()
 
     @Volatile private var interruptReason: String? = null
@@ -68,6 +68,8 @@ class SessionRuntime(
     private var networkObserver: ServiceNetworkObserver? = null
     private var timeZoneReceiver: BroadcastReceiver? = null
     @Volatile private var snapshotRefreshJob: Job? = null
+    @Volatile private var coreWatchJob: Job? = null
+    private val failureReported = AtomicBoolean(false)
     private val queryCache = SessionRuntimeQueryCache()
     private val telemetry =
         SessionRuntimeTelemetry(host = host, scope = scope) { ready ->
@@ -76,15 +78,23 @@ class SessionRuntime(
 
     fun start(spec: RuntimeSpec): RuntimeOperationResult = startFresh(spec, name = "start")
 
-    fun reload(spec: RuntimeSpec): RuntimeOperationResult =
-        runGuarded(
+    fun reload(spec: RuntimeSpec): RuntimeOperationResult {
+        val previous = currentSpec
+        return runGuarded(
             spec,
             name = "reload",
-            onFailure = { message, error -> startupError(spec, "reload failed: $message", error) },
+            onFailure = { message, error ->
+                previous?.let {
+                    host.restoreActiveProfile(it.profileUuid, it.profileName)
+                    host.onProfileLoaded(it.profileUuid)
+                }
+                startupError(spec, "reload failed: $message", error)
+            },
         ) {
             startupLog(spec, "reload begin")
             reloadInternal(spec)
         }
+    }
 
     fun restart(spec: RuntimeSpec): RuntimeOperationResult = startFresh(spec, name = "restart")
 
@@ -92,8 +102,9 @@ class SessionRuntime(
         runGuarded(
             spec,
             name = name,
-            onFailure = { message, error -> rollback(spec, message, error) },
+            onFailure = { message, error -> rollback(spec, message, error, name) },
         ) {
+            failureReported.set(false)
             stopInternal(reason = null, notifyHost = false)
             startupLog(spec, "$name begin")
             startInternal(spec)
@@ -150,13 +161,14 @@ class SessionRuntime(
 
     fun requestStop(reason: String? = null) {
         interruptReason = reason ?: "runtime stop requested"
+        stopCoreWatch()
         currentSpec?.let { startupLog(it, "stop requested") }
         snapshotRefreshJob?.cancel()
         if (currentSnapshot.owner == RuntimeOwner.VpnService) {
             // Drop the child and its TUN fd without waiting for the lifecycle lock.
             com.github.yumelira.yumebox.runtime.service.core.CoreProcess.killRunning()
         }
-        synchronized(interruptMonitor) { interruptMonitor.notifyAll() }
+        interruptSignal.release()
     }
 
     fun destroy() {
@@ -169,133 +181,6 @@ class SessionRuntime(
 
     fun snapshot(): RuntimeSnapshot = currentSnapshot
 
-    fun queryTunnelState(): TunnelState =
-        ifRunning(TunnelState(TunnelState.Mode.Rule)) { rest.queryTunnelState() }
-
-    fun queryTrafficNow(): Long = queryTraffic(rest::queryTrafficNow, queryCache::updateTrafficNow)
-
-    fun queryTrafficTotal(): Long =
-        queryTraffic(rest::queryTrafficTotal, queryCache::updateTrafficTotal)
-
-    private fun queryTraffic(fetch: () -> Long, cache: (Long) -> Unit): Long {
-        if (currentSnapshot.phase != RuntimePhase.Running) return 0L
-        return fetch().also { value ->
-            cache(value)
-            updateSnapshot { it.copy(trafficReady = true) }
-        }
-    }
-
-    private inline fun <T> ifRunning(fallback: T, block: () -> T): T =
-        if (currentSnapshot.phase == RuntimePhase.Running) block() else fallback
-
-    fun queryConnections(): ConnectionSnapshot =
-        ifRunning(ConnectionSnapshot()) { rest.queryConnections() }
-
-    fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> {
-        if (currentSnapshot.phase != RuntimePhase.Running) return emptyList()
-        val groups = runCatching {
-            resolveRuntimeProxyGroups(excludeNotSelectable)
-        }
-            .getOrElse {
-                if (excludeNotSelectable) {
-                    val selectable = rest.queryProxyGroupNames(true).toSet()
-                    ensureRuntimeSnapshot().proxyGroups.filter { selectable.contains(it.name) }
-                } else {
-                    ensureRuntimeSnapshot().proxyGroups
-                }
-            }
-        queryCache.replaceProxyGroups(groups)
-        updateSnapshot { it.copy(groupsReady = groups.isNotEmpty()) }
-        return groups
-    }
-
-    fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> {
-        if (currentSnapshot.phase != RuntimePhase.Running) return emptyList()
-        return runCatching { resolveRuntimeProxyGroupNames(excludeNotSelectable) }
-            .getOrElse { queryAllProxyGroups(excludeNotSelectable).map { it.name } }
-    }
-
-    fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup {
-        if (currentSnapshot.phase != RuntimePhase.Running) {
-            error("runtime not running")
-        }
-        val group = rest.queryProxyGroup(name, proxySort)
-        if (proxySort == ProxySort.Default && group.name.isNotBlank()) {
-            queryCache.upsertProxyGroup(name, group)
-        }
-        return group
-    }
-
-    fun queryConfiguration(): UiConfiguration =
-        ifRunning(UiConfiguration()) { ensureRuntimeSnapshot().configuration }
-
-    fun queryProviders(): List<Provider> =
-        ifRunning(emptyList()) { ensureRuntimeSnapshot().providers }
-
-    fun patchSelector(group: String, name: String): Boolean = rest.patchSelector(group, name)
-
-    fun closeConnection(id: String): Boolean = ifRunning(false) { rest.closeConnection(id) }
-
-    fun closeAllConnections() = ifRunning(Unit) { rest.closeAllConnections() }
-
-    suspend fun healthCheck(group: String): String? {
-        Timber.d(
-            "SessionRuntime healthCheck: group=%s phase=%s owner=%s",
-            group,
-            currentSnapshot.phase,
-            currentSnapshot.owner,
-        )
-        return runCatching {
-            rest.healthCheck(group)
-            refreshRuntimeProxyGroup(group)
-            null
-        }
-            .getOrElse { it.message ?: "health check failed" }
-    }
-
-    suspend fun healthCheckProxy(group: String, proxyName: String): String {
-        Timber.d(
-            "SessionRuntime healthCheckProxy: group=%s proxy=%s phase=%s owner=%s",
-            group,
-            proxyName,
-            currentSnapshot.phase,
-            currentSnapshot.owner,
-        )
-        return runCatching {
-            val delay =
-                rest.healthCheckProxy(group, proxyName).also { refreshRuntimeProxyGroup(group) }
-            """{"delay":$delay}"""
-        }
-            .getOrElse {
-                val msg =
-                    kotlinx.serialization.json.JsonPrimitive(
-                        it.message ?: "health check proxy failed"
-                    )
-                """{"delay":-1,"error":$msg}"""
-            }
-    }
-
-    suspend fun updateProvider(type: String, name: String): String? {
-        val providerType = runCatching {
-            Provider.Type.valueOf(type)
-        }
-            .getOrElse {
-                return "invalid provider type: $type"
-            }
-        return runCatching {
-            rest.updateProvider(providerType, name)
-            refreshRuntimeSnapshot()
-            null
-        }
-            .getOrElse { it.message ?: "update provider failed" }
-    }
-
-    fun setLogObserver(observer: ((LogMessage) -> Unit)?) {
-        telemetry.setLogObserver(observer)
-    }
-
-    fun queryRecentLogsJson(sinceSeq: Long): RuntimeLogChunk =
-        telemetry.queryRecentLogsJson(sinceSeq)
 
     private fun startInternal(spec: RuntimeSpec) {
         val startedAt = System.currentTimeMillis()
@@ -328,6 +213,7 @@ class SessionRuntime(
 
         transport.prepare(prepared)
         transport.start(prepared)
+        startCoreWatch(prepared)
         startupLog(
             prepared,
             "core launched elapsedMs=${elapsedMillis(startedAtNanos)} " +
@@ -362,7 +248,9 @@ class SessionRuntime(
     }
 
     private fun reloadInternal(spec: RuntimeSpec) {
-        check(currentSpec != null) { "runtime not started" }
+        val previous = checkNotNull(currentSpec) { "runtime not started" }
+        val previousSnapshot = currentSnapshot
+        failureReported.set(false)
         val prepared = prepareCompiledSpec(spec)
         updateSnapshot {
             it.copy(
@@ -378,31 +266,81 @@ class SessionRuntime(
         // Config reload for the out-of-process core is applied by restarting the transport (the
         // core
         // reads its config at launch); re-verify groups afterwards.
+        stopCoreWatch()
+        stopLogStream()
         runCatching { transport.stop() }
-        transport.start(prepared)
-        val initialGroups = awaitProxyGroupsReady(prepared)
-        ensureNotInterrupted(prepared)
-        currentSpec = prepared
-        queryCache.replaceProxyGroups(initialGroups)
-        updateSnapshot {
-            it.copy(
-                phase = RuntimePhase.Running,
-                profileReady = true,
-                groupsReady = initialGroups.isNotEmpty(),
-                trafficReady = false,
-                configReady = true,
-                transportReady = true,
-                logReady = telemetry.isLogStreaming(),
-                effectiveFingerprint = prepared.effectiveFingerprint,
-                lastError = null,
-            )
+        try {
+            currentSpec = prepared
+            transport.start(prepared)
+            startCoreWatch(prepared)
+            val initialGroups = awaitProxyGroupsReady(prepared)
+            ensureNotInterrupted(prepared)
+            queryCache.replaceProxyGroups(initialGroups)
+            startLogStream()
+            updateSnapshot {
+                it.copy(
+                    phase = RuntimePhase.Running,
+                    profileReady = true,
+                    groupsReady = initialGroups.isNotEmpty(),
+                    trafficReady = false,
+                    configReady = true,
+                    transportReady = true,
+                    logReady = telemetry.isLogStreaming(),
+                    effectiveFingerprint = prepared.effectiveFingerprint,
+                    lastError = null,
+                )
+            }
+            host.onProfileLoaded(prepared.profileUuid)
+            startupLog(prepared, "success: reload done")
+            scheduleRuntimeSnapshotRefresh(prepared)
+        } catch (reloadError: Throwable) {
+            if (reloadError is CancellationException || interruptReason != null) throw reloadError
+            restorePreviousAfterReloadFailure(previous, previousSnapshot, reloadError)
+            throw reloadError
         }
-        host.onProfileLoaded(prepared.profileUuid)
-        startupLog(prepared, "success: reload done")
-        scheduleRuntimeSnapshotRefresh(prepared)
+    }
+
+    private fun restorePreviousAfterReloadFailure(
+        previous: RuntimeSpec,
+        previousSnapshot: RuntimeSnapshot,
+        reloadError: Throwable,
+    ) {
+        stopCoreWatch()
+        runCatching { transport.stop() }
+        val restoreResult =
+            runCatching {
+                currentSpec = previous
+                transport.start(previous)
+                startCoreWatch(previous)
+                val groups = awaitProxyGroupsReady(previous)
+                ensureNotInterrupted(previous)
+                queryCache.replaceProxyGroups(groups)
+                startLogStream()
+                publishSnapshot(
+                    previousSnapshot.copy(
+                        phase = RuntimePhase.Running,
+                        groupsReady = groups.isNotEmpty(),
+                        trafficReady = false,
+                        transportReady = true,
+                        logReady = telemetry.isLogStreaming(),
+                    )
+                )
+                scheduleRuntimeSnapshotRefresh(previous)
+            }
+        restoreResult.onSuccess {
+            startupError(previous, "reload rejected; previous config restored", reloadError)
+        }
+        restoreResult.exceptionOrNull()?.let { restoreError ->
+            val reason =
+                "reload failed and previous runtime restore failed: " +
+                    (restoreError.message ?: restoreError::class.java.simpleName)
+            rollback(previous, reason, restoreError, "reload")
+            throw IllegalStateException(reason, reloadError)
+        }
     }
 
     private fun stopInternal(reason: String?, notifyHost: Boolean) {
+        stopCoreWatch()
         snapshotRefreshJob?.cancel()
         snapshotRefreshJob = null
         if (currentSnapshot.phase == RuntimePhase.Idle && currentSpec == null) {
@@ -448,7 +386,13 @@ class SessionRuntime(
         clearInterruptRequest()
     }
 
-    private fun rollback(spec: RuntimeSpec, reason: String, error: Throwable? = null) {
+    private fun rollback(
+        spec: RuntimeSpec,
+        reason: String,
+        error: Throwable? = null,
+        operation: String,
+    ) {
+        stopCoreWatch()
         stopLogStream()
         stopConnectionTracking()
         stopObservers()
@@ -467,8 +411,60 @@ class SessionRuntime(
                 effectiveFingerprint = spec.effectiveFingerprint,
             )
         )
-        startupError(spec, "start failed: $reason", error)
-        host.reportFailure(reason)
+        startupError(spec, "$operation failed: $reason", error)
+        if (failureReported.compareAndSet(false, true)) {
+            host.reportFailure(reason)
+        }
+    }
+
+    private fun startCoreWatch(spec: RuntimeSpec) {
+        stopCoreWatch()
+        if (spec.owner != RuntimeOwner.VpnService) return
+        coreWatchJob =
+            scope.launch(Dispatchers.IO) {
+                while (isActive) {
+                    delay(CORE_WATCH_INTERVAL_MS)
+                    if (currentSpec !== spec || interruptReason != null) return@launch
+                    if (
+                        currentSnapshot.phase == RuntimePhase.Idle ||
+                            currentSnapshot.phase == RuntimePhase.Stopping ||
+                            currentSnapshot.phase == RuntimePhase.Failed
+                    ) {
+                        return@launch
+                    }
+                    if (CoreProcess.isLocalCoreAlive()) {
+                        continue
+                    }
+
+                    val coreTail = CoreProcess.coreLogTail(host.context.appContextOrSelf)
+                    val reason =
+                        "core process exited unexpectedly" +
+                            (coreTail?.let { ": $it" } ?: "")
+                    if (!failureReported.compareAndSet(false, true)) return@launch
+
+                    interruptReason = reason
+                    interruptSignal.release()
+                    publishSnapshot(
+                        RuntimeSnapshot(
+                            owner = spec.owner,
+                            phase = RuntimePhase.Failed,
+                            runMode = host.mode,
+                            profileUuid = spec.profileUuid,
+                            profileName = spec.profileName,
+                            lastError = reason,
+                            effectiveFingerprint = spec.effectiveFingerprint,
+                        )
+                    )
+                    startupError(spec, reason)
+                    host.reportFailure(reason)
+                    return@launch
+                }
+            }
+    }
+
+    private fun stopCoreWatch() {
+        coreWatchJob?.cancel()
+        coreWatchJob = null
     }
 
     private fun awaitProxyGroupsReady(spec: RuntimeSpec): List<ProxyGroup> {
@@ -609,8 +605,8 @@ class SessionRuntime(
     }
 
     private fun waitForRetryOrInterrupt(delayMs: Long) {
-        synchronized(interruptMonitor) {
-            if (interruptReason == null) interruptMonitor.wait(delayMs)
+        if (interruptReason == null) {
+            interruptSignal.tryAcquire(delayMs, TimeUnit.MILLISECONDS)
         }
     }
 
@@ -709,25 +705,6 @@ class SessionRuntime(
         )
     }
 
-    private fun refreshRuntimeProxyGroup(
-        name: String,
-        proxySort: ProxySort = ProxySort.Default,
-    ): ProxyGroup? {
-        if (
-            currentSnapshot.phase != RuntimePhase.Running &&
-                currentSnapshot.phase != RuntimePhase.Starting
-        ) {
-            return null
-        }
-
-        val group = runCatching { rest.queryProxyGroup(name, proxySort) }.getOrNull() ?: return null
-        queryCache.upsertProxyGroup(name, group)
-        return group
-    }
-
-    private fun resolveRuntimeProxyGroupNames(excludeNotSelectable: Boolean): List<String> =
-        proxyGroupResolver.resolvedGroupNames(currentSpec, excludeNotSelectable)
-
     private fun resolveRuntimeProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
         proxyGroupResolver.resolvedGroups(currentSpec, excludeNotSelectable, enrichLive = true)
 
@@ -805,20 +782,27 @@ class SessionRuntime(
     private fun ensureNotInterrupted(spec: RuntimeSpec) {
         val reason = interruptReason ?: return
         startupLog(spec, "session: interrupted reason=$reason")
+        if (failureReported.get()) {
+            throw RuntimeFailureException(reason)
+        }
         throw RuntimeInterruptedException(reason)
     }
 
     private fun clearInterruptRequest() {
         interruptReason = null
+        interruptSignal.drainPermits()
     }
 
     private companion object {
         private const val PROXY_GROUP_READY_RETRY_COUNT = 10
         private const val PROXY_GROUP_READY_RETRY_DELAY_MS = 200L
+        private const val CORE_WATCH_INTERVAL_MS = 500L
 
         /** The session instance currently owning the process-wide Go core. */
         @Volatile private var coreOwner: SessionRuntime? = null
     }
 
     private class RuntimeInterruptedException(message: String) : CancellationException(message)
+
+    private class RuntimeFailureException(message: String) : IllegalStateException(message)
 }

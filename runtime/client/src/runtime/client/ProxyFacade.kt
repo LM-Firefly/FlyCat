@@ -221,7 +221,10 @@ class ProxyFacade(
             session.setCurrentProfile(profile)
             session.updateProfileReady(profile)
         }
-            .onFailure { error -> Timber.e(error, "Failed to refresh current profile") }
+            .onFailure { error ->
+                if (error is CancellationException) throw error
+                Timber.e(error, "Failed to refresh current profile")
+            }
     }
 
     suspend fun refreshAll() {
@@ -238,7 +241,10 @@ class ProxyFacade(
 
     private fun launchPreviewWarmup(): Job = scope.launch {
         runCatching { refreshProxyGroups() }
-            .onFailure { error -> Timber.d(error, "Warm up proxy groups skipped") }
+            .onFailure { error ->
+                if (error is CancellationException) throw error
+                Timber.d(error, "Warm up proxy groups skipped")
+            }
     }
 
     private suspend fun refreshAllSafely() {
@@ -251,9 +257,7 @@ class ProxyFacade(
         }
         runCatching { refreshAll() }
             .onFailure { error ->
-                if (snapshot.owner == RuntimeOwner.RemoteController) {
-                    session.markRemoteLost(error)
-                }
+                if (error is CancellationException) throw error
                 Timber.d(error, "Refresh runtime data skipped")
             }
     }
@@ -263,7 +267,10 @@ class ProxyFacade(
             refreshCurrentProfile()
             refreshProxyGroups()
         }
-            .onFailure { error -> Timber.d(error, "Refresh preview data skipped") }
+            .onFailure { error ->
+                if (error is CancellationException) throw error
+                Timber.d(error, "Refresh preview data skipped")
+            }
     }
 
     private fun observeProxyGroupSyncPriority() {
