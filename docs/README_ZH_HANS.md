@@ -2,7 +2,7 @@
 
 **简体中文** | [English](README.md)
 
-<img src="logo.webp" width="96" alt="YumeBox logo">
+<img src="Yume.png" width="96" alt="YumeBox logo">
 
 # YumeBox
 
