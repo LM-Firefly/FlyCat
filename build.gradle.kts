@@ -32,7 +32,7 @@ buildscript {
                 "com.fasterxml.jackson.core" ->
                     if (requested.name == "jackson-core") useVersion("2.22.0")
                 "org.apache.commons" -> if (requested.name == "commons-lang3") useVersion("3.20.0")
-                "io.netty" -> useVersion("4.1.135.Final")
+                "io.netty" -> useVersion("4.1.136.Final")
             }
         }
     }
@@ -58,7 +58,7 @@ allprojects {
         resolutionStrategy.eachDependency {
             when (requested.group) {
                 "org.bouncycastle" -> useVersion("1.84")
-                "io.netty" -> useVersion("4.1.135.Final")
+                "io.netty" -> useVersion("4.1.136.Final")
                 "org.apache.httpcomponents" -> if (requested.name == "httpclient") useVersion("4.5.14")
                 "org.apache.commons" -> if (requested.name == "commons-lang3") useVersion("3.20.0")
             }
