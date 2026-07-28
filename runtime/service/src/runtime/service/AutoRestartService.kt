@@ -298,7 +298,7 @@ class AutoRestartService : Service() {
         NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("YumeBox")
             .setContentText("Checking auto-start...")
-            .setSmallIcon(R.drawable.ic_logo_service)
+            .setSmallIcon(ServiceLogoIcons.resId())
             .setOngoing(true)
             .build()
 

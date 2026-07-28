@@ -32,6 +32,9 @@ AppSettings = {
         LanguageRussian = "Русский"
 
         ColorThemeTitle = "テーマ配色"
+        AppIconTitle = "アプリアイコン"
+        AppIconDefault = "デフォルト"
+        AppIconClassic = "クラシック"
         ColorThemePickerTitle = "テーマカラーを選択"
         ColorThemeCodeLabel = "テーマカラーコード (#RRGGBB)"
         ColorThemeCustomSummary = "現在のテーマカラー: %s"

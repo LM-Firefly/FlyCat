@@ -66,6 +66,7 @@ data class AppSettingsBackup(
     val automaticRestart: Boolean = false,
     val autoUpdateCurrentProfileOnStart: Boolean = true,
     val hideAppIcon: Boolean = false,
+    val appIconStyle: AppIconStyle = AppIconStyle.Default,
     val excludeFromRecents: Boolean = false,
     val showTrafficNotification: Boolean = true,
     val bottomBarAutoHide: Boolean = true,

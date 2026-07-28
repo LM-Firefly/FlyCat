@@ -24,11 +24,13 @@ import android.app.Application
 import android.content.ComponentName
 import android.content.res.Configuration
 import com.github.yumelira.yumebox.common.util.AppLanguageManager
+import com.github.yumelira.yumebox.common.util.AppIconHelper
 import com.github.yumelira.yumebox.common.util.PlatformIdentifier
 import com.github.yumelira.yumebox.core.Global
 import com.github.yumelira.yumebox.core.util.runtimeHomeDir
 import com.github.yumelira.yumebox.data.controller.AppTrafficStatisticsCollector
 import com.github.yumelira.yumebox.data.store.AppSettingsStore
+import com.github.yumelira.yumebox.data.model.AppIconStyle
 import com.github.yumelira.yumebox.data.store.FeatureStore
 import com.github.yumelira.yumebox.di.appModule
 import com.github.yumelira.yumebox.feature.meta.presentation.util.CustomRoutingBootstrapper
@@ -76,6 +78,11 @@ class App : Application() {
 
         val appSettingsStorage: AppSettingsStore = koinApp.koin.get()
         AppLanguageManager.apply(appSettingsStorage.appLanguage.value)
+        AppIconHelper.applyStyle(
+            context = this,
+            classic = appSettingsStorage.appIconStyle.value == AppIconStyle.Classic,
+            hide = appSettingsStorage.hideAppIcon.value,
+        )
 
         // Keep first-run geo extraction ahead of the UI so starting the proxy never inherits it.
         extractGeoFiles()

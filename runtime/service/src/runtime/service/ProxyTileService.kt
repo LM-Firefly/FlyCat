@@ -43,6 +43,7 @@ import com.github.yumelira.yumebox.runtime.service.profile.ProfileService
 import com.github.yumelira.yumebox.runtime.service.session.RootSessionLauncher
 import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
 import com.github.yumelira.yumebox.runtime.service.util.sendBroadcastSelf
+import com.github.yumelira.yumebox.runtime.service.util.ServiceLogoIcons
 import kotlinx.coroutines.*
 import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
@@ -239,7 +240,7 @@ class ProxyTileService : TileService() {
                 }
         }
 
-        tile.icon = Icon.createWithResource(this, R.drawable.ic_logo_service)
+        tile.icon = Icon.createWithResource(this, ServiceLogoIcons.resId())
 
         tile.updateTile()
     }
@@ -258,7 +259,7 @@ class ProxyTileService : TileService() {
                 }
         }
 
-        tile.icon = Icon.createWithResource(this, R.drawable.ic_logo_service)
+        tile.icon = Icon.createWithResource(this, ServiceLogoIcons.resId())
         tile.updateTile()
     }
 
@@ -271,7 +272,7 @@ class ProxyTileService : TileService() {
             tile.subtitle = subtitle
         }
 
-        tile.icon = Icon.createWithResource(this, R.drawable.ic_logo_service)
+        tile.icon = Icon.createWithResource(this, ServiceLogoIcons.resId())
         tile.updateTile()
     }
 

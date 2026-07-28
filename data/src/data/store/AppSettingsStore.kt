@@ -22,6 +22,7 @@ package com.github.yumelira.yumebox.data.store
 
 import com.github.yumelira.yumebox.data.model.AppColorTheme
 import com.github.yumelira.yumebox.data.model.AppLanguage
+import com.github.yumelira.yumebox.data.model.AppIconStyle
 import com.github.yumelira.yumebox.data.model.ThemeMode
 import com.tencent.mmkv.MMKV
 
@@ -29,12 +30,13 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
     val themeMode by enumFlow(ThemeMode.Auto)
     val appLanguage by enumFlow(AppLanguage.System)
     val colorTheme by enumFlow(AppColorTheme.ClassicMonochrome)
-    val themeAccentColorArgb by longFlow(0xFF138A74L)
+    val themeAccentColorArgb by longFlow(0xFE799F)
     val invertOnPrimaryColors by boolFlow(false)
     val homePreviewGuideShown by boolFlow(false)
     val automaticRestart by boolFlow(false)
     val autoUpdateCurrentProfileOnStart by boolFlow(true)
     val hideAppIcon by boolFlow(false)
+    val appIconStyle by enumFlow(AppIconStyle.Default)
     val excludeFromRecents by boolFlow(false)
     val showTrafficNotification by boolFlow(true)
     val bottomBarAutoHide by boolFlow(true)

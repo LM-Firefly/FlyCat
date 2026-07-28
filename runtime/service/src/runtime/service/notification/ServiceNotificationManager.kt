@@ -33,6 +33,7 @@ import com.github.yumelira.yumebox.runtime.api.Components
 import com.github.yumelira.yumebox.runtime.service.R
 import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.profile.ImportedDao
+import com.github.yumelira.yumebox.runtime.service.util.ServiceLogoIcons
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -92,7 +93,8 @@ class ServiceNotificationManager(
                 val notification = buildRunningNotification()
                 val fingerprint =
                     "${notification.extras.getCharSequence(Notification.EXTRA_TITLE)}|" +
-                        "${notification.extras.getCharSequence(Notification.EXTRA_TEXT)}"
+                        "${notification.extras.getCharSequence(Notification.EXTRA_TEXT)}|" +
+                        "${ServiceLogoIcons.resId()}"
                 // Re-check after the (possibly slow) core query: the service may have stopped while
                 // we
                 // were building the notification, and a notify() now would resurrect it.
@@ -151,6 +153,10 @@ class ServiceNotificationManager(
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
+        // Keep the small icon free of hard failures so startForeground() never trips before the
+        // first frame; preference reads fall back to the default logo inside ServiceLogoIcons.
+        val smallIcon = runCatching { ServiceLogoIcons.resId() }.getOrDefault(R.drawable.ic_logo_service)
+
         return NotificationCompat.Builder(service, config.channelId)
             .setContentTitle(presentation.title)
             .setContentText(presentation.content)
@@ -160,7 +166,7 @@ class ServiceNotificationManager(
                     .bigText(presentation.expandedText)
                     .setSummaryText(presentation.subText)
             )
-            .setSmallIcon(R.drawable.ic_logo_service)
+            .setSmallIcon(smallIcon)
             .setColor(service.getColor(R.color.color_yumebox))
             .setContentIntent(contentIntent)
             .setOngoing(true)

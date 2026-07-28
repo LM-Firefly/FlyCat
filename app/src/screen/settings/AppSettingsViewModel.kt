@@ -31,6 +31,7 @@ import com.github.yumelira.yumebox.core.util.moeWallpaperFile
 import com.github.yumelira.yumebox.data.controller.AppSettingsController
 import com.github.yumelira.yumebox.data.model.AppColorTheme
 import com.github.yumelira.yumebox.data.model.AppLanguage
+import com.github.yumelira.yumebox.data.model.AppIconStyle
 import com.github.yumelira.yumebox.data.model.ThemeMode
 import com.github.yumelira.yumebox.data.store.AppSettingsStore
 import com.github.yumelira.yumebox.data.store.FeatureStore
@@ -59,6 +60,7 @@ class AppSettingsViewModel(
     val autoUpdateCurrentProfileOnStart: Preference<Boolean> =
         settings.autoUpdateCurrentProfileOnStart
     val hideAppIcon: Preference<Boolean> = settings.hideAppIcon
+    val appIconStyle: Preference<AppIconStyle> = settings.appIconStyle
     val excludeFromRecents: Preference<Boolean> = settings.excludeFromRecents
     val showTrafficNotification: Preference<Boolean> = settings.showTrafficNotification
     val bottomBarAutoHide: Preference<Boolean> = settings.bottomBarAutoHide
@@ -108,6 +110,7 @@ class AppSettingsViewModel(
         val topBarBlurEnabled: Boolean = false,
         val pageScale: Float = 1f,
         val classicHomeEnabled: Boolean = false,
+        val appIconStyle: AppIconStyle = AppIconStyle.Default,
     )
 
     val interfaceSectionState: StateFlow<InterfaceSectionState> =
@@ -127,16 +130,25 @@ class AppSettingsViewModel(
                     bottomBarAutoHide = bottomBar,
                 )
             },
-            combine(topBarBlurEnabled.state, pageScale.state, classicHomeEnabled.state) { blur,
-                                                                                          scale,
-                                                                                          classic ->
-                Triple(blur, scale, classic)
+            combine(
+                topBarBlurEnabled.state,
+                pageScale.state,
+                classicHomeEnabled.state,
+                appIconStyle.state,
+            ) { blur, scale, classic, iconStyle ->
+                InterfaceSectionExtras(
+                    topBarBlurEnabled = blur,
+                    pageScale = scale,
+                    classicHomeEnabled = classic,
+                    appIconStyle = iconStyle,
+                )
             },
         ) { base, extra ->
             base.copy(
-                topBarBlurEnabled = extra.first,
-                pageScale = extra.second,
-                classicHomeEnabled = extra.third,
+                topBarBlurEnabled = extra.topBarBlurEnabled,
+                pageScale = extra.pageScale,
+                classicHomeEnabled = extra.classicHomeEnabled,
+                appIconStyle = extra.appIconStyle,
             )
         }
             .stateInWhileSubscribed(
@@ -150,8 +162,16 @@ class AppSettingsViewModel(
                     topBarBlurEnabled = topBarBlurEnabled.value,
                     pageScale = pageScale.value,
                     classicHomeEnabled = classicHomeEnabled.value,
+                    appIconStyle = appIconStyle.value,
                 ),
             )
+
+    private data class InterfaceSectionExtras(
+        val topBarBlurEnabled: Boolean,
+        val pageScale: Float,
+        val classicHomeEnabled: Boolean,
+        val appIconStyle: AppIconStyle,
+    )
 
     data class ServiceSectionState(
         val showTrafficNotification: Boolean = false,
@@ -308,6 +328,8 @@ class AppSettingsViewModel(
         autoUpdateCurrentProfileOnStart.set(enabled)
 
     fun onHideAppIconChange(hide: Boolean) = hideAppIcon.set(hide)
+
+    fun onAppIconStyleChange(style: AppIconStyle) = appIconStyle.set(style)
 
     fun onExcludeFromRecentsChange(exclude: Boolean) = excludeFromRecents.set(exclude)
 

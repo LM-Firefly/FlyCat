@@ -47,6 +47,7 @@ import com.github.yumelira.yumebox.common.util.LocaleUtil
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.data.model.AppLanguage
 import com.github.yumelira.yumebox.data.model.ThemeMode
+import com.github.yumelira.yumebox.data.model.AppIconStyle
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.theme.UiDp
@@ -117,6 +118,7 @@ private fun AppBehaviorSettingsSection(viewModel: AppSettingsViewModel) {
 
 @Composable
 private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
+    val context = LocalContext.current
     val section by viewModel.interfaceSectionState.collectAsState()
     val themeMode = section.themeMode
     val appLanguage = section.appLanguage
@@ -126,6 +128,7 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
     val topBarBlurEnabled = section.topBarBlurEnabled
     val pageScale = section.pageScale
     val classicHomeEnabled = section.classicHomeEnabled
+    val appIconStyle = section.appIconStyle
 
     Title(YumeTxt.AppSettings.Interface.ColorThemeTitle)
     Card {
@@ -168,6 +171,24 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
             values = AppLanguage.entries,
             onValueChange = viewModel::onAppLanguageChange,
         )
+        PreferenceEnumItem(
+            title = YumeTxt.AppSettings.Interface.AppIconTitle,
+            currentValue = appIconStyle,
+            items =
+                listOf(
+                    YumeTxt.AppSettings.Interface.AppIconDefault,
+                    YumeTxt.AppSettings.Interface.AppIconClassic,
+                ),
+            values = AppIconStyle.entries,
+            onValueChange = { style ->
+                viewModel.onAppIconStyleChange(style)
+                AppIconHelper.applyStyle(
+                    context = context,
+                    classic = style == AppIconStyle.Classic,
+                    hide = viewModel.hideAppIcon.value,
+                )
+            },
+        )
         PreferenceSwitchItem(
             title = YumeTxt.AppSettings.Interface.AutoHideNavbarTitle,
             checked = bottomBarAutoHide,
@@ -194,6 +215,7 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
 private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
     val context = LocalContext.current
     val section by viewModel.privacySectionState.collectAsState()
+    val appIconStyle by viewModel.appIconStyle.state.collectAsState()
 
     Title(YumeTxt.AppSettings.Section.Privacy)
     Card {
@@ -201,6 +223,7 @@ private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
             hideAppIcon = section.hideAppIcon,
             onHideAppIconChange = viewModel::onHideAppIconChange,
             context = context,
+            classicIcon = appIconStyle == AppIconStyle.Classic,
         )
         PreferenceSwitchItem(
             title = YumeTxt.AppSettings.Privacy.HideFromRecentsTitle,
@@ -303,6 +326,7 @@ private fun HideAppIconPreferenceItem(
     hideAppIcon: Boolean,
     onHideAppIconChange: (Boolean) -> Unit,
     context: android.content.Context,
+    classicIcon: Boolean,
 ) {
     val showHideIconDialogState = remember { mutableStateOf(false) }
 
@@ -314,7 +338,7 @@ private fun HideAppIconPreferenceItem(
                 showHideIconDialogState.value = true
             } else {
                 onHideAppIconChange(false)
-                AppIconHelper.toggleIcon(context, false)
+                AppIconHelper.toggleIcon(context, hide = false, classic = classicIcon)
             }
         },
     )
@@ -329,7 +353,7 @@ private fun HideAppIconPreferenceItem(
             ),
         onConfirm = {
             onHideAppIconChange(true)
-            AppIconHelper.toggleIcon(context, true)
+            AppIconHelper.toggleIcon(context, hide = true, classic = classicIcon)
         },
     )
 }
