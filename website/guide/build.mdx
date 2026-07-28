@@ -198,7 +198,7 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
 ### 可单独执行的任务
 
 <ResponseField name="--go" type="native">
-  构建 mihomo PIE 内核，输出 `libclash.so`。
+  构建 mihomo PIE 内核，输出 `libmihomo.so`。
 </ResponseField>
 
 <ResponseField name="--rust" type="native">
@@ -222,7 +222,7 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
 </ResponseField>
 
 <Check>
-  成功后，每个目标 ABI 的 `jniLibs/&lt;abi&gt;/` 下应包含 `libclash.so`、`liboverride.so`、`libcompat.so`、`libloader.so` 和 `core-version.properties`。
+  成功后，每个目标 ABI 的 `jniLibs/&lt;abi&gt;/` 下应包含 `libmihomo.so`、`liboverride.so`、`libcompat.so`、`libloader.so` 和 `core-version.properties`。
 </Check>
 
 ## 构建 APK

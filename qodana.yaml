@@ -12,7 +12,7 @@ profile:
   name: qodana.recommended
 
 # Kotlin/Java static analysis only. Exclude everything that is not app source:
-#  - lib/      native libs (Go PIE libclash, Rust liboverride, C libcompat/libloader) + mihomo
+#  - lib/      native libs (Go PIE libmihomo, Rust liboverride, C libcompat/libloader) + mihomo
 #  - scripts/  standalone *.main.kts build tooling (native-build / locale codegen)
 #  - website/  documentation site (mdx/css)
 #  - .trellis/ task-management workspace

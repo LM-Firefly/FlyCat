@@ -28,7 +28,7 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
- * Validates a profile's main `config.yaml` with the packaged mihomo core (`libclash.so --test`),
+ * Validates a profile's main `config.yaml` with the packaged mihomo core (`libmihomo.so --test`),
  * without applying overrides or runtime patches. Used on first import so a broken main config is
  * rejected before commit.
  *
@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit
  */
 internal object ProfileConfigTester {
     private const val TAG = "ProfileConfigTester"
-    private const val LIB = "libclash.so"
+    private const val LIB = "libmihomo.so"
     private const val TIMEOUT_MS = 20_000L
     private const val MAX_ERROR_CHARS = 400
     private const val CORE_FATAL_PREFIX = "mihomo:"
@@ -139,7 +139,7 @@ internal object ProfileConfigTester {
     @SuppressLint("SetWorldReadable")
     private fun extractBin(context: Context): File {
         val src = File(context.applicationInfo.nativeLibraryDir, LIB)
-        val dst = File(context.filesDir, "bin/clash")
+        val dst = File(context.filesDir, "bin/mihomo")
         dst.parentFile?.mkdirs()
         if (!dst.exists() || dst.length() != src.length()) {
             src.copyTo(dst, overwrite = true)

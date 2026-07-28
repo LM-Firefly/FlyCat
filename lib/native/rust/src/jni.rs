@@ -13,7 +13,7 @@ use crate::compiler::compile_request;
 use crate::compiler::result::{compile_error_json, encode_compile_result};
 use crate::model::CompileRequest;
 
-// Age x25519 keygen, moved off the (deleted) Go libclash. Bound to the Kotlin `Compiler` object.
+// Age x25519 keygen, moved off the (deleted) Go core path. Bound to the Kotlin `Compiler` object.
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_github_yumelira_yumebox_core_bridge_Compiler_nativeGenAgeKey<
     'local,

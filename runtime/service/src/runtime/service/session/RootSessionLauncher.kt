@@ -79,7 +79,7 @@ object RootSessionLauncher {
                 error(reason)
             }
 
-            // A live PID is not enough: libclash can stay around while its controller socket failed
+            // A live PID is not enough: libmihomo can stay around while its controller socket failed
             // to bind or the config handoff was rejected. Probe the same REST endpoint used by the
             // node page before publishing Running, otherwise the UI reports an active tunnel with
             // no groups and hides the actual startup failure.

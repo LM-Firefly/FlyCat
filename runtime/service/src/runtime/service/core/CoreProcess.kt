@@ -49,7 +49,7 @@ import java.util.*
 data class CoreEndpoint(val sock: String, val secret: String)
 
 /**
- * Launches and owns the out-of-process mihomo core (the `native` PIE, packaged as `libclash.so`):
+ * Launches and owns the out-of-process mihomo core (the `native` PIE, packaged as `libmihomo.so`):
  * fork+exec it from nativeLibraryDir (the non-root exec path; falls back to an extracted, chmod'd
  * copy if refused), stream the compiled config over the socketpair (in memory, never on disk) plus
  * the VpnService TUN fd via SCM_RIGHTS, and publish the controller endpoint via [current].
@@ -324,7 +324,7 @@ class CoreProcess(private val context: Context) {
      */
     private fun spawn(home: File, args: Array<String>): NativeProcess {
         val wd = home.absolutePath
-        // libclash.so stays raw in nativeLibraryDir (the non-root exec path); fall back to an
+        // libmihomo.so stays raw in nativeLibraryDir (the non-root exec path); fall back to an
         // extracted, chmod'd copy if that exec is refused.
         val bundled = File(context.applicationInfo.nativeLibraryDir, LIB).absolutePath
         return try {
@@ -339,7 +339,7 @@ class CoreProcess(private val context: Context) {
     @SuppressLint("SetWorldReadable")
     private fun extractBin(): File {
         val src = File(context.applicationInfo.nativeLibraryDir, LIB)
-        val dst = File(context.filesDir, "bin/clash")
+        val dst = File(context.filesDir, "bin/mihomo")
         dst.parentFile?.mkdirs()
         if (!dst.exists() || dst.length() != src.length()) {
             src.copyTo(dst, overwrite = true)
@@ -552,8 +552,8 @@ class CoreProcess(private val context: Context) {
                     .also { controller = it }
 
         private const val TAG = "CoreProcess"
-        private const val LIB = "libclash.so"
-        private val ROOT_CORE_EXECUTABLE_NAMES = setOf(LIB, "clash")
+        private const val LIB = "libmihomo.so"
+        private val ROOT_CORE_EXECUTABLE_NAMES = setOf(LIB, "mihomo")
         // After stripping "pid (comm) ", index 0 is field 3 (state), so field 22 is index 19.
         private const val PROC_STAT_START_TIME_INDEX_AFTER_COMM = 19
         private const val CHUNK = 32 * 1024

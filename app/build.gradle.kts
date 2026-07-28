@@ -69,7 +69,7 @@ val appAbiList = gropify.abi.app.list.split(',').map { it.trim() }.filter { it.i
 //  - geo.bundle=false   -> keep the XZ geo databases and BundleMRS.7z out of assets (the local
 //    default); App.extractGeoFiles skips them and mihomo falls back to remote provider data.
 // Release-only native-lib XZ compression is handled by the dev.yume.packer APK transform (which
-// keeps libclash/libloader raw in nativeLibraryDir and packs the rest into assets/loader/), not
+// keeps libmihomo/libloader raw in nativeLibraryDir and packs the rest into assets/loader/), not
 // here.
 val buildAllAbis = providers.gradleProperty("build.allAbis").orNull?.toBoolean() ?: false
 val geoBundle = providers.gradleProperty("geo.bundle").orNull?.toBoolean() ?: false

@@ -137,7 +137,7 @@ jobs:
         shell: bash
         run: |
           set -eu
-          test -f "jniLibs/${{ inputs.abi }}/libclash.so"
+          test -f "jniLibs/${{ inputs.abi }}/libmihomo.so"
           test -f "jniLibs/${{ inputs.abi }}/liboverride.so"
           test -f "jniLibs/${{ inputs.abi }}/libcompat.so"
           test -f "jniLibs/${{ inputs.abi }}/libloader.so"
@@ -148,7 +148,7 @@ jobs:
         with:
           name: native-${{ inputs.channel }}-${{ inputs.abi }}
           path: |
-            jniLibs/${{ inputs.abi }}/libclash.so
+            jniLibs/${{ inputs.abi }}/libmihomo.so
             jniLibs/${{ inputs.abi }}/liboverride.so
             jniLibs/${{ inputs.abi }}/libcompat.so
             jniLibs/${{ inputs.abi }}/libloader.so

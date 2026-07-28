@@ -6,7 +6,7 @@
 //
 // Copyright (c) YumeYucca 2025 - Present
 
-// Command clash is the mihomo core packaged as a standalone PIE (libclash.so): --test validates
+// Command mihomo is the core packaged as a standalone PIE (libmihomo.so): --test validates
 // a config and exits, otherwise it runs until SIGINT/SIGTERM. Launcher side: CoreProcess.kt.
 package main
 

@@ -359,7 +359,7 @@ fun writeCoreVersionStamp(stamp: CoreVersionStamp, abis: List<String>) {
     }
 }
 
-// Builds the standalone mihomo PIE core executable (libclash.so) used by the out-of-process
+// Builds the standalone mihomo PIE core executable (libmihomo.so) used by the out-of-process
 // architecture: `-buildmode=pie` from the `cfa/native` main package (entry.go), named lib*.so so
 // the
 // installer drops it into nativeLibraryDir (where it is executable) — fork+exec'd, no System.load.
@@ -386,7 +386,7 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
     private val buildTags = config.getCsv("golang.buildTags", "cmfa")
     private val buildFlags = config.getCsv("golang.buildFlags", "-trimpath")
     private val packageName = config.getString("golang.packageName", "cfa/native")
-    private val outputLibraryName = "libclash.so"
+    private val outputLibraryName = "libmihomo.so"
     private var coreVersionStamp: CoreVersionStamp? = null
 
     fun buildAll() {
@@ -892,8 +892,8 @@ fun printUsage() {
         Usage: kotlin scripts/native-build.main.kts [options]
 
         Options:
-          --go       Build the mihomo PIE core (libclash.so)
-          --coreexe  Alias of --go (build the mihomo PIE core, libclash.so)
+          --go       Build the mihomo PIE core (libmihomo.so)
+          --coreexe  Alias of --go (build the mihomo PIE core, libmihomo.so)
           --rust     Build Rust config compiler
           --loader   Build the C/liblzma native payload extractor
           --compat   Build the out-of-process core bridge (libcompat.so)
@@ -917,7 +917,7 @@ fun cleanBuildOutputs() {
 
     val abis = listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
     abis.forEach { abi ->
-        File("jniLibs/$abi/libclash.so").delete()
+        File("jniLibs/$abi/libmihomo.so").delete()
         File("jniLibs/$abi/liboverride.so").delete()
         File("jniLibs/$abi/libloader.so").delete()
         File("jniLibs/$abi/libcompat.so").delete()
@@ -977,7 +977,7 @@ fun main(args: Array<String>) {
     println("XZ library: org.tukaani:xz:1.12")
 
     if (buildGo || buildCoreExe) {
-        // The core is the standalone mihomo PIE (libclash.so), fork+exec'd out of process.
+        // The core is the standalone mihomo PIE (libmihomo.so), fork+exec'd out of process.
         GoExeBuilder(config, ndkTools).buildAll()
     }
 
