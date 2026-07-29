@@ -1,12 +1,14 @@
 <div align="center">
 
-**English** | [简体中文](README_ZH_HANS.md)
 
-<img src="Yume.png" width="96" alt="YumeBox logo">
+
+<img src="Yume.png" width="138" alt="YumeBox logo">
 
 # YumeBox
 
 [![Latest release](https://img.shields.io/github/v/release/YumeYucca/YumeBox?style=flat-square&label=Release&logo=github)](https://github.com/YumeYucca/YumeBox/releases/latest) [![GitHub License](https://img.shields.io/github/license/YumeYucca/YumeBox?style=flat-square&logo=gnu)](/LICENSE) ![Downloads](https://img.shields.io/github/downloads/YumeYucca/YumeBox/total?style=flat-square) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/731d810dd0f6423bb61b7c140653bc32)](https://app.codacy.com/gh/YumeYucca/YumeBox/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+
+**English** | [简体中文](README_ZH_HANS.md)
 
 **An open-source Android client based on the [mihomo](https://github.com/MetaCubeX/mihomo) kernel**
 
