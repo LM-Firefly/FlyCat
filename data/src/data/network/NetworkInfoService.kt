@@ -25,6 +25,7 @@ package com.github.yumelira.yumebox.data.network
 
 import com.github.yumelira.yumebox.core.util.NetworkInterfaces
 import io.ktor.client.*
+import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -59,7 +60,7 @@ sealed class IpMonitoringState {
 class NetworkInfoService : Closeable {
     private val json = Json { ignoreUnknownKeys = true }
 
-    private val httpClient = HttpClient {
+    private val httpClient = HttpClient(OkHttp) {
         install(HttpTimeout) {
             requestTimeoutMillis = 5000
             connectTimeoutMillis = 5000
