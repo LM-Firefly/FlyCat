@@ -69,15 +69,14 @@ object RuntimeLog {
         /** [RunMode.VpnService] session: launcher, service, transport, session runtime. */
         LocalTun("LOCAL"),
 
-        /** Root `tun` / `tproxy` daemon session, same span of stages as [LocalTun]. */
+        /** Root `tun` daemon session, same span of stages as [LocalTun]. */
         RootTun("ROOT");
 
         companion object {
             fun forMode(mode: RunMode): Source =
                 when (mode) {
                     RunMode.VpnService -> LocalTun
-                    RunMode.Tun,
-                    RunMode.Tproxy -> RootTun
+                    RunMode.Tun -> RootTun
                 }
         }
     }

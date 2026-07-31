@@ -171,7 +171,7 @@ class AutoRestartService : Service() {
             }
             RuntimeServiceLauncher.start(this, RunMode.VpnService, startupSource)
         } else {
-            // The root Tun/Tproxy daemon survives app death and is reattached on demand — it is not
+            // The root Tun daemon survives app death and is reattached on demand — it is not
             // auto-restarted here.
             Timber.tag(TAG).i("Skip auto start: root mode $runMode is not auto-restarted")
             return

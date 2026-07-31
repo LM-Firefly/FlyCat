@@ -72,6 +72,8 @@ internal fun ProfilesDialogHost(
         onDownloadComplete = {
             state.isDownloading = false
             state.showAdd.value = false
+            state.importUrl = null
+            state.scannedUrl = null
             profilesViewModel.clearDownloadProgress()
         },
         profilesViewModel = profilesViewModel,

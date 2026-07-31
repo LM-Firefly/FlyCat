@@ -36,7 +36,6 @@ fun EntryProviderScope<NavKey>.yumeSecondaryEntries(navigator: Navigator) {
     entry<Route.NetworkSettings> { NetworkSettingsScreen(navigator) }
     entry<Route.VpnServiceOptions> { VpnServiceOptionsScreen() }
     entry<Route.TunServiceOptions> { TunServiceOptionsScreen() }
-    entry<Route.TproxyServiceOptions> { TproxyServiceOptionsScreen() }
     entry<Route.AccessControl> { AccessControlScreen(navigator) }
     entry<Route.MetaFeature> { MetaFeatureScreen(navigator) }
     entry<Route.Connection> { ConnectionScreen(navigator) }

@@ -36,7 +36,7 @@ object RootDaemonState {
     private const val KEY_MODE = "root_daemon_mode"
     private const val KEY_START_TIME_TICKS = "root_daemon_start_time_ticks"
 
-    /** [mode] is the launch `--mode` value: "tun" or "tproxy". */
+    /** [mode] is the launch `--mode` value: "tun". */
     data class Record(
         val pid: Int,
         val secret: String,

@@ -18,8 +18,6 @@ NetworkSettings = {
         VpnServiceSummary = "Системный VPN, глобальный прокси"
         TunTitle = "Tun"
         TunSummary = "Ядерный TUN-туннель с root"
-        TproxyTitle = "TPROXY"
-        TproxySummary = "Ядерный прозрачный прокси с root"
     }
 
     VpnOptions = {
@@ -47,10 +45,6 @@ NetworkSettings = {
         Ipv6Title = "Включить IPv6"
     }
 
-    TproxyOptions = {
-        Title = "Параметры TPROXY"
-        PortTitle = "Порт TPROXY"
-    }
 
     ProxyOptions = {
         AccessControlModeTitle = "Режим контроля доступа"
@@ -62,6 +56,6 @@ NetworkSettings = {
 
     Error = {
         VpnDenied = "Разрешение VPN отклонено"
-        RootRequired = "Для Tun / TPROXY у YumeBox должен быть рабочий root-доступ"
+        RootRequired = "Для Tun у YumeBox должен быть рабочий root-доступ"
     }
 }

@@ -14,7 +14,7 @@ icon: clock
   - **Reworked and aggressively minimized the application shell**, compressing application Dex and native payloads to significantly reduce APK size
   - **Added a dedicated package module and custom APK packer** for payload compression, ABI packaging, integrity checks, dynamic loading, alignment, and signing
   - **Completely rewrote Core API communication**, removing the old JNI business bridge and using the mihomo REST API for both local and remote controllers
-  - **Removed proxy-only mode and switched routing to VPN Service Tun and transparent proxying; transparent proxy support remains incomplete and is currently limited**
+  - **Removed proxy-only mode and switched routing to VPN Service and Tun**
   - Reworked runtime API, client, and service boundaries, moved the core out of process, and strengthened session, process, and state management
   - Removed old Go/C bridges, JNI helpers, and obsolete native APIs while restructuring the Go entry point and Rust override compiler
   - Added master/detail layouts for tablets and large screens, with adaptive proxy-node grids and a dedicated detail pane

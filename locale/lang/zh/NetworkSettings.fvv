@@ -18,8 +18,6 @@ NetworkSettings = {
         VpnServiceSummary = "系統 VPN 全域代理"
         TunTitle = "Tun"
         TunSummary = "需要 Root 的核心虛擬網卡"
-        TproxyTitle = "TPROXY"
-        TproxySummary = "需要 Root 的核心透明代理"
     }
 
     VpnOptions = {
@@ -47,10 +45,6 @@ NetworkSettings = {
         Ipv6Title = "啟用 IPv6"
     }
 
-    TproxyOptions = {
-        Title = "TPROXY 設定"
-        PortTitle = "TPROXY 連接埠"
-    }
 
     ProxyOptions = {
         AccessControlModeTitle = "存取控制模式"
@@ -62,6 +56,6 @@ NetworkSettings = {
 
     Error = {
         VpnDenied = "VPN 權限被拒絕"
-        RootRequired = "Tun / TPROXY 需要 YumeBox 已取得可用的 Root 權限"
+        RootRequired = "Tun 需要 YumeBox 已取得可用的 Root 權限"
     }
 }

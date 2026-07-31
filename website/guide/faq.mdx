@@ -42,7 +42,7 @@ keywords:
   </Step>
 
   <Step title="区分运行模式">
-    先使用 `VPN Service` 验证配置。只有 Root `Tun` / `TPROXY` 失败时，优先检查 Root 授权、SELinux、路由和 iptables。
+    先使用 `VPN Service` 验证配置。只有 Root `Tun` 失败时，优先检查 Root 授权、SELinux 和路由。
   </Step>
 
   <Step title="导出日志">
@@ -248,10 +248,10 @@ keywords:
   <Accordion title="root core launch failed" icon="badge-alert">
     ```text Root 启动错误
     root core launch failed (success=false ...)
-    Tun / TPROXY 需要 YumeBox 已获取可用的 Root 权限
+    Tun 需要 YumeBox 已获取可用的 Root 权限
     ```
 
-    `Tun` 与 `TPROXY` 运行模式需要可用的 `su`。确认 Root 管理器已授权当前安装包，并且授权没有被设置为“仅一次”。更新或更换签名后，Root 管理器可能把应用视为新客户端，需要重新授权。
+    `Tun` 运行模式需要可用的 `su`。确认 Root 管理器已授权当前安装包，并且授权没有被设置为“仅一次”。更新或更换签名后，Root 管理器可能把应用视为新客户端，需要重新授权。
   </Accordion>
 
   <Accordion title="permission denied / operation not permitted" icon="lock-keyhole">
@@ -259,7 +259,6 @@ keywords:
 
     - `VPN Service` 下出现：检查系统 VPN 授权和 ROM 后台限制。
     - Root `Tun` 下出现：检查 `su` 授权、SELinux 策略和 `/dev/net/tun`。
-    - `TPROXY` 下出现：确认内核支持 TPROXY，系统具有 iptables 相关模块。
     - 仅自编译 APK 出现：确认对应 ABI 的四个 native 文件均已打包。
   </Accordion>
 
@@ -329,7 +328,7 @@ keywords:
       关于页中的 mihomo 分支和短 hash。
     </ResponseField>
 
-    <ResponseField name="运行模式" type="VPN Service | Tun | TPROXY" required>
+    <ResponseField name="运行模式" type="VPN Service | Tun" required>
       同一配置在其他模式是否能够启动。
     </ResponseField>
 

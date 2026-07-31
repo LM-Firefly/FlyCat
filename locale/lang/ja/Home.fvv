@@ -60,7 +60,6 @@ Home = {
     ProxyMode = {
         Vpn = "VPN"
         Tun = "TUN"
-        Tproxy = "TPROXY"
     }
 
     PreviewGuide = {

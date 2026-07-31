@@ -148,8 +148,7 @@ class ProxyTileService : TileService() {
                             )
                         }
 
-                        RunMode.Tun,
-                        RunMode.Tproxy -> {
+                        RunMode.Tun -> {
                             withContext(Dispatchers.IO) {
                                 RootSessionLauncher.start(this@ProxyTileService, currentMode)
                             }

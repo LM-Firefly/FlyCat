@@ -34,8 +34,7 @@ enum class RuntimeOwner {
     VpnService,
 
     /**
-     * The root libsu daemon (both Tun and Tproxy modes; disambiguated by
-     * [RuntimeSnapshot.runMode]).
+     * The root libsu daemon running Tun mode.
      */
     RootDaemon,
     RemoteController,

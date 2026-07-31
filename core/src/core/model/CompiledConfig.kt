@@ -41,9 +41,9 @@ data class CompileRequest(
     val outputPath: String,
     val ageSecretKey: String? = null,
     // Forwarded to liboverride: in Tun mode it keeps the compiled `tun:` block authoritative (the
-    // core opens its own kernel device) instead of force-disabling it as for VpnService / TPROXY.
+    // core opens its own kernel device) instead of force-disabling it as for VpnService.
     val runMode: RunMode = RunMode.VpnService,
-    // Root Tun/TPROXY + disable-all only. Skips compiler runtime DNS/path patches so the raw
+    // Root Tun + disable-all only. Skips compiler runtime DNS/path patches so the raw
     // profile stays authoritative. VPN never sets this — user overrides are still cleared by the
     // factory, but system patches remain.
     val skipRuntimePatches: Boolean = false,

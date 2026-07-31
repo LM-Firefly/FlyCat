@@ -33,8 +33,7 @@ object RuntimeStateMapper {
         snapshot.phase == RuntimePhase.Running
 
     /**
-     * VpnService maps 1:1 to [RunMode.VpnService], but the root daemon serves both Tun and Tproxy,
-     * so its mode isn't derivable from the owner alone — read [RuntimeSnapshot.runMode] instead.
+     * VpnService maps 1:1 to [RunMode.VpnService]; the root daemon always runs [RunMode.Tun].
      */
     fun modeForOwner(owner: RuntimeOwner): RunMode? =
         when (owner) {

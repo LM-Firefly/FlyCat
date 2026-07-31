@@ -25,7 +25,7 @@ pub struct CompileRequest {
 }
 
 /// The proxy run mode the app selected. Controls mode-specific config patching — chiefly whether the
-/// compiled `tun:` block is force-disabled (VPN/TPROXY) or kept authoritative for a root-created
+/// compiled `tun:` block is force-disabled (VPN) or kept authoritative for a root-created
 /// kernel device (tun). Defaults to `vpn` so older requests without the field compile unchanged.
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq, Default)]
 #[serde(rename_all = "kebab-case")]
@@ -33,7 +33,6 @@ pub enum RunMode {
     #[default]
     Vpn,
     Tun,
-    Tproxy,
 }
 
 #[derive(Debug, Serialize)]

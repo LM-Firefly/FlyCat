@@ -52,7 +52,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="root_tun_tproxy_notification"/>
+                android:value="root_tun_notification"/>
         </service>
 
         <service

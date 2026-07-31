@@ -368,8 +368,8 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
     private val outputDir = File("build/native/go-exe")
     private val appJniRoot = File("jniLibs")
 
-    // The mihomo source at lib/mihomo/mihomo is kept PRISTINE. The Android-root kernel changes
-    // (tproxy iptables working under GOOS=android, tun uid rules, per-app owner rules) live as git
+    // The mihomo source at lib/mihomo/mihomo is kept PRISTINE. The Android-root Tun changes
+    // (tun uid rules and per-app owner rules) live as git
     // patches under .github/patches/mihomo and are applied here right before the Go build — so an
     // upstream mihomo sync never has to be hand-merged.
     private val mihomoDir = File("lib/mihomo/mihomo")

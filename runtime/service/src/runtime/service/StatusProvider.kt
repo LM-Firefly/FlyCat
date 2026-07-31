@@ -304,8 +304,7 @@ class StatusProvider : ContentProvider() {
         fun isLocalRuntimeServiceAlive(mode: RunMode): Boolean =
             when (mode) {
                 RunMode.VpnService -> vpnServiceAlive
-                RunMode.Tun,
-                RunMode.Tproxy -> CoreProcess.isRootDaemonAlive()
+                RunMode.Tun -> CoreProcess.isRootDaemonAlive()
             }
 
         fun clearLegacyStateFiles() {

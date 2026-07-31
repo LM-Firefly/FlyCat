@@ -34,14 +34,14 @@ import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
 
 /**
- * Launches the root [RunMode.Tun] / [RunMode.Tproxy] daemon. A foreground notification host tracks
+ * Launches the root [RunMode.Tun] daemon. A foreground notification host tracks
  * the detached `su` daemon, which remains independently driven over the REST socket
  * ([CoreProcess.reconnectRoot]). Only an explicit [CoreProcess.stopRoot] kills the core.
  */
 object RootSessionLauncher {
     /** Compile the active profile for [mode] and launch the detached root daemon. */
     suspend fun start(context: Context, mode: RunMode) {
-        require(mode == RunMode.Tun || mode == RunMode.Tproxy) {
+        require(mode == RunMode.Tun) {
             "RootSessionLauncher handles root modes only, got $mode"
         }
         val appContext = context.appContextOrSelf

@@ -18,8 +18,6 @@ NetworkSettings = {
         VpnServiceSummary = "システム VPN による全体プロキシ"
         TunTitle = "Tun"
         TunSummary = "Root が必要なカーネル TUN トンネル"
-        TproxyTitle = "TPROXY"
-        TproxySummary = "Root が必要なカーネル透過プロキシ"
     }
 
     VpnOptions = {
@@ -47,10 +45,6 @@ NetworkSettings = {
         Ipv6Title = "IPv6 を有効化"
     }
 
-    TproxyOptions = {
-        Title = "TPROXY 設定"
-        PortTitle = "TPROXY ポート"
-    }
 
     ProxyOptions = {
         AccessControlModeTitle = "アクセス制御モード"
@@ -62,6 +56,6 @@ NetworkSettings = {
 
     Error = {
         VpnDenied = "VPN 権限が拒否されました"
-        RootRequired = "Tun / TPROXY には YumeBox の利用可能な Root 権限が必要です"
+        RootRequired = "Tun には YumeBox の利用可能な Root 権限が必要です"
     }
 }

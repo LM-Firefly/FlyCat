@@ -18,8 +18,6 @@ NetworkSettings = {
         VpnServiceSummary = "System VPN, global proxy"
         TunTitle = "Tun"
         TunSummary = "Kernel TUN tunnel with root"
-        TproxyTitle = "TPROXY"
-        TproxySummary = "Kernel transparent proxy with root"
     }
 
     VpnOptions = {
@@ -47,10 +45,6 @@ NetworkSettings = {
         Ipv6Title = "Enable IPv6"
     }
 
-    TproxyOptions = {
-        Title = "TPROXY Options"
-        PortTitle = "TPROXY Port"
-    }
 
     ProxyOptions = {
         AccessControlModeTitle = "Access Control Mode"
@@ -62,6 +56,6 @@ NetworkSettings = {
 
     Error = {
         VpnDenied = "VPN permission denied"
-        RootRequired = "Tun / TPROXY requires YumeBox to have working root access"
+        RootRequired = "Tun requires YumeBox to have working root access"
     }
 }

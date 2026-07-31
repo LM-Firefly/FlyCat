@@ -38,7 +38,7 @@ func parseOptions() options {
 	flag.StringVar(&o.controller, "controller", "", "external-controller-unix socket path")
 	flag.StringVar(&o.gateway, "gateway", "", "tun gateway CIDR(s)")
 	flag.StringVar(&o.dns, "dns", "", "tun DNS hijack address(es)")
-	flag.StringVar(&o.mode, "mode", "vpn", "run mode: vpn | tun | tproxy")
+	flag.StringVar(&o.mode, "mode", "vpn", "run mode: vpn | tun")
 	flag.StringVar(&o.configPath, "config", "", "compiled config path; root modes read the config here instead of the channel")
 	flag.IntVar(&o.sdk, "sdk", 0, "android platform SDK int")
 	flag.BoolVar(&o.test, "test", false, "parse config and exit (mihomo -t equivalent); requires --config")

@@ -89,8 +89,7 @@ pub fn patch_static_runtime(root: &mut JsonValue, profile_dir: &Path, run_mode: 
 
     // In the VpnService path the TUN is attached at runtime via a file descriptor; a config-provided
     // tun block must never open its own /dev/net/tun (it would fail on non-root and fight the
-    // fd-based listener). TPROXY also needs TUN off (mihomo refuses to program iptables while a tun is
-    // up). So force any tun block off — EXCEPT in tun mode, where the compiled tun block is
+    // fd-based listener). So force any tun block off — EXCEPT in tun mode, where the compiled tun block is
     // authoritative and the core opens its own kernel device (auto-route / auto-detect-interface) in
     // the root domain.
     if run_mode != RunMode::Tun
@@ -149,8 +148,7 @@ fn bool_field(object: &JsonMap<String, JsonValue>, block: &str, key: &str) -> bo
         .unwrap_or(false)
 }
 
-/// The app owns the transparent-proxy entry points; a profile-declared tproxy/redir/tun listener
-/// would collide with them.
+/// The app owns the Tun entry point; a profile-declared redir/tun listener would collide with it.
 fn patch_listeners(object: &mut JsonMap<String, JsonValue>) {
     let Some(listeners) = object
         .get_mut("listeners")
@@ -163,7 +161,7 @@ fn patch_listeners(object: &mut JsonMap<String, JsonValue>) {
             .as_object()
             .and_then(|value| value.get("type"))
             .and_then(JsonValue::as_str)
-            .map(|kind| !matches!(kind, "tproxy" | "redir" | "tun"))
+            .map(|kind| !matches!(kind, "redir" | "tun"))
             .unwrap_or(true)
     });
 }

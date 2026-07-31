@@ -36,7 +36,7 @@ import java.io.File
  * (`patch_static_runtime`); the compiler backfills the nameserver whenever this leaves DNS empty,
  * so Tun and VpnService resolve identically and the resolver is never left crippled.
  *
- * Delivered as an ordinary override, NOT a reserved one. Under disable-all in Tun/TPROXY the
+ * Delivered as an ordinary override, NOT a reserved one. Under disable-all in Tun the
  * factory omits this fragment and sets skipRuntimePatches, so the raw subscription wins. A plain
  * `tun:` object flows through liboverride's per-field merge and passes even keys outside the tun
  * schema through untouched.

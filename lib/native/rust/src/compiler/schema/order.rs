@@ -42,7 +42,6 @@ pub const ROOT_ORDER: &[&str] = &[
     "socks-port",
     "mixed-port",
     "redir-port",
-    "tproxy-port",
     "tun",
     "proxies",
     "proxy-providers",

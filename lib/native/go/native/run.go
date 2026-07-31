@@ -63,7 +63,7 @@ func run(opts options) {
 	}
 
 	<-signals
-	// Unwinds listeners (root tun ip rules included), tproxy iptables and the fake-ip pool, each
+	// Unwinds listeners (including root tun ip rules) and the fake-ip pool, each
 	// self-guarding. Only root mode gets here: the VpnService child is SIGKILLed by the launcher.
 	executor.Shutdown()
 }
@@ -85,7 +85,7 @@ func readStartup(opts options) (rawConfig []byte, tunFd, channelFd int) {
 	tunFd, channelFd = -1, -1
 
 	switch opts.mode {
-	case "tun", "tproxy":
+	case "tun":
 		if opts.configPath == "" {
 			fatal("mode %q requires --config", opts.mode)
 		}

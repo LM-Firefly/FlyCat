@@ -42,7 +42,7 @@ Use the exact error text to find the relevant section on this page. A dialog suc
   </Step>
 
   <Step title="Distinguish the runtime mode">
-    Test the configuration with `VPN Service` first. If only Root `Tun` / `TPROXY` fails, check Root authorization, SELinux, routing, and iptables.
+    Test the configuration with `VPN Service` first. If only Root `Tun` fails, check Root authorization, SELinux, and routing.
   </Step>
 
   <Step title="Export logs">
@@ -248,10 +248,10 @@ The errors below come from the current Rust configuration compiler, Android star
   <Accordion title="root core launch failed" icon="badge-alert">
     ```text Root startup error
     root core launch failed (success=false ...)
-    Tun / TPROXY requires usable Root permission for YumeBox
+    Tun requires usable Root permission for YumeBox
     ```
 
-    The `Tun` and `TPROXY` runtime modes require a working `su`. Confirm that the Root manager has authorized the currently installed package and that permission is not set to "Only once." After an update or signing-key change, the Root manager may treat the app as a new client and require authorization again.
+    The `Tun` runtime mode requires a working `su`. Confirm that the Root manager has authorized the currently installed package and that permission is not set to "Only once." After an update or signing-key change, the Root manager may treat the app as a new client and require authorization again.
   </Accordion>
 
   <Accordion title="permission denied / operation not permitted" icon="lock-keyhole">
@@ -259,7 +259,6 @@ The errors below come from the current Rust configuration compiler, Android star
 
     - Under `VPN Service`: check system VPN permission and vendor background restrictions.
     - Under Root `Tun`: check `su` authorization, SELinux policy, and `/dev/net/tun`.
-    - Under `TPROXY`: confirm that the kernel supports TPROXY and the system has the relevant iptables modules.
     - Only with a self-built APK: confirm that all four native files for the target ABI were packaged.
   </Accordion>
 
@@ -329,7 +328,7 @@ The errors below come from the current Rust configuration compiler, Android star
       The mihomo branch and short hash shown on the About page.
     </ResponseField>
 
-    <ResponseField name="Runtime mode" type="VPN Service | Tun | TPROXY" required>
+    <ResponseField name="Runtime mode" type="VPN Service | Tun" required>
       Whether the same configuration starts in another mode.
     </ResponseField>
 

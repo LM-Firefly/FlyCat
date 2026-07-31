@@ -37,7 +37,6 @@ import androidx.core.content.ContextCompat
 import com.github.yumelira.yumebox.common.util.toast
 import com.github.yumelira.yumebox.presentation.util.*
 import com.github.yumelira.yumebox.runtime.api.Profile
-import kotlinx.coroutines.delay
 import tf.gal.yumebox.locale.YumeTxt
 import java.util.*
 import kotlin.math.max
@@ -170,10 +169,7 @@ internal fun AddProfileSheet(
     LaunchedEffect(downloadProgress?.isCompleted, isDownloading) {
         if (isDownloading && downloadProgress?.isCompleted == true && !hasShownCompleteAnimation) {
             hasShownCompleteAnimation = true
-            delay(DOWNLOAD_COMPLETE_DISPLAY_MILLIS)
-            if (show.value && isDownloading && downloadProgress?.isCompleted == true) {
-                onDownloadComplete()
-            }
+            onDownloadComplete()
         }
     }
 
@@ -185,8 +181,7 @@ internal fun AddProfileSheet(
             !hasShownCompleteAnimation
         ) {
             hasShownCompleteAnimation = true
-            delay(DOWNLOAD_COMPLETE_DISPLAY_MILLIS)
-            if (show.value && isDownloading) onDownloadComplete()
+            onDownloadComplete()
         }
         if (uiState.message != null) {
             profilesViewModel.clearMessage()
@@ -289,5 +284,3 @@ internal fun AddProfileSheet(
         )
     }
 }
-
-private const val DOWNLOAD_COMPLETE_DISPLAY_MILLIS = 700L

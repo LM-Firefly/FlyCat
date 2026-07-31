@@ -23,7 +23,6 @@ package com.github.yumelira.yumebox.runtime.service.session
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.OverrideSpec
 import com.github.yumelira.yumebox.core.model.RunMode
-import com.github.yumelira.yumebox.core.model.TproxyConfig
 import com.github.yumelira.yumebox.core.model.TunConfig
 import com.github.yumelira.yumebox.data.model.TunStack
 import com.github.yumelira.yumebox.data.store.MMKVProvider
@@ -58,7 +57,7 @@ class SessionRuntimeSpecFactory(
         val profileDir = context.importedDir.resolve(profile.uuid.toString())
         val disableAllUserOverrides = networkSettings.disableAllOverride.value
         val skipModePatches =
-            disableAllUserOverrides && (runMode == RunMode.Tun || runMode == RunMode.Tproxy)
+            disableAllUserOverrides && runMode == RunMode.Tun
         val userOverrides =
             if (disableAllUserOverrides) {
                 emptyList()
@@ -67,16 +66,11 @@ class SessionRuntimeSpecFactory(
             }
         val tunConfig =
             if (!skipModePatches && runMode == RunMode.Tun) buildTunConfig() else null
-        val tproxyConfig =
-            if (!skipModePatches && runMode == RunMode.Tproxy) buildTproxyConfig() else null
         // Mode/system fragments first; app global-ua always last so it beats subscription + user
         // overrides and survives disable-all (core provider refresh must use the same UA).
         val modeOverrides =
             when {
                 tunConfig != null -> userOverrides + TunOverride.materialize(tunConfig, profileDir)
-                tproxyConfig != null ->
-                    userOverrides + TproxyOverride.materialize(tproxyConfig, profileDir)
-
                 else -> userOverrides
             }
         val overrideSpecs = modeOverrides + GlobalUaOverride.materialize(profileDir)
@@ -90,10 +84,9 @@ class SessionRuntimeSpecFactory(
             ageSecretKey = ageSecretKey,
             overrideSpecs = overrideSpecs,
             runMode = runMode,
-            // Only Root Tun/TPROXY skip compiler patches; VPN keeps DNS/path injection.
+            // Only Root Tun skips compiler patches; VPN keeps DNS/path injection.
             skipRuntimePatches = skipModePatches,
             tunConfig = tunConfig,
-            tproxyConfig = tproxyConfig,
             effectiveFingerprint =
                 buildEffectiveFingerprint(
                     profile.uuid.toString(),
@@ -124,19 +117,6 @@ class SessionRuntimeSpecFactory(
             includeAndroidUser = access.includeAndroidUser,
             routeExcludeAddress = networkSettings.tunRouteExcludeAddress.value,
             dnsMode = networkSettings.tunDnsMode.value,
-            fakeIpRange = networkSettings.tunFakeIpRange.value,
-            fakeIpRange6 = networkSettings.tunFakeIpRange6.value,
-            allowIpv6 = networkSettings.enableIPv6.value,
-        )
-    }
-
-    private fun buildTproxyConfig(): TproxyConfig {
-        val access = resolveTunAccessControl()
-        return TproxyConfig(
-            port = networkSettings.tproxyPort.value,
-            dnsMode = networkSettings.tunDnsMode.value,
-            includeUid = access.includeUid,
-            excludeUid = access.excludeUid,
             fakeIpRange = networkSettings.tunFakeIpRange.value,
             fakeIpRange6 = networkSettings.tunFakeIpRange6.value,
             allowIpv6 = networkSettings.enableIPv6.value,

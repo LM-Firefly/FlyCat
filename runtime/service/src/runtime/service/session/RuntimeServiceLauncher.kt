@@ -41,7 +41,7 @@ object RuntimeServiceLauncher {
     const val SOURCE_AUTO_RESTART_REPLACED = "auto_restart_replaced"
     const val SOURCE_UNKNOWN = "unknown"
 
-    // Only [RunMode.VpnService] is service-hosted; the root Tun/Tproxy daemons launch via
+    // Only [RunMode.VpnService] is service-hosted; the root Tun daemon launches via
     // CoreProcess.startRoot (through RuntimeLauncher), not this launcher.
     @Synchronized
     fun start(

@@ -62,9 +62,7 @@ class NetworkSettingsViewModel(
     val tunDnsMode: Preference<TunDnsMode> = settings.tunDnsMode
     val tunIfName: Preference<String> = settings.tunIfName
     val tunMtu: Preference<Int> = settings.tunMtu
-    val tproxyPort: Preference<Int> = settings.tproxyPort
-
-    // Root availability, probed once on open — gates the Tun / TPROXY cards (greyed when false, no
+    // Root availability, probed once on open — gates the Tun card (greyed when false, no
     // toast).
     // Probing constructs the libsu shell, so a rooted device may surface its su prompt here; that
     // grant
@@ -203,32 +201,13 @@ class NetworkSettingsViewModel(
             )
 
     /**
-     * Selects the run mode — the single mode key across the runtime. The root Tun / TPROXY cards
+     * Selects the run mode — the single mode key across the runtime. The root Tun card
      * are disabled in the UI when [rootAvailable] is false, so reaching here for a root mode
      * already implies root was granted.
      */
     fun onRunModeChange(mode: RunMode) {
         controller.setRunMode(mode)
     }
-
-    data class TproxyOptionsScreenState(
-        val port: Int = 0,
-        val dnsMode: TunDnsMode = TunDnsMode.FakeIp,
-        val enableIPv6: Boolean = false,
-    )
-
-    val tproxyOptionsScreenState: StateFlow<TproxyOptionsScreenState> =
-        combine(tproxyPort.state, tunDnsMode.state, enableIPv6.state) { port, dns, ipv6 ->
-            TproxyOptionsScreenState(port = port, dnsMode = dns, enableIPv6 = ipv6)
-        }
-            .stateInWhileSubscribed(
-                viewModelScope,
-                TproxyOptionsScreenState(
-                    port = tproxyPort.value,
-                    dnsMode = tunDnsMode.value,
-                    enableIPv6 = enableIPv6.value,
-                ),
-            )
 
     fun onBypassPrivateNetworkChange(enabled: Boolean) {
         controller.setAndRestartIfNeeded(bypassPrivateNetwork, enabled)
@@ -270,10 +249,6 @@ class NetworkSettingsViewModel(
 
     fun onTunMtuChange(value: Int) {
         if (value in 576..9000) controller.setAndRestartIfNeeded(tunMtu, value)
-    }
-
-    fun onTproxyPortChange(value: Int) {
-        if (value in 1..65535) controller.setAndRestartIfNeeded(tproxyPort, value)
     }
 
     fun onDisableAllOverrideChange(enabled: Boolean) {

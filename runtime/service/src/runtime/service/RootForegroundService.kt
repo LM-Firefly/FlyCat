@@ -24,7 +24,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 
 /**
- * Foreground notification host for the detached root TUN/TPROXY daemon. The core itself remains a
+ * Foreground notification host for the detached root Tun daemon. The core itself remains a
  * root-owned process so it can survive an app process restart; this service only owns Android's
  * user-visible lifecycle and traffic notification.
  */

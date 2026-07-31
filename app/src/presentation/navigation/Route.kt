@@ -52,9 +52,6 @@ sealed interface Route : NavKey {
     data object TunServiceOptions : Route
 
     @Serializable
-    data object TproxyServiceOptions : Route
-
-    @Serializable
     data object AccessControl : Route
 
     @Serializable

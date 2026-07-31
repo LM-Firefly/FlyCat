@@ -81,8 +81,7 @@ internal class RuntimeOwnership(
     fun ownerForMode(mode: RunMode): RuntimeOwner =
         when (mode) {
             RunMode.VpnService -> RuntimeOwner.VpnService
-            RunMode.Tun,
-            RunMode.Tproxy -> RuntimeOwner.RootDaemon
+            RunMode.Tun -> RuntimeOwner.RootDaemon
         }
 
     fun startingSnapshot(

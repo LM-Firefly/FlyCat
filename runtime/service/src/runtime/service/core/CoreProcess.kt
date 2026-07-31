@@ -195,10 +195,10 @@ class CoreProcess(private val context: Context) {
     }.getOrNull()
 
     /**
-     * Launch the core as a detached ROOT daemon (tun / tproxy) via `su`: it runs in the root
-     * SELinux domain (free to open a kernel TUN, program routes, iptables) and, unlike the VPN
+     * Launch the core as a detached ROOT Tun daemon via `su`: it runs in the root
+     * SELinux domain (free to open a kernel TUN and program routes) and, unlike the VPN
      * child core, outlives the app process — reattached over the REST socket ([reconnectRoot]).
-     * [mode] = "tun"/"tproxy".
+     * [mode] = "tun".
      */
     fun startRoot(mode: String, config: String): CoreEndpoint {
         awaitRootStopGrace()
@@ -428,7 +428,7 @@ class CoreProcess(private val context: Context) {
         }
 
         /**
-         * The run mode of the persisted root daemon ("tun"/"tproxy" → [RunMode]), or null when
+         * The run mode of the persisted root daemon ("tun" → [RunMode]), or null when
          * none.
          */
         fun rootDaemonMode(): RunMode? = RunMode.fromCoreArg(RootDaemonState.load()?.mode)
@@ -469,7 +469,7 @@ class CoreProcess(private val context: Context) {
         }
 
         // The su kill returns fast, but libsu's shell round-trip + mihomo's SIGTERM teardown
-        // (tproxy's iptables execs, tun route/rule cleanup) add latency the stop path must not
+        // (Tun route/rule cleanup) adds latency the stop path must not
         // block on.
         private val stopScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 

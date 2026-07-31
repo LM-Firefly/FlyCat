@@ -28,7 +28,7 @@ import com.github.yumelira.yumebox.data.model.TunStack
 import com.tencent.mmkv.MMKV
 
 class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
-    // Run mode selected in the UI (VpnService / Tun / TPROXY).
+    // Run mode selected in the UI (VpnService / Tun).
     val runMode by enumFlow(RunMode.VpnService)
 
     val bypassPrivateNetwork by boolFlow(true)
@@ -37,7 +37,7 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     val enableIPv6 by boolFlow(false)
     val systemProxy by boolFlow(true)
 
-    // All modes: drop the user override chain. Root Tun/TPROXY additionally skip mode geometry
+    // All modes: drop the user override chain. Root Tun additionally skips mode geometry
     // injection and compiler runtime patches (skipRuntimePatches).
     val disableAllOverride by boolFlow(false)
 
@@ -63,8 +63,6 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     val tunFakeIpRange by strFlow("198.18.0.1/16")
     val tunFakeIpRange6 by strFlow("fc00::/18")
 
-    // TPROXY: the transparent-proxy port mihomo opens and points its iptables mangle rules at.
-    val tproxyPort by intFlow(7893)
     val accessControlMode by enumFlow(AccessControlMode.ALLOW_ALL)
     val accessControlPackages by stringSetFlow(emptySet())
     val accessControlSelectedFirst by boolFlow(true)

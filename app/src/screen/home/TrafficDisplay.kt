@@ -305,7 +305,6 @@ private fun ProxyTypeCapsule(proxyMode: RunMode) {
                     when (proxyMode) {
                         RunMode.VpnService -> Yume.PlaneTakeoff
                         RunMode.Tun -> Yume.PlaneTakeoff
-                        RunMode.Tproxy -> Yume.Wifi
                     },
                 contentDescription = null,
                 tint = primary,
@@ -316,7 +315,6 @@ private fun ProxyTypeCapsule(proxyMode: RunMode) {
                     when (proxyMode) {
                         RunMode.VpnService -> YumeTxt.Home.ProxyMode.Vpn
                         RunMode.Tun -> YumeTxt.Home.ProxyMode.Tun
-                        RunMode.Tproxy -> YumeTxt.Home.ProxyMode.Tproxy
                     },
                 style =
                     MiuixTheme.textStyles.footnote1.copy(
