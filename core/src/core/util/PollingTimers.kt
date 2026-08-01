@@ -102,8 +102,8 @@ object PollingTimerSpecs {
     }
 
     object LogFlush {
-        const val FOREGROUND_INTERVAL_MS = 350L
-        const val SCREEN_OFF_INTERVAL_MS = 60_000L
+        const val FOREGROUND_INTERVAL_MS = 2_000L
+        const val SCREEN_OFF_INTERVAL_MS = 10_000L
     }
 
     fun dynamic(

@@ -39,6 +39,7 @@ import com.github.yumelira.yumebox.core.model.ProfileBinding
 import com.github.yumelira.yumebox.core.model.Provider
 import com.github.yumelira.yumebox.core.model.ProxyDisplayMode
 import com.github.yumelira.yumebox.core.model.ProxyGroupInfo
+import com.github.yumelira.yumebox.core.model.RuntimeRule
 import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.core.model.ProxySort
 import com.github.yumelira.yumebox.core.model.ProxySortMode
@@ -199,8 +200,15 @@ interface ConnectionRepository {
     val connectionSnapshot: StateFlow<ConnectionSnapshot>
     val isRunning: StateFlow<Boolean>
     suspend fun queryConnections(): ConnectionSnapshot
+    suspend fun queryConnectionsOverview(): com.github.yumelira.yumebox.core.model.ConnectionOverviewSnapshot
     suspend fun closeConnection(id: String): Boolean
     suspend fun closeAllConnections()
+}
+
+/** Read-only contract for runtime rules and temporary enable/disable control. */
+interface RuntimeRuleRepository {
+    suspend fun queryRules(): List<RuntimeRule>
+    suspend fun setRuleDisabled(index: Int, disabled: Boolean): Boolean
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -287,7 +295,6 @@ interface NetworkSettingsReader {
     val tunDnsMode: Preference<TunDnsMode>
     val tunFakeIpRange: Preference<String>
     val tunFakeIpRange6: Preference<String>
-    val tproxyPort: Preference<Int>
     val accessControlMode: Preference<AccessControlMode>
     val accessControlPackages: Preference<Set<String>>
     val accessControlShowSystemApps: Preference<Boolean>

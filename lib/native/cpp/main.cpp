@@ -14,6 +14,13 @@
 #include "libmihomo.h"
 
 extern "C" {
+void unsubscribeConnectionClose(void);
+void unsubscribeConnectionJoin(void);
+void subscribeTrafficUpdatePacked(void *remote);
+void unsubscribeTrafficUpdate(void);
+}
+
+extern "C" {
 
 JNIEXPORT void JNICALL
 Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeInit(JNIEnv *env, jobject thiz,
@@ -81,6 +88,33 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeQueryConnections(JNIEn
     scoped_string response = queryConnections();
 
     return new_string(response);
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeQueryConnectionsOverview(JNIEnv *env, jobject thiz) {
+    TRACE_METHOD();
+
+    scoped_string response = queryConnectionsOverview();
+
+    return new_string(response);
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeQueryRules(JNIEnv *env, jobject thiz) {
+    TRACE_METHOD();
+
+    scoped_string response = queryRules();
+
+    return new_string(response);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSetRuleDisabled(JNIEnv *env, jobject thiz,
+                                                                     jint index,
+                                                                     jboolean disabled) {
+    TRACE_METHOD();
+
+    return (jboolean) setRuleDisabled((int) index, (int) disabled);
 }
 
 JNIEXPORT jboolean JNICALL
@@ -429,6 +463,13 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSubscribeConnectionClo
 }
 
 JNIEXPORT void JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeUnsubscribeConnectionClose(JNIEnv *env, jobject thiz) {
+    TRACE_METHOD();
+
+    unsubscribeConnectionClose();
+}
+
+JNIEXPORT void JNICALL
 Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSubscribeConnectionJoin(JNIEnv *env, jobject thiz,
                                                                               jobject callback) {
     TRACE_METHOD();
@@ -439,6 +480,13 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSubscribeConnectionJoi
 }
 
 JNIEXPORT void JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeUnsubscribeConnectionJoin(JNIEnv *env, jobject thiz) {
+    TRACE_METHOD();
+
+    unsubscribeConnectionJoin();
+}
+
+JNIEXPORT void JNICALL
 Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSubscribeTrafficUpdate(JNIEnv *env, jobject thiz,
                                                                               jobject callback) {
     TRACE_METHOD();
@@ -446,6 +494,23 @@ Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSubscribeTrafficUpdate
     jobject _callback = new_global(callback);
 
     subscribeTrafficUpdate(_callback);
+}
+
+JNIEXPORT void JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeSubscribeTrafficUpdatePacked(JNIEnv *env, jobject thiz,
+                                                                                    jobject callback) {
+    TRACE_METHOD();
+
+    jobject _callback = new_global(callback);
+
+    subscribeTrafficUpdatePacked(_callback);
+}
+
+JNIEXPORT void JNICALL
+Java_com_github_yumelira_yumebox_core_bridge_Bridge_nativeUnsubscribeTrafficUpdate(JNIEnv *env, jobject thiz) {
+    TRACE_METHOD();
+
+    unsubscribeTrafficUpdate();
 }
 
 

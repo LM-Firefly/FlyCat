@@ -41,7 +41,7 @@ object RuntimeStateMapper {
     fun modeForOwner(owner: RuntimeOwner): RunMode? =
         when (owner) {
             RuntimeOwner.LocalTun -> RunMode.Vpn
-            RuntimeOwner.RootTun -> null // RootTun handles both Tun and Tproxy; use configured mode
+            RuntimeOwner.RootTun -> null // RootTun always runs Tun; use configured mode
             RuntimeOwner.RemoteController -> null
             RuntimeOwner.None -> null
         }

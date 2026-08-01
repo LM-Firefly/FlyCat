@@ -152,9 +152,8 @@ private fun NetworkVpnServiceSection(
                 listOf(
                     FlyTxt.NetworkSettings.RunMode.VpnMode,
                     FlyTxt.NetworkSettings.RunMode.TunMode,
-                    FlyTxt.NetworkSettings.RunMode.TproxyMode,
                 ),
-            values = listOf(RunMode.Vpn, RunMode.Tun, RunMode.Tproxy),
+            values = listOf(RunMode.Vpn, RunMode.Tun),
             onValueChange = { mode ->
                 when (mode) {
                     RunMode.Vpn -> {
@@ -168,17 +167,6 @@ private fun NetworkVpnServiceSection(
                     }
 
                     RunMode.Tun -> {
-                        coroutineScope.launch {
-                            val rootStatus = viewModel.evaluateRootAccess()
-                            if (!rootStatus.canStartRootTun) {
-                                context.toast(rootStatus.rootTunBlockedMessage())
-                                return@launch
-                            }
-                            viewModel.onRunModeChange(mode)
-                        }
-                    }
-
-                    RunMode.Tproxy -> {
                         coroutineScope.launch {
                             val rootStatus = viewModel.evaluateRootAccess()
                             if (!rootStatus.canStartRootTun) {
@@ -252,7 +240,6 @@ private fun NetworkServiceOptionsSection(
                     },
                 )
             }
-            RunMode.Tproxy -> Unit
         }
         // Disable all overrides
         PreferenceSwitchItem(

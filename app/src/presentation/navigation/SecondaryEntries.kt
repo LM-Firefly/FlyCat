@@ -18,6 +18,7 @@ import com.github.yumelira.yumebox.feature.log.presentation.screen.LogDetailScre
 import com.github.yumelira.yumebox.feature.log.presentation.screen.LogScreen
 import com.github.yumelira.yumebox.feature.meta.presentation.screen.ConnectionScreen
 import com.github.yumelira.yumebox.feature.meta.presentation.screen.CustomRoutingRoute
+import com.github.yumelira.yumebox.feature.meta.presentation.screen.RulesScreen
 import com.github.yumelira.yumebox.feature.meta.presentation.screen.TrafficStatisticsContent
 import com.github.yumelira.yumebox.feature.settings.presentation.screen.AccessControlScreen
 import com.github.yumelira.yumebox.feature.settings.presentation.screen.AppSettingsScreen
@@ -45,6 +46,7 @@ fun EntryProviderScope<NavKey>.flycatSecondaryEntries(navigator: Navigator) {
     entry<Route.Connection> { ConnectionScreen(navigator) }
     entry<Route.TrafficStatistics> { TrafficStatisticsContent(onBack = { navigator.pop() }) }
     entry<Route.Log> { LogScreen(navigator) }
+    entry<Route.Rules> { RulesScreen(navigator) }
     entry<Route.About> { AboutScreen(navigator, appIconResId = R.drawable.flycat) }
     entry<Route.OpenSourceLicenses> {
         OpenSourceLicensesScreen(navigator, librariesResId = R.raw.aboutlibraries)

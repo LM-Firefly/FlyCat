@@ -11,7 +11,6 @@ pub fn field_behavior(schema: SchemaId, key: &str) -> Option<FieldBehavior> {
             | "socks-port"
             | "mixed-port"
             | "redir-port"
-            | "tproxy-port"
             | "allow-lan"
             | "bind-address"
             | "mode"

@@ -23,17 +23,18 @@ package com.github.yumelira.yumebox.core.model
 import kotlinx.serialization.Serializable
 
 /**
- * Root TPROXY run mode: the core opens `tproxy-port` and programs the host iptables mangle rules itself. mihomo excludes the core's own uid from those rules so its egress is never redirected back into itself.
+ * One entry from mihomo runtime `GET /rules`.
+ *
+ * [disabled] is a runtime flag and resets when the core restarts.
  */
 @Serializable
-data class TproxyConfig(
-    val port: Int = 7893,
-    val dnsMode: TunDnsMode = TunDnsMode.RedirHost,
-    val fakeIpRange: String? = "198.18.0.1/16",
-    val fakeIpRange6: String? = "fc00::/18",
-    val includeUid: List<Int> = emptyList(),
-    val excludeUid: List<Int> = emptyList(),
-    val bypass: List<String> = emptyList(),
-    val dnsRedirect: Boolean = true,
-    val allowIpv6: Boolean = false,
+data class RuntimeRule(
+    val index: Int,
+    val type: String,
+    val payload: String = "",
+    val proxy: String = "",
+    val size: Int = -1,
+    val disabled: Boolean = false,
+    val hitCount: Long = 0L,
+    val missCount: Long = 0L,
 )

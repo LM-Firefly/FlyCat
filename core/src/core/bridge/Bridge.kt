@@ -63,6 +63,12 @@ object Bridge {
 
     external fun nativeQueryConnections(): String
 
+    external fun nativeQueryConnectionsOverview(): String
+
+    external fun nativeQueryRules(): String
+
+    external fun nativeSetRuleDisabled(index: Int, disabled: Boolean): Boolean
+
     external fun nativeCloseConnection(id: String): Boolean
 
     external fun nativeCloseAllConnections()
@@ -129,9 +135,17 @@ object Bridge {
 
     external fun nativeSubscribeConnectionClose(callback: ConnectionCloseInterface)
 
+    external fun nativeUnsubscribeConnectionClose()
+
     external fun nativeSubscribeConnectionJoin(callback: ConnectionJoinInterface)
 
+    external fun nativeUnsubscribeConnectionJoin()
+
     external fun nativeSubscribeTrafficUpdate(callback: TrafficUpdateInterface)
+
+    external fun nativeSubscribeTrafficUpdatePacked(callback: TrafficUpdatePackedInterface)
+
+    external fun nativeUnsubscribeTrafficUpdate()
 
     external fun nativeCoreVersion(): String
 
@@ -187,4 +201,9 @@ interface ConnectionJoinInterface {
 @Keep
 interface TrafficUpdateInterface {
     fun received(jsonPayload: String)
+}
+
+@Keep
+interface TrafficUpdatePackedInterface {
+    fun received(uploadTotal: Long, downloadTotal: Long, uploadSpeed: Long, downloadSpeed: Long)
 }

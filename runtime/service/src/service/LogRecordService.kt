@@ -55,7 +55,6 @@ class LogRecordService : Service() {
         private const val NOTIFICATION_ID = 2001
         private const val CHANNEL_ID = "log_record_channel"
         private const val CHANNEL_NAME = "日志记录"
-        private const val LOG_FLUSH_INTERVAL_MS = 350L
         private const val LOG_BUFFER_FLUSH_THRESHOLD_CHARS = 8 * 1024
 
         private const val ACTION_START = "com.github.yumelira.yumebox.LOG_START"

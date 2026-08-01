@@ -26,7 +26,6 @@ import com.github.yumelira.yumebox.core.importedDir
 import com.github.yumelira.yumebox.core.model.Imported
 import com.github.yumelira.yumebox.core.model.OverrideSpec
 import com.github.yumelira.yumebox.core.model.RunMode
-import com.github.yumelira.yumebox.core.model.TproxyConfig
 import com.github.yumelira.yumebox.core.model.TunConfig
 import com.github.yumelira.yumebox.runtime.api.contract.entity.RuntimeOwner
 import com.github.yumelira.yumebox.runtime.api.service.runtime.session.RuntimeSpec
@@ -36,7 +35,6 @@ import com.github.yumelira.yumebox.runtime.service.runtime.config.ServiceStore
 import com.github.yumelira.yumebox.runtime.service.runtime.records.ImportedDao
 import com.github.yumelira.yumebox.runtime.service.runtime.util.directoryLastModified
 import com.github.yumelira.yumebox.runtime.service.session.TunOverride
-import com.github.yumelira.yumebox.runtime.service.session.TproxyOverride
 import java.io.File
 import java.security.MessageDigest
 
@@ -124,49 +122,6 @@ class SessionRuntimeSpecFactory(
         )
     }
 
-    fun createRootTproxySpec(log: (String) -> Unit = {}): RuntimeSpec {
-        val profile = requireActiveProfile()
-        val profileDir = context.importedDir.resolve(profile.uuid.toString())
-        val disableAllUserOverrides = store.disableAllOverride
-        val skipModePatches = disableAllUserOverrides
-        val userOverrides =
-            if (disableAllUserOverrides) {
-                emptyList()
-            } else {
-                compiledConfigPipeline.resolveOverrideSpecs(profile.uuid.toString())
-            }
-        val tproxyConfig =
-            if (!skipModePatches) buildTproxyConfig() else null
-        val modeOverrides =
-            if (tproxyConfig != null) {
-                userOverrides + TproxyOverride.materialize(tproxyConfig, profileDir)
-            } else {
-                userOverrides
-            }
-        val overrideSpecs = modeOverrides + GlobalUaOverride.materialize(profileDir)
-        val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
-        return RuntimeSpec(
-            owner = RuntimeOwner.RootTun,
-            profileUuid = profile.uuid.toString(),
-            profileName = profile.name,
-            profileDir = profileDir.absolutePath,
-            runtimeConfigPath = profileDir.resolve("runtime.yaml").absolutePath,
-            ageSecretKey = ageSecretKey,
-            overrideSpecs = overrideSpecs,
-            runMode = RunMode.Tproxy,
-            skipRuntimePatches = skipModePatches,
-            tproxyConfig = tproxyConfig,
-            effectiveFingerprint =
-                buildEffectiveFingerprint(
-                    profile.uuid.toString(),
-                    overrideSpecs,
-                    ageSecretKey,
-                    skipModePatches,
-                ),
-            profileFingerprint = buildProfileFingerprint(profile.uuid.toString()),
-        )
-    }
-
     private fun buildTunConfig(): TunConfig {
         val access = resolveTunAccessControl()
         return TunConfig(
@@ -181,19 +136,6 @@ class SessionRuntimeSpecFactory(
             includeAndroidUser = access.includeAndroidUser,
             routeExcludeAddress = store.rootTunRouteExcludeAddress,
             dnsMode = store.tunDnsMode,
-            fakeIpRange = store.rootTunFakeIpRange,
-            fakeIpRange6 = store.rootTunFakeIpRange6,
-            allowIpv6 = store.allowIpv6,
-        )
-    }
-
-    private fun buildTproxyConfig(): TproxyConfig {
-        val access = resolveTunAccessControl()
-        return TproxyConfig(
-            port = store.tproxyPort,
-            dnsMode = store.tunDnsMode,
-            includeUid = access.includeUid,
-            excludeUid = access.excludeUid,
             fakeIpRange = store.rootTunFakeIpRange,
             fakeIpRange6 = store.rootTunFakeIpRange6,
             allowIpv6 = store.allowIpv6,

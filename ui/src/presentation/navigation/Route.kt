@@ -65,6 +65,9 @@ sealed interface Route : NavKey {
     data object Log : Route
 
     @Serializable
+    data object Rules : Route
+
+    @Serializable
     data object About : Route
 
     @Serializable

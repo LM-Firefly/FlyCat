@@ -35,13 +35,21 @@ object AppLogBuffer : AppLogSettings {
     @Volatile
     override var minLogLevel: Int = Log.DEBUG
     private val rwLock = java.util.concurrent.locks.ReentrantReadWriteLock()
+
+    internal fun shouldCaptureLog(priority: Int, tag: String?, message: String): Boolean {
+        if (priority < minLogLevel) return false
+        if (tag == "mihomo" && priority < Log.WARN) return false
+        return message.isNotBlank()
+    }
+
     fun add(priority: Int, tag: String?, message: String) {
-        if (priority < minLogLevel) return
+        if (!shouldCaptureLog(priority, tag, message)) return
         appendFormatted(priority, tag, message)
     }
 
     /** Insert a log line bypassing [minLogLevel] (e.g. mihomo native logs filtered by their own level). */
     fun forceAdd(priority: Int, tag: String?, message: String) {
+        if (!shouldCaptureLog(priority, tag, message)) return
         appendFormatted(priority, tag, message)
     }
 

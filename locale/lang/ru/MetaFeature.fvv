@@ -26,6 +26,11 @@ MetaFeature = {
         EditButton = "Изменить"
     }
 
+    RuntimeRules = {
+        Title = "Правила"
+        Summary = "Просмотр и временное переключение правил"
+    }
+
     Download = {
         DialogTitle = "Онлайн-обновление GeoX"
         DownloadComplete = "Загрузка завершена: %d/%d"

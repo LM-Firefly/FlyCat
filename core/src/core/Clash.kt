@@ -29,6 +29,7 @@ import com.github.yumelira.yumebox.core.model.AgeKeyPair
 import com.github.yumelira.yumebox.core.model.CompileRawSummary
 import com.github.yumelira.yumebox.core.model.CompileRequest
 import com.github.yumelira.yumebox.core.model.CompileResult
+import com.github.yumelira.yumebox.core.model.ConnectionOverviewSnapshot
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
 import com.github.yumelira.yumebox.core.model.FetchStatus
 import com.github.yumelira.yumebox.core.model.LogMessage
@@ -37,6 +38,7 @@ import com.github.yumelira.yumebox.core.model.Provider
 import com.github.yumelira.yumebox.core.model.Proxy
 import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.model.ProxySort
+import com.github.yumelira.yumebox.core.model.RuntimeRule
 import com.github.yumelira.yumebox.core.model.TunConfig
 import com.github.yumelira.yumebox.core.model.Traffic
 import com.github.yumelira.yumebox.core.model.TunnelState
@@ -46,6 +48,7 @@ import com.github.yumelira.yumebox.core.util.parseInetSocketAddress
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -75,6 +78,9 @@ interface ClashEngine {
     fun queryTrafficTotal(): Traffic
     // Connections
     fun queryConnections(): ConnectionSnapshot
+    fun queryConnectionsOverview(): ConnectionOverviewSnapshot
+    fun queryRules(): List<RuntimeRule>
+    fun setRuleDisabled(index: Int, disabled: Boolean): Boolean
     fun closeConnection(id: String): Boolean
     fun closeAllConnections()
     // System notifications
@@ -190,13 +196,35 @@ object Clash : ClashEngine {
 
     override fun queryConnections(): ConnectionSnapshot {
         val rawJson = Bridge.nativeQueryConnections()
-        val element = ClashJson.parseToJsonElement(rawJson)
-        val normalized = if (element is JsonObject && element["connections"] == JsonNull) { JsonObject(element.toMutableMap().apply { put("connections", JsonArray(emptyList())) }) } else { element }
-        return ClashJson.decodeFromJsonElement(
-            ConnectionSnapshot.serializer(),
-            normalized,
-        )
+        return try {
+            // Hot path: avoid building a JsonElement tree for per-second polling.
+            ClashJson.decodeFromString(ConnectionSnapshot.serializer(), rawJson)
+        } catch (_: SerializationException) {
+            val element = ClashJson.parseToJsonElement(rawJson)
+            val normalized = if (element is JsonObject && element["connections"] == JsonNull) {
+                JsonObject(element.toMutableMap().apply { put("connections", JsonArray(emptyList())) })
+            } else {
+                element
+            }
+            ClashJson.decodeFromJsonElement(
+                ConnectionSnapshot.serializer(),
+                normalized,
+            )
+        }
     }
+
+    override fun queryConnectionsOverview(): ConnectionOverviewSnapshot {
+        val rawJson = Bridge.nativeQueryConnectionsOverview()
+        return ClashJson.decodeFromString(ConnectionOverviewSnapshot.serializer(), rawJson)
+    }
+
+    override fun queryRules(): List<RuntimeRule> {
+        val payload = Bridge.nativeQueryRules()
+        return Json.decodeFromString(ListSerializer(RuntimeRule.serializer()), payload)
+    }
+
+    override fun setRuleDisabled(index: Int, disabled: Boolean): Boolean =
+        Bridge.nativeSetRuleDisabled(index, disabled)
 
     override fun closeConnection(id: String): Boolean = Bridge.nativeCloseConnection(id)
 

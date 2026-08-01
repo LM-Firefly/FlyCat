@@ -23,6 +23,7 @@ package com.github.yumelira.yumebox.runtime.client.remote
 import android.content.Context
 import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.core.appContextOrSelf
+import com.github.yumelira.yumebox.core.model.ConnectionOverviewSnapshot
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
 import com.github.yumelira.yumebox.core.model.LogMessage
 import com.github.yumelira.yumebox.core.model.Provider
@@ -30,6 +31,7 @@ import com.github.yumelira.yumebox.core.model.ProviderList
 import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.core.model.ProxySort
+import com.github.yumelira.yumebox.core.model.RuntimeRule
 import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.model.UiConfiguration
 import com.github.yumelira.yumebox.core.util.AppForegroundState
@@ -114,6 +116,27 @@ class ClashGateway(
             localCall = { Clash.queryConnections() },
             rootCall = { withContext(Dispatchers.IO) { RootTunController.queryConnections(appContext) } },
             remoteCall = { remote.queryConnections() },
+        )
+
+    override suspend fun queryConnectionsOverview(): ConnectionOverviewSnapshot =
+        dispatchSuspend(
+            localCall = { Clash.queryConnectionsOverview() },
+            rootCall = { withContext(Dispatchers.IO) { RootTunController.queryConnectionsOverview(appContext) } },
+            remoteCall = { remote.queryConnectionsOverview() },
+        )
+
+    override suspend fun queryRules(): List<RuntimeRule> =
+        dispatchSuspend(
+            localCall = { Clash.queryRules() },
+            rootCall = { Clash.queryRules() },
+            remoteCall = { remote.queryRules() },
+        )
+
+    override suspend fun setRuleDisabled(index: Int, disabled: Boolean): Boolean =
+        dispatchSuspend(
+            localCall = { Clash.setRuleDisabled(index, disabled) },
+            rootCall = { Clash.setRuleDisabled(index, disabled) },
+            remoteCall = { remote.setRuleDisabled(index, disabled) },
         )
 
     override suspend fun queryProfileProxyGroupNames(excludeNotSelectable: Boolean): List<String> {
@@ -342,7 +365,6 @@ class ClashGateway(
         val spec = when (configuredRunMode()) {
             RunMode.Vpn -> sessionHelpers.createSpec(SpecMode.Tun)
             RunMode.Tun -> sessionHelpers.createSpec(SpecMode.RootTun)
-            RunMode.Tproxy -> sessionHelpers.createSpec(SpecMode.RootTun)
         } ?: return emptyList()
         return sessionHelpers.resolvedGroups(spec, excludeNotSelectable, enrichLive = false)
     }
@@ -358,7 +380,6 @@ class ClashGateway(
         val spec = when (configuredRunMode()) {
             RunMode.Vpn -> sessionHelpers.createSpec(SpecMode.Tun)
             RunMode.Tun -> sessionHelpers.createSpec(SpecMode.RootTun)
-            RunMode.Tproxy -> sessionHelpers.createSpec(SpecMode.RootTun)
         }
         return spec?.takeIf { it.profileUuid == activeProfileUuid }
     }

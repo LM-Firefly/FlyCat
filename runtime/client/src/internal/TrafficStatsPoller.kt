@@ -3,8 +3,9 @@ package com.github.yumelira.yumebox.runtime.client.internal
 import com.github.yumelira.yumebox.core.bridge.Bridge
 import com.github.yumelira.yumebox.core.bridge.ConnectionCloseInterface
 import com.github.yumelira.yumebox.core.bridge.ConnectionJoinInterface
-import com.github.yumelira.yumebox.core.bridge.TrafficUpdateInterface
+import com.github.yumelira.yumebox.core.bridge.TrafficUpdatePackedInterface
 import com.github.yumelira.yumebox.core.model.ConnectionInfo
+import com.github.yumelira.yumebox.core.model.ConnectionOverviewSnapshot
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
 import com.github.yumelira.yumebox.core.model.Traffic
 import com.github.yumelira.yumebox.core.model.TunnelState
@@ -32,7 +33,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import timber.log.Timber
 
 internal class TrafficStatsPoller(
@@ -63,6 +66,66 @@ internal class TrafficStatsPoller(
     private val pollingMutex = Mutex()
     private var pollingJob: Job? = null
     private var failureBackoffUntilMs: Long = 0L
+    private val connectionCloseCallback = object : ConnectionCloseInterface {
+        override fun received(jsonPayload: String) {
+            runCatching {
+                val event = eventJson.decodeFromString<ConnectionClosePayload>(jsonPayload)
+                val cached = liveConnections.remove(event.id)
+                val merged =
+                    cached?.copy(upload = event.upload, download = event.download)
+                        ?: ConnectionInfo(
+                            id = event.id,
+                            upload = event.upload,
+                            download = event.download,
+                        )
+                _connectionCloseEvents.tryEmit(merged)
+                emitConnectionSnapshotFromLive()
+            }.onFailure { e ->
+                Timber.tag(TAG).w(e, "Failed to parse connection close event")
+            }
+        }
+    }
+    private val connectionJoinCallback = object : ConnectionJoinInterface {
+        override fun received(jsonPayload: String) {
+            runCatching {
+                val event = eventJson.decodeFromString<ConnectionJoinPayload>(jsonPayload)
+                val connection =
+                    ConnectionInfo(
+                        id = event.id,
+                        metadata = event.metadata,
+                        start = event.start,
+                        chains = event.chains,
+                        providerChains = event.providerChains,
+                        rule = event.rule,
+                        rulePayload = event.rulePayload,
+                    )
+                liveConnections[event.id] = connection
+                _connectionJoinEvents.tryEmit(connection)
+                emitConnectionSnapshotFromLive()
+            }.onFailure { e ->
+                Timber.tag(TAG).w(e, "Failed to parse connection join event")
+            }
+        }
+    }
+    private val trafficUpdatePackedCallback = object : TrafficUpdatePackedInterface {
+        override fun received(uploadTotal: Long, downloadTotal: Long, uploadSpeed: Long, downloadSpeed: Long) {
+            val packedTotal =
+                (encodeTrafficValue(uploadTotal) shl 32) or
+                    encodeTrafficValue(downloadTotal)
+            val packedNow =
+                (encodeTrafficValue(uploadSpeed) shl 32) or
+                    encodeTrafficValue(downloadSpeed)
+            // 统一写入 TrafficPushHub（唯一数据源）
+            TrafficPushHub.update(trafficNowPacked = packedNow, trafficTotalPacked = packedTotal)
+            // 从推送事件更新连接快照的流量总计（与流量数据原子化更新）
+            val current = _connectionSnapshot.value
+            _connectionSnapshot.value = current.copy(
+                uploadTotal = uploadTotal,
+                downloadTotal = downloadTotal,
+            )
+            notifyTrafficUpdated()
+        }
+    }
 
     internal fun notifyTrafficUpdated() {
         onTrafficUpdated()
@@ -130,6 +193,9 @@ internal class TrafficStatsPoller(
         }
     }
     fun stop() {
+        Bridge.nativeUnsubscribeConnectionClose()
+        Bridge.nativeUnsubscribeConnectionJoin()
+        Bridge.nativeUnsubscribeTrafficUpdate()
         pollingJob?.cancel()
         pollingJob = null
     }
@@ -176,6 +242,15 @@ internal class TrafficStatsPoller(
             onLocal = { ServiceClient.clash().queryConnections() },
         )
     }
+
+    suspend fun queryConnectionsOverview(): ConnectionOverviewSnapshot {
+        if (!router.running) return ConnectionOverviewSnapshot()
+        return router.dispatch(
+            onRoot = { ctx -> RootTunController.queryConnectionsOverview(ctx) },
+            onLocal = { ServiceClient.clash().queryConnectionsOverview() },
+        )
+    }
+
     suspend fun closeConnection(id: String): Boolean {
         if (!router.running) return false
         return router.dispatch(
@@ -210,66 +285,33 @@ internal class TrafficStatsPoller(
         )
     }
     private fun subscribeConnectionClose() {
-        Bridge.nativeSubscribeConnectionClose(object : ConnectionCloseInterface {
-            override fun received(jsonPayload: String) {
-                runCatching {
-                    val event = eventJson.decodeFromString<ConnectionInfo>(jsonPayload)
-                    liveConnections.remove(event.id)
-                    _connectionCloseEvents.tryEmit(event)
-                    emitConnectionSnapshotFromLive()
-                }.onFailure { e ->
-                    Timber.tag(TAG).w(e, "Failed to parse connection close event")
-                }
-            }
-        })
+        Bridge.nativeSubscribeConnectionClose(connectionCloseCallback)
     }
     private fun subscribeConnectionJoin() {
-        Bridge.nativeSubscribeConnectionJoin(object : ConnectionJoinInterface {
-            override fun received(jsonPayload: String) {
-                runCatching {
-                    val event = eventJson.decodeFromString<ConnectionInfo>(jsonPayload)
-                    liveConnections[event.id] = event
-                    _connectionJoinEvents.tryEmit(event)
-                    emitConnectionSnapshotFromLive()
-                }.onFailure { e ->
-                    Timber.tag(TAG).w(e, "Failed to parse connection join event")
-                }
-            }
-        })
+        Bridge.nativeSubscribeConnectionJoin(connectionJoinCallback)
     }
     private fun subscribeTrafficUpdate() {
-        Bridge.nativeSubscribeTrafficUpdate(object : TrafficUpdateInterface {
-            override fun received(jsonPayload: String) {
-                runCatching {
-                    val event = eventJson.decodeFromString<TrafficUpdatePayload>(jsonPayload)
-                    val packedTotal =
-                        (encodeTrafficValue(event.uploadTotal) shl 32) or
-                            encodeTrafficValue(event.downloadTotal)
-                    val packedNow =
-                        (encodeTrafficValue(event.uploadSpeed) shl 32) or
-                            encodeTrafficValue(event.downloadSpeed)
-                    // 统一写入 TrafficPushHub（唯一数据源）
-                    TrafficPushHub.update(trafficNowPacked = packedNow, trafficTotalPacked = packedTotal)
-                    // 从推送事件更新连接快照的流量总计（与流量数据原子化更新）
-                    val current = _connectionSnapshot.value
-                    _connectionSnapshot.value = current.copy(
-                        uploadTotal = event.uploadTotal,
-                        downloadTotal = event.downloadTotal,
-                    )
-                    notifyTrafficUpdated()
-                }.onFailure { e ->
-                    Timber.tag(TAG).w(e, "Failed to parse traffic update event")
-                }
-            }
-        })
+        Bridge.nativeSubscribeTrafficUpdatePacked(trafficUpdatePackedCallback)
     }
-    @kotlinx.serialization.Serializable
-    private data class TrafficUpdatePayload(
-        val uploadTotal: Long = 0L,
-        val downloadTotal: Long = 0L,
-        val uploadSpeed: Long = 0L,
-        val downloadSpeed: Long = 0L,
+
+    @Serializable
+    private data class ConnectionJoinPayload(
+        val id: String = "",
+        val start: String = "",
+        val metadata: JsonObject = JsonObject(emptyMap()),
+        val chains: List<String> = emptyList(),
+        val providerChains: List<String> = emptyList(),
+        val rule: String = "",
+        val rulePayload: String = "",
     )
+
+    @Serializable
+    private data class ConnectionClosePayload(
+        val id: String = "",
+        val upload: Long = 0L,
+        val download: Long = 0L,
+    )
+
     private companion object {
         private const val TAG = "TrafficStatsPoller"
         private val eventJson = Json { ignoreUnknownKeys = true }

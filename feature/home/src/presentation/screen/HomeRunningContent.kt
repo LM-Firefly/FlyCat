@@ -43,6 +43,7 @@ fun HomeRunningContent(
     speedHistory: List<TrafficData>,
     onChartClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isActive: Boolean = true,
 ) {
     Column(
         modifier = modifier.fillMaxWidth().padding(vertical = UiDp.dp24),
@@ -55,7 +56,7 @@ fun HomeRunningContent(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
-            SpeedChart(speedHistory = speedHistory, isRunning = isRunning, onClick = onChartClick)
+            SpeedChart(speedHistory = speedHistory, isRunning = isRunning, onClick = onChartClick, isActive = isActive)
         }
     }
 }

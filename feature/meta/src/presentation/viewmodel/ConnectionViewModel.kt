@@ -26,6 +26,7 @@ import com.github.yumelira.yumebox.core.contract.ConnectionRepository
 import com.github.yumelira.yumebox.core.domain.ConnectionHistoryManager
 import com.github.yumelira.yumebox.core.model.AppIdentity
 import com.github.yumelira.yumebox.core.model.ConnectionInfo
+import com.github.yumelira.yumebox.core.model.ConnectionOverviewSnapshot
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
 import com.github.yumelira.yumebox.core.util.buildRuleChain
 import com.github.yumelira.yumebox.core.util.formatBytes
@@ -104,6 +105,7 @@ class ConnectionViewModel(
     companion object {
         const val UNKNOWN_APP_NAME: String = AppIdentityReader.UNKNOWN_APP_NAME
         private const val POLL_INTERVAL_MS = 1_000L
+        private const val IDLE_POLL_INTERVAL_MS = 5_000L
     }
 
     val filteredConnections: StateFlow<List<ConnectionCardItem>> = state
@@ -116,9 +118,13 @@ class ConnectionViewModel(
         )
 
     private var pollingJob: Job? = null
+    private val connectionDetailsById = linkedMapOf<String, ConnectionInfo>()
+    private var needsFullSnapshot = true
 
     fun resetHistory() {
         ConnectionHistoryManager.clear()
+        connectionDetailsById.clear()
+        needsFullSnapshot = true
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -127,8 +133,10 @@ class ConnectionViewModel(
 
         pollingJob = viewModelScope.launch(Dispatchers.IO) {
             while (true) {
+                var nextDelayMs = POLL_INTERVAL_MS
                 runCatching {
-                    val snapshot = connectionRepository.queryConnections()
+                    val snapshot = queryPollingSnapshot()
+                    nextDelayMs = if (snapshot.connections.isEmpty()) IDLE_POLL_INTERVAL_MS else POLL_INTERVAL_MS
                     val previousConnections = currentState.snapshot?.connections.orEmpty().associateBy { it.id }
                     val connectionSpeeds = snapshot.connections.associate { connection ->
                         val previous = previousConnections[connection.id]
@@ -150,9 +158,10 @@ class ConnectionViewModel(
                 }.onFailure { error ->
                     if (error is kotlinx.coroutines.CancellationException) throw error
                     Timber.w(error, "Failed to poll connections")
+                    nextDelayMs = IDLE_POLL_INTERVAL_MS
                     updateState { it.copy(error = error.message, isRefreshing = false) }
                 }
-                delay(POLL_INTERVAL_MS)
+                delay(nextDelayMs)
             }
         }
     }
@@ -160,6 +169,8 @@ class ConnectionViewModel(
     fun stopPolling() {
         pollingJob?.cancel()
         pollingJob = null
+        connectionDetailsById.clear()
+        needsFullSnapshot = true
     }
 
     fun setSearchQuery(query: String) {
@@ -266,6 +277,47 @@ class ConnectionViewModel(
                 uploadText = formatBytes(connection.upload),
             )
         }
+    }
+
+    private suspend fun queryPollingSnapshot(): ConnectionSnapshot {
+        if (needsFullSnapshot) {
+            return queryAndCacheFullSnapshot()
+        }
+
+        val overview = connectionRepository.queryConnectionsOverview()
+        return mergeOverviewSnapshot(overview) ?: queryAndCacheFullSnapshot()
+    }
+
+    private suspend fun queryAndCacheFullSnapshot(): ConnectionSnapshot {
+        val snapshot = connectionRepository.queryConnections()
+        cacheConnectionDetails(snapshot.connections)
+        needsFullSnapshot = false
+        return snapshot
+    }
+
+    private fun mergeOverviewSnapshot(overview: ConnectionOverviewSnapshot): ConnectionSnapshot? {
+        val activeIds = overview.connections.mapTo(linkedSetOf()) { it.id }
+        val mergedConnections = ArrayList<ConnectionInfo>(overview.connections.size)
+        for (connection in overview.connections) {
+            val detail = connectionDetailsById[connection.id] ?: return null
+            mergedConnections += detail.copy(
+                upload = connection.upload,
+                download = connection.download,
+            )
+        }
+        connectionDetailsById.keys.retainAll(activeIds)
+        return ConnectionSnapshot(
+            downloadTotal = overview.downloadTotal,
+            uploadTotal = overview.uploadTotal,
+            connections = mergedConnections,
+            memory = overview.memory,
+        )
+    }
+
+    private fun cacheConnectionDetails(connections: List<ConnectionInfo>) {
+        val activeIds = connections.mapTo(linkedSetOf()) { it.id }
+        connections.forEach { connection -> connectionDetailsById[connection.id] = connection }
+        connectionDetailsById.keys.retainAll(activeIds)
     }
 
     override fun onCleared() {

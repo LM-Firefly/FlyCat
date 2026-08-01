@@ -35,7 +35,9 @@ import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -60,6 +62,7 @@ class TrafficStatisticsStore(
     private var lastTrafficUpload = NO_PERSISTED_TRAFFIC
     private var lastTrafficDownload = NO_PERSISTED_TRAFFIC
     private var lastProfileId: String? = null
+    private var pendingFlushJob: Job? = null
     init { upgradeSchemaIfNeeded(); loadData() }
     fun recordAppTrafficBatch(timestamp: Long, records: List<AppTrafficDeltaRecord>) {
         if (records.isEmpty()) return
@@ -133,7 +136,12 @@ class TrafficStatisticsStore(
             if (changed) { lastTrafficDirty = true }
         }
         if (!changed) return
-        if (forcePersist) { flushNow() } else { flushPendingData() }
+        if (forcePersist) {
+            cancelPendingFlush()
+            flushNow()
+        } else {
+            scheduleFlush()
+        }
     }
 
     private fun loadData() {
@@ -156,6 +164,7 @@ class TrafficStatisticsStore(
     private fun flushPendingData() {
         val trafficSnapshot: Triple<Long, Long, String?>?
         synchronized(lock) {
+            pendingFlushJob = null
             trafficSnapshot = if (lastTrafficDirty) { Triple(lastTrafficUpload, lastTrafficDownload, lastProfileId) } else { null }
             lastTrafficDirty = false
         }
@@ -168,6 +177,23 @@ class TrafficStatisticsStore(
                 Timber.e(e, "Failed to flush last traffic snapshot")
                 synchronized(lock) { lastTrafficDirty = true }
             }
+        }
+    }
+
+    private fun scheduleFlush() {
+        synchronized(lock) {
+            if (pendingFlushJob?.isActive == true) return
+            pendingFlushJob = storeScope.launch {
+                delay(BASELINE_FLUSH_INTERVAL_MS)
+                flushPendingData()
+            }
+        }
+    }
+
+    private fun cancelPendingFlush() {
+        synchronized(lock) {
+            pendingFlushJob?.cancel()
+            pendingFlushJob = null
         }
     }
 
@@ -201,6 +227,7 @@ class TrafficStatisticsStore(
         private const val LEGACY_KEY_LAST_TRAFFIC_DOWNLOAD = "last_traffic_download"
         private const val LEGACY_KEY_LAST_PROFILE_ID = "last_profile_id"
         private const val CURRENT_STATS_SCHEMA_VERSION = 3
+        private const val BASELINE_FLUSH_INTERVAL_MS = 10_000L
         private const val DAY_MS = 24 * 60 * 60 * 1000L
         private const val MAX_APP_DAYS_TO_KEEP = 90
         private const val NO_PERSISTED_TRAFFIC = -1L

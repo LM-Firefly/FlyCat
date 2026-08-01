@@ -21,10 +21,12 @@
 package com.github.yumelira.yumebox.runtime.api.service.remote
 
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
+import com.github.yumelira.yumebox.core.model.ConnectionOverviewSnapshot
 import com.github.yumelira.yumebox.core.model.Provider
 import com.github.yumelira.yumebox.core.model.ProviderList
 import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.model.ProxySort
+import com.github.yumelira.yumebox.core.model.RuntimeRule
 import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.model.UiConfiguration
 
@@ -36,6 +38,12 @@ interface IClashManager {
     suspend fun queryTrafficTotal(): Long
 
     suspend fun queryConnections(): ConnectionSnapshot
+
+    suspend fun queryConnectionsOverview(): ConnectionOverviewSnapshot
+
+    suspend fun queryRules(): List<RuntimeRule>
+
+    suspend fun setRuleDisabled(index: Int, disabled: Boolean): Boolean
 
     suspend fun queryProfileProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup>
 

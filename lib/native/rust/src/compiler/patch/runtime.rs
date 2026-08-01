@@ -138,7 +138,7 @@ fn bool_field(object: &JsonMap<String, JsonValue>, block: &str, key: &str) -> bo
         .unwrap_or(false)
 }
 
-/// The app owns the transparent-proxy entry points; a profile-declared tproxy/redir/tun listener would collide with them.
+/// The app owns the Tun entry point; a profile-declared redir/tun listener would collide with it.
 fn patch_listeners(object: &mut JsonMap<String, JsonValue>) {
     let Some(listeners) = object
         .get_mut("listeners")
@@ -151,7 +151,7 @@ fn patch_listeners(object: &mut JsonMap<String, JsonValue>) {
             .as_object()
             .and_then(|value| value.get("type"))
             .and_then(JsonValue::as_str)
-            .map(|kind| !matches!(kind, "tproxy" | "redir" | "tun"))
+            .map(|kind| !matches!(kind, "redir" | "tun"))
             .unwrap_or(true)
     });
 }

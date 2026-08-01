@@ -176,8 +176,7 @@ class ProxyTileService : TileService() {
                                 ProxyServiceContracts.SOURCE_TILE,
                             )
                         }
-                        RunMode.Tun,
-                        RunMode.Tproxy -> {
+                        RunMode.Tun -> {
                             val result =
                                 withContext(Dispatchers.IO) {
                                     RootTunServiceBridge.start(applicationContext)
@@ -232,7 +231,7 @@ class ProxyTileService : TileService() {
     private fun modeForOwner(owner: RuntimeOwner): RunMode? {
         return when (owner) {
             RuntimeOwner.LocalTun -> RunMode.Vpn
-            RuntimeOwner.RootTun -> null // RootTun handles both Tun and Tproxy; use configured mode
+            RuntimeOwner.RootTun -> null // RootTun always runs Tun; use configured mode
             RuntimeOwner.RemoteController -> null
             RuntimeOwner.None -> null
         }
@@ -256,7 +255,6 @@ class ProxyTileService : TileService() {
         return when (this) {
             RunMode.Vpn -> RuntimeTargetMode.Tun
             RunMode.Tun -> RuntimeTargetMode.RootTun
-            RunMode.Tproxy -> RuntimeTargetMode.RootTun
         }
     }
 

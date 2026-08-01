@@ -12,7 +12,6 @@ NetworkSettings = {
         RouteTrafficTitle = "Route System Traffic"
         VpnMode = "VPN Mode"
         TunMode = "ROOT TUN"
-        TproxyMode = "ROOT TProxy"
     }
 
     VpnOptions = {

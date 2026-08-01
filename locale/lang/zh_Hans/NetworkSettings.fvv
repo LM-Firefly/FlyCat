@@ -12,7 +12,6 @@ NetworkSettings = {
         RouteTrafficTitle = "路由系统流量"
         VpnMode = "VPN 模式"
         TunMode = "ROOT TUN"
-        TproxyMode = "ROOT TProxy"
     }
 
     VpnOptions = {

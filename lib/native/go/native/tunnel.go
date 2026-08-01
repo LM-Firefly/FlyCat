@@ -4,12 +4,47 @@ package main
 import "C"
 
 import (
+	"sync"
 	"unsafe"
 
 	"cfa/native/app"
 	"cfa/native/config"
 	"cfa/native/tunnel"
 )
+
+var (
+	subscriptionMu            sync.Mutex
+	connectionCloseSubscriber unsafe.Pointer
+	connectionJoinSubscriber  unsafe.Pointer
+	trafficUpdateSubscriber   unsafe.Pointer
+)
+
+func swapSubscriber(slot *unsafe.Pointer, next unsafe.Pointer) (previous unsafe.Pointer) {
+	subscriptionMu.Lock()
+	previous = *slot
+	*slot = next
+	subscriptionMu.Unlock()
+	return
+}
+
+func clearSubscriber(slot *unsafe.Pointer) (released unsafe.Pointer) {
+	subscriptionMu.Lock()
+	released = *slot
+	*slot = nil
+	subscriptionMu.Unlock()
+	return
+}
+
+func clearSubscriberIfCurrent(slot *unsafe.Pointer, expected unsafe.Pointer) (released unsafe.Pointer, matched bool) {
+	subscriptionMu.Lock()
+	if *slot == expected {
+		released = *slot
+		*slot = nil
+		matched = true
+	}
+	subscriptionMu.Unlock()
+	return
+}
 
 //export queryTunnelState
 func queryTunnelState() *C.char {
@@ -41,6 +76,24 @@ func queryTotal(upload, download *C.uint64_t) {
 //export queryConnections
 func queryConnections() *C.char {
 	return marshalJSON(tunnel.QueryConnections())
+}
+
+//export queryConnectionsOverview
+func queryConnectionsOverview() *C.char {
+	return marshalJSON(tunnel.QueryConnectionsOverview())
+}
+
+//export queryRules
+func queryRules() *C.char {
+	return marshalJSON(tunnel.QueryRules())
+}
+
+//export setRuleDisabled
+func setRuleDisabled(index C.int, disabled C.int) C.int {
+	if tunnel.SetRuleDisabled(int(index), disabled != 0) {
+		return 1
+	}
+	return 0
 }
 
 //export closeConnection
@@ -101,29 +154,115 @@ func healthCheckAll() {
 
 //export subscribeConnectionClose
 func subscribeConnectionClose(remote unsafe.Pointer) {
+	previous := swapSubscriber(&connectionCloseSubscriber, remote)
+	if previous != nil && previous != remote {
+		C.release_object(previous)
+	}
+
 	tunnel.SetConnectionLeaveListener(func(event *tunnel.ConnectionCloseEvent) {
 		if C.connection_close_received(remote, marshalJSON(event)) != 0 {
-			C.release_object(remote)
+			released, matched := clearSubscriberIfCurrent(&connectionCloseSubscriber, remote)
+			if matched {
+				tunnel.ClearConnectionLeaveListener()
+			}
+			if released != nil {
+				C.release_object(released)
+			}
 		}
 	})
+}
+
+//export unsubscribeConnectionClose
+func unsubscribeConnectionClose() {
+	released := clearSubscriber(&connectionCloseSubscriber)
+	tunnel.ClearConnectionLeaveListener()
+	if released != nil {
+		C.release_object(released)
+	}
 }
 
 //export subscribeConnectionJoin
 func subscribeConnectionJoin(remote unsafe.Pointer) {
-	tunnel.SetConnectionJoinListener(func(event *tunnel.ConnectionCloseEvent) {
+	previous := swapSubscriber(&connectionJoinSubscriber, remote)
+	if previous != nil && previous != remote {
+		C.release_object(previous)
+	}
+
+	tunnel.SetConnectionJoinListener(func(event *tunnel.ConnectionJoinEvent) {
 		if C.connection_join_received(remote, marshalJSON(event)) != 0 {
-			C.release_object(remote)
+			released, matched := clearSubscriberIfCurrent(&connectionJoinSubscriber, remote)
+			if matched {
+				tunnel.ClearConnectionJoinListener()
+			}
+			if released != nil {
+				C.release_object(released)
+			}
 		}
 	})
 }
 
+//export unsubscribeConnectionJoin
+func unsubscribeConnectionJoin() {
+	released := clearSubscriber(&connectionJoinSubscriber)
+	tunnel.ClearConnectionJoinListener()
+	if released != nil {
+		C.release_object(released)
+	}
+}
+
 //export subscribeTrafficUpdate
 func subscribeTrafficUpdate(remote unsafe.Pointer) {
+	previous := swapSubscriber(&trafficUpdateSubscriber, remote)
+	if previous != nil && previous != remote {
+		C.release_object(previous)
+	}
+
 	tunnel.SetTrafficUpdateListener(func(event *tunnel.TrafficUpdateEvent) {
 		if C.traffic_update_received(remote, marshalJSON(event)) != 0 {
-			C.release_object(remote)
+			released, matched := clearSubscriberIfCurrent(&trafficUpdateSubscriber, remote)
+			if matched {
+				tunnel.ClearTrafficUpdateListener()
+			}
+			if released != nil {
+				C.release_object(released)
+			}
 		}
 	})
+}
+
+//export subscribeTrafficUpdatePacked
+func subscribeTrafficUpdatePacked(remote unsafe.Pointer) {
+	previous := swapSubscriber(&trafficUpdateSubscriber, remote)
+	if previous != nil && previous != remote {
+		C.release_object(previous)
+	}
+
+	tunnel.SetTrafficUpdateListener(func(event *tunnel.TrafficUpdateEvent) {
+		if C.traffic_update_received_packed(
+			remote,
+			C.longlong(event.UploadTotal),
+			C.longlong(event.DownloadTotal),
+			C.longlong(event.UploadSpeed),
+			C.longlong(event.DownloadSpeed),
+		) != 0 {
+			released, matched := clearSubscriberIfCurrent(&trafficUpdateSubscriber, remote)
+			if matched {
+				tunnel.ClearTrafficUpdateListener()
+			}
+			if released != nil {
+				C.release_object(released)
+			}
+		}
+	})
+}
+
+//export unsubscribeTrafficUpdate
+func unsubscribeTrafficUpdate() {
+	released := clearSubscriber(&trafficUpdateSubscriber)
+	tunnel.ClearTrafficUpdateListener()
+	if released != nil {
+		C.release_object(released)
+	}
 }
 
 //export healthCheckProxy

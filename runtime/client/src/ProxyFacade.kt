@@ -9,7 +9,9 @@ import com.github.yumelira.yumebox.core.contract.NetworkSettingsReader
 import com.github.yumelira.yumebox.core.contract.ProxyGroupRepository
 import com.github.yumelira.yumebox.core.contract.ProxySyncPriority
 import com.github.yumelira.yumebox.core.contract.RemoteControllerStoreReader
+import com.github.yumelira.yumebox.core.contract.RuntimeRuleRepository
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
+import com.github.yumelira.yumebox.core.model.ConnectionOverviewSnapshot
 import com.github.yumelira.yumebox.core.model.Profile
 import com.github.yumelira.yumebox.core.model.Proxy
 import com.github.yumelira.yumebox.core.model.ProxyGroup
@@ -17,6 +19,7 @@ import com.github.yumelira.yumebox.core.model.ProxyGroupInfo
 import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.core.model.ProxySort
 import com.github.yumelira.yumebox.core.model.RemoteBackend
+import com.github.yumelira.yumebox.core.model.RuntimeRule
 import com.github.yumelira.yumebox.core.model.Traffic
 import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.util.AppForegroundState
@@ -66,7 +69,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
-class ProxyFacade(private val context: Context, private val networkSettingsStorage: NetworkSettingsReader, private val remoteControllerStore: RemoteControllerStoreReader,) : ProxyControlContract, ProxyGroupRepository, ConnectionRepository {
+class ProxyFacade(private val context: Context, private val networkSettingsStorage: NetworkSettingsReader, private val remoteControllerStore: RemoteControllerStoreReader,) : ProxyControlContract, ProxyGroupRepository, ConnectionRepository, RuntimeRuleRepository {
     private companion object {
         const val DEFAULT_SYNC_PRIORITY_SOURCE = "default"
         const val CONTROLLER_SWITCH_STOP_TIMEOUT_MS = 4000L
@@ -474,6 +477,18 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     suspend fun queryTunnelState(): TunnelState = traffic.queryTunnelState()
 
     override suspend fun queryConnections(): ConnectionSnapshot = traffic.queryConnections()
+
+    override suspend fun queryConnectionsOverview(): ConnectionOverviewSnapshot = traffic.queryConnectionsOverview()
+
+    override suspend fun queryRules(): List<RuntimeRule> {
+        connectCurrentBackend()
+        return ServiceClient.clash().queryRules()
+    }
+
+    override suspend fun setRuleDisabled(index: Int, disabled: Boolean): Boolean {
+        connectCurrentBackend()
+        return ServiceClient.clash().setRuleDisabled(index, disabled)
+    }
 
     override suspend fun closeConnection(id: String): Boolean = traffic.closeConnection(id)
 

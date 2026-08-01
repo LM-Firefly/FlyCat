@@ -77,7 +77,6 @@ class RuntimeStartupLogStore(
             when (mode) {
                 RunMode.Vpn -> Scope.LOCAL_TUN
                 RunMode.Tun -> Scope.ROOT_TUN
-                RunMode.Tproxy -> Scope.ROOT_TUN
             }
     }
 }

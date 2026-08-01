@@ -65,6 +65,7 @@ fun SpeedChart(
     isRunning: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isActive: Boolean = true,
 ) {
     val componentSizes = AppTheme.sizes
     val opacity = AppTheme.opacity
@@ -79,7 +80,7 @@ fun SpeedChart(
     }
     // Use Animatable so the animation can be started/stopped without slot-table shift.
     val idlePhaseAnimatable = remember { Animatable(0f) }
-    val shouldAnimateIdle = !isRunning && isLifecycleStarted
+    val shouldAnimateIdle = isActive && !isRunning && isLifecycleStarted
     LaunchedEffect(shouldAnimateIdle) {
         if (shouldAnimateIdle) {
             idlePhaseAnimatable.animateTo(targetValue = 1f, animationSpec = infiniteRepeatable(animation = tween(durationMillis = SPEED_CHART_IDLE_SCROLL_DURATION_MS, easing = LinearEasing), repeatMode = RepeatMode.Restart))

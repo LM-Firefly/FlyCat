@@ -21,6 +21,8 @@
 package com.github.yumelira.yumebox.runtime.client.remote
 
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
+import com.github.yumelira.yumebox.core.model.ConnectionOverviewInfo
+import com.github.yumelira.yumebox.core.model.ConnectionOverviewSnapshot
 import com.github.yumelira.yumebox.core.model.LogMessage
 import com.github.yumelira.yumebox.core.model.Provider
 import com.github.yumelira.yumebox.core.model.ProviderList
@@ -28,6 +30,7 @@ import com.github.yumelira.yumebox.core.model.Proxy
 import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.model.ProxySort
 import com.github.yumelira.yumebox.core.model.RemoteBackend
+import com.github.yumelira.yumebox.core.model.RuntimeRule
 import com.github.yumelira.yumebox.core.model.SubscriptionInfo
 import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.model.UiConfiguration
@@ -43,6 +46,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.put
+import io.ktor.client.request.patch
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
@@ -88,12 +92,9 @@ class HttpClashManager(
     private val client: HttpClient by lazy {
         HttpClient(OkHttp) {
             install(ContentNegotiation) { json(this@HttpClashManager.json) }
-            // Without timeouts a runBlocking REST call against an unreachable backend blocks its
-            // IO thread until the OS TCP timeout (tens of seconds). The traffic poller and proxy
-            // group sync loop fire these continuously, so a dead backend saturates Dispatchers.IO
-            // and starves the local start path — the home start button appears frozen. Bound every
-            // call so a lost backend fails fast instead of hanging. socketTimeout intentionally
-            // covers the streaming /traffic read (one JSON line per second) without killing it.
+            // Without timeouts a runBlocking REST call against an unreachable backend blocks its IO thread until the OS TCP timeout (tens of seconds).
+            // The traffic poller and proxy group sync loop fire these continuously, so a dead backend saturates Dispatchers.IO and starves the local start path — the home start button appears frozen.
+            // Bound every call so a lost backend fails fast instead of hanging. socketTimeout intentionally covers the streaming /traffic read (one JSON line per second) without killing it.
             install(HttpTimeout) {
                 connectTimeoutMillis = CONNECT_TIMEOUT_MS
                 socketTimeoutMillis = SOCKET_TIMEOUT_MS
@@ -128,6 +129,14 @@ class HttpClashManager(
                 client.delete(url) { applyAuth(backend) }
             HttpMethod.Put ->
                 client.put(url) {
+                    applyAuth(backend)
+                    if (body != null) {
+                        contentType(ContentType.Application.Json)
+                        setBody(body)
+                    }
+                }
+            HttpMethod.Patch ->
+                client.patch(url) {
                     applyAuth(backend)
                     if (body != null) {
                         contentType(ContentType.Application.Json)
@@ -179,6 +188,48 @@ class HttpClashManager(
 
     override suspend fun queryConnections(): ConnectionSnapshot =
         withContext(Dispatchers.IO) { fetchConnections() }
+
+    override suspend fun queryConnectionsOverview(): ConnectionOverviewSnapshot =
+        withContext(Dispatchers.IO) {
+            val snapshot = fetchConnections()
+            ConnectionOverviewSnapshot(
+                downloadTotal = snapshot.downloadTotal,
+                uploadTotal = snapshot.uploadTotal,
+                memory = snapshot.memory,
+                connections = snapshot.connections.map { connection ->
+                    ConnectionOverviewInfo(
+                        id = connection.id,
+                        upload = connection.upload,
+                        download = connection.download,
+                    )
+                },
+            )
+        }
+
+    override suspend fun queryRules(): List<RuntimeRule> =
+        withContext(Dispatchers.IO) {
+            val raw = request(HttpMethod.Get, "rules").bodyAsText()
+            val response = json.decodeFromString<RawRulesResponse>(raw)
+            response.rules.map { rule ->
+                RuntimeRule(
+                    index = rule.index,
+                    type = rule.type,
+                    payload = rule.payload,
+                    proxy = rule.proxy,
+                    size = rule.size,
+                    disabled = rule.disabled ?: rule.extra?.disabled ?: false,
+                    hitCount = rule.hitCount ?: rule.extra?.hitCount ?: 0L,
+                    missCount = rule.missCount ?: rule.extra?.missCount ?: 0L,
+                )
+            }
+        }
+
+    override suspend fun setRuleDisabled(index: Int, disabled: Boolean): Boolean =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                request(HttpMethod.Patch, "rules", "disable", body = mapOf(index.toString() to disabled)).status.isSuccess()
+            }.getOrDefault(false)
+        }
 
     private suspend fun fetchConnections(): ConnectionSnapshot {
         val raw = request(HttpMethod.Get, "connections").bodyAsText()
@@ -503,6 +554,29 @@ class HttpClashManager(
 
     @Serializable
     private data class SelectBody(val name: String)
+
+    @Serializable
+    private data class RawRulesResponse(val rules: List<RawRule> = emptyList())
+
+    @Serializable
+    private data class RawRule(
+        val index: Int = -1,
+        val type: String = "",
+        val payload: String = "",
+        val proxy: String = "",
+        val size: Int = -1,
+        val disabled: Boolean? = null,
+        val hitCount: Long? = null,
+        val missCount: Long? = null,
+        val extra: RawRuleExtra? = null,
+    )
+
+    @Serializable
+    private data class RawRuleExtra(
+        val disabled: Boolean = false,
+        val hitCount: Long = 0L,
+        val missCount: Long = 0L,
+    )
 
     @Serializable
     private data class RawProvidersResponse(val providers: Map<String, RawProvider> = emptyMap())

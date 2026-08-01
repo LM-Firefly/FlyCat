@@ -284,20 +284,12 @@ class ServiceStore : ServiceStateReader {
     var showTrafficNotification by
         store.boolean(key = "show_traffic_notification", defaultValue = true)
 
-    // All modes: drop the user override chain. Root Tun/TPROXY additionally skip mode geometry injection and compiler runtime patches (skipRuntimePatches).
+    // All modes: drop the user override chain. Root Tun additionally skips mode geometry injection and compiler runtime patches (skipRuntimePatches).
     var disableAllOverride: Boolean
         get() = readBoolean("disableAllOverride", "disable_all_override", false)
         set(value) {
             networkSettings.encode("disableAllOverride", value)
             store.provider.setBoolean("disable_all_override", value)
-        }
-
-    // TPROXY: the transparent-proxy port mihomo opens and points its iptables mangle rules at.
-    var tproxyPort: Int
-        get() = readInt("tproxyPort", "tproxy_port", 7893)
-        set(value) {
-            networkSettings.encode("tproxyPort", value)
-            store.provider.setInt("tproxy_port", value)
         }
 
     private companion object {

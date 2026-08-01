@@ -39,10 +39,6 @@ class RootTunTransport : RuntimeTransport {
                 Clash.startRootTun(config)?.let { error(it) }
                 startupLogStore.append("ROOT_TUN transport start: done (TUN mode)")
             }
-            RunMode.Tproxy -> {
-                // TProxy config (tproxy-port + iptables) is applied by compileAndLoad() via hub.ApplyConfig(). The mihomo core sets up the tproxy listener and iptables rules itself. No additional transport setup needed.
-                startupLogStore.append("ROOT_TUN transport start: TProxy mode (config applied by compiler)")
-            }
             else -> error("RootTunTransport does not support ${spec.runMode}")
         }
     }

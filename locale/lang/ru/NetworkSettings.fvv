@@ -12,7 +12,6 @@ NetworkSettings = {
         RouteTrafficTitle = "Маршрутизировать системный трафик"
         VpnMode = "Режим VPN"
         TunMode = "ROOT TUN"
-        TproxyMode = "ROOT TProxy"
     }
 
     VpnOptions = {

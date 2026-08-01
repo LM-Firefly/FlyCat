@@ -43,6 +43,7 @@ import com.github.yumelira.yumebox.core.contract.ProvidersRepository
 import com.github.yumelira.yumebox.core.contract.ProxyDisplaySettingsReader
 import com.github.yumelira.yumebox.core.contract.ProxyGroupRepository
 import com.github.yumelira.yumebox.core.contract.RemoteControllerStoreReader
+import com.github.yumelira.yumebox.core.contract.RuntimeRuleRepository
 import com.github.yumelira.yumebox.core.contract.ServiceBootstrapReader
 import com.github.yumelira.yumebox.core.contract.StoreSynchronizer
 import com.github.yumelira.yumebox.core.contract.SubStoreSettings
@@ -281,6 +282,7 @@ val appDataRuntimeModule = module {
     single { ProxyFacade(androidContext(), get(), get()) }
     single<ProxyGroupRepository> { get<ProxyFacade>() }
     single<ConnectionRepository> { get<ProxyFacade>() }
+    single<RuntimeRuleRepository> { get<ProxyFacade>() }
     single<ProxyControlContract> { get<ProxyFacade>() }
     single { AppIdentityResolver(androidContext()) }
     single { ProfilesRepository(androidContext()) }

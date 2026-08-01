@@ -23,7 +23,6 @@ package com.github.yumelira.yumebox.runtime.api.service.runtime.session
 import com.github.yumelira.yumebox.core.model.OverrideSpec
 import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.model.RunMode
-import com.github.yumelira.yumebox.core.model.TproxyConfig
 import com.github.yumelira.yumebox.core.model.TunConfig
 import com.github.yumelira.yumebox.runtime.api.contract.entity.RuntimeOwner
 import kotlinx.serialization.Serializable
@@ -42,7 +41,6 @@ data class RuntimeSpec(
     val runMode: RunMode = RunMode.Vpn,
     val skipRuntimePatches: Boolean = false,
     val rootTunConfig: TunConfig? = null,
-    val tproxyConfig: TproxyConfig? = null,
     val staticPlanFingerprint: String = "",
     val transportFingerprint: String = "",
     val effectiveFingerprint: String = "",

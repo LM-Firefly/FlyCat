@@ -42,6 +42,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -58,6 +60,7 @@ class AppTrafficStatisticsCollector(
 ) : TrafficCollectorContract {
     private var collectionJob: Job? = null
     private var monitoringJob: Job? = null
+    private val mutex = Mutex()
     private val connectionBaselines = linkedMapOf<String, ConnectionTrafficBaseline>()
     private var lastTotalUpload = NO_BASELINE
     private var lastTotalDownload = NO_BASELINE
@@ -85,10 +88,12 @@ class AppTrafficStatisticsCollector(
 
     private fun startTrafficMonitoring(parentScope: CoroutineScope): Job {
         return parentScope.launch {
-            lastTotalUpload = trafficStatisticsStore.getLastTrafficUpload()
-            lastTotalDownload = trafficStatisticsStore.getLastTrafficDownload()
-            lastProfileId = trafficStatisticsStore.getLastProfileId()
-            connectionBaselines.clear()
+            mutex.withLock {
+                lastTotalUpload = trafficStatisticsStore.getLastTrafficUpload()
+                lastTotalDownload = trafficStatisticsStore.getLastTrafficDownload()
+                lastProfileId = trafficStatisticsStore.getLastProfileId()
+                connectionBaselines.clear()
+            }
             launch {
                 connectionJoinFlow.collect { joined ->
                     handleConnectionJoin(joined)
@@ -112,37 +117,41 @@ class AppTrafficStatisticsCollector(
     private suspend fun trackTrafficTotals(totalTraffic: TrafficData) {
         val timestamp = System.currentTimeMillis()
         val currentProfileId = currentProfileId() ?: runCatching { queryActiveProfileId() }.getOrNull()
-        val isFirstCall = lastTotalUpload < 0L || lastTotalDownload < 0L
-        val profileChanged = !isFirstCall && currentProfileId != lastProfileId
-        val trafficReset = !isFirstCall && !profileChanged && (totalTraffic.upload < lastTotalUpload || totalTraffic.download < lastTotalDownload)
-        if (isFirstCall || profileChanged || trafficReset) {
+        mutex.withLock {
+            val isFirstCall = lastTotalUpload < 0L || lastTotalDownload < 0L
+            val profileChanged = !isFirstCall && currentProfileId != lastProfileId
+            val trafficReset = !isFirstCall && !profileChanged && (totalTraffic.upload < lastTotalUpload || totalTraffic.download < lastTotalDownload)
+            if (isFirstCall || profileChanged || trafficReset) {
+                initializeTotals(
+                    totalTraffic = totalTraffic,
+                    profileId = currentProfileId,
+                    forcePersist = true,
+                )
+                return
+            }
+            // 定期刷新待处理的关闭事件增量
+            flushPendingDeltasIfNeeded(timestamp)
             initializeTotals(
                 totalTraffic = totalTraffic,
                 profileId = currentProfileId,
-                forcePersist = true,
+                forcePersist = false,
             )
-            return
         }
-        // 定期刷新待处理的关闭事件增量
-        flushPendingDeltasIfNeeded(timestamp)
-        initializeTotals(
-            totalTraffic = totalTraffic,
-            profileId = currentProfileId,
-            forcePersist = false,
-        )
     }
 
-    private fun handleConnectionJoin(joined: ConnectionInfo) {
+    private suspend fun handleConnectionJoin(joined: ConnectionInfo) {
         val identity = appIdentityResolver.resolve(joined.metadata)
-        connectionBaselines[joined.id] =
-            ConnectionTrafficBaseline(
-                id = joined.id,
-                upload = joined.upload,
-                download = joined.download,
-                appKey = identity.appKey,
-                packageName = identity.packageName,
-                appName = identity.appName,
-            )
+        mutex.withLock {
+            connectionBaselines[joined.id] =
+                ConnectionTrafficBaseline(
+                    id = joined.id,
+                    upload = joined.upload,
+                    download = joined.download,
+                    appKey = identity.appKey,
+                    packageName = identity.packageName,
+                    appName = identity.appName,
+                )
+        }
     }
 
     private fun initializeTotals(
@@ -161,44 +170,48 @@ class AppTrafficStatisticsCollector(
         )
     }
 
-    private fun handleConnectionClose(closed: ConnectionInfo) {
-        val baseline = connectionBaselines.remove(closed.id) ?: return
-        val uploadDelta = (closed.upload - baseline.upload).coerceAtLeast(0L)
-        val downloadDelta = (closed.download - baseline.download).coerceAtLeast(0L)
-        if (uploadDelta <= 0L && downloadDelta <= 0L) return
-        val identity = AppIdentity(
-            appKey = baseline.appKey,
-            packageName = baseline.packageName,
-            appName = baseline.appName,
-        )
-        val routeKey = closed.chains.lastOrNull()?.takeIf(String::isNotBlank)
-            ?: closed.providerChains.lastOrNull()?.takeIf(String::isNotBlank)
-            ?: closed.rulePayload.takeIf(String::isNotBlank)
-            ?: closed.rule.takeIf(String::isNotBlank)
-            ?: TrafficStatisticsBuckets.UNATTRIBUTED_ROUTE_KEY
-        val routeLabel = closed.chains.lastOrNull()?.takeIf(String::isNotBlank)
-            ?: closed.providerChains.lastOrNull()?.takeIf(String::isNotBlank)
-            ?: routeKey
-        pendingDeltas.add(
-            AppTrafficDeltaRecord(
-                appKey = identity.appKey,
-                packageName = identity.packageName,
-                appName = identity.appName,
-                uploadDelta = uploadDelta,
-                downloadDelta = downloadDelta,
-                routeKey = routeKey,
-                routeLabel = routeLabel,
+    private suspend fun handleConnectionClose(closed: ConnectionInfo) {
+        mutex.withLock {
+            val baseline = connectionBaselines.remove(closed.id) ?: return
+            val uploadDelta = (closed.upload - baseline.upload).coerceAtLeast(0L)
+            val downloadDelta = (closed.download - baseline.download).coerceAtLeast(0L)
+            if (uploadDelta <= 0L && downloadDelta <= 0L) return
+            val identity = AppIdentity(
+                appKey = baseline.appKey,
+                packageName = baseline.packageName,
+                appName = baseline.appName,
             )
-        )
+            val routeKey = closed.chains.lastOrNull()?.takeIf(String::isNotBlank)
+                ?: closed.providerChains.lastOrNull()?.takeIf(String::isNotBlank)
+                ?: closed.rulePayload.takeIf(String::isNotBlank)
+                ?: closed.rule.takeIf(String::isNotBlank)
+                ?: TrafficStatisticsBuckets.UNATTRIBUTED_ROUTE_KEY
+            val routeLabel = closed.chains.lastOrNull()?.takeIf(String::isNotBlank)
+                ?: closed.providerChains.lastOrNull()?.takeIf(String::isNotBlank)
+                ?: routeKey
+            pendingDeltas.add(
+                AppTrafficDeltaRecord(
+                    appKey = identity.appKey,
+                    packageName = identity.packageName,
+                    appName = identity.appName,
+                    uploadDelta = uploadDelta,
+                    downloadDelta = downloadDelta,
+                    routeKey = routeKey,
+                    routeLabel = routeLabel,
+                )
+            )
+        }
     }
 
-    private fun resetBaselines() {
-        flushPendingDeltasNow()
-        trafficStatisticsStore.flushNow()
-        connectionBaselines.clear()
-        lastTotalUpload = NO_BASELINE
-        lastTotalDownload = NO_BASELINE
-        lastProfileId = null
+    private suspend fun resetBaselines() {
+        mutex.withLock {
+            flushPendingDeltasNow()
+            trafficStatisticsStore.flushNow()
+            connectionBaselines.clear()
+            lastTotalUpload = NO_BASELINE
+            lastTotalDownload = NO_BASELINE
+            lastProfileId = null
+        }
     }
 
     private fun flushPendingDeltasIfNeeded(timestamp: Long) {

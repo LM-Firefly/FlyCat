@@ -101,7 +101,6 @@ internal object ProxyRuntimeOwnership {
         when (mode) {
             RunMode.Vpn -> RuntimeOwner.LocalTun
             RunMode.Tun -> RuntimeOwner.RootTun
-            RunMode.Tproxy -> RuntimeOwner.RootTun
         }
 
     fun modeForOwner(owner: RuntimeOwner, configuredMode: RunMode): RunMode =

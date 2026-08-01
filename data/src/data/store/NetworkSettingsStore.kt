@@ -46,7 +46,6 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     override val tunDnsMode by enumFlow(TunDnsMode.RedirHost)
     override val tunFakeIpRange by strFlow("198.18.0.1/16")
     override val tunFakeIpRange6 by strFlow("fc00::/18")
-    override val tproxyPort by intFlow(7893)
     override val accessControlMode by enumFlow(AccessControlMode.ALLOW_ALL)
     override val accessControlPackages by stringSetFlow(emptySet())
     override val accessControlShowSystemApps by boolFlow(false)

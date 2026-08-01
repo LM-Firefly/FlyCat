@@ -340,7 +340,7 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 if (networkSettingsStore.runMode.value == mode) return@launch
-                if (mode == RunMode.Tun || mode == RunMode.Tproxy) { val rootStatus = proxyFacade.evaluateRootAccess(); if (!rootStatus.canStartRootTun) { showError(rootStatus.rootTunBlockedMessage()); return@launch } }
+                if (mode == RunMode.Tun) { val rootStatus = proxyFacade.evaluateRootAccess(); if (!rootStatus.canStartRootTun) { showError(rootStatus.rootTunBlockedMessage()); return@launch } }
                 networkSettingsStore.runMode.set(mode)
                 _runMode.value = mode
                 if (controlState.value == HomeProxyControlState.Running) { withContext(Dispatchers.IO) { AutoStartSessionGate.clearManualPaused(); proxyFacade.startProxy(mode) }
@@ -379,7 +379,7 @@ class HomeViewModel(
             mode = request.mode,
             onPreStart = {
                 _runMode.value = request.mode
-                if (request.mode == RunMode.Tun || request.mode == RunMode.Tproxy) {
+                if (request.mode == RunMode.Tun) {
                     val rootStatus = proxyFacade.evaluateRootAccess()
                     if (!rootStatus.canStartRootTun) { showError(rootStatus.rootTunBlockedMessage()); throw CancellationException("RootTun not available") }
                 }
@@ -413,6 +413,10 @@ class HomeViewModel(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun startSpeedSampling(sampleLimit: Int = 24) {
+        // Pre-allocate a mutable list to use as a ring buffer, avoiding per-second allocation.
+        val ringBuffer = MutableList(sampleLimit) { TrafficData.zero }
+        var writeIndex = 0
+        var fillCount = 0
         viewModelScope.launch {
             _homeScreenActive.flatMapLatest { active -> if (active) trafficData else emptyFlow() }.collect { sample ->
                 val snapshot = runtimeSnapshot.value
@@ -420,13 +424,14 @@ class HomeViewModel(
                     snapshot.phase.running -> sample
                     else -> TrafficData.zero
                 }
-                _speedHistory.update { old ->
-                    if (old.size < sampleLimit) { old + data } else {
-                        val deque = ArrayDeque(old)
-                        deque.removeFirst()
-                        deque.addLast(data)
-                        deque
-                    }
+                ringBuffer[writeIndex] = data
+                writeIndex = (writeIndex + 1) % sampleLimit
+                fillCount = (fillCount + 1).coerceAtMost(sampleLimit)
+                _speedHistory.value = if (fillCount < sampleLimit) {
+                    ringBuffer.subList(0, fillCount).toList()
+                } else {
+                    // Rotate so oldest sample is first: [writeIndex..end] + [0..writeIndex)
+                    ringBuffer.subList(writeIndex, sampleLimit) + ringBuffer.subList(0, writeIndex)
                 }
             }
         }

@@ -26,6 +26,11 @@ MetaFeature = {
         EditButton = "编辑"
     }
 
+    RuntimeRules = {
+        Title = "规则"
+        Summary = "查看并临时开关运行时规则"
+    }
+
     Download = {
         DialogTitle = "更新 GeoX"
         DownloadComplete = "下载完成：%d/%d"

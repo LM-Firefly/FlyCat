@@ -26,6 +26,11 @@ MetaFeature = {
         EditButton = "Edit"
     }
 
+    RuntimeRules = {
+        Title = "Rules"
+        Summary = "View and temporarily toggle runtime rules"
+    }
+
     Download = {
         DialogTitle = "Update GeoX Online"
         DownloadComplete = "Download complete: %d/%d"

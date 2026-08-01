@@ -185,7 +185,7 @@ fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
                                         .Loading
                                 }
                         )
-                        HomeSpeedChartSection(homeViewModel = homeViewModel, isRunning = isRunning, onClick = { openSecondary(Route.TrafficStatistics) })
+                        HomeSpeedChartSection(homeViewModel = homeViewModel, isRunning = isRunning, onClick = { openSecondary(Route.TrafficStatistics) }, isActive = isActive)
                         if (isRunning) { HomeTopologyChartSection(homeViewModel = homeViewModel, onClick = { openSecondary(Route.Connection) }) }
                     }
                 }
@@ -210,9 +210,9 @@ private fun HomeTrafficSection(homeViewModel: HomeViewModel, isRunning: Boolean,
  * Wrapper composable that collects [HomeViewModel.speedHistory] (1Hz) internally.
  */
 @Composable
-private fun HomeSpeedChartSection(homeViewModel: HomeViewModel, isRunning: Boolean, onClick: () -> Unit) {
+private fun HomeSpeedChartSection(homeViewModel: HomeViewModel, isRunning: Boolean, onClick: () -> Unit, isActive: Boolean = true) {
     val speedHistory by homeViewModel.speedHistory.collectAsStateWithLifecycle()
-    SpeedChart(speedHistory = speedHistory, isRunning = isRunning, onClick = onClick)
+    SpeedChart(speedHistory = speedHistory, isRunning = isRunning, onClick = onClick, isActive = isActive)
 }
 
 /**

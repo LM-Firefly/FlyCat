@@ -335,18 +335,18 @@ private fun ProxyTypeCapsule(runMode: RunMode, isEnabled: Boolean, onRunModeClic
     val primary = MiuixTheme.colorScheme.primary
     val interactionSource = remember { MutableInteractionSource() }
     var showPopup by rememberSaveable { mutableStateOf(false) }
-    val runModeOptions = remember { listOf(RunMode.Vpn, RunMode.Tun, RunMode.Tproxy) }
+    val runModeOptions = remember { listOf(RunMode.Vpn, RunMode.Tun) }
     Box {
         Surface(color = primary.copy(alpha = opacity.subtle), shape = RoundedCornerShape(50), modifier = Modifier.height(componentSizes.statusCapsuleHeight).clickable(enabled = isEnabled, interactionSource = interactionSource, indication = null, role = Role.Button, onClick = {onRunModeClick(); showPopup = true })) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = spacing.space12), horizontalArrangement = Arrangement.spacedBy(spacing.space6)) {
-                Icon(imageVector = when (runMode) { RunMode.Vpn -> Yume.PlaneTakeoff; RunMode.Tun -> Yume.Tun; RunMode.Tproxy -> Yume.Wifi }, contentDescription = null, tint = primary, modifier = Modifier.size(spacing.space12))
-                Text(text = when (runMode) { RunMode.Vpn -> FlyTxt.Home.RunMode.Vpn; RunMode.Tun -> FlyTxt.Home.RunMode.Tun; RunMode.Tproxy -> FlyTxt.Home.RunMode.Tproxy }, style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold), color = primary)
+                Icon(imageVector = when (runMode) { RunMode.Vpn -> Yume.PlaneTakeoff; RunMode.Tun -> Yume.Tun }, contentDescription = null, tint = primary, modifier = Modifier.size(spacing.space12))
+                Text(text = when (runMode) { RunMode.Vpn -> FlyTxt.Home.RunMode.Vpn; RunMode.Tun -> FlyTxt.Home.RunMode.Tun }, style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold), color = primary)
             }
         }
         OverlayListPopup(show = showPopup, alignment = PopupPositionProvider.Align.BottomStart, onDismissRequest = { showPopup = false }) {
             ListPopupColumn {
                 runModeOptions.forEachIndexed { index, mode ->
-                    DropdownImpl(text = when (mode) { RunMode.Vpn -> FlyTxt.Home.RunMode.Vpn; RunMode.Tun -> FlyTxt.Home.RunMode.Tun; RunMode.Tproxy -> FlyTxt.Home.RunMode.Tproxy }, optionSize = runModeOptions.size, isSelected = mode == runMode, onSelectedIndexChange = { showPopup = false; onRunModeSelected(mode) }, index = index)
+                    DropdownImpl(text = when (mode) { RunMode.Vpn -> FlyTxt.Home.RunMode.Vpn; RunMode.Tun -> FlyTxt.Home.RunMode.Tun }, optionSize = runModeOptions.size, isSelected = mode == runMode, onSelectedIndexChange = { showPopup = false; onRunModeSelected(mode) }, index = index)
                 }
             }
         }

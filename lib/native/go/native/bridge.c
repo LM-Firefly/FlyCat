@@ -27,6 +27,8 @@ int (*connection_join_received_func)(void *callback, const char *payload);
 
 int (*traffic_update_received_func)(void *callback, const char *payload);
 
+int (*traffic_update_received_packed_func)(void *callback, long long upload_total, long long download_total, long long upload_speed, long long download_speed);
+
 int (*open_content_func)(const char *url, char *error, int error_length);
 
 void (*release_object_func)(void *obj);
@@ -118,6 +120,17 @@ int traffic_update_received(void *callback, char *payload) {
     free(payload);
 
     return result;
+}
+
+int traffic_update_received_packed(void *callback, long long upload_total, long long download_total, long long upload_speed, long long download_speed) {
+    TRACE_METHOD();
+
+    return traffic_update_received_packed_func(
+            callback,
+            upload_total,
+            download_total,
+            upload_speed,
+            download_speed);
 }
 
 int open_content(char *url, char *error, int error_length) {

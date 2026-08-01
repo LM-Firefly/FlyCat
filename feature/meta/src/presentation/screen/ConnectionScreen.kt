@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -147,9 +148,22 @@ fun ConnectionScreen(navigator: Navigator) {
             showDetailSheet = false
         }
     }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(state.snapshot, state.selectedTab, showDetailSheet, selectedConnection?.id) {
+        if (!showDetailSheet || state.selectedTab != ConnectionTab.ACTIVE) return@LaunchedEffect
+        val selectedId = selectedConnection?.id ?: return@LaunchedEffect
+        val updated = state.snapshot?.connections?.firstOrNull { it.id == selectedId }
+        when {
+            updated != null && updated != selectedConnection -> selectedConnection = updated
+            updated == null -> showDetailSheet = false
+        }
+    }
+    DisposableEffect(Unit) {
         viewModel.resetHistory()
         viewModel.startPolling()
+
+        onDispose {
+            viewModel.stopPolling()
+        }
     }
     LaunchedEffect(showDetailSheet) {
         if (showDetailSheet) {

@@ -25,15 +25,14 @@ import kotlinx.serialization.Serializable
 
 /**
  * The single proxy run-mode key shared across UI, runtime, launcher, owner, and compiler.
- * [Vpn] is the non-root Android VpnService path; [Tun]/[Tproxy] are the root libsu-daemon paths.
- * The serialized `vpn`/`tun`/`tproxy` names are the contract with the compiler's `run_mode`.
- * The [coreArg] property returns `vpn`/`tun`/`tproxy` for the core's `--mode` flag.
+ * [Vpn] is the non-root Android VpnService path; [Tun] is the root libsu-daemon path.
+ * The serialized `vpn`/`tun` names are the contract with the compiler's `run_mode`.
+ * The [coreArg] property returns `vpn`/`tun` for the core's `--mode` flag.
  */
 @Serializable
 enum class RunMode {
     @SerialName("vpn") Vpn,
-    @SerialName("tun") Tun,
-    @SerialName("tproxy") Tproxy;
+    @SerialName("tun") Tun;
 
     /**
      * The token this mode maps to for the native core's `--mode` flag and the persisted daemon record.
@@ -43,7 +42,6 @@ enum class RunMode {
             when (this) {
                 Vpn -> "vpn"
                 Tun -> "tun"
-                Tproxy -> "tproxy"
             }
 
     companion object {
@@ -51,7 +49,6 @@ enum class RunMode {
             when (value) {
                 "vpn" -> Vpn
                 "tun" -> Tun
-                "tproxy" -> Tproxy
                 else -> null
             }
     }

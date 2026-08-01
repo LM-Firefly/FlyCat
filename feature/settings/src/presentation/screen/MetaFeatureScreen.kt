@@ -153,6 +153,11 @@ fun MetaFeatureScreen(navigator: Navigator) {
                 Title(FlyTxt.MetaFeature.Section.Routing)
                 Card {
                     ArrowPreference(
+                        title = FlyTxt.MetaFeature.RuntimeRules.Title,
+                        summary = FlyTxt.MetaFeature.RuntimeRules.Summary,
+                        onClick = { navigator.push(Route.Rules) },
+                    )
+                    ArrowPreference(
                         title = FlyTxt.MetaFeature.CustomRouting.Title,
                         summary = FlyTxt.MetaFeature.CustomRouting.Summary,
                         onClick = { navigator.push(Route.CustomRouting) },

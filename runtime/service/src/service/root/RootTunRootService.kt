@@ -152,6 +152,12 @@ class RootTunRootService : RootService() {
                     runtime.queryConnections(),
                 )
 
+            override fun queryConnectionsOverviewJson(): String =
+                RootTunJson.Default.encodeToString(
+                    com.github.yumelira.yumebox.core.model.ConnectionOverviewSnapshot.serializer(),
+                    runtime.queryConnectionsOverview(),
+                )
+
             override fun queryAllProxyGroupsJson(excludeNotSelectable: Boolean): String =
                 binderTimed {
                     RootTunJson.Default.encodeToString(
@@ -268,7 +274,6 @@ class RootTunRootService : RootService() {
         startupLogStore.append("ROOT_TUN root-service: spec create begin action=$action mode=$mode")
         val spec = when (mode) {
             RunMode.Tun -> runtimeSpecFactory.createRootTunSpec()
-            RunMode.Tproxy -> runtimeSpecFactory.createRootTproxySpec()
             else -> error("Root service does not support mode $mode")
         }
         startupLogStore.append(

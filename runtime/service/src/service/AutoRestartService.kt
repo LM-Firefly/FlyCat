@@ -187,9 +187,6 @@ class AutoRestartService : Service() {
                     error(result.error ?: "RootTun auto start failed")
                 }
             }
-            RunMode.Tproxy -> {
-                RuntimeServiceLauncher.start(this, RunMode.Tproxy, startupSource)
-            }
         }
 
         val activationResult =
@@ -244,8 +241,7 @@ class AutoRestartService : Service() {
                                 error = status.lastError,
                             )
                         }
-                RunMode.Vpn,
-                RunMode.Tproxy ->
+                RunMode.Vpn ->
                     RuntimeActivationState(
                         phase = StatusProvider.queryRuntimePhase(mode),
                     )
@@ -259,8 +255,7 @@ class AutoRestartService : Service() {
                 RootTunService.stop(this)
                 StatusProvider.markRuntimeIdle(RunMode.Tun)
             }
-            RunMode.Vpn,
-            RunMode.Tproxy -> RuntimeServiceLauncher.stop(this, mode)
+            RunMode.Vpn -> RuntimeServiceLauncher.stop(this, mode)
         }
     }
 

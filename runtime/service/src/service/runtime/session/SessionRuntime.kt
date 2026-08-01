@@ -28,6 +28,7 @@ import androidx.core.content.ContextCompat
 import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.core.appContextOrSelf
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
+import com.github.yumelira.yumebox.core.model.ConnectionOverviewSnapshot
 import com.github.yumelira.yumebox.core.model.LogMessage
 import com.github.yumelira.yumebox.core.model.Provider
 import com.github.yumelira.yumebox.core.model.Proxy
@@ -230,6 +231,11 @@ class SessionRuntime(
     fun queryConnections(): ConnectionSnapshot {
         if (currentSnapshot.phase != RuntimePhase.Running) return ConnectionSnapshot()
         return Clash.queryConnections()
+    }
+
+    fun queryConnectionsOverview(): ConnectionOverviewSnapshot {
+        if (currentSnapshot.phase != RuntimePhase.Running) return ConnectionOverviewSnapshot()
+        return Clash.queryConnectionsOverview()
     }
 
     suspend fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> {
@@ -789,7 +795,6 @@ class SessionRuntime(
         return when (this) {
             com.github.yumelira.yumebox.core.model.RunMode.Vpn -> RuntimeTargetMode.Tun
             com.github.yumelira.yumebox.core.model.RunMode.Tun -> RuntimeTargetMode.RootTun
-            com.github.yumelira.yumebox.core.model.RunMode.Tproxy -> RuntimeTargetMode.RootTun
         }
     }
 

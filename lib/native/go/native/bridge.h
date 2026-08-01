@@ -35,6 +35,8 @@ extern int (*connection_join_received_func)(void *callback, const char *payload)
 
 extern int (*traffic_update_received_func)(void *callback, const char *payload);
 
+extern int (*traffic_update_received_packed_func)(void *callback, long long upload_total, long long download_total, long long upload_speed, long long download_speed);
+
 extern void (*release_object_func)(void *obj);
 
 extern int (*open_content_func)(const char *url, char *error, int error_length);
@@ -59,6 +61,8 @@ extern int connection_close_received(void *callback, char *payload);
 extern int connection_join_received(void *callback, char *payload);
 
 extern int traffic_update_received(void *callback, char *payload);
+
+extern int traffic_update_received_packed(void *callback, long long upload_total, long long download_total, long long upload_speed, long long download_speed);
 
 extern void release_object(void *obj);
 

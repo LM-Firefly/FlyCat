@@ -223,7 +223,6 @@ class StatusProvider : ContentProvider() {
                 when (mode) {
                     RunMode.Vpn -> TunService::class.java.name
                     RunMode.Tun -> return false
-                    RunMode.Tproxy -> return false // Root-only mode
                 }
 
             return runCatching {

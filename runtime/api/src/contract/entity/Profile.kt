@@ -39,7 +39,6 @@ fun RuntimeTargetMode.toRunMode(): RunMode = when (this) {
 fun RunMode.toRuntimeTargetMode(): RuntimeTargetMode = when (this) {
     RunMode.Vpn -> RuntimeTargetMode.Tun
     RunMode.Tun -> RuntimeTargetMode.RootTun
-    RunMode.Tproxy -> RuntimeTargetMode.RootTun
 }
 
 @Serializable

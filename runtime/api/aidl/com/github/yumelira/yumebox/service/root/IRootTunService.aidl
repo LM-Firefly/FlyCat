@@ -12,6 +12,7 @@ interface IRootTunService {
     long queryTrafficNow();
     long queryTrafficTotal();
     String queryConnectionsJson();
+    String queryConnectionsOverviewJson();
     String queryAllProxyGroupsJson(boolean excludeNotSelectable);
     String queryProxyGroupNamesJson(boolean excludeNotSelectable);
     String queryProxyGroupJson(String name, String sort);

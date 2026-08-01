@@ -23,6 +23,7 @@ package com.github.yumelira.yumebox.runtime.service.root
 import android.content.Context
 import com.github.yumelira.yumebox.core.appContextOrSelf
 import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
+import com.github.yumelira.yumebox.core.model.ConnectionOverviewSnapshot
 import com.github.yumelira.yumebox.core.model.ProxyGroup
 import com.github.yumelira.yumebox.core.model.ProxySort
 import com.github.yumelira.yumebox.runtime.api.service.root.RootTunOperationResult
@@ -110,6 +111,11 @@ internal object RootTunServiceBridge {
     suspend fun queryConnections(context: Context): ConnectionSnapshot =
         remoteCall(context) { service ->
             rootTunDecode<ConnectionSnapshot>(service.queryConnectionsJson())
+        }
+
+    suspend fun queryConnectionsOverview(context: Context): ConnectionOverviewSnapshot =
+        remoteCall(context) { service ->
+            rootTunDecode<ConnectionOverviewSnapshot>(service.queryConnectionsOverviewJson())
         }
 
     suspend fun closeConnection(context: Context, id: String): Boolean =

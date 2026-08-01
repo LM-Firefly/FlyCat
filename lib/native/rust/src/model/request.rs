@@ -10,7 +10,6 @@ pub enum RunMode {
     #[default]
     Vpn,
     Tun,
-    Tproxy,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

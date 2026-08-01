@@ -26,6 +26,11 @@ MetaFeature = {
         EditButton = "編集"
     }
 
+    RuntimeRules = {
+        Title = "ルール"
+        Summary = "実行中ルールの確認と一時的な切り替え"
+    }
+
     Download = {
         DialogTitle = "GeoX をオンライン更新"
         DownloadComplete = "ダウンロード完了: %d/%d"

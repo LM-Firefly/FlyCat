@@ -74,7 +74,6 @@ class AccessControlController(
             if (!isRunning()) return@launch
             val activeMode = resolveActiveMode()
             val targetMode = activeMode ?: store.runMode.value
-            if (targetMode == RunMode.Tproxy) return@launch
 
             try {
                 commandExecutor.restartProxy(targetMode)
