@@ -10,18 +10,23 @@
 package com.github.yumelira.yumebox.runtime.service
 
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.IBinder
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
 import com.github.yumelira.yumebox.runtime.api.initializeServiceGlobal
+import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.runtime.service.notification.ServiceNotificationManager
 import com.github.yumelira.yumebox.runtime.service.util.cancelAndJoinBlocking
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 /**
  * Foreground notification host for the detached root Tun daemon. The core itself remains a
@@ -33,6 +38,14 @@ class RootForegroundService : Service(), CoroutineScope by CoroutineScope(Dispat
         ServiceNotificationManager(this, ServiceNotificationManager.rootConfig)
     }
     private var notificationJob: Job? = null
+    private val iconStyleReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == Intents.ACTION_APP_ICON_STYLE_CHANGED) {
+                    launch { notificationManager.refreshForIconStyleChange() }
+                }
+            }
+        }
 
     override fun onCreate() {
         super.onCreate()
@@ -41,6 +54,12 @@ class RootForegroundService : Service(), CoroutineScope by CoroutineScope(Dispat
         startForeground(
             ServiceNotificationManager.rootConfig.notificationId,
             notificationManager.createInitialNotification(),
+        )
+        ContextCompat.registerReceiver(
+            this,
+            iconStyleReceiver,
+            IntentFilter(Intents.ACTION_APP_ICON_STYLE_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
         )
     }
 
@@ -56,6 +75,7 @@ class RootForegroundService : Service(), CoroutineScope by CoroutineScope(Dispat
     override fun onDestroy() {
         notificationJob?.cancel()
         notificationJob = null
+        runCatching { unregisterReceiver(iconStyleReceiver) }
         notificationManager.release()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         super.onDestroy()

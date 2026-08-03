@@ -51,6 +51,7 @@ import com.github.yumelira.yumebox.data.model.AppIconStyle
 import com.github.yumelira.yumebox.presentation.component.*
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.screen.settings.component.ThemeColorPickerItem
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -186,6 +187,9 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
                     context = context,
                     classic = style == AppIconStyle.Classic,
                     hide = viewModel.hideAppIcon.value,
+                )
+                context.sendBroadcast(
+                    Intent(Intents.ACTION_APP_ICON_STYLE_CHANGED).setPackage(context.packageName)
                 )
             },
         )

@@ -87,23 +87,15 @@ class ServiceNotificationManager(
     fun startTrafficUpdate(scope: CoroutineScope): Job =
         scope.launch(Dispatchers.Default) {
             PollingTimers.ticks(PollingTimerSpecs.ServiceTrafficNotification).collect {
-                // Without POST_NOTIFICATIONS the notify() below is silently dropped anyway;
-                // skip the per-tick core queries and notification builds.
-                if (released || !notificationManager.areNotificationsEnabled()) return@collect
-                val notification = buildRunningNotification()
-                val fingerprint =
-                    "${notification.extras.getCharSequence(Notification.EXTRA_TITLE)}|" +
-                        "${notification.extras.getCharSequence(Notification.EXTRA_TEXT)}|" +
-                        "${ServiceLogoIcons.resId()}"
-                // Re-check after the (possibly slow) core query: the service may have stopped while
-                // we
-                // were building the notification, and a notify() now would resurrect it.
-                if (!released && fingerprint != lastNotificationFingerprint) {
-                    lastNotificationFingerprint = fingerprint
-                    notificationManager.notify(config.notificationId, notification)
-                }
+                refreshRunningNotification()
             }
         }
+
+    /** Force the current foreground notification to adopt the selected application icon style. */
+    fun refreshForIconStyleChange() {
+        lastNotificationFingerprint = null
+        refreshRunningNotification(repostForegroundNotification = true)
+    }
 
     /**
      * Stop updating and clear the notification. After this the traffic updater never notifies
@@ -135,6 +127,31 @@ class ServiceNotificationManager(
                 trafficTotal = total,
             )
         )
+    }
+
+    private fun refreshRunningNotification(repostForegroundNotification: Boolean = false) {
+        // Without POST_NOTIFICATIONS the notify() below is silently dropped anyway; skip the
+        // core queries and notification build. An icon-style change instead re-posts the
+        // foreground notification, which must also work when the app's regular notifications are
+        // disabled but Android still retains the foreground-service entry.
+        if (released || (!repostForegroundNotification && !notificationManager.areNotificationsEnabled())) {
+            return
+        }
+        val notification = buildRunningNotification()
+        val fingerprint =
+            "${notification.extras.getCharSequence(Notification.EXTRA_TITLE)}|" +
+                "${notification.extras.getCharSequence(Notification.EXTRA_TEXT)}|" +
+                "${ServiceLogoIcons.resId()}"
+        // Re-check after the (possibly slow) core query: the service may have stopped while we
+        // were building the notification, and a notify() now would resurrect it.
+        if (!released && fingerprint != lastNotificationFingerprint) {
+            lastNotificationFingerprint = fingerprint
+            if (repostForegroundNotification) {
+                service.startForeground(config.notificationId, notification)
+            } else {
+                notificationManager.notify(config.notificationId, notification)
+            }
+        }
     }
 
     private fun buildNotification(presentation: NotificationPresentation): Notification {
