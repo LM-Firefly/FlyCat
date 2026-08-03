@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import dalvik.system.DexClassLoader;
+import dalvik.system.PathClassLoader;
 
 final class PayloadInstaller {
     private static final String CACHE_MARKER = ".complete";
@@ -123,9 +123,8 @@ final class PayloadInstaller {
             }
             dexPath.append(file.getAbsolutePath());
         }
-        DexClassLoader payloadLoader = new DexClassLoader(
+        PathClassLoader payloadLoader = new PathClassLoader(
                 dexPath.toString(),
-                null,
                 nativeDir == null ? null : nativeDir.getAbsolutePath(),
                 parentLoader
         );
