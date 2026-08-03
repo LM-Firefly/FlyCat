@@ -27,6 +27,7 @@ import com.github.yumelira.yumebox.common.util.AppLanguageManager
 import com.github.yumelira.yumebox.common.util.AppIconHelper
 import com.github.yumelira.yumebox.common.util.PlatformIdentifier
 import com.github.yumelira.yumebox.core.Global
+import com.github.yumelira.yumebox.core.util.AppVisibilityTracker
 import com.github.yumelira.yumebox.core.util.runtimeHomeDir
 import com.github.yumelira.yumebox.data.controller.AppTrafficStatisticsCollector
 import com.github.yumelira.yumebox.data.store.AppSettingsStore
@@ -59,6 +60,7 @@ class App : Application() {
         super.onCreate()
 
         instance = this
+        AppVisibilityTracker.register(this)
         if (BuildConfig.DEBUG && Timber.forest().isEmpty()) {
             Timber.plant(Timber.DebugTree())
         }

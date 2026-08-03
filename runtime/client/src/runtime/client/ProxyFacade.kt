@@ -25,6 +25,7 @@ package com.github.yumelira.yumebox.runtime.client
 
 import android.content.Context
 import com.github.yumelira.yumebox.core.model.*
+import com.github.yumelira.yumebox.core.util.AppVisibilityTracker
 import com.github.yumelira.yumebox.data.store.MMKVProvider
 import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
 import com.github.yumelira.yumebox.data.store.RemoteControllerStore
@@ -90,8 +91,16 @@ class ProxyFacade(
                     remoteControllerStore = remoteControllerStore,
                     queryTrafficNowAction = { coreOps.queryTrafficNow() },
                     queryTrafficTotalAction = { coreOps.queryTrafficTotal() },
-                    onAfterRunning = { refreshAllSafely() },
-                    onAfterIdle = { refreshPreviewStateSafely() },
+                    onAfterRunning = {
+                        if (AppVisibilityTracker.isForeground.value) {
+                            refreshAllSafely()
+                        }
+                    },
+                    onAfterIdle = {
+                        if (AppVisibilityTracker.isForeground.value) {
+                            refreshPreviewStateSafely()
+                        }
+                    },
                     onGroupTick = { groups.refreshSafely() },
                     onTrafficTickExtra = { tick ->
                         if (
@@ -121,6 +130,7 @@ class ProxyFacade(
         resolvedPrimaryNode = groups.resolvedPrimaryNode
         session.bootstrap()
         observeProxyGroupSyncPriority()
+        observeAppVisibility()
     }
 
     fun isRemoteControllerActive(): Boolean = session.isRemoteControllerActive()
@@ -275,29 +285,43 @@ class ProxyFacade(
 
     private fun observeProxyGroupSyncPriority() {
         scope.launch {
-            combine(session.runtimeSnapshot, syncPriorityRequests) { snapshot, requests ->
-                    resolveEffectiveProxyGroupSyncPriority(snapshot, requests)
+            combine(
+                session.runtimeSnapshot,
+                syncPriorityRequests,
+                AppVisibilityTracker.isForeground,
+            ) { snapshot, requests, isForeground ->
+                    resolveEffectiveProxyGroupSyncPriority(snapshot, requests, isForeground)
                 }
                 .distinctUntilChanged()
                 .collect { priority -> session.startGroupPolling(priority) }
         }
     }
 
+    private fun observeAppVisibility() {
+        scope.launch {
+            AppVisibilityTracker.isForeground
+                .collect { isForeground ->
+                    if (isForeground) {
+                        session.reconcileAndRefresh()
+                    } else {
+                        session.stopTrafficPolling()
+                    }
+                }
+        }
+    }
+
     private fun resolveEffectiveProxyGroupSyncPriority(
         snapshot: RuntimeSnapshot,
         requests: Map<String, ProxyGroupSyncPriority>,
+        isForeground: Boolean,
     ): ProxyGroupSyncPriority {
         if (
+            !isForeground ||
             snapshot.phase != RuntimePhase.Running &&
                 snapshot.owner != RuntimeOwner.RemoteController
         ) {
             return ProxyGroupSyncPriority.OFF
         }
-        val requested = requests.values.maxByOrNull { it.ordinal } ?: ProxyGroupSyncPriority.OFF
-        return if (requested.ordinal > ProxyGroupSyncPriority.SLOW.ordinal) {
-            requested
-        } else {
-            ProxyGroupSyncPriority.SLOW
-        }
+        return requests.values.maxByOrNull { it.ordinal } ?: ProxyGroupSyncPriority.OFF
     }
 }

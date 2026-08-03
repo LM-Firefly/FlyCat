@@ -29,7 +29,7 @@ import com.github.yumelira.yumebox.data.model.TrafficStatisticsBuckets
 import com.github.yumelira.yumebox.data.store.TrafficStatisticsStore
 import com.github.yumelira.yumebox.domain.model.TrafficData
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.collect
 import timber.log.Timber
 
 class AppTrafficStatisticsCollector(
@@ -52,29 +52,39 @@ class AppTrafficStatisticsCollector(
     private fun startCollection() {
         collectionJob?.cancel()
         collectionJob = scope.launch {
-            querySource.isRunning.collectLatest { isRunning ->
-                monitoringJob?.cancel()
+            querySource.isRunning.collect { isRunning ->
+                val previousMonitoring = monitoringJob
+                previousMonitoring?.cancelAndJoin()
+                monitoringJob = null
                 if (isRunning) {
-                    monitoringJob = startTrafficMonitoring(this)
+                    monitoringJob = startTrafficMonitoring()
                 } else {
+                    if (previousMonitoring != null) {
+                        collectTrafficDataSafely()
+                    }
                     resetBaselines()
                 }
             }
         }
     }
 
-    private fun startTrafficMonitoring(parentScope: CoroutineScope): Job = parentScope.launch {
+    private fun startTrafficMonitoring(): Job = scope.launch {
         lastTotalUpload = trafficStatisticsStore.getLastTrafficUpload()
         lastTotalDownload = trafficStatisticsStore.getLastTrafficDownload()
         lastProfileId = trafficStatisticsStore.getLastProfileId()
         connectionBaselines.clear()
+        collectTrafficDataSafely()
         PollingTimers.ticks(PollingTimerSpecs.TrafficStatsCollection).collect {
-            runCatching { collectTrafficData() }
-                .onFailure { error ->
-                    if (error is CancellationException) throw error
-                    Timber.tag(TAG).e(error, "App traffic collection failed")
-                }
+            collectTrafficDataSafely()
         }
+    }
+
+    private suspend fun collectTrafficDataSafely() {
+        runCatching { collectTrafficData() }
+            .onFailure { error ->
+                if (error is CancellationException) throw error
+                Timber.tag(TAG).e(error, "App traffic collection failed")
+            }
     }
 
     private suspend fun collectTrafficData() {

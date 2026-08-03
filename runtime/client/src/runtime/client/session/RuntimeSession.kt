@@ -24,6 +24,7 @@ package com.github.yumelira.yumebox.runtime.client.session
 
 import android.net.VpnService
 import com.github.yumelira.yumebox.core.model.RunMode
+import com.github.yumelira.yumebox.core.util.AppVisibilityTracker
 import com.github.yumelira.yumebox.runtime.api.*
 import com.github.yumelira.yumebox.runtime.client.ProxyGroupSyncPriority
 import com.github.yumelira.yumebox.runtime.client.RuntimeStartRequest
@@ -185,7 +186,11 @@ internal class RuntimeSession(private val deps: RuntimeSessionDeps) {
         return generationCounter
     }
 
-    fun startTrafficPolling() = polling.startTraffic()
+    fun startTrafficPolling() {
+        if (AppVisibilityTracker.isForeground.value) {
+            polling.startTraffic()
+        }
+    }
 
     fun stopTrafficPolling() = polling.stopTraffic()
 
