@@ -6,7 +6,13 @@
 
 ```kotlin
 repositories {
-    mavenCentral()
+    maven {
+        url = uri("https://maven.pkg.github.com/YumeYucca/YumeBox")
+        credentials {
+            username = providers.gradleProperty("gpr.user").orNull
+            password = providers.gradleProperty("gpr.key").orNull
+        }
+    }
 }
 
 dependencies {
@@ -43,3 +49,11 @@ newer controller endpoints before a dedicated helper is added.
 
 GitHub Packages uses `GITHUB_ACTOR` and `GITHUB_TOKEN` (or `gpr.user` and `gpr.key` Gradle
 properties). Override the target repository with `-Papi.githubRepository=owner/repository`.
+
+For an external project, create a GitHub personal access token with `read:packages` and place the
+GitHub username and token in `~/.gradle/gradle.properties`:
+
+```properties
+gpr.user=GITHUB_USERNAME
+gpr.key=GITHUB_TOKEN_WITH_READ_PACKAGES
+```
