@@ -31,7 +31,7 @@
         android:name="${applicationClass}"
         android:appComponentFactory="${componentFactory}"
         android:allowBackup="true"
-        android:enableOnBackInvokedCallback="true"
+        android:enableOnBackInvokedCallback="false"
         tools:targetApi="33"
         android:icon="@mipmap/ic_launcher"
         android:label="${appName}"
