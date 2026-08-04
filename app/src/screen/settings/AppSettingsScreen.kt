@@ -23,13 +23,9 @@
 package com.github.yumelira.yumebox.screen.settings
 
 import android.annotation.SuppressLint
-import android.content.ComponentName
 import android.content.Intent
-import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.runtime.*
@@ -39,9 +35,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.core.net.toUri
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.github.yumelira.yumebox.common.util.AppIconHelper
 import com.github.yumelira.yumebox.common.util.LocaleUtil
 import com.github.yumelira.yumebox.common.util.toast
@@ -53,8 +46,6 @@ import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.runtime.api.Intents
 import com.github.yumelira.yumebox.screen.settings.component.ThemeColorPickerItem
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -63,7 +54,6 @@ import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun AppSettingsScreen() {
@@ -240,44 +230,10 @@ private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
 @Composable
 private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     val section by viewModel.serviceSectionState.collectAsState()
     val showTrafficNotification = section.showTrafficNotification
     val singleNodeTest = section.singleNodeTest
     val exitUiWhenBackground = section.exitUiWhenBackground
-    var batteryOptimizationIgnored by remember {
-        mutableStateOf(isBatteryOptimizationIgnored(context))
-    }
-    val scope = rememberCoroutineScope()
-    // Launch via activity-result so the summary refreshes as soon as the system grant dialog
-    // returns — HyperOS shows it as a dialog-style activity where ON_RESUME timing is unreliable.
-    val batteryOptimizationLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            batteryOptimizationIgnored = isBatteryOptimizationIgnored(context)
-            scope.launch {
-                // The PowerManager whitelist state can lag slightly behind the dialog result.
-                delay(500.milliseconds)
-                batteryOptimizationIgnored = isBatteryOptimizationIgnored(context)
-            }
-        }
-    val batteryOptimizationSummary =
-        remember(batteryOptimizationIgnored) {
-            if (batteryOptimizationIgnored) {
-                YumeTxt.AppSettings.ServiceSection.BatteryOptimizationSummaryEnabled
-            } else {
-                YumeTxt.AppSettings.ServiceSection.BatteryOptimizationSummaryDisabled
-            }
-        }
-
-    DisposableEffect(lifecycleOwner, context) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                batteryOptimizationIgnored = isBatteryOptimizationIgnored(context)
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
 
     Title(YumeTxt.AppSettings.Section.Service)
     Card {
@@ -298,14 +254,15 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
         )
         PreferenceArrowItem(
             title = YumeTxt.AppSettings.ServiceSection.BatteryOptimizationTitle,
-            summary = batteryOptimizationSummary,
             onClick = {
-                val launched =
-                    batteryOptimizationIntents(context, batteryOptimizationIgnored).any { intent ->
-                        runCatching { batteryOptimizationLauncher.launch(intent) }.isSuccess
-                    }
-                if (!launched) {
-                    context.toast(YumeTxt.Util.Error.UnknownError)
+                if (isBatteryOptimizationIgnored(context)) {
+                    context.toast(YumeTxt.AppSettings.ServiceSection.BatteryOptimizationAlreadyDisabled)
+                } else {
+                    context.startActivity(
+                        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = "package:${context.packageName}".toUri()
+                        }
+                    )
                 }
             },
         )
@@ -368,42 +325,6 @@ private fun isBatteryOptimizationIgnored(context: android.content.Context): Bool
     return powerManager.isIgnoringBatteryOptimizations(context.packageName)
 }
 
-@SuppressLint("BatteryLife")
-private fun batteryOptimizationIntents(
-    context: android.content.Context,
-    alreadyIgnored: Boolean,
-): List<Intent> = buildList {
-    if (!alreadyIgnored) {
-        add(
-            Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                data = "package:${context.packageName}".toUri()
-            }
-        )
-    } else {
-        // Already whitelisted: open this app's own power policy page instead of the global
-        // "battery usage of all apps" list. MIUI/HyperOS per-app power keeper page first...
-        add(
-            Intent().apply {
-                component =
-                    ComponentName(
-                        "com.miui.powerkeeper",
-                        "com.miui.powerkeeper.ui.HiddenAppsConfigActivity",
-                    )
-                putExtra("package_name", context.packageName)
-                putExtra(
-                    "package_label",
-                    context.applicationInfo.loadLabel(context.packageManager).toString(),
-                )
-            }
-        )
-    }
-    // ...then the public per-app details page as the fallback for both branches.
-    add(
-        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-            data = Uri.fromParts("package", context.packageName, null)
-        }
-    )
-}
 
 @Composable
 private fun PageScalePreferenceItem(pageScale: Float, onApply: (Float) -> Unit) {

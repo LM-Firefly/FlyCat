@@ -66,8 +66,7 @@ AppSettings = {
         SingleNodeTestTitle = "單節點測試"
         ExitUiWhenBackgroundTitle = "背景隱藏時釋放介面"
         BatteryOptimizationTitle = "電池最佳化無限制"
-        BatteryOptimizationSummaryEnabled = "已允許背景無限制執行"
-        BatteryOptimizationSummaryDisabled = "受電池最佳化限制，點一下前往設定"
+        BatteryOptimizationAlreadyDisabled = "電池最佳化已關閉"
     }
 
     Network = {

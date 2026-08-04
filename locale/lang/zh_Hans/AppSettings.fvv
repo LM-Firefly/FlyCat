@@ -66,8 +66,7 @@ AppSettings = {
         SingleNodeTestTitle = "单节点测试"
         ExitUiWhenBackgroundTitle = "后台隐藏时释放界面"
         BatteryOptimizationTitle = "电池优化无限制"
-        BatteryOptimizationSummaryEnabled = "已允许后台无限制运行"
-        BatteryOptimizationSummaryDisabled = "受电池优化限制，点击前往设置"
+        BatteryOptimizationAlreadyDisabled = "电池优化已关闭"
     }
 
     Network = {

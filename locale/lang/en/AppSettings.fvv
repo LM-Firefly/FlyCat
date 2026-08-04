@@ -66,8 +66,7 @@ AppSettings = {
         SingleNodeTestTitle = "Single Node Test"
         ExitUiWhenBackgroundTitle = "Release UI In Background"
         BatteryOptimizationTitle = "Unrestricted Battery"
-        BatteryOptimizationSummaryEnabled = "Background activity is unrestricted"
-        BatteryOptimizationSummaryDisabled = "Restricted by battery optimization; tap to fix"
+        BatteryOptimizationAlreadyDisabled = "Battery optimization is already disabled"
     }
 
     Network = {

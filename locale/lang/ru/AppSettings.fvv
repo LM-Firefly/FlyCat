@@ -66,8 +66,7 @@ AppSettings = {
         SingleNodeTestTitle = "Тест одного узла"
         ExitUiWhenBackgroundTitle = "Освобождать UI в фоне"
         BatteryOptimizationTitle = "Без ограничений батареи"
-        BatteryOptimizationSummaryEnabled = "Фоновая работа без ограничений разрешена"
-        BatteryOptimizationSummaryDisabled = "Ограничено оптимизацией батареи; нажмите, чтобы исправить"
+        BatteryOptimizationAlreadyDisabled = "Оптимизация батареи уже отключена"
     }
 
     Network = {

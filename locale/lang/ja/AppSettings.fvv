@@ -66,8 +66,7 @@ AppSettings = {
         SingleNodeTestTitle = "単一ノードテスト"
         ExitUiWhenBackgroundTitle = "バックグラウンドで UI を解放"
         BatteryOptimizationTitle = "バッテリー制限なし"
-        BatteryOptimizationSummaryEnabled = "バックグラウンドの制限なし実行が許可されています"
-        BatteryOptimizationSummaryDisabled = "バッテリー最適化で制限されています。タップして修正"
+        BatteryOptimizationAlreadyDisabled = "バッテリー最適化は既に無効です"
     }
 
     Network = {
