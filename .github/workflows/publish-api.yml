@@ -34,6 +34,9 @@ jobs:
           java-version: "24"
           cache: gradle
 
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
       - name: Publish API package
         run: >-
           ./gradlew :api:publishMavenPublicationToGitHubPackagesRepository
