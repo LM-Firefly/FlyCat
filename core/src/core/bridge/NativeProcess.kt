@@ -26,8 +26,8 @@ package com.github.yumelira.yumebox.core.bridge
 import androidx.annotation.Keep
 
 /**
- * A handle to the PIE core running as a child process, launched via fork+execve with a socketpair
- * control channel. YumeBox's equivalent of CFA's `AndroidProcess`.
+ * A handle to the PIE core shell running as a child process, launched via fork+execve with a
+ * socketpair control channel. YumeBox's equivalent of CFA's `AndroidProcess`.
  *
  * [channelFd] is the parent-side end of the socketpair; wrap it in a [Channel] to exchange control
  * messages (and to hand the TUN fd to the core via SCM_RIGHTS in the non-root path). The core reads

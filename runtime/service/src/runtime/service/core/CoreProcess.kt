@@ -49,10 +49,9 @@ import java.util.*
 data class CoreEndpoint(val sock: String, val secret: String)
 
 /**
- * Launches and owns the out-of-process mihomo core (the `native` PIE, packaged as `libmihomo.so`):
- * fork+exec it from nativeLibraryDir (the non-root exec path; falls back to an extracted, chmod'd
- * copy if refused), stream the compiled config over the socketpair (in memory, never on disk) plus
- * the VpnService TUN fd via SCM_RIGHTS, and publish the controller endpoint via [current].
+ * Launches and owns the out-of-process mihomo core. A tiny `libmihomo.so` PIE shell is fork+exec'd
+ * from nativeLibraryDir and dlopens the compressed `libmihomocore.so` payload, then the existing
+ * socketpair and REST protocols operate unchanged.
  *
  * Egress: the tun uses the userspace gVisor stack, so excluding the app's own uid from the
  * VpnService tunnel keeps the core's egress off it — no per-socket protect needed.
@@ -216,10 +215,12 @@ class CoreProcess(private val context: Context) {
         val fifo = File(home, ROOT_CONFIG_PIPE).apply { delete() }
         Os.mkfifo(fifo.absolutePath, ROOT_PIPE_MODE)
 
-        val lib = File(context.applicationInfo.nativeLibraryDir, LIB).absolutePath
+        val shell = CoreArtifacts.shell(context).absolutePath
+        val coreLibrary = CoreArtifacts.library(context).absolutePath
         val logFile = File(home, CORE_LOG).absolutePath
         val command =
-            "exec ${quote(lib)} --mode $mode --home ${quote(home.absolutePath)} " +
+            "exec ${quote(shell)} ${CoreArtifacts.LIBRARY_OPTION} ${quote(coreLibrary)} " +
+                "--mode $mode --home ${quote(home.absolutePath)} " +
                 "--sdk ${Build.VERSION.SDK_INT} " +
                 "--controller ${quote(sock)} " +
                 "--config ${quote(fifo.absolutePath)} " +
@@ -324,21 +325,20 @@ class CoreProcess(private val context: Context) {
      */
     private fun spawn(home: File, args: Array<String>): NativeProcess {
         val wd = home.absolutePath
-        // libmihomo.so stays raw in nativeLibraryDir (the non-root exec path); fall back to an
-        // extracted, chmod'd copy if that exec is refused.
-        val bundled = File(context.applicationInfo.nativeLibraryDir, LIB).absolutePath
+        val bundled = CoreArtifacts.shell(context).absolutePath
+        val launchArgs = CoreArtifacts.arguments(context, args)
         return try {
-            NativeProcess.start(bundled, args, workdir = wd)
+            NativeProcess.start(bundled, launchArgs, workdir = wd)
         } catch (t: Throwable) {
             Timber.tag(TAG).w(t, "exec from nativeLibraryDir failed; retrying from extracted copy")
-            NativeProcess.start(extractBin().absolutePath, args, workdir = wd)
+            NativeProcess.start(extractBin().absolutePath, launchArgs, workdir = wd)
         }
     }
 
-    /** Copy the core out of nativeLibraryDir into app storage and chmod it executable. */
+    /** Copy the PIE shell out of nativeLibraryDir into app storage and chmod it executable. */
     @SuppressLint("SetWorldReadable")
     private fun extractBin(): File {
-        val src = File(context.applicationInfo.nativeLibraryDir, LIB)
+        val src = CoreArtifacts.shell(context)
         val dst = File(context.filesDir, "bin/mihomo")
         dst.parentFile?.mkdirs()
         if (!dst.exists() || dst.length() != src.length()) {
@@ -537,10 +537,17 @@ class CoreProcess(private val context: Context) {
         /** Controller socket filename under the runtime home dir. Read by the client controller. */
         const val SOCK = "clash.sock"
 
-        @Volatile private var controller: CoreApi? = null
+        @Volatile private var controller: CoreController? = null
 
         /** Shared local-core controller client (unix socket path fixed, secret from [current]). */
-        fun controller(context: Context): CoreApi =
+        fun controller(context: Context): CoreApi = sharedController(context)
+
+        /** Suspendable startup probe so launch deadlines are not hidden by the synchronous API. */
+        internal suspend fun probeController(context: Context) {
+            sharedController(context).queryTunnelStateAsync()
+        }
+
+        private fun sharedController(context: Context): CoreController =
             controller
                 ?: CoreController(
                         local =
@@ -552,8 +559,7 @@ class CoreProcess(private val context: Context) {
                     .also { controller = it }
 
         private const val TAG = "CoreProcess"
-        private const val LIB = "libmihomo.so"
-        private val ROOT_CORE_EXECUTABLE_NAMES = setOf(LIB, "mihomo")
+        private val ROOT_CORE_EXECUTABLE_NAMES = setOf(CoreArtifacts.SHELL_NAME, "mihomo")
         // After stripping "pid (comm) ", index 0 is field 3 (state), so field 22 is index 19.
         private const val PROC_STAT_START_TIME_INDEX_AFTER_COMM = 19
         private const val CHUNK = 32 * 1024

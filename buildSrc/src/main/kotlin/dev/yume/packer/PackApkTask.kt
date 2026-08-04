@@ -324,10 +324,8 @@ abstract class PackApkTask : DefaultTask() {
 
         // Kept raw (not moved into the payload) so they stay under nativeLibraryDir:
         //  - libloader.so is the bootstrap loader itself;
-        //  - libmihomo.so is the mihomo PIE core — it is fork+exec'd out of process, and a non-root
-        // app
-        //    can only execve() a file living in nativeLibraryDir (SELinux forbids exec from the
-        //    extracted code_cache payload), so it must not be packed.
+        //  - libmihomo.so is the tiny PIE shell. A non-root app can only execve() a file living in
+        //    nativeLibraryDir; the shell dlopens the compressed libmihomocore.so payload.
         val BOOTSTRAP_LIBRARY = Regex("lib/[^/]+/(?:libloader|libmihomo)\\.so")
         val SIGNATURE_ENTRY =
             Regex("META-INF/[^/]+\\.(?:MF|SF|RSA|DSA|EC)", RegexOption.IGNORE_CASE)

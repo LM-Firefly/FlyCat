@@ -22,6 +22,7 @@ package com.github.yumelira.yumebox.runtime.service.session
 
 import android.content.Context
 import android.content.Intent
+import android.os.SystemClock
 import com.github.yumelira.yumebox.core.model.RunMode
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
 import com.github.yumelira.yumebox.core.util.PollingTimers
@@ -32,6 +33,7 @@ import com.github.yumelira.yumebox.runtime.service.RootForegroundService
 import com.github.yumelira.yumebox.runtime.service.StatusProvider
 import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
 import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
+import kotlinx.coroutines.withTimeout
 
 /**
  * Launches the root [RunMode.Tun] daemon. A foreground notification host tracks
@@ -60,39 +62,7 @@ object RootSessionLauncher {
             val compiled = CompiledConfigPipeline(appContext).compileDetailed(spec)
             log.i(RuntimeLog.Type.Launcher, "compiled groups=${compiled.proxyGroupNames.size}")
             CoreProcess(appContext).startRoot(mode.coreArg, compiled.finalYaml)
-
-            // The fork succeeding proves nothing: a rejected config kills the core moments later
-            // (only
-            // trace is core.log). Re-probe after a grace so a dead-on-arrival daemon surfaces as
-            // Failed.
-            PollingTimers.awaitTick(
-                PollingTimerSpecs.dynamic(
-                    name = "root_core_startup_probe",
-                    intervalMillis = STARTUP_PROBE_DELAY_MS,
-                    initialDelayMillis = STARTUP_PROBE_DELAY_MS,
-                )
-            )
-            if (!CoreProcess.isRootDaemonAlive()) {
-                val reason =
-                    CoreProcess.coreLogTail(appContext) ?: "root core exited during startup"
-                CoreProcess.stopRoot()
-                error(reason)
-            }
-
-            // A live PID is not enough: libmihomo can stay around while its controller socket failed
-            // to bind or the config handoff was rejected. Probe the same REST endpoint used by the
-            // node page before publishing Running, otherwise the UI reports an active tunnel with
-            // no groups and hides the actual startup failure.
-            runCatching { CoreProcess.controller(appContext).queryTunnelState() }
-                .onFailure { error ->
-                    CoreProcess.stopRoot()
-                    val tail = CoreProcess.coreLogTail(appContext)
-                    throw IllegalStateException(
-                        "root core controller unavailable: ${error.message ?: error::class.simpleName}" +
-                            (tail?.let { " ($it)" } ?: ""),
-                        error,
-                    )
-                }
+            awaitControllerReady(appContext)
             log.i(RuntimeLog.Type.Launcher, "controller ready")
 
             StatusProvider.markRuntimeRunning(mode)
@@ -123,5 +93,50 @@ object RootSessionLauncher {
         }
     }
 
-    private const val STARTUP_PROBE_DELAY_MS = 800L
+    private suspend fun awaitControllerReady(context: Context) {
+        val deadline = SystemClock.elapsedRealtime() + STARTUP_PROBE_TIMEOUT_MS
+        var lastError: Throwable? = null
+        while (true) {
+            if (!CoreProcess.isRootDaemonAlive()) {
+                val reason = CoreProcess.coreLogTail(context) ?: "root core exited during startup"
+                error(reason)
+            }
+
+            val remainingMillis = deadline - SystemClock.elapsedRealtime()
+            if (remainingMillis <= 0L) break
+            val result =
+                runCatching {
+                    withTimeout(remainingMillis) {
+                        CoreProcess.probeController(context)
+                    }
+                }
+            if (result.isSuccess) return
+            lastError = result.exceptionOrNull()
+
+            val retryDelay =
+                minOf(
+                    STARTUP_PROBE_INTERVAL_MS,
+                    deadline - SystemClock.elapsedRealtime(),
+                )
+            if (retryDelay <= 0L) break
+            PollingTimers.awaitTick(
+                PollingTimerSpecs.dynamic(
+                    name = "root_core_startup_probe",
+                    intervalMillis = retryDelay,
+                    initialDelayMillis = retryDelay,
+                )
+            )
+        }
+
+        val tail = CoreProcess.coreLogTail(context)
+        throw IllegalStateException(
+            "root core controller unavailable: " +
+                (lastError?.message ?: lastError?.let { it::class.simpleName } ?: "startup timed out") +
+                (tail?.let { " ($it)" } ?: ""),
+            lastError,
+        )
+    }
+
+    private const val STARTUP_PROBE_INTERVAL_MS = 75L
+    private const val STARTUP_PROBE_TIMEOUT_MS = 2_000L
 }

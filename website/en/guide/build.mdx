@@ -40,7 +40,7 @@ These versions come from the current repository's `gradle.properties` and GitHub
 </ResponseField>
 
 <ResponseField name="Android NDK" type="30.0.14904198" required>
-  The Go PIE, Rust, and C native libraries use this NDK.
+  The Go shared core, Rust, and C native libraries use this NDK.
 </ResponseField>
 
 <ResponseField name="CMake" type="3.22.1" required>
@@ -52,7 +52,7 @@ These versions come from the current repository's `gradle.properties` and GitHub
 </ResponseField>
 
 <ResponseField name="Go" type="1.26" required>
-  Builds the mihomo PIE core. Project CI uses the MetaCubeX Go 1.26 build.
+  Builds the mihomo shared core and PIE launcher. Project CI uses MetaCubeX Go 1.26.
 </ResponseField>
 
 <ResponseField name="Rust" type="nightly" required>
@@ -198,7 +198,7 @@ Run the native build script for the first build and whenever the core, Rust, or 
 ### Individual tasks
 
 <ResponseField name="--go" type="native">
-  Build the mihomo PIE core and output `libmihomo.so`.
+  Build the mihomo shared core `libmihomocore.so` and PIE launcher `libmihomo.so`.
 </ResponseField>
 
 <ResponseField name="--rust" type="native">
@@ -222,7 +222,7 @@ Run the native build script for the first build and whenever the core, Rust, or 
 </ResponseField>
 
 <Check>
-  After a successful build, `jniLibs/&lt;abi&gt;/` for every target ABI should contain `libmihomo.so`, `liboverride.so`, `libcompat.so`, `libloader.so`, and `core-version.properties`.
+  After a successful build, `jniLibs/&lt;abi&gt;/` for every target ABI should contain `libmihomo.so`, `libmihomocore.so`, `liboverride.so`, `libcompat.so`, `libloader.so`, and `core-version.properties`.
 </Check>
 
 ## Build the APK

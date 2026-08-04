@@ -350,7 +350,7 @@ fun writeCoreVersionStamp(stamp: CoreVersionStamp, abis: List<String>) {
     val generated = File("build/generated/core-version.properties")
     generated.parentFile.mkdirs()
     generated.writeText(stamp.toPropertiesText())
-    println("[CoreExe] Stamped core version: ${stamp.displayVersion} -> ${generated.path}")
+    println("[GoCore] Stamped core version: ${stamp.displayVersion} -> ${generated.path}")
 
     abis.forEach { abi ->
         val perAbi = File("jniLibs/$abi/core-version.properties")
@@ -359,13 +359,11 @@ fun writeCoreVersionStamp(stamp: CoreVersionStamp, abis: List<String>) {
     }
 }
 
-// Builds the standalone mihomo PIE core executable (libmihomo.so) used by the out-of-process
-// architecture: `-buildmode=pie` from the `cfa/native` main package (entry.go), named lib*.so so
-// the
-// installer drops it into nativeLibraryDir (where it is executable) — fork+exec'd, no System.load.
-class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkTools) {
+// Builds the heavyweight mihomo Go core as a shared library. The release packer XZ-compresses this
+// payload; a tiny raw PIE shell loads it in the child process.
+class GoCoreBuilder(private val config: ProjectConfig, private val ndkTools: NdkTools) {
     private val sourceDir = File("lib/native/go")
-    private val outputDir = File("build/native/go-exe")
+    private val outputDir = File("build/native/go-core")
     private val appJniRoot = File("jniLibs")
 
     // The mihomo source at lib/mihomo/mihomo is kept PRISTINE. The Android-root Tun changes
@@ -386,12 +384,12 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
     private val buildTags = config.getCsv("golang.buildTags", "cmfa")
     private val buildFlags = config.getCsv("golang.buildFlags", "-trimpath")
     private val packageName = config.getString("golang.packageName", "cfa/native")
-    private val outputLibraryName = "libmihomo.so"
+    private val outputLibraryName = "libmihomocore.so"
     private var coreVersionStamp: CoreVersionStamp? = null
 
     fun buildAll() {
         if (!sourceDir.exists()) {
-            error("[CoreExe] Source directory not found: ${sourceDir.absolutePath}")
+            error("[GoCore] Source directory not found: ${sourceDir.absolutePath}")
         }
         applyKernelPatches()
         val stamp = resolveCoreVersionStamp(config, mihomoDir)
@@ -399,7 +397,7 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
         val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
         writeCoreVersionStamp(stamp, abis)
         println(
-            "[CoreExe] Building PIE core executable ($outputLibraryName) for ABIs: ${abis.joinToString()}"
+            "[GoCore] Building shared core ($outputLibraryName) for ABIs: ${abis.joinToString()}"
         )
         abis.forEach(::buildForAbi)
     }
@@ -414,7 +412,7 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
                 ?.sortedBy { it.name }
                 .orEmpty()
         if (patches.isEmpty()) return
-        println("[CoreExe] Applying ${patches.size} mihomo kernel patch(es)")
+        println("[GoCore] Applying ${patches.size} mihomo kernel patch(es)")
         patches.forEach { patch ->
             val alreadyApplied =
                 executeCommand(
@@ -427,7 +425,7 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
                     )
                     .success
             if (alreadyApplied) {
-                println("[CoreExe]   already applied: ${patch.name}")
+                println("[GoCore]   already applied: ${patch.name}")
                 return@forEach
             }
             val result =
@@ -439,25 +437,25 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
                     stderrIsError = false,
                 )
             check(result.success) { "Failed to apply kernel patch ${patch.name}: ${result.error}" }
-            println("[CoreExe]   applied: ${patch.name}")
+            println("[GoCore]   applied: ${patch.name}")
         }
     }
 
     private fun buildForAbi(abi: String) {
         val arch =
             abiToGoArch[abi]
-                ?: error("[CoreExe] Unsupported ABI: $abi")
-        println("[building] Building for $abi (PIE core exe, arch: $arch)...")
+                ?: error("[GoCore] Unsupported ABI: $abi")
+        println("[building] Building for $abi (Go shared core, arch: $arch)...")
         val outputLibDir = File(outputDir, abi)
         outputLibDir.mkdirs()
         val outputFile = File(outputLibDir, outputLibraryName)
 
-        val flags = mergeVersionLdflags(buildFlags, coreVersionStamp)
+        val flags = mergeCoreLdflags(buildFlags, coreVersionStamp)
         val command = buildList {
             add("go")
             add("build")
             add("-buildmode")
-            add("pie")
+            add("c-shared")
             addAll(flags)
             if (buildTags.isNotEmpty()) {
                 add("-tags")
@@ -481,20 +479,16 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
             val destDir = File(appJniRoot, abi)
             destDir.mkdirs()
             outputFile.copyTo(File(destDir, outputLibraryName), overwrite = true)
-            println("[CoreExe] Copied to ${File(destDir, outputLibraryName).absolutePath}")
+            println("[GoCore] Copied to ${File(destDir, outputLibraryName).absolutePath}")
         } else {
             val reason = result.error.ifBlank { result.output }.trim()
-            error("[CoreExe] Failed to build $abi: $reason")
+            error("[GoCore] Failed to build $abi: $reason")
         }
     }
 
     private fun buildGoEnv(abi: String): Map<String, String> {
         val arch = abiToGoArch.getValue(abi)
-        // The Go source is cgo-free (no `import "C"`, the c-shared bridge is gone). But
-        // `-buildmode=pie` for android/{arm,386,amd64} REQUIRES external linking — only
-        // android/arm64
-        // links PIE with the internal linker. So enable CGO purely to route linking through the NDK
-        // clang; Android rejects non-PIE executables on every ABI. No C is compiled here.
+        // c-shared requires cgo and routes the final link through the ABI-specific NDK clang.
         return mapOf(
             "CGO_ENABLED" to "1",
             "GOOS" to "android",
@@ -506,18 +500,20 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
 
     // Fold the core identity into -ldflags so /version works even when the launcher omits
     // --git-version (CoreProcess currently only passes --home/--controller/…).
-    private fun mergeVersionLdflags(
+    private fun mergeCoreLdflags(
         baseFlags: List<String>,
         stamp: CoreVersionStamp?,
     ): List<String> {
-        if (stamp == null || stamp.commit == "unknown") return baseFlags
-        val versionValue = stamp.displayVersion.lowercase(Locale.US)
         // ProcessBuilder passes each list element as one argv; no shell quoting.
         // kernel.properties stores: -trimpath,-ldflags,-s -w  so the token after -ldflags
         // is often "-s -w" (starts with '-', but is still the ldflags VALUE, not a go flag).
-        val inject =
-            "-X github.com/metacubex/mihomo/constant.Version=$versionValue " +
-                "-X github.com/metacubex/mihomo/constant.BuildTime=${stamp.buildTime}"
+        val additions = mutableListOf(ANDROID_PACKED_RELOCATIONS_LDFLAG)
+        if (stamp != null && stamp.commit != "unknown") {
+            val versionValue = stamp.displayVersion.lowercase(Locale.US)
+            additions += "-X github.com/metacubex/mihomo/constant.Version=$versionValue"
+            additions += "-X github.com/metacubex/mihomo/constant.BuildTime=${stamp.buildTime}"
+        }
+        val inject = additions.joinToString(" ")
         val flags = baseFlags.toMutableList()
         val ldflagsIndex = flags.indexOf("-ldflags")
         if (ldflagsIndex >= 0) {
@@ -531,6 +527,11 @@ class GoExeBuilder(private val config: ProjectConfig, private val ndkTools: NdkT
             flags.add("-s -w $inject")
         }
         return flags
+    }
+
+    private companion object {
+        const val ANDROID_PACKED_RELOCATIONS_LDFLAG =
+            "-extldflags=-Wl,--pack-dyn-relocs=android"
     }
 }
 
@@ -627,6 +628,83 @@ class RustBuilder(private val config: ProjectConfig) {
         val destLib = File(destDir, "liboverride.so")
         sourceLib.copyTo(destLib, overwrite = true)
         println("[Rust] Copied to ${destLib.absolutePath}")
+    }
+}
+
+class CoreShellBuilder(private val config: ProjectConfig, private val ndkTools: NdkTools) {
+    private val sourceDir = File("lib/native/shell")
+    private val outputDir = File("build/native/core-shell")
+    private val appJniRoot = File("jniLibs")
+    private val outputFileName = "libmihomo.so"
+
+    fun buildAll() {
+        require(File(sourceDir, "CMakeLists.txt").isFile) {
+            "[CoreShell] Source directory not ready: missing ${File(sourceDir, "CMakeLists.txt").absolutePath}"
+        }
+
+        val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
+        println("[CoreShell] Building PIE launcher for ABIs: ${abis.joinToString()}")
+        abis.forEach(::buildForAbi)
+    }
+
+    private fun buildForAbi(abi: String) {
+        println("[building] Building for $abi (mihomo PIE shell)...")
+        val objDir = File(outputDir, "obj/$abi")
+        val binDir = File(outputDir, abi)
+        objDir.mkdirs()
+        binDir.mkdirs()
+        val toolchain = File(ndkTools.ndkDir, "build/cmake/android.toolchain.cmake")
+        val configure =
+            executeCommand(
+                command =
+                    listOf(
+                        ndkTools.getCmakePath(),
+                        "-S",
+                        sourceDir.absolutePath,
+                        "-B",
+                        objDir.absolutePath,
+                        "-G",
+                        "Ninja",
+                        "-DCMAKE_MAKE_PROGRAM=${ndkTools.getNinjaPath()}",
+                        "-DCMAKE_TOOLCHAIN_FILE=${toolchain.absolutePath}",
+                        "-DANDROID_ABI=$abi",
+                        "-DANDROID_PLATFORM=android-${ndkTools.getMinAndroidApi()}",
+                        "-DCMAKE_BUILD_TYPE=Release",
+                        "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${binDir.absolutePath}",
+                    ),
+                stdoutPrefix = "[building][$abi]",
+                stderrPrefix = "[building][$abi]",
+                stderrIsError = false,
+            )
+        if (!configure.success) {
+            val reason = configure.error.ifBlank { configure.output }.trim()
+            error("[CoreShell] Failed to configure $abi: $reason")
+        }
+        val build =
+            executeCommand(
+                command =
+                    listOf(
+                        ndkTools.getCmakePath(),
+                        "--build",
+                        objDir.absolutePath,
+                        "--target",
+                        "mihomo-shell",
+                    ),
+                stdoutPrefix = "[building][$abi]",
+                stderrPrefix = "[building][$abi]",
+                stderrIsError = false,
+            )
+        if (!build.success) {
+            val reason = build.error.ifBlank { build.output }.trim()
+            error("[CoreShell] Failed to build $abi: $reason")
+        }
+
+        val source = File(binDir, outputFileName)
+        require(source.isFile) { "[CoreShell] Output not found: ${source.absolutePath}" }
+        val destination = File(appJniRoot, "$abi/$outputFileName")
+        destination.parentFile.mkdirs()
+        source.copyTo(destination, overwrite = true)
+        println("[CoreShell] Copied to ${destination.absolutePath}")
     }
 }
 
@@ -892,8 +970,9 @@ fun printUsage() {
         Usage: kotlin scripts/native-build.main.kts [options]
 
         Options:
-          --go       Build the mihomo PIE core (libmihomo.so)
-          --coreexe  Alias of --go (build the mihomo PIE core, libmihomo.so)
+          --go       Build the mihomo shared core and PIE shell
+          --coreexe  Compatibility alias of --go
+          --shell    Build only the mihomo PIE shell (libmihomo.so)
           --rust     Build Rust config compiler
           --loader   Build the C/liblzma native payload extractor
           --compat   Build the out-of-process core bridge (libcompat.so)
@@ -918,6 +997,7 @@ fun cleanBuildOutputs() {
     val abis = listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
     abis.forEach { abi ->
         File("jniLibs/$abi/libmihomo.so").delete()
+        File("jniLibs/$abi/libmihomocore.so").delete()
         File("jniLibs/$abi/liboverride.so").delete()
         File("jniLibs/$abi/libloader.so").delete()
         File("jniLibs/$abi/libcompat.so").delete()
@@ -955,18 +1035,19 @@ fun main(args: Array<String>) {
 
     val config = ProjectConfig()
 
-    val buildGo = args.isEmpty() || args.contains("--all") || args.contains("--go")
-    val buildCoreExe = args.contains("--coreexe")
+    val buildGo =
+        args.isEmpty() ||
+            args.contains("--all") ||
+            args.contains("--go") ||
+            args.contains("--coreexe")
+    val buildShell = buildGo || args.contains("--shell")
     val buildRust = args.isEmpty() || args.contains("--all") || args.contains("--rust")
     val buildLoader = args.isEmpty() || args.contains("--all") || args.contains("--loader")
     val buildCompat = args.isEmpty() || args.contains("--all") || args.contains("--compat")
     val downloadGeo = args.isEmpty() || args.contains("--all") || args.contains("--geo")
 
-    // The Go PIE core is cgo-free in source, but -buildmode=pie for the 32-bit/x86 Android ABIs
-    // must
-    // be linked by the NDK clang (see GoExeBuilder.buildGoEnv); the loader/compat C libs need it
-    // too.
-    val needsNdk = buildGo || buildCoreExe || buildLoader || buildCompat
+    // The c-shared core and every C component link through the ABI-specific NDK toolchain.
+    val needsNdk = buildGo || buildShell || buildLoader || buildCompat
     val ndkTools by lazy { NdkTools(config) }
 
     if (needsNdk) {
@@ -976,9 +1057,12 @@ fun main(args: Array<String>) {
     println("Rust: ${if (SystemDetector.checkCommandExists("cargo")) "OK" else "NOT FOUND"}")
     println("XZ library: org.tukaani:xz:1.12")
 
-    if (buildGo || buildCoreExe) {
-        // The core is the standalone mihomo PIE (libmihomo.so), fork+exec'd out of process.
-        GoExeBuilder(config, ndkTools).buildAll()
+    if (buildGo) {
+        GoCoreBuilder(config, ndkTools).buildAll()
+    }
+
+    if (buildShell) {
+        CoreShellBuilder(config, ndkTools).buildAll()
     }
 
     if (buildRust) {

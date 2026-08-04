@@ -20,7 +20,7 @@
 
 /*
  * libcompat.so — JNI primitives for the non-root (VpnService) launch path, and nothing else:
- * fork+execve the PIE core with a SOCK_SEQPACKET socketpair passed as CHANNEL=<fd>, SIGKILL it,
+ * fork+execve the PIE shell with a SOCK_SEQPACKET socketpair passed as CHANNEL=<fd>, SIGKILL it,
  * exchange one datagram per call (optionally carrying a descriptor via SCM_RIGHTS — how the TUN
  * fd reaches the core), and connect to the core's controller socket. SEQPACKET keeps message
  * boundaries, so the protocol needs no framing. Everything else runs over the mihomo REST API

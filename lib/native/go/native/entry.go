@@ -6,14 +6,20 @@
 //
 // Copyright (c) YumeYucca 2025 - Present
 
-// Command mihomo is the core packaged as a standalone PIE (libmihomo.so): --test validates
-// a config and exits, otherwise it runs until SIGINT/SIGTERM. Launcher side: CoreProcess.kt.
+// Package main is built as libmihomocore.so. A tiny PIE launcher dlopens the library and calls
+// MihomoMain so the heavyweight Go payload can stay XZ-compressed in the APK.
 package main
+
+/*
+#include <stdint.h>
+*/
+import "C"
 
 import (
 	"flag"
 	"fmt"
 	"os"
+	"unsafe"
 
 	"github.com/metacubex/mihomo/config"
 	"github.com/metacubex/mihomo/constant"
@@ -27,28 +33,34 @@ type options struct {
 	dns        string
 	mode       string
 	configPath string
+	channel    string
 	sdk        int
 	test       bool
 }
 
-func parseOptions() options {
+func parseOptions(args []string) options {
 	var o options
+	flags := flag.NewFlagSet("mihomo", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
 
-	flag.StringVar(&o.home, "home", "", "core home directory")
-	flag.StringVar(&o.controller, "controller", "", "external-controller-unix socket path")
-	flag.StringVar(&o.gateway, "gateway", "", "tun gateway CIDR(s)")
-	flag.StringVar(&o.dns, "dns", "", "tun DNS hijack address(es)")
-	flag.StringVar(&o.mode, "mode", "vpn", "run mode: vpn | tun")
-	flag.StringVar(&o.configPath, "config", "", "compiled config path; root modes read the config here instead of the channel")
-	flag.IntVar(&o.sdk, "sdk", 0, "android platform SDK int")
-	flag.BoolVar(&o.test, "test", false, "parse config and exit (mihomo -t equivalent); requires --config")
-	flag.Parse()
+	flags.StringVar(&o.home, "home", "", "core home directory")
+	flags.StringVar(&o.controller, "controller", "", "external-controller-unix socket path")
+	flags.StringVar(&o.gateway, "gateway", "", "tun gateway CIDR(s)")
+	flags.StringVar(&o.dns, "dns", "", "tun DNS hijack address(es)")
+	flags.StringVar(&o.mode, "mode", "vpn", "run mode: vpn | tun")
+	flags.StringVar(&o.configPath, "config", "", "compiled config path; root modes read the config here instead of the channel")
+	flags.IntVar(&o.sdk, "sdk", 0, "android platform SDK int")
+	flags.BoolVar(&o.test, "test", false, "parse config and exit (mihomo -t equivalent); requires --config")
+	if err := flags.Parse(args[1:]); err != nil {
+		fatal("parse arguments: %v", err)
+	}
 
 	return o
 }
 
-func main() {
-	opts := parseOptions()
+func runMain(args []string, channel string) int {
+	opts := parseOptions(args)
+	opts.channel = channel
 
 	// SetHomeDir must precede config.Parse: geo paths resolve through constant.Path.
 	log.SetLevel(log.ERROR)
@@ -58,9 +70,32 @@ func main() {
 
 	if opts.test {
 		testConfig(opts)
-		return
+		return 0
 	}
 	run(opts)
+	return 0
+}
+
+// main is intentionally empty: -buildmode=c-shared initializes the Go runtime at dlopen time,
+// then the PIE launcher enters through MihomoMain.
+func main() {}
+
+//export MihomoMain
+func MihomoMain(argc C.int, argv **C.char, channel *C.char) C.int {
+	count := int(argc)
+	if count <= 0 || argv == nil {
+		fatal("launcher supplied an empty argument vector")
+	}
+	cArgs := unsafe.Slice(argv, count)
+	args := make([]string, count)
+	for index, value := range cArgs {
+		args[index] = C.GoString(value)
+	}
+	channelValue := ""
+	if channel != nil {
+		channelValue = C.GoString(channel)
+	}
+	return C.int(runMain(args, channelValue))
 }
 
 // testConfig implements --test: parse only. Wording and exit codes are a contract with

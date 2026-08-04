@@ -15,6 +15,7 @@ import dalvik.system.PathClassLoader;
 
 final class PayloadInstaller {
     private static final String CACHE_MARKER = ".complete";
+    private static final String LAZY_CORE_LIBRARY = "libmihomocore.so";
     private static volatile Installation installedPayload;
     private PayloadInstaller() {
     }
@@ -46,6 +47,12 @@ final class PayloadInstaller {
                     ensureDirectory(dexDir);
 
                     List<PayloadMetadata.NativeEntry> nativeEntries = selectNativeEntries(metadata.nativeEntries);
+                    List<PayloadMetadata.NativeEntry> eagerNativeEntries = new ArrayList<>();
+                    for (PayloadMetadata.NativeEntry entry : nativeEntries) {
+                        if (!LAZY_CORE_LIBRARY.equals(entry.outputName())) {
+                            eagerNativeEntries.add(entry);
+                        }
+                    }
                     File nativeDir = null;
                     if (!nativeEntries.isEmpty()) {
                         nativeDir = safeChild(new File(payloadDir, "lib"), nativeEntries.get(0).abi(), "ABI");
@@ -53,7 +60,7 @@ final class PayloadInstaller {
                     }
                     File completeMarker = new File(payloadDir, CACHE_MARKER);
                     boolean cacheComplete = hasCompleteMarker(completeMarker, metadata.id)
-                            && hasExpectedPayloadFiles(metadata.dexEntries, dexDir, nativeEntries, nativeDir);
+                            && hasExpectedPayloadFiles(metadata.dexEntries, dexDir, eagerNativeEntries, nativeDir);
                     if (completeMarker.exists() && !cacheComplete && !completeMarker.delete()) {
                         throw new IOException("Unable to invalidate incomplete payload cache: " + completeMarker);
                     }
@@ -69,8 +76,8 @@ final class PayloadInstaller {
                             makeReadOnly(target);
                             dexFiles.add(target);
                         }
-                        if (!nativeEntries.isEmpty()) {
-                            for (PayloadMetadata.NativeEntry entry : nativeEntries) {
+                        if (!eagerNativeEntries.isEmpty()) {
+                            for (PayloadMetadata.NativeEntry entry : eagerNativeEntries) {
                                 File target = safeChild(nativeDir, entry.outputName(), "native output name");
                                 if (!cacheComplete && !isValid(target, entry.size(), entry.sha256())) {
                                     extract(archive, entry.assetName(), entry.size(), entry.sha256(), target);
@@ -92,7 +99,13 @@ final class PayloadInstaller {
                             nativeDir
                     );
                     RuntimeBootstrap.installClassLoader(loadedApk, payloadLoader);
-                    installedPayload = new Installation(metadata, payloadLoader);
+                    installedPayload = new Installation(
+                            metadata,
+                            payloadLoader,
+                            nativeDir,
+                            appInfo.sourceDir,
+                            nativeEntries
+                    );
                 }
                 return installedPayload;
             } catch (IOException | ReflectiveOperationException error) {
@@ -189,12 +202,12 @@ final class PayloadInstaller {
     ) {
         try {
             for (PayloadMetadata.DexEntry entry : dexEntries) {
-                if (!isValid(safeChild(dexDir, entry.outputName(), "dex output name"), entry.size(), entry.sha256())) {
+                if (!hasExpectedSize(safeChild(dexDir, entry.outputName(), "dex output name"), entry.size())) {
                     return false;
                 }
             }
             for (PayloadMetadata.NativeEntry entry : nativeEntries) {
-                if (!isValid(safeChild(nativeDir, entry.outputName(), "native output name"), entry.size(), entry.sha256())) {
+                if (!hasExpectedSize(safeChild(nativeDir, entry.outputName(), "native output name"), entry.size())) {
                     return false;
                 }
             }
@@ -202,6 +215,10 @@ final class PayloadInstaller {
         } catch (IOException invalidPayload) {
             return false;
         }
+    }
+
+    private static boolean hasExpectedSize(File file, long expectedSize) {
+        return file.isFile() && file.length() == expectedSize;
     }
 
     private static boolean hasCompleteMarker(File marker, String payloadId) {
@@ -304,6 +321,60 @@ final class PayloadInstaller {
         }
     }
 
-    record Installation(PayloadMetadata metadata, ClassLoader classLoader) {
+    static String findNativeLibrary(String fileName) {
+        synchronized (PayloadInstaller.class) {
+            Installation installation = installedPayload;
+            if (installation == null || installation.nativeDirectory() == null) {
+                return null;
+            }
+            try {
+                File library = safeChild(
+                        installation.nativeDirectory(),
+                        fileName,
+                        "native library name"
+                );
+                PayloadMetadata.NativeEntry metadata = null;
+                for (PayloadMetadata.NativeEntry entry : installation.nativeEntries()) {
+                    if (fileName.equals(entry.outputName())) {
+                        metadata = entry;
+                        break;
+                    }
+                }
+                if (metadata == null) {
+                    return null;
+                }
+                if (hasExpectedSize(library, metadata.size())) {
+                    return library.getAbsolutePath();
+                }
+                if (library.exists() && !library.delete()) {
+                    return null;
+                }
+                long archive = NativePayloadExtractor.openArchive(installation.apkPath());
+                try {
+                    extract(
+                            archive,
+                            metadata.assetName(),
+                            metadata.size(),
+                            metadata.sha256(),
+                            library
+                    );
+                } finally {
+                    NativePayloadExtractor.closeArchive(archive);
+                }
+                makeReadOnly(library);
+                return library.getAbsolutePath();
+            } catch (IOException invalidLibrary) {
+                return null;
+            }
+        }
+    }
+
+    record Installation(
+            PayloadMetadata metadata,
+            ClassLoader classLoader,
+            File nativeDirectory,
+            String apkPath,
+            List<PayloadMetadata.NativeEntry> nativeEntries
+    ) {
     }
 }

@@ -40,7 +40,7 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
 </ResponseField>
 
 <ResponseField name="Android NDK" type="30.0.14904198" required>
-  Go PIE、Rust 和 C 原生库共用此 NDK。
+  Go 共享核心、Rust 和 C 原生库共用此 NDK。
 </ResponseField>
 
 <ResponseField name="CMake" type="3.22.1" required>
@@ -52,7 +52,7 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
 </ResponseField>
 
 <ResponseField name="Go" type="1.26" required>
-  构建 mihomo PIE 内核。项目 CI 使用 MetaCubeX 的 Go 1.26 构建。
+  构建 mihomo 共享核心和 PIE 启动壳。项目 CI 使用 MetaCubeX 的 Go 1.26 构建。
 </ResponseField>
 
 <ResponseField name="Rust" type="nightly" required>
@@ -198,7 +198,7 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
 ### 可单独执行的任务
 
 <ResponseField name="--go" type="native">
-  构建 mihomo PIE 内核，输出 `libmihomo.so`。
+  构建 mihomo 共享核心 `libmihomocore.so` 和 PIE 启动壳 `libmihomo.so`。
 </ResponseField>
 
 <ResponseField name="--rust" type="native">
@@ -222,7 +222,7 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
 </ResponseField>
 
 <Check>
-  成功后，每个目标 ABI 的 `jniLibs/&lt;abi&gt;/` 下应包含 `libmihomo.so`、`liboverride.so`、`libcompat.so`、`libloader.so` 和 `core-version.properties`。
+  成功后，每个目标 ABI 的 `jniLibs/&lt;abi&gt;/` 下应包含 `libmihomo.so`、`libmihomocore.so`、`liboverride.so`、`libcompat.so`、`libloader.so` 和 `core-version.properties`。
 </Check>
 
 ## 构建 APK

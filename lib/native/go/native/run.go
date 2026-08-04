@@ -94,7 +94,7 @@ func readStartup(opts options) (rawConfig []byte, tunFd, channelFd int) {
 			fatal("read config %q: %v", opts.configPath, err)
 		}
 	default: // vpn
-		value := os.Getenv("CHANNEL")
+		value := opts.channel
 		fd, err := strconv.Atoi(value)
 		if err != nil || fd < 0 {
 			fatal("missing or malformed CHANNEL=%q: vpn mode delivers config over the socketpair, not a file", value)
