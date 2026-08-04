@@ -138,6 +138,7 @@ jobs:
         run: |
           set -eu
           test -f "jniLibs/${{ inputs.abi }}/libmihomo.so"
+          test -f "jniLibs/${{ inputs.abi }}/libmihomocore.so"
           test -f "jniLibs/${{ inputs.abi }}/liboverride.so"
           test -f "jniLibs/${{ inputs.abi }}/libcompat.so"
           test -f "jniLibs/${{ inputs.abi }}/libloader.so"
@@ -149,6 +150,7 @@ jobs:
           name: native-${{ inputs.channel }}-${{ inputs.abi }}
           path: |
             jniLibs/${{ inputs.abi }}/libmihomo.so
+            jniLibs/${{ inputs.abi }}/libmihomocore.so
             jniLibs/${{ inputs.abi }}/liboverride.so
             jniLibs/${{ inputs.abi }}/libcompat.so
             jniLibs/${{ inputs.abi }}/libloader.so
