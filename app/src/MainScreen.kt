@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox
+package com.github.yumeyucca.yumebox
 
 
 import android.app.Activity
@@ -37,22 +37,22 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import com.github.yumelira.yumebox.common.util.openUrl
-import com.github.yumelira.yumebox.data.store.FeatureStore
-import com.github.yumelira.yumebox.data.store.LinkOpenMode
-import com.github.yumelira.yumebox.presentation.component.*
-import com.github.yumelira.yumebox.presentation.navigation.Route
-import com.github.yumelira.yumebox.presentation.screen.ProxyPager
-import com.github.yumelira.yumebox.presentation.theme.YumeHaze
-import com.github.yumelira.yumebox.presentation.webview.WebViewUtils
-import com.github.yumelira.yumebox.runtime.api.RuntimePhase
-import com.github.yumelira.yumebox.screen.home.HomePager
-import com.github.yumelira.yumebox.screen.home.HomeViewModel
-import com.github.yumelira.yumebox.screen.moe.MoeHomePage
-import com.github.yumelira.yumebox.screen.moe.calculateHomeVisibility
-import com.github.yumelira.yumebox.screen.profiles.ProfilesPager
-import com.github.yumelira.yumebox.screen.settings.AppSettingsViewModel
-import com.github.yumelira.yumebox.screen.settings.SettingPager
+import com.github.yumeyucca.yumebox.common.util.openUrl
+import com.github.yumeyucca.yumebox.data.store.FeatureStore
+import com.github.yumeyucca.yumebox.data.store.LinkOpenMode
+import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.navigation.Route
+import com.github.yumeyucca.yumebox.presentation.screen.ProxyPager
+import com.github.yumeyucca.yumebox.presentation.theme.YumeHaze
+import com.github.yumeyucca.yumebox.presentation.webview.WebViewUtils
+import com.github.yumeyucca.yumebox.runtime.api.RuntimePhase
+import com.github.yumeyucca.yumebox.screen.home.HomePager
+import com.github.yumeyucca.yumebox.screen.home.HomeViewModel
+import com.github.yumeyucca.yumebox.screen.moe.MoeHomePage
+import com.github.yumeyucca.yumebox.screen.moe.calculateHomeVisibility
+import com.github.yumeyucca.yumebox.screen.profiles.ProfilesPager
+import com.github.yumeyucca.yumebox.screen.settings.AppSettingsViewModel
+import com.github.yumeyucca.yumebox.screen.settings.SettingPager
 import dev.chrisbanes.haze.HazeState
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject

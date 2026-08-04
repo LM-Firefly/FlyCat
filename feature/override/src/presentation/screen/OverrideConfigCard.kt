@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.screen
+package com.github.yumeyucca.yumebox.presentation.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
@@ -28,14 +28,14 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.data.model.OverrideConfig
-import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.component.OverrideCardActionIconButton
-import com.github.yumelira.yumebox.presentation.component.OverrideStatusBadge
-import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.*
-import com.github.yumelira.yumebox.presentation.theme.Spacing
-import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.data.model.OverrideConfig
+import com.github.yumeyucca.yumebox.presentation.component.Card
+import com.github.yumeyucca.yumebox.presentation.component.OverrideCardActionIconButton
+import com.github.yumeyucca.yumebox.presentation.component.OverrideStatusBadge
+import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.*
+import com.github.yumeyucca.yumebox.presentation.theme.Spacing
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import sh.calvin.reorderable.ReorderableCollectionItemScope
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.HorizontalDivider

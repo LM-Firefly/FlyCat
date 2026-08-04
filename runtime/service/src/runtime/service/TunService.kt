@@ -18,18 +18,18 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service
+package com.github.yumeyucca.yumebox.runtime.service
 
 import android.content.Intent
 import android.net.VpnService
-import com.github.yumelira.yumebox.data.model.RunMode
-import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import com.github.yumelira.yumebox.runtime.api.initializeServiceGlobal
-import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
-import com.github.yumelira.yumebox.runtime.service.notification.ServiceNotificationManager
-import com.github.yumelira.yumebox.runtime.service.session.SessionRuntimeSpecFactory
-import com.github.yumelira.yumebox.runtime.service.session.VpnTunTransport
-import com.github.yumelira.yumebox.runtime.service.util.cancelAndJoinBlocking
+import com.github.yumeyucca.yumebox.data.model.RunMode
+import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
+import com.github.yumeyucca.yumebox.runtime.api.initializeServiceGlobal
+import com.github.yumeyucca.yumebox.runtime.service.log.RuntimeLog
+import com.github.yumeyucca.yumebox.runtime.service.notification.ServiceNotificationManager
+import com.github.yumeyucca.yumebox.runtime.service.session.SessionRuntimeSpecFactory
+import com.github.yumeyucca.yumebox.runtime.service.session.VpnTunTransport
+import com.github.yumeyucca.yumebox.runtime.service.util.cancelAndJoinBlocking
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 
@@ -59,7 +59,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         // Guarantee the core child dies first: it holds the tun fd, so killing it (lock-free) is
         // what
         // actually brings the VPN interface down — even if the session-scoped teardown is blocked.
-        com.github.yumelira.yumebox.runtime.service.core.CoreProcess.killRunning()
+        com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess.killRunning()
         controller.onDestroy()
         super.onDestroy()
         cancelAndJoinBlocking()

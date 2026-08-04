@@ -9,7 +9,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.presentation.navigation
+package com.github.yumeyucca.yumebox.presentation.navigation
 
 
 import androidx.compose.runtime.Composable
@@ -23,8 +23,8 @@ import androidx.navigation3.scene.rememberSceneState
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import com.github.yumelira.yumebox.presentation.component.LocalNavigator
-import com.github.yumelira.yumebox.presentation.component.Navigator
+import com.github.yumeyucca.yumebox.presentation.component.LocalNavigator
+import com.github.yumeyucca.yumebox.presentation.component.Navigator
 
 /** Right-pane Navigation3 host used by the tablet dual-pane shell. */
 @Composable

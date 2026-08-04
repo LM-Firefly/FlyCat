@@ -20,7 +20,7 @@
 
 @file:Suppress("UnusedSymbol", "FunctionName")
 
-package com.github.yumelira.yumebox.presentation.component
+package com.github.yumeyucca.yumebox.presentation.component
 
 
 import androidx.compose.foundation.layout.Box
@@ -29,9 +29,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
-import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.core.util.PollingTimerSpecs
+import com.github.yumeyucca.yumebox.core.util.PollingTimers
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 

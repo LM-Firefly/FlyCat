@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.notification
+package com.github.yumeyucca.yumebox.runtime.service.notification
 
 import android.app.Notification
 import android.app.PendingIntent
@@ -27,13 +27,13 @@ import android.content.Intent
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
-import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.runtime.api.Components
-import com.github.yumelira.yumebox.runtime.service.R
-import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
-import com.github.yumelira.yumebox.runtime.service.profile.ImportedDao
-import com.github.yumelira.yumebox.runtime.service.util.ServiceLogoIcons
+import com.github.yumeyucca.yumebox.core.util.PollingTimerSpecs
+import com.github.yumeyucca.yumebox.core.util.PollingTimers
+import com.github.yumeyucca.yumebox.runtime.api.Components
+import com.github.yumeyucca.yumebox.runtime.service.R
+import com.github.yumeyucca.yumebox.runtime.service.config.ServiceStore
+import com.github.yumeyucca.yumebox.runtime.service.profile.ImportedDao
+import com.github.yumeyucca.yumebox.runtime.service.util.ServiceLogoIcons
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -117,7 +117,7 @@ class ServiceNotificationManager(
             )
         }
 
-        val core = com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(service)
+        val core = com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess.controller(service)
         val now = runCatching { core.queryTrafficNow() }.getOrDefault(0L)
         val total = runCatching { core.queryTrafficTotal() }.getOrDefault(0L)
         return buildNotification(

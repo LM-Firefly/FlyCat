@@ -20,7 +20,7 @@
 
 @file:Suppress("AndroidLintObsoleteSdkInt")
 
-package com.github.yumelira.yumebox.common.util
+package com.github.yumeyucca.yumebox.common.util
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -28,7 +28,7 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
-import com.github.yumelira.yumebox.data.model.AppLanguage
+import com.github.yumeyucca.yumebox.data.model.AppLanguage
 import tf.gal.shirosu.fyl.fytxt.FYTxtConfig
 import java.util.*
 

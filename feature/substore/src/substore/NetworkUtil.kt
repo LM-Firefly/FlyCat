@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore
+package com.github.yumeyucca.yumebox.substore
 
 import java.io.IOException
 import java.net.ServerSocket

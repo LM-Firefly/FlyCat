@@ -18,12 +18,12 @@
  *
  */
 
-package com.github.yumelira.yumebox.data.store
+package com.github.yumeyucca.yumebox.data.store
 
-import com.github.yumelira.yumebox.data.model.AppColorTheme
-import com.github.yumelira.yumebox.data.model.AppLanguage
-import com.github.yumelira.yumebox.data.model.AppIconStyle
-import com.github.yumelira.yumebox.data.model.ThemeMode
+import com.github.yumeyucca.yumebox.data.model.AppColorTheme
+import com.github.yumeyucca.yumebox.data.model.AppLanguage
+import com.github.yumeyucca.yumebox.data.model.AppIconStyle
+import com.github.yumeyucca.yumebox.data.model.ThemeMode
 import com.tencent.mmkv.MMKV
 
 class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {

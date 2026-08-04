@@ -18,9 +18,9 @@
  *
  */
 
-package com.github.yumelira.yumebox.data.store
+package com.github.yumeyucca.yumebox.data.store
 
-import com.github.yumelira.yumebox.data.model.ProfileBinding
+import com.github.yumeyucca.yumebox.data.model.ProfileBinding
 import kotlinx.coroutines.flow.Flow
 
 interface ProfileBindingProvider {

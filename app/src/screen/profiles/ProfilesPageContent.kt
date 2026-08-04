@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.screen.profiles
+package com.github.yumeyucca.yumebox.screen.profiles
 
 
 import androidx.compose.foundation.layout.Box
@@ -32,12 +32,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import com.github.yumelira.yumebox.App
-import com.github.yumelira.yumebox.presentation.component.*
-import com.github.yumelira.yumebox.presentation.icon.ShellIcons
-import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.runtime.api.Profile
-import com.github.yumelira.yumebox.screen.home.HomeViewModel
+import com.github.yumeyucca.yumebox.App
+import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.icon.ShellIcons
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.runtime.api.Profile
+import com.github.yumeyucca.yumebox.screen.home.HomeViewModel
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState

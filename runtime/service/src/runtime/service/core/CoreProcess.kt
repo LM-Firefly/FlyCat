@@ -20,7 +20,7 @@
 
 @file:Suppress("SimplifiableCallChain", "CanConvertToMultiDollarString", "CanUnescapeDollarLiteral")
 
-package com.github.yumelira.yumebox.runtime.service.core
+package com.github.yumeyucca.yumebox.runtime.service.core
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -28,13 +28,13 @@ import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.system.Os
-import com.github.yumelira.yumebox.core.bridge.Channel
-import com.github.yumelira.yumebox.core.bridge.NativeProcess
-import com.github.yumelira.yumebox.core.model.RunMode
-import com.github.yumelira.yumebox.core.util.runtimeHomeDir
-import com.github.yumelira.yumebox.runtime.api.CoreApi
-import com.github.yumelira.yumebox.runtime.service.controller.CoreController
-import com.github.yumelira.yumebox.runtime.service.util.SocketOwnerResolver
+import com.github.yumeyucca.yumebox.core.bridge.Channel
+import com.github.yumeyucca.yumebox.core.bridge.NativeProcess
+import com.github.yumeyucca.yumebox.core.model.RunMode
+import com.github.yumeyucca.yumebox.core.util.runtimeHomeDir
+import com.github.yumeyucca.yumebox.runtime.api.CoreApi
+import com.github.yumeyucca.yumebox.runtime.service.controller.CoreController
+import com.github.yumeyucca.yumebox.runtime.service.util.SocketOwnerResolver
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.*
 import timber.log.Timber

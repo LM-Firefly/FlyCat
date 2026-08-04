@@ -18,12 +18,12 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.session
+package com.github.yumeyucca.yumebox.runtime.service.session
 
 import android.content.Context
-import com.github.yumelira.yumebox.core.model.LogMessage
-import com.github.yumelira.yumebox.data.model.RunMode
-import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
+import com.github.yumeyucca.yumebox.core.model.LogMessage
+import com.github.yumeyucca.yumebox.data.model.RunMode
+import com.github.yumeyucca.yumebox.runtime.api.RuntimeSnapshot
 
 interface RuntimeHost {
     val context: Context

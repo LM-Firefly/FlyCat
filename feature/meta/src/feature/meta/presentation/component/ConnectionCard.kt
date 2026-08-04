@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName", "ReplaceIsEmptyWithIfEmpty")
 
-package com.github.yumelira.yumebox.feature.meta.presentation.component
+package com.github.yumeyucca.yumebox.feature.meta.presentation.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,8 +37,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.core.model.ConnectionInfo
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.core.model.ConnectionInfo
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import kotlinx.serialization.json.jsonPrimitive
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Text

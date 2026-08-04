@@ -20,11 +20,11 @@
 
 @file:Suppress("ConvertLongToDuration")
 
-package com.github.yumelira.yumebox.runtime.service.util
+package com.github.yumeyucca.yumebox.runtime.service.util
 
 import android.os.SystemClock
-import com.github.yumelira.yumebox.data.model.RunMode
-import com.github.yumelira.yumebox.runtime.api.RuntimePhase
+import com.github.yumeyucca.yumebox.data.model.RunMode
+import com.github.yumeyucca.yumebox.runtime.api.RuntimePhase
 import kotlinx.coroutines.delay
 import kotlin.math.min
 import kotlin.time.Duration.Companion.milliseconds

@@ -24,7 +24,7 @@ plugins {
 }
 
 android {
-    namespace = "com.github.yumelira.yumebox.runtime.client"
+    namespace = "com.github.yumeyucca.yumebox.runtime.client"
 }
 
 dependencies {

@@ -22,10 +22,10 @@
 
 @file:Suppress("UnusedSymbol")
 
-package com.github.yumelira.yumebox.runtime.service.profile
+package com.github.yumeyucca.yumebox.runtime.service.profile
 
 
-import com.github.yumelira.yumebox.runtime.api.UUIDSerializer
+import com.github.yumeyucca.yumebox.runtime.api.UUIDSerializer
 import com.tencent.mmkv.MMKV
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.UseSerializers

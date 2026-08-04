@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.presentation.component
+package com.github.yumeyucca.yumebox.presentation.component
 
 
 import android.annotation.SuppressLint
@@ -34,14 +34,14 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.CircleFadingArrowUp
-import com.github.yumelira.yumebox.presentation.icon.yume.Delete
-import com.github.yumelira.yumebox.presentation.icon.yume.Edit
-import com.github.yumelira.yumebox.presentation.icon.yume.Share
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.util.*
-import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.CircleFadingArrowUp
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Delete
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Edit
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Share
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.presentation.util.*
+import com.github.yumeyucca.yumebox.runtime.api.Profile
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.theme.MiuixTheme

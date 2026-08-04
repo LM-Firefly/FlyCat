@@ -20,13 +20,13 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.screen.settings
+package com.github.yumeyucca.yumebox.screen.settings
 
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import com.github.yumelira.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.component.*
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior

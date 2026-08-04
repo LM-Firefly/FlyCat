@@ -20,24 +20,24 @@
 
 @file:Suppress("UnusedSymbol", "RedundantIf")
 
-package com.github.yumelira.yumebox.presentation.viewmodel
+package com.github.yumeyucca.yumebox.presentation.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.common.util.DeviceUtil
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
-import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.data.store.FeatureStore
-import com.github.yumelira.yumebox.data.store.LinkOpenMode
-import com.github.yumelira.yumebox.data.store.Preference
-import com.github.yumelira.yumebox.substore.SubStorePaths
-import com.github.yumelira.yumebox.substore.SubStoreServiceController
-import com.github.yumelira.yumebox.substore.SubStoreServiceRequest
-import com.github.yumelira.yumebox.substore.engine.NativeLibraryManager
-import com.github.yumelira.yumebox.substore.model.AutoCloseMode
-import com.github.yumelira.yumebox.substore.util.SubStoreDownloadClient
+import com.github.yumeyucca.yumebox.common.util.DeviceUtil
+import com.github.yumeyucca.yumebox.common.util.toast
+import com.github.yumeyucca.yumebox.core.util.PollingTimerSpecs
+import com.github.yumeyucca.yumebox.core.util.PollingTimers
+import com.github.yumeyucca.yumebox.data.store.FeatureStore
+import com.github.yumeyucca.yumebox.data.store.LinkOpenMode
+import com.github.yumeyucca.yumebox.data.store.Preference
+import com.github.yumeyucca.yumebox.substore.SubStorePaths
+import com.github.yumeyucca.yumebox.substore.SubStoreServiceController
+import com.github.yumeyucca.yumebox.substore.SubStoreServiceRequest
+import com.github.yumeyucca.yumebox.substore.engine.NativeLibraryManager
+import com.github.yumeyucca.yumebox.substore.model.AutoCloseMode
+import com.github.yumeyucca.yumebox.substore.util.SubStoreDownloadClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -156,7 +156,7 @@ class FeatureViewModel(
             )
 
     companion object {
-        private const val EXTENSION_PACKAGE_NAME = "com.github.yumelira.yumebox.extension"
+        private const val EXTENSION_PACKAGE_NAME = "com.github.yumeyucca.yumebox.extension"
         private const val JAVET_LIB_NAME = "libjavet-node-android"
     }
 

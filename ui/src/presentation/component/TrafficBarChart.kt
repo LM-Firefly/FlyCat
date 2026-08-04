@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.presentation.component
+package com.github.yumeyucca.yumebox.presentation.component
 
 
 import androidx.compose.animation.core.Animatable
@@ -44,8 +44,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.common.util.formatBytes
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.common.util.formatBytes
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 

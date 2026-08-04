@@ -20,13 +20,13 @@
 
 @file:Suppress("ConvertLongToDuration")
 
-package com.github.yumelira.yumebox.runtime.client.access
+package com.github.yumeyucca.yumebox.runtime.client.access
 
-import com.github.yumelira.yumebox.core.model.*
-import com.github.yumelira.yumebox.runtime.api.CoreApi
-import com.github.yumelira.yumebox.runtime.api.CoreAsyncQueries
-import com.github.yumelira.yumebox.runtime.api.LogObserver
-import com.github.yumelira.yumebox.runtime.api.LogSubscription
+import com.github.yumeyucca.yumebox.core.model.*
+import com.github.yumeyucca.yumebox.runtime.api.CoreApi
+import com.github.yumeyucca.yumebox.runtime.api.CoreAsyncQueries
+import com.github.yumeyucca.yumebox.runtime.api.LogObserver
+import com.github.yumeyucca.yumebox.runtime.api.LogSubscription
 import kotlinx.coroutines.*
 
 /** Routes [CoreApi] to remote controller when active, otherwise the local controller. */

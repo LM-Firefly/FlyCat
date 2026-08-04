@@ -18,9 +18,9 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore
+package com.github.yumeyucca.yumebox.substore
 
-import com.github.yumelira.yumebox.core.Global
+import com.github.yumeyucca.yumebox.core.Global
 import java.io.File
 
 object SubStorePaths {

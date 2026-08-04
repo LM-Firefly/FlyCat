@@ -18,12 +18,12 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.session
+package com.github.yumeyucca.yumebox.runtime.service.session
 
 import android.content.Context
 import android.net.*
 import android.os.Build
-import com.github.yumelira.yumebox.runtime.service.util.asSocketAddressText
+import com.github.yumeyucca.yumebox.runtime.service.util.asSocketAddressText
 import java.net.InetAddress
 import java.util.concurrent.ConcurrentHashMap
 

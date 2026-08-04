@@ -18,14 +18,14 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.session
+package com.github.yumeyucca.yumebox.runtime.service.session
 
-import com.github.yumelira.yumebox.core.domain.ConnectionHistoryManager
-import com.github.yumelira.yumebox.core.model.LogMessage
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
-import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.runtime.api.LogObserver
-import com.github.yumelira.yumebox.runtime.api.LogSubscription
+import com.github.yumeyucca.yumebox.core.domain.ConnectionHistoryManager
+import com.github.yumeyucca.yumebox.core.model.LogMessage
+import com.github.yumeyucca.yumebox.core.util.PollingTimerSpecs
+import com.github.yumeyucca.yumebox.core.util.PollingTimers
+import com.github.yumeyucca.yumebox.runtime.api.LogObserver
+import com.github.yumeyucca.yumebox.runtime.api.LogSubscription
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -114,7 +114,7 @@ internal class SessionRuntimeTelemetry(
                 PollingTimers.ticks(PollingTimerSpecs.SessionConnectionTracking).collect {
                     runCatching {
                         val core =
-                            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(
+                            com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess.controller(
                                 host.context
                             )
                         val snapshot = core.queryConnections()

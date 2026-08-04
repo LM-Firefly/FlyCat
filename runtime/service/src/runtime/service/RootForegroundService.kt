@@ -7,7 +7,7 @@
  * License.
  */
 
-package com.github.yumelira.yumebox.runtime.service
+package com.github.yumeyucca.yumebox.runtime.service
 
 import android.app.Service
 import android.content.BroadcastReceiver
@@ -17,11 +17,11 @@ import android.content.IntentFilter
 import android.os.IBinder
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
-import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import com.github.yumelira.yumebox.runtime.api.initializeServiceGlobal
-import com.github.yumelira.yumebox.runtime.api.Intents
-import com.github.yumelira.yumebox.runtime.service.notification.ServiceNotificationManager
-import com.github.yumelira.yumebox.runtime.service.util.cancelAndJoinBlocking
+import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
+import com.github.yumeyucca.yumebox.runtime.api.initializeServiceGlobal
+import com.github.yumeyucca.yumebox.runtime.api.Intents
+import com.github.yumeyucca.yumebox.runtime.service.notification.ServiceNotificationManager
+import com.github.yumeyucca.yumebox.runtime.service.util.cancelAndJoinBlocking
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

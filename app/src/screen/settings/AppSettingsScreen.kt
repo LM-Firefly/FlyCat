@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName", "ConvertLongToDuration")
 
-package com.github.yumelira.yumebox.screen.settings
+package com.github.yumeyucca.yumebox.screen.settings
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -35,17 +35,17 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.core.net.toUri
-import com.github.yumelira.yumebox.common.util.AppIconHelper
-import com.github.yumelira.yumebox.common.util.LocaleUtil
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.data.model.AppLanguage
-import com.github.yumelira.yumebox.data.model.ThemeMode
-import com.github.yumelira.yumebox.data.model.AppIconStyle
-import com.github.yumelira.yumebox.presentation.component.*
-import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.runtime.api.Intents
-import com.github.yumelira.yumebox.screen.settings.component.ThemeColorPickerItem
+import com.github.yumeyucca.yumebox.common.util.AppIconHelper
+import com.github.yumeyucca.yumebox.common.util.LocaleUtil
+import com.github.yumeyucca.yumebox.common.util.toast
+import com.github.yumeyucca.yumebox.data.model.AppLanguage
+import com.github.yumeyucca.yumebox.data.model.ThemeMode
+import com.github.yumeyucca.yumebox.data.model.AppIconStyle
+import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.component.Card
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.runtime.api.Intents
+import com.github.yumeyucca.yumebox.screen.settings.component.ThemeColorPickerItem
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior

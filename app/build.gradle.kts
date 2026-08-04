@@ -544,7 +544,7 @@ androidComponents {
                     "Compresses DEX payloads and installs the loader in ${variant.name} APKs"
                 loaderDex.set(loaderDexTask.flatMap { it.outputDirectory.file("classes.dex") })
                 sdkDirectory.set(sdkComponents.sdkDirectory)
-                originalApplication.set("com.github.yumelira.yumebox.App")
+                originalApplication.set("com.github.yumeyucca.yumebox.App")
                 originalComponentFactory.set("androidx.core.app.CoreComponentFactory")
                 if (releaseSigningProperties != null) {
                     keyStoreFile.set(rootProject.layout.projectDirectory.file("release.keystore"))

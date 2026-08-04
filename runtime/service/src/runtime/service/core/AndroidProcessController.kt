@@ -18,12 +18,12 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.core
+package com.github.yumeyucca.yumebox.runtime.service.core
 
 import android.content.Context
-import com.github.yumelira.yumebox.runtime.api.CoreEndpointRef
-import com.github.yumelira.yumebox.runtime.api.ProcessController
-import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
+import com.github.yumeyucca.yumebox.runtime.api.CoreEndpointRef
+import com.github.yumeyucca.yumebox.runtime.api.ProcessController
+import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
 
 /** Android binding of [ProcessController] over [CoreProcess] static ownership. */
 class AndroidProcessController(context: Context) : ProcessController {

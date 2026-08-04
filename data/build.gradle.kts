@@ -26,7 +26,7 @@ plugins {
 }
 
 android {
-    namespace = "com.github.yumelira.yumebox.data"
+    namespace = "com.github.yumeyucca.yumebox.data"
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }

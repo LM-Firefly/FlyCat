@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName", "ConvertLongToDuration", "KotlinConstantConditions")
 
-package com.github.yumelira.yumebox.screen.moe
+package com.github.yumeyucca.yumebox.screen.moe
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -48,12 +48,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.Repeat
-import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.theme.YumeHaze
-import com.github.yumelira.yumebox.screen.home.HomeProxyControlState
+import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Repeat
+import com.github.yumeyucca.yumebox.presentation.theme.AnimationSpecs
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.presentation.theme.YumeHaze
+import com.github.yumeyucca.yumebox.screen.home.HomeProxyControlState
 import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.blurEffect

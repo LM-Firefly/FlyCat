@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.presentation.component
+package com.github.yumeyucca.yumebox.presentation.component
 
 
 import androidx.compose.foundation.Image
@@ -38,9 +38,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import com.github.panpf.sketch.rememberAsyncImagePainter
 import com.github.panpf.sketch.request.ImageRequest
-import com.github.yumelira.yumebox.common.util.LocaleUtil
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.common.util.LocaleUtil
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import tf.gal.yumebox.locale.YumeTxt
 
 @Composable

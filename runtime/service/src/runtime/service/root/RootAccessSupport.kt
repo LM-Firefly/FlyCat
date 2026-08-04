@@ -20,7 +20,7 @@
 
 @file:Suppress("UnusedSymbol")
 
-package com.github.yumelira.yumebox.runtime.service.root
+package com.github.yumeyucca.yumebox.runtime.service.root
 
 
 import android.content.Context

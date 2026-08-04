@@ -20,11 +20,11 @@
 
 @file:Suppress("RedundantSuspendModifier")
 
-package com.github.yumelira.yumebox.runtime.service.session
+package com.github.yumeyucca.yumebox.runtime.service.session
 
-import com.github.yumelira.yumebox.core.model.Proxy
-import com.github.yumelira.yumebox.core.model.ProxyGroup
-import com.github.yumelira.yumebox.core.model.ProxySort
+import com.github.yumeyucca.yumebox.core.model.Proxy
+import com.github.yumeyucca.yumebox.core.model.ProxyGroup
+import com.github.yumeyucca.yumebox.core.model.ProxySort
 import java.security.MessageDigest
 
 /**
@@ -45,7 +45,7 @@ class RuntimeProxyGroupResolver(
     private val context: android.content.Context,
 ) {
     private val rest
-        get() = com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(context)
+        get() = com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess.controller(context)
 
     private val expectedNameCacheLock = Any()
     private var expectedNameCache: ExpectedGroupCache? = null

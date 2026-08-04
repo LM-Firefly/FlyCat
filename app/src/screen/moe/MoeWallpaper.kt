@@ -11,7 +11,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.screen.moe
+package com.github.yumeyucca.yumebox.screen.moe
 
 
 import android.annotation.SuppressLint
@@ -37,8 +37,8 @@ import com.github.panpf.sketch.request.ImageRequest
 import com.github.panpf.sketch.resize.Precision
 import com.github.panpf.sketch.resize.Scale
 import com.github.panpf.sketch.util.Size
-import com.github.yumelira.yumebox.R
-import com.github.yumelira.yumebox.presentation.component.calculateWallpaperViewportLayout
+import com.github.yumeyucca.yumebox.R
+import com.github.yumeyucca.yumebox.presentation.component.calculateWallpaperViewportLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

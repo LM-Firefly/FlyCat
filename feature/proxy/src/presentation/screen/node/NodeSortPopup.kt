@@ -20,11 +20,11 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.presentation.screen.node
+package com.github.yumeyucca.yumebox.presentation.screen.node
 
 
 import androidx.compose.runtime.Composable
-import com.github.yumelira.yumebox.data.model.ProxySortMode
+import com.github.yumeyucca.yumebox.data.model.ProxySortMode
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults

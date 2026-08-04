@@ -18,21 +18,21 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.session
+package com.github.yumeyucca.yumebox.runtime.service.session
 
 import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
-import com.github.yumelira.yumebox.core.model.RunMode
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
-import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.core.util.StartupTaskCoordinator
-import com.github.yumelira.yumebox.runtime.api.Intents
-import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import com.github.yumelira.yumebox.runtime.service.RootForegroundService
-import com.github.yumelira.yumebox.runtime.service.StatusProvider
-import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
-import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
+import com.github.yumeyucca.yumebox.core.model.RunMode
+import com.github.yumeyucca.yumebox.core.util.PollingTimerSpecs
+import com.github.yumeyucca.yumebox.core.util.PollingTimers
+import com.github.yumeyucca.yumebox.core.util.StartupTaskCoordinator
+import com.github.yumeyucca.yumebox.runtime.api.Intents
+import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
+import com.github.yumeyucca.yumebox.runtime.service.RootForegroundService
+import com.github.yumeyucca.yumebox.runtime.service.StatusProvider
+import com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess
+import com.github.yumeyucca.yumebox.runtime.service.log.RuntimeLog
 import kotlinx.coroutines.withTimeout
 
 /**

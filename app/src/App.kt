@@ -18,27 +18,27 @@
  *
  */
 
-package com.github.yumelira.yumebox
+package com.github.yumeyucca.yumebox
 
 import android.app.Application
 import android.content.ComponentName
 import android.content.res.Configuration
-import com.github.yumelira.yumebox.common.util.AppLanguageManager
-import com.github.yumelira.yumebox.common.util.AppIconHelper
-import com.github.yumelira.yumebox.common.util.PlatformIdentifier
-import com.github.yumelira.yumebox.core.Global
-import com.github.yumelira.yumebox.core.util.AppVisibilityTracker
-import com.github.yumelira.yumebox.core.util.runtimeHomeDir
-import com.github.yumelira.yumebox.data.controller.AppTrafficStatisticsCollector
-import com.github.yumelira.yumebox.data.store.AppSettingsStore
-import com.github.yumelira.yumebox.data.model.AppIconStyle
-import com.github.yumelira.yumebox.data.store.FeatureStore
-import com.github.yumelira.yumebox.di.appModule
-import com.github.yumelira.yumebox.feature.meta.presentation.util.CustomRoutingBootstrapper
-import com.github.yumelira.yumebox.runtime.api.Components
-import com.github.yumelira.yumebox.runtime.client.ProxyFacade
-import com.github.yumelira.yumebox.screen.settings.MoeWallpaperImporter
-import com.github.yumelira.yumebox.substore.util.AppUtil
+import com.github.yumeyucca.yumebox.common.util.AppLanguageManager
+import com.github.yumeyucca.yumebox.common.util.AppIconHelper
+import com.github.yumeyucca.yumebox.common.util.PlatformIdentifier
+import com.github.yumeyucca.yumebox.core.Global
+import com.github.yumeyucca.yumebox.core.util.AppVisibilityTracker
+import com.github.yumeyucca.yumebox.core.util.runtimeHomeDir
+import com.github.yumeyucca.yumebox.data.controller.AppTrafficStatisticsCollector
+import com.github.yumeyucca.yumebox.data.store.AppSettingsStore
+import com.github.yumeyucca.yumebox.data.model.AppIconStyle
+import com.github.yumeyucca.yumebox.data.store.FeatureStore
+import com.github.yumeyucca.yumebox.di.appModule
+import com.github.yumeyucca.yumebox.feature.meta.presentation.util.CustomRoutingBootstrapper
+import com.github.yumeyucca.yumebox.runtime.api.Components
+import com.github.yumeyucca.yumebox.runtime.client.ProxyFacade
+import com.github.yumeyucca.yumebox.screen.settings.MoeWallpaperImporter
+import com.github.yumeyucca.yumebox.substore.util.AppUtil
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.*
 import org.koin.android.ext.koin.androidContext

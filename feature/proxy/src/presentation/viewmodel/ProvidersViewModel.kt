@@ -18,15 +18,15 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.viewmodel
+package com.github.yumeyucca.yumebox.presentation.viewmodel
 
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.core.model.Provider
-import com.github.yumelira.yumebox.data.controller.ProvidersController
-import com.github.yumelira.yumebox.runtime.client.ProxyFacade
+import com.github.yumeyucca.yumebox.core.model.Provider
+import com.github.yumeyucca.yumebox.data.controller.ProvidersController
+import com.github.yumeyucca.yumebox.runtime.client.ProxyFacade
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

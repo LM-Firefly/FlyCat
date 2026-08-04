@@ -18,11 +18,11 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.session
+package com.github.yumeyucca.yumebox.runtime.service.session
 
-import com.github.yumelira.yumebox.core.model.Provider
-import com.github.yumelira.yumebox.core.model.ProxyGroup
-import com.github.yumelira.yumebox.core.model.UiConfiguration
+import com.github.yumeyucca.yumebox.core.model.Provider
+import com.github.yumeyucca.yumebox.core.model.ProxyGroup
+import com.github.yumeyucca.yumebox.core.model.UiConfiguration
 
 internal class SessionRuntimeQueryCache {
     private var snapshot = SessionRuntimeQuerySnapshot()

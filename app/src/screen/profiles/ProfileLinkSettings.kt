@@ -20,7 +20,7 @@
 
 @file:Suppress("UnusedSymbol", "FunctionName")
 
-package com.github.yumelira.yumebox.screen.profiles
+package com.github.yumeyucca.yumebox.screen.profiles
 
 
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,10 +28,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
-import com.github.yumelira.yumebox.data.store.LinkOpenMode
-import com.github.yumelira.yumebox.data.store.ProfileLink
-import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
-import com.github.yumelira.yumebox.presentation.component.AppFormDialog
+import com.github.yumeyucca.yumebox.data.store.LinkOpenMode
+import com.github.yumeyucca.yumebox.data.store.ProfileLink
+import com.github.yumeyucca.yumebox.presentation.component.AppActionBottomSheet
+import com.github.yumeyucca.yumebox.presentation.component.AppFormDialog
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.TextField
 

@@ -20,7 +20,7 @@
 
 @file:Suppress("UnusedSymbol", "FunctionName")
 
-package com.github.yumelira.yumebox.presentation.component
+package com.github.yumeyucca.yumebox.presentation.component
 
 
 import androidx.compose.foundation.layout.*
@@ -28,7 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
-import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults

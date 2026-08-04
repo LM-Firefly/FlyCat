@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.presentation.component
+package com.github.yumeyucca.yumebox.presentation.component
 
 
 import androidx.activity.compose.BackHandler
@@ -49,10 +49,10 @@ import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.takeOrElse
 import androidx.compose.ui.zIndex
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.theme.Sizes
-import com.github.yumelira.yumebox.presentation.theme.Spacing
-import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.presentation.theme.Sizes
+import com.github.yumeyucca.yumebox.presentation.theme.Spacing
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InputField

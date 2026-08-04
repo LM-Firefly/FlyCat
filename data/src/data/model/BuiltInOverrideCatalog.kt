@@ -18,9 +18,9 @@
  *
  */
 
-package com.github.yumelira.yumebox.data.model
+package com.github.yumeyucca.yumebox.data.model
 
-import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
+import com.github.yumeyucca.yumebox.core.model.OverrideInternalConstants
 import tf.gal.yumebox.locale.YumeTxt
 
 /**

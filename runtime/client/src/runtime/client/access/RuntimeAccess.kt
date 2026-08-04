@@ -20,17 +20,17 @@
 
 @file:Suppress("UnusedSymbol", "RedundantSuspendModifier")
 
-package com.github.yumelira.yumebox.runtime.client.access
+package com.github.yumeyucca.yumebox.runtime.client.access
 
 import android.content.Context
-import com.github.yumelira.yumebox.data.store.MMKVProvider
-import com.github.yumelira.yumebox.data.store.RemoteControllerStore
-import com.github.yumelira.yumebox.runtime.api.CoreApi
-import com.github.yumelira.yumebox.runtime.api.ProfileApi
-import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import com.github.yumelira.yumebox.runtime.api.initializeServiceGlobal
-import com.github.yumelira.yumebox.runtime.service.controller.CoreController
-import com.github.yumelira.yumebox.runtime.service.profile.ProfileService
+import com.github.yumeyucca.yumebox.data.store.MMKVProvider
+import com.github.yumeyucca.yumebox.data.store.RemoteControllerStore
+import com.github.yumeyucca.yumebox.runtime.api.CoreApi
+import com.github.yumeyucca.yumebox.runtime.api.ProfileApi
+import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
+import com.github.yumeyucca.yumebox.runtime.api.initializeServiceGlobal
+import com.github.yumeyucca.yumebox.runtime.service.controller.CoreController
+import com.github.yumeyucca.yumebox.runtime.service.profile.ProfileService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -62,7 +62,7 @@ object RuntimeAccess {
                     coreApi =
                         CoreRouter(
                             local =
-                                com.github.yumelira.yumebox.runtime.service.core.CoreProcess
+                                com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess
                                     .controller(appContext),
                             remote = remote,
                             isRemoteControllerActive = {

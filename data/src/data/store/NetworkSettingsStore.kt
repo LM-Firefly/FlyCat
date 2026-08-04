@@ -18,13 +18,13 @@
  *
  */
 
-package com.github.yumelira.yumebox.data.store
+package com.github.yumeyucca.yumebox.data.store
 
-import com.github.yumelira.yumebox.core.model.TunDnsMode
-import com.github.yumelira.yumebox.data.model.AccessControlMode
-import com.github.yumelira.yumebox.data.model.AccessControlSortMode
-import com.github.yumelira.yumebox.data.model.RunMode
-import com.github.yumelira.yumebox.data.model.TunStack
+import com.github.yumeyucca.yumebox.core.model.TunDnsMode
+import com.github.yumeyucca.yumebox.data.model.AccessControlMode
+import com.github.yumeyucca.yumebox.data.model.AccessControlSortMode
+import com.github.yumeyucca.yumebox.data.model.RunMode
+import com.github.yumeyucca.yumebox.data.model.TunStack
 import com.tencent.mmkv.MMKV
 
 class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {

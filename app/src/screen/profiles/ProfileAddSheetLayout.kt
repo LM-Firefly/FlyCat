@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName", "SortModifiers")
 
-package com.github.yumelira.yumebox.screen.profiles
+package com.github.yumeyucca.yumebox.screen.profiles
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -37,11 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Dp
-import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
-import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
+import com.github.yumeyucca.yumebox.presentation.component.AppActionBottomSheet
+import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetCloseAction
+import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetConfirmAction
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
 import tf.gal.yumebox.locale.YumeTxt
 
 internal class ProfileAddSheetActions(

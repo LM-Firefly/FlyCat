@@ -20,19 +20,19 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.screen.navigation
+package com.github.yumeyucca.yumebox.screen.navigation
 
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
-import com.github.yumelira.yumebox.WebViewActivity
-import com.github.yumelira.yumebox.common.util.DashboardShortcutHelper
-import com.github.yumelira.yumebox.common.util.openUrl
-import com.github.yumelira.yumebox.presentation.component.Navigator
-import com.github.yumelira.yumebox.presentation.screen.FeatureContent
-import com.github.yumelira.yumebox.screen.feature.PanelShortcutDialog
-import com.github.yumelira.yumebox.screen.feature.RemoteControllerSection
-import com.github.yumelira.yumebox.screen.settings.backup.BackupRestoreSection
+import com.github.yumeyucca.yumebox.WebViewActivity
+import com.github.yumeyucca.yumebox.common.util.DashboardShortcutHelper
+import com.github.yumeyucca.yumebox.common.util.openUrl
+import com.github.yumeyucca.yumebox.presentation.component.Navigator
+import com.github.yumeyucca.yumebox.presentation.screen.FeatureContent
+import com.github.yumeyucca.yumebox.screen.feature.PanelShortcutDialog
+import com.github.yumeyucca.yumebox.screen.feature.RemoteControllerSection
+import com.github.yumeyucca.yumebox.screen.settings.backup.BackupRestoreSection
 import kotlinx.coroutines.launch
 
 @Composable

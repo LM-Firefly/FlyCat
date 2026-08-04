@@ -18,11 +18,11 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.client
+package com.github.yumeyucca.yumebox.runtime.client
 
-import com.github.yumelira.yumebox.core.model.RunMode
-import com.github.yumelira.yumebox.runtime.api.Profile
-import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
+import com.github.yumeyucca.yumebox.core.model.RunMode
+import com.github.yumeyucca.yumebox.runtime.api.Profile
+import com.github.yumeyucca.yumebox.runtime.api.RuntimeOwner
 
 /** Start request carried as one object instead of long argument lists. */
 data class RuntimeStartRequest(

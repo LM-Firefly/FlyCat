@@ -25,7 +25,7 @@ plugins {
 }
 
 android {
-    namespace = "com.github.yumelira.yumebox.feature.meta"
+    namespace = "com.github.yumeyucca.yumebox.feature.meta"
 
     buildFeatures {
         compose = true

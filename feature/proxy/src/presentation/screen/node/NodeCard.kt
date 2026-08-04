@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.presentation.screen.node
+package com.github.yumeyucca.yumebox.presentation.screen.node
 
 
 import androidx.compose.animation.animateColor
@@ -43,14 +43,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.core.model.Proxy
-import com.github.yumelira.yumebox.presentation.component.CountryFlagCircle
-import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.BadgeDollarSign
-import com.github.yumelira.yumebox.presentation.icon.yume.CircleGauge
-import com.github.yumelira.yumebox.presentation.icon.yume.Cloud
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.util.extractNodeTags
+import com.github.yumeyucca.yumebox.core.model.Proxy
+import com.github.yumeyucca.yumebox.presentation.component.CountryFlagCircle
+import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.BadgeDollarSign
+import com.github.yumeyucca.yumebox.presentation.icon.yume.CircleGauge
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Cloud
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.presentation.util.extractNodeTags
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text

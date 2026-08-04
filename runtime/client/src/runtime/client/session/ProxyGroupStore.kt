@@ -18,12 +18,12 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.client.session
+package com.github.yumeyucca.yumebox.runtime.client.session
 
-import com.github.yumelira.yumebox.core.model.Proxy
-import com.github.yumelira.yumebox.core.model.ProxyGroup
-import com.github.yumelira.yumebox.core.model.isProxyGroup
-import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
+import com.github.yumeyucca.yumebox.core.model.Proxy
+import com.github.yumeyucca.yumebox.core.model.ProxyGroup
+import com.github.yumeyucca.yumebox.core.model.isProxyGroup
+import com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

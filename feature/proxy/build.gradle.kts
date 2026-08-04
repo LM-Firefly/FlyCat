@@ -24,7 +24,7 @@ plugins {
 }
 
 android {
-    namespace = "com.github.yumelira.yumebox.feature.proxy"
+    namespace = "com.github.yumeyucca.yumebox.feature.proxy"
 
     buildFeatures {
         compose = true

@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore
+package com.github.yumeyucca.yumebox.substore
 
 import com.caoccao.javet.enums.V8AwaitMode
 import com.caoccao.javet.interception.logging.JavetStandardConsoleInterceptor

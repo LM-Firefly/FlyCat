@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.screen.feature
+package com.github.yumeyucca.yumebox.screen.feature
 
 
 import android.net.Uri
@@ -43,9 +43,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.github.panpf.sketch.rememberAsyncImagePainter
 import com.github.panpf.sketch.request.ImageRequest
-import com.github.yumelira.yumebox.R
-import com.github.yumelira.yumebox.presentation.component.AppFormDialog
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.R
+import com.github.yumeyucca.yumebox.presentation.component.AppFormDialog
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton

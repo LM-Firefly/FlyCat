@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.screen.settings
+package com.github.yumeyucca.yumebox.screen.settings
 
 
 import android.annotation.SuppressLint
@@ -38,17 +38,17 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.BuildConfig
-import com.github.yumelira.yumebox.WebViewActivity
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.presentation.component.*
-import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.*
-import com.github.yumelira.yumebox.presentation.navigation.Route
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.viewmodel.SettingEvent
-import com.github.yumelira.yumebox.presentation.viewmodel.SettingViewModel
+import com.github.yumeyucca.yumebox.BuildConfig
+import com.github.yumeyucca.yumebox.WebViewActivity
+import com.github.yumeyucca.yumebox.common.util.toast
+import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.component.Card
+import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.*
+import com.github.yumeyucca.yumebox.presentation.navigation.Route
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.presentation.viewmodel.SettingEvent
+import com.github.yumeyucca.yumebox.presentation.viewmodel.SettingViewModel
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon

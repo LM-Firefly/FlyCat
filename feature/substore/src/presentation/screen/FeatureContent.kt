@@ -20,17 +20,17 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.presentation.screen
+package com.github.yumeyucca.yumebox.presentation.screen
 
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import com.github.yumelira.yumebox.common.util.DeviceUtil
-import com.github.yumelira.yumebox.presentation.component.*
-import com.github.yumelira.yumebox.presentation.viewmodel.FeatureViewModel
-import com.github.yumelira.yumebox.substore.model.AutoCloseMode
+import com.github.yumeyucca.yumebox.common.util.DeviceUtil
+import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.viewmodel.FeatureViewModel
+import com.github.yumeyucca.yumebox.substore.model.AutoCloseMode
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior

@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.screen.feature
+package com.github.yumeyucca.yumebox.screen.feature
 
 
 import androidx.compose.foundation.layout.*
@@ -30,11 +30,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.data.model.RemoteBackend
-import com.github.yumelira.yumebox.presentation.component.*
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.screen.settings.RemoteControllerViewModel
+import com.github.yumeyucca.yumebox.common.util.toast
+import com.github.yumeyucca.yumebox.data.model.RemoteBackend
+import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.screen.settings.RemoteControllerViewModel
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.ButtonDefaults

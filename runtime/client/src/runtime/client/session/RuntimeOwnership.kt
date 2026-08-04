@@ -20,12 +20,12 @@
 
 @file:Suppress("UnusedSymbol")
 
-package com.github.yumelira.yumebox.runtime.client.session
+package com.github.yumeyucca.yumebox.runtime.client.session
 
 
-import com.github.yumelira.yumebox.core.model.RunMode
-import com.github.yumelira.yumebox.runtime.api.*
-import com.github.yumelira.yumebox.runtime.client.RuntimeStateMapper
+import com.github.yumeyucca.yumebox.core.model.RunMode
+import com.github.yumeyucca.yumebox.runtime.api.*
+import com.github.yumeyucca.yumebox.runtime.client.RuntimeStateMapper
 
 /**
  * Ownership / liveness / snapshot transitions for the cohesive runtime session. Uses platform seams

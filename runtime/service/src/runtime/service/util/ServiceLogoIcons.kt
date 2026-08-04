@@ -18,10 +18,10 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.util
+package com.github.yumeyucca.yumebox.runtime.service.util
 
-import com.github.yumelira.yumebox.data.model.AppIconStyle
-import com.github.yumelira.yumebox.runtime.service.R
+import com.github.yumeyucca.yumebox.data.model.AppIconStyle
+import com.github.yumeyucca.yumebox.runtime.service.R
 import com.tencent.mmkv.MMKV
 
 object ServiceLogoIcons {

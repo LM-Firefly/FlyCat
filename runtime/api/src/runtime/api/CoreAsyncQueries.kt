@@ -18,9 +18,9 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.api
+package com.github.yumeyucca.yumebox.runtime.api
 
-import com.github.yumelira.yumebox.core.model.*
+import com.github.yumeyucca.yumebox.core.model.*
 
 /**
  * Coroutine-native controller queries. Prefer this over [CoreApi] sync methods to avoid nested

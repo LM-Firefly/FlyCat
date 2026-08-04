@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.core.bridge
+package com.github.yumeyucca.yumebox.core.bridge
 
 import androidx.annotation.Keep
 

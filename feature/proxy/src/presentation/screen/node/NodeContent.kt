@@ -20,7 +20,7 @@
 
 @file:Suppress("UnusedSymbol", "FunctionName")
 
-package com.github.yumelira.yumebox.presentation.screen.node
+package com.github.yumeyucca.yumebox.presentation.screen.node
 
 
 import android.annotation.SuppressLint
@@ -41,13 +41,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.github.yumelira.yumebox.data.model.normalizeProxySheetHeightFraction
-import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
-import com.github.yumelira.yumebox.domain.model.isSelectable
-import com.github.yumelira.yumebox.presentation.component.LocalTopBarHazeState
-import com.github.yumelira.yumebox.presentation.component.LocalTopBarHazeStyle
-import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.presentation.theme.YumeHaze.chromeEffect
+import com.github.yumeyucca.yumebox.data.model.normalizeProxySheetHeightFraction
+import com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo
+import com.github.yumeyucca.yumebox.domain.model.isSelectable
+import com.github.yumeyucca.yumebox.presentation.component.LocalTopBarHazeState
+import com.github.yumeyucca.yumebox.presentation.component.LocalTopBarHazeStyle
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.presentation.theme.YumeHaze.chromeEffect
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.HazeProgressive

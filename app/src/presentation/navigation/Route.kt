@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.navigation
+package com.github.yumeyucca.yumebox.presentation.navigation
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable

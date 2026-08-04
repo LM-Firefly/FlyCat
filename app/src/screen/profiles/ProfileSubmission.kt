@@ -17,14 +17,14 @@
  * Copyright (c)  YumeYucca 2025 - Present
  */
 
-package com.github.yumelira.yumebox.screen.profiles
+package com.github.yumeyucca.yumebox.screen.profiles
 
 import android.net.Uri
 import androidx.core.net.toUri
-import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_FILE
-import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
-import com.github.yumelira.yumebox.presentation.util.PROFILE_IMPORT_TYPE_URL
-import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumeyucca.yumebox.presentation.util.PROFILE_IMPORT_TYPE_FILE
+import com.github.yumeyucca.yumebox.presentation.util.PROFILE_IMPORT_TYPE_QR
+import com.github.yumeyucca.yumebox.presentation.util.PROFILE_IMPORT_TYPE_URL
+import com.github.yumeyucca.yumebox.runtime.api.Profile
 import tf.gal.yumebox.locale.YumeTxt
 import java.util.*
 

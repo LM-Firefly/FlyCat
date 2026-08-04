@@ -18,11 +18,11 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.client
+package com.github.yumeyucca.yumebox.runtime.client
 
-import com.github.yumelira.yumebox.core.model.*
-import com.github.yumelira.yumebox.runtime.api.CoreApi
-import com.github.yumelira.yumebox.runtime.api.CoreAsyncQueries
+import com.github.yumeyucca.yumebox.core.model.*
+import com.github.yumeyucca.yumebox.runtime.api.CoreApi
+import com.github.yumeyucca.yumebox.runtime.api.CoreAsyncQueries
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

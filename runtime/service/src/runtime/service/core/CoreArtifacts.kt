@@ -14,7 +14,7 @@
  * Copyright (c) YumeYucca 2025 - Present
  */
 
-package com.github.yumelira.yumebox.runtime.service.core
+package com.github.yumeyucca.yumebox.runtime.service.core
 
 import android.content.Context
 import java.io.File

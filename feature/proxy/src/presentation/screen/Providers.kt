@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName", "KotlinConstantConditions")
 
-package com.github.yumelira.yumebox.presentation.screen
+package com.github.yumeyucca.yumebox.presentation.screen
 
 import android.net.Uri
 import android.widget.Toast
@@ -35,14 +35,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.core.model.Provider
-import com.github.yumelira.yumebox.presentation.component.*
-import com.github.yumelira.yumebox.presentation.component.Card
-import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.CircleFadingArrowUp
-import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.presentation.viewmodel.ProvidersViewModel
+import com.github.yumeyucca.yumebox.common.util.toast
+import com.github.yumeyucca.yumebox.core.model.Provider
+import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.component.Card
+import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.CircleFadingArrowUp
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.presentation.viewmodel.ProvidersViewModel
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.DropdownImpl

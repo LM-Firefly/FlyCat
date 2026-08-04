@@ -20,9 +20,9 @@
 
 @file:Suppress("RemoveExplicitTypeArguments")
 
-package com.github.yumelira.yumebox.data.store
+package com.github.yumeyucca.yumebox.data.store
 
-import com.github.yumelira.yumebox.data.model.RemoteBackend
+import com.github.yumeyucca.yumebox.data.model.RemoteBackend
 import com.tencent.mmkv.MMKV
 
 /**

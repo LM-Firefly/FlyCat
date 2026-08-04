@@ -20,20 +20,20 @@
 
 @file:Suppress("UnusedSymbol")
 
-package com.github.yumelira.yumebox.screen.settings
+package com.github.yumeyucca.yumebox.screen.settings
 
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumelira.yumebox.common.util.stateInWhileSubscribed
-import com.github.yumelira.yumebox.data.model.RemoteBackend
-import com.github.yumelira.yumebox.data.store.RemoteControllerStore
-import com.github.yumelira.yumebox.data.store.add
-import com.github.yumelira.yumebox.data.store.remove
-import com.github.yumelira.yumebox.data.store.update
-import com.github.yumelira.yumebox.runtime.client.ProxyFacade
-import com.github.yumelira.yumebox.runtime.service.controller.CoreController
+import com.github.yumeyucca.yumebox.common.util.stateInWhileSubscribed
+import com.github.yumeyucca.yumebox.data.model.RemoteBackend
+import com.github.yumeyucca.yumebox.data.store.RemoteControllerStore
+import com.github.yumeyucca.yumebox.data.store.add
+import com.github.yumeyucca.yumebox.data.store.remove
+import com.github.yumeyucca.yumebox.data.store.update
+import com.github.yumeyucca.yumebox.runtime.client.ProxyFacade
+import com.github.yumeyucca.yumebox.runtime.service.controller.CoreController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

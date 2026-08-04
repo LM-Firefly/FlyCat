@@ -15,7 +15,7 @@ use crate::model::CompileRequest;
 
 // Age x25519 keygen, moved off the (deleted) Go core path. Bound to the Kotlin `Compiler` object.
 #[unsafe(no_mangle)]
-pub extern "system" fn Java_com_github_yumelira_yumebox_core_bridge_Compiler_nativeGenAgeKey<
+pub extern "system" fn Java_com_github_yumeyucca_yumebox_core_bridge_Compiler_nativeGenAgeKey<
     'local,
 >(
     mut env: EnvUnowned<'local>,
@@ -33,7 +33,7 @@ pub extern "system" fn Java_com_github_yumelira_yumebox_core_bridge_Compiler_nat
 
 /// Derives the age public key for a secret key, or "" when it does not parse.
 #[unsafe(no_mangle)]
-pub extern "system" fn Java_com_github_yumelira_yumebox_core_bridge_Compiler_nativeAgePublicKey<
+pub extern "system" fn Java_com_github_yumeyucca_yumebox_core_bridge_Compiler_nativeAgePublicKey<
     'local,
 >(
     mut env: EnvUnowned<'local>,
@@ -62,7 +62,7 @@ pub extern "system" fn Java_com_github_yumelira_yumebox_core_bridge_Compiler_nat
 // seam for the out-of-process core — the app compiles here and streams finalYaml to the core; there
 // is no in-process load path. Bound to the Kotlin `Compiler` object.
 #[unsafe(no_mangle)]
-pub extern "system" fn Java_com_github_yumelira_yumebox_core_bridge_Compiler_nativeCompile<
+pub extern "system" fn Java_com_github_yumeyucca_yumebox_core_bridge_Compiler_nativeCompile<
     'local,
 >(
     mut env: EnvUnowned<'local>,

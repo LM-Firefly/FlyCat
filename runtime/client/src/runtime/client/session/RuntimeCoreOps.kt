@@ -18,14 +18,14 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.client.session
+package com.github.yumeyucca.yumebox.runtime.client.session
 
-import com.github.yumelira.yumebox.core.model.ConnectionSnapshot
-import com.github.yumelira.yumebox.core.model.ProxyGroup
-import com.github.yumelira.yumebox.core.model.ProxySort
-import com.github.yumelira.yumebox.runtime.api.CoreApi
-import com.github.yumelira.yumebox.runtime.client.CoreQueries
-import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
+import com.github.yumeyucca.yumebox.core.model.ConnectionSnapshot
+import com.github.yumeyucca.yumebox.core.model.ProxyGroup
+import com.github.yumeyucca.yumebox.core.model.ProxySort
+import com.github.yumeyucca.yumebox.runtime.api.CoreApi
+import com.github.yumeyucca.yumebox.runtime.client.CoreQueries
+import com.github.yumeyucca.yumebox.runtime.client.access.RuntimeAccess
 
 /** Shared CoreApi resolve + query helpers used by the runtime client facade. */
 internal class RuntimeCoreOps(private val connect: suspend () -> Unit = {}) {

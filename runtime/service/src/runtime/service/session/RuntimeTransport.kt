@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.session
+package com.github.yumeyucca.yumebox.runtime.service.session
 
 interface RuntimeTransport {
     fun prepare(spec: RuntimeSpec) {}

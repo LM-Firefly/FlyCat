@@ -20,14 +20,14 @@
 
 @file:Suppress("ConvertLongToDuration")
 
-package com.github.yumelira.yumebox.runtime.service.controller
+package com.github.yumeyucca.yumebox.runtime.service.controller
 
-import com.github.yumelira.yumebox.core.bridge.UnixSocketFactory
-import com.github.yumelira.yumebox.core.model.*
-import com.github.yumelira.yumebox.core.util.encodeTrafficValue
-import com.github.yumelira.yumebox.data.model.RemoteBackend
-import com.github.yumelira.yumebox.runtime.api.CoreApi
-import com.github.yumelira.yumebox.runtime.api.CoreAsyncQueries
+import com.github.yumeyucca.yumebox.core.bridge.UnixSocketFactory
+import com.github.yumeyucca.yumebox.core.model.*
+import com.github.yumeyucca.yumebox.core.util.encodeTrafficValue
+import com.github.yumeyucca.yumebox.data.model.RemoteBackend
+import com.github.yumeyucca.yumebox.runtime.api.CoreApi
+import com.github.yumeyucca.yumebox.runtime.api.CoreAsyncQueries
 import io.ktor.client.*
 import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.*
@@ -534,8 +534,8 @@ class CoreController(
         // No-op: we don't own the remote core, so there is nothing to stop.
     }
 
-    override fun subscribeLogs(observer: com.github.yumelira.yumebox.runtime.api.LogObserver):
-        com.github.yumelira.yumebox.runtime.api.LogSubscription = logStream.subscribe(observer)
+    override fun subscribeLogs(observer: com.github.yumeyucca.yumebox.runtime.api.LogObserver):
+        com.github.yumeyucca.yumebox.runtime.api.LogSubscription = logStream.subscribe(observer)
 
     private fun RawRule.toRuntimeRule(): RuntimeRule =
         RuntimeRule(

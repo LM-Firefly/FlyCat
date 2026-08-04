@@ -20,11 +20,11 @@
 
 @file:Suppress("RedundantIf", "RemoveExplicitTypeArguments")
 
-package com.github.yumelira.yumebox.presentation.viewmodel
+package com.github.yumeyucca.yumebox.presentation.viewmodel
 
-import com.github.yumelira.yumebox.core.model.Proxy
-import com.github.yumelira.yumebox.data.model.ProxySortMode
-import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
+import com.github.yumeyucca.yumebox.core.model.Proxy
+import com.github.yumeyucca.yumebox.data.model.ProxySortMode
+import com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
 

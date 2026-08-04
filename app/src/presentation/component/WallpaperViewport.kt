@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.presentation.component
+package com.github.yumeyucca.yumebox.presentation.component
 
 import kotlin.math.max
 

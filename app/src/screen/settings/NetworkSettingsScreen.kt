@@ -20,7 +20,7 @@
 
 @file:Suppress("DuplicatedCode", "FunctionName")
 
-package com.github.yumelira.yumebox.screen.settings
+package com.github.yumeyucca.yumebox.screen.settings
 
 
 import androidx.compose.foundation.layout.Arrangement
@@ -29,10 +29,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
-import com.github.yumelira.yumebox.data.model.AccessControlMode
-import com.github.yumelira.yumebox.data.model.RunMode
-import com.github.yumelira.yumebox.presentation.component.*
-import com.github.yumelira.yumebox.presentation.navigation.Route
+import com.github.yumeyucca.yumebox.data.model.AccessControlMode
+import com.github.yumeyucca.yumebox.data.model.RunMode
+import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.navigation.Route
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.BasicComponent

@@ -9,7 +9,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox
+package com.github.yumeyucca.yumebox
 
 
 import androidx.compose.animation.AnimatedContent
@@ -33,12 +33,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.navigation3.runtime.NavKey
-import com.github.yumelira.yumebox.presentation.component.*
-import com.github.yumelira.yumebox.presentation.navigation.Route
-import com.github.yumelira.yumebox.presentation.navigation.SecondaryDetailHost
-import com.github.yumelira.yumebox.presentation.navigation.splitShellRightPaneTransform
-import com.github.yumelira.yumebox.presentation.screen.ProxyShellNodeDetail
-import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.navigation.Route
+import com.github.yumeyucca.yumebox.presentation.navigation.SecondaryDetailHost
+import com.github.yumeyucca.yumebox.presentation.navigation.splitShellRightPaneTransform
+import com.github.yumeyucca.yumebox.presentation.screen.ProxyShellNodeDetail
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import top.yukonga.miuix.kmp.basic.Scaffold

@@ -20,7 +20,7 @@
 
 @file:Suppress("UnusedSymbol")
 
-package com.github.yumelira.yumebox.data.model
+package com.github.yumeyucca.yumebox.data.model
 
 
 import tf.gal.yumebox.locale.YumeTxt

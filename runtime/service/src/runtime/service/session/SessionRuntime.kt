@@ -18,17 +18,17 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.session
+package com.github.yumeyucca.yumebox.runtime.service.session
 
 import android.os.SystemClock
-import com.github.yumelira.yumebox.core.model.ProxyGroup
-import com.github.yumelira.yumebox.core.model.UiConfiguration
-import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
-import com.github.yumelira.yumebox.runtime.api.RuntimePhase
-import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
-import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
-import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
+import com.github.yumeyucca.yumebox.core.model.ProxyGroup
+import com.github.yumeyucca.yumebox.core.model.UiConfiguration
+import com.github.yumeyucca.yumebox.runtime.api.RuntimeOwner
+import com.github.yumeyucca.yumebox.runtime.api.RuntimePhase
+import com.github.yumeyucca.yumebox.runtime.api.RuntimeSnapshot
+import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
+import com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess
+import com.github.yumeyucca.yumebox.runtime.service.log.RuntimeLog
 import kotlinx.coroutines.*
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
@@ -44,7 +44,7 @@ class SessionRuntime(
 
     private val rest
         get() =
-            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.controller(
+            com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess.controller(
                 host.context.appContextOrSelf
             )
 
@@ -156,7 +156,7 @@ class SessionRuntime(
         currentSpec?.let { startupLog(it, "stop requested") }
         snapshotRefreshJob?.cancel()
         if (currentSnapshot.owner == RuntimeOwner.VpnService) {
-        com.github.yumelira.yumebox.runtime.service.core.CoreProcess.killRunning()
+        com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess.killRunning()
         }
         interruptSignal.release()
     }
@@ -468,10 +468,10 @@ class SessionRuntime(
 
             if (
                 spec.owner == RuntimeOwner.VpnService &&
-                    !com.github.yumelira.yumebox.runtime.service.core.CoreProcess.isLocalCoreAlive()
+                    !com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess.isLocalCoreAlive()
             ) {
                 val coreTail =
-                    com.github.yumelira.yumebox.runtime.service.core.CoreProcess.coreLogTail(
+                    com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess.coreLogTail(
                         host.context.appContextOrSelf
                     )
                 error(
@@ -519,7 +519,7 @@ class SessionRuntime(
 
         ensureNotInterrupted(spec)
         val coreTail =
-            com.github.yumelira.yumebox.runtime.service.core.CoreProcess.coreLogTail(
+            com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess.coreLogTail(
                 host.context.appContextOrSelf
             )
         if (expectedGroups.isNotEmpty()) {

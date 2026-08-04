@@ -20,7 +20,7 @@
 
 @file:Suppress("KotlinConstantConditions")
 
-package com.github.yumelira.yumebox.runtime.service
+package com.github.yumeyucca.yumebox.runtime.service
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
@@ -30,20 +30,20 @@ import android.net.VpnService
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
-import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
-import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.data.model.RunMode
-import com.github.yumelira.yumebox.data.store.MMKVProvider
-import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
-import com.github.yumelira.yumebox.data.store.RemoteControllerStore
-import com.github.yumelira.yumebox.runtime.api.*
-import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
-import com.github.yumelira.yumebox.runtime.service.profile.ProfileService
-import com.github.yumelira.yumebox.runtime.service.session.RootSessionLauncher
-import com.github.yumelira.yumebox.runtime.service.session.RuntimeServiceLauncher
-import com.github.yumelira.yumebox.runtime.service.util.sendBroadcastSelf
-import com.github.yumelira.yumebox.runtime.service.util.ServiceLogoIcons
+import com.github.yumeyucca.yumebox.core.util.AutoStartSessionGate
+import com.github.yumeyucca.yumebox.core.util.PollingTimerSpecs
+import com.github.yumeyucca.yumebox.core.util.PollingTimers
+import com.github.yumeyucca.yumebox.data.model.RunMode
+import com.github.yumeyucca.yumebox.data.store.MMKVProvider
+import com.github.yumeyucca.yumebox.data.store.NetworkSettingsStore
+import com.github.yumeyucca.yumebox.data.store.RemoteControllerStore
+import com.github.yumeyucca.yumebox.runtime.api.*
+import com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess
+import com.github.yumeyucca.yumebox.runtime.service.profile.ProfileService
+import com.github.yumeyucca.yumebox.runtime.service.session.RootSessionLauncher
+import com.github.yumeyucca.yumebox.runtime.service.session.RuntimeServiceLauncher
+import com.github.yumeyucca.yumebox.runtime.service.util.sendBroadcastSelf
+import com.github.yumeyucca.yumebox.runtime.service.util.ServiceLogoIcons
 import kotlinx.coroutines.*
 import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber

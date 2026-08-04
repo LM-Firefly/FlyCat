@@ -220,7 +220,7 @@ static _Noreturn void child_exec(const char *path, char **argv, char **envp, con
  * of handing back an already-dead pid.
  */
 JNIEXPORT jintArray JNICALL
-Java_com_github_yumelira_yumebox_core_bridge_NativeProcess_nativeStart(
+Java_com_github_yumeyucca_yumebox_core_bridge_NativeProcess_nativeStart(
         JNIEnv *env, jclass clazz, jstring path_value, jobjectArray args_value,
         jstring workdir_value) {
     (void)clazz;
@@ -316,7 +316,7 @@ cleanup:
 }
 
 JNIEXPORT void JNICALL
-Java_com_github_yumelira_yumebox_core_bridge_NativeProcess_nativeKill(
+Java_com_github_yumeyucca_yumebox_core_bridge_NativeProcess_nativeKill(
         JNIEnv *env, jclass clazz, jint pid) {
     (void)env;
     (void)clazz;
@@ -343,7 +343,7 @@ static char *scratch_for(JNIEnv *env, jint length, char *scratch, size_t scratch
  * A descriptor the peer attached via SCM_RIGHTS lands in fdHolder[0], otherwise -1.
  */
 JNIEXPORT jint JNICALL
-Java_com_github_yumelira_yumebox_core_bridge_Channel_nativeReadMessage(
+Java_com_github_yumeyucca_yumebox_core_bridge_Channel_nativeReadMessage(
         JNIEnv *env, jclass clazz, jint fd, jbyteArray buffer, jint offset, jint length,
         jintArray fd_holder) {
     (void)clazz;
@@ -413,7 +413,7 @@ Java_com_github_yumelira_yumebox_core_bridge_Channel_nativeReadMessage(
  * attachFd >= 0 is passed to the peer via SCM_RIGHTS; -1 means no descriptor.
  */
 JNIEXPORT jint JNICALL
-Java_com_github_yumelira_yumebox_core_bridge_Channel_nativeWriteMessage(
+Java_com_github_yumeyucca_yumebox_core_bridge_Channel_nativeWriteMessage(
         JNIEnv *env, jclass clazz, jint fd, jbyteArray buffer, jint offset, jint length,
         jint attach_fd) {
     (void)clazz;
@@ -471,7 +471,7 @@ Java_com_github_yumelira_yumebox_core_bridge_Channel_nativeWriteMessage(
  * A leading '@' selects the abstract namespace; timeoutMs <= 0 is a plain blocking connect.
  */
 JNIEXPORT jint JNICALL
-Java_com_github_yumelira_yumebox_core_bridge_UnixSocket_nativeConnectUnixSocket(
+Java_com_github_yumeyucca_yumebox_core_bridge_UnixSocket_nativeConnectUnixSocket(
         JNIEnv *env, jclass clazz, jstring path_value, jint timeout_ms) {
     (void)clazz;
     const char *path = (*env)->GetStringUTFChars(env, path_value, NULL);
@@ -552,7 +552,7 @@ Java_com_github_yumelira_yumebox_core_bridge_UnixSocket_nativeConnectUnixSocket(
 }
 
 JNIEXPORT void JNICALL
-Java_com_github_yumelira_yumebox_core_bridge_UnixSocket_nativeSetSoTimeout(
+Java_com_github_yumeyucca_yumebox_core_bridge_UnixSocket_nativeSetSoTimeout(
         JNIEnv *env, jclass clazz, jint fd, jint timeout_ms) {
     (void)clazz;
     struct timeval tv;
@@ -565,7 +565,7 @@ Java_com_github_yumelira_yumebox_core_bridge_UnixSocket_nativeSetSoTimeout(
 }
 
 JNIEXPORT jint JNICALL
-Java_com_github_yumelira_yumebox_core_bridge_UnixSocket_nativeGetSoTimeout(
+Java_com_github_yumeyucca_yumebox_core_bridge_UnixSocket_nativeGetSoTimeout(
         JNIEnv *env, jclass clazz, jint fd) {
     (void)clazz;
     struct timeval tv;

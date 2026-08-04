@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.presentation.theme
+package com.github.yumeyucca.yumebox.presentation.theme
 
 
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -28,7 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
-import com.github.yumelira.yumebox.data.model.ThemeMode
+import com.github.yumeyucca.yumebox.data.model.ThemeMode
 import tf.gal.shirosu.fyl.fytxt.compose.FYTxtProvider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 

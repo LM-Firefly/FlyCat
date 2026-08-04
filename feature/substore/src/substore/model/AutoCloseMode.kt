@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.substore.model
+package com.github.yumeyucca.yumebox.substore.model
 
 import tf.gal.yumebox.locale.YumeTxt
 

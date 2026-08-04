@@ -20,11 +20,11 @@
 
 @file:Suppress("UnusedSymbol", "SimplifiableCallChain")
 
-package com.github.yumelira.yumebox.runtime.service.util
+package com.github.yumeyucca.yumebox.runtime.service.util
 
 import android.content.Context
 import android.content.Intent
-import com.github.yumelira.yumebox.runtime.api.Intents
+import com.github.yumeyucca.yumebox.runtime.api.Intents
 import java.io.File
 import java.util.*
 
@@ -86,7 +86,7 @@ private fun Context.requestTileRefresh() {
             this,
             android.content.ComponentName(
                 this,
-                com.github.yumelira.yumebox.runtime.service.ProxyTileService::class.java,
+                com.github.yumeyucca.yumebox.runtime.service.ProxyTileService::class.java,
             ),
         )
     }

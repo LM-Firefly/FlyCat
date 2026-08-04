@@ -93,7 +93,7 @@ gropify {
         android {
             generateDirPath = "build/generated/gropify"
             sourceSetName = "main"
-            packageName = "com.github.yumelira.yumebox.yumebox.generated"
+            packageName = "com.github.yumeyucca.yumebox.yumebox.generated"
             useKotlin = true
             isRestrictedAccessEnabled = false
             isIsolationEnabled = true
@@ -105,6 +105,7 @@ gropify {
 }
 
 include(
+    ":api",
     ":core",
     ":common",
     ":locale",

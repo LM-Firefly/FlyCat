@@ -18,12 +18,12 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service
+package com.github.yumeyucca.yumebox.runtime.service
 
 import android.app.Service
-import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import com.github.yumelira.yumebox.runtime.api.initializeServiceGlobal
-import com.github.yumelira.yumebox.runtime.service.util.cancelAndJoinBlocking
+import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
+import com.github.yumeyucca.yumebox.runtime.api.initializeServiceGlobal
+import com.github.yumeyucca.yumebox.runtime.service.util.cancelAndJoinBlocking
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 

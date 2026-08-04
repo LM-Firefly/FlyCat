@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.screen.profiles
+package com.github.yumeyucca.yumebox.screen.profiles
 
 
 import androidx.compose.animation.Crossfade
@@ -38,17 +38,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.core.model.OverrideInternalConstants
-import com.github.yumelira.yumebox.data.model.OverrideConfig
-import com.github.yumelira.yumebox.data.model.ProfileBinding
-import com.github.yumelira.yumebox.presentation.component.AgeSecretKeyField
-import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumeyucca.yumebox.common.util.toast
+import com.github.yumeyucca.yumebox.core.model.OverrideInternalConstants
+import com.github.yumeyucca.yumebox.data.model.OverrideConfig
+import com.github.yumeyucca.yumebox.data.model.ProfileBinding
+import com.github.yumeyucca.yumebox.presentation.component.AgeSecretKeyField
+import com.github.yumeyucca.yumebox.presentation.component.AppActionBottomSheet
+import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetCloseAction
+import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetConfirmAction
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.runtime.api.Profile
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState

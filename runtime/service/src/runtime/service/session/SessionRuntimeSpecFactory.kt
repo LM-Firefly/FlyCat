@@ -18,23 +18,23 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.session
+package com.github.yumeyucca.yumebox.runtime.service.session
 
 import android.content.Context
-import com.github.yumelira.yumebox.core.model.OverrideSpec
-import com.github.yumelira.yumebox.core.model.RunMode
-import com.github.yumelira.yumebox.core.model.TunConfig
-import com.github.yumelira.yumebox.data.model.TunStack
-import com.github.yumelira.yumebox.data.store.MMKVProvider
-import com.github.yumelira.yumebox.data.store.NetworkSettingsStore
-import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
-import com.github.yumelira.yumebox.runtime.api.appContextOrSelf
-import com.github.yumelira.yumebox.runtime.service.config.AccessControlMode
-import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
-import com.github.yumelira.yumebox.runtime.service.profile.ImportedDao
-import com.github.yumelira.yumebox.runtime.service.root.RootPackageShell
-import com.github.yumelira.yumebox.runtime.service.util.directoryLastModified
-import com.github.yumelira.yumebox.runtime.service.util.importedDir
+import com.github.yumeyucca.yumebox.core.model.OverrideSpec
+import com.github.yumeyucca.yumebox.core.model.RunMode
+import com.github.yumeyucca.yumebox.core.model.TunConfig
+import com.github.yumeyucca.yumebox.data.model.TunStack
+import com.github.yumeyucca.yumebox.data.store.MMKVProvider
+import com.github.yumeyucca.yumebox.data.store.NetworkSettingsStore
+import com.github.yumeyucca.yumebox.runtime.api.RuntimeOwner
+import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
+import com.github.yumeyucca.yumebox.runtime.service.config.AccessControlMode
+import com.github.yumeyucca.yumebox.runtime.service.config.ServiceStore
+import com.github.yumeyucca.yumebox.runtime.service.profile.ImportedDao
+import com.github.yumeyucca.yumebox.runtime.service.root.RootPackageShell
+import com.github.yumeyucca.yumebox.runtime.service.util.directoryLastModified
+import com.github.yumeyucca.yumebox.runtime.service.util.importedDir
 import java.io.File
 import java.security.MessageDigest
 
@@ -181,7 +181,7 @@ class SessionRuntimeSpecFactory(
     }
 
     private fun requireActiveProfile():
-        com.github.yumelira.yumebox.runtime.service.profile.Imported {
+        com.github.yumeyucca.yumebox.runtime.service.profile.Imported {
         val profileId = store.activeProfile ?: error("No active profile selected")
         return ImportedDao.queryByUUID(profileId)
             ?: error("Active profile metadata not found: $profileId")

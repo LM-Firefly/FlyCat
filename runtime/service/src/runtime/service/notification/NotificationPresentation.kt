@@ -18,10 +18,10 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.notification
+package com.github.yumeyucca.yumebox.runtime.service.notification
 
-import com.github.yumelira.yumebox.common.util.formatBytes
-import com.github.yumelira.yumebox.common.util.formatSpeed
+import com.github.yumeyucca.yumebox.common.util.formatBytes
+import com.github.yumeyucca.yumebox.common.util.formatSpeed
 import tf.gal.yumebox.locale.YumeTxt
 
 internal data class NotificationPresentation(

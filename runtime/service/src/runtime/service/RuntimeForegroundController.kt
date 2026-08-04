@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service
+package com.github.yumeyucca.yumebox.runtime.service
 
 import android.app.Service
 import android.content.BroadcastReceiver
@@ -27,20 +27,20 @@ import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
-import com.github.yumelira.yumebox.core.model.LogMessage
-import com.github.yumelira.yumebox.data.model.RunMode
-import com.github.yumelira.yumebox.runtime.api.Intents
-import com.github.yumelira.yumebox.runtime.api.RuntimeSnapshot
-import com.github.yumelira.yumebox.runtime.service.config.ServiceStore
-import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
-import com.github.yumelira.yumebox.runtime.service.notification.ServiceNotificationManager
-import com.github.yumelira.yumebox.runtime.service.session.RuntimeHost
-import com.github.yumelira.yumebox.runtime.service.session.RuntimeSpec
-import com.github.yumelira.yumebox.runtime.service.session.RuntimeTransport
-import com.github.yumelira.yumebox.runtime.service.session.SessionRuntime
-import com.github.yumelira.yumebox.runtime.service.util.sendProfileLoaded
-import com.github.yumelira.yumebox.runtime.service.util.sendRuntimeStarted
-import com.github.yumelira.yumebox.runtime.service.util.sendRuntimeStopped
+import com.github.yumeyucca.yumebox.core.model.LogMessage
+import com.github.yumeyucca.yumebox.data.model.RunMode
+import com.github.yumeyucca.yumebox.runtime.api.Intents
+import com.github.yumeyucca.yumebox.runtime.api.RuntimeSnapshot
+import com.github.yumeyucca.yumebox.runtime.service.config.ServiceStore
+import com.github.yumeyucca.yumebox.runtime.service.log.RuntimeLog
+import com.github.yumeyucca.yumebox.runtime.service.notification.ServiceNotificationManager
+import com.github.yumeyucca.yumebox.runtime.service.session.RuntimeHost
+import com.github.yumeyucca.yumebox.runtime.service.session.RuntimeSpec
+import com.github.yumeyucca.yumebox.runtime.service.session.RuntimeTransport
+import com.github.yumeyucca.yumebox.runtime.service.session.SessionRuntime
+import com.github.yumeyucca.yumebox.runtime.service.util.sendProfileLoaded
+import com.github.yumeyucca.yumebox.runtime.service.util.sendRuntimeStarted
+import com.github.yumeyucca.yumebox.runtime.service.util.sendRuntimeStopped
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -325,7 +325,7 @@ class RuntimeForegroundController(
         // Put down the data plane before any session-scoped cleanup that may be waiting on a
         // compile or controller request. stopSelf then drives onDestroy and the authoritative
         // stopped broadcast without waiting for the lifecycle lock.
-        com.github.yumelira.yumebox.runtime.service.core.CoreProcess.killRunning()
+        com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess.killRunning()
         stopForegroundService()
         val initialStopStartId = lastStartId
         service.stopSelf(initialStopStartId)

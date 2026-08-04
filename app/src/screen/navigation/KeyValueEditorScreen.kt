@@ -20,7 +20,7 @@
 
 @file:Suppress("UnusedSymbol", "FunctionName")
 
-package com.github.yumelira.yumebox.screen.navigation
+package com.github.yumeyucca.yumebox.screen.navigation
 
 
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,9 +29,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.github.yumelira.yumebox.presentation.component.*
-import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.BadgePlus
+import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.BadgePlus
 import dev.chrisbanes.haze.hazeSource
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior

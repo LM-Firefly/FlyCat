@@ -24,7 +24,7 @@ plugins {
 }
 
 android {
-    namespace = "com.github.yumelira.yumebox.feature.editor"
+    namespace = "com.github.yumeyucca.yumebox.feature.editor"
 
     packaging {
         jniLibs {

@@ -18,9 +18,9 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service.util
+package com.github.yumeyucca.yumebox.runtime.service.util
 
-import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumeyucca.yumebox.runtime.api.Profile
 
 object AutoStartUpdatePolicy {
     enum class Decision {

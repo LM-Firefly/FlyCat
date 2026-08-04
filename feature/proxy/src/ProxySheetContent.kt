@@ -20,7 +20,7 @@
 
 @file:Suppress("DuplicatedCode", "FunctionName")
 
-package com.github.yumelira.yumebox
+package com.github.yumeyucca.yumebox
 
 
 import androidx.compose.animation.*
@@ -31,19 +31,19 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.unit.DpSize
-import com.github.yumelira.yumebox.domain.model.isSelectable
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetAction
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetIconAction
-import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.ListChevronsUpDown
-import com.github.yumelira.yumebox.presentation.icon.yume.Speed
-import com.github.yumelira.yumebox.presentation.screen.node.NodeGroupSheetContent
-import com.github.yumelira.yumebox.presentation.screen.node.NodeSheetContent
-import com.github.yumelira.yumebox.presentation.screen.node.NodeSortPopup
-import com.github.yumelira.yumebox.presentation.screen.rememberProxyGroupSelectionState
-import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
-import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.presentation.viewmodel.ProxyViewModel
+import com.github.yumeyucca.yumebox.domain.model.isSelectable
+import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetAction
+import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetIconAction
+import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.ListChevronsUpDown
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Speed
+import com.github.yumeyucca.yumebox.presentation.screen.node.NodeGroupSheetContent
+import com.github.yumeyucca.yumebox.presentation.screen.node.NodeSheetContent
+import com.github.yumeyucca.yumebox.presentation.screen.node.NodeSortPopup
+import com.github.yumeyucca.yumebox.presentation.screen.rememberProxyGroupSelectionState
+import com.github.yumeyucca.yumebox.presentation.theme.AnimationSpecs
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.presentation.viewmodel.ProxyViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -319,7 +319,7 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
 @Composable
 private fun ProxySheetNodeContent(
     proxyViewModel: ProxyViewModel,
-    group: com.github.yumelira.yumebox.domain.model.ProxyGroupInfo,
+    group: com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo,
     onTestDelay: () -> Unit,
     sheetHeightFraction: Float,
     listState: LazyListState,

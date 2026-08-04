@@ -18,15 +18,15 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.client.session
+package com.github.yumeyucca.yumebox.runtime.client.session
 
-import com.github.yumelira.yumebox.core.model.ProxySort
-import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
-import com.github.yumelira.yumebox.core.util.PollingTimers
-import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
-import com.github.yumelira.yumebox.runtime.api.RuntimeOwner
-import com.github.yumelira.yumebox.runtime.api.RuntimePhase
-import com.github.yumelira.yumebox.runtime.client.access.RuntimeAccess
+import com.github.yumeyucca.yumebox.core.model.ProxySort
+import com.github.yumeyucca.yumebox.core.util.PollingTimerSpecs
+import com.github.yumeyucca.yumebox.core.util.PollingTimers
+import com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo
+import com.github.yumeyucca.yumebox.runtime.api.RuntimeOwner
+import com.github.yumeyucca.yumebox.runtime.api.RuntimePhase
+import com.github.yumeyucca.yumebox.runtime.client.access.RuntimeAccess
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock

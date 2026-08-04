@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.screen.about
+package com.github.yumeyucca.yumebox.screen.about
 
 
 import android.content.Context
@@ -40,14 +40,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
-import com.github.yumelira.yumebox.BuildConfig
-import com.github.yumelira.yumebox.common.util.openUrl
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.presentation.component.*
-import com.github.yumelira.yumebox.presentation.navigation.Route
-import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
-import com.github.yumelira.yumebox.runtime.service.log.RuntimeLog
+import com.github.yumeyucca.yumebox.BuildConfig
+import com.github.yumeyucca.yumebox.common.util.openUrl
+import com.github.yumeyucca.yumebox.common.util.toast
+import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.navigation.Route
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess
+import com.github.yumeyucca.yumebox.runtime.service.log.RuntimeLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

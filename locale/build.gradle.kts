@@ -42,7 +42,7 @@ fytxt {
 }
 
 android {
-    namespace = "com.github.yumelira.yumebox.core.locale"
+    namespace = "com.github.yumeyucca.yumebox.core.locale"
 
     buildFeatures {
         compose = true

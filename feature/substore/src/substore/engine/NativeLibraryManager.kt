@@ -20,7 +20,7 @@
 
 @file:Suppress("DuplicatedCode")
 
-package com.github.yumelira.yumebox.substore.engine
+package com.github.yumeyucca.yumebox.substore.engine
 
 
 import android.annotation.SuppressLint
@@ -77,7 +77,7 @@ object NativeLibraryManager {
                 name = "libjavet-node-android",
                 type = LibraryType.JNI_LOAD,
                 source = LibrarySource.EXTENSION_APK,
-                packageName = "com.github.yumelira.yumebox.extension",
+                packageName = "com.github.yumeyucca.yumebox.extension",
             )
         )
     }

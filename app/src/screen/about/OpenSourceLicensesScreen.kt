@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.screen.about
+package com.github.yumeyucca.yumebox.screen.about
 
 
 import androidx.activity.compose.BackHandler
@@ -37,11 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
-import com.github.yumelira.yumebox.R
-import com.github.yumelira.yumebox.common.util.openUrl
-import com.github.yumelira.yumebox.presentation.component.*
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.R
+import com.github.yumeyucca.yumebox.common.util.openUrl
+import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import com.mikepenz.aboutlibraries.entity.Library
 import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
 import tf.gal.yumebox.locale.YumeTxt

@@ -18,12 +18,12 @@
  *
  */
 
-package com.github.yumelira.yumebox.runtime.service
+package com.github.yumeyucca.yumebox.runtime.service
 
-import com.github.yumelira.yumebox.core.model.RunMode
-import com.github.yumelira.yumebox.core.util.enumByNameOrNull
-import com.github.yumelira.yumebox.runtime.api.RuntimePhase
-import com.github.yumelira.yumebox.runtime.api.RuntimeStatusStore
+import com.github.yumeyucca.yumebox.core.model.RunMode
+import com.github.yumeyucca.yumebox.core.util.enumByNameOrNull
+import com.github.yumeyucca.yumebox.runtime.api.RuntimePhase
+import com.github.yumeyucca.yumebox.runtime.api.RuntimeStatusStore
 
 /** Android [RuntimeStatusStore] backed by [StatusProvider]. */
 object AndroidRuntimeStatusStore : RuntimeStatusStore {

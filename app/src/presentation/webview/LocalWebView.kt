@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName", "DeprecatedCallableAddReplaceWith")
 
-package com.github.yumelira.yumebox.presentation.webview
+package com.github.yumeyucca.yumebox.presentation.webview
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -39,8 +39,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.github.yumelira.yumebox.BuildConfig
-import com.github.yumelira.yumebox.WebViewActivity
+import com.github.yumeyucca.yumebox.BuildConfig
+import com.github.yumeyucca.yumebox.WebViewActivity
 import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
 import top.yukonga.miuix.kmp.basic.Text

@@ -20,7 +20,7 @@
 
 @file:Suppress("UnusedSymbol")
 
-package com.github.yumelira.yumebox.runtime.api
+package com.github.yumeyucca.yumebox.runtime.api
 
 
 object Intents {

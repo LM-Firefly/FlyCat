@@ -18,10 +18,10 @@
  *
  */
 
-package com.github.yumelira.yumebox.screen.profiles
+package com.github.yumeyucca.yumebox.screen.profiles
 
-import com.github.yumelira.yumebox.core.model.FetchStatus
-import com.github.yumelira.yumebox.core.presentation.LoadableState
+import com.github.yumeyucca.yumebox.core.model.FetchStatus
+import com.github.yumeyucca.yumebox.core.presentation.LoadableState
 import tf.gal.yumebox.locale.YumeTxt
 
 sealed interface ProfilesUiEffect {

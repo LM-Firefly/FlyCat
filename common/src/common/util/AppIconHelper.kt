@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.common.util
+package com.github.yumeyucca.yumebox.common.util
 
 import android.content.ComponentName
 import android.content.Context
@@ -26,10 +26,10 @@ import android.content.pm.PackageManager
 import timber.log.Timber
 
 object AppIconHelper {
-    private const val DEFAULT_ACTIVITY_ALIAS = "com.github.yumelira.yumebox.MainActivityAlias"
+    private const val DEFAULT_ACTIVITY_ALIAS = "com.github.yumeyucca.yumebox.MainActivityAlias"
     private const val CLASSIC_ACTIVITY_ALIAS =
-        "com.github.yumelira.yumebox.MainActivityAliasClassic"
-    private const val MAIN_ACTIVITY = "com.github.yumelira.yumebox.MainActivity"
+        "com.github.yumeyucca.yumebox.MainActivityAliasClassic"
+    private const val MAIN_ACTIVITY = "com.github.yumeyucca.yumebox.MainActivity"
 
     fun hideIcon(context: Context) {
         applyLauncherState(context, classic = false, hide = true)

@@ -20,7 +20,7 @@
 
 @file:Suppress("DuplicatedCode", "FunctionName", "UnnecessaryVariable")
 
-package com.github.yumelira.yumebox.presentation.screen
+package com.github.yumeyucca.yumebox.presentation.screen
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -31,15 +31,15 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import com.github.yumelira.yumebox.data.model.ProxySortMode
-import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
-import com.github.yumelira.yumebox.presentation.component.*
-import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.*
-import com.github.yumelira.yumebox.presentation.screen.node.NodeSortPopup
-import com.github.yumelira.yumebox.presentation.screen.node.nodeGroupItems
-import com.github.yumelira.yumebox.presentation.theme.*
-import com.github.yumelira.yumebox.presentation.viewmodel.ProxyViewModel
+import com.github.yumeyucca.yumebox.data.model.ProxySortMode
+import com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo
+import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.*
+import com.github.yumeyucca.yumebox.presentation.screen.node.NodeSortPopup
+import com.github.yumeyucca.yumebox.presentation.screen.node.nodeGroupItems
+import com.github.yumeyucca.yumebox.presentation.theme.*
+import com.github.yumeyucca.yumebox.presentation.viewmodel.ProxyViewModel
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel

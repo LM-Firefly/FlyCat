@@ -20,7 +20,7 @@
 
 @file:Suppress("UnusedSymbol", "FunctionName")
 
-package com.github.yumelira.yumebox.screen.home
+package com.github.yumeyucca.yumebox.screen.home
 
 
 import androidx.compose.animation.*
@@ -37,11 +37,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.Play
-import com.github.yumelira.yumebox.presentation.icon.yume.Square
-import com.github.yumelira.yumebox.presentation.theme.AnimationSpecs
-import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Play
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Square
+import com.github.yumeyucca.yumebox.presentation.theme.AnimationSpecs
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import kotlinx.coroutines.launch
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Button

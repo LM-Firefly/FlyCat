@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox.core.model
+package com.github.yumeyucca.yumebox.core.model
 
 object OverrideInternalConstants {
     const val CUSTOM_ROUTING_OVERRIDE_ID = "__custom_routing__"

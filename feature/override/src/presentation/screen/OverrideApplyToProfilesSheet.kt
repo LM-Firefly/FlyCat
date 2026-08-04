@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.presentation.screen
+package com.github.yumeyucca.yumebox.presentation.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,15 +28,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import com.github.yumelira.yumebox.common.util.toast
-import com.github.yumelira.yumebox.data.model.OverrideConfig
-import com.github.yumelira.yumebox.presentation.component.AppActionBottomSheet
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetCloseAction
-import com.github.yumelira.yumebox.presentation.component.AppBottomSheetConfirmAction
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.theme.UiDp
-import com.github.yumelira.yumebox.presentation.viewmodel.OverrideConfigViewModel
-import com.github.yumelira.yumebox.runtime.api.Profile
+import com.github.yumeyucca.yumebox.common.util.toast
+import com.github.yumeyucca.yumebox.data.model.OverrideConfig
+import com.github.yumeyucca.yumebox.presentation.component.AppActionBottomSheet
+import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetCloseAction
+import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetConfirmAction
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.presentation.viewmodel.OverrideConfigViewModel
+import com.github.yumeyucca.yumebox.runtime.api.Profile
 import kotlinx.coroutines.launch
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Card

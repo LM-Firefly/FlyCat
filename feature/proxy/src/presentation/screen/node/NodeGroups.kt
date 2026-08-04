@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.presentation.screen.node
+package com.github.yumeyucca.yumebox.presentation.screen.node
 
 
 import androidx.compose.foundation.background
@@ -45,13 +45,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import com.github.panpf.sketch.request.ImageRequest
 import com.github.panpf.sketch.state.IntColorDrawableStateImage
-import com.github.yumelira.yumebox.core.model.Proxy
-import com.github.yumelira.yumebox.domain.model.ProxyGroupInfo
-import com.github.yumelira.yumebox.presentation.component.CountryFlagCircle
-import com.github.yumelira.yumebox.presentation.icon.Yume
-import com.github.yumelira.yumebox.presentation.icon.yume.chevron
-import com.github.yumelira.yumebox.presentation.theme.AppTheme
-import com.github.yumelira.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.core.model.Proxy
+import com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo
+import com.github.yumeyucca.yumebox.presentation.component.CountryFlagCircle
+import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.chevron
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text

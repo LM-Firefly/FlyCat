@@ -18,12 +18,12 @@
  *
  */
 
-package com.github.yumelira.yumebox.data.store
+package com.github.yumeyucca.yumebox.data.store
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import com.github.yumelira.yumebox.data.model.RemoteBackend
+import com.github.yumeyucca.yumebox.data.model.RemoteBackend
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import timber.log.Timber

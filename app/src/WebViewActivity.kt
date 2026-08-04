@@ -18,7 +18,7 @@
  *
  */
 
-package com.github.yumelira.yumebox
+package com.github.yumeyucca.yumebox
 
 import android.app.Activity
 import android.content.Context
@@ -34,8 +34,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.WindowCompat
-import com.github.yumelira.yumebox.common.util.AppLanguageManager
-import com.github.yumelira.yumebox.presentation.webview.WebViewScreen
+import com.github.yumeyucca.yumebox.common.util.AppLanguageManager
+import com.github.yumeyucca.yumebox.presentation.webview.WebViewScreen
 import tf.gal.shirosu.fyl.fytxt.compose.FYTxtProvider
 
 class WebViewActivity : ComponentActivity() {

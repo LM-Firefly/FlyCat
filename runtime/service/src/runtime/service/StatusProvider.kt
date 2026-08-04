@@ -20,7 +20,7 @@
 
 @file:Suppress("RedundantNullableReturnType", "UnusedSymbol")
 
-package com.github.yumelira.yumebox.runtime.service
+package com.github.yumeyucca.yumebox.runtime.service
 
 
 import android.content.ContentProvider
@@ -28,12 +28,12 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
-import com.github.yumelira.yumebox.core.Global
-import com.github.yumelira.yumebox.core.util.enumByNameOrNull
-import com.github.yumelira.yumebox.data.model.RunMode
-import com.github.yumelira.yumebox.runtime.api.RuntimePhase
-import com.github.yumelira.yumebox.runtime.api.initializeServiceGlobal
-import com.github.yumelira.yumebox.runtime.service.core.CoreProcess
+import com.github.yumeyucca.yumebox.core.Global
+import com.github.yumeyucca.yumebox.core.util.enumByNameOrNull
+import com.github.yumeyucca.yumebox.data.model.RunMode
+import com.github.yumeyucca.yumebox.runtime.api.RuntimePhase
+import com.github.yumeyucca.yumebox.runtime.api.initializeServiceGlobal
+import com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess
 import com.tencent.mmkv.MMKV
 import java.util.*
 

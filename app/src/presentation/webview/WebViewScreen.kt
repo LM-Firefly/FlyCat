@@ -20,7 +20,7 @@
 
 @file:Suppress("FunctionName")
 
-package com.github.yumelira.yumebox.presentation.webview
+package com.github.yumeyucca.yumebox.presentation.webview
 
 
 import android.app.Activity

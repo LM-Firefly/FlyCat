@@ -18,9 +18,9 @@
  *
  */
 
-package com.github.yumelira.yumebox.data.store
+package com.github.yumeyucca.yumebox.data.store
 
-import com.github.yumelira.yumebox.data.model.OverrideConfig
+import com.github.yumeyucca.yumebox.data.model.OverrideConfig
 import kotlinx.coroutines.flow.Flow
 
 interface OverrideConfigProvider {
