@@ -61,7 +61,7 @@ object AppLanguageManager {
         when (language) {
             AppLanguage.System -> FYTxtConfig.updateTags(lock = false)
             AppLanguage.Zh -> FYTxtConfig.updateTags(listOf("ZH_HANS"), lock = true)
-            AppLanguage.ZhHant -> FYTxtConfig.updateTags(listOf("ZH"), lock = true)
+            AppLanguage.ZhHant -> FYTxtConfig.updateTags(listOf("ZH_HANT"), lock = true)
             AppLanguage.En -> FYTxtConfig.updateTags(listOf("EN"), lock = true)
             AppLanguage.Ja -> FYTxtConfig.updateTags(listOf("JA"), lock = true)
             AppLanguage.Ru -> FYTxtConfig.updateTags(listOf("RU"), lock = true)
