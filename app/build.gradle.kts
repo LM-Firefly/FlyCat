@@ -24,6 +24,7 @@ import com.android.build.api.artifact.ArtifactTransformationRequest
 import com.android.build.api.artifact.SingleArtifact
 import dev.yume.packer.BuildLoaderDexTask
 import dev.yume.packer.PackApkTask
+import org.gradle.api.tasks.Sync
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -564,6 +565,20 @@ androidComponents {
                 )
                 .toTransformMany(SingleArtifact.APK)
         packApkTask.configure { transformationRequest.set(artifactRequest) }
+    }
+}
+
+listOf("debug", "release").forEach { buildType ->
+    val capitalized = buildType.replaceFirstChar(Char::uppercaseChar)
+    val collectApkTask =
+        tasks.register<Sync>("collect${capitalized}Apk") {
+            group = "build"
+            description = "Copies ${buildType} APKs to the root output_apk directory"
+            from(layout.buildDirectory.dir("outputs/apk/$buildType")) { include("*.apk") }
+            into(rootProject.layout.projectDirectory.dir("output_apk/$buildType"))
+        }
+    tasks.matching { it.name == "assemble$capitalized" }.configureEach {
+        finalizedBy(collectApkTask)
     }
 }
 
