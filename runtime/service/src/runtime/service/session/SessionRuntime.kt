@@ -155,9 +155,6 @@ class SessionRuntime(
         stopCoreWatch()
         currentSpec?.let { startupLog(it, "stop requested") }
         snapshotRefreshJob?.cancel()
-        if (currentSnapshot.owner == RuntimeOwner.VpnService) {
-        com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess.killRunning()
-        }
         interruptSignal.release()
     }
 

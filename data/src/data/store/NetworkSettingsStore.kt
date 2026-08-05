@@ -41,9 +41,7 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     // injection and compiler runtime patches (skipRuntimePatches).
     val disableAllOverride by boolFlow(false)
 
-    // gVisor is the reliable VpnService default (userspace, no per-socket protect); system/mixed
-    // work too
-    // but route egress through cross-process protect.
+    // Network stack selected for Root Tun. Root provides the virtual network interface and routes.
     val tunStack by enumFlow(TunStack.GVisor)
     val tunRouteExcludeAddress by stringListFlow(emptyList())
     val tunIfName by strFlow("Yume")

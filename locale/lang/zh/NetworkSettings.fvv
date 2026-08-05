@@ -17,7 +17,7 @@ NetworkSettings = {
         VpnServiceTitle = "Vpn Service"
         VpnServiceSummary = "系統 VPN 全域代理"
         TunTitle = "Tun"
-        TunSummary = "需要 Root 的核心虛擬網卡"
+        TunSummary = "需要 Root 的虛擬網卡"
     }
 
     VpnOptions = {

@@ -33,7 +33,7 @@ func run(opts options) {
 	}
 
 	// A launcher channel is what makes this the VpnService child; the root modes have none.
-	installHooks(opts.sdk, channelFd >= 0, socketOwnerQuery(channelFd))
+	installHooks(opts.sdk, channelFd >= 0, newLauncherRPC(channelFd))
 
 	cfg, err := config.Parse(rawConfig)
 	if err != nil {
@@ -63,8 +63,8 @@ func run(opts options) {
 	}
 
 	<-signals
-	// Unwinds listeners (including root tun ip rules) and the fake-ip pool, each
-	// self-guarding. Only root mode gets here: the VpnService child is SIGKILLed by the launcher.
+	// Unwinds listeners (including root tun ip rules) and the fake-ip pool, each self-guarding.
+	// The VpnService child also arrives here through SIGTERM so selector state can be persisted.
 	executor.Shutdown()
 }
 

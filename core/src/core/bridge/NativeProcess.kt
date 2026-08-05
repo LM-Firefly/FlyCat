@@ -43,6 +43,9 @@ private constructor(
     val pid: Int,
     val channelFd: Int,
 ) {
+    /** Ask the child to shut down cleanly so its persistent state can be flushed. */
+    fun terminate() = nativeTerminate(pid)
+
     /** Send SIGKILL to the child. Safe to call more than once. */
     fun kill() = nativeKill(pid)
 
@@ -76,6 +79,9 @@ private constructor(
             args: Array<String>,
             workdir: String,
         ): IntArray
+
+        @JvmStatic
+        private external fun nativeTerminate(pid: Int)
 
         @JvmStatic
         private external fun nativeKill(pid: Int)

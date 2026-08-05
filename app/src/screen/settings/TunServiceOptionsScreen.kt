@@ -38,8 +38,8 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 
 /**
- * Root Tun "service config" sub-page (network-settings Advanced, Tun mode): the kernel-TUN geometry
- * the core opens for itself. Shares [NetworkSettingsViewModel] with the picker screen.
+ * Root Tun "service config" sub-page. Root provisions the virtual network interface and routing.
+ * Shares [NetworkSettingsViewModel] with the picker screen.
  */
 @Composable
 fun TunServiceOptionsScreen() {

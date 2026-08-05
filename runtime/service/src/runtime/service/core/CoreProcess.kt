@@ -24,6 +24,7 @@ package com.github.yumeyucca.yumebox.runtime.service.core
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
@@ -70,6 +71,7 @@ class CoreProcess(private val context: Context) {
         config: String,
     ): CoreEndpoint {
         val home = context.runtimeHomeDir.apply { mkdirs() }
+        prepareSelectorCache(home)
         // Fresh core.log for this launch (libcompat redirects stdout/stderr there after chdir).
         File(home, CORE_LOG).delete()
         // Drop any leftover controller node so readiness probes cannot hit a dead socket.
@@ -147,7 +149,17 @@ class CoreProcess(private val context: Context) {
                             val result = channel.readMessage(buffer, 0, buffer.size)
                             if (result.count <= 0) break
                             val request = buffer.decodeToString(0, result.count)
-                            val response = resolveOwnerQuery(resolver, request)
+                            val response =
+                                if (result.fd >= 0) {
+                                    if (request == PROTECT_SOCKET_REQUEST) {
+                                        protectCoreSocket(result.fd)
+                                    } else {
+                                        closeReceivedFd(result.fd)
+                                        PROTECT_SOCKET_DENIED
+                                    }
+                                } else {
+                                    resolveOwnerQuery(resolver, request)
+                                }
                             val responseBytes = response.toByteArray(Charsets.UTF_8)
                             channel.writeMessage(responseBytes, 0, responseBytes.size)
                         }
@@ -168,6 +180,23 @@ class CoreProcess(private val context: Context) {
                     isDaemon = true
                     start()
                 }
+    }
+
+    /** Protect only the child core's socket; regular app traffic must remain inside the VPN. */
+    private fun protectCoreSocket(fd: Int): String =
+        try {
+            if ((context as? VpnService)?.protect(fd) == true) {
+                PROTECT_SOCKET_OK
+            } else {
+                Timber.tag(TAG).w("VpnService refused core socket protection")
+                PROTECT_SOCKET_DENIED
+            }
+        } finally {
+            closeReceivedFd(fd)
+        }
+
+    private fun closeReceivedFd(fd: Int) {
+        runCatching { ParcelFileDescriptor.adoptFd(fd).close() }
     }
 
     private fun resolveOwnerQuery(resolver: SocketOwnerResolver, request: String): String {
@@ -202,6 +231,7 @@ class CoreProcess(private val context: Context) {
     fun startRoot(mode: String, config: String): CoreEndpoint {
         awaitRootStopGrace()
         val home = context.runtimeHomeDir.apply { mkdirs() }
+        prepareSelectorCache(home)
         File(home, SOCK).delete()
         val sock = File(home, SOCK).absolutePath
         val (runtimeConfig, secret) = ensureControllerSecret(config)
@@ -273,13 +303,74 @@ class CoreProcess(private val context: Context) {
         return CoreEndpoint(sock, secret).also { current = it }
     }
 
+    /**
+     * Both root and VPN cores use this home directory. The cache must remain owned by the app UID:
+     * root can read it, while the VPN child cannot recover from a root-owned BoltDB file.
+     */
+    private fun prepareSelectorCache(home: File) {
+        val cache = File(home, SELECTOR_CACHE)
+        if (cache.canRead() && cache.canWrite()) return
+
+        if (cache.exists()) {
+            val uid = context.applicationInfo.uid
+            val repaired =
+                runCatching {
+                        Shell.cmd(
+                                "chown $uid:$uid ${quote(cache.absolutePath)} && " +
+                                    "chmod 0600 ${quote(cache.absolutePath)}"
+                            )
+                            .exec()
+                            .isSuccess
+                    }
+                    .getOrDefault(false)
+            if (repaired && cache.canRead() && cache.canWrite()) {
+                Timber.tag(TAG).i("restored selector cache ownership to app uid=%d", uid)
+                return
+            }
+
+            // The app owns the parent directory, so it can replace a stale root-owned cache even
+            // when root access has since been revoked. This only discards an inaccessible cache.
+            check(cache.delete()) { "Unable to replace inaccessible selector cache" }
+            Timber.tag(TAG).w("discarded inaccessible selector cache after ownership repair failed")
+        }
+
+        check(cache.createNewFile()) { "Unable to create selector cache" }
+        cache.setReadable(true, true)
+        cache.setWritable(true, true)
+        check(cache.canRead() && cache.canWrite()) { "Selector cache is not accessible to app" }
+    }
+
     fun stop() {
-        process?.let { runCatching { it.kill() } }
+        val stoppedProcess = process
+        stoppedProcess?.let(::stopVpnProcess)
         stopOwnerQueryLoop()
-        if (running === process) running = null
+        if (running === stoppedProcess) running = null
         process = null
         current = null
     }
+
+    /**
+     * A selector change is persisted by mihomo during its orderly shutdown. The VpnService child
+     * used to be killed here, which bypassed that flush and lost every selected node on restart.
+     */
+    private fun stopVpnProcess(process: NativeProcess) {
+        runCatching { process.terminate() }
+        val deadline = SystemClock.elapsedRealtime() + VPN_STOP_GRACE_MS
+        while (isVpnProcessAlive(process.pid) && SystemClock.elapsedRealtime() < deadline) {
+            Thread.sleep(VPN_STOP_POLL_MS)
+        }
+        if (isVpnProcessAlive(process.pid)) {
+            Timber.tag(TAG).w("VPN core did not exit after SIGTERM; sending SIGKILL")
+            runCatching { process.kill() }
+        }
+    }
+
+    private fun isVpnProcessAlive(pid: Int): Boolean =
+        runCatching {
+                Os.kill(pid, 0)
+                true
+            }
+            .getOrDefault(false)
 
     private fun stopOwnerQueryLoop() {
         val channel = ownerChannel
@@ -359,16 +450,11 @@ class CoreProcess(private val context: Context) {
             private set
 
         /**
-         * The running core child, tracked statically so it can be killed lock-free (see
-         * [killRunning]).
+         * The running core child, tracked statically for timeout recovery (see [killRunning]).
          */
         @Volatile private var running: NativeProcess? = null
 
-        /**
-         * Lock-free SIGKILL of the running core child; closing the tun fd it holds drops the
-         * VpnService interface. Called from `TunService.onDestroy` so teardown happens even if the
-         * scoped stop blocks.
-         */
+        /** Last-resort SIGKILL of the VPN child after its normal SIGTERM shutdown timed out. */
         fun killRunning() {
             running?.let { runCatching { it.kill() } }
             running = null
@@ -521,6 +607,8 @@ class CoreProcess(private val context: Context) {
 
         private const val ROOT_STOP_GRACE_MS = 2_000L
         private const val ROOT_STOP_POLL_MS = 100L
+        private const val VPN_STOP_GRACE_MS = 2_000L
+        private const val VPN_STOP_POLL_MS = 25L
 
         // Config is delivered over this named pipe (never persisted); LEGACY_ROOT_CONFIG is the old
         // plaintext file, deleted on launch. 0600 = owner-only (app creates it, root reads it).
@@ -528,6 +616,7 @@ class CoreProcess(private val context: Context) {
         private const val LEGACY_ROOT_CONFIG = "run.yaml"
         private const val ROOT_PIPE_MODE = 384
         private const val FIFO_WRITE_TIMEOUT_MS = 5000L
+        private const val SELECTOR_CACHE = "cache.db"
 
         /** Core stdout/stderr log under [runtimeHomeDir]; launcher redirects both modes here. */
         const val CORE_LOG = "core.log"
@@ -565,6 +654,9 @@ class CoreProcess(private val context: Context) {
         private const val CHUNK = 32 * 1024
         private const val OWNER_QUERY_BUFFER_SIZE = 4096
         private const val UNKNOWN_SOCKET_OWNER = "-1\t"
+        private const val PROTECT_SOCKET_REQUEST = "protect"
+        private const val PROTECT_SOCKET_OK = "protected"
+        private const val PROTECT_SOCKET_DENIED = "denied"
         private val END = byteArrayOf(1)
     }
 }

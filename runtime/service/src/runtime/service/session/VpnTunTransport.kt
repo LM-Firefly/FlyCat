@@ -198,33 +198,24 @@ class VpnTunTransport(
         }
     }
 
-    /**
-     * Per-app routing. The out-of-process core runs under the app's own uid, so the app's package
-     * is always EXCLUDED from the tunnel — that keeps the core's egress off the TUN (no loop) and
-     * replaces the old per-socket VpnService.protect entirely. Only UI access control drives the
-     * rest (compiled tun.include/exclude-package parsing is a later refinement).
-     */
+    /** Core sockets are protected individually; the app's own traffic must stay in the VPN. */
     private fun VpnService.Builder.configurePerAppRouting() {
         val self = vpnService.packageName
-        log.i(
-            RuntimeLog.Type.Transport,
-            "per-app routing: ui mode=${store.accessControlMode} (self excluded)",
-        )
+        log.i(RuntimeLog.Type.Transport, "per-app routing: ui mode=${store.accessControlMode}")
         when (store.accessControlMode) {
-            // Route everything except ourselves.
-            AccessControlMode.AcceptAll -> runCatching { addDisallowedApplication(self) }
-            // Allow only the selected apps; self is naturally excluded by not being in the list.
+            AccessControlMode.AcceptAll,
+            AccessControlMode.RejectAll -> Unit
+
             AccessControlMode.AcceptSelected ->
-                (store.accessControlPackages - self).forEach {
+                (store.accessControlPackages + self).forEach {
                     runCatching { addAllowedApplication(it) }
                 }
-            // Route nothing but ourselves is already excluded; disallow self keeps intent explicit.
-            AccessControlMode.RejectAll -> runCatching { addDisallowedApplication(self) }
-            // Disallow the selected apps plus ourselves.
-            AccessControlMode.RejectSelected ->
-                (store.accessControlPackages + self).forEach {
+
+            AccessControlMode.RejectSelected -> {
+                (store.accessControlPackages - self).forEach {
                     runCatching { addDisallowedApplication(it) }
                 }
+            }
         }
     }
 

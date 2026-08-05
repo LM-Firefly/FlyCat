@@ -9,11 +9,13 @@ import (
 	"syscall"
 )
 
-// The client half of the launcher socketpair: config + TUN fd inbound at startup, socket-owner
-// RPC for the rest of the session. The other half is CoreProcess.kt.
+// The client half of the launcher socketpair: config + TUN fd inbound at startup, then socket
+// owner and VpnService.protect RPCs for the rest of the session. The other half is CoreProcess.kt.
 const (
 	setupBufSize      = 64 * 1024 // >= the launcher's write chunk (CHUNK)
 	ownerReplyBufSize = 4096      // == the launcher's reply buffer (OWNER_QUERY_BUFFER_SIZE)
+	protectRequest    = "protect"
+	protectReply      = "protected"
 )
 
 // readSetup drains the config; the launcher terminates it with the TUN fd via SCM_RIGHTS.
@@ -42,71 +44,97 @@ func readSetup(channelFd int) ([]byte, int, error) {
 	}
 }
 
-// socketOwnerQuery asks the launcher which app owns a connection, over the socketpair the config
-// arrived on; nil in the root modes, which have no launcher to ask. Wire format: request
+type launcherRPC struct {
+	fd      int
+	mutex   sync.Mutex
+	broken  bool
+	logOnce sync.Once
+	reply   []byte
+}
+
+func newLauncherRPC(fd int) *launcherRPC {
+	if fd < 0 {
+		return nil
+	}
+	return &launcherRPC{fd: fd, reply: make([]byte, ownerReplyBufSize)}
+}
+
+// request serializes every round trip so the reply always matches its request on SOCK_SEQPACKET.
+func (rpc *launcherRPC) request(request []byte, attachedFd int) ([]byte, error) {
+	rpc.mutex.Lock()
+	defer rpc.mutex.Unlock()
+	if rpc.broken {
+		return nil, fmt.Errorf("launcher RPC channel is closed")
+	}
+	if err := sendRequest(rpc.fd, request, attachedFd); err != nil {
+		return nil, err
+	}
+	for {
+		n, _, _, _, err := syscall.Recvmsg(rpc.fd, rpc.reply, nil, 0)
+		if err == syscall.EINTR {
+			continue
+		}
+		if err != nil || n <= 0 {
+			rpc.broken = true
+			return nil, fmt.Errorf("launcher RPC read (err=%v n=%d)", err, n)
+		}
+		return append([]byte(nil), rpc.reply[:n]...), nil
+	}
+}
+
+// socketOwnerQuery asks the launcher which app owns a connection. Wire format: request
 // "<ipproto>\t<src>\t<dst>", reply "<uid>\t<package>", "-1\t" = unknown.
-func socketOwnerQuery(channelFd int) ownerQuery {
-	if channelFd < 0 {
+func socketOwnerQuery(rpc *launcherRPC) ownerQuery {
+	if rpc == nil {
 		return nil
 	}
 
-	// The mutex serialises every call, which is what makes the scratch buffers reusable.
-	var (
-		mutex   sync.Mutex
-		broken  bool
-		logOnce sync.Once
-
-		request = make([]byte, 0, 128)
-		reply   = make([]byte, ownerReplyBufSize)
-	)
-
 	report := func(err error, n int) {
-		logOnce.Do(func() {
+		rpc.logOnce.Do(func() {
 			fmt.Fprintf(os.Stderr, "socket-owner RPC failed (err=%v n=%d); per-app rules fall back to /proc/net\n", err, n)
 		})
 	}
 
 	return func(protocol int, source, target string) (int, string) {
-		mutex.Lock()
-		defer mutex.Unlock()
-		if broken {
-			return -1, ""
-		}
-
-		request = strconv.AppendInt(request[:0], int64(protocol), 10)
+		request := strconv.AppendInt(make([]byte, 0, 128), int64(protocol), 10)
 		request = append(request, '\t')
 		request = append(request, source...)
 		request = append(request, '\t')
 		request = append(request, target...)
 
-		if err := sendRequest(channelFd, request); err != nil {
-			// SEQPACKET sendmsg is all-or-nothing: still aligned, so do not latch the RPC off.
+		reply, err := rpc.request(request, -1)
+		if err != nil {
 			report(err, 0)
 			return -1, ""
 		}
-
-		for {
-			n, _, _, _, err := syscall.Recvmsg(channelFd, reply, nil, 0)
-			if err == syscall.EINTR {
-				continue // delivery is atomic: nothing consumed, still aligned
-			}
-			if err != nil || n <= 0 {
-				// The launcher queues one reply per request, so asking again would stay one
-				// reply behind forever and blame every connection on the previous app.
-				broken = true
-				report(err, n)
-				return -1, ""
-			}
-			return decodeSocketOwner(reply[:n])
-		}
+		return decodeSocketOwner(reply)
 	}
+}
+
+// protect asks VpnService to exempt one core socket from the TUN before it connects.
+func (rpc *launcherRPC) protect(fd int) error {
+	if rpc == nil {
+		return fmt.Errorf("VpnService launcher is unavailable")
+	}
+	reply, err := rpc.request([]byte(protectRequest), fd)
+	if err != nil {
+		return err
+	}
+	if string(reply) != protectReply {
+		return fmt.Errorf("VpnService rejected socket")
+	}
+	return nil
 }
 
 // sendRequest retries the interrupted case the way the receive path does: a datagram send is
 // all-or-nothing, so EINTR means nothing left the socket and the RPC is still aligned.
-func sendRequest(fd int, request []byte) error {
+func sendRequest(fd int, request []byte, attachedFd int) error {
+	var oob []byte
+	if attachedFd >= 0 {
+		oob = syscall.UnixRights(attachedFd)
+	}
 	for {
-		if err := syscall.Sendmsg(fd, request, nil, nil, 0); err != syscall.EINTR {
+		if err := syscall.Sendmsg(fd, request, oob, nil, 0); err != syscall.EINTR {
 			return err
 		}
 	}

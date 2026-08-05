@@ -17,7 +17,7 @@ NetworkSettings = {
         VpnServiceTitle = "Vpn Service"
         VpnServiceSummary = "システム VPN による全体プロキシ"
         TunTitle = "Tun"
-        TunSummary = "Root が必要なカーネル TUN トンネル"
+        TunSummary = "Root が必要な仮想ネットワークインターフェース"
     }
 
     VpnOptions = {

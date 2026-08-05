@@ -157,7 +157,7 @@ class FeatureViewModel(
 
     companion object {
         private const val JAVET_RELEASE_URL =
-            "https://github.com/YumeYucca/YumeBox/releases/download/Expand/libjavet.so"
+            "https://github.com/YumeYucca/libjavet/releases/download/libjavet/libjavet.so.xz"
     }
 
     fun startService() {

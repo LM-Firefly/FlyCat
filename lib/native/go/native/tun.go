@@ -21,12 +21,13 @@ func configureTun(cfg *config.Config, fd int, gateway, dns string) error {
 	}
 
 	cfg.General.Tun = LC.Tun{
-		Enable:              true,
-		Device:              sing_tun.InterfaceName,
-		Stack:               C.TunGvisor,
-		DNSHijack:           splitDNSHijack(dns),
-		AutoRoute:           false, // routes are set by the VpnService.Builder
-		AutoDetectInterface: false, // the core's own uid is excluded from the tunnel, so no protect
+		Enable:    true,
+		Device:    sing_tun.InterfaceName,
+		Stack:     C.TunGvisor,
+		DNSHijack: splitDNSHijack(dns),
+		AutoRoute: false, // routes are set by the VpnService.Builder
+		// Core sockets are protected through the launcher, so the TUN must not pick an interface.
+		AutoDetectInterface: false,
 		Inet4Address:        prefix4,
 		Inet6Address:        prefix6,
 		MTU:                 1500,

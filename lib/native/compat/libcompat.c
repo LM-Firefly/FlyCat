@@ -20,7 +20,7 @@
 
 /*
  * libcompat.so — JNI primitives for the non-root (VpnService) launch path, and nothing else:
- * fork+execve the PIE shell with a SOCK_SEQPACKET socketpair passed as CHANNEL=<fd>, SIGKILL it,
+ * fork+execve the PIE shell with a SOCK_SEQPACKET socketpair passed as CHANNEL=<fd>, signal it,
  * exchange one datagram per call (optionally carrying a descriptor via SCM_RIGHTS — how the TUN
  * fd reaches the core), and connect to the core's controller socket. SEQPACKET keeps message
  * boundaries, so the protocol needs no framing. Everything else runs over the mihomo REST API
@@ -313,6 +313,14 @@ cleanup:
     if (workdir != NULL) (*env)->ReleaseStringUTFChars(env, workdir_value, workdir);
     if (path != NULL) (*env)->ReleaseStringUTFChars(env, path_value, path);
     return result;
+}
+
+JNIEXPORT void JNICALL
+Java_com_github_yumeyucca_yumebox_core_bridge_NativeProcess_nativeTerminate(
+        JNIEnv *env, jclass clazz, jint pid) {
+    (void)env;
+    (void)clazz;
+    kill((pid_t)pid, SIGTERM);
 }
 
 JNIEXPORT void JNICALL

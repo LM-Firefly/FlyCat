@@ -24,6 +24,7 @@ import android.content.Context
 import com.github.yumeyucca.yumebox.runtime.api.CoreEndpointRef
 import com.github.yumeyucca.yumebox.runtime.api.ProcessController
 import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
+import com.github.yumeyucca.yumebox.runtime.service.session.RuntimeServiceLauncher
 
 /** Android binding of [ProcessController] over [CoreProcess] static ownership. */
 class AndroidProcessController(context: Context) : ProcessController {
@@ -33,7 +34,9 @@ class AndroidProcessController(context: Context) : ProcessController {
         CoreProcess.current?.let { CoreEndpointRef(sock = it.sock, secret = it.secret) }
 
     override fun stop() {
-        CoreProcess.killRunning()
+        // Stop the service instead of killing its child directly: VpnTunTransport gives mihomo a
+        // bounded SIGTERM window to persist selector state before escalating to SIGKILL.
+        RuntimeServiceLauncher.stop(appContext)
     }
 
     override fun stopRoot() {

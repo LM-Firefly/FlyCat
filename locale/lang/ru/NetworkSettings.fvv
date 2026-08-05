@@ -17,7 +17,7 @@ NetworkSettings = {
         VpnServiceTitle = "Vpn Service"
         VpnServiceSummary = "Системный VPN, глобальный прокси"
         TunTitle = "Tun"
-        TunSummary = "Ядерный TUN-туннель с root"
+        TunSummary = "Виртуальный сетевой интерфейс, требующий root"
     }
 
     VpnOptions = {

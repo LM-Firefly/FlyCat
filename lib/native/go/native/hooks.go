@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"syscall"
 
@@ -15,7 +16,8 @@ type ownerQuery func(protocol int, source, target string) (uid int, pkg string)
 
 // installHooks points mihomo's process-global hooks at this host. vpnHosted marks the VpnService
 // child; the root daemon is far less constrained and keeps more of mihomo's own socket path.
-func installHooks(sdk int, vpnHosted bool, query ownerQuery) {
+func installHooks(sdk int, vpnHosted bool, rpc *launcherRPC) {
+	query := socketOwnerQuery(rpc)
 	process.DefaultPackageNameResolver = func(metadata *constant.Metadata) (string, error) {
 		source := metadata.RawSrcAddr
 		if source == nil {
@@ -43,10 +45,19 @@ func installHooks(sdk int, vpnHosted bool, query ownerQuery) {
 		return
 	}
 
-	// Must stay non-nil even though it does nothing: mihomo reads a non-nil DefaultSocketHook as
-	// "CMFA host" and skips interfaceName/routingMark binding and TFO, which this process cannot
-	// do. No per-socket protect either: the core's uid is excluded from the tunnel.
-	dialer.DefaultSocketHook = func(string, string, syscall.RawConn) error { return nil }
+	// A non-nil hook also makes mihomo skip interfaceName/routingMark binding and TFO, which this
+	// process cannot use. The launcher protects only these core sockets, leaving app downloads in
+	// the VPN tunnel.
+	dialer.DefaultSocketHook = func(_ string, _ string, conn syscall.RawConn) error {
+		var protectErr error
+		if err := conn.Control(func(fd uintptr) { protectErr = rpc.protect(int(fd)) }); err != nil {
+			return err
+		}
+		if protectErr != nil {
+			return fmt.Errorf("protect core socket: %w", protectErr)
+		}
+		return nil
+	}
 }
 
 // Launcher RPC first on API 29+ (where /proc/net hides other uids' rows), /proc/net on a miss.
@@ -62,11 +73,15 @@ func socketOwner(sdk int, query ownerQuery, source, target net.Addr) (int, strin
 		return -1, ""
 	}
 
-	// Only the RPC needs a usable target; /proc/net matches on the local address alone.
-	if query != nil && sdk >= 29 && addrUsable(target) {
-		if uid, pkg := query(protocol, source.String(), target.String()); uid >= 0 || pkg != "" {
-			return uid, pkg
+	// Android 10+ hides /proc/net from the app UID. In VPN mode the launcher query is the only
+	// valid owner source; falling back to /proc merely emits a permission error and finds nothing.
+	if query != nil && sdk >= 29 {
+		if addrUsable(target) {
+			if uid, pkg := query(protocol, source.String(), target.String()); uid >= 0 || pkg != "" {
+				return uid, pkg
+			}
 		}
+		return -1, ""
 	}
 	return procNetUID(source), ""
 }

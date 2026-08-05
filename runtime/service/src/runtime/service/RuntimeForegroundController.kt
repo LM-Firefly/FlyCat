@@ -322,10 +322,9 @@ class RuntimeForegroundController(
         StatusProvider.markRuntimeStopping(mode, sessionToken)
         notificationJob?.cancel()
         notificationJob = null
-        // Put down the data plane before any session-scoped cleanup that may be waiting on a
-        // compile or controller request. stopSelf then drives onDestroy and the authoritative
-        // stopped broadcast without waiting for the lifecycle lock.
-        com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess.killRunning()
+        // The session thread below performs the data-plane stop. It sends the VPN child SIGTERM
+        // first so mihomo can persist selector state; AndroidRuntimeLauncher retains a timeout
+        // based SIGKILL fallback if the service becomes stuck.
         stopForegroundService()
         val initialStopStartId = lastStartId
         service.stopSelf(initialStopStartId)

@@ -17,7 +17,7 @@ NetworkSettings = {
         VpnServiceTitle = "Vpn Service"
         VpnServiceSummary = "System VPN, global proxy"
         TunTitle = "Tun"
-        TunSummary = "Kernel TUN tunnel with root"
+        TunSummary = "Virtual network interface requiring root"
     }
 
     VpnOptions = {
