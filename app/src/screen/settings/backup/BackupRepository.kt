@@ -56,10 +56,7 @@ class BackupRepository internal constructor(
 
             try {
                 val extracted = archiveManager.readArchive(input, extractDir)
-                require(
-                    extracted.manifest.appId.isBlank() ||
-                            extracted.manifest.appId == application.packageName
-                ) {
+                require(isCompatibleBackupAppId(extracted.manifest.appId, application.packageName)) {
                     "Backup belongs to ${extracted.manifest.appId}"
                 }
 
@@ -176,6 +173,13 @@ class BackupRepository internal constructor(
             mkdirs()
         }
 }
+
+internal fun isCompatibleBackupAppId(backupAppId: String, currentAppId: String): Boolean =
+    backupAppId.isBlank() ||
+            backupAppId == currentAppId ||
+            backupAppId in LEGACY_BACKUP_APP_IDS
+
+private val LEGACY_BACKUP_APP_IDS = setOf("com.github.yumelira.yumebox")
 
 internal fun replaceBackupDirectory(source: File, target: File) {
     target.deleteRecursively()
