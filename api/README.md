@@ -30,6 +30,7 @@ val client = ApiClient(
     )
 )
 
+val mode = client.tunnelMode()
 val proxies = client.proxies()
 client.selectProxy(group = "Proxy", name = "Hong Kong 01")
 val delay = client.proxyDelay("Hong Kong 01")

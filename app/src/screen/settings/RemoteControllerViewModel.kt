@@ -33,7 +33,8 @@ import com.github.yumeyucca.yumebox.data.store.add
 import com.github.yumeyucca.yumebox.data.store.remove
 import com.github.yumeyucca.yumebox.data.store.update
 import com.github.yumeyucca.yumebox.runtime.client.ProxyFacade
-import com.github.yumeyucca.yumebox.runtime.service.controller.CoreController
+import io.github.yumeyucca.yumebox.api.ApiClient
+import io.github.yumeyucca.yumebox.api.ApiConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -135,13 +136,23 @@ class RemoteControllerViewModel(
             val result =
                 withContext(Dispatchers.IO) {
                     runCatching {
-                        val manager = CoreController(backendProvider = { backend })
-                        manager.queryTunnelState()
+                        val client =
+                            ApiClient(
+                                ApiConfig(
+                                    endpoint = backend.normalizedBaseUrl,
+                                    secret = backend.secret,
+                                )
+                            )
+                        try {
+                            client.tunnelMode()
+                        } finally {
+                            client.close()
+                        }
                     }
                 }
             result
                 .onSuccess { state ->
-                    _messages.tryEmit(YumeTxt.Feature.RemoteController.Connected.format(state.mode))
+                    _messages.tryEmit(YumeTxt.Feature.RemoteController.Connected.format(state))
                 }
                 .onFailure { error ->
                     _messages.tryEmit(

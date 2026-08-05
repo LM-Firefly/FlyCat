@@ -31,6 +31,8 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 /** Connection settings for a controller endpoint. */
@@ -169,6 +171,11 @@ class ApiClient(
     }
 
     suspend fun configs(): JsonObject = getObject("configs")
+
+    /** Returns the active mihomo tunnel mode reported by `/configs`. */
+    suspend fun tunnelMode(): String =
+        configs()["mode"]?.jsonPrimitive?.contentOrNull
+            ?: throw ApiProtocolException(IllegalStateException("configs response is missing mode"))
 
     suspend fun patchConfigs(config: JsonObject): JsonElement =
         request(HttpMethod.Patch, "configs", body = config)

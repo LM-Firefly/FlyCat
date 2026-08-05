@@ -571,6 +571,7 @@ dependencies {
     implementation(libs.androidx.animation)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
+    implementation(project(":api"))
     implementation(project(":core"))
     implementation(project(":common"))
     implementation(project(":locale"))
