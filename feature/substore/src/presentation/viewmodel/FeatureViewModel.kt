@@ -89,8 +89,8 @@ class FeatureViewModel(
     private val _isSubStoreInitialized = MutableStateFlow(false)
     val isSubStoreInitialized: StateFlow<Boolean> = _isSubStoreInitialized.asStateFlow()
 
-    private val _isExtensionInstalled = MutableStateFlow(false)
-    val isExtensionInstalled: StateFlow<Boolean> = _isExtensionInstalled.asStateFlow()
+    private val _isDownloadingJavet = MutableStateFlow(false)
+    val isDownloadingJavet: StateFlow<Boolean> = _isDownloadingJavet.asStateFlow()
 
     private val _isJavetLoaded = MutableStateFlow(false)
     val isJavetLoaded: StateFlow<Boolean> = _isJavetLoaded.asStateFlow()
@@ -103,7 +103,7 @@ class FeatureViewModel(
         val autoCloseMode: AutoCloseMode = AutoCloseMode.ALWAYS_ON,
         val isDownloadingSubStoreFrontend: Boolean = false,
         val isDownloadingSubStoreBackend: Boolean = false,
-        val isExtensionInstalled: Boolean = false,
+        val isDownloadingJavet: Boolean = false,
         val isJavetLoaded: Boolean = false,
         val selectedPanelType: Int = 0,
     )
@@ -128,14 +128,14 @@ class FeatureViewModel(
             combine(
                 isDownloadingSubStoreFrontend,
                 isDownloadingSubStoreBackend,
-                isExtensionInstalled,
+                isDownloadingJavet,
                 isJavetLoaded,
                 selectedPanelType.state,
-            ) { dlFront, dlBack, ext, javet, panel ->
+            ) { dlFront, dlBack, dlJavet, javet, panel ->
                 FeatureScreenState(
                     isDownloadingSubStoreFrontend = dlFront,
                     isDownloadingSubStoreBackend = dlBack,
-                    isExtensionInstalled = ext,
+                    isDownloadingJavet = dlJavet,
                     isJavetLoaded = javet,
                     selectedPanelType = panel,
                 )
@@ -144,7 +144,7 @@ class FeatureViewModel(
             base.copy(
                 isDownloadingSubStoreFrontend = extra.isDownloadingSubStoreFrontend,
                 isDownloadingSubStoreBackend = extra.isDownloadingSubStoreBackend,
-                isExtensionInstalled = extra.isExtensionInstalled,
+                isDownloadingJavet = extra.isDownloadingJavet,
                 isJavetLoaded = extra.isJavetLoaded,
                 selectedPanelType = extra.selectedPanelType,
             )
@@ -156,8 +156,8 @@ class FeatureViewModel(
             )
 
     companion object {
-        private const val EXTENSION_PACKAGE_NAME = "com.github.yumeyucca.yumebox.extension"
-        private const val JAVET_LIB_NAME = "libjavet-node-android"
+        private const val JAVET_RELEASE_URL =
+            "https://github.com/YumeYucca/YumeBox/releases/download/Expand/libjavet.so"
     }
 
     fun startService() {
@@ -180,11 +180,6 @@ class FeatureViewModel(
 
     private fun checkSubStoreReadiness(): Boolean =
         when {
-            !_isExtensionInstalled.value -> {
-                showToast(YumeTxt.Feature.SubStore.InstallExtension)
-                false
-            }
-
             !_isSubStoreInitialized.value -> {
                 showToast(YumeTxt.Feature.SubStore.DownloadSubStoreFirst)
                 false
@@ -232,32 +227,62 @@ class FeatureViewModel(
         viewModelScope.launch(Dispatchers.IO) { refreshSubStoreStatus() }
     }
 
-    private fun checkExtensionInstalled(): Boolean = runCatching {
-        application.packageManager.getApplicationInfo(EXTENSION_PACKAGE_NAME, 0)
-        true
-    }
-        .getOrDefault(false)
-
     private fun initializeJavetStatus() {
-        if (!_isExtensionInstalled.value) {
-            _isJavetLoaded.value = false
-            return
-        }
         NativeLibraryManager.initialize(application)
         _isJavetLoaded.value =
-            NativeLibraryManager.isLibraryAvailable(JAVET_LIB_NAME) ||
-                    NativeLibraryManager.extractAllLibraries()[JAVET_LIB_NAME] == true
+            NativeLibraryManager.isLibraryAvailable(NativeLibraryManager.JAVET_LIBRARY_NAME) &&
+                NativeLibraryManager.loadJniLibrary(NativeLibraryManager.JAVET_LIBRARY_NAME)
     }
 
-    fun refreshExtensionStatus() {
+    fun refreshJavetStatus() {
         viewModelScope.launch(Dispatchers.IO) { refreshSubStoreStatus() }
     }
 
     private suspend fun refreshSubStoreStatus() {
         statusInitializationMutex.withLock {
             _isSubStoreInitialized.value = SubStorePaths.isResourcesReady()
-            _isExtensionInstalled.value = checkExtensionInstalled()
             initializeJavetStatus()
+        }
+    }
+
+    fun downloadJavetLibrary() {
+        if (_isDownloadingJavet.value) return
+        viewModelScope.launch {
+            _isDownloadingJavet.value = true
+            val wasJavetLoaded = _isJavetLoaded.value
+            val downloaded =
+                runCatching {
+                    NativeLibraryManager.initialize(application)
+                    val temporaryFile =
+                        requireNotNull(
+                            NativeLibraryManager.getDownloadTempFile(
+                                NativeLibraryManager.JAVET_LIBRARY_NAME
+                            )
+                        )
+                    temporaryFile.delete()
+                    downloadClient.download(JAVET_RELEASE_URL, temporaryFile) &&
+                        NativeLibraryManager.installDownloadedLibrary(
+                            NativeLibraryManager.JAVET_LIBRARY_NAME,
+                            temporaryFile,
+                        ) &&
+                        NativeLibraryManager.loadJniLibrary(NativeLibraryManager.JAVET_LIBRARY_NAME)
+                }.getOrElse { error ->
+                    showToast(
+                        YumeTxt.Feature.SubStore.DownloadError.format(
+                            error.message ?: YumeTxt.Util.Error.UnknownError
+                        )
+                    )
+                    false
+                }
+            _isJavetLoaded.value = downloaded || wasJavetLoaded
+            showToast(
+                if (downloaded) {
+                    YumeTxt.Feature.SubStore.JavetDownloadSuccess
+                } else {
+                    YumeTxt.Feature.SubStore.JavetDownloadFailed
+                }
+            )
+            _isDownloadingJavet.value = false
         }
     }
 

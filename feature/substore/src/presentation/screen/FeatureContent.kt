@@ -63,7 +63,7 @@ fun FeatureContent(
 
     val isDownloadingSubStoreFrontend = screen.isDownloadingSubStoreFrontend
     val isDownloadingSubStoreBackend = screen.isDownloadingSubStoreBackend
-    val isExtensionInstalled = screen.isExtensionInstalled
+    val isDownloadingJavet = screen.isDownloadingJavet
     val isJavetLoaded = screen.isJavetLoaded
     val selectedPanelType = screen.selectedPanelType
 
@@ -150,28 +150,19 @@ fun FeatureContent(
                 Card {
                     ArrowPreference(
                         title =
-                            if (isExtensionInstalled) {
-                                YumeTxt.Feature.SubStore.ExtensionInstalled
+                            if (isJavetLoaded) {
+                                YumeTxt.Feature.SubStore.JavetLibraryReady
                             } else {
-                                YumeTxt.Feature.SubStore.ExtensionInstall
+                                YumeTxt.Feature.SubStore.JavetLibraryDownload
                             },
                         summary =
-                            when {
-                                isExtensionInstalled && isJavetLoaded ->
-                                    YumeTxt.Feature.SubStore.JavetAvailable
-
-                                isExtensionInstalled -> YumeTxt.Feature.SubStore.JavetPending
-                                else -> YumeTxt.Feature.SubStore.DownloadHint
-                            },
-                        onClick = {
-                            if (!isExtensionInstalled) {
-                                onOpenExternalUrl(
-                                    "https://github.com/YumeRiMoe/YumeBox/releases/tag/Expand"
-                                )
+                            if (isJavetLoaded) {
+                                YumeTxt.Feature.SubStore.JavetAvailable
                             } else {
-                                viewModel.refreshExtensionStatus()
-                            }
-                        },
+                                YumeTxt.Feature.SubStore.DownloadHint
+                            },
+                        onClick = { viewModel.downloadJavetLibrary() },
+                        enabled = !isDownloadingJavet,
                     )
                     ArrowPreference(
                         title = YumeTxt.Feature.SubStore.DownloadResources,

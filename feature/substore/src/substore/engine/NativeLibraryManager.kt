@@ -6,7 +6,7 @@
  * published by the Free Software Foundation, either version 3 of the
  * License.
  *
- * This program is distributed in the hope that it will be useful,
+ * YumeBox is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
@@ -14,264 +14,124 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
- * Copyright (c)  YumeYucca 2025 - Present
- *
+ * Copyright (c) YumeYucca 2025 - Present
  */
-
-@file:Suppress("DuplicatedCode")
 
 package com.github.yumeyucca.yumebox.substore.engine
 
-
 import android.annotation.SuppressLint
 import android.content.Context
-import android.os.Build
 import timber.log.Timber
 import java.io.File
-import java.io.FileOutputStream
-import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
+import java.security.MessageDigest
 
 @SuppressLint("StaticFieldLeak")
 object NativeLibraryManager {
-    private const val LIBS_DIR_NAME = "libs"
-    private var libsBaseDir: File? = null
+    const val JAVET_LIBRARY_NAME = "libjavet-node-android"
+    const val JAVET_LIBRARY_FILE_NAME = "libjavet.so"
+    const val JAVET_LIBRARY_SHA256 =
+        "126d1569d60c2f20605188001f236d91ba4c9cf7d35a8f02b57d69e47fe4b39d"
+
+    private const val LIBRARY_DIR_NAME = "lib"
+
     private var context: Context? = null
-    private var isInitialized = false
-
-    enum class LibraryType {
-        JNI_LOAD,
-        PROCESS_EXEC,
-    }
-
-    enum class LibrarySource {
-        MAIN_APK,
-        EXTENSION_APK,
-    }
-
-    data class LibraryInfo(
-        val name: String,
-        val type: LibraryType,
-        val source: LibrarySource,
-        val packageName: String? = null,
-        val version: String? = null,
-    )
-
-    private val managedLibraries = mutableMapOf<String, LibraryInfo>()
 
     fun initialize(context: Context) {
-        if (isInitialized) return
-
-        this.context = context
-        libsBaseDir = File(context.filesDir, LIBS_DIR_NAME)
-        libsBaseDir?.mkdirs()
-        registerDefaultLibraries()
-        isInitialized = true
-        extractAllLibraries()
+        if (this.context != null) return
+        this.context = context.applicationContext
+        libraryDir?.mkdirs()
     }
 
-    @SuppressLint("StaticFieldLeak")
-    private fun registerDefaultLibraries() {
-        registerLibrary(
-            LibraryInfo(
-                name = "libjavet-node-android",
-                type = LibraryType.JNI_LOAD,
-                source = LibrarySource.EXTENSION_APK,
-                packageName = "com.github.yumeyucca.yumebox.extension",
-            )
-        )
+    fun getLibraryFile(name: String): File? {
+        if (context == null) return null
+        return when (name) {
+            JAVET_LIBRARY_NAME -> File(requireNotNull(libraryDir), JAVET_LIBRARY_FILE_NAME)
+            else -> null
+        }
     }
 
-    fun registerLibrary(info: LibraryInfo) {
-        managedLibraries[info.name] = info
-    }
+    fun getDownloadTempFile(name: String): File? =
+        getLibraryFile(name)?.let { library -> File(library.parentFile, "${library.name}.download") }
 
-    fun extractAllLibraries(): Map<String, Boolean> {
-        val results = mutableMapOf<String, Boolean>()
-        managedLibraries.forEach { (name, info) -> results[name] = extractLibrary(info) }
-        return results
-    }
-
-    fun extractLibrary(info: LibraryInfo): Boolean {
-        val targetDir =
-            libsBaseDir
-                ?: run {
-                    Timber.w("Library manager not initialized")
-                    return false
-                }
-        targetDir.mkdirs()
-        val targetFile = File(targetDir, info.name)
-
-        if (targetFile.exists() && targetFile.canRead()) {
-            if (info.type == LibraryType.PROCESS_EXEC && !targetFile.canExecute()) {
-                targetFile.setExecutable(true, false)
-            }
-            return true
+    fun installDownloadedLibrary(name: String, downloadedFile: File): Boolean {
+        val targetFile = getLibraryFile(name) ?: return false
+        if (!isLibraryFileValid(name, downloadedFile)) {
+            Timber.e("Native library hash mismatch: $name")
+            return false
         }
 
         return runCatching {
-            when (info.source) {
-                LibrarySource.MAIN_APK -> extractFromMainApk(info, targetFile)
-                LibrarySource.EXTENSION_APK -> extractFromExtensionApk(info, targetFile)
+            targetFile.parentFile?.mkdirs()
+            val backupFile = File(targetFile.parentFile, "${targetFile.name}.previous")
+            if (backupFile.exists() && !backupFile.delete()) {
+                error("Unable to clear native library backup: ${backupFile.absolutePath}")
             }
-        }
-            .getOrElse { error ->
-                Timber.w(error, "Library extract failed: ${info.name}")
-                false
+            val hasPreviousLibrary = targetFile.exists()
+            if (hasPreviousLibrary && !targetFile.renameTo(backupFile)) {
+                error("Unable to back up native library: ${targetFile.absolutePath}")
             }
-    }
-
-    @SuppressLint("SetWorldReadable")
-    private fun extractFromMainApk(info: LibraryInfo, targetFile: File): Boolean {
-        val apkPath =
-            context?.applicationInfo?.sourceDir
-                ?: throw IllegalStateException("Context not initialized")
-
-        ZipFile(apkPath).use { zip ->
-            val libEntry =
-                findMainApkLibEntry(zip, info.name)
-                    ?: throw IllegalStateException("Library not found in APK: ${info.name}")
-
-            zip.getInputStream(libEntry).use { input ->
-                FileOutputStream(targetFile).use { output -> input.copyTo(output) }
+            if (!downloadedFile.renameTo(targetFile)) {
+                if (hasPreviousLibrary) backupFile.renameTo(targetFile)
+                error("Unable to install native library: ${targetFile.absolutePath}")
             }
-
+            backupFile.delete()
             targetFile.setReadable(true, false)
-            if (info.type == LibraryType.PROCESS_EXEC) {
-                targetFile.setExecutable(true, false)
-            }
-
-            return true
+            true
+        }.getOrElse { error ->
+            Timber.e(error, "Native library installation failed: $name")
+            false
         }
     }
 
-    private fun findMainApkLibEntry(zip: ZipFile, libraryName: String): ZipEntry? {
-        zip.getEntry("lib/${getSupportedAbi()}/$libraryName")?.let { return it }
-        for (tryAbi in Build.SUPPORTED_ABIS) {
-            zip.getEntry("lib/$tryAbi/$libraryName")?.let { return it }
-        }
-        return null
-    }
-
-    @SuppressLint("SetWorldReadable")
-    private fun extractFromExtensionApk(info: LibraryInfo, targetFile: File): Boolean {
-        if (info.packageName == null) {
-            throw IllegalArgumentException("Package name required for extension APK source")
-        }
-
-        val extensionApk = getExtensionApk(info.packageName)
-        if (extensionApk == null) {
-            Timber.w("Extension APK missing: ${info.packageName}")
-            return false
-        }
-
-        val abi = getSupportedAbi()
-
-        ZipFile(extensionApk).use { zip ->
-            val pattern =
-                Regex(
-                    "lib/($abi|${Build.SUPPORTED_ABIS.joinToString("|")})/${info.name}\\.v\\.\\d+\\.\\d+\\.\\d+\\.so"
-                )
-            val entry =
-                zip.entries().asSequence().firstOrNull { error -> pattern.matches(error.name) }
-
-            if (entry == null) {
-                Timber.w("Library not found in extension APK: ${info.name}")
-                return false
-            }
-
-            val actualFileName = entry.name.substringAfterLast("/")
-            val actualTargetFile = File(targetFile.parentFile, actualFileName)
-
-            actualLibraryNames[info.name] = actualFileName
-
-            zip.getInputStream(entry).use { input ->
-                FileOutputStream(actualTargetFile).use { output -> input.copyTo(output) }
-            }
-
-            actualTargetFile.setReadable(true, false)
-            if (info.type == LibraryType.PROCESS_EXEC) {
-                actualTargetFile.setExecutable(true, false)
-            }
-
-            return true
-        }
-    }
-
-    private val actualLibraryNames = mutableMapOf<String, String>()
-
-    private fun getExtensionApk(packageName: String): File? =
-        runCatching {
-            val pm = context?.packageManager ?: return null
-            val info = pm.getApplicationInfo(packageName, 0)
-            File(info.sourceDir)
-        }
-            .getOrNull()
-
-    fun getLibraryPath(name: String): String? {
-        if (!isInitialized) return null
-
-        val actualName = actualLibraryNames[name] ?: name
-        val libraryFile = File(libsBaseDir, actualName)
-        return if (libraryFile.exists()) libraryFile.absolutePath else null
-    }
-
-    fun isLibraryAvailable(name: String): Boolean {
-        val path = getLibraryPath(name) ?: return false
-        val file = File(path)
-        val info = managedLibraries[name]
-        return when (info?.type) {
-            LibraryType.JNI_LOAD -> file.exists() && file.canRead()
-            LibraryType.PROCESS_EXEC -> file.exists() && file.canRead() && file.canExecute()
-            null -> false
-        }
-    }
+    fun isLibraryAvailable(name: String): Boolean =
+        getLibraryFile(name)?.let { isLibraryFileValid(name, it) } == true
 
     @SuppressLint("UnsafeDynamicallyLoadedCode")
     fun loadJniLibrary(name: String): Boolean {
-        val info = managedLibraries[name]
-        if (info?.type != LibraryType.JNI_LOAD) {
-            return false
-        }
-
-        val path = getLibraryPath(name) ?: return false
+        val path = getLibraryFile(name)?.takeIf(File::isFile)?.absolutePath ?: return false
 
         return runCatching {
             System.load(path)
             true
+        }.getOrElse { error ->
+            Timber.e(error, "JNI load failed: $name")
+            false
         }
-            .getOrElse { error ->
-                Timber.e(error, "JNI load failed: $name")
-                false
-            }
     }
 
     fun getLibraryStatus(name: String): String {
-        if (!isInitialized) return "Library manager not initialized"
-        val info = managedLibraries[name] ?: return "Library not registered: $name"
-        val path = getLibraryPath(name)
-
+        val libraryFile = getLibraryFile(name) ?: return "Library manager not initialized"
         return when {
-            path == null -> "Library not extracted: $name"
-            !File(path).exists() -> "Library file not found: $path"
-            info.type == LibraryType.PROCESS_EXEC && !File(path).canExecute() ->
-                "Library exists but not executable: $path"
-
-            info.type == LibraryType.JNI_LOAD && !File(path).canRead() ->
-                "Library exists but not readable: $path"
-
-            else -> "Library ready: $name (${info.type}) at $path"
+            !libraryFile.exists() -> "Library file not found: ${libraryFile.absolutePath}"
+            !libraryFile.canRead() -> "Library file is not readable: ${libraryFile.absolutePath}"
+            !isLibraryFileValid(name, libraryFile) -> "Library hash mismatch: ${libraryFile.absolutePath}"
+            else -> "Library ready: $name at ${libraryFile.absolutePath}"
         }
     }
 
-    private fun getSupportedAbi(): String {
-        val supportedABIs = Build.SUPPORTED_ABIS
-        return when {
-            supportedABIs.contains("arm64-v8a") -> "arm64-v8a"
-            supportedABIs.contains("x86_64") -> "x86_64"
-            supportedABIs.contains("armeabi-v7a") -> "armeabi-v7a"
-            supportedABIs.contains("x86") -> "x86"
-            else -> supportedABIs.firstOrNull() ?: "arm64-v8a"
+    private val libraryDir: File?
+        get() = context?.filesDir?.resolve(LIBRARY_DIR_NAME)
+
+    private fun isLibraryFileValid(name: String, file: File): Boolean =
+        file.isFile && file.canRead() && sha256(file) == expectedSha256(name)
+
+    private fun expectedSha256(name: String): String? =
+        when (name) {
+            JAVET_LIBRARY_NAME -> JAVET_LIBRARY_SHA256
+            else -> null
         }
-    }
+
+    private fun sha256(file: File): String? =
+        runCatching {
+            val digest = MessageDigest.getInstance("SHA-256")
+            file.inputStream().buffered().use { input ->
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read == -1) break
+                    digest.update(buffer, 0, read)
+                }
+            }
+            digest.digest().joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+        }.getOrNull()
 }

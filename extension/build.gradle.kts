@@ -21,6 +21,8 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.android.build.gradle.tasks.PackageAndroidArtifact
+import org.gradle.api.file.RelativePath
+import org.gradle.api.tasks.Sync
 
 plugins {
     id("com.android.application")
@@ -98,4 +100,16 @@ android {
             isUniversalApk = false
         }
     }
+}
+
+tasks.register<Sync>("collectJavetNative") {
+    group = "distribution"
+    description = "Extracts the arm64-v8a Javet native library for the Expand release"
+    from(provider { configurations.getByName("releaseRuntimeClasspath").files.map(::zipTree) }) {
+        include("jni/arm64-v8a/libjavet-node-android.v.5.0.9.so")
+        rename { "libjavet.so" }
+        eachFile { relativePath = RelativePath(true, name) }
+        includeEmptyDirs = false
+    }
+    into(rootProject.layout.projectDirectory.dir("output_apk/Expand"))
 }

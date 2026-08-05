@@ -96,14 +96,11 @@ class SubStoreService : Service() {
 
     private fun ensureJavetLibraryLoaded(): Boolean = runCatching {
         NativeLibraryManager.initialize(applicationContext)
-        val javetLibBaseName = "libjavet-node-android"
+        val javetLibBaseName = NativeLibraryManager.JAVET_LIBRARY_NAME
 
         if (!NativeLibraryManager.isLibraryAvailable(javetLibBaseName)) {
-            val results = NativeLibraryManager.extractAllLibraries()
-            if (results[javetLibBaseName] != true) {
-                Timber.e("Javet extract failed")
-                return false
-            }
+            Timber.e("Javet library is not downloaded")
+            return false
         }
 
         val loaded = NativeLibraryManager.loadJniLibrary(javetLibBaseName)
