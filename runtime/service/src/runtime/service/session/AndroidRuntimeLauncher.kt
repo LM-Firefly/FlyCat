@@ -86,7 +86,7 @@ class AndroidRuntimeLauncher(context: Context) : RuntimeLauncher {
     }
 
     private companion object {
-        const val VPN_STOP_TIMEOUT_MS = 3_000L
+        const val VPN_STOP_TIMEOUT_MS = 1_000L
         const val VPN_STOP_POLL_MS = 25L
     }
 }
