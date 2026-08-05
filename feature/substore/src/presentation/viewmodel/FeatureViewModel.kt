@@ -261,7 +261,7 @@ class FeatureViewModel(
                         )
                     temporaryFile.delete()
                     downloadClient.download(JAVET_RELEASE_URL, temporaryFile) &&
-                        NativeLibraryManager.installDownloadedLibrary(
+                        NativeLibraryManager.installDownloadedArchive(
                             NativeLibraryManager.JAVET_LIBRARY_NAME,
                             temporaryFile,
                         ) &&

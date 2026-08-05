@@ -21,6 +21,7 @@ package com.github.yumeyucca.yumebox.substore.engine
 
 import android.annotation.SuppressLint
 import android.content.Context
+import org.tukaani.xz.XZInputStream
 import timber.log.Timber
 import java.io.File
 import java.security.MessageDigest
@@ -29,6 +30,9 @@ import java.security.MessageDigest
 object NativeLibraryManager {
     const val JAVET_LIBRARY_NAME = "libjavet-node-android"
     const val JAVET_LIBRARY_FILE_NAME = "libjavet.so"
+    const val JAVET_ARCHIVE_FILE_NAME = "libjavet.so.xz"
+    const val JAVET_ARCHIVE_SHA256 =
+        "31d7606fe3dd9135930a6a9519d90394abd219e535796cee3d5c8747812c6d35"
     const val JAVET_LIBRARY_SHA256 =
         "126d1569d60c2f20605188001f236d91ba4c9cf7d35a8f02b57d69e47fe4b39d"
 
@@ -51,16 +55,41 @@ object NativeLibraryManager {
     }
 
     fun getDownloadTempFile(name: String): File? =
-        getLibraryFile(name)?.let { library -> File(library.parentFile, "${library.name}.download") }
+        getLibraryFile(name)?.let { library ->
+            File(library.parentFile, "$JAVET_ARCHIVE_FILE_NAME.download")
+        }
 
-    fun installDownloadedLibrary(name: String, downloadedFile: File): Boolean {
+    fun installDownloadedArchive(name: String, downloadedArchive: File): Boolean {
         val targetFile = getLibraryFile(name) ?: return false
-        if (!isLibraryFileValid(name, downloadedFile)) {
-            Timber.e("Native library hash mismatch: $name")
+        if (!isArchiveFileValid(name, downloadedArchive)) {
+            Timber.e("Native library archive hash mismatch: $name")
             return false
         }
 
-        return runCatching {
+        val expandedFile = File(targetFile.parentFile, "${targetFile.name}.expanded")
+        val installed =
+            runCatching {
+                if (expandedFile.exists() && !expandedFile.delete()) {
+                    error("Unable to clear expanded native library: ${expandedFile.absolutePath}")
+                }
+                XZInputStream(downloadedArchive.inputStream().buffered()).use { input ->
+                    expandedFile.outputStream().buffered().use { output -> input.copyTo(output) }
+                }
+                check(isLibraryFileValid(name, expandedFile)) {
+                    "Expanded native library hash mismatch: $name"
+                }
+                replaceLibrary(targetFile, expandedFile)
+            }.getOrElse { error ->
+                Timber.e(error, "Native library installation failed: $name")
+                false
+            }
+        downloadedArchive.delete()
+        if (!installed) expandedFile.delete()
+        return installed
+    }
+
+    private fun replaceLibrary(targetFile: File, replacementFile: File): Boolean =
+        runCatching {
             targetFile.parentFile?.mkdirs()
             val backupFile = File(targetFile.parentFile, "${targetFile.name}.previous")
             if (backupFile.exists() && !backupFile.delete()) {
@@ -70,7 +99,7 @@ object NativeLibraryManager {
             if (hasPreviousLibrary && !targetFile.renameTo(backupFile)) {
                 error("Unable to back up native library: ${targetFile.absolutePath}")
             }
-            if (!downloadedFile.renameTo(targetFile)) {
+            if (!replacementFile.renameTo(targetFile)) {
                 if (hasPreviousLibrary) backupFile.renameTo(targetFile)
                 error("Unable to install native library: ${targetFile.absolutePath}")
             }
@@ -78,10 +107,9 @@ object NativeLibraryManager {
             targetFile.setReadable(true, false)
             true
         }.getOrElse { error ->
-            Timber.e(error, "Native library installation failed: $name")
+            Timber.e(error, "Native library replacement failed: ${targetFile.name}")
             false
         }
-    }
 
     fun isLibraryAvailable(name: String): Boolean =
         getLibraryFile(name)?.let { isLibraryFileValid(name, it) } == true
@@ -115,9 +143,18 @@ object NativeLibraryManager {
     private fun isLibraryFileValid(name: String, file: File): Boolean =
         file.isFile && file.canRead() && sha256(file) == expectedSha256(name)
 
+    private fun isArchiveFileValid(name: String, file: File): Boolean =
+        file.isFile && file.canRead() && sha256(file) == expectedArchiveSha256(name)
+
     private fun expectedSha256(name: String): String? =
         when (name) {
             JAVET_LIBRARY_NAME -> JAVET_LIBRARY_SHA256
+            else -> null
+        }
+
+    private fun expectedArchiveSha256(name: String): String? =
+        when (name) {
+            JAVET_LIBRARY_NAME -> JAVET_ARCHIVE_SHA256
             else -> null
         }
 

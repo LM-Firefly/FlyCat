@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.android)
     implementation(libs.commons.compress)
+    implementation(libs.xz)
     implementation(libs.javet.node.android)
     implementation(libs.timber)
     implementation(libs.miuix.ui)

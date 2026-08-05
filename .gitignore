@@ -92,4 +92,4 @@ __pycache__/
 *.pyc
 
 .qodana_work/
-
+/output_*/

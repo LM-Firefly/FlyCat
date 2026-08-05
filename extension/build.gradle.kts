@@ -22,6 +22,7 @@
 
 import com.android.build.gradle.tasks.PackageAndroidArtifact
 import org.gradle.api.file.RelativePath
+import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.Sync
 
 plugins {
@@ -112,4 +113,16 @@ tasks.register<Sync>("collectJavetNative") {
         includeEmptyDirs = false
     }
     into(rootProject.layout.projectDirectory.dir("output_apk/Expand"))
+}
+
+tasks.register<Exec>("compressJavetNative") {
+    group = "distribution"
+    description = "Compresses the Javet native library as an XZ release asset"
+    dependsOn("collectJavetNative")
+
+    val inputFile = rootProject.layout.projectDirectory.file("output_apk/Expand/libjavet.so")
+    val outputFile = rootProject.layout.projectDirectory.file("output_apk/Expand/libjavet.so.xz")
+    inputs.file(inputFile)
+    outputs.file(outputFile)
+    commandLine("7z", "a", "-y", "-txz", "-mx=9", outputFile.asFile, inputFile.asFile)
 }
