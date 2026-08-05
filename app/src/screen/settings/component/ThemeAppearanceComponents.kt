@@ -36,6 +36,7 @@ import com.github.yumeyucca.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetCloseAction
 import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetConfirmAction
 import com.github.yumeyucca.yumebox.presentation.component.EnumSelector
+import com.github.yumeyucca.yumebox.presentation.component.OemTextField
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
 import com.github.yumeyucca.yumebox.presentation.icon.yume.Palette
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
@@ -45,7 +46,6 @@ import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ColorPicker
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.TextField
 
 @Composable
 internal fun ThemeModeAndColorItems(
@@ -185,7 +185,7 @@ internal fun ThemeColorPickerSheet(
                     },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                TextField(
+                OemTextField(
                     value = hexField.value,
                     onValueChange = { updated ->
                         val upper = updated.copy(text = updated.text.uppercase())

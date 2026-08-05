@@ -23,7 +23,6 @@
 package com.github.yumeyucca.yumebox.screen.settings
 
 
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalFocusManager
@@ -175,6 +174,6 @@ internal fun TextInputArrowItem(
         onConfirm = confirm,
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        keyboardActions = KeyboardActions(onDone = { confirm() }),
+        onImeAction = confirm,
     )
 }

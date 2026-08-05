@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import com.github.yumeyucca.yumebox.presentation.component.AgeSecretKeyField
+import com.github.yumeyucca.yumebox.presentation.component.OemTextField
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
 import com.github.yumeyucca.yumebox.presentation.icon.yume.PackageCheck
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
@@ -282,7 +283,7 @@ private fun ManualProfileContent(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(UiDp.dp16),
     ) {
-        TextField(
+        OemTextField(
             value = nameTextFieldValue,
             onValueChange = onNameChange,
             label = YumeTxt.ProfilesPage.Input.ProfileName,
@@ -291,7 +292,7 @@ private fun ManualProfileContent(
         )
 
         if (typeIndex == PROFILE_IMPORT_TYPE_URL) {
-            TextField(
+            OemTextField(
                 value = urlTextFieldValue,
                 onValueChange = onUrlChange,
                 label = YumeTxt.ProfilesPage.Input.SubscriptionUrl,
@@ -302,22 +303,27 @@ private fun ManualProfileContent(
                 modifier = Modifier.fillMaxWidth(),
             )
         } else {
-            TextField(
-                value = fileNameTextFieldValue,
-                onValueChange = {},
-                label = YumeTxt.ProfilesPage.Input.SelectFile,
-                useLabelAsPlaceholder = true,
-                readOnly = true,
-                enabled = false,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                            onClick = onPickFile,
-                        ),
-            )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OemTextField(
+                    value = fileNameTextFieldValue,
+                    onValueChange = {},
+                    label = YumeTxt.ProfilesPage.Input.SelectFile,
+                    useLabelAsPlaceholder = true,
+                    readOnly = true,
+                    enabled = false,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Box(
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() },
+                                onClick = onPickFile,
+                            ),
+                )
+            }
         }
 
         AgeSecretKeyField(

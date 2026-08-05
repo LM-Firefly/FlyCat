@@ -31,6 +31,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.github.yumeyucca.yumebox.core.bridge.Compiler
 import com.github.yumeyucca.yumebox.presentation.component.AppDialog
+import com.github.yumeyucca.yumebox.presentation.component.OemTextField
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -38,7 +39,6 @@ import kotlinx.coroutines.withContext
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 
 /**
  * Age key generator dialog. The secret/public fields are editable so a key can be typed or pasted,
@@ -73,14 +73,14 @@ fun AgeKeyGeneratorDialog(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(spacing.space12),
         ) {
-            TextField(
+            OemTextField(
                 value = secretKey,
                 onValueChange = { secretKey = it },
                 label = YumeTxt.MetaFeature.AgeKey.SecretKey,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            TextField(
+            OemTextField(
                 value = publicKey,
                 onValueChange = { publicKey = it },
                 label = YumeTxt.MetaFeature.AgeKey.PublicKey,

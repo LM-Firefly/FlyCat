@@ -40,6 +40,7 @@ import com.github.yumeyucca.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetCloseAction
 import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetConfirmAction
 import com.github.yumeyucca.yumebox.presentation.component.AppDialog
+import com.github.yumeyucca.yumebox.presentation.component.OemTextField
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import com.github.yumeyucca.yumebox.presentation.viewmodel.OverrideConfigViewModel
 import kotlinx.coroutines.launch
@@ -207,7 +208,7 @@ internal fun CreateConfigDialog(
             }
             when (inputMode) {
                 OverrideConfigInputMode.CreateNew -> {
-                    TextField(
+                    OemTextField(
                         value = nameTextFieldValueState.value,
                         onValueChange = { updatedTextFieldValue ->
                             nameTextFieldValueState.value = updatedTextFieldValue
@@ -302,7 +303,7 @@ private fun ImportOverrideNetworkContent(
     enabled: Boolean,
     onUrlChange: (String) -> Unit,
 ) {
-    TextField(
+    OemTextField(
         value = url,
         onValueChange = onUrlChange,
         label = YumeTxt.Override.Dialog.Create.Url,

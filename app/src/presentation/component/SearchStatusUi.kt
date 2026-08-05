@@ -30,7 +30,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -53,6 +52,7 @@ import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.presentation.theme.Sizes
 import com.github.yumeyucca.yumebox.presentation.theme.Spacing
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.presentation.component.OemSearchInput
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InputField
@@ -343,47 +343,32 @@ private fun SearchBar(
         }
     }
 
-    BasicTextField(
+    OemSearchInput(
         value = textFieldValue,
         onValueChange = {
             textFieldValue = it
             onSearchStatusChange(searchStatus.copy(searchText = it.text))
         },
-        singleLine = true,
-        textStyle =
-            TextStyle(
-                fontWeight = FontWeight.Medium,
-                fontSize = 17.sp,
-                color = colorScheme.onSurface,
-            ),
-        cursorBrush = SolidColor(colorScheme.primary),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         modifier =
             modifier
                 .fillMaxWidth()
                 .padding(start = padding.start, end = padding.end)
                 .padding(top = padding.top, bottom = componentSizes.searchBarBottomPadding)
-                .heightIn(min = componentSizes.searchFieldMinHeight)
-                .background(colorScheme.secondaryContainer, CircleShape)
-                .focusRequester(focusRequester),
-        decorationBox = { innerTextField ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SearchBarLeadingIcon(componentSizes = componentSizes, spacing = spacing)
-                Box(modifier = Modifier.weight(1f)) { innerTextField() }
-                SearchBarClearButton(
-                    searchText = searchStatus.searchText,
-                    onClear = {
-                        textFieldValue = TextFieldValue("")
-                        onSearchStatusChange(searchStatus.copy(searchText = ""))
-                    },
-                    componentSizes = componentSizes,
-                    spacing = spacing,
-                )
-            }
+                .heightIn(min = componentSizes.searchFieldMinHeight),
+        inputModifier = Modifier.focusRequester(focusRequester),
+        leadingIcon = { SearchBarLeadingIcon(componentSizes = componentSizes, spacing = spacing) },
+        trailingIcon = {
+            SearchBarClearButton(
+                searchText = searchStatus.searchText,
+                onClear = {
+                    textFieldValue = TextFieldValue("")
+                    onSearchStatusChange(searchStatus.copy(searchText = ""))
+                },
+                componentSizes = componentSizes,
+                spacing = spacing,
+            )
         },
+        onImeAction = {},
     )
 }
 

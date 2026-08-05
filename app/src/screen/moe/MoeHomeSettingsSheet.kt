@@ -23,7 +23,6 @@ import com.github.yumeyucca.yumebox.presentation.component.*
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.TextField
 
 @Composable
 internal fun MoeHomeSettingsSheet(
@@ -63,7 +62,7 @@ internal fun MoeHomeSettingsSheet(
             .fillMaxWidth()
             .padding(bottom = spacing.space16)) {
             item {
-                TextField(
+                OemTextField(
                     value = draftQuote,
                     onValueChange = { draftQuote = it },
                     label = YumeTxt.Home.Settings.Quote,

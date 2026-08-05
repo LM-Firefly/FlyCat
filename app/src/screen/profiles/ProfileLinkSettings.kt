@@ -32,8 +32,8 @@ import com.github.yumeyucca.yumebox.data.store.LinkOpenMode
 import com.github.yumeyucca.yumebox.data.store.ProfileLink
 import com.github.yumeyucca.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumeyucca.yumebox.presentation.component.AppFormDialog
+import com.github.yumeyucca.yumebox.presentation.component.OemTextField
 import tf.gal.yumebox.locale.YumeTxt
-import top.yukonga.miuix.kmp.basic.TextField
 
 @Composable
 internal fun LinkSettingsDialog(
@@ -133,7 +133,7 @@ internal fun AddLinkDialog(
         cancelText = YumeTxt.ProfilesPage.Button.Cancel,
         confirmText = YumeTxt.ProfilesPage.Button.Confirm,
     ) {
-        TextField(
+        OemTextField(
             value = currentName,
             onValueChange = {
                 currentName = it
@@ -143,7 +143,7 @@ internal fun AddLinkDialog(
             useLabelAsPlaceholder = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        TextField(
+        OemTextField(
             value = currentUrl,
             onValueChange = {
                 currentUrl = it

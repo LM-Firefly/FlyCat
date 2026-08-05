@@ -46,6 +46,7 @@ import com.github.yumeyucca.yumebox.presentation.component.AgeSecretKeyField
 import com.github.yumeyucca.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetCloseAction
 import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetConfirmAction
+import com.github.yumeyucca.yumebox.presentation.component.OemTextField
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import com.github.yumeyucca.yumebox.runtime.api.Profile
@@ -274,7 +275,7 @@ internal fun ProfileSettingsDialog(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(spacing.space16),
                         ) {
-                            TextField(
+                            OemTextField(
                                 value = editName,
                                 onValueChange = { editName = it },
                                 label = YumeTxt.ProfilesPage.Input.ProfileName,
@@ -283,7 +284,7 @@ internal fun ProfileSettingsDialog(
                             )
 
                             if (profile.type == Profile.Type.Url) {
-                                TextField(
+                                OemTextField(
                                     value = editSource,
                                     onValueChange = { editSource = it },
                                     label = YumeTxt.ProfilesPage.SettingsDialog.ChangeLink,

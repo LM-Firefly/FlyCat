@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
 import com.github.yumeyucca.yumebox.presentation.icon.yume.chevron
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.presentation.component.OemTextField
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -123,7 +124,7 @@ fun OverrideFormField(
     maxLines: Int = 1,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        TextField(
+        OemTextField(
             value = value,
             onValueChange = onValueChange,
             label = label,

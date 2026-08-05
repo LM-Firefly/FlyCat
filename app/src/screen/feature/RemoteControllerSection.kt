@@ -40,7 +40,6 @@ import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -176,7 +175,7 @@ private fun BackendEditSheet(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(spacing.space12),
             ) {
-                TextField(
+                OemTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = YumeTxt.Feature.RemoteController.Name,
@@ -189,7 +188,7 @@ private fun BackendEditSheet(
                     horizontalArrangement = Arrangement.spacedBy(spacing.space12),
                     verticalAlignment = Alignment.Top,
                 ) {
-                    TextField(
+                    OemTextField(
                         value = host,
                         onValueChange = { raw ->
                             val input = parseHostPortInput(raw, port)
@@ -200,7 +199,7 @@ private fun BackendEditSheet(
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
-                    TextField(
+                    OemTextField(
                         value = port,
                         onValueChange = { port = it.filter(Char::isDigit).take(5) },
                         label = YumeTxt.Feature.RemoteController.Port,
@@ -210,7 +209,7 @@ private fun BackendEditSheet(
                     )
                 }
 
-                TextField(
+                OemTextField(
                     value = secret,
                     onValueChange = { secret = it },
                     label = YumeTxt.Feature.RemoteController.Secret,

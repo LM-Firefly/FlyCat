@@ -28,11 +28,11 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumeyucca.yumebox.presentation.component.AppFormDialog
 import com.github.yumeyucca.yumebox.presentation.component.AppTextFieldDialog
+import com.github.yumeyucca.yumebox.presentation.component.OemTextField
 import com.github.yumeyucca.yumebox.presentation.component.PreferenceValueItem
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 
 private val ruleTypePresets =
@@ -159,7 +159,7 @@ internal fun KeyValueFormDialog(
         },
         error = error,
     ) {
-        TextField(
+        OemTextField(
             value = keyTextFieldValue,
             onValueChange = { updatedTextFieldValue ->
                 keyTextFieldValue = updatedTextFieldValue
@@ -168,7 +168,7 @@ internal fun KeyValueFormDialog(
             label = keyPlaceholder,
             modifier = Modifier.fillMaxWidth(),
         )
-        TextField(
+        OemTextField(
             value = valueTextFieldValue,
             onValueChange = { updatedTextFieldValue ->
                 valueTextFieldValue = updatedTextFieldValue
@@ -257,7 +257,7 @@ internal fun RuleEditorDialog(
                 error = null
             },
         )
-        TextField(
+        OemTextField(
             value = payloadTextFieldValue,
             onValueChange = { updatedTextFieldValue ->
                 payloadTextFieldValue = updatedTextFieldValue

@@ -27,7 +27,6 @@ import android.content.Intent
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -408,14 +407,11 @@ private fun CustomUserAgentPreferenceItem(customUserAgent: String, onConfirm: (S
             showEditCustomUserAgentDialog.value = false
         },
         singleLine = true,
-        keyboardActions =
-            KeyboardActions(
-                onDone = {
-                    onConfirm(localTextFieldValue.text)
-                    focusManager.clearFocus()
-                    showEditCustomUserAgentDialog.value = false
-                }
-            ),
+        onImeAction = {
+            onConfirm(localTextFieldValue.text)
+            focusManager.clearFocus()
+            showEditCustomUserAgentDialog.value = false
+        },
     )
 }
 

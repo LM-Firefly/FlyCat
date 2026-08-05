@@ -36,7 +36,6 @@ import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -165,7 +164,7 @@ private fun ConfigTextInputDialog(
                 .padding(vertical = UiDp.dp8),
             verticalArrangement = Arrangement.spacedBy(UiDp.dp16),
         ) {
-            TextField(
+            OemTextField(
                 value = textFieldValue.value,
                 onValueChange = { updatedTextFieldValue ->
                     textFieldValue.value = updatedTextFieldValue

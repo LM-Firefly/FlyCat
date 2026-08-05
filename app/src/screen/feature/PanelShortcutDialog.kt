@@ -45,12 +45,12 @@ import com.github.panpf.sketch.rememberAsyncImagePainter
 import com.github.panpf.sketch.request.ImageRequest
 import com.github.yumeyucca.yumebox.R
 import com.github.yumeyucca.yumebox.presentation.component.AppFormDialog
+import com.github.yumeyucca.yumebox.presentation.component.OemTextField
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Reset
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -143,7 +143,7 @@ fun PanelShortcutDialog(
                 }
             }
 
-            TextField(
+            OemTextField(
                 value = name,
                 onValueChange = { name = it },
                 label = YumeTxt.Feature.Panel.ShortcutName,

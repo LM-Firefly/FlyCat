@@ -25,14 +25,12 @@ package com.github.yumeyucca.yumebox.presentation.component
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
-import top.yukonga.miuix.kmp.basic.TextField
 
 @Composable
 fun AppTextFieldDialog(
@@ -50,7 +48,7 @@ fun AppTextFieldDialog(
     maxLines: Int = 1,
     renderInRootScaffold: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    onImeAction: (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     supportingContent: @Composable (() -> Unit)? = null,
 ) {
@@ -101,7 +99,7 @@ fun AppTextFieldDialog(
         maxLines = maxLines,
         renderInRootScaffold = renderInRootScaffold,
         keyboardOptions = keyboardOptions,
-        keyboardActions = keyboardActions,
+        onImeAction = onImeAction,
         trailingIcon = trailingIcon,
         supportingContent = supportingContent,
     )
@@ -123,7 +121,7 @@ fun AppTextFieldDialog(
     maxLines: Int = 1,
     renderInRootScaffold: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    onImeAction: (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     supportingContent: @Composable (() -> Unit)? = null,
 ) {
@@ -140,31 +138,18 @@ fun AppTextFieldDialog(
                 Modifier
                     .fillMaxWidth()
                     .padding(bottom = if (supportingContent == null) UiDp.dp0 else UiDp.dp8)
-            if (label.isBlank()) {
-                TextField(
-                    modifier = textFieldModifier,
-                    value = textFieldValue,
-                    onValueChange = onTextFieldValueChange,
-                    singleLine = singleLine,
-                    maxLines = maxLines,
-                    keyboardOptions = keyboardOptions,
-                    keyboardActions = keyboardActions,
-                    trailingIcon = trailingIcon,
-                )
-            } else {
-                TextField(
-                    modifier = textFieldModifier,
-                    value = textFieldValue,
-                    onValueChange = onTextFieldValueChange,
-                    label = label,
-                    useLabelAsPlaceholder = useLabelAsPlaceholder,
-                    singleLine = singleLine,
-                    maxLines = maxLines,
-                    keyboardOptions = keyboardOptions,
-                    keyboardActions = keyboardActions,
-                    trailingIcon = trailingIcon,
-                )
-            }
+            OemTextField(
+                modifier = textFieldModifier,
+                value = textFieldValue,
+                onValueChange = onTextFieldValueChange,
+                label = label,
+                useLabelAsPlaceholder = useLabelAsPlaceholder,
+                singleLine = singleLine,
+                maxLines = maxLines,
+                keyboardOptions = keyboardOptions,
+                onImeAction = onImeAction,
+                trailingIcon = trailingIcon,
+            )
             supportingContent?.invoke()
             DialogButtonRow(onCancel = onDismissRequest, onConfirm = onConfirm)
         }
