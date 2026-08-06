@@ -23,18 +23,18 @@
 package com.github.yumeyucca.yumebox.screen.profiles
 
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import com.github.yumeyucca.yumebox.App
 import com.github.yumeyucca.yumebox.presentation.component.*
 import com.github.yumeyucca.yumebox.presentation.icon.ShellIcons
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import com.github.yumeyucca.yumebox.runtime.api.Profile
 import com.github.yumeyucca.yumebox.screen.home.HomeViewModel
@@ -43,6 +43,8 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.*
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 @Composable
 internal fun ProfilesPageHost(
@@ -128,23 +130,12 @@ internal fun ProfilesPageContent(
             TopBar(
                 title = YumeTxt.ProfilesPage.Title,
                 scrollBehavior = scrollBehavior,
-                actions = {
-                    IconButton(onClick = onAddProfile) {
-                        Icon(
-                            imageVector = ShellIcons.AddProfile,
-                            contentDescription = YumeTxt.ProfilesPage.Action.AddProfile,
-                        )
-                    }
-                },
             )
         }
     ) { innerPadding ->
         Box(Modifier.fillMaxSize()) {
             if (profiles.isEmpty()) {
-                CenteredText(
-                    firstLine = YumeTxt.ProfilesPage.Empty.NoProfiles,
-                    secondLine = YumeTxt.ProfilesPage.Empty.Hint,
-                )
+                ProfileEmptyAddGuide(onClick = onAddProfile)
             } else {
                 ProfilesList(
                     profiles = profiles,
@@ -152,6 +143,7 @@ internal fun ProfilesPageContent(
                     innerPadding = innerPadding,
                     scrollBehavior = scrollBehavior,
                     isDownloading = isDownloading,
+                    onAddProfile = onAddProfile,
                     onReorderProfiles = onReorderProfiles,
                     onShareProfile = onShareProfile,
                     onUpdateProfile = onUpdateProfile,
@@ -174,6 +166,7 @@ private fun ProfilesList(
     innerPadding: PaddingValues,
     scrollBehavior: ScrollBehavior,
     isDownloading: Boolean,
+    onAddProfile: () -> Unit,
     onReorderProfiles: (Int, Int) -> Unit,
     onShareProfile: (Profile) -> Unit,
     onUpdateProfile: (Profile) -> Unit,
@@ -184,7 +177,14 @@ private fun ProfilesList(
     val listState = rememberLazyListState()
     val reorderState =
         rememberReorderableLazyListState(listState) { from, to ->
-            onReorderProfiles(from.index, to.index)
+            // The add card occupies the first LazyColumn slot but is not a profile. Keep it
+            // outside the sortable range before forwarding indices to the profiles list.
+            val fromProfile = from.index - 1
+            val toProfile = to.index - 1
+            if (fromProfile < 0 || toProfile < 0) {
+                return@rememberReorderableLazyListState
+            }
+            onReorderProfiles(fromProfile, toProfile)
         }
     val importedDir = App.instance.filesDir.resolve("imported")
 
@@ -194,6 +194,9 @@ private fun ProfilesList(
         innerPadding = combinePaddingValues(innerPadding, mainInnerPadding),
         topPadding = UiDp.dp20,
     ) {
+        item(key = "profile_add") {
+            ProfileAddCard(onClick = onAddProfile)
+        }
         items(items = profiles, key = { it.uuid.toString() }) { profile ->
             ReorderableItem(reorderState, key = profile.uuid.toString()) { isDragging ->
                 ProfileCard(
@@ -209,6 +212,80 @@ private fun ProfilesList(
                     onDelete = { onDeleteProfile(it) },
                     onEdit = { onEditProfile(it) },
                     onToggleEnabled = { onToggleProfile(it) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileAddCard(onClick: () -> Unit) {
+    val spacing = AppTheme.spacing
+    val primary = MiuixTheme.colorScheme.primary
+
+    AppCard(
+        modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12),
+        insideMargin = PaddingValues(spacing.space16),
+        onClick = onClick,
+        pressFeedbackType = PressFeedbackType.Sink,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = ShellIcons.AddProfile,
+                contentDescription = YumeTxt.ProfilesPage.Action.AddProfile,
+                tint = primary,
+                modifier = Modifier.size(UiDp.dp20),
+            )
+            Spacer(modifier = Modifier.width(spacing.space8))
+            Text(
+                text = YumeTxt.ProfilesPage.Action.AddProfile,
+                style = MiuixTheme.textStyles.body1,
+                color = primary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileEmptyAddGuide(onClick: () -> Unit) {
+    val spacing = AppTheme.spacing
+    val primary = MiuixTheme.colorScheme.primary
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        EmptyResourceIllustration()
+        Spacer(modifier = Modifier.height(spacing.space16))
+        AppCard(
+            modifier = Modifier.wrapContentWidth(),
+            cornerRadius = 100,
+            insideMargin = PaddingValues(horizontal = spacing.space16, vertical = spacing.space10),
+            colors =
+                top.yukonga.miuix.kmp.basic.CardDefaults.defaultColors(
+                    color = primary.copy(alpha = 0.10f),
+                    contentColor = primary,
+                ),
+            onClick = onClick,
+            pressFeedbackType = PressFeedbackType.Sink,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = ShellIcons.AddProfile,
+                    contentDescription = YumeTxt.ProfilesPage.Action.AddProfile,
+                    tint = primary,
+                    modifier = Modifier.size(UiDp.dp20),
+                )
+                Spacer(modifier = Modifier.width(spacing.space8))
+                Text(
+                    text = YumeTxt.ProfilesPage.Action.AddProfile,
+                    style = MiuixTheme.textStyles.body1,
+                    color = primary,
                 )
             }
         }

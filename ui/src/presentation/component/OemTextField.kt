@@ -142,7 +142,7 @@ fun OemTextField(
                     maxLines = maxLines,
                     keyboardOptions = keyboardOptions,
                     onImeAction = onImeAction,
-                    textColor = colors.onSecondaryContainer,
+                    textColor = colors.onSurface,
                     onFocusChanged = { focused = it },
                 )
             }

@@ -54,6 +54,7 @@ internal class ProfileSubmissionActions(
 context(actions: ProfileSubmissionActions)
 internal fun submitProfile(draft: ProfileDraft) {
     if (draft.typeIndex == PROFILE_IMPORT_TYPE_QR || draft.isDownloading) return
+    actions.hideKeyboard()
     if (draft.typeIndex == PROFILE_IMPORT_TYPE_URL && draft.url.isBlank()) {
         actions.showError(YumeTxt.ProfilesPage.Validation.EnterUrl)
         return
@@ -63,7 +64,6 @@ internal fun submitProfile(draft: ProfileDraft) {
         return
     }
 
-    actions.hideKeyboard()
     actions.clearError()
     actions.startDownload()
     val profile = draft.profileToEdit
