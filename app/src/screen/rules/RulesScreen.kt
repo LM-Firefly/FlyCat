@@ -56,7 +56,7 @@ import java.util.*
  * This is **not** the custom-routing editor.
  *
  * Search chrome mirrors [com.github.yumeyucca.yumebox.screen.connection.ConnectionScreen] (collapsed
- * bar in TopBar + SearchPager overlay). Horizontal inset for cards is owned by shared [Card]
+ * bar in TopBar + SearchPager overlay). Horizontal inset for cards is owned by shared [AppCard]
  * (`applyHorizontalPadding`), same as Log — not LazyColumn contentPadding.
  */
 @Composable
@@ -270,7 +270,7 @@ private fun RuleCard(
         } else {
             "-"
         }
-    Card(modifier = Modifier.padding(vertical = spacing.space4)) {
+    AppCard(modifier = Modifier.padding(vertical = spacing.space4)) {
         Column(
             modifier =
                 Modifier

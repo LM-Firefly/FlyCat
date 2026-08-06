@@ -76,7 +76,7 @@ fun <T> RoutingSwitchCard(
     ) {
         titleContent(title)
         itemChunks.forEach { chunk ->
-            Card(applyHorizontalPadding = applyHorizontalPadding) {
+            AppCard(applyHorizontalPadding = applyHorizontalPadding) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     chunk.forEach { item ->
                         key(item) {

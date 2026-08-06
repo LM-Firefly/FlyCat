@@ -81,7 +81,7 @@ fun ProfileCard(
         remember(colorScheme, opacity) { colorScheme.primary.copy(alpha = opacity.subtle) }
     val updateTint = remember(colorScheme) { colorScheme.primary }
 
-    Card(
+    AppCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(bottom = spacing.space12),

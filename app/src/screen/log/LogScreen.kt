@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.sp
 import com.github.yumeyucca.yumebox.common.util.toast
 import com.github.yumeyucca.yumebox.core.model.LogMessage
 import com.github.yumeyucca.yumebox.presentation.component.*
-import com.github.yumeyucca.yumebox.presentation.component.Card
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
 import com.github.yumeyucca.yumebox.presentation.icon.yume.Share
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
@@ -351,7 +351,7 @@ fun LogScreen(navigator: Navigator) {
             LazyColumn(
                 state = searchListState,
                 modifier = Modifier.fillMaxSize(),
-                // Horizontal inset is owned by Card.horizontalPadding(); only vertical here.
+                // Horizontal inset is owned by AppCard.horizontalPadding(); only vertical here.
                 contentPadding =
                     PaddingValues(
                         top = spacing.space6,
@@ -398,7 +398,7 @@ private fun LogEntryRow(
             LogMessage.Level.Unknown -> semanticColors.logLevel.neutral
         }
 
-    Card(
+    AppCard(
         modifier = modifier.padding(vertical = spacing.space4),
         onClick = onClick,
         pressFeedbackType = PressFeedbackType.Sink,

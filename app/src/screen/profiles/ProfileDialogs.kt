@@ -44,6 +44,7 @@ import com.github.yumeyucca.yumebox.data.model.OverrideConfig
 import com.github.yumeyucca.yumebox.data.model.ProfileBinding
 import com.github.yumeyucca.yumebox.presentation.component.AgeSecretKeyField
 import com.github.yumeyucca.yumebox.presentation.component.AppActionBottomSheet
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetCloseAction
 import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetConfirmAction
 import com.github.yumeyucca.yumebox.presentation.component.OemTextField
@@ -245,7 +246,7 @@ internal fun ProfileSettingsDialog(
                     .padding(bottom = UiDp.dp16),
             verticalArrangement = Arrangement.spacedBy(spacing.space16),
         ) {
-            Card {
+            AppCard(applyHorizontalPadding = false) {
                 WindowSpinnerPreference(
                     title = YumeTxt.ProfilesPage.SettingsDialog.SectionType,
                     items =
@@ -311,7 +312,7 @@ internal fun ProfileSettingsDialog(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(spacing.space16),
                         ) {
-                            Card {
+                            AppCard(applyHorizontalPadding = false) {
                                 Column {
                                     SwitchPreference(
                                         title = YumeTxt.ProfilesPage.SettingsDialog.CustomRouting,
@@ -335,7 +336,7 @@ internal fun ProfileSettingsDialog(
                             }
 
                             if (overrideRowIds.isNotEmpty()) {
-                                Card {
+                                AppCard(applyHorizontalPadding = false) {
                                     LazyColumn(
                                         state = selectedOverrideListState,
                                         modifier =

@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.github.yumeyucca.yumebox.common.util.toast
 import com.github.yumeyucca.yumebox.data.model.OverrideConfig
 import com.github.yumeyucca.yumebox.presentation.component.AppActionBottomSheet
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetCloseAction
 import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetConfirmAction
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
@@ -39,7 +40,6 @@ import com.github.yumeyucca.yumebox.presentation.viewmodel.OverrideConfigViewMod
 import com.github.yumeyucca.yumebox.runtime.api.Profile
 import kotlinx.coroutines.launch
 import tf.gal.yumebox.locale.YumeTxt
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
@@ -153,7 +153,7 @@ internal fun OverrideApplyToProfilesSheet(
                             color = colorScheme.onSurfaceVariantSummary,
                         )
                     } else {
-                        Card {
+                        AppCard(applyHorizontalPadding = false) {
                             LazyColumn(
                                 modifier =
                                     Modifier

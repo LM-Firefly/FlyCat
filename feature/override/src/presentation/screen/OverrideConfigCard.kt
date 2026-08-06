@@ -29,7 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.github.yumeyucca.yumebox.data.model.OverrideConfig
-import com.github.yumeyucca.yumebox.presentation.component.Card
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.component.OverrideCardActionIconButton
 import com.github.yumeyucca.yumebox.presentation.component.OverrideStatusBadge
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
@@ -116,7 +116,7 @@ private fun OverrideConfigCardContent(
 ) {
     val accentTintColor = colorScheme.primary
 
-    Card(
+    AppCard(
         modifier =
             Modifier
                 .fillMaxWidth()

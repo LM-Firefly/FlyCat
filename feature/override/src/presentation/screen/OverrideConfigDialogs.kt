@@ -39,6 +39,7 @@ import com.github.yumeyucca.yumebox.data.model.OverrideContentType
 import com.github.yumeyucca.yumebox.presentation.component.AppActionBottomSheet
 import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetCloseAction
 import com.github.yumeyucca.yumebox.presentation.component.AppBottomSheetConfirmAction
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.component.AppDialog
 import com.github.yumeyucca.yumebox.presentation.component.OemTextField
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
@@ -247,7 +248,7 @@ private fun OverrideInputModeSelector(
     val inputModeOptions = remember { OverrideConfigInputMode.entries.toList() }
     val selectedModeIndex = inputModeOptions.indexOf(selectedMode).coerceAtLeast(0)
 
-    top.yukonga.miuix.kmp.basic.Card {
+    AppCard(applyHorizontalPadding = false) {
         OverlayDropdownPreference(
             title = YumeTxt.ProfilesPage.Type.Title,
             items = inputModeOptions.map(OverrideConfigInputMode::label),
@@ -267,7 +268,7 @@ private fun OverrideTypeSelector(
     val contentTypeOptions = remember { OverrideContentType.entries.toList() }
     val selectedTypeIndex = contentTypeOptions.indexOf(selectedType).coerceAtLeast(0)
 
-    top.yukonga.miuix.kmp.basic.Card {
+    AppCard(applyHorizontalPadding = false) {
         OverlayDropdownPreference(
             title = YumeTxt.Override.Dialog.Create.Type,
             items = contentTypeOptions.map { it.label },
@@ -286,7 +287,7 @@ private fun ImportOverrideFileContent(
     onPickFile: () -> Unit,
 ) {
     Box(modifier = modifier) {
-        top.yukonga.miuix.kmp.basic.Card {
+        AppCard(applyHorizontalPadding = false) {
             BasicComponent(
                 title = YumeTxt.ProfilesPage.Input.SelectFile,
                 summary = fileName.ifBlank { YumeTxt.ProfilesPage.Validation.SelectFile },

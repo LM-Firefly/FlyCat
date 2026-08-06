@@ -160,7 +160,7 @@ fun OverrideFieldAssistText(text: String, color: Color, modifier: Modifier = Mod
 
 @Composable
 fun OverrideSelectorCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    Card(modifier = modifier, insideMargin = PaddingValues(), content = content)
+    AppCard(modifier = modifier, insideMargin = PaddingValues(), content = content)
 }
 
 @Composable

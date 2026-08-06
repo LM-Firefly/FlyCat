@@ -84,7 +84,7 @@ fun EditorListItem(
     deleteIcon: ImageVector,
     deleteContentDescription: String,
 ) {
-    Card(modifier = modifier.padding(vertical = UiDp.dp4)) {
+    AppCard(modifier = modifier.padding(vertical = UiDp.dp4)) {
         Row(
             modifier =
                 Modifier

@@ -99,7 +99,7 @@ fun AboutScreen(navigator: Navigator) {
             item {
                 Spacer(modifier = Modifier.height(UiDp.dp24))
 
-                Card {
+                AppCard {
                     Box(
                         modifier =
                             Modifier
@@ -163,7 +163,7 @@ fun AboutScreen(navigator: Navigator) {
 
                 Spacer(modifier = Modifier.height(UiDp.dp12))
 
-                Card {
+                AppCard {
                     BasicComponent(
                         title = "YumeBox",
                         summary = "An open-source Android client based Mihomo",
@@ -171,7 +171,7 @@ fun AboutScreen(navigator: Navigator) {
                 }
 
                 Title(YumeTxt.About.Section.ProjectLinks)
-                Card {
+                AppCard {
                     AboutLinkItem(
                         title = "YumeBox",
                         url = "https://github.com/YumeYucca/YumeBox",
@@ -187,7 +187,7 @@ fun AboutScreen(navigator: Navigator) {
                 }
 
                 Title(YumeTxt.About.Section.More)
-                Card {
+                AppCard {
                     AboutLinkItem(
                         title = YumeTxt.About.Link.TelegramGroup,
                         url = "https://t.me/OOM_Group",
@@ -203,7 +203,7 @@ fun AboutScreen(navigator: Navigator) {
                 }
 
                 Title(YumeTxt.About.Section.Support)
-                Card {
+                AppCard {
                     ArrowPreference(
                         title = YumeTxt.About.Support.ExportLogs,
                         onClick = {
@@ -224,7 +224,7 @@ fun AboutScreen(navigator: Navigator) {
                 }
 
                 Title(YumeTxt.About.Section.License)
-                Card {
+                AppCard {
                     ArrowPreference(
                         title = YumeTxt.About.License.Libraries,
                         summary = YumeTxt.About.License.LibrariesSummary,

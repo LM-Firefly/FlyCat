@@ -166,7 +166,7 @@ fun WifiAutomationSettingsSection() {
     }
 
     Title(YumeTxt.NetworkSettings.WifiAutomation.Title)
-    Card {
+    AppCard {
         PreferenceSwitchItem(
             title = YumeTxt.NetworkSettings.WifiAutomation.EnabledTitle,
             checked = state.enabled,
@@ -176,7 +176,7 @@ fun WifiAutomationSettingsSection() {
         )
     }
     Title(YumeTxt.NetworkSettings.WifiAutomation.WifiNameHeading)
-    Card {
+    AppCard {
         PreferenceArrowItem(
             title = YumeTxt.NetworkSettings.WifiAutomation.ManualDialogTitle,
             onClick = {
@@ -191,7 +191,7 @@ fun WifiAutomationSettingsSection() {
         )
     }
     Title(YumeTxt.NetworkSettings.WifiAutomation.NetworkChangeSection)
-    Card {
+    AppCard {
         PreferenceEnumItem(
             title = YumeTxt.NetworkSettings.WifiAutomation.OtherWifiTitle,
             currentValue = state.otherWifiAction,
@@ -385,7 +385,7 @@ private fun WifiScanSheet(
                         enter = fadeIn() + expandVertically(),
                         exit = fadeOut() + shrinkVertically(),
                     ) {
-                        Card {
+                        AppCard {
                             WindowDropdownPreference(
                                 title = YumeTxt.NetworkSettings.WifiAutomation.ActionTitle,
                                 items = listOf(
@@ -404,7 +404,7 @@ private fun WifiScanSheet(
                             )
                         }
                     }
-                    Card {
+                    AppCard {
                         LazyColumn(
                             modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
                         ) {
@@ -479,7 +479,7 @@ private fun WifiRuleEditSheet(
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically(),
             ) {
-                Card {
+                AppCard {
                     WindowDropdownPreference(
                         title = YumeTxt.NetworkSettings.WifiAutomation.ActionTitle,
                         items = listOf(
@@ -497,7 +497,7 @@ private fun WifiRuleEditSheet(
             if (rules.isEmpty()) {
                 BasicComponent(title = YumeTxt.NetworkSettings.WifiAutomation.EmptyRules)
             } else {
-                Card {
+                AppCard {
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
                     ) {

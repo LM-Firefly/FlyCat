@@ -39,7 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.yumeyucca.yumebox.common.util.formatBytes
 import com.github.yumeyucca.yumebox.core.model.ConnectionInfo
-import com.github.yumeyucca.yumebox.presentation.component.Card
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.component.Title
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import kotlinx.serialization.json.JsonObject
@@ -69,7 +69,7 @@ fun ConnectionDetailContent(
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Title(YumeTxt.Connection.Detail.Section.Info)
-        Card {
+        AppCard {
             ConnectionHeaderRow(state = state)
             DetailValueRow(
                 title = YumeTxt.Connection.Detail.Label.Host,
@@ -113,7 +113,7 @@ fun ConnectionDetailContent(
 
         if (connectionInfo.rule.isNotEmpty()) {
             Title(YumeTxt.Connection.Detail.Section.Rule)
-            Card {
+            AppCard {
                 DetailValueRow(
                     title = YumeTxt.Connection.Detail.Label.Type,
                     value = connectionInfo.rule,
@@ -129,7 +129,7 @@ fun ConnectionDetailContent(
 
         if (connectionInfo.chains.isNotEmpty()) {
             Title(YumeTxt.Connection.Detail.Section.Chain)
-            Card {
+            AppCard {
                 ProxyChainRow(
                     chains = connectionInfo.chains,
                     modifier =

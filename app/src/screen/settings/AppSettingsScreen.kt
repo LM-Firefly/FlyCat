@@ -41,7 +41,7 @@ import com.github.yumeyucca.yumebox.data.model.AppLanguage
 import com.github.yumeyucca.yumebox.data.model.ThemeMode
 import com.github.yumeyucca.yumebox.data.model.AppIconStyle
 import com.github.yumeyucca.yumebox.presentation.component.*
-import com.github.yumeyucca.yumebox.presentation.component.Card
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import com.github.yumeyucca.yumebox.runtime.api.Intents
 import com.github.yumeyucca.yumebox.screen.settings.component.ThemeColorPickerItem
@@ -84,7 +84,7 @@ private fun AppBehaviorSettingsSection(viewModel: AppSettingsViewModel) {
     val isChineseLocale = remember { LocaleUtil.isChineseLocale() }
 
     Title(YumeTxt.AppSettings.Section.Behavior)
-    Card {
+    AppCard {
         PreferenceSwitchItem(
             title = YumeTxt.AppSettings.Behavior.AutoStartTitle,
             checked = automaticRestart,
@@ -121,7 +121,7 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
     val appIconStyle = section.appIconStyle
 
     Title(YumeTxt.AppSettings.Interface.ColorThemeTitle)
-    Card {
+    AppCard {
         PreferenceEnumItem(
             title = YumeTxt.AppSettings.Interface.ThemeModeTitle,
             currentValue = themeMode,
@@ -145,7 +145,7 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
         )
     }
     Title(YumeTxt.AppSettings.Section.Interface)
-    Card {
+    AppCard {
         PreferenceEnumItem(
             title = YumeTxt.AppSettings.Interface.LanguageTitle,
             currentValue = appLanguage,
@@ -195,7 +195,7 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
         PageScalePreferenceItem(pageScale = pageScale, onApply = viewModel::onPageScaleChange)
     }
     Title(YumeTxt.AppSettings.Section.Home)
-    Card {
+    AppCard {
         PreferenceSwitchItem(
             title = YumeTxt.AppSettings.Interface.ClassicHomeTitle,
             checked = classicHomeEnabled,
@@ -211,7 +211,7 @@ private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
     val appIconStyle by viewModel.appIconStyle.state.collectAsState()
 
     Title(YumeTxt.AppSettings.Section.Privacy)
-    Card {
+    AppCard {
         HideAppIconPreferenceItem(
             hideAppIcon = section.hideAppIcon,
             onHideAppIconChange = viewModel::onHideAppIconChange,
@@ -235,7 +235,7 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
     val exitUiWhenBackground = section.exitUiWhenBackground
 
     Title(YumeTxt.AppSettings.Section.Service)
-    Card {
+    AppCard {
         PreferenceSwitchItem(
             title = YumeTxt.AppSettings.ServiceSection.TrafficNotificationTitle,
             checked = showTrafficNotification,
@@ -273,7 +273,7 @@ private fun AppNetworkSettingsSection(viewModel: AppSettingsViewModel) {
     val section by viewModel.networkSectionState.collectAsState()
 
     Title(YumeTxt.AppSettings.Section.Network)
-    Card {
+    AppCard {
         CustomUserAgentPreferenceItem(
             customUserAgent = section.customUserAgent,
             onConfirm = viewModel::applyCustomUserAgent,

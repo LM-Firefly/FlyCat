@@ -29,5 +29,5 @@ import androidx.compose.ui.Modifier
 @Composable
 fun SectionCard(title: String, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Title(title)
-    Card(modifier = modifier) { content() }
+    AppCard(modifier = modifier) { content() }
 }

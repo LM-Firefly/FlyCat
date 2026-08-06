@@ -35,7 +35,7 @@ import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.basic.Card as MiuixCard
 
 @Composable
-fun Card(
+fun AppCard(
     modifier: Modifier = Modifier,
     cornerRadius: Int = 24,
     insideMargin: PaddingValues = PaddingValues(UiDp.dp0),

@@ -42,7 +42,7 @@ import com.github.yumeyucca.yumebox.BuildConfig
 import com.github.yumeyucca.yumebox.WebViewActivity
 import com.github.yumeyucca.yumebox.common.util.toast
 import com.github.yumeyucca.yumebox.presentation.component.*
-import com.github.yumeyucca.yumebox.presentation.component.Card
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
 import com.github.yumeyucca.yumebox.presentation.icon.yume.*
 import com.github.yumeyucca.yumebox.presentation.navigation.Route
@@ -178,7 +178,7 @@ private fun SettingsMasterList(
         ) {
             item {
                 Title(YumeTxt.Settings.Section.UiSettings)
-                Card {
+                AppCard {
                     SettingsRootPreference(
                         title = YumeTxt.Settings.UiSettings.App,
                         summary = YumeTxt.Settings.UiSettings.AppSummary,
@@ -207,7 +207,7 @@ private fun SettingsMasterList(
             }
             item {
                 Title(YumeTxt.Settings.Section.More)
-                Card {
+                AppCard {
                     SettingsRootPreference(
                         title = YumeTxt.Settings.More.Lab,
                         summary = YumeTxt.Settings.More.LabSummary,

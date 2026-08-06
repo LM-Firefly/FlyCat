@@ -33,7 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.github.yumeyucca.yumebox.common.util.toast
 import com.github.yumeyucca.yumebox.presentation.component.AppDialog
-import com.github.yumeyucca.yumebox.presentation.component.Card
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.component.Title
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import org.koin.androidx.compose.koinViewModel
@@ -74,7 +74,7 @@ fun BackupRestoreSection() {
     }
 
     Title(YumeTxt.Feature.BackupRestore.Section)
-    Card {
+    AppCard {
         ArrowPreference(
             title = YumeTxt.Feature.BackupRestore.ExportTitle,
             summary = YumeTxt.Feature.BackupRestore.ExportSummary,

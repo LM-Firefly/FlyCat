@@ -46,7 +46,7 @@ import com.github.yumeyucca.yumebox.data.model.TrafficStatisticsBuckets
 import com.github.yumeyucca.yumebox.feature.meta.presentation.component.TabRowWithContour
 import com.github.yumeyucca.yumebox.feature.meta.presentation.viewmodel.TrafficStatisticsViewModel
 import com.github.yumeyucca.yumebox.presentation.component.*
-import com.github.yumeyucca.yumebox.presentation.component.Card
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import kotlinx.coroutines.Dispatchers
@@ -150,7 +150,7 @@ fun TrafficStatisticsScreen() {
             item {
                 Spacer(modifier = Modifier.height(spacing.space12))
                 // Summary + chart card
-                Card(insideMargin = PaddingValues(spacing.space16)) {
+                AppCard(insideMargin = PaddingValues(spacing.space16)) {
                     Column(verticalArrangement = Arrangement.spacedBy(spacing.space16)) {
                         if (isToday) {
                             Column(
@@ -207,7 +207,7 @@ fun TrafficStatisticsScreen() {
 
             item {
                 Spacer(modifier = Modifier.height(spacing.space12))
-                Card(insideMargin = PaddingValues(spacing.space0)) {
+                AppCard(insideMargin = PaddingValues(spacing.space0)) {
                     OverlayDropdownPreference(
                         items =
                             listOf(

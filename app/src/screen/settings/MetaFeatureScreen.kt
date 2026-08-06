@@ -37,7 +37,7 @@ import com.github.yumeyucca.yumebox.core.model.GeoXItem
 import com.github.yumeyucca.yumebox.core.model.geoXItems
 import com.github.yumeyucca.yumebox.core.util.runtimeHomeDir
 import com.github.yumeyucca.yumebox.presentation.component.*
-import com.github.yumeyucca.yumebox.presentation.component.Card
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.navigation.Route
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.substore.util.SubStoreDownloadClient
@@ -76,7 +76,7 @@ fun MetaFeatureScreen(navigator: Navigator) {
         ) {
             item {
                 Title(YumeTxt.MetaFeature.Section.ConnectionAndTraffic)
-                Card {
+                AppCard {
                     ArrowPreference(
                         title = YumeTxt.Connection.Title,
                         onClick = { navigator.push(Route.Connection) },
@@ -93,7 +93,7 @@ fun MetaFeatureScreen(navigator: Navigator) {
             }
             item {
                 Title(YumeTxt.MetaFeature.Section.Routing)
-                Card {
+                AppCard {
                     ArrowPreference(
                         title = YumeTxt.TrafficStatistics.Title,
                         onClick = { navigator.push(Route.TrafficStatistics) },
@@ -110,7 +110,7 @@ fun MetaFeatureScreen(navigator: Navigator) {
             }
             item {
                 Title(YumeTxt.MetaFeature.AgeKey.Section)
-                Card {
+                AppCard {
                     ArrowPreference(
                         title = YumeTxt.MetaFeature.AgeKey.X25519Title,
                         onClick = {

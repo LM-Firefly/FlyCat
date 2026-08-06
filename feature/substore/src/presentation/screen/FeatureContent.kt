@@ -85,7 +85,7 @@ fun FeatureContent(
                 val panelUrl = panelUrlFor(selectedPanelType)
 
                 Title(YumeTxt.Feature.Panel.Section)
-                Card {
+                AppCard {
                     val safeSelectedPanelType =
                         selectedPanelType.coerceIn(0, panelDisplayNames.lastIndex)
                     WindowDropdownPreference(
@@ -107,7 +107,7 @@ fun FeatureContent(
 
             item {
                 Title(YumeTxt.Feature.ServiceStatus.Section)
-                Card {
+                AppCard {
                     val autoCloseItems = AutoCloseMode.entries.map { it.getDisplayName() }
                     val autoCloseValues = AutoCloseMode.entries
 
@@ -147,7 +147,7 @@ fun FeatureContent(
 
             item {
                 Title(YumeTxt.Feature.SubStore.Section)
-                Card {
+                AppCard {
                     ArrowPreference(
                         title =
                             if (isJavetLoaded) {

@@ -353,7 +353,7 @@ private fun ModifierModeCard(
     onClear: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    Card(modifier = modifier, insideMargin = PaddingValues(UiDp.dp12)) {
+    AppCard(modifier = modifier, insideMargin = PaddingValues(UiDp.dp12)) {
         Text(text = title, color = MiuixTheme.colorScheme.onSurface)
         Text(
             text = summary,

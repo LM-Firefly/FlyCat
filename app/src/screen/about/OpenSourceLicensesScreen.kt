@@ -104,7 +104,7 @@ private fun LibraryItem(library: Library, onClick: () -> Unit) {
     val spacing = AppTheme.spacing
     val hasUrl = !library.projectUrl.isNullOrBlank()
 
-    Card(
+    AppCard(
         modifier = Modifier.padding(bottom = spacing.space12),
         insideMargin = PaddingValues(spacing.space0),
     ) {

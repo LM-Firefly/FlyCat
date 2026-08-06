@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import com.github.yumeyucca.yumebox.presentation.component.*
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import tf.gal.yumebox.locale.YumeTxt
-import top.yukonga.miuix.kmp.basic.Card
 
 @Composable
 internal fun MoeHomeSettingsSheet(
@@ -74,9 +73,12 @@ internal fun MoeHomeSettingsSheet(
                 )
             }
             item {
-                Card(modifier = Modifier
+                AppCard(
+                    modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = spacing.space12)) {
+                    .padding(bottom = spacing.space12),
+                    applyHorizontalPadding = false,
+                ) {
                     Column {
                         PreferenceSwitchItem(
                             title = YumeTxt.Home.Settings.ClassicHome,

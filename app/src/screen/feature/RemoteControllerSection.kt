@@ -63,7 +63,7 @@ fun RemoteControllerSection(viewModel: RemoteControllerViewModel = koinViewModel
     val backendItems = backends.map { it.displayName() }
 
     Title(YumeTxt.Feature.RemoteController.Section)
-    Card {
+    AppCard {
         PreferenceSwitchItem(
             title = YumeTxt.Feature.RemoteController.ModeTitle,
             checked = controllerEnabled,

@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import com.github.yumeyucca.yumebox.presentation.component.AgeSecretKeyField
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.component.OemTextField
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
 import com.github.yumeyucca.yumebox.presentation.icon.yume.PackageCheck
@@ -200,7 +201,7 @@ private fun ProfileTypeSelectorCard(
     profileLocked: Boolean,
     onTypeSelected: (Int) -> Unit,
 ) {
-    top.yukonga.miuix.kmp.basic.Card {
+    AppCard(applyHorizontalPadding = false) {
         Box(
             modifier =
                 Modifier

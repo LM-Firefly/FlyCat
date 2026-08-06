@@ -70,7 +70,7 @@ fun TunServiceOptionsScreen() {
         ) {
             item {
                 Title(YumeTxt.NetworkSettings.RunMode.TunTitle)
-                Card {
+                AppCard {
                     TextInputArrowItem(
                         title = YumeTxt.NetworkSettings.TunOptions.IfNameTitle,
                         value = ifName,

@@ -58,7 +58,7 @@ fun VpnServiceOptionsScreen() {
         ) {
             item {
                 Title(YumeTxt.NetworkSettings.RunMode.VpnServiceTitle)
-                Card {
+                AppCard {
                     PreferenceSwitchItem(
                         title = YumeTxt.NetworkSettings.VpnOptions.BypassPrivateTitle,
                         checked = tunOptions.common.bypassPrivateNetwork,

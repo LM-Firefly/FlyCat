@@ -35,7 +35,7 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.graphics.drawable.toBitmap
-import com.github.yumeyucca.yumebox.presentation.component.Card
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme.spacing
 import kotlinx.coroutines.Dispatchers
@@ -77,7 +77,7 @@ private fun AccessControlAppCard(
     val spacing = spacing
     val componentSizes = AppTheme.sizes
 
-    Card(modifier = Modifier.padding(vertical = spacing.space4), applyHorizontalPadding = false) {
+    AppCard(modifier = Modifier.padding(vertical = spacing.space4), applyHorizontalPadding = false) {
         BasicComponent(
             insideMargin = PaddingValues(horizontal = spacing.space16, vertical = spacing.space12),
             startAction = {
