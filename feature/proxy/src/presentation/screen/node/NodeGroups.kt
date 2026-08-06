@@ -199,7 +199,8 @@ internal fun NodeGroupCard(
                         modifier =
                             Modifier
                                 .padding(start = UiDp.dp6)
-                                .size(UiDp.dp28)
+                                .width(UiDp.dp28)
+                                .height(UiDp.dp22)
                                 .clickable(
                                     interactionSource = testInteractionSource,
                                     indication = null,

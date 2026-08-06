@@ -25,7 +25,6 @@ package com.github.yumeyucca.yumebox.presentation.screen.node
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -39,7 +38,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
@@ -48,9 +49,11 @@ import com.github.yumeyucca.yumebox.presentation.component.CountryFlagCircle
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
 import com.github.yumeyucca.yumebox.presentation.icon.yume.BadgeDollarSign
 import com.github.yumeyucca.yumebox.presentation.icon.yume.CircleGauge
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Tags
+import com.github.yumeyucca.yumebox.presentation.icon.yume.clock
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import com.github.yumeyucca.yumebox.presentation.util.extractNodeTags
-import kotlinx.coroutines.delay
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -161,29 +164,14 @@ internal fun NodeSelectableCard(
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     paddingVertical: Dp,
-    content: @Composable BoxScope.() -> Unit,
+    content: @Composable BoxScope.(isSelected: Boolean) -> Unit,
 ) {
     val radii = AppTheme.radii
     val sizes = AppTheme.sizes
     val interactionSource = remember { MutableInteractionSource() }
+    val hapticFeedback = LocalHapticFeedback.current
     val shape = RoundedCornerShape(radii.radius18)
-    val primary = MiuixTheme.colorScheme.primary
     val backgroundColor = MiuixTheme.colorScheme.background
-    val selectionVisibility = remember { Animatable(if (isSelected) 1f else 0f) }
-
-    LaunchedEffect(isSelected) {
-        if (isSelected) {
-            // The newly selected card must be visible before the previous frame starts fading.
-            selectionVisibility.snapTo(1f)
-        } else {
-            delay(140)
-            selectionVisibility.animateTo(
-                targetValue = 0f,
-                animationSpec = tween(durationMillis = 420, easing = FastOutSlowInEasing),
-            )
-        }
-    }
-    val borderColor = primary.copy(alpha = 0.9f * selectionVisibility.value)
 
     Box(
         modifier =
@@ -201,20 +189,24 @@ internal fun NodeSelectableCard(
                 }
                 .clip(shape)
                 .background(backgroundColor)
-                .border(sizes.nodeCardBorderWidth, borderColor, shape)
                 .let {
                     if (onClick != null) {
                         it.clickable(
                             interactionSource = interactionSource,
                             indication = null,
-                            onClick = onClick,
+                            onClick = {
+                                if (!isSelected) {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                                }
+                                onClick()
+                            },
                         )
                     } else {
                         it
                     }
                 }
                 .padding(horizontal = sizes.nodeCardPaddingHorizontal, vertical = paddingVertical),
-        content = content,
+        content = { content(isSelected) },
     )
 }
 
@@ -236,7 +228,7 @@ internal fun NodeCard(
         onClick = onCardClick,
         modifier = modifier,
         paddingVertical = sizes.nodeCardPaddingVertical,
-    ) {
+    ) { selected ->
         val presentation =
             remember(proxy.name, proxy.title) {
                 resolveProxyDisplayPresentation(name = proxy.name, title = proxy.title)
@@ -269,37 +261,27 @@ internal fun NodeCard(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement =
+                        Arrangement.spacedBy(AppTheme.sizes.listItemVerticalMinimal),
+                    verticalArrangement = Arrangement.spacedBy(spacing.space4),
                 ) {
-                    FlowRow(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement =
-                            Arrangement.spacedBy(AppTheme.sizes.listItemVerticalMinimal),
-                        verticalArrangement = Arrangement.spacedBy(spacing.space4),
-                    ) {
-                        NodeTagChip(label = typeLabel)
-                        tags.keywords.forEach { keyword -> NodeTagChip(label = keyword) }
-                        tags.multiplier?.let { multiplier ->
-                            if (multiplier > 0f) NodeMultiplierChip(multiplier = multiplier)
-                        }
+                    NodeTagChip(label = typeLabel)
+                    tags.keywords.forEach { keyword -> NodeTagChip(label = keyword) }
+                    tags.multiplier?.let { multiplier ->
+                        if (multiplier > 0f) NodeMultiplierChip(multiplier = multiplier)
                     }
-                    when {
-                        delayLabel != null -> {
-                            val (delayText, delayColor) = delayLabel
-                            Text(
-                                text = delayText,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = delayColor,
-                                maxLines = 1,
-                                textAlign = TextAlign.End,
-                                modifier = Modifier.padding(start = sizes.nodeCardTrailingGap),
-                            )
-                        }
+                    delayLabel?.let { (delayText, delayColor) ->
+                        NodeLatencyChip(label = delayText, color = delayColor)
                     }
                 }
             }
+
+            NodeSelectionTag(
+                isSelected = selected,
+                modifier = Modifier.align(Alignment.CenterVertically),
+            )
         }
     }
 }
@@ -387,4 +369,67 @@ private fun NodeMultiplierChip(multiplier: Float) {
             color = chipColor,
         )
     }
+}
+
+@Composable
+private fun NodeLatencyChip(label: String, color: Color) {
+    val spacing = AppTheme.spacing
+    val radii = AppTheme.radii
+    val opacity = AppTheme.opacity
+    val sizes = AppTheme.sizes
+
+    Row(
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(radii.full))
+                .background(color.copy(alpha = opacity.subtle))
+                .padding(horizontal = spacing.space4, vertical = spacing.space2),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.space2),
+    ) {
+        Icon(
+            imageVector = Yume.clock,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(sizes.nodeTagIconSize),
+        )
+        Text(
+            text = label,
+            style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
+            color = color,
+        )
+    }
+}
+
+@Composable
+private fun NodeSelectionTag(isSelected: Boolean, modifier: Modifier = Modifier) {
+    val scale = remember { Animatable(if (isSelected) 0.72f else 1f) }
+
+    LaunchedEffect(isSelected) {
+        if (isSelected) {
+            scale.snapTo(0.72f)
+            scale.animateTo(
+                targetValue = 1f,
+                animationSpec =
+                    keyframes {
+                        durationMillis = 260
+                        1.1f at 150 using FastOutSlowInEasing
+                    },
+            )
+        }
+    }
+    if (!isSelected) return
+
+    Icon(
+        imageVector = Yume.Tags,
+        contentDescription = null,
+        tint = MiuixTheme.colorScheme.primary,
+        modifier =
+            modifier
+                .size(UiDp.dp24)
+                .graphicsLayer {
+                    scaleX = scale.value
+                    scaleY = scale.value
+                },
+    )
 }
