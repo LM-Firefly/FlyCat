@@ -22,8 +22,8 @@ package com.github.yumeyucca.yumebox.runtime.client.session
 
 import com.github.yumeyucca.yumebox.core.model.Proxy
 import com.github.yumeyucca.yumebox.core.model.ProxyGroup
-import com.github.yumeyucca.yumebox.core.model.isProxyGroup
 import com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo
+import com.github.yumeyucca.yumebox.domain.model.resolveTerminalProxy
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -116,37 +116,6 @@ internal class ProxyGroupStore(
             groups.find { it.name.equals("Proxy", ignoreCase = true) } ?: groups.firstOrNull()
         val targetNode = mainGroup?.now?.trim().orEmpty()
         _resolvedPrimaryNode.value =
-            targetNode.takeIf(String::isNotEmpty)?.let { resolveProxyNode(it, groups) }
-    }
-
-    private fun resolveProxyNode(
-        nodeName: String,
-        groups: List<ProxyGroupInfo>,
-        visited: MutableSet<String> = linkedSetOf(),
-    ): Proxy? {
-        if (!visited.add(nodeName)) {
-            return null
-        }
-
-        val group = groups.firstOrNull { it.name == nodeName }
-        if (group != null) {
-            val groupNow = group.now.trim()
-            return groupNow
-                .takeIf { it.isNotEmpty() }
-                ?.let { resolveProxyNode(it, groups, visited) }
-        }
-
-        groups.forEach { proxyGroup ->
-            val proxy = proxyGroup.proxies.firstOrNull { it.name == nodeName } ?: return@forEach
-            if (proxy.isProxyGroup) {
-                val nextGroup = groups.firstOrNull { it.name == proxy.name } ?: return null
-                val nextNode = nextGroup.now.trim()
-                return nextNode
-                    .takeIf { it.isNotEmpty() }
-                    ?.let { resolveProxyNode(it, groups, visited) }
-            }
-            return proxy
-        }
-        return null
+            targetNode.takeIf(String::isNotEmpty)?.let { groups.resolveTerminalProxy(it) }
     }
 }

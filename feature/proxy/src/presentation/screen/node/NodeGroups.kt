@@ -45,8 +45,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import com.github.panpf.sketch.request.ImageRequest
 import com.github.panpf.sketch.state.IntColorDrawableStateImage
-import com.github.yumeyucca.yumebox.core.model.Proxy
 import com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo
+import com.github.yumeyucca.yumebox.domain.model.resolveTerminalProxy
 import com.github.yumeyucca.yumebox.presentation.component.CountryFlagCircle
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
 import com.github.yumeyucca.yumebox.presentation.icon.yume.chevron
@@ -77,6 +77,7 @@ internal fun LazyListScope.nodeGroupItems(
     ) { group ->
         NodeGroupCard(
             group = group,
+            allGroups = groups,
             isDelayTesting = testingGroupNames.contains(group.name),
             onClick = onGroupClick,
             modifier = Modifier
@@ -89,6 +90,7 @@ internal fun LazyListScope.nodeGroupItems(
 @Composable
 internal fun NodeGroupCard(
     group: ProxyGroupInfo,
+    allGroups: List<ProxyGroupInfo> = listOf(group),
     isDelayTesting: Boolean,
     onClick: (ProxyGroupInfo) -> Unit,
     modifier: Modifier = Modifier,
@@ -96,8 +98,11 @@ internal fun NodeGroupCard(
     val cardShape = RoundedCornerShape(AppTheme.radii.radius24)
     val interactionSource = remember { MutableInteractionSource() }
 
-    val proxiesByName = remember(group.proxies) { group.proxies.associateBy(Proxy::name) }
-    val currentProxy = remember(group.now, proxiesByName) { proxiesByName[group.now] }
+    val currentProxy =
+        remember(group.now, allGroups) {
+            allGroups.resolveTerminalProxy(group.now)
+                ?: group.proxies.firstOrNull { it.name == group.now }
+        }
     val currentNode =
         remember(currentProxy?.name, currentProxy?.title, group.now) {
             resolveProxyDisplayPresentation(
@@ -136,8 +141,8 @@ internal fun NodeGroupCard(
                     indication = null,
                     onClick = { onClick(group) },
                 )
-                .padding(horizontal = UiDp.dp16, vertical = UiDp.dp14),
-        verticalArrangement = Arrangement.spacedBy(UiDp.dp10),
+                .padding(horizontal = UiDp.dp16, vertical = UiDp.dp10),
+        verticalArrangement = Arrangement.spacedBy(UiDp.dp8),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -197,59 +202,67 @@ internal fun NodeGroupCard(
                     )
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(UiDp.dp14))
+                        .background(MiuixTheme.colorScheme.surface)
+                        .padding(horizontal = UiDp.dp10, vertical = UiDp.dp6),
                 ) {
                     Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(UiDp.dp8),
-                        modifier = Modifier.weight(1f),
                     ) {
-                        val cc = currentNode.countryCode
-                        if (cc != null) {
-                            CountryFlagCircle(countryCode = cc, size = UiDp.dp20)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(UiDp.dp8),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            val cc = currentNode.countryCode
+                            if (cc != null) {
+                                CountryFlagCircle(countryCode = cc, size = UiDp.dp20)
+                            }
+                            Text(
+                                text = currentNodeName,
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                         }
-                        Text(
-                            text = currentNodeName,
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
 
-                    Box(
-                        modifier = Modifier.padding(start = UiDp.dp8),
-                        contentAlignment = Alignment.CenterEnd,
-                    ) {
-                        when {
-                            delayLabel != null -> {
-                                val (delayText, delayColor) = delayLabel
-                                Text(
-                                    text = delayText,
-                                    style = MiuixTheme.textStyles.footnote1,
-                                    color = delayColor,
-                                )
+                        Box(
+                            modifier = Modifier.padding(start = UiDp.dp8),
+                            contentAlignment = Alignment.CenterEnd,
+                        ) {
+                            when {
+                                delayLabel != null -> {
+                                    val (delayText, delayColor) = delayLabel
+                                    Text(
+                                        text = delayText,
+                                        style = MiuixTheme.textStyles.footnote1,
+                                        color = delayColor,
+                                    )
+                                }
+
+                                isDelayTesting -> {
+                                    RotatingCircleGauge(
+                                        isRotating = true,
+                                        modifier = Modifier.size(UiDp.dp14),
+                                        tint = MiuixTheme.colorScheme.primary,
+                                        contentDescription = null,
+                                    )
+                                }
+
+                                else ->
+                                    Icon(
+                                        Yume.chevron,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(UiDp.dp18),
+                                        tint = AppTheme.colors.state.subtleDivider,
+                                    )
                             }
-
-                            isDelayTesting -> {
-                                RotatingCircleGauge(
-                                    isRotating = true,
-                                    modifier = Modifier.size(UiDp.dp14),
-                                    tint = MiuixTheme.colorScheme.primary,
-                                    contentDescription = null,
-                                )
-                            }
-
-                            else ->
-                                Icon(
-                                    Yume.chevron,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(UiDp.dp18),
-                                    tint = AppTheme.colors.state.subtleDivider,
-                                )
                         }
                     }
                 }

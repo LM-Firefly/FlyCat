@@ -25,6 +25,7 @@ package com.github.yumeyucca.yumebox.domain.model
 
 import com.github.yumeyucca.yumebox.core.model.Proxy
 import com.github.yumeyucca.yumebox.core.model.isManuallySelectable
+import com.github.yumeyucca.yumebox.core.model.isProxyGroup
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -42,3 +43,37 @@ val ProxyGroupInfo.isSelectable: Boolean
 
 val ProxyGroupInfo.isProxyGroup: Boolean
     get() = type in Proxy.Type.groupTypes || now.isNotBlank() || proxies.isNotEmpty()
+
+/** Resolves a selected proxy-group entry to the terminal (non-group) proxy. */
+fun List<ProxyGroupInfo>.resolveTerminalProxy(entryName: String): Proxy? {
+    fun findGroup(name: String): ProxyGroupInfo? =
+        firstOrNull { it.name == name } ?: firstOrNull { it.name.equals(name, ignoreCase = true) }
+
+    fun findProxy(name: String): Proxy? =
+        asSequence()
+            .flatMap { it.proxies.asSequence() }
+            .firstOrNull { it.name == name }
+            ?: asSequence()
+                .flatMap { it.proxies.asSequence() }
+                .firstOrNull { it.name.equals(name, ignoreCase = true) }
+
+    fun resolve(name: String, visited: MutableSet<String>): Proxy? {
+        val normalized = name.trim()
+        if (normalized.isEmpty() || !visited.add(normalized.lowercase())) return null
+
+        findGroup(normalized)?.let { group ->
+            return resolve(group.now, visited)
+        }
+
+        val proxy = findProxy(normalized) ?: return null
+        val nestedGroup = findGroup(proxy.name)
+        if (proxy.isProxyGroup || nestedGroup != null) {
+            nestedGroup?.let { group ->
+                return resolve(group.now, visited) ?: proxy
+            }
+        }
+        return proxy
+    }
+
+    return resolve(entryName, linkedSetOf())
+}
