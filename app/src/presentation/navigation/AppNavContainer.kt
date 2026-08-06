@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.*
 import androidx.navigation3.scene.SceneInfo
@@ -46,24 +47,50 @@ import com.github.yumeyucca.yumebox.screen.settings.MoeWallpaperCropScreen
 
 private const val DURATION = 340
 private const val FADE_DURATION = 140
+private const val PAGE_SCALE = 0.94f
 private val slideEasing = CubicBezierEasing(0.25f, 0.10f, 0.25f, 1.0f)
 
-private fun slideEnter(offset: (Int) -> Int): EnterTransition =
+/**
+ * A full-width page push with a subtle depth scale.
+ *
+ * The entering page travels in from the right while expanding to its final size. At the same time,
+ * the current page is pushed fully to the left and scales down. This preserves the app's page-push
+ * navigation while making the hand-off feel layered.
+ */
+private fun pushScaleEnter(
+    offset: (Int) -> Int,
+    transformOrigin: TransformOrigin,
+): EnterTransition =
     slideInHorizontally(
         animationSpec = tween(DURATION, easing = slideEasing),
         initialOffsetX = offset,
-    ) + fadeIn(animationSpec = tween(FADE_DURATION, easing = LinearEasing))
+    ) +
+        scaleIn(
+            initialScale = PAGE_SCALE,
+            transformOrigin = transformOrigin,
+            animationSpec = tween(DURATION, easing = slideEasing),
+        ) +
+        fadeIn(animationSpec = tween(FADE_DURATION, easing = LinearEasing))
 
-private fun slideExit(offset: (Int) -> Int): ExitTransition =
+private fun pushScaleExit(
+    offset: (Int) -> Int,
+    transformOrigin: TransformOrigin,
+): ExitTransition =
     slideOutHorizontally(
         animationSpec = tween(DURATION, easing = slideEasing),
         targetOffsetX = offset,
-    ) + fadeOut(animationSpec = tween(FADE_DURATION, easing = LinearEasing))
+    ) +
+        scaleOut(
+            targetScale = PAGE_SCALE,
+            transformOrigin = transformOrigin,
+            animationSpec = tween(DURATION, easing = slideEasing),
+        ) +
+        fadeOut(animationSpec = tween(FADE_DURATION, easing = LinearEasing))
 
 /**
  * The app's navigation3 host. Renders the back stack through [NavDisplay] using YumeBox's original
- * horizontal slide + fade transitions (the AOSP predictive-back animation was dropped). The system
- * predictive-back gesture scrubs [NavDisplay]'s pop transition, i.e. the default slide.
+ * horizontal push + scale transitions. The system predictive-back gesture scrubs [NavDisplay]'s
+ * matching pop transition.
  */
 @Composable
 fun AppNavContainer() {
@@ -130,13 +157,25 @@ fun AppNavContainer() {
         contentAlignment = Alignment.TopStart,
         sizeTransform = null,
         transitionSpec = {
-            ContentTransform(slideEnter { it }, slideExit { -it }, sizeTransform = null)
+            ContentTransform(
+                pushScaleEnter({ it }, TransformOrigin(1f, 0.5f)),
+                pushScaleExit({ -it }, TransformOrigin(0f, 0.5f)),
+                sizeTransform = null,
+            )
         },
         popTransitionSpec = {
-            ContentTransform(slideEnter { -it }, slideExit { it }, sizeTransform = null)
+            ContentTransform(
+                pushScaleEnter({ -it }, TransformOrigin(0f, 0.5f)),
+                pushScaleExit({ it }, TransformOrigin(1f, 0.5f)),
+                sizeTransform = null,
+            )
         },
         predictivePopTransitionSpec = { _ ->
-            ContentTransform(slideEnter { -it }, slideExit { it }, sizeTransform = null)
+            ContentTransform(
+                pushScaleEnter({ -it }, TransformOrigin(0f, 0.5f)),
+                pushScaleExit({ it }, TransformOrigin(1f, 0.5f)),
+                sizeTransform = null,
+            )
         },
     )
 }
