@@ -32,13 +32,17 @@ import androidx.compose.ui.unit.dp
 import com.github.yumeyucca.yumebox.data.model.AccessControlMode
 import com.github.yumeyucca.yumebox.data.model.RunMode
 import com.github.yumeyucca.yumebox.presentation.component.*
+import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.PlaneTakeoff
 import com.github.yumeyucca.yumebox.presentation.navigation.Route
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * Network settings entry point. Top: a "run mode" radio picker — one card per mode.
@@ -87,7 +91,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
             }
             item {
                 Title(YumeTxt.NetworkSettings.Section.Advanced)
-                Card {
+                AppCard {
                     PreferenceArrowItem(
                         title = YumeTxt.NetworkSettings.Section.VpnOptions,
                         // Each mode's service config lives behind its own page.
@@ -107,7 +111,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
             }
             item {
                 Title(YumeTxt.NetworkSettings.Section.ProxyOptions)
-                Card {
+                AppCard {
                     PreferenceEnumItem(
                         title = YumeTxt.NetworkSettings.ProxyOptions.AccessControlModeTitle,
                         currentValue = accessControlMode,
@@ -131,8 +135,8 @@ fun NetworkSettingsScreen(navigator: Navigator) {
 }
 
 /**
- * A run-mode option: its own card with a leading radio and a title/summary. A disabled mode greys
- * its text and radio and can't be selected (the root Tun card when root isn't granted).
+ * A run-mode option: its own card with the home-mode icon on the leading side and a trailing
+ * selection radio. A disabled mode greys its contents and can't be selected.
  */
 @Composable
 private fun ModeCard(
@@ -142,13 +146,27 @@ private fun ModeCard(
     enabled: Boolean,
     onSelect: () -> Unit,
 ) {
-    Card {
+    val iconTint =
+        when {
+            !enabled -> MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.38f)
+            selected -> MiuixTheme.colorScheme.primary
+            else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+        }
+
+    AppCard {
         BasicComponent(
             title = title,
             summary = summary,
             enabled = enabled,
             onClick = if (enabled) onSelect else null,
             startAction = {
+                Icon(
+                    imageVector = Yume.PlaneTakeoff,
+                    contentDescription = null,
+                    tint = iconTint,
+                )
+            },
+            endActions = {
                 RadioButton(
                     selected = selected,
                     onClick = if (enabled) onSelect else null,
