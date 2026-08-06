@@ -336,7 +336,7 @@ private fun ProxyTypeCapsule(proxyMode: RunMode) {
                 imageVector =
                     when (proxyMode) {
                         RunMode.VpnService -> Yume.PlaneTakeoff
-                        RunMode.Tun -> Yume.PlaneTakeoff
+                        RunMode.Tun -> Yume.Tun
                     },
                 contentDescription = null,
                 tint = primary,

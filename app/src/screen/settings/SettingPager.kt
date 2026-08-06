@@ -84,7 +84,6 @@ private fun CircularIcon(
                         val containerSize = componentSizes.settingsIconContainerSize.roundToPx()
                         val parentSize = componentSizes.settingsIconSlotSize.roundToPx()
                         val offset = (containerSize - parentSize) / 2
-
                         val placeable =
                             measurable.measure(
                                 androidx.compose.ui.unit.Constraints.fixed(

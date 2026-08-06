@@ -25,15 +25,20 @@ package com.github.yumeyucca.yumebox.screen.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.github.yumeyucca.yumebox.data.model.AccessControlMode
 import com.github.yumeyucca.yumebox.data.model.RunMode
 import com.github.yumeyucca.yumebox.presentation.component.*
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
 import com.github.yumeyucca.yumebox.presentation.icon.yume.PlaneTakeoff
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Tun
 import com.github.yumeyucca.yumebox.presentation.navigation.Route
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
@@ -42,7 +47,6 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * Network settings entry point. Top: a "run mode" radio picker — one card per mode.
@@ -74,6 +78,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                 Title(YumeTxt.NetworkSettings.RunMode.SectionTitle)
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     ModeCard(
+                        icon = Yume.PlaneTakeoff,
                         title = YumeTxt.NetworkSettings.RunMode.VpnServiceTitle,
                         summary = YumeTxt.NetworkSettings.RunMode.VpnServiceSummary,
                         selected = runMode == RunMode.VpnService,
@@ -81,6 +86,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                         onSelect = { viewModel.onRunModeChange(RunMode.VpnService) },
                     )
                     ModeCard(
+                        icon = Yume.Tun,
                         title = YumeTxt.NetworkSettings.RunMode.TunTitle,
                         summary = YumeTxt.NetworkSettings.RunMode.TunSummary,
                         selected = runMode == RunMode.Tun,
@@ -140,19 +146,13 @@ fun NetworkSettingsScreen(navigator: Navigator) {
  */
 @Composable
 private fun ModeCard(
+    icon: ImageVector,
     title: String,
     summary: String,
     selected: Boolean,
     enabled: Boolean,
     onSelect: () -> Unit,
 ) {
-    val iconTint =
-        when {
-            !enabled -> MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.38f)
-            selected -> MiuixTheme.colorScheme.primary
-            else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
-        }
-
     AppCard {
         BasicComponent(
             title = title,
@@ -161,9 +161,15 @@ private fun ModeCard(
             onClick = if (enabled) onSelect else null,
             startAction = {
                 Icon(
-                    imageVector = Yume.PlaneTakeoff,
+                    imageVector = icon,
                     contentDescription = null,
-                    tint = iconTint,
+                    tint =
+                        if (enabled) {
+                            top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurface
+                        } else {
+                            top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.disabledOnSecondaryVariant
+                        },
+                    modifier = Modifier.padding(start = 4.dp, end = 12.dp).size(24.dp),
                 )
             },
             endActions = {
