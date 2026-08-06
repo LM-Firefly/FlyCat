@@ -23,7 +23,6 @@
 package com.github.yumeyucca.yumebox.presentation.screen.node
 
 
-import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -33,6 +32,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +50,7 @@ import com.github.yumeyucca.yumebox.presentation.icon.yume.BadgeDollarSign
 import com.github.yumeyucca.yumebox.presentation.icon.yume.CircleGauge
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.presentation.util.extractNodeTags
+import kotlinx.coroutines.delay
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -164,19 +165,25 @@ internal fun NodeSelectableCard(
 ) {
     val radii = AppTheme.radii
     val sizes = AppTheme.sizes
-    val opacity = AppTheme.opacity
     val interactionSource = remember { MutableInteractionSource() }
     val shape = RoundedCornerShape(radii.radius18)
     val primary = MiuixTheme.colorScheme.primary
     val backgroundColor = MiuixTheme.colorScheme.background
-    val transition = updateTransition(targetState = isSelected, label = "node_card_selection")
-    val borderColor by
-    transition.animateColor(
-        transitionSpec = { tween(durationMillis = 220, easing = FastOutSlowInEasing) },
-        label = "node_card_border_color",
-    ) { selected ->
-        if (selected) primary.copy(alpha = opacity.disabled) else Color.Transparent
+    val selectionVisibility = remember { Animatable(if (isSelected) 1f else 0f) }
+
+    LaunchedEffect(isSelected) {
+        if (isSelected) {
+            // The newly selected card must be visible before the previous frame starts fading.
+            selectionVisibility.snapTo(1f)
+        } else {
+            delay(140)
+            selectionVisibility.animateTo(
+                targetValue = 0f,
+                animationSpec = tween(durationMillis = 420, easing = FastOutSlowInEasing),
+            )
+        }
     }
+    val borderColor = primary.copy(alpha = 0.9f * selectionVisibility.value)
 
     Box(
         modifier =
