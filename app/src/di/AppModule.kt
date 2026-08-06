@@ -28,6 +28,7 @@ import com.github.yumeyucca.yumebox.screen.settings.AccessControlViewModel
 import com.github.yumeyucca.yumebox.screen.settings.AppSettingsViewModel
 import com.github.yumeyucca.yumebox.screen.settings.NetworkSettingsViewModel
 import com.github.yumeyucca.yumebox.screen.settings.RemoteControllerViewModel
+import com.github.yumeyucca.yumebox.screen.settings.WifiAutomationViewModel
 import com.github.yumeyucca.yumebox.screen.settings.backup.BackupRepository
 import com.github.yumeyucca.yumebox.screen.settings.backup.BackupRestoreViewModel
 import com.github.yumeyucca.yumebox.screen.settings.backup.BackupStoreAdapter
@@ -65,6 +66,7 @@ val appViewModelModule = module {
     viewModel { NetworkSettingsViewModel(androidApplication(), get(), get()) }
     viewModel { RemoteControllerViewModel(androidApplication(), get(), get()) }
     viewModel { AccessControlViewModel(androidApplication(), get(), get()) }
+    viewModel { WifiAutomationViewModel(androidApplication(), get()) }
     viewModel { LogViewModel(androidApplication()) }
     viewModel { RulesViewModel(androidApplication()) }
     viewModel { BackupRestoreViewModel(androidApplication(), get()) }

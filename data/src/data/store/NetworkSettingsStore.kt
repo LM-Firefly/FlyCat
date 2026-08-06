@@ -25,7 +25,11 @@ import com.github.yumeyucca.yumebox.data.model.AccessControlMode
 import com.github.yumeyucca.yumebox.data.model.AccessControlSortMode
 import com.github.yumeyucca.yumebox.data.model.RunMode
 import com.github.yumeyucca.yumebox.data.model.TunStack
+import com.github.yumeyucca.yumebox.data.model.WifiAutomationFallbackAction
+import com.github.yumeyucca.yumebox.data.model.WifiAutomationRule
 import com.tencent.mmkv.MMKV
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 
 class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv) {
     // Run mode selected in the UI (VpnService / Tun).
@@ -66,4 +70,21 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     val accessControlSelectedFirst by boolFlow(true)
     val accessControlShowSystemApps by boolFlow(false)
     val accessControlSortMode by enumFlow(AccessControlSortMode.LABEL)
+
+    // Wi-Fi SSIDs are location-sensitive on Android. This state is only enabled after the user
+    // explicitly completes the location-permission flow from the Wi-Fi automation screen.
+    val wifiAutomationEnabled by boolFlow(false)
+    val wifiAutomationLocationRequested by boolFlow(false)
+    val wifiAutomationRules: Preference<List<WifiAutomationRule>> by
+        jsonListFlow(
+            default = emptyList(),
+            decode = { source -> decodeFromString<List<WifiAutomationRule>>(source) },
+            encode = { rules -> encodeToString(rules) },
+        )
+
+    // These explicitly cover physical Wi-Fi transport changes. They intentionally default to
+    // Keep so enabling SSID automation never changes behavior outside the user's rules.
+    val wifiAutomationOtherWifiAction by enumFlow(WifiAutomationFallbackAction.Keep)
+    val wifiAutomationNoWifiAction by enumFlow(WifiAutomationFallbackAction.Keep)
+
 }

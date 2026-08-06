@@ -86,6 +86,7 @@ fun VpnServiceOptionsScreen() {
                     )
                 }
             }
+            item { WifiAutomationSettingsSection() }
         }
     }
 }

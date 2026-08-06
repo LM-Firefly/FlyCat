@@ -39,6 +39,7 @@ object RuntimeServiceLauncher {
     const val SOURCE_AUTO_RESTART = "auto_restart"
     const val SOURCE_AUTO_RESTART_BOOT = "auto_restart_boot"
     const val SOURCE_AUTO_RESTART_REPLACED = "auto_restart_replaced"
+    const val SOURCE_WIFI_AUTOMATION = "wifi_automation"
     const val SOURCE_UNKNOWN = "unknown"
 
     // Only [RunMode.VpnService] is service-hosted; the root Tun daemon launches via
@@ -109,6 +110,14 @@ object RuntimeServiceLauncher {
     @Synchronized
     fun stop(context: Context, mode: RunMode = RunMode.VpnService) {
         val appContext = context.appContextOrSelf
+        if (mode == RunMode.VpnService && StatusProvider.isLocalRuntimeServiceAlive(mode)) {
+            appContext.sendBroadcast(
+                Intent(Intents.ACTION_RUNTIME_REQUEST_STOP)
+                    .setPackage(appContext.packageName)
+                    .putExtra(Intents.EXTRA_RUNTIME_MODE, mode.name)
+            )
+            return
+        }
         runCatching { appContext.stopService(Intent(appContext, TunService::class.java)) }
         StatusProvider.markRuntimeIdle(mode)
     }

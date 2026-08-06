@@ -42,6 +42,7 @@ import com.github.yumeyucca.yumebox.runtime.client.ProfilesRepository
 import com.github.yumeyucca.yumebox.runtime.client.ProxyFacade
 import com.github.yumeyucca.yumebox.runtime.client.ProxyGroupSyncPriority
 import com.github.yumeyucca.yumebox.runtime.client.RuntimeStateMapper
+import com.github.yumeyucca.yumebox.runtime.service.WifiAutomationService
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*

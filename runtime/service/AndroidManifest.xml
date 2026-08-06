@@ -23,6 +23,7 @@
           xmlns:tools="http://schemas.android.com/tools">
     <!-- The module declares what its own components need; hosts merge these automatically. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:ignore="ForegroundServicesPolicy"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
@@ -63,6 +64,11 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="auto_restart_service"/>
         </service>
+
+        <service
+            android:name="com.github.yumeyucca.yumebox.runtime.service.WifiAutomationService"
+            android:exported="false"
+            android:foregroundServiceType="location"/>
 
         <service
             android:name="com.github.yumeyucca.yumebox.runtime.service.ProxyTileService"

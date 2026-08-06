@@ -51,6 +51,7 @@ import com.github.yumeyucca.yumebox.presentation.navigation.AppNavContainer
 import com.github.yumeyucca.yumebox.presentation.theme.ProvideAndroidPlatformTheme
 import com.github.yumeyucca.yumebox.presentation.theme.YumeHaze
 import com.github.yumeyucca.yumebox.presentation.theme.YumeTheme
+import com.github.yumeyucca.yumebox.runtime.service.WifiAutomationService
 import com.github.yumeyucca.yumebox.screen.moe.HomePreviewGuideDialog
 import com.github.yumeyucca.yumebox.screen.settings.AppSettingsViewModel
 import com.tencent.mmkv.MMKV
@@ -116,10 +117,14 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         applyExcludeFromRecents(appSettingsStorage.excludeFromRecents.value)
 
-        intentController = IntentController(lifecycleScope)
+        intentController = IntentController(this, lifecycleScope)
         handleIntent(intent)
 
         requestStartupPermissions()
+
+        if (networkSettingsStorage.wifiAutomationEnabled.value) {
+            WifiAutomationService.start(this)
+        }
 
         val showHomeGuideInitially =
             savedInstanceState == null && !appSettingsStorage.homePreviewGuideShown.value
