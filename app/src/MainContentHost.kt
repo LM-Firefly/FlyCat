@@ -144,7 +144,6 @@ internal fun MainContentHost(
                                 onNavigateToProviders = {
                                     detailNavigator.replaceAll(listOf(Route.Providers))
                                 },
-                                onOpenPanel = onOpenPanel,
                             )
                         } else {
                             SecondaryDetailHost(

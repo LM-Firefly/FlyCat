@@ -151,6 +151,7 @@ internal fun NodeGroupSheetContent(
     testingGroupNames: Set<String>,
     sheetHeightFraction: Float,
     onGroupClick: (ProxyGroupInfo) -> Unit,
+    onGroupTest: (ProxyGroupInfo) -> Unit,
     listState: LazyListState = rememberLazyListState(),
 ) {
     val sheetHeight = rememberNodeSheetHeight(sheetHeightFraction)
@@ -174,6 +175,7 @@ internal fun NodeGroupSheetContent(
         nodeGroupItems(
             groups = groups,
             onGroupClick = onGroupClick,
+            onGroupTest = onGroupTest,
             testingGroupNames = testingGroupNames,
             itemVerticalPadding = UiDp.dp0,
         )
@@ -185,12 +187,9 @@ fun NodeSheetContent(
     group: ProxyGroupInfo,
     onSelectProxy: (String) -> Unit,
     isDelayTesting: Boolean,
-    testingProxyNames: Set<String>,
     onTestDelay: () -> Unit,
-    onTestProxyDelay: (String) -> Unit,
     sheetHeightFraction: Float,
     listState: LazyListState = rememberLazyListState(),
-    singleNodeTestEnabled: Boolean = true,
 ) {
     val sheetHeight = rememberNodeSheetHeight(sheetHeightFraction)
 
@@ -251,10 +250,6 @@ fun NodeSheetContent(
                     onTestDelay()
                 }
             },
-            isDelayTesting = isDelayTesting,
-            testingProxyNames = testingProxyNames,
-            onSingleNodeTestClick = onTestProxyDelay,
-            singleNodeTestEnabled = singleNodeTestEnabled,
         )
     }
 }

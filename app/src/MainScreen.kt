@@ -353,6 +353,7 @@ internal fun MainRootPageContent(
                 HomePager(
                     mainInnerPadding = mainInnerPadding,
                     isActive = selectedDestination == BottomBarDestination.Home,
+                    onOpenPanel = onOpenPanel,
                 )
             } else {
                 MoeHomePage(
@@ -363,6 +364,7 @@ internal fun MainRootPageContent(
                     wallpaperBiasY = moeWallpaperBiasY,
                     isActive = selectedDestination == BottomBarDestination.Home,
                     pageProgress = homePageProgress,
+                    onOpenPanel = onOpenPanel,
                     windowLayoutMode = windowLayoutMode,
                 )
             }
@@ -374,7 +376,6 @@ internal fun MainRootPageContent(
                 onNavigateToProviders = {
                     openSecondary(Route.Providers)
                 },
-                onOpenPanel = onOpenPanel,
                 isActive = selectedDestination == BottomBarDestination.Proxy,
                 windowLayoutMode = windowLayoutMode,
             )

@@ -56,16 +56,13 @@ internal fun NodeListPage(
     group: ProxyGroupInfo?,
     sortMode: ProxySortMode,
     testingGroupNames: Set<String>,
-    testingProxyNames: Set<String>,
     mainInnerPadding: PaddingValues,
     outerInnerPadding: PaddingValues,
     scrollBehavior: ScrollBehavior,
     listState: LazyListState,
     onSelectProxy: (groupName: String, proxyName: String) -> Unit,
     onTestDelay: () -> Unit,
-    onTestProxyDelay: (proxyName: String) -> Unit,
     onScrollDirectionChanged: (Boolean) -> Unit,
-    singleNodeTestEnabled: Boolean = true,
     useAdaptiveGrid: Boolean = false,
     gridState: LazyGridState? = null,
 ) {
@@ -222,11 +219,7 @@ internal fun NodeListPage(
                                 onTestDelay()
                             }
                         },
-                        isDelayTesting = isTesting,
-                        isThisProxyTesting = proxy.name in testingProxyNames,
-                        onSingleNodeTestClick = { onTestProxyDelay(it) },
                         showCountryFlag = true,
-                        singleNodeTestEnabled = singleNodeTestEnabled,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -300,12 +293,8 @@ internal fun NodeListPage(
                     onTestDelay()
                 }
             },
-            isDelayTesting = isTesting,
-            testingProxyNames = testingProxyNames,
-            onSingleNodeTestClick = { onTestProxyDelay(it) },
             outerHorizontalPadding = UiDp.dp0,
             itemVerticalPadding = UiDp.dp6,
-            singleNodeTestEnabled = singleNodeTestEnabled,
         )
     }
 }

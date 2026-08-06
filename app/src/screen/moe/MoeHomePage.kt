@@ -53,6 +53,8 @@ import com.github.yumeyucca.yumebox.domain.model.TrafficData
 import com.github.yumeyucca.yumebox.presentation.component.LocalHandlePageChange
 import com.github.yumeyucca.yumebox.presentation.component.LocalNavigator
 import com.github.yumeyucca.yumebox.presentation.icon.ShellIcons
+import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Zashboard
 import com.github.yumeyucca.yumebox.presentation.navigation.Route
 import com.github.yumeyucca.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumeyucca.yumebox.screen.home.HomeProxyControlState
@@ -73,6 +75,7 @@ fun MoeHomePage(
     isActive: Boolean,
     pageProgress: Float = 1f,
     sidebarProgress: Float = pageProgress,
+    onOpenPanel: (() -> Unit)? = null,
     windowLayoutMode: com.github.yumeyucca.yumebox.presentation.component.WindowLayoutMode =
         com.github.yumeyucca.yumebox.presentation.component.WindowLayoutMode.Compact,
 ) {
@@ -164,11 +167,14 @@ fun MoeHomePage(
         }
     val contentSurface = if (isDarkHomeSurface) MiuixTheme.colorScheme.surface else Color.White
     val handlePageChange = LocalHandlePageChange.current
-    val sidebarIcons = remember {
+    val proxyDestinationVisible = isRemoteController || visualControlState != HomeProxyControlState.Idle
+    val configPageIndex = if (proxyDestinationVisible) 2 else 1
+    val settingsPageIndex = configPageIndex + 1
+    val sidebarIcons = remember(onOpenPanel, configPageIndex, settingsPageIndex) {
         listOf(
-            MoeSidebarIconItem(ShellIcons.OpenProxy) { handlePageChange(1) },
-            MoeSidebarIconItem(ShellIcons.OpenProfiles) { handlePageChange(2) },
-            MoeSidebarIconItem(ShellIcons.OpenSettings) { handlePageChange(3) },
+            MoeSidebarIconItem(Yume.Zashboard) { onOpenPanel?.invoke() },
+            MoeSidebarIconItem(ShellIcons.OpenProfiles) { handlePageChange(configPageIndex) },
+            MoeSidebarIconItem(ShellIcons.OpenSettings) { handlePageChange(settingsPageIndex) },
         )
     }
     val quoteText = moeHomeQuote.ifBlank { YumeTxt.AppSettings.Interface.HomeQuoteDefault }

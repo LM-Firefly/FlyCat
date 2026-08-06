@@ -48,7 +48,6 @@ import com.github.yumeyucca.yumebox.presentation.component.CountryFlagCircle
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
 import com.github.yumeyucca.yumebox.presentation.icon.yume.BadgeDollarSign
 import com.github.yumeyucca.yumebox.presentation.icon.yume.CircleGauge
-import com.github.yumeyucca.yumebox.presentation.icon.yume.Cloud
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.presentation.util.extractNodeTags
 import tf.gal.yumebox.locale.YumeTxt
@@ -218,22 +217,12 @@ internal fun NodeCard(
     isSelected: Boolean,
     onClick: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
-    isDelayTesting: Boolean = false,
-    isThisProxyTesting: Boolean = false,
-    onSingleNodeTestClick: ((String) -> Unit)? = null,
     showCountryFlag: Boolean = true,
-    singleNodeTestEnabled: Boolean = true,
 ) {
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
     val onCardClick =
         remember(proxy.name, onClick) { onClick?.let { click -> { click(proxy.name) } } }
-    val onNodeTestClick =
-        remember(proxy.name, onSingleNodeTestClick) {
-            onSingleNodeTestClick?.let { click -> { click(proxy.name) } }
-        }
-    val delayInteractionSource = remember { MutableInteractionSource() }
-    val iconInteractionSource = remember { MutableInteractionSource() }
 
     NodeSelectableCard(
         isSelected = isSelected,
@@ -298,47 +287,8 @@ internal fun NodeCard(
                                 color = delayColor,
                                 maxLines = 1,
                                 textAlign = TextAlign.End,
-                                modifier =
-                                    Modifier.padding(start = sizes.nodeCardTrailingGap).let { modifier ->
-                                        if (onNodeTestClick != null && singleNodeTestEnabled) {
-                                            modifier.clickable(
-                                                interactionSource = delayInteractionSource,
-                                                indication = null,
-                                                onClick = onNodeTestClick,
-                                            )
-                                        } else {
-                                            modifier
-                                        }
-                                    },
+                                modifier = Modifier.padding(start = sizes.nodeCardTrailingGap),
                             )
-                        }
-
-                        onNodeTestClick != null && singleNodeTestEnabled -> {
-                            if (isThisProxyTesting) {
-                                RotatingCircleGauge(
-                                    isRotating = true,
-                                    modifier =
-                                        Modifier
-                                            .padding(start = sizes.nodeCardTrailingGap)
-                                            .size(sizes.nodeCardTrailingGap * 2),
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Yume.Cloud,
-                                    contentDescription = YumeTxt.Proxy.Action.Test,
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    modifier =
-                                        Modifier
-                                            .padding(start = sizes.nodeCardTrailingGap)
-                                            .size(sizes.nodeCardTrailingGap * 2)
-                                            .clickable(
-                                                interactionSource = iconInteractionSource,
-                                                indication = null,
-                                                onClick = onNodeTestClick,
-                                            ),
-                                )
-                            }
                         }
                     }
                 }

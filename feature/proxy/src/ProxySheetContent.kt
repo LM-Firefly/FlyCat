@@ -45,7 +45,6 @@ import com.github.yumeyucca.yumebox.presentation.theme.AnimationSpecs
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import com.github.yumeyucca.yumebox.presentation.viewmodel.ProxyViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -299,6 +298,7 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
                 NodeGroupSheetContent(
                     groups = proxyGroups,
                     onGroupClick = groupSelection.selectGroup,
+                    onGroupTest = { group -> proxyViewModel.testDelay(group.name) },
                     testingGroupNames = testingGroupNames,
                     sheetHeightFraction = NOTIFICATION_PROXY_SHEET_HEIGHT_FRACTION,
                     listState = groupListState,
@@ -324,7 +324,6 @@ private fun ProxySheetNodeContent(
     sheetHeightFraction: Float,
     listState: LazyListState,
 ) {
-    val groupProxyNames = remember(group.proxies) { group.proxies.mapTo(linkedSetOf()) { it.name } }
     val isDelayTesting by
     remember(group.name, proxyViewModel) {
         proxyViewModel.testingGroupNames
@@ -332,21 +331,6 @@ private fun ProxySheetNodeContent(
             .distinctUntilChanged()
     }
         .collectAsState(initial = false)
-    val testingProxyNames by
-    remember(group.name, groupProxyNames, proxyViewModel) {
-        if (groupProxyNames.isEmpty()) {
-            flowOf(emptySet<String>())
-        } else {
-            proxyViewModel.testingProxyNames
-                .map { names ->
-                    names.filterTo(linkedSetOf()) { proxyName ->
-                        proxyName in groupProxyNames
-                    }
-                }
-                .distinctUntilChanged()
-        }
-    }
-        .collectAsState(initial = emptySet())
     val onSelectProxy =
         remember(group.name, group.type, proxyViewModel, onTestDelay) {
             { proxyName: String ->
@@ -357,18 +341,12 @@ private fun ProxySheetNodeContent(
                 }
             }
         }
-    val onSingleNodeTestClick =
-        remember(group.name, proxyViewModel) {
-            { proxyName: String -> proxyViewModel.testProxyDelay(group.name, proxyName) }
-        }
 
     NodeSheetContent(
         group = group,
         isDelayTesting = isDelayTesting,
-        testingProxyNames = testingProxyNames,
         onSelectProxy = onSelectProxy,
         onTestDelay = onTestDelay,
-        onTestProxyDelay = onSingleNodeTestClick,
         sheetHeightFraction = sheetHeightFraction,
         listState = listState,
     )

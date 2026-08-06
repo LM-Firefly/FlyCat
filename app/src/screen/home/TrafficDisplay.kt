@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -60,6 +61,7 @@ fun TrafficDisplay(
     proxyMode: RunMode,
     isRemoteController: Boolean,
     isEnabled: Boolean,
+    onOpenPanel: (() -> Unit)? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -92,6 +94,7 @@ fun TrafficDisplay(
             controlState = controlState,
             proxyMode = proxyMode,
             isRemoteController = isRemoteController,
+            onOpenPanel = onOpenPanel,
         )
     }
 }
@@ -210,6 +213,7 @@ private fun UploadSection(
     controlState: HomeProxyControlState,
     proxyMode: RunMode,
     isRemoteController: Boolean,
+    onOpenPanel: (() -> Unit)?,
 ) {
     val spacing = AppTheme.spacing
 
@@ -279,7 +283,35 @@ private fun UploadSection(
             ) {
                 ProxyTypeCapsule(proxyMode = proxyMode)
             }
+            if (isRunning && onOpenPanel != null) {
+                NetworkPanelStatusButton(onClick = onOpenPanel)
+            }
         }
+    }
+}
+
+@Composable
+private fun NetworkPanelStatusButton(onClick: () -> Unit) {
+    val componentSizes = AppTheme.sizes
+    val primary = MiuixTheme.colorScheme.primary
+    Box(
+        modifier =
+            Modifier
+                .size(componentSizes.statusCapsuleHeight)
+                .clip(CircleShape)
+                .background(primary.copy(alpha = AppTheme.opacity.subtle))
+                .clickable(
+                    role = Role.Button,
+                    onClick = onClick,
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Yume.Zashboard,
+            contentDescription = YumeTxt.Proxy.Action.Panel,
+            tint = primary,
+            modifier = Modifier.size(AppTheme.spacing.space16),
+        )
     }
 }
 

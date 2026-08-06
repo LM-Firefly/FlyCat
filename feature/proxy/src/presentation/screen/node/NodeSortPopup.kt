@@ -25,11 +25,11 @@ package com.github.yumeyucca.yumebox.presentation.screen.node
 
 import androidx.compose.runtime.Composable
 import com.github.yumeyucca.yumebox.data.model.ProxySortMode
-import top.yukonga.miuix.kmp.basic.DropdownImpl
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.ListPopupDefaults
+import tf.gal.yumebox.locale.YumeTxt
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
-import top.yukonga.miuix.kmp.window.WindowListPopup
+import top.yukonga.miuix.kmp.overlay.OverlayCascadingListPopup
 
 internal val NodeSortModes =
     listOf(ProxySortMode.DEFAULT, ProxySortMode.BY_NAME, ProxySortMode.BY_LATENCY)
@@ -40,28 +40,44 @@ internal fun NodeSortPopup(
     onDismiss: () -> Unit,
     sortMode: ProxySortMode,
     alignment: PopupPositionProvider.Align = PopupPositionProvider.Align.Start,
+    onNavigateToProviders: (() -> Unit)? = null,
     onSortSelected: (ProxySortMode) -> Unit,
 ) {
-    val selectedSortIndex = NodeSortModes.indexOf(sortMode).coerceAtLeast(0)
-    WindowListPopup(
-        show = show,
-        popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
-        alignment = alignment,
-        onDismissRequest = onDismiss,
-    ) {
-        ListPopupColumn {
-            NodeSortModes.forEachIndexed { index, mode ->
-                DropdownImpl(
-                    text = mode.displayName,
-                    optionSize = NodeSortModes.size,
-                    isSelected = selectedSortIndex == index,
-                    onSelectedIndexChange = {
-                        if (mode != sortMode) onSortSelected(mode)
-                        onDismiss()
-                    },
-                    index = index,
+    val entries =
+        buildList {
+            add(
+                DropdownEntry(
+                    items =
+                        NodeSortModes.map { mode ->
+                            DropdownItem(
+                                text = mode.displayName,
+                                selected = mode == sortMode,
+                                onClick = {
+                                    if (mode != sortMode) onSortSelected(mode)
+                                },
+                            )
+                        },
+                )
+            )
+            onNavigateToProviders?.let { navigateToProviders ->
+                add(
+                    DropdownEntry(
+                        items =
+                            listOf(
+                                DropdownItem(
+                                    text = YumeTxt.Providers.Title,
+                                    onClick = navigateToProviders,
+                                )
+                            ),
+                    )
                 )
             }
         }
-    }
+
+    OverlayCascadingListPopup(
+        show = show,
+        entries = entries,
+        alignment = alignment,
+        onDismissRequest = onDismiss,
+    )
 }

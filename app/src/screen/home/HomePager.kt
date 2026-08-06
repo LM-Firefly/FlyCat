@@ -50,7 +50,11 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 
 @Composable
-fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
+fun HomePager(
+    mainInnerPadding: PaddingValues,
+    isActive: Boolean,
+    onOpenPanel: (() -> Unit)? = null,
+) {
     val homeViewModel = koinViewModel<HomeViewModel>()
     val navigator = LocalNavigator.current
     val screen by homeViewModel.screenState.collectAsState()
@@ -125,6 +129,7 @@ fun HomePager(mainInnerPadding: PaddingValues, isActive: Boolean) {
                         proxyMode = screen.proxyMode,
                         isRemoteController = screen.isRemoteController,
                         isEnabled = isProxyEnabled,
+                        onOpenPanel = onOpenPanel,
                         onClick = {
                             if (screen.isRemoteController) {
                                 return@TrafficDisplay

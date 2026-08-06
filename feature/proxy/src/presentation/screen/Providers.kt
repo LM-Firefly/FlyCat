@@ -38,9 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.github.yumeyucca.yumebox.common.util.toast
 import com.github.yumeyucca.yumebox.core.model.Provider
 import com.github.yumeyucca.yumebox.presentation.component.*
-import com.github.yumeyucca.yumebox.presentation.component.Card
-import com.github.yumeyucca.yumebox.presentation.icon.Yume
-import com.github.yumeyucca.yumebox.presentation.icon.yume.CircleFadingArrowUp
+import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import com.github.yumeyucca.yumebox.presentation.viewmodel.ProvidersViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -105,8 +103,6 @@ fun ProvidersContent(navigator: Navigator) {
         }
     }
 
-    val updatableProviders =
-        remember(providers) { providers.filter { it.vehicleType == Provider.VehicleType.HTTP } }
     val sections =
         remember(providers) {
             val (proxyProviders, ruleProviders) =
@@ -137,16 +133,6 @@ fun ProvidersContent(navigator: Navigator) {
             TopBar(
                 title = YumeTxt.Providers.Title,
                 scrollBehavior = scrollBehavior,
-                actions = {
-                    if (isRunning && updatableProviders.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.updateAllProviders() }) {
-                            Icon(
-                                imageVector = Yume.CircleFadingArrowUp,
-                                contentDescription = YumeTxt.Providers.Action.UpdateAll,
-                            )
-                        }
-                    }
-                },
             )
         }
     ) { innerPadding ->
@@ -203,7 +189,7 @@ private fun ProviderCard(
             uri?.let { onUpload(it) }
         }
 
-    Card(modifier = Modifier.padding(vertical = UiDp.dp4)) {
+    AppCard(modifier = Modifier.padding(vertical = UiDp.dp4)) {
         Row(
             modifier =
                 Modifier

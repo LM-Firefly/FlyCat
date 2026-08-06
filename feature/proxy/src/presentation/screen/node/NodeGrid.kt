@@ -44,23 +44,15 @@ internal fun LazyListScope.nodeGridItems(
     proxies: List<Proxy>,
     selectedProxyName: String,
     onProxyClick: ((String) -> Unit)? = null,
-    isDelayTesting: Boolean = false,
-    testingProxyNames: Set<String> = emptySet(),
-    onSingleNodeTestClick: ((String) -> Unit)? = null,
     outerHorizontalPadding: Dp = UiDp.dp0,
     itemVerticalPadding: Dp = UiDp.dp0,
-    singleNodeTestEnabled: Boolean = true,
 ) {
     items(items = proxies, key = { it.name }, contentType = { "NodeCard1" }) { proxy ->
         NodeCard(
             proxy = proxy,
             isSelected = proxy.name == selectedProxyName,
             onClick = onProxyClick,
-            isDelayTesting = isDelayTesting,
-            isThisProxyTesting = proxy.name in testingProxyNames,
-            onSingleNodeTestClick = onSingleNodeTestClick,
             showCountryFlag = true,
-            singleNodeTestEnabled = singleNodeTestEnabled,
             modifier =
                 Modifier.padding(
                     horizontal = outerHorizontalPadding,
@@ -75,13 +67,9 @@ internal fun NodeGrid(
     proxies: List<Proxy>,
     selectedProxyName: String,
     onProxyClick: ((String) -> Unit)? = null,
-    isDelayTesting: Boolean = false,
-    testingProxyNames: Set<String> = emptySet(),
-    onSingleNodeTestClick: ((String) -> Unit)? = null,
     listStateKey: String? = null,
     @SuppressLint("ModifierParameter") modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(UiDp.dp0),
-    singleNodeTestEnabled: Boolean = true,
 ) {
     val listState = rememberSaveable(listStateKey, saver = LazyListState.Saver) { LazyListState() }
     LazyColumn(
@@ -97,10 +85,6 @@ internal fun NodeGrid(
             proxies = proxies,
             selectedProxyName = selectedProxyName,
             onProxyClick = onProxyClick,
-            isDelayTesting = isDelayTesting,
-            testingProxyNames = testingProxyNames,
-            onSingleNodeTestClick = onSingleNodeTestClick,
-            singleNodeTestEnabled = singleNodeTestEnabled,
         )
     }
 }

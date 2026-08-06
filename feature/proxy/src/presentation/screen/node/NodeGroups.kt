@@ -29,6 +29,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -49,6 +50,7 @@ import com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo
 import com.github.yumeyucca.yumebox.domain.model.resolveTerminalProxy
 import com.github.yumeyucca.yumebox.presentation.component.CountryFlagCircle
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Speed
 import com.github.yumeyucca.yumebox.presentation.icon.yume.chevron
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
@@ -67,6 +69,7 @@ private fun groupBadge(type: String): GroupBadge = GroupBadge(type)
 internal fun LazyListScope.nodeGroupItems(
     groups: List<ProxyGroupInfo>,
     onGroupClick: (ProxyGroupInfo) -> Unit,
+    onGroupTest: (ProxyGroupInfo) -> Unit,
     testingGroupNames: Set<String> = emptySet(),
     itemVerticalPadding: Dp = UiDp.dp6,
 ) {
@@ -80,6 +83,7 @@ internal fun LazyListScope.nodeGroupItems(
             allGroups = groups,
             isDelayTesting = testingGroupNames.contains(group.name),
             onClick = onGroupClick,
+            onTestClick = onGroupTest,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = itemVerticalPadding),
@@ -93,10 +97,12 @@ internal fun NodeGroupCard(
     allGroups: List<ProxyGroupInfo> = listOf(group),
     isDelayTesting: Boolean,
     onClick: (ProxyGroupInfo) -> Unit,
+    onTestClick: (ProxyGroupInfo) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val cardShape = RoundedCornerShape(AppTheme.radii.radius24)
     val interactionSource = remember { MutableInteractionSource() }
+    val testInteractionSource = remember { MutableInteractionSource() }
 
     val currentProxy =
         remember(group.now, allGroups) {
@@ -127,6 +133,9 @@ internal fun NodeGroupCard(
     Column(
         modifier =
             modifier
+                // Keep the original press motion, but put it outside the card's visual layers so
+                // the shadow, shape, background, and content move as a single card.
+                .pressable(interactionSource = interactionSource, indication = SinkFeedback())
                 .shadow(
                     elevation = UiDp.dp4,
                     shape = cardShape,
@@ -135,7 +144,6 @@ internal fun NodeGroupCard(
                 )
                 .clip(cardShape)
                 .background(MiuixTheme.colorScheme.background)
-                .pressable(interactionSource = interactionSource, indication = SinkFeedback())
                 .clickable(
                     interactionSource = interactionSource,
                     indication = null,
@@ -167,39 +175,64 @@ internal fun NodeGroupCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(UiDp.dp8),
+                    Text(
+                        text = group.name,
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
+                    )
+                    val primary = MiuixTheme.colorScheme.primary
+                    Text(
+                        text = badge.label,
+                        style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
+                        color = primary,
+                        modifier =
+                            Modifier
+                                .padding(start = UiDp.dp8)
+                                .clip(RoundedCornerShape(UiDp.dp100))
+                                .background(primary.copy(alpha = 0.1f))
+                                .padding(horizontal = UiDp.dp8, vertical = UiDp.dp3),
+                    )
+                    Box(
+                        modifier =
+                            Modifier
+                                .padding(start = UiDp.dp6)
+                                .size(UiDp.dp28)
+                                .clickable(
+                                    interactionSource = testInteractionSource,
+                                    indication = null,
+                                    enabled = !isDelayTesting,
+                                    onClick = { onTestClick(group) },
+                                ),
+                        contentAlignment = Alignment.CenterEnd,
                     ) {
-                        Text(
-                            text = group.name,
-                            style = MiuixTheme.textStyles.body1,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
-                        )
-
-                        val primary = MiuixTheme.colorScheme.primary
-                        Text(
-                            text = badge.label,
-                            style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
-                            color = primary,
+                        Box(
                             modifier =
                                 Modifier
-                                    .clip(RoundedCornerShape(UiDp.dp100))
-                                    .background(primary.copy(alpha = 0.1f))
-                                    .padding(horizontal = UiDp.dp8, vertical = UiDp.dp3),
-                        )
+                                    .size(UiDp.dp22)
+                                    .clip(CircleShape)
+                                    .background(primary.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (isDelayTesting) {
+                                RotatingCircleGauge(
+                                    isRotating = true,
+                                    modifier = Modifier.size(UiDp.dp14),
+                                    tint = primary,
+                                    contentDescription = null,
+                                )
+                            } else {
+                                Icon(
+                                    Yume.Speed,
+                                    contentDescription = YumeTxt.Proxy.Action.Test,
+                                    modifier = Modifier.size(UiDp.dp14),
+                                    tint = primary,
+                                )
+                            }
+                        }
                     }
-
-                    Text(
-                        text = YumeTxt.Proxy.Node.Count.format(group.proxies.size),
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        modifier = Modifier.padding(start = UiDp.dp8),
-                    )
                 }
 
                 Box(
@@ -245,16 +278,6 @@ internal fun NodeGroupCard(
                                         color = delayColor,
                                     )
                                 }
-
-                                isDelayTesting -> {
-                                    RotatingCircleGauge(
-                                        isRotating = true,
-                                        modifier = Modifier.size(UiDp.dp14),
-                                        tint = MiuixTheme.colorScheme.primary,
-                                        contentDescription = null,
-                                    )
-                                }
-
                                 else ->
                                     Icon(
                                         Yume.chevron,
