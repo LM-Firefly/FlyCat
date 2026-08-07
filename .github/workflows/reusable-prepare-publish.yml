@@ -31,11 +31,6 @@ on:
         required: false
         type: string
         default: ""
-      publish_universal:
-        description: "Whether to publish universal APKs in addition to the arm64-v8a packages."
-        required: false
-        type: boolean
-        default: true
       build_hash:
         description: "Commit sha of the build; first 8 chars go into versionName (<base>[.<branch>].<hash8>)."
         required: false
@@ -123,9 +118,7 @@ jobs:
           channel_segment="${{ inputs.channel_segment }}"
           {
             echo "external_arm64=$(bash scripts/ci-apk-stem.sh "${prefix}" external arm64-v8a "${channel_segment}" "${tail}")"
-            echo "external_universal=$(bash scripts/ci-apk-stem.sh "${prefix}" external universal "${channel_segment}" "${tail}")"
             echo "builtin_arm64=$(bash scripts/ci-apk-stem.sh "${prefix}" builtin arm64-v8a "${channel_segment}" "${tail}")"
-            echo "builtin_universal=$(bash scripts/ci-apk-stem.sh "${prefix}" builtin universal "${channel_segment}" "${tail}")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Generate release notes
@@ -158,9 +151,7 @@ jobs:
           version_name="${{ steps.version.outputs.version_name }}"
           version_code="${{ steps.version.outputs.version_code }}"
           stem_external="${{ steps.stem.outputs.external_arm64 }}"
-          stem_external_universal="${{ steps.stem.outputs.external_universal }}"
           stem_builtin="${{ steps.stem.outputs.builtin_arm64 }}"
-          stem_builtin_universal="${{ steps.stem.outputs.builtin_universal }}"
           release_url="https://github.com/${{ github.repository }}/releases/tag/${{ inputs.release_tag }}"
           publish_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -168,12 +159,6 @@ jobs:
             "${stem_external}.apk"
             "${stem_builtin}.apk"
           )
-          if [ "${{ inputs.publish_universal }}" = "true" ]; then
-            names+=(
-              "${stem_external_universal}.apk"
-              "${stem_builtin_universal}.apk"
-            )
-          fi
           for name in "${names[@]}"; do
             test -f "raw-apk/${name}"
             cp -f "raw-apk/${name}" "publish/${name}"
@@ -181,9 +166,6 @@ jobs:
 
           actual="$(find publish -maxdepth 1 -type f -name '*.apk' | wc -l)"
           expected=2
-          if [ "${{ inputs.publish_universal }}" = "true" ]; then
-            expected=4
-          fi
           if [ "${actual}" -ne "${expected}" ]; then
             echo "Expected ${expected} publish APKs, got ${actual}:" >&2
             ls publish >&2
@@ -225,7 +207,7 @@ jobs:
           for apk in sorted(publish_dir.glob("*.apk")):
               name = apk.name
               geo_bundled = name.startswith(f"{artifact_prefix}-builtin-")
-              abi = "universal" if "-universal-" in name else "arm64-v8a"
+              abi = "arm64-v8a"
 
               h = hashlib.sha256()
               with apk.open("rb") as f:
@@ -239,7 +221,7 @@ jobs:
                   "downloadUrl": f"https://github.com/{repo}/releases/download/{release_tag}/{name}",
                   "size": apk.stat().st_size,
                   "sha256": h.hexdigest(),
-                  "isUniversal": abi == "universal",
+                  "isUniversal": False,
               })
 
           meta = {
@@ -295,23 +277,5 @@ jobs:
         with:
           name: ${{ steps.stem.outputs.builtin_arm64 }}
           path: publish/${{ steps.stem.outputs.builtin_arm64 }}.apk
-          if-no-files-found: error
-          archive: false
-
-      - name: Upload universal APK artifact (external geo)
-        if: inputs.publish_universal
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ steps.stem.outputs.external_universal }}
-          path: publish/${{ steps.stem.outputs.external_universal }}.apk
-          if-no-files-found: error
-          archive: false
-
-      - name: Upload universal APK artifact (builtin geo)
-        if: inputs.publish_universal
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ steps.stem.outputs.builtin_universal }}
-          path: publish/${{ steps.stem.outputs.builtin_universal }}.apk
           if-no-files-found: error
           archive: false

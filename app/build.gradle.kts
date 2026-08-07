@@ -62,11 +62,13 @@ kotlin {
 }
 
 val appAbiList = gropify.abi.app.list.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+check(appAbiList == listOf("arm64-v8a")) {
+    "Only arm64-v8a is supported; configured ABIs: $appAbiList"
+}
 
 // Packaging matrix switches. CLI -P properties (same pattern as build.number below), NOT
 // gropify keys, so CI can flip them per invocation:
-//  - build.allAbis=true -> per-ABI splits for the full abi.app.list plus a universal APK
-//    (CI). Default (local dev) builds only arm64-v8a and skips the universal APK.
+//  - build.allAbis=true -> the arm64-v8a split (kept for CI compatibility).
 //  - geo.bundle=false   -> keep the XZ geo databases and BundleMRS.7z out of assets (the local
 //    default); App.extractGeoFiles skips them and mihomo falls back to remote provider data.
 // Release-only native-lib XZ compression is handled by the dev.yume.packer APK transform (which
@@ -441,7 +443,7 @@ android {
             @Suppress("SpreadOperator")
             //noinspection ChromeOsAbiSupport
             include(*splitAbiList.toTypedArray())
-            isUniversalApk = buildAllAbis
+            isUniversalApk = false
         }
     }
 
@@ -495,7 +497,7 @@ android {
                             it.filterType ==
                                 com.android.build.api.variant.FilterConfiguration.FilterType.ABI
                         }
-                        ?.identifier ?: "universal"
+                        ?.identifier ?: "arm64-v8a"
                 val outputName =
                     buildList {
                             add(apkOutputPrefix)
@@ -623,10 +625,7 @@ dependencies {
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
-    val mmkv64 = libs.versions.mmkv64.get()
-    val mmkv32 = libs.versions.mmkv32.get()
-    val injectedAbi = findProperty("android.injected.build.abi") as? String
-    val mmkvVersion = if (injectedAbi in listOf("arm64-v8a", "x86_64")) mmkv64 else mmkv32
+    val mmkvVersion = libs.versions.mmkv64.get()
     //noinspection NewerVersionAvailable
     //noinspection AndroidLintUseTomlInstead,AndroidLintNewerVersionAvailable
     implementation("com.tencent:mmkv:$mmkvVersion")

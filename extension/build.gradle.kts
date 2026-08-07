@@ -91,7 +91,7 @@ android {
             isEnable = true
             reset()
             val abiList =
-                (gropify.abi.extension.list ?: "arm64-v8a,x86_64")
+                (gropify.abi.extension.list ?: "arm64-v8a")
                     .split(',')
                     .map { it.trim() }
                     .filter { it.isNotEmpty() }

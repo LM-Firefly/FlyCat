@@ -18,10 +18,10 @@
 # Copyright (c)  YumeYucca 2025 - Present
 #
 # Prints the publish APK file stem used by reusable-prepare-publish.yml. Segments,
-# in order: <prefix>-<geo>[-universal][-<channel_segment>]-<tail>. GEO is the geo
+# in order: <prefix>-<geo>[-<channel_segment>]-<tail>. GEO is the geo
 # database variant: "builtin" (bundled in assets) or "external" (core downloads at
-# runtime). ABI arm64-v8a is the unmarked default; universal carries a -universal
-# segment. CHANNEL_SEGMENT tags non-default channels (smart, pr); empty for the pre
+# runtime). ABI arm64-v8a is the only supported and unmarked ABI. CHANNEL_SEGMENT tags
+# non-default channels (smart, pr); empty for the pre
 # channel and stable releases. TAIL is the packaging date (yy.MM.dd, Asia/Shanghai)
 # for channel/PR builds or the clean version name for official releases — the
 # caller decides which.
@@ -48,8 +48,7 @@ esac
 stem="${prefix}-${geo}"
 case "${abi}" in
   arm64-v8a) ;;
-  universal) stem="${stem}-universal" ;;
-  *) echo "ABI must be arm64-v8a or universal, got: ${abi}" >&2; exit 1 ;;
+  *) echo "ABI must be arm64-v8a, got: ${abi}" >&2; exit 1 ;;
 esac
 
 if [ -n "${channel_segment}" ]; then

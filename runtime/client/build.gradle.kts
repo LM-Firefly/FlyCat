@@ -44,10 +44,7 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
-    val mmkv64 = libs.versions.mmkv64.get()
-    val mmkv32 = libs.versions.mmkv32.get()
-    val injectedAbi = findProperty("android.injected.build.abi") as? String
-    val mmkvVersion = if (injectedAbi in listOf("arm64-v8a", "x86_64")) mmkv64 else mmkv32
+    val mmkvVersion = libs.versions.mmkv64.get()
     //noinspection AndroidLintUseTomlInstead,AndroidLintNewerVersionAvailable
     implementation("com.tencent:mmkv:$mmkvVersion")
 

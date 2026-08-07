@@ -44,15 +44,6 @@ jobs:
       channel: smart
     secrets: inherit
 
-  build-native-abi-pre-armeabi-v7a:
-    name: Native v7a (Pre)
-    uses: ./.github/workflows/reusable-build-native-abi.yml
-    with:
-      channel: pre
-      kernel_channel: alpha
-      abi: armeabi-v7a
-    secrets: inherit
-
   build-native-abi-pre-arm64-v8a:
     name: Native v8a (Pre)
     uses: ./.github/workflows/reusable-build-native-abi.yml
@@ -60,33 +51,6 @@ jobs:
       channel: pre
       kernel_channel: alpha
       abi: arm64-v8a
-    secrets: inherit
-
-  build-native-abi-pre-x86:
-    name: Native x86 (Pre)
-    uses: ./.github/workflows/reusable-build-native-abi.yml
-    with:
-      channel: pre
-      kernel_channel: alpha
-      abi: x86
-    secrets: inherit
-
-  build-native-abi-pre-x86_64:
-    name: Native x64 (Pre)
-    uses: ./.github/workflows/reusable-build-native-abi.yml
-    with:
-      channel: pre
-      kernel_channel: alpha
-      abi: x86_64
-    secrets: inherit
-
-  build-native-abi-smart-armeabi-v7a:
-    name: Native v7a (Smart)
-    uses: ./.github/workflows/reusable-build-native-abi.yml
-    with:
-      channel: smart
-      kernel_channel: smart
-      abi: armeabi-v7a
     secrets: inherit
 
   build-native-abi-smart-arm64-v8a:
@@ -98,32 +62,11 @@ jobs:
       abi: arm64-v8a
     secrets: inherit
 
-  build-native-abi-smart-x86:
-    name: Native x86 (Smart)
-    uses: ./.github/workflows/reusable-build-native-abi.yml
-    with:
-      channel: smart
-      kernel_channel: smart
-      abi: x86
-    secrets: inherit
-
-  build-native-abi-smart-x86_64:
-    name: Native x64 (Smart)
-    uses: ./.github/workflows/reusable-build-native-abi.yml
-    with:
-      channel: smart
-      kernel_channel: smart
-      abi: x86_64
-    secrets: inherit
-
   bundle-native-pre:
     name: Bundle (Pre)
     needs:
       - build-geo-pre
-      - build-native-abi-pre-armeabi-v7a
       - build-native-abi-pre-arm64-v8a
-      - build-native-abi-pre-x86
-      - build-native-abi-pre-x86_64
     uses: ./.github/workflows/reusable-bundle-native.yml
     with:
       channel: pre
@@ -133,10 +76,7 @@ jobs:
     name: Bundle (Smart)
     needs:
       - build-geo-smart
-      - build-native-abi-smart-armeabi-v7a
       - build-native-abi-smart-arm64-v8a
-      - build-native-abi-smart-x86
-      - build-native-abi-smart-x86_64
     uses: ./.github/workflows/reusable-bundle-native.yml
     with:
       channel: smart

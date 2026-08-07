@@ -39,15 +39,6 @@ jobs:
       channel: stable
     secrets: inherit
 
-  build-native-abi-stable-armeabi-v7a:
-    name: Native v7a (Stable)
-    uses: ./.github/workflows/reusable-build-native-abi.yml
-    with:
-      channel: stable
-      kernel_channel: alpha
-      abi: armeabi-v7a
-    secrets: inherit
-
   build-native-abi-stable-arm64-v8a:
     name: Native v8a (Stable)
     uses: ./.github/workflows/reusable-build-native-abi.yml
@@ -57,32 +48,11 @@ jobs:
       abi: arm64-v8a
     secrets: inherit
 
-  build-native-abi-stable-x86:
-    name: Native x86 (Stable)
-    uses: ./.github/workflows/reusable-build-native-abi.yml
-    with:
-      channel: stable
-      kernel_channel: alpha
-      abi: x86
-    secrets: inherit
-
-  build-native-abi-stable-x86_64:
-    name: Native x64 (Stable)
-    uses: ./.github/workflows/reusable-build-native-abi.yml
-    with:
-      channel: stable
-      kernel_channel: alpha
-      abi: x86_64
-    secrets: inherit
-
   bundle-native-stable:
     name: Bundle (Stable)
     needs:
       - build-geo-stable
-      - build-native-abi-stable-armeabi-v7a
       - build-native-abi-stable-arm64-v8a
-      - build-native-abi-stable-x86
-      - build-native-abi-stable-x86_64
     uses: ./.github/workflows/reusable-bundle-native.yml
     with:
       channel: stable
@@ -112,7 +82,6 @@ jobs:
       meta_asset_name: YumeBox-stable-meta.json
       raw_apk_artifact_name: apk-raw-stable-app
       publish_artifact_name: publish-stable-app
-      publish_universal: false
       apk_name_tail: ${{ needs.build-apk-stable-app.outputs.apk_name_tail }}
     secrets: inherit
 

@@ -86,11 +86,7 @@ YumeBox 不使用 Git submodule。从干净检出开始构建前，需要先准�
 
    ```bash
    rustup toolchain install nightly --component rust-src
-   rustup target add --toolchain nightly \
-     armv7-linux-androideabi \
-     aarch64-linux-android \
-     i686-linux-android \
-     x86_64-linux-android
+   rustup target add --toolchain nightly aarch64-linux-android
    cargo install cargo-ndk
    ```
 
@@ -119,7 +115,7 @@ YumeBox 不使用 Git submodule。从干净检出开始构建前，需要先准�
    # 内置 Geo 数据库与 BundleMRS.7z 的 arm64-v8a Debug APK
    ./gradlew -Pgeo.bundle=true :app:assembleDebug
 
-   # 为所有已配置 ABI 构建 Release APK，并额外生成通用 APK
+   # 构建 arm64-v8a Release APK
    ./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
    ```
 

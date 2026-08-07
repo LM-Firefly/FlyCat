@@ -202,9 +202,6 @@ class NdkTools(private val config: ProjectConfig) {
         val triple =
             when (abi) {
                 "arm64-v8a" -> "aarch64-linux-android"
-                "armeabi-v7a" -> "armv7a-linux-androideabi"
-                "x86" -> "i686-linux-android"
-                "x86_64" -> "x86_64-linux-android"
                 else -> throw IllegalArgumentException("Unsupported ABI: $abi")
             }
         val ext = if (SystemDetector.os == "windows") ".cmd" else ""
@@ -292,6 +289,16 @@ data class CoreVersionStamp(
     }
 }
 
+val SUPPORTED_ANDROID_ABI = "arm64-v8a"
+
+fun configuredAbis(config: ProjectConfig): List<String> {
+    val abis = config.getCsv("abi.app.list", SUPPORTED_ANDROID_ABI)
+    require(abis == listOf(SUPPORTED_ANDROID_ABI)) {
+        "Only $SUPPORTED_ANDROID_ABI is supported; configured ABIs: ${abis.joinToString()}"
+    }
+    return abis
+}
+
 // Resolve branch/hash while the mihomo checkout is present (native job / local --go). Prefer `git`
 // itself (handles worktrees, packed-refs, remotes) and fall back to kernel.properties labels.
 fun resolveCoreVersionStamp(
@@ -376,9 +383,6 @@ class GoCoreBuilder(private val config: ProjectConfig, private val ndkTools: Ndk
     private val abiToGoArch =
         mapOf(
             "arm64-v8a" to "arm64",
-            "armeabi-v7a" to "arm",
-            "x86" to "386",
-            "x86_64" to "amd64",
         )
 
     private val buildTags = config.getCsv("golang.buildTags", "cmfa")
@@ -394,7 +398,7 @@ class GoCoreBuilder(private val config: ProjectConfig, private val ndkTools: Ndk
         applyKernelPatches()
         val stamp = resolveCoreVersionStamp(config, mihomoDir)
         coreVersionStamp = stamp
-        val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
+        val abis = configuredAbis(config)
         writeCoreVersionStamp(stamp, abis)
         println(
             "[GoCore] Building shared core ($outputLibraryName) for ABIs: ${abis.joinToString()}"
@@ -495,7 +499,7 @@ class GoCoreBuilder(private val config: ProjectConfig, private val ndkTools: Ndk
             "GOARCH" to arch,
             "CC" to ndkTools.getClangPath(abi),
             "GOCACHE" to File("build/go-cache").absolutePath,
-        ) + if (abi == "armeabi-v7a") mapOf("GOARM" to "7") else emptyMap()
+        )
     }
 
     // Fold the core identity into -ldflags so /version works even when the launcher omits
@@ -548,7 +552,7 @@ class RustBuilder(private val config: ProjectConfig) {
             )
         }
 
-        val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
+        val abis = configuredAbis(config)
         println("[Rust] Building Android shared library from ${sourceDir.absolutePath}")
         println("[Rust] Host CLI/ELF is not built by this script")
         println("[Rust] Building for ABIs: ${abis.joinToString()}")
@@ -642,7 +646,7 @@ class CoreShellBuilder(private val config: ProjectConfig, private val ndkTools: 
             "[CoreShell] Source directory not ready: missing ${File(sourceDir, "CMakeLists.txt").absolutePath}"
         }
 
-        val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
+        val abis = configuredAbis(config)
         println("[CoreShell] Building PIE launcher for ABIs: ${abis.joinToString()}")
         abis.forEach(::buildForAbi)
     }
@@ -719,7 +723,7 @@ class LoaderCBuilder(private val config: ProjectConfig, private val ndkTools: Nd
             "[Loader] Source directory not ready: missing ${File(sourceDir, "CMakeLists.txt").absolutePath}"
         }
 
-        val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
+        val abis = configuredAbis(config)
         println("[Loader] Building native payload extractor for ABIs: ${abis.joinToString()}")
         abis.forEach(::buildForAbi)
     }
@@ -798,7 +802,7 @@ class CompatBuilder(private val config: ProjectConfig, private val ndkTools: Ndk
             "[Compat] Source directory not ready: missing ${File(sourceDir, "CMakeLists.txt").absolutePath}"
         }
 
-        val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
+        val abis = configuredAbis(config)
         println(
             "[Compat] Building out-of-process core bridge (libcompat.so) for ABIs: ${abis.joinToString()}"
         )
@@ -994,7 +998,7 @@ fun cleanBuildOutputs() {
         File("app/assets/$name").delete()
     }
 
-    val abis = listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+    val abis = listOf(SUPPORTED_ANDROID_ABI)
     abis.forEach { abi ->
         File("jniLibs/$abi/libmihomo.so").delete()
         File("jniLibs/$abi/libmihomocore.so").delete()

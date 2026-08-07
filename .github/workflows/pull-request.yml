@@ -23,15 +23,6 @@ jobs:
       channel: pr
     secrets: inherit
 
-  build-native-abi-pr-armeabi-v7a:
-    name: Native v7a (PR)
-    uses: ./.github/workflows/reusable-build-native-abi.yml
-    with:
-      channel: pr
-      kernel_channel: alpha
-      abi: armeabi-v7a
-    secrets: inherit
-
   build-native-abi-pr-arm64-v8a:
     name: Native v8a (PR)
     uses: ./.github/workflows/reusable-build-native-abi.yml
@@ -41,32 +32,11 @@ jobs:
       abi: arm64-v8a
     secrets: inherit
 
-  build-native-abi-pr-x86:
-    name: Native x86 (PR)
-    uses: ./.github/workflows/reusable-build-native-abi.yml
-    with:
-      channel: pr
-      kernel_channel: alpha
-      abi: x86
-    secrets: inherit
-
-  build-native-abi-pr-x86_64:
-    name: Native x64 (PR)
-    uses: ./.github/workflows/reusable-build-native-abi.yml
-    with:
-      channel: pr
-      kernel_channel: alpha
-      abi: x86_64
-    secrets: inherit
-
   bundle-native-pr:
     name: Bundle (PR)
     needs:
       - build-geo-pr
-      - build-native-abi-pr-armeabi-v7a
       - build-native-abi-pr-arm64-v8a
-      - build-native-abi-pr-x86
-      - build-native-abi-pr-x86_64
     uses: ./.github/workflows/reusable-bundle-native.yml
     with:
       channel: pr

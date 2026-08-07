@@ -93,11 +93,7 @@ build the app.
 
    ```bash
    rustup toolchain install nightly --component rust-src
-   rustup target add --toolchain nightly \
-     armv7-linux-androideabi \
-     aarch64-linux-android \
-     i686-linux-android \
-     x86_64-linux-android
+   rustup target add --toolchain nightly aarch64-linux-android
    cargo install cargo-ndk
    ```
 
@@ -127,7 +123,7 @@ build the app.
    # arm64-v8a debug APK with Geo databases and BundleMRS.7z
    ./gradlew -Pgeo.bundle=true :app:assembleDebug
 
-   # release APKs for every configured ABI plus a universal APK
+   # arm64-v8a release APK
    ./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
    ```
 

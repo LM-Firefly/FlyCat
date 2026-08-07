@@ -68,10 +68,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    val mmkv64 = libs.versions.mmkv64.get()
-    val mmkv32 = libs.versions.mmkv32.get()
-    val injectedAbi = findProperty("android.injected.build.abi") as? String
-    val mmkvVersion = if (injectedAbi in listOf("arm64-v8a", "x86_64")) mmkv64 else mmkv32
+    val mmkvVersion = libs.versions.mmkv64.get()
     implementation("com.tencent:mmkv:$mmkvVersion")
 
     testImplementation("junit:junit:4.13.2")
