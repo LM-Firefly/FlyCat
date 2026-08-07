@@ -23,6 +23,8 @@
 package com.github.yumeyucca.yumebox.screen.moe
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -39,10 +41,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -58,7 +60,6 @@ import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.blurEffect
 import dev.chrisbanes.haze.hazeEffect
-import kotlinx.coroutines.delay
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -151,11 +152,9 @@ internal fun MoeSidebarContent(
     }
 }
 
-private const val MOE_LAUNCH_TEXT_SLIDE_DURATION = 450
-private const val MOE_LAUNCH_TEXT_TRANSIENT_DELAY = 220L
+private const val MOE_LAUNCH_TEXT_SLIDE_DURATION = 280
 
-private fun HomeProxyControlState.isMoeLaunchTransientState(): Boolean =
-    this == HomeProxyControlState.Connecting || this == HomeProxyControlState.Disconnecting
+private data class MoeLaunchLabel(val text: String, val order: Int)
 
 @Composable
 internal fun MoeLaunchControls(
@@ -265,29 +264,28 @@ internal fun MoeLaunchButton(
     )
     val targetLabel =
         when {
-            isRemoteController && isRunning -> YumeTxt.Home.Status.Running
-            !enabled && controlState == HomeProxyControlState.Idle -> YumeTxt.Home.Traffic.NoProfile
+            isRemoteController && isRunning -> MoeLaunchLabel(YumeTxt.Home.Status.Running, order = 2)
+            !enabled && controlState == HomeProxyControlState.Idle ->
+                MoeLaunchLabel(YumeTxt.Home.Traffic.NoProfile, order = 0)
+
             else ->
                 when (controlState) {
-                    HomeProxyControlState.Idle -> YumeTxt.Home.Control.Start
-                    HomeProxyControlState.Connecting -> YumeTxt.Home.Status.Connecting
-                    HomeProxyControlState.Running ->
-                        if (isRemoteController) YumeTxt.Home.Status.Running
-                        else YumeTxt.Home.Control.Stop
+                    HomeProxyControlState.Idle -> MoeLaunchLabel(YumeTxt.Home.Control.Start, order = 0)
+                    HomeProxyControlState.Connecting ->
+                        MoeLaunchLabel(YumeTxt.Home.Status.Connecting, order = 1)
 
-                    HomeProxyControlState.Lost -> YumeTxt.Home.Status.Lost
-                    HomeProxyControlState.Disconnecting -> YumeTxt.Home.Status.Disconnecting
+                    HomeProxyControlState.Running ->
+                        MoeLaunchLabel(
+                            if (isRemoteController) YumeTxt.Home.Status.Running
+                            else YumeTxt.Home.Control.Stop,
+                            order = 2,
+                        )
+
+                    HomeProxyControlState.Lost -> MoeLaunchLabel(YumeTxt.Home.Status.Lost, order = 0)
+                    HomeProxyControlState.Disconnecting ->
+                        MoeLaunchLabel(YumeTxt.Home.Status.Disconnecting, order = 1)
                 }
         }
-    var displayedLabel by remember { mutableStateOf(targetLabel) }
-
-    LaunchedEffect(targetLabel, controlState) {
-        if (targetLabel == displayedLabel) return@LaunchedEffect
-        if (controlState.isMoeLaunchTransientState()) {
-            delay(MOE_LAUNCH_TEXT_TRANSIENT_DELAY)
-        }
-        displayedLabel = targetLabel
-    }
 
     Box(
         modifier =
@@ -326,35 +324,49 @@ internal fun MoeLaunchButton(
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
-                .height(22.dp)
-                .clipToBounds(),
+                .heightIn(min = 28.dp)
+                .fillMaxWidth(),
             contentAlignment = Alignment.Center,
         ) {
             AnimatedContent(
-                targetState = displayedLabel,
+                targetState = targetLabel,
+                modifier = Modifier.fillMaxWidth(),
                 transitionSpec = {
-                    // 同一时长同一缓动、无延迟：新旧文本锁成一列同步上移，呈整体平移感
+                    val forward = targetState.order >= initialState.order
                     val slideSpec =
                         tween<IntOffset>(
                             durationMillis = MOE_LAUNCH_TEXT_SLIDE_DURATION,
                             easing = AnimationSpecs.StandardEasing,
                         )
-                    slideInVertically(initialOffsetY = { it }, animationSpec = slideSpec)
+                    val fadeSpec =
+                        tween<Float>(
+                            durationMillis = MOE_LAUNCH_TEXT_SLIDE_DURATION,
+                            easing = AnimationSpecs.StandardEasing,
+                        )
+                    (slideInVertically(
+                        initialOffsetY = { if (forward) it else -it },
+                        animationSpec = slideSpec,
+                    ) + fadeIn(animationSpec = fadeSpec))
                         .togetherWith(
-                            slideOutVertically(targetOffsetY = { -it }, animationSpec = slideSpec)
+                            slideOutVertically(
+                                targetOffsetY = { if (forward) -it else it },
+                                animationSpec = slideSpec,
+                            ) + fadeOut(animationSpec = fadeSpec)
                         )
                 },
                 label = "moe_launch_button_text",
-            ) { text ->
+            ) { label ->
                 Text(
-                    text = text,
+                    text = label.text,
                     color = contentColor,
                     style = MiuixTheme.textStyles.body1,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp,
                     softWrap = false,
                     maxLines = 1,
-                    overflow = TextOverflow.Clip,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
