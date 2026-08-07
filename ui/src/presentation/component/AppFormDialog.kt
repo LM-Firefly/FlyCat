@@ -31,6 +31,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Text
@@ -52,12 +54,23 @@ fun AppFormDialog(
     onDismissFinished: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    fun hideInput() {
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+    }
+
     AppDialog(
         show = show,
         modifier = modifier,
         title = title,
         summary = summary,
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = {
+            hideInput()
+            onDismissRequest()
+        },
         onDismissFinished = onDismissFinished,
     ) {
         val contentModifier =
@@ -88,8 +101,14 @@ fun AppFormDialog(
                     )
                 }
             DialogButtonRow(
-                onCancel = onDismissRequest,
-                onConfirm = onConfirm,
+                onCancel = {
+                    hideInput()
+                    onDismissRequest()
+                },
+                onConfirm = {
+                    hideInput()
+                    onConfirm()
+                },
                 cancelText = cancelText,
                 confirmText = confirmText,
                 confirmEnabled = confirmEnabled,

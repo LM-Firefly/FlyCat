@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
@@ -125,12 +127,23 @@ fun AppTextFieldDialog(
     trailingIcon: @Composable (() -> Unit)? = null,
     supportingContent: @Composable (() -> Unit)? = null,
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    fun hideInput() {
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+    }
+
     AppDialog(
         show = show,
         modifier = modifier,
         title = title,
         summary = summary,
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = {
+            hideInput()
+            onDismissRequest()
+        },
         renderInRootScaffold = renderInRootScaffold,
     ) {
         AppDialogColumn {
@@ -147,11 +160,25 @@ fun AppTextFieldDialog(
                 singleLine = singleLine,
                 maxLines = maxLines,
                 keyboardOptions = keyboardOptions,
-                onImeAction = onImeAction,
+                onImeAction = onImeAction?.let { action ->
+                    {
+                        hideInput()
+                        action()
+                    }
+                },
                 trailingIcon = trailingIcon,
             )
             supportingContent?.invoke()
-            DialogButtonRow(onCancel = onDismissRequest, onConfirm = onConfirm)
+            DialogButtonRow(
+                onCancel = {
+                    hideInput()
+                    onDismissRequest()
+                },
+                onConfirm = {
+                    hideInput()
+                    onConfirm()
+                },
+            )
         }
     }
 }

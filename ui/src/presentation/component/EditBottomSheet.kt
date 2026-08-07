@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import tf.gal.yumebox.locale.YumeTxt
@@ -45,7 +47,22 @@ fun TextEditBottomSheet(
     secondaryButtonText: String = YumeTxt.Component.Button.Cancel,
     onSecondaryClick: () -> Unit = onDismiss,
 ) {
-    AppActionBottomSheet(show = show.value, title = title, onDismissRequest = onDismiss) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    fun hideInput() {
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+    }
+
+    AppActionBottomSheet(
+        show = show.value,
+        title = title,
+        onDismissRequest = {
+            hideInput()
+            onDismiss()
+        },
+    ) {
         Column {
             OemTextField(
                 value = textFieldValue.value,
@@ -54,11 +71,18 @@ fun TextEditBottomSheet(
             )
             Spacer(modifier = Modifier.height(UiDp.dp16))
             Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
-                Button(onClick = onSecondaryClick, modifier = Modifier.weight(1f)) {
+                Button(
+                    onClick = {
+                        hideInput()
+                        onSecondaryClick()
+                    },
+                    modifier = Modifier.weight(1f),
+                ) {
                     Text(secondaryButtonText)
                 }
                 Button(
                     onClick = {
+                        hideInput()
                         onConfirm(textFieldValue.value.text)
                         show.value = false
                     },

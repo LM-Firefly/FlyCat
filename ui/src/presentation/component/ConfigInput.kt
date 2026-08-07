@@ -29,6 +29,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
@@ -150,10 +152,19 @@ private fun ConfigTextInputDialog(
     onDismiss: (() -> Unit)? = null,
 ) {
     if (!show.value) return
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    fun hideInput() {
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+    }
+
     AppDialog(
         show = show.value,
         title = title,
         onDismissRequest = {
+            hideInput()
             onDismiss?.invoke()
             show.value = false
         },
@@ -174,10 +185,12 @@ private fun ConfigTextInputDialog(
             )
             DialogFilledButtonRow(
                 onSecondary = {
+                    hideInput()
                     onClear()
                     show.value = false
                 },
                 onPrimary = {
+                    hideInput()
                     onConfirm()
                     show.value = false
                 },

@@ -39,6 +39,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -153,6 +155,8 @@ fun SearchStatus.SearchPager(
 ) {
     val spacing = AppTheme.spacing
     val componentSizes = AppTheme.sizes
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val resolvedPadding =
         SearchBarPadding(
             top = padding.top.takeOrElse { componentSizes.searchBarTopPadding },
@@ -186,6 +190,8 @@ fun SearchStatus.SearchPager(
     )
 
     BackHandler(enabled = active) {
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
         onSearchStatusChange(
             searchStatus.copy(searchText = "", current = SearchStatus.Status.COLLAPSING)
         )
@@ -260,6 +266,8 @@ private fun SearchPagerCancelButton(
     searchBarTopPadding: Dp,
 ) {
     val spacing = AppTheme.spacing
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val isExpanded = searchStatus.isExpanded() || searchStatus.isExpanding()
     AnimatedVisibility(
         visible = isExpanded,
@@ -283,6 +291,8 @@ private fun SearchPagerCancelButton(
                         indication = null,
                         enabled = searchStatus.isExpanded(),
                     ) {
+                        focusManager.clearFocus(force = true)
+                        keyboardController?.hide()
                         onSearchStatusChange(
                             searchStatus.copy(
                                 searchText = "",
@@ -327,6 +337,8 @@ private fun SearchBar(
 ) {
     val spacing = AppTheme.spacing
     val componentSizes = AppTheme.sizes
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     val focusRequester = remember { FocusRequester() }
     var textFieldValue by remember { mutableStateOf(TextFieldValue(searchStatus.searchText)) }
@@ -339,7 +351,9 @@ private fun SearchBar(
 
     LaunchedEffect(searchStatus.current) {
         if (searchStatus.isExpanding()) {
+            withFrameNanos { }
             focusRequester.requestFocus()
+            keyboardController?.show()
         }
     }
 
@@ -368,7 +382,10 @@ private fun SearchBar(
                 spacing = spacing,
             )
         },
-        onImeAction = {},
+        onImeAction = {
+            focusManager.clearFocus(force = true)
+            keyboardController?.hide()
+        },
     )
 }
 
