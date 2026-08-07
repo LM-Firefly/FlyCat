@@ -198,42 +198,14 @@ jobs:
 
       - name: Write APK guide summary
         shell: bash
-        env:
-          TAIL: ${{ steps.apk_name.outputs.tail }}
-          CHANNEL_SEGMENT: ${{ steps.apk_name.outputs.channel_segment }}
         run: |
-          seg="${CHANNEL_SEGMENT:+-${CHANNEL_SEGMENT}}"
           cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
-          ## Which APK should I download?
+          ## Choosing an APK variant
 
-          File name format:
-
-          ```
-          YumeBox-<geo>[-<channel>]-<tail>.apk
-          ```
-
-          ### Geo databases — `<geo>`
-          | Segment | Geo data (geoip / geosite / ASN) | APK size | Choose when |
-          |---|---|---|---|
-          | `builtin` | Bundled inside the APK | Larger | You want it working right after install, with no first-run download |
-          | `external` | Downloaded by the core at runtime | Smaller | You want the smallest APK and have network on first use |
-
-          ### Architecture — `<abi>`
-          | Segment | CPU / device | Choose when |
-          |---|---|---|
-          | *(none)* | **arm64-v8a** | **Virtually every phone from the last ~8 years — the default** |
-
-          > **arm64-v8a carries no abi segment** (it is the default). A name with no abi segment is an arm64-v8a build.
-
-          ### Channel — `<channel>`
-          | Segment | Channel |
-          |---|---|
-          | *(none)* | Pre-release / Stable |
-          | `pr` | Pull-request build |
-
-          `<tail>` is the packaging date `yy.mm.dd` for channel / PR builds, or the version name for stable releases.
+          - `builtin`: Bundles GeoIP, GeoSite, ASN, and BundleMRS data and works immediately after installation.
+          - `external`: Omits Geo data for a smaller APK, but requires a network download on first use.
+          - First-time users should choose `builtin` with bundled Geo data; both variants provide the same application features and core code.
           EOF
-          printf '\n**Most people want** `%s` — arm64 + bundled geo.\n' "YumeBox-builtin${seg}-${TAIL}.apk" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload raw APK artifact
         uses: actions/upload-artifact@v7
