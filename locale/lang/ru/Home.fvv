@@ -6,6 +6,7 @@ Home = {
         ConfigSwitched = "Профиль переключён"
         ConfigSwitchFailed = "Не удалось переключить профиль: %s"
         Preparing = "Подготовка..."
+        BuiltinGeoRequired = "Сначала установите версию Builtin"
         StartFailed = "Не удалось запустить: %s"
         StopFailed = "Не удалось остановить: %s"
     }

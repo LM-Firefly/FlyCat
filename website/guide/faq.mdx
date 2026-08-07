@@ -308,13 +308,13 @@ keywords:
       </Step>
 
       <Step title="检查 Geo 数据">
-        使用 external APK 时，首次启动需要下载 Geo 资源。网络受限时可改用 builtin APK。
+        使用 external APK 前，请先安装一次 builtin APK 以写入 Geo 资源。后续更新 external APK 会保留这些文件。
       </Step>
     </Steps>
   </Accordion>
 
   <Accordion title="外置 Geo 和内置 Geo 有什么区别" icon="database">
-    `external` APK 不携带 Geo 数据，文件较小，首次使用依赖网络；`builtin` APK 携带 GeoIP、GeoSite、ASN 和 BundleMRS，文件较大但不依赖首次下载。两者的应用功能与内核代码相同。
+    `external` APK 不携带 Geo 数据，文件较小；首次使用前需先安装一次 `builtin` APK。`builtin` APK 携带 GeoIP、GeoSite、ASN 和 BundleMRS，文件较大。应用数据保留时，之后可直接更新到 `external` APK。两者的应用功能与内核代码相同。
   </Accordion>
 
   <Accordion title="如何提交可处理的问题报告" icon="message-square-code">

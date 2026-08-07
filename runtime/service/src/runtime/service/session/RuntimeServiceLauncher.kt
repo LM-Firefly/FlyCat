@@ -24,6 +24,7 @@ import android.content.Context
 import android.content.Intent
 import com.github.yumeyucca.yumebox.data.model.RunMode
 import com.github.yumeyucca.yumebox.data.store.RemoteControllerStore
+import com.github.yumeyucca.yumebox.core.util.requireBuiltinGeoAssets
 import com.github.yumeyucca.yumebox.runtime.api.Intents
 import com.github.yumeyucca.yumebox.runtime.api.RuntimePhase
 import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
@@ -89,6 +90,7 @@ object RuntimeServiceLauncher {
             return
         }
 
+        appContext.requireBuiltinGeoAssets()
         log.beginSession(
             RuntimeLog.Type.Launcher,
             "request start source=$source mode=${mode.name}",

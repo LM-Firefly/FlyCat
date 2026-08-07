@@ -308,13 +308,13 @@ The errors below come from the current Rust configuration compiler, Android star
       </Step>
 
       <Step title="Check Geo data">
-        The first startup of an external APK downloads Geo resources. Use a builtin APK if the network is restricted.
+        Before using an external APK, install a builtin APK once to write the Geo resources. Later external APK updates retain those files.
       </Step>
     </Steps>
   </Accordion>
 
   <Accordion title="What is the difference between external and builtin Geo?" icon="database">
-    An `external` APK does not contain Geo data. It is smaller but depends on the network during first use. A `builtin` APK contains GeoIP, GeoSite, ASN, and BundleMRS data. It is larger but does not require an initial download. Both use the same app features and core code.
+    An `external` APK does not contain Geo data, so install a `builtin` APK once before first use. A `builtin` APK contains GeoIP, GeoSite, ASN, and BundleMRS data and is larger. With app data retained, later updates can use an `external` APK directly. Both use the same app features and core code.
   </Accordion>
 
   <Accordion title="How do I submit an actionable issue report?" icon="message-square-code">

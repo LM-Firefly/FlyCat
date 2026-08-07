@@ -6,6 +6,7 @@ Home = {
         ConfigSwitched = "Config switched"
         ConfigSwitchFailed = "Config switch failed: %s"
         Preparing = "Preparing..."
+        BuiltinGeoRequired = "Please install the Builtin version first"
         StartFailed = "Start failed: %s"
         StopFailed = "Stop failed: %s"
     }

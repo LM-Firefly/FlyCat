@@ -47,6 +47,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import tf.gal.yumebox.locale.YumeTxt
+import com.github.yumeyucca.yumebox.core.util.BuiltinGeoAssetsRequiredException
 import timber.log.Timber
 
 class HomeViewModel(
@@ -568,6 +569,10 @@ class HomeViewModel(
                 clearPendingStart()
                 _pendingTransition.value = PendingTransition.None
             }
+        } catch (error: BuiltinGeoAssetsRequiredException) {
+            clearPendingStart()
+            _pendingTransition.value = PendingTransition.None
+            showError(YumeTxt.Home.Message.BuiltinGeoRequired)
         } catch (error: com.github.yumeyucca.yumebox.runtime.api.VpnPermissionRequired) {
             _pendingTransition.value = PendingTransition.AwaitingPermission
             _vpnPrepareIntent.emit(error.intent)

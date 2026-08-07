@@ -27,6 +27,7 @@ import com.github.yumeyucca.yumebox.core.model.RunMode
 import com.github.yumeyucca.yumebox.core.util.PollingTimerSpecs
 import com.github.yumeyucca.yumebox.core.util.PollingTimers
 import com.github.yumeyucca.yumebox.core.util.StartupTaskCoordinator
+import com.github.yumeyucca.yumebox.core.util.requireBuiltinGeoAssets
 import com.github.yumeyucca.yumebox.runtime.api.Intents
 import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
 import com.github.yumeyucca.yumebox.runtime.service.RootForegroundService
@@ -47,6 +48,7 @@ object RootSessionLauncher {
             "RootSessionLauncher handles root modes only, got $mode"
         }
         val appContext = context.appContextOrSelf
+        appContext.requireBuiltinGeoAssets()
         val log = RuntimeLog.writer(appContext, mode)
         log.beginSession(RuntimeLog.Type.Launcher, "root start mode=${mode.name}")
 

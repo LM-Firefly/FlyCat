@@ -6,6 +6,7 @@ Home = {
         ConfigSwitched = "設定檔已切換"
         ConfigSwitchFailed = "設定檔切換失敗：%s"
         Preparing = "準備中..."
+        BuiltinGeoRequired = "請先安裝 Builtin 版本"
         StartFailed = "啟動失敗：%s"
         StopFailed = "停止失敗：%s"
     }

@@ -132,5 +132,6 @@ build the app.
    ./gradlew -Pgeo.bundle=true :app:assembleRelease
    ```
 
-   APKs are written to `app/build/outputs/apk/<build-type>/`. External builds omit Geo assets and `BundleMRS.7z`; mihomo
-   downloads them when needed. On Windows, use `gradlew.bat`.
+   APKs are written to `app/build/outputs/apk/<build-type>/`. External builds omit Geo assets and
+   `BundleMRS.7z`; install a Builtin build once first. Those files stay in app storage when later
+   updating to an external build. On Windows, use `gradlew.bat`.

@@ -111,8 +111,8 @@ class App : Application() {
     }
 
     /**
-     * External-geo builds omit these runtime assets. A missing asset is expected there, so remove
-     * partial writes and let mihomo download the database or provider content when needed.
+     * External-geo builds omit these runtime assets. Remove partial writes so the startup guard
+     * can require a Builtin APK to install a complete Geo data set.
      */
     private fun copyAssetIfExists(name: String, target: File) {
         runCatching {
@@ -122,7 +122,7 @@ class App : Application() {
         }
             .onFailure {
                 target.delete()
-                Timber.i("Runtime asset %s not bundled, deferring to remote data", name)
+                Timber.i("Runtime asset %s not bundled; a Builtin APK must install it", name)
             }
     }
 

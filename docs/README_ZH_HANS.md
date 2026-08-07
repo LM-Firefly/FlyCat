@@ -119,5 +119,5 @@ YumeBox 不使用 Git submodule。从干净检出开始构建前，需要先准�
    ./gradlew -Pgeo.bundle=true :app:assembleRelease
    ```
 
-   APK 输出到 `app/build/outputs/apk/<build-type>/`。外置版本不包含 Geo 资源和 `BundleMRS.7z`，Mihomo 会按需下载。Windows
-   请使用 `gradlew.bat`。
+   APK 输出到 `app/build/outputs/apk/<build-type>/`。外置版本不包含 Geo 资源和 `BundleMRS.7z`，请先安装一次
+   Builtin 版本；后续更新外置版本时，文件会保留在应用存储中。Windows 请使用 `gradlew.bat`。

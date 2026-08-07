@@ -6,6 +6,7 @@ Home = {
         ConfigSwitched = "設定を切り替えました"
         ConfigSwitchFailed = "設定の切り替えに失敗しました: %s"
         Preparing = "準備中..."
+        BuiltinGeoRequired = "先に Builtin 版をインストールしてください"
         StartFailed = "開始に失敗しました: %s"
         StopFailed = "停止に失敗しました: %s"
     }
