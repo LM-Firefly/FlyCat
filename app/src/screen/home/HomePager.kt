@@ -95,7 +95,8 @@ fun HomePager(
         if (screen.isRemoteController) {
             false
         } else {
-            screen.profilesLoaded && screen.profiles.isNotEmpty() && screen.controlState.canInteract
+            screen.controlState.canInteract &&
+                    (isRunning || (screen.profilesLoaded && screen.profiles.isNotEmpty()))
         }
 
     Scaffold(topBar = { TopBar(title = YumeTxt.Home.Title, scrollBehavior = scrollBehavior) }) { innerPadding ->
@@ -134,7 +135,9 @@ fun HomePager(
                             if (screen.isRemoteController) {
                                 return@TrafficDisplay
                             }
-                            if (!screen.hasEnabledProfile || screen.recommendedProfile == null) {
+                            if (!isRunning &&
+                                (!screen.hasEnabledProfile || screen.recommendedProfile == null)
+                            ) {
                                 context.toast(YumeTxt.ProfilesVM.Error.ProfileNotExist)
                                 return@TrafficDisplay
                             }

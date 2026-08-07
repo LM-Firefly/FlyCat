@@ -12,17 +12,14 @@ package com.github.yumeyucca.yumebox.runtime.service
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import androidx.core.content.ContextCompat
 import com.github.yumeyucca.yumebox.data.model.RunMode
 import com.github.yumeyucca.yumebox.data.model.WifiAutomationAction
 import com.github.yumeyucca.yumebox.data.model.WifiAutomationFallbackAction
@@ -30,7 +27,6 @@ import com.github.yumeyucca.yumebox.data.store.MMKVProvider
 import com.github.yumeyucca.yumebox.data.store.NetworkSettingsStore
 import com.github.yumeyucca.yumebox.data.store.RemoteControllerStore
 import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
-import com.github.yumeyucca.yumebox.runtime.api.Intents
 import com.github.yumeyucca.yumebox.runtime.service.session.RuntimeServiceLauncher
 import com.github.yumeyucca.yumebox.runtime.service.session.WifiSsidObservation
 import com.github.yumeyucca.yumebox.runtime.service.session.WifiSsidObserver
@@ -48,24 +44,12 @@ class WifiAutomationService : Service() {
     }
     private var observer: WifiSsidObserver? = null
     private var applyJob: Job? = null
-    private val runtimeEventsReceiver =
-        object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == Intents.ACTION_RUNTIME_STARTED) observer?.refresh()
-            }
-        }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         startForegroundNotification()
-        ContextCompat.registerReceiver(
-            this,
-            runtimeEventsReceiver,
-            IntentFilter(Intents.ACTION_RUNTIME_STARTED),
-            ContextCompat.RECEIVER_NOT_EXPORTED,
-        )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -85,7 +69,6 @@ class WifiAutomationService : Service() {
         applyJob?.cancel()
         observer?.stop()
         observer = null
-        runCatching { unregisterReceiver(runtimeEventsReceiver) }
         serviceScope.cancel()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         super.onDestroy()

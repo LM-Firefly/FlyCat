@@ -49,6 +49,7 @@ class WifiSsidObserver(
     private val legacyNetworks = linkedSetOf<Network>()
     private val capabilityObservations = linkedMapOf<Network, WifiSsidObservation>()
     private var started = false
+    private var hasObservation = false
     private var lastObservation: WifiSsidObservation = WifiSsidObservation.NoWifi
 
     private val request =
@@ -93,10 +94,10 @@ class WifiSsidObserver(
         }
     }
 
-    /** Re-applies the last observation after a rule edit without triggering a new Wi-Fi scan. */
+    /** Re-applies the last observation after a rule edit without treating it as a network change. */
     fun refresh() {
         val observation = synchronized(lock) { lastObservation }
-        emit(observation)
+        emit(observation, force = true)
     }
 
     private fun legacyCallback() =
@@ -192,15 +193,19 @@ class WifiSsidObserver(
         }
     }
 
-    private fun emit(observation: WifiSsidObservation) {
-        if (
+    private fun emit(observation: WifiSsidObservation, force: Boolean = false) {
+        val shouldEmit =
             synchronized(lock) {
-                lastObservation = observation
-                started
+                if (!started) {
+                    false
+                } else {
+                    val changed = !hasObservation || lastObservation != observation
+                    lastObservation = observation
+                    hasObservation = true
+                    force || changed
+                }
             }
-        ) {
-            onChanged(observation)
-        }
+        if (shouldEmit) onChanged(observation)
     }
 
     companion object {
