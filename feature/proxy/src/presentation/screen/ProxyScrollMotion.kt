@@ -78,7 +78,6 @@ private suspend fun animateLocateScroll(
             -tick,
             spring(dampingRatio = 0.48f, stiffness = Spring.StiffnessMedium),
         )
-        scrollTo(targetIndex)
         return
     }
 
@@ -93,7 +92,6 @@ private suspend fun animateLocateScroll(
         -overshoot,
         spring(dampingRatio = 0.52f, stiffness = 360f),
     )
-    scrollTo(targetIndex)
 }
 
 internal suspend fun LazyListState.animateLocateToItem(targetIndex: Int) {
