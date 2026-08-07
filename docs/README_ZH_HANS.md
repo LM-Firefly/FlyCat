@@ -75,7 +75,7 @@ YumeBox 不使用 Git submodule。从干净检出开始构建前，需要先准�
    # ndk.dir=/path/to/android-sdk/ndk/30.0.14904198
    ```
 
-3. 拉取 Mihomo 源码，可选择 `alpha`、`meta` 或 `smart`。
+3. 拉取 Mihomo 源码，可选择 `alpha` 或 `meta`。
 
    ```bash
    chmod +x scripts/sync-kernel.sh
@@ -116,7 +116,7 @@ YumeBox 不使用 Git submodule。从干净检出开始构建前，需要先准�
    ./gradlew -Pgeo.bundle=true :app:assembleDebug
 
    # 构建 arm64-v8a Release APK
-   ./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
+   ./gradlew -Pgeo.bundle=true :app:assembleRelease
    ```
 
    APK 输出到 `app/build/outputs/apk/<build-type>/`。外置版本不包含 Geo 资源和 `BundleMRS.7z`，Mihomo 会按需下载。Windows

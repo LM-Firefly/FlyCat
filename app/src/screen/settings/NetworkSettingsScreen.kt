@@ -25,13 +25,23 @@ package com.github.yumeyucca.yumebox.screen.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.Composable
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import com.github.yumeyucca.yumebox.data.model.AccessControlMode
 import com.github.yumeyucca.yumebox.data.model.RunMode
@@ -40,13 +50,20 @@ import com.github.yumeyucca.yumebox.presentation.icon.Yume
 import com.github.yumeyucca.yumebox.presentation.icon.yume.PlaneTakeoff
 import com.github.yumeyucca.yumebox.presentation.icon.yume.Tun
 import com.github.yumeyucca.yumebox.presentation.navigation.Route
+import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
+import com.github.yumeyucca.yumebox.runtime.service.core.KernelManager
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Checkbox
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 
 /**
  * Network settings entry point. Top: a "run mode" radio picker — one card per mode.
@@ -65,6 +82,9 @@ fun NetworkSettingsScreen(navigator: Navigator) {
     // Root Tun is only selectable when root is granted; otherwise its card is greyed
     // out.
     val rootAvailable = screen.rootAvailable
+    val kernels = screen.kernels
+    val context = LocalContext.current
+    var showKernelDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = { TopBar(title = YumeTxt.NetworkSettings.Title, scrollBehavior = scrollBehavior) }
@@ -116,6 +136,31 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                 }
             }
             item {
+                Title(YumeTxt.NetworkSettings.Section.Kernel)
+                AppCard {
+                    val installedKernelIds = kernels
+                        .filter { KernelManager.isInstalled(context, it.id) }
+                        .map { it.id }
+                    val locallyInstalledKernelIds = listOf("alpha", "meta", "smart")
+                        .filter { KernelManager.isInstalled(context, it) }
+                    val kernelIds = listOf("bundled-alpha") +
+                        (locallyInstalledKernelIds + installedKernelIds).distinct()
+                    WindowDropdownPreference(
+                        title = YumeTxt.NetworkSettings.Kernel.ActiveTitle,
+                        summary = null,
+                        items = kernelIds.map { kernelLabel(it) },
+                        selectedIndex = kernelIds.indexOf(screen.activeKernelId).coerceAtLeast(0),
+                        enabled = !screen.kernelBusy,
+                        onSelectedIndexChange = { viewModel.selectKernel(kernelIds[it]) },
+                    )
+                    PreferenceArrowItem(
+                        title = YumeTxt.NetworkSettings.Kernel.RefreshTitle,
+                        summary = null,
+                        onClick = { showKernelDialog = true },
+                    )
+                }
+            }
+            item {
                 Title(YumeTxt.NetworkSettings.Section.ProxyOptions)
                 AppCard {
                     PreferenceEnumItem(
@@ -135,6 +180,108 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                         onClick = { navigator.push(Route.AccessControl) },
                     )
                 }
+            }
+        }
+
+        KernelSelectionDialog(
+            show = showKernelDialog,
+            screen = screen,
+            onRefresh = viewModel::refreshKernels,
+            onDownload = { ids ->
+                viewModel.downloadKernels(ids) { success ->
+                    if (success) showKernelDialog = false
+                }
+            },
+            onDismiss = { showKernelDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun kernelLabel(id: String): String =
+    when (id) {
+        "bundled-alpha" -> YumeTxt.NetworkSettings.Kernel.BundledAlpha
+        "alpha" -> "Alpha"
+        "meta" -> "Meta"
+        "smart" -> "Smart"
+        else -> YumeTxt.NetworkSettings.Kernel.BundledAlpha
+    }
+
+@Composable
+private fun KernelSelectionDialog(
+    show: Boolean,
+    screen: NetworkSettingsViewModel.NetworkSettingsScreenState,
+    onRefresh: () -> Unit,
+    onDownload: (Set<String>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val spacing = AppTheme.spacing
+    var selectedIds by remember(show) { mutableStateOf<Set<String>>(emptySet()) }
+    var initialized by remember(show) { mutableStateOf(false) }
+    LaunchedEffect(show) {
+        if (show) onRefresh()
+    }
+    LaunchedEffect(show, screen.kernels) {
+        if (show && screen.kernels.isNotEmpty() && !initialized) {
+            selectedIds = screen.kernels.map { it.id }.toSet()
+            initialized = true
+        }
+    }
+    AppDialog(show = show, title = YumeTxt.NetworkSettings.Kernel.DownloadTitle, onDismissRequest = onDismiss) {
+        val contentState = when {
+            screen.kernelBusy -> 0
+            screen.kernels.isEmpty() -> 1
+            else -> 2
+        }
+        AnimatedContent(
+            targetState = contentState,
+            transitionSpec = {
+                fadeIn(tween(140)) togetherWith fadeOut(tween(90)) using SizeTransform(clip = false)
+            },
+            label = "kernel_dialog_content",
+        ) { state ->
+            when (state) {
+                0 ->
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = spacing.space24),
+                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                    ) {
+                        InfiniteProgressIndicator(modifier = Modifier.size(32.dp))
+                    }
+                1 ->
+                    TextButton(
+                        text = YumeTxt.NetworkSettings.Kernel.FetchButton,
+                        onClick = onRefresh,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = spacing.space8),
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                    )
+                else ->
+                    Column(verticalArrangement = Arrangement.spacedBy(spacing.space4)) {
+                        screen.kernels.map { it.id to kernelLabel(it.id) }
+                            .forEach { (id, label) ->
+                                BasicComponent(
+                                    title = label,
+                                    onClick = {
+                                        selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+                                    },
+                                    endActions = {
+                                        Checkbox(
+                                            state = ToggleableState(selectedIds.contains(id)),
+                                            onClick = {
+                                                selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+                                            },
+                                        )
+                                    },
+                                )
+                            }
+                        TextButton(
+                            text = YumeTxt.NetworkSettings.Kernel.DownloadButton,
+                            onClick = { onDownload(selectedIds) },
+                            enabled = selectedIds.isNotEmpty(),
+                            modifier = Modifier.fillMaxWidth().padding(top = spacing.space16),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                        )
+                    }
             }
         }
     }

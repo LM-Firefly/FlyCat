@@ -13,7 +13,7 @@ on:
         required: true
         type: string
       channel_segment:
-        description: "Optional channel tag placed before the date/version tail in publish file names (e.g. smart, pr); empty for the default pre channel and stable releases."
+        description: "Optional channel tag placed before the date/version tail in publish file names (e.g. pr); empty for the default pre channel and stable releases."
         required: false
         type: string
         default: ""

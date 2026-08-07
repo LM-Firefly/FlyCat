@@ -28,7 +28,7 @@ GOLANG_MAIN="$PROJECT_ROOT/lib/native/go"
 MIHOMO_DIR="$GOLANG_ROOT/mihomo"
 
 usage() {
-  echo "Usage: $(basename "$0") <alpha|meta|smart>"
+  echo "Usage: $(basename "$0") <alpha|meta>"
   exit 1
 }
 
@@ -43,11 +43,6 @@ case "$CHOICE" in
     REPO_URL="https://github.com/MetaCubeX/mihomo.git"
     BRANCH_NAME="Meta"
     VERSION_SUFFIX=""
-    ;;
-  smart|Smart)
-    REPO_URL="https://github.com/vernesong/mihomo.git"
-    BRANCH_NAME="Alpha"
-    VERSION_SUFFIX="-Smart"
     ;;
   *)
     usage

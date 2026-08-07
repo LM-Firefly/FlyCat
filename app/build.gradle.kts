@@ -66,17 +66,14 @@ check(appAbiList == listOf("arm64-v8a")) {
     "Only arm64-v8a is supported; configured ABIs: $appAbiList"
 }
 
-// Packaging matrix switches. CLI -P properties (same pattern as build.number below), NOT
-// gropify keys, so CI can flip them per invocation:
-//  - build.allAbis=true -> the arm64-v8a split (kept for CI compatibility).
+// Packaging switches. CLI -P properties (same pattern as build.number below), NOT gropify keys:
 //  - geo.bundle=false   -> keep the XZ geo databases and BundleMRS.7z out of assets (the local
 //    default); App.extractGeoFiles skips them and mihomo falls back to remote provider data.
 // Release-only native-lib XZ compression is handled by the dev.yume.packer APK transform (which
 // keeps the libmihomo PIE shell and libloader raw in nativeLibraryDir and packs the shared Go core
 // plus the remaining libraries into assets/loader/), not here.
-val buildAllAbis = providers.gradleProperty("build.allAbis").orNull?.toBoolean() ?: false
 val geoBundle = providers.gradleProperty("geo.bundle").orNull?.toBoolean() ?: false
-val splitAbiList = if (buildAllAbis) appAbiList else listOf("arm64-v8a")
+val splitAbiList = listOf("arm64-v8a")
 val geoFilesAssetsDir = rootProject.layout.buildDirectory.dir("generated/assets/geo")
 val signingPropertiesFile = rootProject.file("signing.properties")
 val releaseSigningProperties =
@@ -133,7 +130,7 @@ val apkGeoSegment = if (geoBundle) "builtin" else "external"
 
 // Resolve the tracked mihomo tree at configure time so About / BuildConfig can show branch + hash
 // without a runtime JNI probe (the core is out-of-process now). Prefer kernel.properties for the
-// channel label (Alpha/Meta + optional -Smart suffix); fall back to the git checkout under
+// channel label (Alpha or Meta); fall back to the git checkout under
 // external.mihomo.dir for the short commit.
 // CI APK jobs never have the mihomo tree — they only download jniLibs — so prefer the
 // core-version.properties stamp written by scripts/native-build.main.kts during --go.
@@ -292,7 +289,7 @@ fun resolveMihomoBuildInfo(rootDir: File): MihomoBuildInfo {
         } else {
             "local"
         }
-    // Historical version.h style: Alpha-Smart-06249f84
+    // Historical version.h style: Alpha-06249f84
     // Only reuse stamp display/gitVersion when the commit itself came from the stamp (CI path).
     val display =
         if (usingStampCommit) {

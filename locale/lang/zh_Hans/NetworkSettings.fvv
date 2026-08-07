@@ -6,6 +6,7 @@ NetworkSettings = {
         VpnOptions = "服务配置"
         Advanced = "高级选项"
         ProxyOptions = "访问控制"
+        Kernel = "内核"
     }
 
     Advanced = {
@@ -45,6 +46,15 @@ NetworkSettings = {
         Ipv6Title = "启用 IPv6"
     }
 
+
+    Kernel = {
+        ActiveTitle = "当前内核"
+        BundledAlpha = "Builtin"
+        RefreshTitle = "获取最新内核"
+        DownloadTitle = "远程内核"
+        FetchButton = "获取最新"
+        DownloadButton = "下载"
+    }
 
     ProxyOptions = {
         AccessControlModeTitle = "访问控制模式"

@@ -125,9 +125,6 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
         MetaCubeX `Meta` 分支。
       </Tab>
 
-      <Tab title="smart">
-        vernesong/mihomo 的 `Alpha` 分支，构建版本会带 `-Smart` 后缀。
-      </Tab>
     </Tabs>
   </Step>
 
@@ -236,7 +233,7 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
   ./gradlew -Pgeo.bundle=true :app:assembleDebug
 
   # 全 ABI、内置 Geo 数据
-  ./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
+  ./gradlew -Pgeo.bundle=true :app:assembleRelease
   ```
 
   ```powershell Windows
@@ -247,7 +244,7 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
   .\gradlew.bat -Pgeo.bundle=true :app:assembleDebug
 
   # 全 ABI、内置 Geo 数据
-  .\gradlew.bat -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
+  .\gradlew.bat -Pgeo.bundle=true :app:assembleRelease
   ```
 </CodeGroup>
 
@@ -261,7 +258,7 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
   </Card>
 </Columns>
 
-APK 输出目录为 `app/build/outputs/apk/debug/` 或 `app/build/outputs/apk/release/`。默认本地构建只生成 `arm64-v8a`；`-Pbuild.allAbis=true` 会生成各 ABI 拆分包和 universal APK。
+APK 输出目录为 `app/build/outputs/apk/debug/` 或 `app/build/outputs/apk/release/`。所有构建仅生成 `arm64-v8a` APK。
 
 ## Release 签名
 

@@ -150,7 +150,7 @@ jobs:
             tail="$(grep '^project.version.name=' gradle.properties | cut -d= -f2-)"
           fi
           case "${{ inputs.channel }}" in
-            smart|pr) channel_segment="${{ inputs.channel }}" ;;
+            pr) channel_segment="${{ inputs.channel }}" ;;
             pre|stable) channel_segment="" ;;
             *) echo "Unsupported APK output channel: ${{ inputs.channel }}" >&2; exit 1 ;;
           esac
@@ -173,7 +173,6 @@ jobs:
             -Pbuild.number="${BUILD_NUMBER}"
             -Pbuild.hash="${BUILD_HASH:0:8}"
             -Pbuild.branch="${BUILD_BRANCH}"
-            -Pbuild.allAbis=true
             -Papk.output.tail="${{ steps.apk_name.outputs.tail }}"
             -Papk.output.channel="${{ steps.apk_name.outputs.channel_segment }}"
           )
@@ -230,7 +229,6 @@ jobs:
           | Segment | Channel |
           |---|---|
           | *(none)* | Pre-release / Stable |
-          | `smart` | Smart channel |
           | `pr` | Pull-request build |
 
           `<tail>` is the packaging date `yy.mm.dd` for channel / PR builds, or the version name for stable releases.

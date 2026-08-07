@@ -6,6 +6,7 @@ NetworkSettings = {
         VpnOptions = "服務設定"
         Advanced = "進階選項"
         ProxyOptions = "存取控制"
+        Kernel = "核心"
     }
 
     Advanced = {
@@ -45,6 +46,15 @@ NetworkSettings = {
         Ipv6Title = "啟用 IPv6"
     }
 
+
+    Kernel = {
+        ActiveTitle = "目前核心"
+        BundledAlpha = "Builtin"
+        RefreshTitle = "取得最新核心"
+        DownloadTitle = "遠端核心"
+        FetchButton = "取得最新"
+        DownloadButton = "下載"
+    }
 
     ProxyOptions = {
         AccessControlModeTitle = "存取控制模式"

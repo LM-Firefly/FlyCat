@@ -21,7 +21,7 @@
 # in order: <prefix>-<geo>[-<channel_segment>]-<tail>. GEO is the geo
 # database variant: "builtin" (bundled in assets) or "external" (core downloads at
 # runtime). ABI arm64-v8a is the only supported and unmarked ABI. CHANNEL_SEGMENT tags
-# non-default channels (smart, pr); empty for the pre
+# non-default channels (for example, pr); empty for the pre
 # channel and stable releases. TAIL is the packaging date (yy.MM.dd, Asia/Shanghai)
 # for channel/PR builds or the clean version name for official releases — the
 # caller decides which.

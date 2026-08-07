@@ -6,6 +6,7 @@ NetworkSettings = {
         VpnOptions = "サービス設定"
         Advanced = "詳細"
         ProxyOptions = "アクセス制御"
+        Kernel = "カーネル"
     }
 
     Advanced = {
@@ -45,6 +46,15 @@ NetworkSettings = {
         Ipv6Title = "IPv6 を有効化"
     }
 
+
+    Kernel = {
+        ActiveTitle = "使用中のカーネル"
+        BundledAlpha = "Builtin"
+        RefreshTitle = "最新カーネルを取得"
+        DownloadTitle = "リモートカーネル"
+        FetchButton = "最新を取得"
+        DownloadButton = "ダウンロード"
+    }
 
     ProxyOptions = {
         AccessControlModeTitle = "アクセス制御モード"

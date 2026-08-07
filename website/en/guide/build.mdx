@@ -125,9 +125,6 @@ These versions come from the current repository's `gradle.properties` and GitHub
         The MetaCubeX `Meta` branch.
       </Tab>
 
-      <Tab title="smart">
-        The vernesong/mihomo `Alpha` branch. Its build version includes a `-Smart` suffix.
-      </Tab>
     </Tabs>
   </Step>
 
@@ -236,7 +233,7 @@ Run the native build script for the first build and whenever the core, Rust, or 
   ./gradlew -Pgeo.bundle=true :app:assembleDebug
 
   # All ABIs with built-in Geo data
-  ./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
+  ./gradlew -Pgeo.bundle=true :app:assembleRelease
   ```
 
   ```powershell Windows
@@ -247,7 +244,7 @@ Run the native build script for the first build and whenever the core, Rust, or 
   .\gradlew.bat -Pgeo.bundle=true :app:assembleDebug
 
   # All ABIs with built-in Geo data
-  .\gradlew.bat -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
+  .\gradlew.bat -Pgeo.bundle=true :app:assembleRelease
   ```
 </CodeGroup>
 
@@ -261,7 +258,7 @@ Run the native build script for the first build and whenever the core, Rust, or 
   </Card>
 </Columns>
 
-APK output is written to `app/build/outputs/apk/debug/` or `app/build/outputs/apk/release/`. A default local build only generates `arm64-v8a`; `-Pbuild.allAbis=true` generates split APKs for each ABI and a universal APK.
+APK output is written to `app/build/outputs/apk/debug/` or `app/build/outputs/apk/release/`. All builds generate only an `arm64-v8a` APK.
 
 ## Release signing
 

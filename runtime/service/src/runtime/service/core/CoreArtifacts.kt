@@ -19,42 +19,38 @@ package com.github.yumeyucca.yumebox.runtime.service.core
 import android.content.Context
 import java.io.File
 
-/** Resolves the raw PIE shell and the Go shared library extracted by the release payload loader. */
+/** Resolves the APK shell and the selected downloaded core, falling back to bundled Alpha. */
 internal object CoreArtifacts {
     const val SHELL_NAME = "libmihomo.so"
     const val LIBRARY_NAME = "libmihomocore.so"
     const val LIBRARY_OPTION = "--core-library"
-    @Volatile private var cachedLibrary: File? = null
 
     fun shell(context: Context): File =
         File(context.applicationInfo.nativeLibraryDir, SHELL_NAME)
 
     fun library(context: Context): File {
-        cachedLibrary?.takeIf(File::isFile)?.let { return it }
-        return synchronized(this) {
-            cachedLibrary?.takeIf(File::isFile)?.let { return@synchronized it }
+        KernelManager.installed(context)?.let { return it }
 
-            val unpacked = File(context.applicationInfo.nativeLibraryDir, LIBRARY_NAME)
-            if (unpacked.isFile) {
-                cachedLibrary = unpacked
-                return@synchronized unpacked
+        // Keep the untransformed debug APK path working. Release APKs normally move this file
+        // into the loader payload, but Android Gradle's ordinary debug packaging may leave it in
+        // nativeLibraryDir.
+        File(context.applicationInfo.nativeLibraryDir, LIBRARY_NAME)
+            .takeIf(File::isFile)
+            ?.let { return it }
+
+        // Alpha remains bundled as the first-run/offline baseline. The payload loader extracts it
+        // to app-private storage; remote kernels use the same directory but always take priority.
+        return runCatching {
+                val bridge =
+                    Class.forName("dev.yume.loader.PayloadRuntime", false, context.classLoader)
+                bridge
+                    .getMethod("findNativeLibrary", String::class.java)
+                    .invoke(null, LIBRARY_NAME) as? String
             }
-
-            val packed =
-                runCatching {
-                        val bridge =
-                            Class.forName("dev.yume.loader.PayloadRuntime", false, context.classLoader)
-                        bridge
-                            .getMethod("findNativeLibrary", String::class.java)
-                            .invoke(null, LIBRARY_NAME) as? String
-                    }
-                    .getOrNull()
-                    ?.let(::File)
-                    ?.takeIf(File::isFile)
-                    ?: error("mihomo core library is unavailable")
-            cachedLibrary = packed
-            packed
-        }
+            .getOrNull()
+            ?.let(::File)
+            ?.takeIf(File::isFile)
+            ?: error("Bundled Alpha mihomo core is unavailable")
     }
 
     fun arguments(context: Context, coreArgs: Array<String>): Array<String> =

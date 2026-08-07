@@ -56,8 +56,6 @@ def html_escape(text):
 
 def _workflow_label():
     workflow_name_lower = WORKFLOW_NAME.lower()
-    if "smart" in workflow_name_lower or "smart" in TITLE.lower():
-        return "Smart"
     if "test" in workflow_name_lower:
         return "Test"
     return "Normal"

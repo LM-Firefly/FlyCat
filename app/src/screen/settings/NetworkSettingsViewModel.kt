@@ -32,6 +32,7 @@ import com.github.yumeyucca.yumebox.data.model.TunStack
 import com.github.yumeyucca.yumebox.data.store.NetworkSettingsStore
 import com.github.yumeyucca.yumebox.data.store.Preference
 import com.github.yumeyucca.yumebox.runtime.service.root.RootAccessSupport
+import com.github.yumeyucca.yumebox.runtime.service.core.KernelManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -69,26 +70,46 @@ class NetworkSettingsViewModel(
     // flow is intended. A non-rooted device fast-fails to false and the root cards stay disabled.
     private val _rootAvailable = MutableStateFlow(false)
     val rootAvailable: StateFlow<Boolean> = _rootAvailable.asStateFlow()
+    private val _kernels = MutableStateFlow<List<KernelManager.Kernel>>(emptyList())
+    private val _kernelStatus = MutableStateFlow("No downloaded kernel installed")
+    private val _kernelBusy = MutableStateFlow(false)
+    private val _activeKernelId = MutableStateFlow(KernelManager.BUNDLED_ALPHA_ID)
 
     data class NetworkSettingsScreenState(
         val runMode: RunMode = RunMode.VpnService,
         val disableAllOverride: Boolean = false,
         val accessControlMode: AccessControlMode = AccessControlMode.ALLOW_ALL,
         val rootAvailable: Boolean = false,
+        val kernels: List<KernelManager.Kernel> = emptyList(),
+        val kernelStatus: String = "No downloaded kernel installed",
+        val kernelBusy: Boolean = false,
+        val activeKernelId: String = KernelManager.BUNDLED_ALPHA_ID,
     )
 
     val networkScreenState: StateFlow<NetworkSettingsScreenState> =
         combine(
-            runMode.state,
-            disableAllOverride.state,
-            accessControlMode.state,
-            rootAvailable,
-        ) { mode, disableOverride, accessMode, root ->
-            NetworkSettingsScreenState(
-                runMode = mode,
-                disableAllOverride = disableOverride,
-                accessControlMode = accessMode,
-                rootAvailable = root,
+            combine(
+                runMode.state,
+                disableAllOverride.state,
+                accessControlMode.state,
+                rootAvailable,
+            ) { mode, disableOverride, accessMode, root ->
+                NetworkSettingsScreenState(
+                    runMode = mode,
+                    disableAllOverride = disableOverride,
+                    accessControlMode = accessMode,
+                    rootAvailable = root,
+                )
+            },
+            combine(_kernels, _kernelStatus, _kernelBusy, _activeKernelId) { availableKernels, status, busy, active ->
+                KernelUiSelection(availableKernels, status, busy, active)
+            },
+        ) { base, kernel ->
+            base.copy(
+                kernels = kernel.kernels,
+                kernelStatus = kernel.status,
+                kernelBusy = kernel.busy,
+                activeKernelId = kernel.active,
             )
         }
             .stateInWhileSubscribed(
@@ -98,6 +119,10 @@ class NetworkSettingsViewModel(
                     disableAllOverride = disableAllOverride.value,
                     accessControlMode = accessControlMode.value,
                     rootAvailable = false,
+                    kernels = emptyList(),
+                    kernelStatus = _kernelStatus.value,
+                    kernelBusy = false,
+                    activeKernelId = KernelManager.BUNDLED_ALPHA_ID,
                 ),
             )
 
@@ -156,6 +181,7 @@ class NetworkSettingsViewModel(
             )
 
     init {
+        _activeKernelId.value = KernelManager.activeKernelId(getApplication())
         viewModelScope.launch {
             _rootAvailable.value = RootAccessSupport.evaluateAsync(getApplication()).canStartRoot
         }
@@ -258,7 +284,112 @@ class NetworkSettingsViewModel(
     fun onAccessControlModeChange(mode: AccessControlMode) {
         controller.setAndRestartIfNeeded(accessControlMode, mode)
     }
+
+    fun refreshKernels() {
+        if (_kernelBusy.value) return
+        viewModelScope.launch {
+            _kernelBusy.value = true
+            runCatching { KernelManager.fetchIndex() }
+                .onSuccess { index ->
+                    _kernels.value = index.kernels
+                    _activeKernelId.value = KernelManager.activeKernelId(getApplication())
+                    _kernelStatus.value = "Select kernels to download"
+                }
+                .onFailure { error -> _kernelStatus.value = "Kernel index unavailable: ${error.message}" }
+            _kernelBusy.value = false
+        }
+    }
+
+    fun downloadKernels(ids: Set<String>, onFinished: (Boolean) -> Unit = {}) {
+        if (_kernelBusy.value || ids.isEmpty()) return
+        val selected = _kernels.value.filter { it.id in ids }
+        if (selected.isEmpty()) return
+        viewModelScope.launch {
+            _kernelBusy.value = true
+            var completed = 0
+            var failed = false
+            selected.forEach { kernel ->
+                if (!failed) {
+                    _kernelStatus.value = "Downloading ${kernel.name}"
+                    runCatching { KernelManager.install(getApplication(), kernel) }
+                        .onFailure { error ->
+                            failed = true
+                            _kernelStatus.value = "Kernel install failed: ${error.message}"
+                        }
+                }
+                if (!failed) completed++
+            }
+            if (!failed) _kernelStatus.value = "$completed kernel(s) downloaded and verified"
+            _kernelBusy.value = false
+            onFinished(!failed)
+        }
+    }
+
+    fun selectKernel(id: String) {
+        if (id == KernelManager.BUNDLED_ALPHA_ID) {
+            runCatching { KernelManager.activate(getApplication(), id) }
+                .onSuccess {
+                    _activeKernelId.value = id
+                    _kernelStatus.value = "Builtin selected. Restart the service to load it."
+                    controller.requestRestartIfRunning()
+                }
+            return
+        }
+        val kernel = _kernels.value.firstOrNull { it.id == id }
+        if (kernel == null && KernelManager.isInstalled(getApplication(), id)) {
+            runCatching { KernelManager.activate(getApplication(), id) }
+                .onSuccess {
+                    _activeKernelId.value = id
+                    _kernelStatus.value = "$id selected. Restart the service to load it."
+                    controller.requestRestartIfRunning()
+                }
+            return
+        }
+        if (kernel == null) {
+            viewModelScope.launch {
+                _kernelBusy.value = true
+                runCatching { KernelManager.fetchIndex() }
+                    .onSuccess { index ->
+                        _kernels.value = index.kernels
+                        _kernelBusy.value = false
+                        selectKernel(id)
+                    }
+                    .onFailure { error -> _kernelStatus.value = "Kernel index unavailable: ${error.message}" }
+                _kernelBusy.value = false
+            }
+            return
+        }
+        if (_kernelBusy.value) return
+        if (KernelManager.isInstalled(getApplication(), id)) {
+            runCatching { KernelManager.activate(getApplication(), id) }
+                .onSuccess {
+                    _activeKernelId.value = id
+                    _kernelStatus.value = "${kernel.name} selected. Restart the service to load it."
+                    controller.requestRestartIfRunning()
+                }
+            return
+        }
+        viewModelScope.launch {
+            _kernelBusy.value = true
+            _kernelStatus.value = "Downloading ${kernel.name}"
+            runCatching { KernelManager.install(getApplication(), kernel) }
+                .onSuccess {
+                    KernelManager.activate(getApplication(), kernel.id)
+                    _activeKernelId.value = kernel.id
+                    _kernelStatus.value = "${kernel.name} selected. Restart the service to load it."
+                }
+                .onFailure { error -> _kernelStatus.value = "Kernel install failed: ${error.message}" }
+            _kernelBusy.value = false
+        }
+    }
 }
+
+private data class KernelUiSelection(
+    val kernels: List<KernelManager.Kernel>,
+    val status: String,
+    val busy: Boolean,
+    val active: String,
+)
 
 data class NetworkSettingsUiState(val configuredMode: RunMode = RunMode.VpnService)
 

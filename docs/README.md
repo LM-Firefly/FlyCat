@@ -12,6 +12,11 @@
 
 **An open-source Android client based on the [mihomo](https://github.com/MetaCubeX/mihomo) kernel**
 
+The APK includes the Alpha kernel as an offline baseline. Additional Alpha, Meta, and Smart
+kernels are listed and downloaded from the Kernel-Builder index in Network Settings. A verified
+downloaded kernel is used on the next service start; when none is installed, YumeBox loads the
+bundled Alpha core. `libjavet` is an optional Sub-Store dependency and is downloaded separately.
+
 [Documentation](https://yumebox.gal.tf) · [Download](https://github.com/YumeYucca/YumeBox/releases) · [Feedback](https://github.com/YumeYucca/YumeBox/issues) · [Telegram Group](https://t.me/OOM_Group)
 
 </div>
@@ -82,7 +87,7 @@ build the app.
    # ndk.dir=/path/to/android-sdk/ndk/30.0.14904198
    ```
 
-3. Fetch the mihomo source. Available channels are `alpha`, `meta`, and `smart`.
+3. Fetch the mihomo source. Available channels are `alpha` and `meta`.
 
    ```bash
    chmod +x scripts/sync-kernel.sh
@@ -124,7 +129,7 @@ build the app.
    ./gradlew -Pgeo.bundle=true :app:assembleDebug
 
    # arm64-v8a release APK
-   ./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
+   ./gradlew -Pgeo.bundle=true :app:assembleRelease
    ```
 
    APKs are written to `app/build/outputs/apk/<build-type>/`. External builds omit Geo assets and `BundleMRS.7z`; mihomo

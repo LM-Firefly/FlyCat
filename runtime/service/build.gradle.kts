@@ -37,6 +37,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.xz)
 
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)

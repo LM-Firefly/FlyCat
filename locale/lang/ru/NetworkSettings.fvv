@@ -6,6 +6,7 @@ NetworkSettings = {
         VpnOptions = "Параметры службы"
         Advanced = "Дополнительно"
         ProxyOptions = "Контроль доступа"
+        Kernel = "Ядро"
     }
 
     Advanced = {
@@ -45,6 +46,15 @@ NetworkSettings = {
         Ipv6Title = "Включить IPv6"
     }
 
+
+    Kernel = {
+        ActiveTitle = "Активное ядро"
+        BundledAlpha = "Builtin"
+        RefreshTitle = "Получить последние ядра"
+        DownloadTitle = "Удалённые ядра"
+        FetchButton = "Получить последние"
+        DownloadButton = "Скачать"
+    }
 
     ProxyOptions = {
         AccessControlModeTitle = "Режим контроля доступа"
