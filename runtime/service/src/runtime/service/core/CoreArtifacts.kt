@@ -22,15 +22,25 @@ import java.io.File
 /** Resolves the APK shell and the selected downloaded core, falling back to bundled Alpha. */
 internal object CoreArtifacts {
     const val SHELL_NAME = "libmihomo.so"
+    const val PREVIEW_SHELL_NAME = "libpreview.so"
     const val LIBRARY_NAME = "libmihomocore.so"
     const val LIBRARY_OPTION = "--core-library"
 
     fun shell(context: Context): File =
         File(context.applicationInfo.nativeLibraryDir, SHELL_NAME)
 
+    fun previewShell(context: Context): File =
+        File(context.applicationInfo.nativeLibraryDir, PREVIEW_SHELL_NAME)
+
     fun library(context: Context): File {
         KernelManager.installed(context)?.let { return it }
+        return bundledLibrary(context)
+    }
 
+    /** Preview needs the bundled core that implements the private `--mode preview` protocol. */
+    fun previewLibrary(context: Context): File = bundledLibrary(context)
+
+    private fun bundledLibrary(context: Context): File {
         // Keep the untransformed debug APK path working. Release APKs normally move this file
         // into the loader payload, but Android Gradle's ordinary debug packaging may leave it in
         // nativeLibraryDir.
@@ -55,4 +65,7 @@ internal object CoreArtifacts {
 
     fun arguments(context: Context, coreArgs: Array<String>): Array<String> =
         arrayOf(LIBRARY_OPTION, library(context).absolutePath, *coreArgs)
+
+    fun previewArguments(context: Context, coreArgs: Array<String>): Array<String> =
+        arrayOf(LIBRARY_OPTION, previewLibrary(context).absolutePath, *coreArgs)
 }

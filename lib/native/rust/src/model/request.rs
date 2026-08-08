@@ -22,6 +22,10 @@ pub struct CompileRequest {
     pub run_mode: RunMode,
     #[serde(default)]
     pub skip_runtime_patches: bool,
+    /// Internal, inspect-only launch role. It is intentionally separate from the user-visible
+    /// run mode so preview cannot accidentally become a root/TUN selection.
+    #[serde(default)]
+    pub preview: bool,
 }
 
 /// The proxy run mode the app selected. Controls mode-specific config patching — chiefly whether the

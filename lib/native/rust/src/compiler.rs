@@ -120,6 +120,10 @@ fn compile_root_from_source(
         patch::patch_static_runtime(&mut root, profile_dir, request.run_mode);
     }
 
+    if request.preview {
+        patch::patch_preview_runtime(&mut root);
+    }
+
     let object = root
         .as_object_mut()
         .ok_or_else(|| "compiled root config must be an object".to_string())?;

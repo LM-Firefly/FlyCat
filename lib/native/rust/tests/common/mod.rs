@@ -38,6 +38,7 @@ pub fn test_request(profile_dir: &Path, profile_path: &Path) -> CompileRequest {
         age_secret_key: None,
         run_mode: RunMode::default(),
         skip_runtime_patches: false,
+        preview: false,
     }
 }
 

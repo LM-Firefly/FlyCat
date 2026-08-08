@@ -639,7 +639,7 @@ class CoreShellBuilder(private val config: ProjectConfig, private val ndkTools: 
     private val sourceDir = File("lib/native/shell")
     private val outputDir = File("build/native/core-shell")
     private val appJniRoot = File("jniLibs")
-    private val outputFileName = "libmihomo.so"
+    private val outputFileNames = listOf("libmihomo.so", "libpreview.so")
 
     fun buildAll() {
         require(File(sourceDir, "CMakeLists.txt").isFile) {
@@ -647,12 +647,12 @@ class CoreShellBuilder(private val config: ProjectConfig, private val ndkTools: 
         }
 
         val abis = configuredAbis(config)
-        println("[CoreShell] Building PIE launcher for ABIs: ${abis.joinToString()}")
+        println("[CoreShell] Building PIE launchers for ABIs: ${abis.joinToString()}")
         abis.forEach(::buildForAbi)
     }
 
     private fun buildForAbi(abi: String) {
-        println("[building] Building for $abi (mihomo PIE shell)...")
+        println("[building] Building for $abi (mihomo PIE shells)...")
         val objDir = File(outputDir, "obj/$abi")
         val binDir = File(outputDir, abi)
         objDir.mkdirs()
@@ -693,6 +693,7 @@ class CoreShellBuilder(private val config: ProjectConfig, private val ndkTools: 
                         objDir.absolutePath,
                         "--target",
                         "mihomo-shell",
+                        "mihomo-preview-shell",
                     ),
                 stdoutPrefix = "[building][$abi]",
                 stderrPrefix = "[building][$abi]",
@@ -703,12 +704,14 @@ class CoreShellBuilder(private val config: ProjectConfig, private val ndkTools: 
             error("[CoreShell] Failed to build $abi: $reason")
         }
 
-        val source = File(binDir, outputFileName)
-        require(source.isFile) { "[CoreShell] Output not found: ${source.absolutePath}" }
-        val destination = File(appJniRoot, "$abi/$outputFileName")
-        destination.parentFile.mkdirs()
-        source.copyTo(destination, overwrite = true)
-        println("[CoreShell] Copied to ${destination.absolutePath}")
+        outputFileNames.forEach { outputFileName ->
+            val source = File(binDir, outputFileName)
+            require(source.isFile) { "[CoreShell] Output not found: ${source.absolutePath}" }
+            val destination = File(appJniRoot, "$abi/$outputFileName")
+            destination.parentFile.mkdirs()
+            source.copyTo(destination, overwrite = true)
+            println("[CoreShell] Copied to ${destination.absolutePath}")
+        }
     }
 }
 
@@ -976,7 +979,7 @@ fun printUsage() {
         Options:
           --go       Build the mihomo shared core and PIE shell
           --coreexe  Compatibility alias of --go
-          --shell    Build only the mihomo PIE shell (libmihomo.so)
+          --shell    Build only the mihomo PIE shells (libmihomo.so + libpreview.so)
           --rust     Build Rust config compiler
           --loader   Build the C/liblzma native payload extractor
           --compat   Build the out-of-process core bridge (libcompat.so)
@@ -1001,6 +1004,7 @@ fun cleanBuildOutputs() {
     val abis = listOf(SUPPORTED_ANDROID_ABI)
     abis.forEach { abi ->
         File("jniLibs/$abi/libmihomo.so").delete()
+        File("jniLibs/$abi/libpreview.so").delete()
         File("jniLibs/$abi/libmihomocore.so").delete()
         File("jniLibs/$abi/liboverride.so").delete()
         File("jniLibs/$abi/libloader.so").delete()

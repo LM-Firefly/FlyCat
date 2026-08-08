@@ -47,6 +47,8 @@ data class CompileRequest(
     // profile stays authoritative. VPN never sets this — user overrides are still cleared by the
     // factory, but system patches remain.
     val skipRuntimePatches: Boolean = false,
+    /** Internal launch role. Preview is not a user-selectable [RunMode]. */
+    val preview: Boolean = false,
 )
 
 @Serializable

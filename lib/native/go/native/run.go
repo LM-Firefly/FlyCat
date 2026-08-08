@@ -32,8 +32,12 @@ func run(opts options) {
 		return
 	}
 
-	// A launcher channel is what makes this the VpnService child; the root modes have none.
-	installHooks(opts.sdk, channelFd >= 0, newLauncherRPC(channelFd))
+	// Preview receives config through a short-lived channel too, but is never a VpnService child.
+	var rpc *launcherRPC
+	if opts.mode == "vpn" {
+		rpc = newLauncherRPC(channelFd)
+	}
+	installHooks(opts.sdk, opts.mode == "vpn", rpc)
 
 	cfg, err := config.Parse(rawConfig)
 	if err != nil {
@@ -92,6 +96,15 @@ func readStartup(opts options) (rawConfig []byte, tunFd, channelFd int) {
 		var err error
 		if rawConfig, err = os.ReadFile(opts.configPath); err != nil {
 			fatal("read config %q: %v", opts.configPath, err)
+		}
+	case "preview":
+		fd, err := strconv.Atoi(opts.channel)
+		if err != nil || fd < 0 {
+			fatal("missing or malformed CHANNEL=%q: preview mode delivers config over the socketpair", opts.channel)
+		}
+		channelFd = fd
+		if rawConfig, err = readPreviewSetup(channelFd); err != nil {
+			fatal("read preview setup from channel: %v", err)
 		}
 	default: // vpn
 		value := opts.channel

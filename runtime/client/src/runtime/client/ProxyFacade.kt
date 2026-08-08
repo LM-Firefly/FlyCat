@@ -36,6 +36,7 @@ import com.github.yumeyucca.yumebox.runtime.client.session.RuntimeCoreOps
 import com.github.yumeyucca.yumebox.runtime.client.session.RuntimeGroupHub
 import com.github.yumeyucca.yumebox.runtime.client.session.RuntimeSession
 import com.github.yumeyucca.yumebox.runtime.client.session.RuntimeSessionDeps
+import com.github.yumeyucca.yumebox.runtime.service.preview.PreviewRuntimeManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import timber.log.Timber
@@ -45,6 +46,21 @@ enum class ProxyGroupSyncPriority {
     SLOW,
     FAST,
 }
+
+/** The controller that produced the current node snapshot. Preview data is read-only. */
+enum class NodeDataSource {
+    None,
+    Preview,
+    Active,
+}
+
+/** Keeps the last successful node snapshot through real-core handoff and reload transitions. */
+data class NodeSessionState(
+    val source: NodeDataSource = NodeDataSource.None,
+    val groups: List<ProxyGroupInfo> = emptyList(),
+    val available: Boolean = false,
+    val everReady: Boolean = false,
+)
 
 /**
  * UI-facing runtime facade. Runtime lifecycle/state live in [RuntimeSession]; proxy-group ops live
@@ -67,6 +83,8 @@ class ProxyFacade(
     private val session: RuntimeSession
     private val coreOps = RuntimeCoreOps(connect = { session.connectBackend() })
     private val groups: RuntimeGroupHub
+    private val preview = PreviewRuntimeManager(appContext)
+    private val _nodeSession = MutableStateFlow(NodeSessionState())
 
     private var previewWarmupJob: Job? = null
     private val syncPriorityRequests =
@@ -79,6 +97,7 @@ class ProxyFacade(
     val trafficNow: StateFlow<Traffic>
     val trafficTotal: StateFlow<Traffic>
     val proxyGroups: StateFlow<List<ProxyGroupInfo>>
+    val nodeSession: StateFlow<NodeSessionState> = _nodeSession.asStateFlow()
     val resolvedPrimaryNode: StateFlow<Proxy?>
 
     init {
@@ -92,6 +111,7 @@ class ProxyFacade(
                     queryTrafficNowAction = { coreOps.queryTrafficNow() },
                     queryTrafficTotalAction = { coreOps.queryTrafficTotal() },
                     onAfterRunning = {
+                        preview.stop()
                         if (AppVisibilityTracker.isForeground.value) {
                             refreshAllSafely()
                         }
@@ -126,9 +146,14 @@ class ProxyFacade(
         currentProfile = session.currentProfile
         trafficNow = session.trafficNow
         trafficTotal = session.trafficTotal
-        proxyGroups = groups.groups
+        proxyGroups =
+            nodeSession
+                .map { state -> state.groups }
+                .stateIn(scope, SharingStarted.Eagerly, emptyList())
         resolvedPrimaryNode = groups.resolvedPrimaryNode
         session.bootstrap()
+        observeNodeSession()
+        observePreviewRuntime()
         observeProxyGroupSyncPriority()
         observeAppVisibility()
     }
@@ -173,33 +198,66 @@ class ProxyFacade(
 
     suspend fun reconcileRuntimeState() = session.reconcile()
 
-    suspend fun reloadProxy(mode: RunMode = networkSettingsStorage.runMode.value) =
-        session.reload(mode)
+    suspend fun reloadProxy(mode: RunMode = networkSettingsStorage.runMode.value) = session.reload(mode)
 
-    suspend fun startProxy(request: RuntimeStartRequest) = session.start(request)
+    suspend fun startProxy(request: RuntimeStartRequest) {
+        preview.stop()
+        try {
+            session.start(request)
+        } catch (error: Throwable) {
+            resumePreviewWhenEligible()
+            throw error
+        }
+    }
 
     suspend fun startProxy(mode: RunMode = networkSettingsStorage.runMode.value) =
-        session.start(
+        startProxy(
             RuntimeStartRequest(
                 owner = session.ownership.ownerForMode(mode),
                 mode = mode,
             )
         )
 
-    suspend fun stopProxy(request: RuntimeStopRequest) = session.stop(request)
+    suspend fun stopProxy(request: RuntimeStopRequest) {
+        try {
+            session.stop(request)
+        } finally {
+            resumePreviewWhenEligible()
+        }
+    }
 
     suspend fun stopProxy(mode: RunMode? = null) =
-        session.stop(RuntimeStopRequest(targetMode = mode ?: networkSettingsStorage.runMode.value))
+        stopProxy(RuntimeStopRequest(targetMode = mode ?: networkSettingsStorage.runMode.value))
 
     suspend fun selectProxy(group: String, proxyName: String): Boolean =
-        groups.selectProxy(group, proxyName)
+        if (nodeSession.value.source == NodeDataSource.Active) {
+            groups.selectProxy(group, proxyName)
+        } else {
+            false
+        }
 
-    suspend fun healthCheck(group: String) = groups.healthCheck(group)
+    suspend fun healthCheck(group: String) {
+        when (nodeSession.value.source) {
+            NodeDataSource.Active -> groups.healthCheck(group)
+            NodeDataSource.Preview -> preview.healthCheck(group)
+            NodeDataSource.None -> Unit
+        }
+    }
 
-    suspend fun healthCheckAll() = groups.healthCheckAll()
+    suspend fun healthCheckAll() {
+        when (nodeSession.value.source) {
+            NodeDataSource.Active -> groups.healthCheckAll()
+            NodeDataSource.Preview -> preview.healthCheckAll()
+            NodeDataSource.None -> Unit
+        }
+    }
 
     suspend fun healthCheckProxy(group: String, proxyName: String): Int =
-        groups.healthCheckProxy(group, proxyName)
+        when (nodeSession.value.source) {
+            NodeDataSource.Active -> groups.healthCheckProxy(group, proxyName)
+            NodeDataSource.Preview -> preview.healthCheckProxy(group, proxyName)
+            NodeDataSource.None -> 0
+        }
 
     suspend fun queryConnections(): ConnectionSnapshot {
         if (!session.snapshotValue().running) {
@@ -214,10 +272,21 @@ class ProxyFacade(
 
     suspend fun queryTrafficNow(): Long = session.queryTrafficNow { coreOps.queryTrafficNow() }
 
-    suspend fun refreshProxyGroups() = groups.refreshProxyGroups()
+    suspend fun refreshProxyGroups() {
+        if (shouldUsePreviewRuntime()) {
+            preview.ensureRunning()
+        } else {
+            groups.refreshProxyGroups()
+        }
+    }
 
-    suspend fun refreshProxyGroup(name: String, sort: ProxySort = ProxySort.Default) =
-        groups.refreshProxyGroup(name, sort)
+    suspend fun refreshProxyGroup(name: String, sort: ProxySort = ProxySort.Default) {
+        if (nodeSession.value.source == NodeDataSource.Preview) {
+            preview.refreshGroup(name, sort)
+        } else {
+            groups.refreshProxyGroup(name, sort)
+        }
+    }
 
     suspend fun refreshCurrentProfile() {
         if (isRemoteControllerActive()) {
@@ -275,7 +344,7 @@ class ProxyFacade(
     private suspend fun refreshPreviewStateSafely() {
         runCatching {
             refreshCurrentProfile()
-            refreshProxyGroups()
+            resumePreviewWhenEligible()
         }
             .onFailure { error ->
                 if (error is CancellationException) throw error
@@ -310,6 +379,111 @@ class ProxyFacade(
         }
     }
 
+    private fun observePreviewRuntime() {
+        scope.launch {
+            combine(
+                    AppVisibilityTracker.isForeground,
+                    session.runtimeSnapshot,
+                ) { foreground, snapshot ->
+                    foreground to snapshot
+                }
+                .collectLatest { (foreground, snapshot) ->
+                    val realCoreOwnsRuntime =
+                        snapshot.phase.isActiveOrStopping ||
+                            snapshot.owner == RuntimeOwner.RemoteController
+                    when {
+                        !foreground || realCoreOwnsRuntime -> preview.stop()
+                        !preview.hasActiveProfile() -> preview.reset()
+                        else ->
+                            runCatching { preview.ensureRunning() }
+                                .onFailure { error ->
+                                    if (error is CancellationException) throw error
+                                    Timber.d(error, "Preview runtime unavailable")
+                                }
+                    }
+                }
+        }
+    }
+
+    private fun observeNodeSession() {
+        scope.launch {
+            combine(
+                    session.currentProfile,
+                    session.runtimeSnapshot,
+                    groups.groups,
+                    preview.state,
+                ) { profile, snapshot, activeGroups, previewState ->
+                    NodeInputs(profile != null, snapshot, activeGroups, previewState.groups, previewState.ready)
+                }
+                .collect { input ->
+                    val activeAvailable =
+                        input.activeGroups.isNotEmpty() &&
+                            (input.snapshot.phase == RuntimePhase.Running ||
+                                input.snapshot.owner == RuntimeOwner.RemoteController)
+                    val previewGroups = input.previewGroups.map(::toProxyGroupInfo)
+                    when {
+                        activeAvailable ->
+                            publishNodeSession(NodeDataSource.Active, input.activeGroups, available = true)
+                        input.previewReady && previewGroups.isNotEmpty() ->
+                            publishNodeSession(NodeDataSource.Preview, previewGroups, available = true)
+                        !input.hasProfile && input.snapshot.owner != RuntimeOwner.RemoteController ->
+                            _nodeSession.value = NodeSessionState()
+                        _nodeSession.value.everReady ->
+                            _nodeSession.value = _nodeSession.value.copy(available = false)
+                    }
+                }
+        }
+    }
+
+    private suspend fun resumePreviewWhenEligible() {
+        if (
+            AppVisibilityTracker.isForeground.value &&
+                !session.snapshotValue().phase.isActiveOrStopping &&
+                !session.isRemoteControllerActive() &&
+                preview.hasActiveProfile()
+        ) {
+            preview.ensureRunning()
+        }
+    }
+
+    /** The first node refresh happens before [NodeDataSource.Preview] can be published. */
+    private fun shouldUsePreviewRuntime(): Boolean =
+        !session.snapshotValue().phase.isActiveOrStopping &&
+            !session.isRemoteControllerActive() &&
+            preview.hasActiveProfile()
+
+    private fun publishNodeSession(
+        source: NodeDataSource,
+        nodeGroups: List<ProxyGroupInfo>,
+        available: Boolean,
+    ) {
+        _nodeSession.value =
+            NodeSessionState(
+                source = source,
+                groups = nodeGroups,
+                available = available,
+                everReady = nodeGroups.isNotEmpty() || _nodeSession.value.everReady,
+            )
+    }
+
+    private fun toProxyGroupInfo(group: ProxyGroup): ProxyGroupInfo =
+        ProxyGroupInfo(
+            name = group.name,
+            type = group.type,
+            proxies = group.proxies,
+            now = group.now.trim(),
+            icon = group.icon,
+            hidden = group.hidden,
+        )
+
+    private data class NodeInputs(
+        val hasProfile: Boolean,
+        val snapshot: RuntimeSnapshot,
+        val activeGroups: List<ProxyGroupInfo>,
+        val previewGroups: List<ProxyGroup>,
+        val previewReady: Boolean,
+    )
+
     private fun resolveEffectiveProxyGroupSyncPriority(
         snapshot: RuntimeSnapshot,
         requests: Map<String, ProxyGroupSyncPriority>,
@@ -324,4 +498,5 @@ class ProxyFacade(
         }
         return requests.values.maxByOrNull { it.ordinal } ?: ProxyGroupSyncPriority.OFF
     }
+
 }

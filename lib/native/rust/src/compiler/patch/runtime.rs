@@ -104,6 +104,41 @@ pub fn patch_static_runtime(root: &mut JsonValue, profile_dir: &Path, run_mode: 
     patch_providers(object, profile_dir);
 }
 
+/// Strip every traffic-facing entry point from the inspect-only core. The launcher adds its own
+/// Unix controller after parsing, so no profile-supplied TCP controller or listener can survive.
+pub fn patch_preview_runtime(root: &mut JsonValue) {
+    let Some(object) = root.as_object_mut() else {
+        return;
+    };
+
+    for port in [
+        "port",
+        "socks-port",
+        "mixed-port",
+        "redir-port",
+        "tproxy-port",
+    ] {
+        object.insert(port.to_string(), JsonValue::from(0));
+    }
+    object.insert(
+        "external-controller".to_string(),
+        JsonValue::String(String::new()),
+    );
+    object.insert(
+        "external-controller-tls".to_string(),
+        JsonValue::String(String::new()),
+    );
+    object.insert("external-ui".to_string(), JsonValue::String(String::new()));
+    object.insert("listeners".to_string(), JsonValue::Array(Vec::new()));
+
+    let tun = ensure_object_field(object, "tun");
+    tun.insert("enable".to_string(), JsonValue::Bool(false));
+    tun.insert("auto-route".to_string(), JsonValue::Bool(false));
+    tun.insert("auto-detect-interface".to_string(), JsonValue::Bool(false));
+    tun.insert("auto-redirect".to_string(), JsonValue::Bool(false));
+    tun.insert("strict-route".to_string(), JsonValue::Bool(false));
+}
+
 /// An override may force `dns.enable: true` onto a profile that carries no nameservers (the
 /// built-in Tun override does exactly this when the subscription has no `dns:` block). mihomo
 /// hard-fails on "DNS enabled but NameServer empty", killing the core at parse time — backfill
@@ -264,4 +299,43 @@ fn provider_extension(provider: &JsonMap<String, JsonValue>, prefix: &str) -> &'
         return "mrs";
     }
     "yaml"
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::patch_preview_runtime;
+
+    #[test]
+    fn preview_patch_removes_all_traffic_entry_points() {
+        let mut root = json!({
+            "port": 7890,
+            "socks-port": 7891,
+            "mixed-port": 7892,
+            "redir-port": 7893,
+            "tproxy-port": 7894,
+            "external-controller": "127.0.0.1:9090",
+            "listeners": [{ "type": "tun" }, { "type": "mixed" }],
+            "tun": { "enable": true, "auto-route": true, "auto-redirect": true }
+        });
+
+        patch_preview_runtime(&mut root);
+
+        let object = root.as_object().expect("preview config is an object");
+        for port in [
+            "port",
+            "socks-port",
+            "mixed-port",
+            "redir-port",
+            "tproxy-port",
+        ] {
+            assert_eq!(object[port], 0, "{port} must be disabled");
+        }
+        assert_eq!(object["external-controller"], "");
+        assert_eq!(object["listeners"], json!([]));
+        assert_eq!(object["tun"]["enable"], false);
+        assert_eq!(object["tun"]["auto-route"], false);
+        assert_eq!(object["tun"]["auto-redirect"], false);
+    }
 }

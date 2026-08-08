@@ -252,6 +252,7 @@ class CompiledConfigPipeline(private val context: Context) {
             ageSecretKey = spec.ageSecretKey,
             runMode = spec.runMode,
             skipRuntimePatches = spec.skipRuntimePatches,
+            preview = spec.preview,
         )
     }
 

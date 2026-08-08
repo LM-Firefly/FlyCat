@@ -101,7 +101,6 @@ internal fun MainContentHost(
                 Scaffold { leftPadding ->
                     MainPagerHost(
                         layoutMode = leftLayoutMode,
-                        enableUserScroll = true,
                         mainInnerPadding = paneInnerPadding(leftPadding, reserveBottomBar = true),
                         mainPagerState = mainPagerState,
                         pagerFlingBehavior = pagerFlingBehavior,
@@ -165,7 +164,6 @@ internal fun MainContentHost(
         Scaffold { innerPadding ->
             MainPagerHost(
                 layoutMode = windowLayoutMode,
-                enableUserScroll = true,
                 mainInnerPadding = paneInnerPadding(innerPadding, reserveBottomBar = true),
                 mainPagerState = mainPagerState,
                 pagerFlingBehavior = pagerFlingBehavior,
@@ -193,7 +191,6 @@ internal fun MainContentHost(
 @Composable
 private fun MainPagerHost(
     layoutMode: WindowLayoutMode,
-    enableUserScroll: Boolean,
     mainInnerPadding: PaddingValues,
     mainPagerState: MainPagerState,
     pagerFlingBehavior: TargetedFlingBehavior,
@@ -228,7 +225,7 @@ private fun MainPagerHost(
             state = mainPagerState.pagerState,
             beyondViewportPageCount = 2,
             flingBehavior = pagerFlingBehavior,
-            userScrollEnabled = enableUserScroll,
+            userScrollEnabled = true,
             overscrollEffect = null,
             pageNestedScrollConnection =
                 PagerDefaults.pageNestedScrollConnection(

@@ -44,6 +44,27 @@ func readSetup(channelFd int) ([]byte, int, error) {
 	}
 }
 
+// readPreviewSetup receives only the compiled config. Unlike the VPN setup it deliberately has no
+// SCM_RIGHTS handling and EOF terminates the handoff, so preview can never acquire a TUN or retain
+// a launcher RPC channel.
+func readPreviewSetup(channelFd int) ([]byte, error) {
+	payload := make([]byte, 0, setupBufSize)
+	buf := make([]byte, setupBufSize)
+	for {
+		n, _, flags, _, err := syscall.Recvmsg(channelFd, buf, nil, 0)
+		if err != nil {
+			return nil, err
+		}
+		if flags&(syscall.MSG_TRUNC|syscall.MSG_CTRUNC) != 0 {
+			return nil, fmt.Errorf("preview setup datagram truncated (flags=%#x, %d of %d bytes)", flags, n, len(buf))
+		}
+		if n == 0 {
+			return payload, nil
+		}
+		payload = append(payload, buf[:n]...)
+	}
+}
+
 type launcherRPC struct {
 	fd      int
 	mutex   sync.Mutex

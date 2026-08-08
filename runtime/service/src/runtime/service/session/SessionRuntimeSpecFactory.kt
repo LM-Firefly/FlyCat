@@ -52,7 +52,14 @@ class SessionRuntimeSpecFactory(
 
     fun createRootSpec(runMode: RunMode): RuntimeSpec = createSpec(RuntimeOwner.RootDaemon, runMode)
 
-    private fun createSpec(owner: RuntimeOwner, runMode: RunMode): RuntimeSpec {
+    /** A local, no-TUN core used only to materialize proxy-group state while the app is foregrounded. */
+    fun createPreviewSpec(): RuntimeSpec = createSpec(RuntimeOwner.VpnService, RunMode.VpnService, preview = true)
+
+    private fun createSpec(
+        owner: RuntimeOwner,
+        runMode: RunMode,
+        preview: Boolean = false,
+    ): RuntimeSpec {
         val profile = requireActiveProfile()
         val profileDir = context.importedDir.resolve(profile.uuid.toString())
         val disableAllUserOverrides = networkSettings.disableAllOverride.value
@@ -86,6 +93,7 @@ class SessionRuntimeSpecFactory(
             runMode = runMode,
             // Only Root Tun skips compiler patches; VPN keeps DNS/path injection.
             skipRuntimePatches = skipModePatches,
+            preview = preview,
             tunConfig = tunConfig,
             effectiveFingerprint =
                 buildEffectiveFingerprint(
@@ -93,6 +101,7 @@ class SessionRuntimeSpecFactory(
                     overrideSpecs,
                     ageSecretKey,
                     skipModePatches,
+                    preview,
                 ),
             profileFingerprint = buildProfileFingerprint(profile.uuid.toString()),
         )
@@ -201,6 +210,7 @@ class SessionRuntimeSpecFactory(
         overrideSpecs: List<OverrideSpec>,
         ageSecretKey: String?,
         skipRuntimePatches: Boolean,
+        preview: Boolean,
     ): String {
         val profileDir = context.importedDir.resolve(profileUuid)
         val metadataFile = context.filesDir.resolve("overrides/metadata.yaml")
@@ -208,6 +218,7 @@ class SessionRuntimeSpecFactory(
             update(profileUuid.toByteArray())
             updateAgeSecretKeyDigest(ageSecretKey)
             update("skip-runtime-patches:$skipRuntimePatches".toByteArray())
+            update("preview:$preview".toByteArray())
             updateFile(profileDir.resolve("config.yaml"))
             updateFile(metadataFile)
             overrideSpecs.forEach { overrideSpec ->

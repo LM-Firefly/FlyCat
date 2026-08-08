@@ -45,7 +45,6 @@ import com.github.yumeyucca.yumebox.presentation.navigation.Route
 import com.github.yumeyucca.yumebox.presentation.screen.ProxyPager
 import com.github.yumeyucca.yumebox.presentation.theme.YumeHaze
 import com.github.yumeyucca.yumebox.presentation.webview.WebViewUtils
-import com.github.yumeyucca.yumebox.runtime.api.RuntimePhase
 import com.github.yumeyucca.yumebox.screen.home.HomePager
 import com.github.yumeyucca.yumebox.screen.home.HomeViewModel
 import com.github.yumeyucca.yumebox.screen.moe.MoeHomePage
@@ -65,15 +64,9 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
     val homeViewModel = koinViewModel<HomeViewModel>()
     val featureStore = koinInject<FeatureStore>()
-    val runtimeSnapshot by homeViewModel.runtimeSnapshot.collectAsState()
-    val isConfigReloading by homeViewModel.isConfigReloading.collectAsState()
-    val isRemoteControllerMode by homeViewModel.isRemoteControllerMode.collectAsState()
-    val showProxyDestination =
-        isRemoteControllerMode ||
-                isConfigReloading ||
-                runtimeSnapshot.phase == RuntimePhase.Starting ||
-                runtimeSnapshot.phase == RuntimePhase.Running ||
-                runtimeSnapshot.phase == RuntimePhase.Stopping
+    val nodeSession by homeViewModel.nodeSession.collectAsState()
+    var proxyDestinationCommitted by remember { mutableStateOf(false) }
+    val showProxyDestination = proxyDestinationCommitted
     val visibleDestinations =
         remember(showProxyDestination) {
             BottomBarDestination.entries.filter { destination ->
@@ -94,6 +87,16 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val hazeState = remember { HazeState() }
     var previousDestinations by remember { mutableStateOf(visibleDestinations) }
     var settledDestination by remember { mutableStateOf(visibleDestinations[initialMainPage]) }
+
+    LaunchedEffect(nodeSession.everReady, mainPagerState.pagerState.isScrollInProgress) {
+        // Page-count changes while Compose is settling a swipe produce the visible blank-frame
+        // jump. A first successful preview is the sole insertion point, and waits for idle.
+        if (!nodeSession.everReady) {
+            proxyDestinationCommitted = false
+        } else if (!mainPagerState.pagerState.isScrollInProgress) {
+            proxyDestinationCommitted = true
+        }
+    }
 
     val bottomBarAutoHideEnabled by appSettingsViewModel.bottomBarAutoHide.state.collectAsState()
     val topBarBlurEnabled by appSettingsViewModel.topBarBlurEnabled.state.collectAsState()

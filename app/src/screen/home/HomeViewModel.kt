@@ -122,6 +122,7 @@ class HomeViewModel(
     val currentProfile = proxyFacade.currentProfile
     val trafficNow = proxyFacade.trafficNow
     val proxyGroups = proxyFacade.proxyGroups
+    val nodeSession = proxyFacade.nodeSession
 
     private val _proxyMode = MutableStateFlow(RunMode.VpnService)
     val proxyMode: StateFlow<RunMode> = _proxyMode.asStateFlow()

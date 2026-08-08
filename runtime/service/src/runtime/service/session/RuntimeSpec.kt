@@ -37,6 +37,8 @@ data class RuntimeSpec(
     val overrideSpecs: List<OverrideSpec> = emptyList(),
     val runMode: RunMode = RunMode.VpnService,
     val skipRuntimePatches: Boolean = false,
+    /** Compiles an inspect-only core configuration; never expose this as a user run mode. */
+    val preview: Boolean = false,
     val tunConfig: TunConfig? = null,
     val staticPlanFingerprint: String = "",
     val transportFingerprint: String = "",
