@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -24,9 +25,9 @@ import android.app.Application
 import com.github.yumelira.yumebox.core.contract.AppSettingsReader
 import com.github.yumelira.yumebox.core.util.AssetDownloader
 import com.github.yumelira.yumebox.core.util.ByteFormatter.formatSpeed
+import com.github.yumelira.yumebox.core.util.HttpClientProfile
+import com.github.yumelira.yumebox.core.util.createHttpClient
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
@@ -78,13 +79,10 @@ class SubStoreDownloadClient(
     }
 
     private val client: HttpClient by lazy {
-        HttpClient(OkHttp) {
-            install(HttpTimeout) {
-                connectTimeoutMillis = 15_000
-                socketTimeoutMillis = 60_000
-            }
-            followRedirects = true
-        }
+        createHttpClient(
+            HttpClientProfile.DOWNLOAD,
+            installContentNegotiation = false,
+        )
     }
 
     override suspend fun download(url: String, targetFile: File): Boolean =
@@ -197,11 +195,11 @@ class SubStoreDownloadClient(
 
             val extractSuccess =
                 when (fileExtension.lowercase()) {
-                    ".zip" -> ArchiveUtil.unzipZip(tempFile, targetDir)
+                    ".zip" -> ArchiveUtils.unzipZip(tempFile, targetDir)
                     ".tar.gz",
-                    ".tgz" -> ArchiveUtil.untarGz(tempFile, targetDir)
-                    ".tar" -> ArchiveUtil.untar(tempFile, targetDir)
-                    else -> ArchiveUtil.unzipZip(tempFile, targetDir)
+                    ".tgz" -> ArchiveUtils.untarGz(tempFile, targetDir)
+                    ".tar" -> ArchiveUtils.untar(tempFile, targetDir)
+                    else -> ArchiveUtils.unzipZip(tempFile, targetDir)
                 }
 
             tempFile.delete()

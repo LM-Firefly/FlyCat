@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -23,7 +24,7 @@ package com.github.yumelira.yumebox.feature.substore
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
-import com.github.yumelira.yumebox.core.util.NetworkUtil
+import com.github.yumelira.yumebox.core.util.NetworkUtils
 import com.github.yumelira.yumebox.feature.substore.engine.NativeLibraryManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -50,8 +51,8 @@ class SubStoreService : Service() {
         serviceScope.launch {
             runCatching {
                 if (
-                    NetworkUtil.isPortInUse(request.frontendPort) ||
-                        NetworkUtil.isPortInUse(request.backendPort)
+                    NetworkUtils.isPortInUse(request.frontendPort) ||
+                        NetworkUtils.isPortInUse(request.backendPort)
                 ) {
                     error(FlyTxt.Feature.SubStore.PortOccupied.format(request.frontendPort, request.backendPort))
                 }
@@ -75,9 +76,9 @@ class SubStoreService : Service() {
                 caseEngine = engine
                 engine.startServer()
                 val frontendReady =
-                    NetworkUtil.waitForPortReady(host = "127.0.0.1", port = request.frontendPort)
+                    NetworkUtils.waitForPortReady(host = "127.0.0.1", port = request.frontendPort)
                 val backendReady =
-                    NetworkUtil.waitForPortReady(host = "127.0.0.1", port = request.backendPort)
+                    NetworkUtils.waitForPortReady(host = "127.0.0.1", port = request.backendPort)
                 Timber.w("Sub-Store port readiness: frontend=${request.frontendPort} ready=$frontendReady, backend=${request.backendPort} ready=$backendReady")
                 if (!frontendReady || !backendReady) {
                     throw Exception("Sub-Store 启动超时（frontend:${request.frontendPort} ready=$frontendReady, backend:${request.backendPort} ready=$backendReady）")

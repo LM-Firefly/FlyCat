@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -39,7 +40,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -101,7 +101,7 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
                         TimeSlotTrafficItem(slotIndex = 0, upload = d.totalUpload, download = d.totalDownload)
                     }
                     val labels = allDays.map { d ->
-                        checkNotNull(dateFormat.get()).format(Date(d.dateMillis))
+                        checkNotNull(dateFormat.get()).format(java.time.Instant.ofEpochMilli(d.dateMillis).atZone(java.time.ZoneId.systemDefault()).toLocalDate())
                     }
                     items to labels
                 }
@@ -174,7 +174,7 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
     companion object {
         private const val DAY_MS = 24 * 60 * 60 * 1000L
         private val dateFormat = ThreadLocal.withInitial {
-            SimpleDateFormat("M/d", Locale.getDefault())
+            java.time.format.DateTimeFormatter.ofPattern("M/d")
         }
         private val dayStartCalendar = ThreadLocal.withInitial {
             Calendar.getInstance().apply {

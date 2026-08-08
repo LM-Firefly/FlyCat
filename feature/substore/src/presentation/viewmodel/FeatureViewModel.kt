@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -32,7 +33,7 @@ import com.github.yumelira.yumebox.feature.substore.service.ExtensionStatusServi
 import com.github.yumelira.yumebox.feature.substore.SubStoreServiceController
 import com.github.yumelira.yumebox.feature.substore.SubStoreServiceRequest
 import com.github.yumelira.yumebox.feature.substore.util.SubStoreDownloadClient
-import com.github.yumelira.yumebox.platform.util.DeviceUtil
+import com.github.yumelira.yumebox.platform.util.DeviceUtils
 import com.github.yumelira.yumebox.platform.util.showToastDialog
 import tf.gal.yumebox.locale.FlyTxt
 import kotlinx.coroutines.CoroutineScope
@@ -97,7 +98,7 @@ class FeatureViewModel(
     val isJavetLoaded: StateFlow<Boolean> = _isJavetLoaded.asStateFlow()
 
     fun startService() {
-        if (DeviceUtil.is32BitDevice()) {
+        if (DeviceUtils.is32BitDevice()) {
             Timber.w("Sub-Store start skipped: 32-bit device")
             showToast(FlyTxt.Feature.SubStore.Not32Bit)
             return

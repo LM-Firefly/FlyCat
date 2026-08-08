@@ -7,10 +7,10 @@ import android.os.Build
 import androidx.core.content.FileProvider
 import com.github.yumelira.yumebox.core.contract.UpdateSettings
 import com.github.yumelira.yumebox.core.model.UpdateSource
+import com.github.yumelira.yumebox.core.util.HttpClientProfile
+import com.github.yumelira.yumebox.core.util.createHttpClient
 import tf.gal.yumebox.locale.FlyTxt
-import io.ktor.client.*
-import io.ktor.client.engine.okhttp.*
-import io.ktor.client.plugins.*
+import io.ktor.client.HttpClient
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -116,23 +116,16 @@ class GitHubUpdateManager(
     private val buildConfig: UpdateBuildConfig,
 ) {
     private val appContext = context.applicationContext
-    private val client: HttpClient by lazy {
-        HttpClient(OkHttp) {
-            install(HttpTimeout) {
-                connectTimeoutMillis = 15_000
-                socketTimeoutMillis = 60_000
-            }
-            engine {
-                config {
-                    connectTimeout(15_000, java.util.concurrent.TimeUnit.MILLISECONDS)
-                    readTimeout(60_000, java.util.concurrent.TimeUnit.MILLISECONDS)
-                }
-            }
-        }
-    }
     private val json = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
+    }
+    private val client: HttpClient by lazy {
+        createHttpClient(
+            HttpClientProfile.DOWNLOAD,
+            json = json,
+            installContentNegotiation = false,
+        )
     }
     private val preferences = appContext.getSharedPreferences(PREFERENCE_FILE, Context.MODE_PRIVATE)
     private val packageProfile = PackageProfile.fromPackageName(appContext.packageName)

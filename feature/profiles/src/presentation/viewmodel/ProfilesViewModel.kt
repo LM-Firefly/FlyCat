@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -27,6 +28,7 @@ import com.github.yumelira.yumebox.core.contract.OverrideApplyExecutor
 import com.github.yumelira.yumebox.core.contract.ProfileBindingReader
 import com.github.yumelira.yumebox.core.model.Profile
 import com.github.yumelira.yumebox.core.model.ProfileBinding
+import com.github.yumelira.yumebox.core.util.safeRunSilent
 import com.github.yumelira.yumebox.feature.profiles.presentation.screen.copyProfileImport
 import com.github.yumelira.yumebox.presentation.viewmodel.AndroidContractStateViewModel
 import com.github.yumelira.yumebox.runtime.api.contract.ProfileRepositoryContract
@@ -127,10 +129,7 @@ class ProfilesViewModel(
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to create profile")
                 createdUuid?.let { uuid ->
-                    runCatching { profilesRepository.deleteProfile(uuid) }
-                        .onFailure { deleteError ->
-                            Timber.w(deleteError, "Failed to rollback profile creation: $uuid")
-                        }
+                    safeRunSilent("ProfilesVM", "Rollback profile creation: $uuid") { profilesRepository.deleteProfile(uuid) }
                 }
                 refreshProfiles()
                 showError(FlyTxt.ProfilesVM.Message.AddFailed.format(error.message ?: "Unknown"))

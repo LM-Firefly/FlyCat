@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -84,7 +85,6 @@ import com.github.yumelira.yumebox.presentation.navigation.Route
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import com.github.yumelira.yumebox.presentation.util.ProviderFilePreviewStore
 import java.io.File
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -471,8 +471,8 @@ private fun ProviderCard(
                     Spacer(modifier = Modifier.height(4.dp))
                     val diff = info.expire * 1000 - System.currentTimeMillis()
                     val days = diff / (1000 * 60 * 60 * 24)
-                    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
-                    val dateLabel = dateFormat.format(Date(info.expire * 1000))
+                    val dateFormat = remember { java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd") }
+                    val dateLabel = java.time.Instant.ofEpochMilli(info.expire * 1000).atZone(java.time.ZoneId.systemDefault()).format(dateFormat)
                     val suffix = when {
                         days >= 0 -> FlyTxt.Providers.Info.ExpireDays.format(dateLabel, days.toInt())
                         else -> FlyTxt.Providers.Info.Expired.format(dateLabel)
@@ -587,7 +587,7 @@ private fun LazyListScope.providerSection(
 }
 
 private fun formatTimestamp(ts: Long): String =
-    SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(ts))
+    java.time.Instant.ofEpochMilli(ts).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
 
 private fun formatUsagePercent(info: SubscriptionInfo): String? {
     val total = info.total.toULong()

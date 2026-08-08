@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -32,7 +33,6 @@ import com.github.yumelira.yumebox.data.logging.AppLogBuffer
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.enums.enumEntries
@@ -164,7 +164,7 @@ class LogStore(
     override suspend fun exportMergedLog(fileName: String): String? = withContext(Dispatchers.IO) {
         val source = resolveLogFile(fileName) ?: return@withContext null
         try {
-            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
             val base = source.name.removeSuffix(logRecordGateway.logSuffix)
             val targetName = "merged_${base}_$timestamp${logRecordGateway.logSuffix}"
             val target = File(logDir, targetName)

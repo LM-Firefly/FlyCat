@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -37,10 +38,9 @@ import com.github.yumelira.yumebox.core.model.UiConfiguration
 import com.github.yumelira.yumebox.core.model.encodeTrafficValue
 import com.github.yumelira.yumebox.runtime.api.service.remote.IClashManager
 import com.github.yumelira.yumebox.runtime.api.service.remote.ILogObserver
+import com.github.yumelira.yumebox.core.util.HttpClientProfile
+import com.github.yumelira.yumebox.core.util.createHttpClient
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -90,16 +90,7 @@ class HttpClashManager(
     private var logJob: Job? = null
 
     private val client: HttpClient by lazy {
-        HttpClient(OkHttp) {
-            install(ContentNegotiation) { json(this@HttpClashManager.json) }
-            // Without timeouts a runBlocking REST call against an unreachable backend blocks its IO thread until the OS TCP timeout (tens of seconds).
-            // The traffic poller and proxy group sync loop fire these continuously, so a dead backend saturates Dispatchers.IO and starves the local start path — the home start button appears frozen.
-            // Bound every call so a lost backend fails fast instead of hanging. socketTimeout intentionally covers the streaming /traffic read (one JSON line per second) without killing it.
-            install(HttpTimeout) {
-                connectTimeoutMillis = CONNECT_TIMEOUT_MS
-                socketTimeoutMillis = SOCKET_TIMEOUT_MS
-            }
-        }
+        createHttpClient(HttpClientProfile.API, json = json)
     }
 
     private fun requireBackend(): RemoteBackend =

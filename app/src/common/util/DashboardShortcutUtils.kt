@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -30,7 +31,7 @@ import com.github.yumelira.yumebox.WebViewActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-object DashboardShortcutHelper {
+object DashboardShortcutUtils {
     suspend fun createPanelShortcut(
         context: Context,
         url: String,

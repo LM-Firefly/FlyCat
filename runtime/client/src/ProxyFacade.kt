@@ -25,6 +25,8 @@ import com.github.yumelira.yumebox.core.model.TunnelState
 import com.github.yumelira.yumebox.core.util.AppForegroundState
 import com.github.yumelira.yumebox.core.util.PollingTimers
 import com.github.yumelira.yumebox.core.util.PollingTimerSpecs
+import com.github.yumelira.yumebox.core.util.safeRun
+import com.github.yumelira.yumebox.core.util.safeRunSilent
 import com.github.yumelira.yumebox.core.util.throttleByScene
 import com.github.yumelira.yumebox.runtime.api.contract.ProxyControlContract
 import com.github.yumelira.yumebox.runtime.api.contract.RuntimeStateMapper
@@ -153,9 +155,9 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     }
 
     fun shutdown() {
-        runCatching { eventBus.unregister() }
-        runCatching { ServiceClient.disconnect() }
-        runCatching { scope.cancel() }
+        safeRunSilent("ProxyFacade", "Unregister event bus") { eventBus.unregister() }
+        safeRunSilent("ProxyFacade", "Disconnect service client") { ServiceClient.disconnect() }
+        safeRunSilent("ProxyFacade", "Cancel scope") { scope.cancel() }
     }
 
     override fun isRemoteControllerActive(): Boolean =
@@ -171,7 +173,7 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
      * Creates a temporary [HttpClashManager] and queries the tunnel state.
      */
     override suspend fun testRemoteConnection(backend: RemoteBackend): Result<TunnelState> =
-        runCatching { HttpClashManager(backendProvider = { backend }).queryTunnelState() }
+        safeRun("ProxyFacade", "Test remote connection") { HttpClashManager(backendProvider = { backend }).queryTunnelState() }
 
     private suspend fun applyRemoteControllerStateLocked() {
         if (isRemoteControllerActive()) {
@@ -205,7 +207,7 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     }
 
     private suspend fun stopLocalRuntimeForControllerSwitch() {
-        runCatching {
+        safeRun("ProxyFacade", "Stop local runtime for controller switch") {
             val owner = detectActiveOwner()
             if (
                 owner == RuntimeOwner.LocalTun ||
@@ -216,8 +218,6 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
                 stopTrafficPolling()
                 awaitLocalRuntimeFullyStopped(owner)
             }
-        }.onFailure { error ->
-            Timber.w(error, "Failed to stop local runtime on controller switch")
         }
     }
 
@@ -369,8 +369,7 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
 
     private fun launchPreviewWarmup(): Job {
         return scope.launch {
-            runCatching { refreshProxyGroups(force = true) }
-                .onFailure { error -> Timber.d(error, "Warm up proxy groups skipped") }
+            safeRunSilent("ProxyFacade", "Warm up proxy groups") { refreshProxyGroups(force = true) }
         }
     }
 
@@ -410,7 +409,7 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
                 )
             )
 
-            runCatching { runtimeControl.start(targetOwner, mode) }
+            safeRun("ProxyFacade", "Start runtime control") { runtimeControl.start(targetOwner, mode) }
                 .onFailure { error ->
                     clearRuntimeState(resetGroups = false)
                     publishRuntimeSnapshot(
@@ -550,13 +549,12 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
             }
 
             else -> {
-                runCatching {
+                safeRun("ProxyFacade", "Refresh current profile") {
                         connectCurrentBackend()
                         val profile = ServiceClient.profile().queryActive()
                         _currentProfile.value = profile
                         updateProfileReady(profile)
                     }
-                    .onFailure { error -> Timber.e(error, "Failed to refresh current profile") }
             }
         }
     }
@@ -609,10 +607,10 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         // Close TUN fd first so Android unbinds the VpnService.
         // stopService() cannot destroy a bound VpnService — the TUN fd must be closed first.
         if (owner == RuntimeOwner.LocalTun) {
-            runCatching { Clash.stopTun() }
+            safeRunSilent("ProxyFacade", "Stop TUN fd") { Clash.stopTun() }
         }
 
-        runCatching { runtimeControl.stop(owner) }
+        safeRun("ProxyFacade", "Stop runtime control") { runtimeControl.stop(owner) }
             .onFailure {
                 publishRuntimeSnapshot(previousSnapshot)
                 throw it
@@ -802,8 +800,9 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         if (snapshot.phase != RuntimePhase.Running && snapshot.owner != RuntimeOwner.RemoteController) {
             return
         }
-        runCatching { withTimeoutOrNull(10_000L) { refreshAll() } ?: Timber.w("refreshAll timed out after 10s") }
-            .onFailure { error ->
+        safeRun("ProxyFacade", "Refresh all runtime data") {
+            withTimeoutOrNull(10_000L) { refreshAll() } ?: Timber.w("refreshAll timed out after 10s")
+        }.onFailure { error ->
                 if (snapshot.owner == RuntimeOwner.RemoteController) {
                     markRemoteControllerLost(error)
                 }
@@ -811,11 +810,10 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     }
 
     private suspend fun refreshPreviewStateSafely() {
-        runCatching {
+        safeRunSilent("ProxyFacade", "Refresh preview data") {
                 refreshCurrentProfile()
                 refreshProxyGroups(force = true)
             }
-            .onFailure { error -> Timber.d(error, "Refresh preview data skipped") }
     }
 
     private fun shouldRefreshRuntimePayload(): Boolean {
@@ -891,7 +889,7 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         if (snapshot.phase != RuntimePhase.Running && snapshot.owner != RuntimeOwner.RemoteController) {
             return
         }
-        runCatching { refreshProxyGroups() }
+        safeRun("ProxyFacade", "Sync runtime proxy groups") { refreshProxyGroups() }
             .onFailure { error ->
                 if (snapshot.owner == RuntimeOwner.RemoteController) {
                     markRemoteControllerLost(error)
@@ -973,7 +971,7 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     }
 
     private suspend fun refreshRootCurrentProfile(status: RootTunStatus) {
-        runCatching {
+        safeRun("ProxyFacade", "Refresh root current profile") {
                 connectCurrentBackend()
                 val profile =
                     status.profileUuid
@@ -986,7 +984,6 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
                 }
                 updateProfileReady(profile)
             }
-            .onFailure { error -> Timber.d(error, "Failed to refresh root current profile") }
     }
 
     private fun nextGeneration(): Long = generationCounter.incrementAndGet()

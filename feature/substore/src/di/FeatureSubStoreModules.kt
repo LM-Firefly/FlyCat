@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -30,7 +31,7 @@ import com.github.yumelira.yumebox.feature.substore.presentation.viewmodel.Featu
 import com.github.yumelira.yumebox.feature.substore.presentation.viewmodel.SettingViewModel
 import com.github.yumelira.yumebox.feature.substore.presentation.viewmodel.SubStoreNavigationHandlerImpl
 import com.github.yumelira.yumebox.feature.substore.service.ExtensionStatusService
-import com.github.yumelira.yumebox.feature.substore.util.AppUtil
+import com.github.yumelira.yumebox.feature.substore.util.AppUtils
 import com.github.yumelira.yumebox.feature.substore.util.SubStoreDownloadClient
 import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.Module
@@ -42,7 +43,7 @@ val featureSubStoreViewModelModule = module {
     single { SubStoreDownloadClient(androidApplication(), get()) }
     single<AssetDownloader> { get<SubStoreDownloadClient>() }
     single { ExtensionStatusService(androidApplication()) }
-    single<FirstRunInitializer> { AppUtil.apply { application = androidApplication() } }
+    single<FirstRunInitializer> { AppUtils.apply { application = androidApplication() } }
     single<SubStoreBackupSupport> { SubStoreBackupSupportImpl() }
     single { SubStoreNavigationHandlerImpl() }
     single<SubStoreNavigationHandler> { get<SubStoreNavigationHandlerImpl>() }

@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -29,6 +30,7 @@ import com.github.yumelira.yumebox.common.util.AppLanguageManager
 import com.github.yumelira.yumebox.core.Clash
 import com.github.yumelira.yumebox.core.FirstRunInitializer
 import com.github.yumelira.yumebox.core.Global
+import com.github.yumelira.yumebox.core.bridge.Bridge
 import com.github.yumelira.yumebox.core.contract.AppLogSettings
 import com.github.yumelira.yumebox.core.contract.AppShutdownHandler
 import com.github.yumelira.yumebox.core.contract.RuntimeLogWriter
@@ -42,6 +44,8 @@ import com.github.yumelira.yumebox.core.util.AutoStartSessionGate
 import com.github.yumelira.yumebox.core.util.StartupTaskCoordinator
 import com.github.yumelira.yumebox.core.util.SubStorePaths.dataDir
 import com.github.yumelira.yumebox.core.util.runtimeHomeDir
+import com.github.yumelira.yumebox.core.util.safeRun
+import com.github.yumelira.yumebox.core.util.safeRunSilent
 import com.github.yumelira.yumebox.data.collector.AppTrafficStatisticsCollector
 import com.github.yumelira.yumebox.data.logging.AppLogBridge
 import com.github.yumelira.yumebox.data.logging.AppLogBuffer
@@ -56,7 +60,7 @@ import com.github.yumelira.yumebox.feature.update.GitHubUpdateManager
 import com.github.yumelira.yumebox.runtime.api.service.common.constants.Components
 import com.github.yumelira.yumebox.runtime.api.service.common.constants.Intents
 import com.github.yumelira.yumebox.runtime.client.ProxyFacade
-import com.github.yumelira.yumebox.runtime.client.common.util.ProxyAutoStartHelper
+import com.github.yumelira.yumebox.runtime.client.common.util.ProxyAutoStartUtils
 import com.tencent.mmkv.MMKV
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -110,19 +114,17 @@ class App : Application() {
             CrashHandler.init(this)
             return
         }
-        // Stage 2: Apply user settings (deferred — language already wrapped in attachBaseContext)
+        // Stage 2: Apply user settings (deferred �?language already wrapped in attachBaseContext)
         startupScope.launch {
-            runCatching { applyUserSettings(koin) }
-                .onFailure { Timber.e(it, "Error applying user settings") }
+            safeRun("App", "Apply user settings") { applyUserSettings(koin) }
         }
         // Stage 2a: Preload native bridge libraries on background thread
         startupScope.launch {
             withContext(Dispatchers.IO) {
-                runCatching { com.github.yumelira.yumebox.core.bridge.Bridge.preload() }
-                    .onFailure { Timber.e(it, "Bridge preload failed") }
+                safeRun("App", "Bridge preload") { Bridge.preload() }
             }
         }
-        // On-demand mihomo log → AppLogBuffer subscription.
+        // On-demand mihomo log �?AppLogBuffer subscription.
         // Enabled only when log preview is visible or runtime log recording is active.
         val applicationScope = koin.get<CoroutineScope>(named(APPLICATION_SCOPE_NAME))
         applicationScope.launch {
@@ -139,7 +141,7 @@ class App : Application() {
                 }
                 streamJob =
                     launch(Dispatchers.IO) {
-                        runCatching {
+                        safeRunSilent("App", "Mihomo on-demand log subscription") {
                             val channel = Clash.subscribeLogcat()
                             try {
                                 for (msg in channel) {
@@ -158,23 +160,20 @@ class App : Application() {
                                 channel.cancel()
                                 Clash.unsubscribeLogcat()
                             }
-                        }.onFailure { Timber.w(it, "Mihomo on-demand subscription failed") }
+                        }
                     }
             }
         }
         // Stage 2b: Recover from incomplete file operations (atomic rename leftovers)
         startupScope.launch {
             withContext(Dispatchers.IO) {
-                runCatching { recoverIncompleteOperations() }
-                    .onFailure { Timber.w(it, "Startup recovery skipped") }
+                safeRun("App", "Startup recovery") { recoverIncompleteOperations() }
             }
         }
         // Stage 3: Start update check coroutine
-        runCatching { startUpdateCheck(koin, applicationScope) }
-            .onFailure { Timber.w(it, "Update check scheduling skipped") }
+        safeRun("App", "Schedule update check") { startUpdateCheck(koin, applicationScope) }
         // Stage 4: Deferred runtime tasks (geo assets, traffic collector, auto-start)
-        runCatching { scheduleDeferredStartupTasks(koin) }
-            .onFailure { Timber.w(it, "Deferred startup tasks scheduling skipped") }
+        safeRun("App", "Schedule deferred startup tasks") { scheduleDeferredStartupTasks(koin) }
         // Stage 5: Independent lifecycle observers (always safe to start)
         applicationScope.launch { observeAndBroadcastForegroundState() }
     }
@@ -253,24 +252,17 @@ class App : Application() {
         val featureStore: FeatureStore = koin.get()
         StartupTaskCoordinator.startWarmup(startupScope) {
             withContext(Dispatchers.IO) {
-                runCatching { ensureGeoAssetsPrepared() }
-                    .onFailure { Timber.e(it, "Geo assets preparation failed, continuing startup") }
+                safeRun("App", "Prepare geo assets") { ensureGeoAssetsPrepared() }
             }
-            runCatching { koin.get<CustomRoutingInitializer>().ensureDefaultContent() }
-                .onFailure { Timber.e(it, "Failed to bootstrap custom routing default content") }
-            runCatching { ensureMoeWallpaperLocalCopy(koin.get()) }
-                .onFailure { Timber.e(it, "Failed to ensure Moe wallpaper local copy") }
-            runCatching { koin.get<AppTrafficStatisticsCollector>() }
-                .onFailure { Timber.w(it, "App traffic collector init skipped") }
-            runCatching { koin.get<ProxyFacade>().awaitProxyGroupWarmUp() }
-                .onFailure { Timber.w(it, "Proxy preview warm-up skipped") }
+            safeRun("App", "Bootstrap custom routing defaults") { koin.get<CustomRoutingInitializer>().ensureDefaultContent() }
+            safeRun("App", "Ensure Moe wallpaper local copy") { ensureMoeWallpaperLocalCopy(koin.get()) }
+            safeRun("App", "Init traffic collector") { koin.get<AppTrafficStatisticsCollector>() }
+            safeRun("App", "Proxy preview warm-up") { koin.get<ProxyFacade>().awaitProxyGroupWarmUp() }
             if (featureStore.isFirstTimeOpen()) {
                 withContext(Dispatchers.IO) {
-                    runCatching {
+                    safeRun("App", "First-open asset initialization") {
                         koin.getAll<FirstRunInitializer>().forEach { it.initialize() }
                         featureStore.markFirstOpenHandled()
-                    }.onFailure { error ->
-                        Timber.w(error, "First-open asset initialization failed")
                     }
                 }
             }
@@ -282,7 +274,7 @@ class App : Application() {
             if (!AutoStartSessionGate.tryBeginAutoActions()) return@launch
             var handled = false
             try {
-                ProxyAutoStartHelper.checkAndAutoStart(
+                ProxyAutoStartUtils.checkAndAutoStart(
                     context = this@App,
                     featureStore = featureStore,
                     proxyFacade = koin.get(),
@@ -298,11 +290,11 @@ class App : Application() {
         }
     }
     /**
-     * Recover from incomplete atomic file operations. If the process was killed between rename(old→.bak) and rename(new→target), the .bak directory is orphaned and the target is missing.
-     * This restores .bak → target on startup.
+     * Recover from incomplete atomic file operations. If the process was killed between rename(old�?bak) and rename(new→target), the .bak directory is orphaned and the target is missing.
+     * This restores .bak �?target on startup.
      *
      * Covers:
-     * - Profile updates: imported/{uuid}.bak → imported/{uuid}
+     * - Profile updates: imported/{uuid}.bak �?imported/{uuid}
      * - Backup restores: imported.bak, overrides.bak, substore-data.bak
      */
     private fun recoverIncompleteOperations() {
@@ -359,7 +351,7 @@ class App : Application() {
     private suspend fun observeAndBroadcastForegroundState() {
         AppForegroundState.foreground
             .collect { isForeground ->
-                runCatching {
+                safeRunSilent("App", "Broadcast foreground state") {
                     val intent = android.content.Intent(
                         Intents.actionAppForeground(packageName)
                     ).apply {
@@ -378,18 +370,18 @@ class App : Application() {
         super.onTrimMemory(level)
         @Suppress("DEPRECATION")
         if (level >= TRIM_MEMORY_COMPLETE) {
-            // Process is about to be killed — cancel startupScope to release resources promptly.
-            runCatching { startupScope.cancel() }
+            // Process is about to be killed �?cancel startupScope to release resources promptly.
+            safeRunSilent("App", "Cancel startup scope on trim memory") { startupScope.cancel() }
         }
     }
     override fun onTerminate() {
-        runCatching {
+        safeRunSilent("App", "Execute shutdown handlers") {
             val koin = GlobalContext.getOrNull()
             koin?.getAll<AppShutdownHandler>()?.forEach { handler ->
-                runCatching { handler.onShutdown() }
+                safeRunSilent("App", "Execute shutdown handler") { handler.onShutdown() }
             }
         }
-        runCatching { startupScope.cancel() }
+        safeRunSilent("App", "Cancel startup scope on terminate") { startupScope.cancel() }
         super.onTerminate()
     }
     private fun ensureGeoAssetsPrepared() {

@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -68,7 +69,6 @@ import com.github.yumelira.yumebox.presentation.icon.Yume
 import com.github.yumelira.yumebox.presentation.icon.yume.Play
 import com.github.yumelira.yumebox.presentation.icon.yume.Square
 import com.github.yumelira.yumebox.presentation.navigation.Route
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.channels.Channel
@@ -162,7 +162,7 @@ fun LogScreen(navigator: Navigator) {
             ) {
                 FloatingActionButton(
                     onClick = {
-                        val ts = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                        val ts = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
                         saveRecentLogsLauncher.launch("flycat_log_$ts.log")
                     },
                 ) {
@@ -313,7 +313,7 @@ fun LogDetailScreen(
                 }
                 FloatingActionButton(
                     onClick = {
-                        val ts = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                        val ts = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
                         val baseName = fileName.removeSuffix(".log")
                         exportLauncher.launch("${baseName}_$ts.log")
                     },
@@ -367,13 +367,13 @@ private fun LogEntryCard(entry: LogEntry, index: Int = 0, isNewEntry: Boolean = 
 
 @Composable
 private fun LogFileItem(fileInfo: LogFileInfo, index: Int, onClick: () -> Unit) {
-    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()) }
+    val dateFormat = remember { java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss") }
     val interactionSource = remember { MutableInteractionSource() }
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {delay(index * 50L); visible = true }
     val animatedSize by animateFloatAsState(targetValue = fileInfo.size.toFloat(), animationSpec = tween(300), label = "log_file_size_animation")
     val sizeText = formatFileSize(if (fileInfo.isRecording) animatedSize.toLong() else fileInfo.size)
-    val summary = "${dateFormat.format(Date(fileInfo.createdAt))}  ·  $sizeText"
+    val summary = "${java.time.Instant.ofEpochMilli(fileInfo.createdAt).atZone(java.time.ZoneId.systemDefault()).format(dateFormat)}  ·  $sizeText"
     AnimatedVisibility(visible = visible, enter = fadeIn(animationSpec = tween(300)) + slideInVertically(animationSpec = tween(300), initialOffsetY = { -it / 2 })) {
         Card(modifier = Modifier.padding(vertical = 4.dp).pressable(interactionSource = interactionSource, indication = SinkFeedback()).clickable(interactionSource = interactionSource, indication = null, onClick = onClick)) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {

@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -56,10 +57,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.yumelira.yumebox.core.model.AppLanguage
 import com.github.yumelira.yumebox.core.model.ThemeMode
 import com.github.yumelira.yumebox.core.model.UpdateSource
-import com.github.yumelira.yumebox.core.util.LocaleUtil
+import com.github.yumelira.yumebox.core.util.LocaleUtils
 import com.github.yumelira.yumebox.feature.settings.presentation.screen.component.ThemeColorPickerItem
 import com.github.yumelira.yumebox.feature.settings.presentation.viewmodel.AppSettingsViewModel
-import com.github.yumelira.yumebox.platform.util.AppIconHelper
+import com.github.yumelira.yumebox.platform.util.AppIconUtils
 import com.github.yumelira.yumebox.platform.util.toast
 import com.github.yumelira.yumebox.presentation.component.AppFormDialog
 import com.github.yumelira.yumebox.presentation.component.AppTextFieldDialog
@@ -119,7 +120,7 @@ private fun AppBehaviorSettingsSection(viewModel: AppSettingsViewModel) {
     val automaticRestart by viewModel.automaticRestart.state.collectAsStateWithLifecycle()
     val autoUpdateCurrentProfileOnStart by
         viewModel.autoUpdateCurrentProfileOnStart.state.collectAsStateWithLifecycle()
-    val isChineseLocale = remember { LocaleUtil.isChineseLocale() }
+    val isChineseLocale = remember { LocaleUtils.isChineseLocale() }
 
     Title(FlyTxt.AppSettings.Section.Behavior)
     Card {
@@ -358,7 +359,7 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
     }
     val scope = rememberCoroutineScope()
     // Launch via activity-result so the summary refreshes as soon as the system grant dialog
-    // returns â€” HyperOS shows it as a dialog-style activity where ON_RESUME timing is unreliable.
+    // returns â€?HyperOS shows it as a dialog-style activity where ON_RESUME timing is unreliable.
     val batteryOptimizationLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             batteryOptimizationIgnored = isBatteryOptimizationIgnored(context)
@@ -480,7 +481,7 @@ private fun HideAppIconPreferenceItem(
                 showHideIconDialogState.value = true
             } else {
                 onHideAppIconChange(false)
-                AppIconHelper.toggleIcon(context, false)
+                AppIconUtils.toggleIcon(context, false)
             }
         },
     )
@@ -495,7 +496,7 @@ private fun HideAppIconPreferenceItem(
             ),
         onConfirm = {
             onHideAppIconChange(true)
-            AppIconHelper.toggleIcon(context, true)
+            AppIconUtils.toggleIcon(context, true)
         },
     )
 }

@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,10 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumelira.yumebox.feature.settings.data.backup
+package com.github.yumelira.yumebox.data.backup
 
 import android.app.Application
 import android.content.Intent
@@ -55,7 +56,6 @@ import com.github.yumelira.yumebox.runtime.api.service.common.constants.Intents
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -120,7 +120,8 @@ class BackupRepository(
         }
 
     override fun defaultBackupFileName(now: Long): String {
-        val timestamp = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date(now))
+        val timestamp = java.time.Instant.ofEpochMilli(now).atZone(java.time.ZoneId.systemDefault())
+            .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmm").withLocale(Locale.US))
         return "FlyCat-backup-$timestamp.zip"
     }
 

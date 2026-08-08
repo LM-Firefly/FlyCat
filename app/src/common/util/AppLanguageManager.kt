@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -27,7 +28,7 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import com.github.yumelira.yumebox.core.model.AppLanguage
-import com.github.yumelira.yumebox.core.util.LocaleUtil
+import com.github.yumelira.yumebox.core.util.LocaleUtils
 import java.util.Locale
 import tf.gal.shirosu.fyl.fytxt.FYTxtConfig
 
@@ -53,7 +54,7 @@ object AppLanguageManager {
         )
 
         Locale.setDefault(locale)
-        LocaleUtil.setCurrentLocale(locale)
+        LocaleUtils.setCurrentLocale(locale)
         when (language) {
             AppLanguage.System -> FYTxtConfig.updateTags(lock = false)
             AppLanguage.Zh -> FYTxtConfig.updateTags(listOf("ZH_HANS"), lock = true)

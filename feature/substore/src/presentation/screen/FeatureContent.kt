@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -28,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.yumelira.yumebox.feature.substore.model.AutoCloseMode
 import com.github.yumelira.yumebox.feature.substore.presentation.viewmodel.FeatureViewModel
-import com.github.yumelira.yumebox.platform.util.DeviceUtil
+import com.github.yumelira.yumebox.platform.util.DeviceUtils
 import com.github.yumelira.yumebox.presentation.component.Card
 import com.github.yumelira.yumebox.presentation.component.EnumSelector
 import com.github.yumelira.yumebox.presentation.component.NavigationBackIcon
@@ -142,7 +143,7 @@ fun FeatureContent(
                     ArrowPreference(
                         title = FlyTxt.Feature.SubStore.Title,
                         summary = if (isServiceRunning) subStoreUrl else serviceStatusSummary,
-                        enabled = !DeviceUtil.is32BitDevice() && isServiceRunning,
+                        enabled = !DeviceUtils.is32BitDevice() && isServiceRunning,
                         onClick = {
                             if (!isServiceRunning) return@ArrowPreference
                             onOpenInAppUrl(subStoreUrl)

@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -35,7 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import com.github.panpf.sketch.rememberAsyncImagePainter
 import com.github.panpf.sketch.request.ImageRequest
-import com.github.yumelira.yumebox.core.util.LocaleUtil
+import com.github.yumelira.yumebox.core.util.LocaleUtils
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import tf.gal.yumebox.locale.FlyTxt
@@ -43,7 +44,7 @@ import tf.gal.yumebox.locale.FlyTxt
 @Composable
 fun CountryFlagCircle(countryCode: String, modifier: Modifier = Modifier, size: Dp = UiDp.dp18) {
     val semanticColors = AppTheme.colors
-    val flagUrl = remember(countryCode) { LocaleUtil.normalizeFlagUrl(countryCode) }
+    val flagUrl = remember(countryCode) { LocaleUtils.normalizeFlagUrl(countryCode) }
     val context = LocalContext.current
 
     Box(

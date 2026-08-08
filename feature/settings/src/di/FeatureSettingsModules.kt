@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -22,7 +23,7 @@ package com.github.yumelira.yumebox.feature.settings.di
 
 import com.github.yumelira.yumebox.core.contract.BackupDataSource
 import com.github.yumelira.yumebox.core.util.backup.BackupArchiveManager
-import com.github.yumelira.yumebox.feature.settings.data.backup.BackupRepository
+import com.github.yumelira.yumebox.data.backup.BackupRepository
 import com.github.yumelira.yumebox.feature.settings.presentation.backup.BackupRestoreViewModel
 import com.github.yumelira.yumebox.feature.settings.presentation.viewmodel.AccessControlViewModel
 import com.github.yumelira.yumebox.feature.settings.presentation.viewmodel.AppSettingsViewModel

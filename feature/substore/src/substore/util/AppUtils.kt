@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -26,7 +27,7 @@ import com.github.yumelira.yumebox.core.util.SubStorePaths
 import java.io.File
 import tf.gal.yumebox.locale.FlyTxt
 
-object AppUtil : FirstRunInitializer {
+object AppUtils : FirstRunInitializer {
     lateinit var application: Application
 
     override fun initialize() {
@@ -74,7 +75,7 @@ object AppUtil : FirstRunInitializer {
                         mkdirs()
                     }
 
-                val unzipSuccess = ArchiveUtil.unzipZip(zipPath, stagingDir)
+                val unzipSuccess = ArchiveUtils.unzipZip(zipPath, stagingDir)
                 if (!unzipSuccess) {
                     throw IllegalStateException(FlyTxt.Feature.SubStore.FrontendExtractFailed)
                 }

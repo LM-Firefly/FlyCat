@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -34,13 +35,15 @@ import com.github.yumelira.yumebox.runtime.service.runtime.util.generateProfileU
 import com.github.yumelira.yumebox.runtime.service.runtime.util.sendProfileChanged
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.FileNotFoundException
 import java.util.UUID
 
 class ProfileManager(private val context: Context) :
-    IProfileManager, CoroutineScope by CoroutineScope(Dispatchers.IO) {
+    IProfileManager, CoroutineScope by CoroutineScope(SupervisorJob() + Dispatchers.IO) {
     private val store = ServiceStore()
 
     init {
@@ -221,4 +224,8 @@ class ProfileManager(private val context: Context) :
 
     private fun normalizeAgeSecretKey(value: String?): String? =
         value?.trim()?.takeIf { it.isNotEmpty() }
+
+    fun close() {
+        cancel()
+    }
 }

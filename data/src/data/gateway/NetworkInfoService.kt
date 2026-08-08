@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
@@ -24,13 +25,10 @@ import com.github.yumelira.yumebox.core.contract.NetworkInfoReader
 import com.github.yumelira.yumebox.core.model.IpInfo
 import com.github.yumelira.yumebox.core.model.IpMonitoringState
 import com.github.yumelira.yumebox.core.util.NetworkInterfaces
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import com.github.yumelira.yumebox.core.util.HttpClientProfile
+import com.github.yumelira.yumebox.core.util.createHttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
-import io.ktor.serialization.kotlinx.json.json
 import java.io.Closeable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
@@ -48,14 +46,7 @@ class NetworkInfoService : Closeable, NetworkInfoReader {
     /** Minimum interval between external IP HTTP requests to avoid redundant fetches. */
     private val minRefreshIntervalMs = 30_000L
     private var lastExternalIpFetchTime = 0L
-    private val httpClient = HttpClient(OkHttp) {
-        install(HttpTimeout) {
-            requestTimeoutMillis = 5000
-            connectTimeoutMillis = 5000
-            socketTimeoutMillis = 5000
-        }
-        install(ContentNegotiation) { json(json) }
-    }
+    private val httpClient = createHttpClient(HttpClientProfile.FAST, json = json)
 
     private val _refreshTrigger =
         MutableSharedFlow<Unit>(
