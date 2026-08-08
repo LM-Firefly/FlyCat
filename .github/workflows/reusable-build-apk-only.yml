@@ -108,6 +108,7 @@ jobs:
           set -eu
           for abi in arm64-v8a; do
             test -f "jniLibs/${abi}/libmihomo.so"
+            test -f "jniLibs/${abi}/libpreview.so"
             test -f "jniLibs/${abi}/libmihomocore.so"
             test -f "jniLibs/${abi}/liboverride.so"
             test -f "jniLibs/${abi}/libcompat.so"
