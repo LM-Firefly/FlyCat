@@ -201,7 +201,6 @@ class ProxyViewModel(
                 .onFailure { error ->
                     showError(YumeTxt.Proxy.Testing.Failed.format(error.message))
                 }
-            PollingTimers.awaitTick(PollingTimerSpecs.ProxySwitchFeedback)
             _testingProxyNames.update { it - proxyName }
         }
     }

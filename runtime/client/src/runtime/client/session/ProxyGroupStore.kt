@@ -74,6 +74,21 @@ internal class ProxyGroupStore(
         return currentGroups.map { group -> if (group.name == updated.name) updated else group }
     }
 
+    fun updateProxyDelay(groupName: String, proxyName: String, delay: Int): List<ProxyGroupInfo> {
+        val currentGroups = _groups.value
+        return currentGroups.map { group ->
+            if (group.name != groupName) {
+                group
+            } else {
+                group.copy(
+                    proxies = group.proxies.map { proxy ->
+                        if (proxy.name == proxyName) proxy.copy(delay = delay) else proxy
+                    }
+                )
+            }
+        }
+    }
+
     fun clear(resetGroups: Boolean) {
         if (resetGroups) {
             _groups.value = emptyList()

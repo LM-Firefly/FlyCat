@@ -64,19 +64,20 @@ import top.yukonga.miuix.kmp.utils.pressable
 @Composable
 internal fun nodeLatencyLabel(delay: Int?): Pair<String, Color>? =
     when {
-        delay == null -> null
+        delay == null || delay == 0 ->
+            "-" to MiuixTheme.colorScheme.onSurfaceVariantSummary
         delay < 0 -> YumeTxt.Proxy.Node.Timeout to AppTheme.colors.latency.timeout
-        delay == 0 -> null
         delay in 1..300 ->
             YumeTxt.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.fast
 
         delay in 301..1000 ->
             YumeTxt.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.moderate
 
-        delay in 1001..3000 ->
+        delay > 1000 ->
             YumeTxt.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.slow
 
-        else -> null
+        else ->
+            YumeTxt.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.slow
     }
 
 internal fun displayName(type: String): String =

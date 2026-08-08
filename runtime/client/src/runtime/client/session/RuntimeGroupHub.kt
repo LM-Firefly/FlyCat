@@ -97,7 +97,17 @@ internal class RuntimeGroupHub(
         Timber.d("Health check proxy request: group=%s proxy=%s", group, proxyName)
         val delay = coreOps.healthCheckProxy(group, proxyName)
         Timber.d("Health check proxy done: group=%s proxy=%s delay=%s", group, proxyName, delay)
-        refreshProxyGroup(group)
+        // Publish the endpoint response immediately. The controller's /proxies snapshot may lag
+        // behind its /delay response and otherwise replaces this fresh value with zero.
+        groupStore.publish(groupStore.updateProxyDelay(group, proxyName, delay))
+        scope.launch {
+            awaitDelay(PROXY_SELECT_FULL_REFRESH_DELAY_MS, "runtime_proxy_group_refresh_$group")
+            runCatching { refreshProxyGroup(group) }
+                .onFailure { error ->
+                    if (error is CancellationException) throw error
+                    Timber.d(error, "Deferred proxy group refresh skipped: %s", group)
+                }
+        }
         scheduleGroupsRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
         return delay
     }

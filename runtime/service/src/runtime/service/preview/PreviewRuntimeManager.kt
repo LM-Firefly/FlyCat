@@ -101,7 +101,21 @@ class PreviewRuntimeManager(context: Context) {
 
     suspend fun healthCheckProxy(group: String, proxyName: String): Int = mutex.withLock {
         val delay = process.controller().healthCheckProxy(group, proxyName)
-        refreshGroups()
+        // /delay returns before the aggregate /proxies history is updated. Keep the direct result
+        // visible immediately instead of replacing it with the previous zero-delay snapshot.
+        val previous = _state.value
+        _state.value =
+            previous.copy(
+                groups =
+                    previous.groups.map { currentGroup ->
+                        if (currentGroup.name != group) currentGroup
+                        else currentGroup.copy(
+                            proxies = currentGroup.proxies.map { proxy ->
+                                if (proxy.name == proxyName) proxy.copy(delay = delay) else proxy
+                            }
+                        )
+                    }
+            )
         delay
     }
 
