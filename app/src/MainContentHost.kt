@@ -141,7 +141,10 @@ internal fun MainContentHost(
                             ProxyShellNodeDetail(
                                 mainInnerPadding = rightInnerPadding,
                                 onNavigateToProviders = {
-                                    detailNavigator.replaceAll(listOf(Route.Providers))
+                                    // Keep a right-pane root so back returns to the proxy nodes
+                                    // instead of falling through to whichever settings detail was
+                                    // previously selected.
+                                    detailNavigator.replaceAll(listOf(Route.About, Route.Providers))
                                 },
                             )
                         } else {

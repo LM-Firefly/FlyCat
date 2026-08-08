@@ -343,11 +343,19 @@ internal fun MainRootPageContent(
     onOpenPanel: () -> Unit,
 ) {
     val detailNavigator = LocalDetailNavigator.current
-    val openSecondary: (Route) -> Unit = { route ->
+    val openProvidersFromProxy: () -> Unit = {
         if (detailNavigator != null) {
-            detailNavigator.replaceAll(listOf(route))
+            // The split shell renders proxy nodes for any non-Providers detail root.
+            detailNavigator.replaceAll(listOf(Route.About, Route.Providers))
         } else {
-            navigator.push(route)
+            // Recreate Main on the semantic Proxy destination when this full-screen route is
+            // popped; a physical pager index can change while preview inserts its page.
+            navigator.replaceAll(
+                listOf(
+                    Route.Main(initialPage = BottomBarDestination.Proxy.ordinal),
+                    Route.Providers,
+                )
+            )
         }
     }
     when (destination) {
@@ -377,7 +385,7 @@ internal fun MainRootPageContent(
             ProxyPager(
                 mainInnerPadding = mainInnerPadding,
                 onNavigateToProviders = {
-                    openSecondary(Route.Providers)
+                    openProvidersFromProxy()
                 },
                 isActive = selectedDestination == BottomBarDestination.Proxy,
                 windowLayoutMode = windowLayoutMode,
