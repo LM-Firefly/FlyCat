@@ -135,7 +135,7 @@ internal class RuntimeGroupHub(
                 }
 
             if (groups != null) {
-                groupStore.publish(groups)
+                groupStore.publish(groupStore.mergeReportedDelays(groups))
             } else if (missingLocalRuntime) {
                 session.handleMissingLocalRuntime(snapshot, "runtime backend unavailable")
                 runCatching { queryPreviewProxyGroups() }
@@ -168,7 +168,8 @@ internal class RuntimeGroupHub(
                             null
                         }
                 } ?: return
-            groupStore.publish(groupStore.upsert(updatedGroup))
+            val mergedGroup = groupStore.mergeReportedDelays(listOf(updatedGroup)).first()
+            groupStore.publish(groupStore.upsert(mergedGroup))
         }
     }
 

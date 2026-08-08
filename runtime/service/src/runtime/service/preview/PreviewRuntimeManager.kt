@@ -120,7 +120,7 @@ class PreviewRuntimeManager(context: Context) {
     }
 
     suspend fun refreshGroup(name: String, sort: ProxySort) = mutex.withLock {
-        val refreshed = process.controller().queryProxyGroupAsync(name, sort)
+        val refreshed = mergeReportedDelays(listOf(process.controller().queryProxyGroupAsync(name, sort))).first()
         val previous = _state.value
         val merged =
             previous.groups.let { groups ->
@@ -132,7 +132,30 @@ class PreviewRuntimeManager(context: Context) {
 
     private suspend fun refreshGroups() {
         val previous = _state.value
-        _state.value = previous.copy(groups = process.controller().queryAllProxyGroupsAsync(false), ready = true)
+        _state.value =
+            previous.copy(
+                groups = mergeReportedDelays(process.controller().queryAllProxyGroupsAsync(false)),
+                ready = true,
+            )
+    }
+
+    /** Keep a direct delay probe from being overwritten by the controller's lagging zero history. */
+    private fun mergeReportedDelays(incoming: List<ProxyGroup>): List<ProxyGroup> {
+        val previousByGroup = _state.value.groups.associateBy(ProxyGroup::name)
+        return incoming.map { group ->
+            val previousByProxy = previousByGroup[group.name]?.proxies?.associateBy { it.name }
+            group.copy(
+                proxies =
+                    group.proxies.map { proxy ->
+                        val previousDelay = previousByProxy?.get(proxy.name)?.delay
+                        if (proxy.delay == 0 && previousDelay != null && previousDelay != 0) {
+                            proxy.copy(delay = previousDelay)
+                        } else {
+                            proxy
+                        }
+                    }
+            )
+        }
     }
 
     private suspend fun awaitGroups(requestGeneration: Long): List<ProxyGroup> =

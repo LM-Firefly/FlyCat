@@ -65,7 +65,7 @@ import top.yukonga.miuix.kmp.utils.pressable
 internal fun nodeLatencyLabel(delay: Int?): Pair<String, Color>? =
     when {
         delay == null || delay == 0 ->
-            "-" to MiuixTheme.colorScheme.onSurfaceVariantSummary
+            "Ping" to MiuixTheme.colorScheme.onSurfaceVariantSummary
         delay < 0 -> YumeTxt.Proxy.Node.Timeout to AppTheme.colors.latency.timeout
         delay in 1..300 ->
             YumeTxt.Home.NodeInfo.DelayValue.format(delay) to AppTheme.colors.latency.fast

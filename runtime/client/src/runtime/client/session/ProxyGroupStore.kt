@@ -89,6 +89,28 @@ internal class ProxyGroupStore(
         }
     }
 
+    /**
+     * The controller's aggregate proxy snapshot lags behind the direct `/delay` response. Retain
+     * a just-tested result when that stale snapshot still reports the sentinel zero value.
+     */
+    fun mergeReportedDelays(incoming: List<ProxyGroupInfo>): List<ProxyGroupInfo> {
+        val previousByGroup = _groups.value.associateBy(ProxyGroupInfo::name)
+        return incoming.map { group ->
+            val previousByProxy = previousByGroup[group.name]?.proxies?.associateBy(Proxy::name)
+            group.copy(
+                proxies =
+                    group.proxies.map { proxy ->
+                        val previousDelay = previousByProxy?.get(proxy.name)?.delay
+                        if (proxy.delay == 0 && previousDelay != null && previousDelay != 0) {
+                            proxy.copy(delay = previousDelay)
+                        } else {
+                            proxy
+                        }
+                    }
+            )
+        }
+    }
+
     fun clear(resetGroups: Boolean) {
         if (resetGroups) {
             _groups.value = emptyList()
