@@ -21,34 +21,45 @@
 package com.github.yumeyucca.yumebox.presentation.theme
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.unit.IntOffset
 
-/** A restrained vertical hand-off for adjacent content in the split-shell detail pane. */
+/** Vertical layered bounce used by tablet split-shell pane switches. */
 fun verticalBounceContentTransform(forward: Boolean): ContentTransform {
-    val enterSpec = tween<IntOffset>(durationMillis = 180, easing = AnimationSpecs.StrongEaseOut)
-    val exitSpec = tween<IntOffset>(durationMillis = 120, easing = AnimationSpecs.StrongEaseOut)
-    val fadeInSpec = tween<Float>(durationMillis = 120, easing = AnimationSpecs.StrongEaseOut)
-    val fadeOutSpec = tween<Float>(durationMillis = 90, easing = AnimationSpecs.StrongEaseOut)
+    val enterSpring =
+        spring<IntOffset>(
+            dampingRatio = 0.78f,
+            stiffness = Spring.StiffnessLow,
+        )
+    val exitSpring =
+        spring<IntOffset>(
+            dampingRatio = 0.92f,
+            stiffness = 280f,
+        )
+    val fadeInSpec = tween<Float>(durationMillis = 340, easing = FastOutSlowInEasing)
+    val fadeOutSpec = tween<Float>(durationMillis = 260, easing = FastOutSlowInEasing)
     val transform =
         if (forward) {
-            (slideInVertically(animationSpec = enterSpec) { fullHeight ->
-                fullHeight / 18
+            (slideInVertically(animationSpec = enterSpring) { fullHeight ->
+                fullHeight / 10
             } + fadeIn(animationSpec = fadeInSpec)) togetherWith
-                    (slideOutVertically(animationSpec = exitSpec) { fullHeight ->
-                        -fullHeight / 24
+                    (slideOutVertically(animationSpec = exitSpring) { fullHeight ->
+                        -fullHeight / 14
                     } + fadeOut(animationSpec = fadeOutSpec))
         } else {
-            (slideInVertically(animationSpec = enterSpec) { fullHeight ->
-                -fullHeight / 18
+            (slideInVertically(animationSpec = enterSpring) { fullHeight ->
+                -fullHeight / 10
             } + fadeIn(animationSpec = fadeInSpec)) togetherWith
-                    (slideOutVertically(animationSpec = exitSpec) { fullHeight ->
-                        fullHeight / 24
+                    (slideOutVertically(animationSpec = exitSpring) { fullHeight ->
+                        fullHeight / 14
                     } + fadeOut(animationSpec = fadeOutSpec))
         }
     return ContentTransform(
         targetContentEnter = transform.targetContentEnter,
         initialContentExit = transform.initialContentExit,
-        sizeTransform = null,
+        sizeTransform = SizeTransform(clip = false),
     )
 }

@@ -50,6 +50,7 @@ import com.github.yumeyucca.yumebox.core.util.PollingTimerSpecs
 import com.github.yumeyucca.yumebox.core.util.PollingTimers
 import com.github.yumeyucca.yumebox.data.model.ThemeMode
 import com.github.yumeyucca.yumebox.domain.model.TrafficData
+import com.github.yumeyucca.yumebox.presentation.component.BottomBarDestination
 import com.github.yumeyucca.yumebox.presentation.component.LocalHandlePageChange
 import com.github.yumeyucca.yumebox.presentation.component.LocalNavigator
 import com.github.yumeyucca.yumebox.presentation.icon.ShellIcons
@@ -179,14 +180,15 @@ fun MoeHomePage(
         }
     val contentSurface = if (isDarkHomeSurface) MiuixTheme.colorScheme.surface else Color.White
     val handlePageChange = LocalHandlePageChange.current
-    val proxyDestinationVisible = isRemoteController || visualControlState != HomeProxyControlState.Idle
-    val configPageIndex = if (proxyDestinationVisible) 2 else 1
-    val settingsPageIndex = configPageIndex + 1
-    val sidebarIcons = remember(onOpenPanel, configPageIndex, settingsPageIndex) {
+    val sidebarIcons = remember(onOpenPanel, handlePageChange) {
         listOf(
             MoeSidebarIconItem(Yume.Zashboard) { onOpenPanel?.invoke() },
-            MoeSidebarIconItem(ShellIcons.OpenProfiles) { handlePageChange(configPageIndex) },
-            MoeSidebarIconItem(ShellIcons.OpenSettings) { handlePageChange(settingsPageIndex) },
+            MoeSidebarIconItem(ShellIcons.OpenProfiles) {
+                handlePageChange(BottomBarDestination.Config)
+            },
+            MoeSidebarIconItem(ShellIcons.OpenSettings) {
+                handlePageChange(BottomBarDestination.Setting)
+            },
         )
     }
     val quoteText = moeHomeQuote.ifBlank { YumeTxt.AppSettings.Interface.HomeQuoteDefault }

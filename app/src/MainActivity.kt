@@ -36,18 +36,21 @@ import androidx.compose.ui.unit.Density
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
+import com.arkivanov.decompose.retainedComponent
 import com.github.yumeyucca.yumebox.common.util.AppLanguageManager
 import com.github.yumeyucca.yumebox.common.util.AutoStartDependencies
 import com.github.yumeyucca.yumebox.common.util.IntentController
 import com.github.yumeyucca.yumebox.common.util.ProxyAutoStartHelper
 import com.github.yumeyucca.yumebox.core.util.AutoStartSessionGate
 import com.github.yumeyucca.yumebox.core.util.StartupTaskCoordinator
+import com.github.yumeyucca.yumebox.data.store.AppSettingsStore
 import com.github.yumeyucca.yumebox.data.store.FeatureStore
 import com.github.yumeyucca.yumebox.di.APPLICATION_SCOPE_NAME
 import com.github.yumeyucca.yumebox.presentation.component.LocalTopBarHazeState
 import com.github.yumeyucca.yumebox.presentation.component.LocalTopBarHazeStyle
 import com.github.yumeyucca.yumebox.presentation.component.ToastDialogHost
 import com.github.yumeyucca.yumebox.presentation.navigation.AppNavContainer
+import com.github.yumeyucca.yumebox.presentation.navigation.AppNavigationComponent
 import com.github.yumeyucca.yumebox.presentation.theme.ProvideAndroidPlatformTheme
 import com.github.yumeyucca.yumebox.presentation.theme.YumeHaze
 import com.github.yumeyucca.yumebox.presentation.theme.YumeTheme
@@ -68,6 +71,16 @@ import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 class MainActivity : FragmentActivity() {
+    private val appSettingsStore: AppSettingsStore by inject()
+    private val navigationComponent: AppNavigationComponent by lazy {
+        retainedComponent { componentContext ->
+            AppNavigationComponent(
+                componentContext = componentContext,
+                predictiveBackEnabledAtLaunch = appSettingsStore.predictiveBackEnabled.value,
+            )
+        }
+    }
+
     companion object {
         private const val REQUEST_STARTUP_PERMISSIONS = 1001
         private const val MIUI_GET_INSTALLED_APPS_PERMISSION =
@@ -171,7 +184,7 @@ class MainActivity : FragmentActivity() {
                                 modifier = Modifier.fillMaxSize(),
                                 color = MiuixTheme.colorScheme.surface,
                             ) {
-                                AppNavContainer()
+                                AppNavContainer(navigationComponent)
                                 ToastDialogHost()
 
                                 var showHomeGuide by remember {

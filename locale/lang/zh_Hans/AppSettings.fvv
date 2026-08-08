@@ -8,6 +8,7 @@ AppSettings = {
         Privacy = "隐私"
         Service = "服务"
         Network = "网络"
+        Navigation = "导航"
         Home = "首页"
     }
 
@@ -44,6 +45,9 @@ AppSettings = {
 
         PageScaleTitle = "页面缩放"
         PageScaleDialogSummary = "80% - 120%"
+        PredictiveBackTitle = "预测返回手势"
+        PredictiveBackRestartSummary = "下次启动应用后生效"
+        PredictiveBackProgressTitle = "预测返回幅度"
 
         ClassicHomeTitle = "经典首页"
         HomeQuoteTitle = "首页一言"

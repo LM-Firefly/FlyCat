@@ -30,8 +30,8 @@ import com.github.yumeyucca.yumebox.common.util.toast
 import com.github.yumeyucca.yumebox.core.util.moeWallpaperFile
 import com.github.yumeyucca.yumebox.data.controller.AppSettingsController
 import com.github.yumeyucca.yumebox.data.model.AppColorTheme
-import com.github.yumeyucca.yumebox.data.model.AppLanguage
 import com.github.yumeyucca.yumebox.data.model.AppIconStyle
+import com.github.yumeyucca.yumebox.data.model.AppLanguage
 import com.github.yumeyucca.yumebox.data.model.ThemeMode
 import com.github.yumeyucca.yumebox.data.store.AppSettingsStore
 import com.github.yumeyucca.yumebox.data.store.FeatureStore
@@ -75,6 +75,8 @@ class AppSettingsViewModel(
     val moeHomeQuoteAuthor: Preference<String> = settings.moeHomeQuoteAuthor
     val moeSidebarExpanded: Preference<Boolean> = settings.moeSidebarExpanded
     val pageScale: Preference<Float> = settings.pageScale
+    val predictiveBackEnabled: Preference<Boolean> = settings.predictiveBackEnabled
+    val predictiveBackMaxProgress: Preference<Float> = settings.predictiveBackMaxProgress
     val singleNodeTest: Preference<Boolean> = settings.singleNodeTest
     val exitUiWhenBackground: Preference<Boolean> = featureStore.exitUiWhenBackground
 
@@ -273,6 +275,11 @@ class AppSettingsViewModel(
     fun onBottomBarAutoHideChange(enabled: Boolean) = bottomBarAutoHide.set(enabled)
 
     fun onTopBarBlurEnabledChange(enabled: Boolean) = topBarBlurEnabled.set(enabled)
+
+    fun onPredictiveBackMaxProgressChange(progress: Float) =
+        predictiveBackMaxProgress.set(progress.coerceIn(1f, 100f))
+
+    fun onPredictiveBackEnabledChange(enabled: Boolean) = predictiveBackEnabled.set(enabled)
 
     fun onClassicHomeEnabledChange(enabled: Boolean) = classicHomeEnabled.set(enabled)
 

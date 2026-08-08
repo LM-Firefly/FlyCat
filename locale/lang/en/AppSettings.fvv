@@ -8,6 +8,7 @@ AppSettings = {
         Privacy = "Privacy"
         Service = "Service"
         Network = "Network"
+        Navigation = "Navigation"
         Home = "Home"
     }
 
@@ -44,6 +45,9 @@ AppSettings = {
 
         PageScaleTitle = "Page Scale"
         PageScaleDialogSummary = "80% - 120%"
+        PredictiveBackTitle = "Predictive Back Gesture"
+        PredictiveBackRestartSummary = "Takes effect the next time the app starts"
+        PredictiveBackProgressTitle = "Predictive Back Amplitude"
 
         ClassicHomeTitle = "Classic Home"
         HomeQuoteTitle = "Home Quote"

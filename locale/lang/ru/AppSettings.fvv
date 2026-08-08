@@ -8,6 +8,7 @@ AppSettings = {
         Privacy = "Конфиденциальность"
         Service = "Служба"
         Network = "Сеть"
+        Navigation = "Навигация"
         Home = "Главная"
     }
 
@@ -44,6 +45,9 @@ AppSettings = {
 
         PageScaleTitle = "Масштаб страницы"
         PageScaleDialogSummary = "80% - 120%"
+        PredictiveBackTitle = "Предиктивный жест назад"
+        PredictiveBackRestartSummary = "Вступит в силу при следующем запуске приложения"
+        PredictiveBackProgressTitle = "Амплитуда возврата"
 
         ClassicHomeTitle = "Классическая главная"
         HomeQuoteTitle = "Цитата на главной"

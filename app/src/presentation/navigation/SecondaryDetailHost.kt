@@ -5,87 +5,66 @@
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ *
  */
-
-@file:Suppress("FunctionName")
 
 package com.github.yumeyucca.yumebox.presentation.navigation
 
-
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Alignment
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.*
-import androidx.navigation3.scene.SceneInfo
-import androidx.navigation3.scene.SinglePaneSceneStrategy
-import androidx.navigation3.scene.rememberSceneState
-import androidx.navigation3.ui.NavDisplay
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import com.arkivanov.decompose.DefaultComponentContext
+import com.arkivanov.decompose.extensions.compose.stack.Children
+import com.arkivanov.decompose.extensions.compose.stack.animation.*
+import com.arkivanov.decompose.extensions.compose.subscribeAsState
+import com.arkivanov.decompose.router.stack.childStack
+import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.github.yumeyucca.yumebox.presentation.component.LocalNavigator
 import com.github.yumeyucca.yumebox.presentation.component.Navigator
 
-/** Right-pane Navigation3 host used by the tablet dual-pane shell. */
 @Composable
-fun SecondaryDetailHost(
-    backStack: MutableList<NavKey>,
-    navigator: Navigator,
-) {
-    val entries =
-        rememberDecoratedNavEntries(
-            backStack = backStack,
-            entryDecorators =
-                listOf(
-                    rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator(),
-                    NavEntryDecorator { content ->
-                        CompositionLocalProvider(LocalNavigator provides navigator) {
-                            content.Content()
-                        }
-                    },
-                ),
-            entryProvider =
-                entryProvider {
-                    yumeSecondaryEntries(navigator)
-                },
-        )
+fun SecondaryDetailHost(navigator: Navigator) {
+    val componentContext = remember { DefaultComponentContext(LifecycleRegistry()) }
+    val childStack = remember(componentContext, navigator) {
+        componentContext.childStack(
+            source = navigator.navigation,
+            initialConfiguration = Route.About,
+            serializer = null,
+            handleBackButton = false,
+        ) { rawRoute, _ ->
+            DetailRouteChild(rawRoute as Route, navigator)
+        }
+    }
+    val stack by childStack.subscribeAsState()
+    val animation: StackAnimation<Any, DetailRouteChild> = remember {
+        stackAnimation(fade(tween(300)) + slide(tween(400)) + scale(tween(500)))
+    }
+    Children(
+        stack = stack,
+        modifier = Modifier.fillMaxSize(),
+        animation = animation,
+    ) { child -> child.instance.Content() }
+}
 
-    val sceneState =
-        rememberSceneState(
-            entries = entries,
-            sceneStrategies = listOf(SinglePaneSceneStrategy()),
-            sceneDecoratorStrategies = emptyList(),
-            sharedTransitionScope = null,
-            onBack = { navigator.pop() },
-        )
-    val scene = sceneState.currentScene
-    val gestureState =
-        rememberNavigationEventState(
-            currentInfo = SceneInfo(scene),
-            backInfo = sceneState.previousScenes.map { SceneInfo(it) },
-        )
-
-    NavigationBackHandler(
-        state = gestureState,
-        isBackEnabled = scene.previousEntries.isNotEmpty(),
-        onBackCancelled = {},
-        onBackCompleted = { navigator.pop() },
-    )
-
-    NavDisplay(
-        sceneState = sceneState,
-        navigationEventState = gestureState,
-        contentAlignment = Alignment.TopStart,
-        sizeTransform = null,
-        transitionSpec = {
-            splitShellRightPaneTransform(forward = true)
-        },
-        popTransitionSpec = {
-            splitShellRightPaneTransform(forward = false)
-        },
-        predictivePopTransitionSpec = { _ ->
-            splitShellRightPaneTransform(forward = false)
-        },
-    )
+private class DetailRouteChild(private val route: Route, private val navigator: Navigator) {
+    @Composable
+    fun Content() {
+        CompositionLocalProvider(LocalNavigator provides navigator) {
+            RouteContent(route, navigator)
+        }
+    }
 }

@@ -45,6 +45,7 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.decompose)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.sketch.compose)
     implementation(libs.sketch.http)

@@ -94,15 +94,16 @@ class MainPagerState(
     private var navJob: Job? = null
 
     fun animateToPage(targetIndex: Int) {
-        if (targetIndex == selectedPage) return
+        val boundedTarget = targetIndex.coerceIn(0, pagerState.pageCount - 1)
+        if (boundedTarget == selectedPage && !pagerState.isScrollInProgress) return
 
         navJob?.cancel()
-        selectedPage = targetIndex
+        selectedPage = boundedTarget
         isNavigating = true
         val layoutInfo = pagerState.layoutInfo
         val pageSize = layoutInfo.pageSize + layoutInfo.pageSpacing
         val currentDistanceInPages =
-            targetIndex - pagerState.currentPage - pagerState.currentPageOffsetFraction
+            boundedTarget - pagerState.currentPage - pagerState.currentPageOffsetFraction
         val scrollPixels = currentDistanceInPages * pageSize
 
         navJob = coroutineScope.launch {
@@ -110,12 +111,12 @@ class MainPagerState(
             try {
                 pagerState.animateScrollBy(
                     value = scrollPixels,
-                    animationSpec = MainBottomBarDefaults.PagerNavigationAnimationSpec,
+                    animationSpec = MainBottomBarDefaults.PagerAnimationSpec,
                 )
             } finally {
                 if (navJob == myJob) {
                     isNavigating = false
-                    if (pagerState.currentPage != targetIndex) {
+                    if (pagerState.currentPage != boundedTarget) {
                         selectedPage = pagerState.currentPage
                     }
                 }
@@ -141,7 +142,9 @@ val LocalPagerState = compositionLocalOf<PagerState> { error("LocalPagerState is
 val LocalMainPagerState =
     compositionLocalOf<MainPagerState> { error("LocalMainPagerState is not provided") }
 val LocalHandlePageChange =
-    compositionLocalOf<(Int) -> Unit> { error("LocalHandlePageChange is not provided") }
+    compositionLocalOf<(BottomBarDestination) -> Unit> {
+        error("LocalHandlePageChange is not provided")
+    }
 val LocalNavigator = compositionLocalOf<Navigator> { error("LocalNavigator is not provided") }
 
 /**
@@ -170,8 +173,6 @@ object MainBottomBarDefaults {
             stiffness = Spring.StiffnessMediumLow,
             visibilityThreshold = Int.VisibilityThreshold.toFloat(),
         )
-    val PagerNavigationAnimationSpec: AnimationSpec<Float> =
-        tween(durationMillis = 240, easing = AnimationSpecs.StrongEaseOut)
 }
 
 @Composable
@@ -279,7 +280,7 @@ private fun FloatingBottomBarContent(
     val onItemClick: (BottomBarDestination) -> Unit = { destination ->
         val index = destinations.indexOf(destination)
         if (index != pagerState.currentPage) {
-            handlePageChange(destination.ordinal)
+            handlePageChange(destination)
         }
     }
 

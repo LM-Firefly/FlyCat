@@ -8,6 +8,7 @@ AppSettings = {
         Privacy = "プライバシー"
         Service = "サービス"
         Network = "ネットワーク"
+        Navigation = "ナビゲーション"
         Home = "ホーム"
     }
 
@@ -44,6 +45,9 @@ AppSettings = {
 
         PageScaleTitle = "ページ倍率"
         PageScaleDialogSummary = "80% - 120%"
+        PredictiveBackTitle = "予測戻るジェスチャー"
+        PredictiveBackRestartSummary = "次回アプリ起動時に有効になります"
+        PredictiveBackProgressTitle = "予測戻る振幅"
 
         ClassicHomeTitle = "クラシックホーム"
         HomeQuoteTitle = "ホームの一言"

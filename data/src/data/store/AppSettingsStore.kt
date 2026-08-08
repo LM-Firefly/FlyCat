@@ -21,8 +21,8 @@
 package com.github.yumeyucca.yumebox.data.store
 
 import com.github.yumeyucca.yumebox.data.model.AppColorTheme
-import com.github.yumeyucca.yumebox.data.model.AppLanguage
 import com.github.yumeyucca.yumebox.data.model.AppIconStyle
+import com.github.yumeyucca.yumebox.data.model.AppLanguage
 import com.github.yumeyucca.yumebox.data.model.ThemeMode
 import com.tencent.mmkv.MMKV
 
@@ -51,6 +51,8 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
     val moeHomeQuoteAuthor by strFlow("恋文")
     val moeSidebarExpanded by boolFlow(true)
     val pageScale by floatFlow(1.0f)
+    val predictiveBackEnabled by boolFlow(false)
+    val predictiveBackMaxProgress by floatFlow(50.0f)
     val singleNodeTest by boolFlow(true)
 
     val customUserAgent by strFlow("")

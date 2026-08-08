@@ -37,21 +37,16 @@ import androidx.core.net.toUri
 import com.github.yumeyucca.yumebox.common.util.AppIconHelper
 import com.github.yumeyucca.yumebox.common.util.LocaleUtil
 import com.github.yumeyucca.yumebox.common.util.toast
+import com.github.yumeyucca.yumebox.data.model.AppIconStyle
 import com.github.yumeyucca.yumebox.data.model.AppLanguage
 import com.github.yumeyucca.yumebox.data.model.ThemeMode
-import com.github.yumeyucca.yumebox.data.model.AppIconStyle
 import com.github.yumeyucca.yumebox.presentation.component.*
-import com.github.yumeyucca.yumebox.presentation.component.AppCard
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import com.github.yumeyucca.yumebox.runtime.api.Intents
 import com.github.yumeyucca.yumebox.screen.settings.component.ThemeColorPickerItem
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Slider
-import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -117,6 +112,8 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
     val bottomBarAutoHide = section.bottomBarAutoHide
     val topBarBlurEnabled = section.topBarBlurEnabled
     val pageScale = section.pageScale
+    val predictiveBackEnabled by viewModel.predictiveBackEnabled.state.collectAsState()
+    val predictiveBackMaxProgress by viewModel.predictiveBackMaxProgress.state.collectAsState()
     val classicHomeEnabled = section.classicHomeEnabled
     val appIconStyle = section.appIconStyle
 
@@ -193,6 +190,19 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
             onCheckedChange = viewModel::onTopBarBlurEnabledChange,
         )
         PageScalePreferenceItem(pageScale = pageScale, onApply = viewModel::onPageScaleChange)
+    }
+    Title(YumeTxt.AppSettings.Section.Navigation)
+    AppCard {
+        PreferenceSwitchItem(
+            title = YumeTxt.AppSettings.Interface.PredictiveBackTitle,
+            summary = YumeTxt.AppSettings.Interface.PredictiveBackRestartSummary,
+            checked = predictiveBackEnabled,
+            onCheckedChange = viewModel::onPredictiveBackEnabledChange,
+        )
+        PredictiveBackProgressPreferenceItem(
+            progress = predictiveBackMaxProgress,
+            onApply = viewModel::onPredictiveBackMaxProgressChange,
+        )
     }
     Title(YumeTxt.AppSettings.Section.Home)
     AppCard {
@@ -359,6 +369,36 @@ private fun PageScalePreferenceItem(pageScale: Float, onApply: (Float) -> Unit) 
         onPageScaleChange = { pageScaleLocal = it },
         onApply = onApply,
         onDismissRequest = { showPageScaleDialogState.value = false },
+    )
+}
+
+@Composable
+private fun PredictiveBackProgressPreferenceItem(
+    progress: Float,
+    onApply: (Float) -> Unit,
+) {
+    var localProgress by remember(progress) { mutableFloatStateOf(progress) }
+    val progressText = remember(localProgress) { "${localProgress.toInt()}%" }
+
+    PreferenceArrowItem(
+        title = YumeTxt.AppSettings.Interface.PredictiveBackProgressTitle,
+        endActions = {
+            Text(
+                text = progressText,
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+            )
+        },
+        onClick = {},
+        bottomAction = {
+            Slider(
+                value = localProgress,
+                onValueChange = { localProgress = it },
+                onValueChangeFinished = { onApply(localProgress) },
+                valueRange = 1f..100f,
+                magnetThreshold = 0.01f,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+            )
+        },
     )
 }
 

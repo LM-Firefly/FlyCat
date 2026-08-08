@@ -24,7 +24,6 @@ import com.android.build.api.artifact.ArtifactTransformationRequest
 import com.android.build.api.artifact.SingleArtifact
 import dev.yume.packer.BuildLoaderDexTask
 import dev.yume.packer.PackApkTask
-import org.gradle.api.tasks.Sync
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -617,6 +616,8 @@ dependencies {
     implementation(libs.haze)
     implementation(libs.haze.blur)
     implementation(libs.haze.blur.materials)
+    implementation(libs.decompose)
+    implementation(libs.decompose.extensions.compose)
     implementation(libs.androidx.navigationevent.compose)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)

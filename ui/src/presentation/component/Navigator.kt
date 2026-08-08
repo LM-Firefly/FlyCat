@@ -21,10 +21,14 @@
 package com.github.yumeyucca.yumebox.presentation.component
 
 import androidx.compose.runtime.Stable
-import androidx.navigation3.runtime.NavKey
+import androidx.compose.runtime.mutableStateListOf
+import com.arkivanov.decompose.router.stack.StackNavigation
+import com.arkivanov.decompose.router.stack.navigate
+import com.arkivanov.decompose.router.stack.pop
+import com.arkivanov.decompose.router.stack.pushNew
 
 /**
- * Thin wrapper over the navigation3 back stack ([MutableList] of [NavKey]).
+ * Thin wrapper over the Decompose navigation stack with Compose-observable route history.
  *
  * Replaces compose-destinations' DestinationsNavigator. The [push]/[pop]/[replaceAll]/[popUntil]
  * methods cover every navigation pattern previously used in YumeBox. The
@@ -32,42 +36,60 @@ import androidx.navigation3.runtime.NavKey
  * churn-free.
  */
 @Stable
-class Navigator(val backStack: MutableList<NavKey>) {
+class Navigator(initial: List<Any> = emptyList()) {
+    val backStack = mutableStateListOf<Any>().apply { addAll(initial) }
+    val navigation = StackNavigation<Any>()
     /** Pushes [key] onto the stack unless it is already on top (mirrors launchSingleTop). */
-    fun push(key: NavKey) {
-        if (backStack.lastOrNull() != key) {
+    fun push(key: Any) {
+        if (key !in backStack) {
             backStack.add(key)
+            navigation.pushNew(key)
         }
     }
 
     /** Pops the top entry. The root entry is never popped. Returns true if a pop happened. */
     fun pop(): Boolean {
         if (backStack.size <= 1) return false
-        backStack.removeAt(backStack.lastIndex)
+        navigation.pop()
         return true
     }
 
-    /** Replaces the entire stack with [keys]. */
-    fun replaceAll(keys: List<NavKey>) {
+    /** Keeps compatibility callers in sync after Decompose applies a navigation transaction. */
+    fun syncBackStack(configurations: List<Any>) {
+        if (backStack == configurations) return
         backStack.clear()
-        backStack.addAll(keys)
+        backStack.addAll(configurations)
+    }
+
+    /** Replaces the entire stack with [keys]. */
+    fun replaceAll(keys: List<Any>) {
+        val uniqueKeys = keys.distinct()
+        if (backStack == uniqueKeys) return
+        backStack.clear()
+        backStack.addAll(uniqueKeys)
+        navigation.navigate { uniqueKeys }
     }
 
     /** Replaces the top entry with [key]. */
-    fun replace(key: NavKey) {
+    fun replace(key: Any) {
+        if (backStack.lastOrNull() == key) return
         if (backStack.isNotEmpty()) {
             backStack.removeAt(backStack.lastIndex)
         }
         backStack.add(key)
+        navigation.navigate { backStack.toList() }
     }
 
     /**
      * Pops entries until [predicate] is satisfied for the top entry (inclusive of matched stays).
      */
-    fun popUntil(predicate: (NavKey) -> Boolean) {
+    fun popUntil(predicate: (Any) -> Boolean) {
+        val original = backStack.toList()
         while (backStack.size > 1 && !predicate(backStack.last())) {
             backStack.removeAt(backStack.lastIndex)
         }
+        if (backStack == original) return
+        navigation.navigate { backStack.toList() }
     }
 
     /** Compatibility alias for [pop] (compose-destinations API). */

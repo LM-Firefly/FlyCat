@@ -8,6 +8,7 @@ AppSettings = {
         Privacy = "隱私"
         Service = "服務"
         Network = "網路"
+        Navigation = "導航"
         Home = "首頁"
     }
 
@@ -44,6 +45,9 @@ AppSettings = {
 
         PageScaleTitle = "頁面縮放"
         PageScaleDialogSummary = "80% - 120%"
+        PredictiveBackTitle = "預測返回手勢"
+        PredictiveBackRestartSummary = "下次啟動應用後生效"
+        PredictiveBackProgressTitle = "預測返回幅度"
 
         ClassicHomeTitle = "經典首頁"
         HomeQuoteTitle = "首頁一言"

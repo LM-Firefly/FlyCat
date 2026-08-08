@@ -33,10 +33,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
-import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigationevent.NavigationEventInfo
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
 import com.github.yumeyucca.yumebox.common.util.openUrl
 import com.github.yumeyucca.yumebox.data.store.FeatureStore
 import com.github.yumeyucca.yumebox.data.store.LinkOpenMode
@@ -66,18 +62,18 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val featureStore = koinInject<FeatureStore>()
     val nodeSession by homeViewModel.nodeSession.collectAsState()
     var proxyDestinationCommitted by remember { mutableStateOf(false) }
-    val showProxyDestination = proxyDestinationCommitted
     val visibleDestinations =
-        remember(showProxyDestination) {
+        remember(proxyDestinationCommitted) {
             BottomBarDestination.entries.filter { destination ->
-                destination != BottomBarDestination.Proxy || showProxyDestination
+                destination != BottomBarDestination.Proxy || proxyDestinationCommitted
             }
         }
     val initialDestination =
         BottomBarDestination.entries.getOrElse(initialPage.coerceIn(0, 3)) {
             BottomBarDestination.Home
         }
-    val initialMainPage = visibleDestinations.indexOf(initialDestination).takeIf { it >= 0 } ?: 0
+    val initialMainPage =
+        visibleDestinations.indexOf(initialDestination).takeIf { it >= 0 } ?: 0
     val pagerState =
         rememberPagerState(
             initialPage = initialMainPage,
@@ -89,8 +85,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     var settledDestination by remember { mutableStateOf(visibleDestinations[initialMainPage]) }
 
     LaunchedEffect(nodeSession.everReady, mainPagerState.pagerState.isScrollInProgress) {
-        // Page-count changes while Compose is settling a swipe produce the visible blank-frame
-        // jump. A first successful preview is the sole insertion point, and waits for idle.
+        // Insert the proxy page only after the first node load and after a swipe has settled.
         if (!nodeSession.everReady) {
             proxyDestinationCommitted = false
         } else if (!mainPagerState.pagerState.isScrollInProgress) {
@@ -122,8 +117,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     remember(mainPagerState, visibleDestinations) {
         derivedStateOf {
             if (previousDestinations != visibleDestinations) {
-                previousDestinations.getOrNull(mainPagerState.selectedPage)
-                    ?: settledDestination
+                previousDestinations.getOrNull(mainPagerState.selectedPage) ?: settledDestination
             } else {
                 visibleDestinations.getOrElse(mainPagerState.selectedPage) {
                     BottomBarDestination.Home
@@ -169,11 +163,8 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val bottomBarHazeStyle = YumeHaze.bottomBarStyle(bottomBarBackground)
 
     LaunchedEffect(visibleDestinations) {
-        // Runtime transitions insert/remove the proxy page and move Config/Setting between physical
-        // pager slots, so preserve the semantic page.
         val currentDestination =
-            previousDestinations.getOrNull(mainPagerState.pagerState.currentPage)
-                ?: settledDestination
+            previousDestinations.getOrNull(mainPagerState.pagerState.currentPage) ?: settledDestination
         val targetDestination =
             currentDestination.takeIf { it in visibleDestinations } ?: BottomBarDestination.Config
         val targetPage = visibleDestinations.indexOf(targetDestination)
@@ -210,15 +201,9 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         homeViewModel.vpnPrepareIntent.collect { intent -> vpnPermissionLauncher.launch(intent) }
     }
 
-    val handlePageChange: (Int) -> Unit =
+    val handlePageChange: (BottomBarDestination) -> Unit =
         remember(mainPagerState, visibleDestinations) {
-            { targetPage ->
-                val destination =
-                    BottomBarDestination.entries.getOrElse(
-                        targetPage.coerceIn(0, BottomBarDestination.entries.lastIndex)
-                    ) {
-                        BottomBarDestination.Home
-                    }
+            { destination ->
                 val targetDestination =
                     destination.takeIf { it in visibleDestinations } ?: BottomBarDestination.Config
                 mainPagerState.animateToPage(visibleDestinations.indexOf(targetDestination))
@@ -226,8 +211,8 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         }
 
     val usesSplitShell = windowLayoutMode.usesSplitShell
-    val detailBackStack = rememberNavBackStack(Route.About)
-    val detailNavigator = remember(detailBackStack) { Navigator(detailBackStack) }
+    val detailNavigator = remember { Navigator(listOf(Route.About)) }
+    val detailBackStack = detailNavigator.backStack
 
     // Leaving the proxy tab should not leave Providers stuck on the right pane.
     LaunchedEffect(settledDestination) {
@@ -245,10 +230,10 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         when (uri.host) {
             "page" ->
                 when (uri.lastPathSegment) {
-                    "home" -> handlePageChange(0)
-                    "proxy" -> handlePageChange(1)
-                    "profiles" -> handlePageChange(2)
-                    "settings" -> handlePageChange(3)
+                    "home" -> handlePageChange(BottomBarDestination.Home)
+                    "proxy" -> handlePageChange(BottomBarDestination.Proxy)
+                    "profiles" -> handlePageChange(BottomBarDestination.Config)
+                    "settings" -> handlePageChange(BottomBarDestination.Setting)
                 }
 
             "screen" -> {
@@ -277,7 +262,10 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         MainActivity.clearPendingDeepLink()
     }
 
-    MainScreenBackHandler(mainPagerState = mainPagerState)
+    MainScreenBackHandler(
+        mainPagerState = mainPagerState,
+        canPopRoute = navigator.backStack.size > 1,
+    )
 
     CompositionLocalProvider(
         LocalNavigator provides navigator,
@@ -315,16 +303,12 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
 }
 
 @Composable
-private fun MainScreenBackHandler(mainPagerState: MainPagerState) {
-    val isPagerBackHandlerEnabled by
-    remember(mainPagerState) { derivedStateOf { mainPagerState.selectedPage != 0 } }
-    val navigationEventState = rememberNavigationEventState(NavigationEventInfo.None)
-
-    NavigationBackHandler(
-        state = navigationEventState,
-        isBackEnabled = isPagerBackHandlerEnabled,
-        onBackCompleted = { mainPagerState.animateToPage(0) },
-    )
+private fun MainScreenBackHandler(mainPagerState: MainPagerState, canPopRoute: Boolean) {
+    val canReturnHome by
+    remember(mainPagerState, canPopRoute) {
+        derivedStateOf { mainPagerState.selectedPage != 0 && !canPopRoute }
+    }
+    androidx.activity.compose.BackHandler(enabled = canReturnHome) { mainPagerState.animateToPage(0) }
 }
 
 @Composable
