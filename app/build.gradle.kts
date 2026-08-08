@@ -618,10 +618,6 @@ dependencies {
     implementation(libs.haze.blur.materials)
     implementation(libs.decompose)
     implementation(libs.decompose.extensions.compose)
-    implementation(libs.androidx.navigationevent.compose)
-    implementation(libs.androidx.navigation3.runtime)
-    implementation(libs.androidx.navigation3.ui)
-    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
     val mmkvVersion = libs.versions.mmkv64.get()
     //noinspection NewerVersionAvailable

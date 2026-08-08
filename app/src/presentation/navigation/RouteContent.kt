@@ -18,12 +18,23 @@
  *
  */
 
+/*
+ * This file is part of YumeBox.
+ *
+ * YumeBox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ */
+
 package com.github.yumeyucca.yumebox.presentation.navigation
 
 import androidx.compose.runtime.Composable
 import com.github.yumeyucca.yumebox.presentation.component.Navigator
-import com.github.yumeyucca.yumebox.screen.about.*
-import com.github.yumeyucca.yumebox.screen.connection.*
+import com.github.yumeyucca.yumebox.screen.about.AboutScreen
+import com.github.yumeyucca.yumebox.screen.about.OpenSourceLicensesScreen
+import com.github.yumeyucca.yumebox.screen.connection.ConnectionDetailScreen
+import com.github.yumeyucca.yumebox.screen.connection.ConnectionScreen
 import com.github.yumeyucca.yumebox.screen.log.LogScreen
 import com.github.yumeyucca.yumebox.screen.navigation.*
 import com.github.yumeyucca.yumebox.screen.rules.RulesScreen

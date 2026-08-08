@@ -195,9 +195,11 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
     AppCard {
         PreferenceSwitchItem(
             title = YumeTxt.AppSettings.Interface.PredictiveBackTitle,
-            summary = YumeTxt.AppSettings.Interface.PredictiveBackRestartSummary,
             checked = predictiveBackEnabled,
-            onCheckedChange = viewModel::onPredictiveBackEnabledChange,
+            onCheckedChange = { enabled ->
+                viewModel.onPredictiveBackEnabledChange(enabled)
+                context.toast(YumeTxt.AppSettings.Interface.PredictiveBackRestartSummary)
+            },
         )
         PredictiveBackProgressPreferenceItem(
             progress = predictiveBackMaxProgress,

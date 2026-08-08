@@ -25,7 +25,10 @@ package com.github.yumeyucca.yumebox.presentation.screen
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.*
@@ -35,7 +38,8 @@ import com.github.yumeyucca.yumebox.data.model.ProxySortMode
 import com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo
 import com.github.yumeyucca.yumebox.presentation.component.*
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
-import com.github.yumeyucca.yumebox.presentation.icon.yume.*
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Eye
+import com.github.yumeyucca.yumebox.presentation.icon.yume.ListChevronsUpDown
 import com.github.yumeyucca.yumebox.presentation.screen.node.NodeSortPopup
 import com.github.yumeyucca.yumebox.presentation.screen.node.nodeGroupItems
 import com.github.yumeyucca.yumebox.presentation.theme.*
@@ -47,7 +51,6 @@ import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private data class ProxyScreenVmState(
     val proxyGroups: List<ProxyGroupInfo>,
@@ -202,20 +205,30 @@ fun ProxyPager(
                     transitionSpec = {
                         if (targetState != null) {
                             (slideInHorizontally(
-                                animationSpec = tween(durationMillis = 220, easing = AnimationSpecs.StrongEaseOut),
+                                animationSpec = tween(durationMillis = 380, easing = AnimationSpecs.Legacy),
                                 initialOffsetX = { it },
-                            ) + fadeIn(animationSpec = tween(durationMillis = 120, easing = AnimationSpecs.StrongEaseOut))) togetherWith (slideOutHorizontally(
-                                animationSpec = tween(durationMillis = 140, easing = AnimationSpecs.StrongEaseOut),
+                            ) + fadeIn(
+                                animationSpec = tween(
+                                    durationMillis = 180,
+                                    easing = AnimationSpecs.Legacy
+                                )
+                            )) togetherWith (slideOutHorizontally(
+                                animationSpec = tween(durationMillis = 340, easing = AnimationSpecs.Legacy),
                                 targetOffsetX = { -it / 3 },
-                            ) + fadeOut(animationSpec = tween(durationMillis = 90, easing = AnimationSpecs.StrongEaseOut)))
+                            ) + fadeOut(animationSpec = tween(durationMillis = 160, easing = AnimationSpecs.Legacy)))
                         } else {
                             (slideInHorizontally(
-                                animationSpec = tween(durationMillis = 220, easing = AnimationSpecs.StrongEaseOut),
+                                animationSpec = tween(durationMillis = 340, easing = AnimationSpecs.Legacy),
                                 initialOffsetX = { -it / 3 },
-                            ) + fadeIn(animationSpec = tween(durationMillis = 120, easing = AnimationSpecs.StrongEaseOut))) togetherWith (slideOutHorizontally(
-                                animationSpec = tween(durationMillis = 140, easing = AnimationSpecs.StrongEaseOut),
+                            ) + fadeIn(
+                                animationSpec = tween(
+                                    durationMillis = 180,
+                                    easing = AnimationSpecs.Legacy
+                                )
+                            )) togetherWith (slideOutHorizontally(
+                                animationSpec = tween(durationMillis = 380, easing = AnimationSpecs.Legacy),
                                 targetOffsetX = { it },
-                            ) + fadeOut(animationSpec = tween(durationMillis = 90, easing = AnimationSpecs.StrongEaseOut)))
+                            ) + fadeOut(animationSpec = tween(durationMillis = 160, easing = AnimationSpecs.Legacy)))
                         }
                     },
                     label = "proxy_content_slide",

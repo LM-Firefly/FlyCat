@@ -111,7 +111,7 @@ class MainPagerState(
             try {
                 pagerState.animateScrollBy(
                     value = scrollPixels,
-                    animationSpec = MainBottomBarDefaults.PagerAnimationSpec,
+                    animationSpec = MainBottomBarDefaults.PagerNavigationAnimationSpec,
                 )
             } finally {
                 if (navJob == myJob) {
@@ -173,6 +173,8 @@ object MainBottomBarDefaults {
             stiffness = Spring.StiffnessMediumLow,
             visibilityThreshold = Int.VisibilityThreshold.toFloat(),
         )
+    val PagerNavigationAnimationSpec: AnimationSpec<Float> =
+        tween(durationMillis = 360, easing = AnimationSpecs.Legacy)
 }
 
 @Composable
