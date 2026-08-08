@@ -20,8 +20,19 @@
 
 package com.github.yumeyucca.yumebox.presentation.navigation
 
-import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import com.github.yumeyucca.yumebox.presentation.theme.verticalBounceContentTransform
+import com.github.yumeyucca.yumebox.presentation.theme.AnimationSpecs
 
 internal fun splitShellRightPaneTransform(forward: Boolean): ContentTransform =
     verticalBounceContentTransform(forward)
+
+/** The shell changes owners here; keep that hand-off free of a second spatial transition. */
+internal fun splitShellPaneSwapTransform(): ContentTransform =
+    fadeIn(
+        animationSpec = tween(durationMillis = 120, easing = AnimationSpecs.StrongEaseOut),
+    ) togetherWith
+            fadeOut(
+                animationSpec = tween(durationMillis = 90, easing = AnimationSpecs.StrongEaseOut),
+            )

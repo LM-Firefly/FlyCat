@@ -25,7 +25,6 @@ package com.github.yumeyucca.yumebox.presentation.navigation
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -45,10 +44,12 @@ import com.github.yumeyucca.yumebox.presentation.component.LocalNavigator
 import com.github.yumeyucca.yumebox.presentation.component.Navigator
 import com.github.yumeyucca.yumebox.screen.settings.MoeWallpaperCropScreen
 
-private const val DURATION = 340
-private const val FADE_DURATION = 140
-private const val PAGE_SCALE = 0.94f
-private val slideEasing = CubicBezierEasing(0.25f, 0.10f, 0.25f, 1.0f)
+private const val ENTER_DURATION = 240
+private const val EXIT_DURATION = 160
+private const val ENTER_FADE_DURATION = 120
+private const val EXIT_FADE_DURATION = 90
+private const val PAGE_SCALE = 0.97f
+private val routeEasing = CubicBezierEasing(0.23f, 1.0f, 0.32f, 1.0f)
 
 /**
  * A full-width page push with a subtle depth scale.
@@ -62,30 +63,30 @@ private fun pushScaleEnter(
     transformOrigin: TransformOrigin,
 ): EnterTransition =
     slideInHorizontally(
-        animationSpec = tween(DURATION, easing = slideEasing),
+        animationSpec = tween(ENTER_DURATION, easing = routeEasing),
         initialOffsetX = offset,
     ) +
         scaleIn(
             initialScale = PAGE_SCALE,
             transformOrigin = transformOrigin,
-            animationSpec = tween(DURATION, easing = slideEasing),
+            animationSpec = tween(ENTER_DURATION, easing = routeEasing),
         ) +
-        fadeIn(animationSpec = tween(FADE_DURATION, easing = LinearEasing))
+        fadeIn(animationSpec = tween(ENTER_FADE_DURATION, easing = routeEasing))
 
 private fun pushScaleExit(
     offset: (Int) -> Int,
     transformOrigin: TransformOrigin,
 ): ExitTransition =
     slideOutHorizontally(
-        animationSpec = tween(DURATION, easing = slideEasing),
+        animationSpec = tween(EXIT_DURATION, easing = routeEasing),
         targetOffsetX = offset,
     ) +
         scaleOut(
             targetScale = PAGE_SCALE,
             transformOrigin = transformOrigin,
-            animationSpec = tween(DURATION, easing = slideEasing),
+            animationSpec = tween(EXIT_DURATION, easing = routeEasing),
         ) +
-        fadeOut(animationSpec = tween(FADE_DURATION, easing = LinearEasing))
+        fadeOut(animationSpec = tween(EXIT_FADE_DURATION, easing = routeEasing))
 
 /**
  * The app's navigation3 host. Renders the back stack through [NavDisplay] using YumeBox's original

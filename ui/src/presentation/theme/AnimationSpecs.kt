@@ -26,6 +26,7 @@ package com.github.yumeyucca.yumebox.presentation.theme
 import androidx.compose.animation.core.*
 
 object AnimationSpecs {
+    val StrongEaseOut = CubicBezierEasing(0.23f, 1.0f, 0.32f, 1.0f)
     val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
     val EmphasizedAccelerate = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
     val Legacy = CubicBezierEasing(0.4f, 0.0f, 0.2f, 1.0f)

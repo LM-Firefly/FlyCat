@@ -202,20 +202,20 @@ fun ProxyPager(
                     transitionSpec = {
                         if (targetState != null) {
                             (slideInHorizontally(
-                                animationSpec = tween(durationMillis = 340, easing = AnimationSpecs.Legacy),
+                                animationSpec = tween(durationMillis = 220, easing = AnimationSpecs.StrongEaseOut),
                                 initialOffsetX = { it },
-                            ) + fadeIn(animationSpec = tween(durationMillis = 140))) togetherWith (slideOutHorizontally(
-                                animationSpec = tween(durationMillis = 300, easing = AnimationSpecs.Legacy),
+                            ) + fadeIn(animationSpec = tween(durationMillis = 120, easing = AnimationSpecs.StrongEaseOut))) togetherWith (slideOutHorizontally(
+                                animationSpec = tween(durationMillis = 140, easing = AnimationSpecs.StrongEaseOut),
                                 targetOffsetX = { -it / 3 },
-                            ) + fadeOut(animationSpec = tween(durationMillis = 140)))
+                            ) + fadeOut(animationSpec = tween(durationMillis = 90, easing = AnimationSpecs.StrongEaseOut)))
                         } else {
                             (slideInHorizontally(
-                                animationSpec = tween(durationMillis = 300, easing = AnimationSpecs.Legacy),
+                                animationSpec = tween(durationMillis = 220, easing = AnimationSpecs.StrongEaseOut),
                                 initialOffsetX = { -it / 3 },
-                            ) + fadeIn(animationSpec = tween(durationMillis = 140))) togetherWith (slideOutHorizontally(
-                                animationSpec = tween(durationMillis = 340, easing = AnimationSpecs.Legacy),
+                            ) + fadeIn(animationSpec = tween(durationMillis = 120, easing = AnimationSpecs.StrongEaseOut))) togetherWith (slideOutHorizontally(
+                                animationSpec = tween(durationMillis = 140, easing = AnimationSpecs.StrongEaseOut),
                                 targetOffsetX = { it },
-                            ) + fadeOut(animationSpec = tween(durationMillis = 140)))
+                            ) + fadeOut(animationSpec = tween(durationMillis = 90, easing = AnimationSpecs.StrongEaseOut)))
                         }
                     },
                     label = "proxy_content_slide",
