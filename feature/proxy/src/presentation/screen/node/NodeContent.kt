@@ -149,6 +149,7 @@ internal fun rememberNodeSheetHeight(sheetHeightFraction: Float): Dp {
 internal fun NodeGroupSheetContent(
     groups: List<ProxyGroupInfo>,
     testingGroupNames: Set<String>,
+    testingProxyNames: Set<String> = emptySet(),
     sheetHeightFraction: Float,
     onGroupClick: (ProxyGroupInfo) -> Unit,
     onGroupTest: (ProxyGroupInfo) -> Unit,
@@ -186,9 +187,10 @@ internal fun NodeGroupSheetContent(
 fun NodeSheetContent(
     group: ProxyGroupInfo,
     onSelectProxy: (String) -> Unit,
-    onTestProxy: (String) -> Unit,
     isDelayTesting: Boolean,
+    testingProxyNames: Set<String> = emptySet(),
     onTestDelay: () -> Unit,
+    onTestProxyDelay: (String) -> Unit = {},
     sheetHeightFraction: Float,
     listState: LazyListState = rememberLazyListState(),
 ) {
@@ -251,7 +253,8 @@ fun NodeSheetContent(
                     onTestDelay()
                 }
             },
-            onProxyTest = onTestProxy,
+            onProxyTest = onTestProxyDelay,
+            testingProxyNames = testingProxyNames,
         )
     }
 }

@@ -63,6 +63,7 @@ private fun LazyListState.isScrolledFromTop(): Boolean =
 @Composable
 fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = koinViewModel()) {
     val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsState()
+    val testingProxyNames by proxyViewModel.testingProxyNames.collectAsState()
     val sortMode by proxyViewModel.sortMode.collectAsState()
 
     val showSheet = remember { mutableStateOf(true) }
@@ -307,6 +308,7 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
                 ProxySheetNodeContent(
                     proxyViewModel = proxyViewModel,
                     group = targetGroup,
+                    testingProxyNames = testingProxyNames,
                     onTestDelay = triggerSelectedGroupDelayTest,
                     sheetHeightFraction = NOTIFICATION_PROXY_SHEET_HEIGHT_FRACTION,
                     listState = nodeListState,
@@ -320,6 +322,7 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
 private fun ProxySheetNodeContent(
     proxyViewModel: ProxyViewModel,
     group: com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo,
+    testingProxyNames: Set<String>,
     onTestDelay: () -> Unit,
     sheetHeightFraction: Float,
     listState: LazyListState,
@@ -342,16 +345,13 @@ private fun ProxySheetNodeContent(
             }
         }
 
-    val onTestProxy = remember(group.name, proxyViewModel) {
-        { proxyName: String -> proxyViewModel.testProxyDelay(group.name, proxyName) }
-    }
-
     NodeSheetContent(
         group = group,
         isDelayTesting = isDelayTesting,
         onSelectProxy = onSelectProxy,
-        onTestProxy = onTestProxy,
         onTestDelay = onTestDelay,
+        testingProxyNames = testingProxyNames,
+        onTestProxyDelay = { proxyName -> proxyViewModel.testProxyDelay(group.name, proxyName) },
         sheetHeightFraction = sheetHeightFraction,
         listState = listState,
     )

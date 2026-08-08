@@ -45,6 +45,7 @@ internal fun LazyListScope.nodeGridItems(
     selectedProxyName: String,
     onProxyClick: ((String) -> Unit)? = null,
     onProxyTest: ((String) -> Unit)? = null,
+    testingProxyNames: Set<String> = emptySet(),
     outerHorizontalPadding: Dp = UiDp.dp0,
     itemVerticalPadding: Dp = UiDp.dp0,
 ) {
@@ -54,6 +55,7 @@ internal fun LazyListScope.nodeGridItems(
             isSelected = proxy.name == selectedProxyName,
             onClick = onProxyClick,
             onTestClick = onProxyTest,
+            isDelayTesting = testingProxyNames.contains(proxy.name),
             showCountryFlag = true,
             modifier =
                 Modifier.padding(
@@ -70,6 +72,7 @@ internal fun NodeGrid(
     selectedProxyName: String,
     onProxyClick: ((String) -> Unit)? = null,
     onProxyTest: ((String) -> Unit)? = null,
+    testingProxyNames: Set<String> = emptySet(),
     listStateKey: String? = null,
     @SuppressLint("ModifierParameter") modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(UiDp.dp0),
@@ -89,6 +92,7 @@ internal fun NodeGrid(
             selectedProxyName = selectedProxyName,
             onProxyClick = onProxyClick,
             onProxyTest = onProxyTest,
+            testingProxyNames = testingProxyNames,
         )
     }
 }

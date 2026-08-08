@@ -52,6 +52,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 private data class ProxyScreenVmState(
     val proxyGroups: List<ProxyGroupInfo>,
     val testingGroupNames: Set<String>,
+    val testingProxyNames: Set<String>,
     val sortMode: ProxySortMode,
     val uiSelectedGroupName: String?,
 )
@@ -60,17 +61,20 @@ private data class ProxyScreenVmState(
 private fun rememberProxyScreenVmState(proxyViewModel: ProxyViewModel): ProxyScreenVmState {
     val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsState()
     val testingGroupNames by proxyViewModel.testingGroupNames.collectAsState()
+    val testingProxyNames by proxyViewModel.testingProxyNames.collectAsState()
     val sortMode by proxyViewModel.sortMode.collectAsState()
     val uiSelectedGroupName by proxyViewModel.uiSelectedGroupName.collectAsState()
     return remember(
         proxyGroups,
         testingGroupNames,
+        testingProxyNames,
         sortMode,
         uiSelectedGroupName,
     ) {
         ProxyScreenVmState(
             proxyGroups = proxyGroups,
             testingGroupNames = testingGroupNames,
+            testingProxyNames = testingProxyNames,
             sortMode = sortMode,
             uiSelectedGroupName = uiSelectedGroupName,
         )
@@ -88,6 +92,7 @@ fun ProxyPager(
     val screen = rememberProxyScreenVmState(proxyViewModel)
     val proxyGroups = screen.proxyGroups
     val testingGroupNames = screen.testingGroupNames
+    val testingProxyNames = screen.testingProxyNames
     val sortMode = screen.sortMode
     val uiSelectedGroupName = screen.uiSelectedGroupName
     val groupScrollBehavior = MiuixScrollBehavior(snapAnimationSpec = null)
@@ -240,6 +245,7 @@ fun ProxyPager(
                             group = currentGroup,
                             sortMode = sortMode,
                             testingGroupNames = testingGroupNames,
+                            testingProxyNames = testingProxyNames,
                             mainInnerPadding = mainInnerPadding,
                             outerInnerPadding = scaffoldPadding,
                             scrollBehavior = groupScrollBehavior,
@@ -247,10 +253,12 @@ fun ProxyPager(
                             onSelectProxy = { groupName, proxyName ->
                                 proxyViewModel.selectProxy(groupName, proxyName)
                             },
-                            onTestProxy = { groupName, proxyName ->
-                                proxyViewModel.testProxyDelay(groupName, proxyName)
-                            },
                             onTestDelay = requestSelectedGroupDelayTest,
+                            onTestProxyDelay = { proxyName ->
+                                selectedGroupName?.let { groupName ->
+                                    proxyViewModel.testProxyDelay(groupName, proxyName)
+                                }
+                            },
                             onScrollDirectionChanged = {},
                             useAdaptiveGrid = false,
                         )
@@ -304,6 +312,7 @@ internal fun ProxyShellNodeDetailContent(
     val screen = rememberProxyScreenVmState(proxyViewModel)
     val proxyGroups = screen.proxyGroups
     val testingGroupNames = screen.testingGroupNames
+    val testingProxyNames = screen.testingProxyNames
     val sortMode = screen.sortMode
     val uiSelectedGroupName = screen.uiSelectedGroupName
     val scrollBehavior = MiuixScrollBehavior(snapAnimationSpec = null)
@@ -405,6 +414,7 @@ internal fun ProxyShellNodeDetailContent(
                     group = pageGroup,
                     sortMode = sortMode,
                     testingGroupNames = testingGroupNames,
+                    testingProxyNames = testingProxyNames,
                     mainInnerPadding = mainInnerPadding,
                     outerInnerPadding = scaffoldPadding,
                     scrollBehavior = scrollBehavior,
@@ -413,10 +423,12 @@ internal fun ProxyShellNodeDetailContent(
                     onSelectProxy = { selectedGroup, proxyName ->
                         proxyViewModel.selectProxy(selectedGroup, proxyName)
                     },
-                    onTestProxy = { selectedGroup, proxyName ->
-                        proxyViewModel.testProxyDelay(selectedGroup, proxyName)
-                    },
                     onTestDelay = requestSelectedGroupDelayTest,
+                    onTestProxyDelay = { proxyName ->
+                        selectedGroupName?.let { groupName ->
+                            proxyViewModel.testProxyDelay(groupName, proxyName)
+                        }
+                    },
                     onScrollDirectionChanged = {},
                     useAdaptiveGrid = true,
                 )
