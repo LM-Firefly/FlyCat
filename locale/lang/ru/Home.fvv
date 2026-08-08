@@ -8,6 +8,7 @@ Home = {
         Preparing = "Подготовка..."
         BuiltinGeoRequired = "Сначала установите версию Builtin"
         StartFailed = "Не удалось запустить: %s"
+        RuntimeUnavailable = "Среда выполнения недоступна. Повторите попытку."
         StopFailed = "Не удалось остановить: %s"
     }
 

@@ -314,12 +314,10 @@ class HomeViewModel(
                     when (phase) {
                         RuntimePhase.Starting -> {
                             clearPendingStart()
-                            if (
-                                _pendingTransition.value == PendingTransition.AwaitingPermission ||
-                                _pendingTransition.value == PendingTransition.Starting
-                            ) {
-                                _pendingTransition.value = PendingTransition.None
-                            }
+                            // Keep the pending launch marker until Running. Some launch paths
+                            // report Starting and then briefly fall back to Idle while the
+                            // service/core is being brought up; clearing it here makes the UI
+                            // flash back to Start before the next runtime update.
                         }
 
                         RuntimePhase.Running -> {
@@ -339,7 +337,20 @@ class HomeViewModel(
                             }
                         }
 
-                        RuntimePhase.Idle,
+                        RuntimePhase.Idle -> {
+                            // The launcher sets the pending transition before requesting the
+                            // service. Keep that intermediate state while the runtime still
+                            // reports Idle; otherwise the button briefly jumps back to Start
+                            // until the kernel eventually reports Starting.
+                            if (
+                                _pendingTransition.value != PendingTransition.Starting &&
+                                    _pendingTransition.value != PendingTransition.AwaitingPermission
+                            ) {
+                                clearPendingStart()
+                                _pendingTransition.value = PendingTransition.None
+                            }
+                        }
+
                         RuntimePhase.Failed -> {
                             clearPendingStart()
                             _pendingTransition.value = PendingTransition.None
@@ -597,6 +608,9 @@ class HomeViewModel(
         val message = raw?.trim().orEmpty()
         if (message.isEmpty()) {
             return YumeTxt.Util.Error.UnknownError
+        }
+        if (message.equals("runtime backend unavailable", ignoreCase = true)) {
+            return YumeTxt.Home.Message.RuntimeUnavailable
         }
         // Prefer the first actionable line; strip huge core.log tails and stack noise.
         val firstLine =

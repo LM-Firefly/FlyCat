@@ -8,6 +8,7 @@ Home = {
         Preparing = "準備中..."
         BuiltinGeoRequired = "請先安裝 Builtin 版本"
         StartFailed = "啟動失敗：%s"
+        RuntimeUnavailable = "核心執行環境不可用，請重試"
         StopFailed = "停止失敗：%s"
     }
 

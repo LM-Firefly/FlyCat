@@ -15,25 +15,15 @@ import android.content.Context
 
 class BuiltinGeoAssetsRequiredException : IllegalStateException()
 
-private val builtinGeoAssetNames =
-    listOf(
-        "geoip.metadb",
-        "geosite.dat",
-        "ASN.mmdb",
-        "BundleMRS.7z",
-    )
-
-/** Blocks local core startup until all bundled Geo assets have been installed once. */
+/** Blocks local core startup until an MMDB Geo database has been installed once. */
 fun Context.requireBuiltinGeoAssets() {
     check(
-        builtinGeoAssetNames.all { expectedName ->
-            runtimeHomeDir.listFiles()?.any { file ->
-                file.isFile &&
-                    file.length() > 0L &&
-                    expectedName.equals(file.name, ignoreCase = true)
-            }
-                ?: false
+        runtimeHomeDir.listFiles()?.any { file ->
+            file.isFile &&
+                file.length() > 0L &&
+                file.extension.equals("mmdb", ignoreCase = true)
         }
+            ?: false
     ) {
         throw BuiltinGeoAssetsRequiredException()
     }

@@ -128,6 +128,18 @@ fun MoeHomePage(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
+    LaunchedEffect(screen.uiError) {
+        screen.uiError?.let { error ->
+            context.toast(error, Toast.LENGTH_LONG)
+            homeViewModel.consumeError()
+        }
+    }
+    LaunchedEffect(screen.uiMessage) {
+        screen.uiMessage?.let { message ->
+            context.toast(message, Toast.LENGTH_SHORT)
+            homeViewModel.consumeMessage()
+        }
+    }
 
     val visualControlState = controlState
     // Tick once a second whether running or idle: running drives the elapsed timer, idle drives the
