@@ -186,6 +186,7 @@ internal fun NodeGroupSheetContent(
 fun NodeSheetContent(
     group: ProxyGroupInfo,
     onSelectProxy: (String) -> Unit,
+    onTestProxy: (String) -> Unit,
     isDelayTesting: Boolean,
     onTestDelay: () -> Unit,
     sheetHeightFraction: Float,
@@ -250,6 +251,7 @@ fun NodeSheetContent(
                     onTestDelay()
                 }
             },
+            onProxyTest = onTestProxy,
         )
     }
 }

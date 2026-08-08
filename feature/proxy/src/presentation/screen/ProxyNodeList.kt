@@ -61,6 +61,7 @@ internal fun NodeListPage(
     scrollBehavior: ScrollBehavior,
     listState: LazyListState,
     onSelectProxy: (groupName: String, proxyName: String) -> Unit,
+    onTestProxy: (groupName: String, proxyName: String) -> Unit,
     onTestDelay: () -> Unit,
     onScrollDirectionChanged: (Boolean) -> Unit,
     useAdaptiveGrid: Boolean = false,
@@ -219,6 +220,7 @@ internal fun NodeListPage(
                                 onTestDelay()
                             }
                         },
+                        onTestClick = { proxyName -> onTestProxy(group.name, proxyName) },
                         showCountryFlag = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -293,6 +295,7 @@ internal fun NodeListPage(
                     onTestDelay()
                 }
             },
+            onProxyTest = { proxyName -> onTestProxy(group.name, proxyName) },
             outerHorizontalPadding = UiDp.dp0,
             itemVerticalPadding = UiDp.dp6,
         )

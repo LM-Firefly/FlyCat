@@ -342,10 +342,15 @@ private fun ProxySheetNodeContent(
             }
         }
 
+    val onTestProxy = remember(group.name, proxyViewModel) {
+        { proxyName: String -> proxyViewModel.testProxyDelay(group.name, proxyName) }
+    }
+
     NodeSheetContent(
         group = group,
         isDelayTesting = isDelayTesting,
         onSelectProxy = onSelectProxy,
+        onTestProxy = onTestProxy,
         onTestDelay = onTestDelay,
         sheetHeightFraction = sheetHeightFraction,
         listState = listState,

@@ -51,6 +51,7 @@ import com.github.yumeyucca.yumebox.presentation.icon.yume.BadgeDollarSign
 import com.github.yumeyucca.yumebox.presentation.icon.yume.CircleGauge
 import com.github.yumeyucca.yumebox.presentation.icon.yume.Tags
 import com.github.yumeyucca.yumebox.presentation.icon.yume.clock
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Speed
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import com.github.yumeyucca.yumebox.presentation.util.extractNodeTags
@@ -216,6 +217,7 @@ internal fun NodeCard(
     proxy: Proxy,
     isSelected: Boolean,
     onClick: ((String) -> Unit)?,
+    onTestClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
     showCountryFlag: Boolean = true,
 ) {
@@ -279,10 +281,33 @@ internal fun NodeCard(
                 }
             }
 
-            NodeSelectionTag(
-                isSelected = selected,
+            Row(
                 modifier = Modifier.align(Alignment.CenterVertically),
-            )
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(spacing.space4),
+            ) {
+                if (onTestClick != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(UiDp.dp28)
+                            .clip(RoundedCornerShape(AppTheme.radii.full))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = { onTestClick(proxy.name) },
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Yume.Speed,
+                            contentDescription = YumeTxt.Proxy.Action.Test,
+                            tint = MiuixTheme.colorScheme.primary,
+                            modifier = Modifier.size(UiDp.dp18),
+                        )
+                    }
+                }
+                NodeSelectionTag(isSelected = selected)
+            }
         }
     }
 }
