@@ -28,7 +28,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -51,7 +50,6 @@ import com.github.yumeyucca.yumebox.presentation.icon.Yume
 import com.github.yumeyucca.yumebox.presentation.icon.yume.BadgeDollarSign
 import com.github.yumeyucca.yumebox.presentation.icon.yume.CircleGauge
 import com.github.yumeyucca.yumebox.presentation.icon.yume.Tags
-import com.github.yumeyucca.yumebox.presentation.icon.yume.Speed
 import com.github.yumeyucca.yumebox.presentation.icon.yume.clock
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
@@ -278,7 +276,12 @@ internal fun NodeCard(
                         if (multiplier > 0f) NodeMultiplierChip(multiplier = multiplier)
                     }
                     delayLabel?.let { (delayText, delayColor) ->
-                        NodeLatencyChip(label = delayText, color = delayColor)
+                        NodeLatencyChip(
+                            label = delayText,
+                            color = delayColor,
+                            isTesting = isDelayTesting,
+                            onClick = onTestClick?.let { test -> { test(proxy.name) } },
+                        )
                     }
                 }
             }
@@ -287,39 +290,6 @@ internal fun NodeCard(
                 isSelected = selected,
                 modifier = Modifier.align(Alignment.CenterVertically),
             )
-
-            if (onTestClick != null) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(UiDp.dp30)
-                            .clip(CircleShape)
-                            .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.1f))
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                enabled = !isDelayTesting,
-                                onClick = { onTestClick(proxy.name) },
-                            ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (isDelayTesting) {
-                        RotatingCircleGauge(
-                            isRotating = true,
-                            modifier = Modifier.size(UiDp.dp16),
-                            tint = MiuixTheme.colorScheme.primary,
-                            contentDescription = null,
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Yume.Speed,
-                            contentDescription = YumeTxt.Proxy.Action.Test,
-                            tint = MiuixTheme.colorScheme.primary,
-                            modifier = Modifier.size(UiDp.dp16),
-                        )
-                    }
-                }
-            }
         }
     }
 }
@@ -410,7 +380,12 @@ private fun NodeMultiplierChip(multiplier: Float) {
 }
 
 @Composable
-private fun NodeLatencyChip(label: String, color: Color) {
+private fun NodeLatencyChip(
+    label: String,
+    color: Color,
+    isTesting: Boolean,
+    onClick: (() -> Unit)?,
+) {
     val spacing = AppTheme.spacing
     val radii = AppTheme.radii
     val opacity = AppTheme.opacity
@@ -421,16 +396,37 @@ private fun NodeLatencyChip(label: String, color: Color) {
             Modifier
                 .clip(RoundedCornerShape(radii.full))
                 .background(color.copy(alpha = opacity.subtle))
+                .let { modifier ->
+                    if (onClick == null) {
+                        modifier
+                    } else {
+                        modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = SinkFeedback(),
+                            enabled = !isTesting,
+                            onClick = onClick,
+                        )
+                    }
+                }
                 .padding(horizontal = spacing.space4, vertical = spacing.space2),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.space2),
     ) {
-        Icon(
-            imageVector = Yume.clock,
-            contentDescription = null,
-            tint = color,
-            modifier = Modifier.size(sizes.nodeTagIconSize),
-        )
+        if (isTesting) {
+            RotatingCircleGauge(
+                isRotating = true,
+                modifier = Modifier.size(sizes.nodeTagIconSize),
+                tint = color,
+                contentDescription = null,
+            )
+        } else {
+            Icon(
+                imageVector = Yume.clock,
+                contentDescription = if (onClick == null) null else YumeTxt.Proxy.Action.Test,
+                tint = color,
+                modifier = Modifier.size(sizes.nodeTagIconSize),
+            )
+        }
         Text(
             text = label,
             style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),

@@ -128,7 +128,9 @@ internal fun NodeGroupCard(
         }
     val currentDelay = remember(currentProxy) { currentProxy?.delay }
     val badge = remember(group.type) { groupBadge(group.type) }
-    val delayLabel = nodeLatencyLabel(currentDelay)
+    // The group card keeps its navigation chevron until a real delay is available. The default
+    // test capsule belongs to each individual node card, not this group-level navigation surface.
+    val delayLabel = currentDelay?.takeIf { it != 0 }?.let { delay -> nodeLatencyLabel(delay) }
 
     Column(
         modifier =

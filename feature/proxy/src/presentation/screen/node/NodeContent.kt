@@ -149,7 +149,6 @@ internal fun rememberNodeSheetHeight(sheetHeightFraction: Float): Dp {
 internal fun NodeGroupSheetContent(
     groups: List<ProxyGroupInfo>,
     testingGroupNames: Set<String>,
-    testingProxyNames: Set<String> = emptySet(),
     sheetHeightFraction: Float,
     onGroupClick: (ProxyGroupInfo) -> Unit,
     onGroupTest: (ProxyGroupInfo) -> Unit,
