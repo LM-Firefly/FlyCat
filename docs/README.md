@@ -73,7 +73,7 @@ Forked releases must not use this content unless it is solely used to reasonably
 YumeBox does not use Git submodules. A clean checkout needs the mihomo source and generated assets before Gradle can
 build the app.
 
-1. Install **OpenJDK 24**, **Android SDK 37**, **NDK 30.0.14904198**, **CMake 3.22.1**, **Kotlin CLI**, **Go 1.26**,
+1. Install **OpenJDK 24**, **Android SDK 37**, **NDK 30.0.14904198**, **CMake 3.22.1**, **Python 3.10+**, **Go 1.26**,
    **Rust nightly**, Git, and `patch`.
 
    ```bash
@@ -90,8 +90,7 @@ build the app.
 3. Fetch the mihomo source. Available channels are `alpha` and `meta`.
 
    ```bash
-   chmod +x scripts/sync-kernel.sh
-   ./scripts/sync-kernel.sh alpha
+   python3 scripts/sync_kernel.py alpha
    ```
 
 4. Prepare Rust. Release builds should use MetaCubeX Go 1.26 with the patches in `.github/patch`, matching CI.
@@ -105,7 +104,7 @@ build the app.
 5. Generate locale sources, native libraries, and bundled Geo assets:
 
    ```bash
-   kotlin scripts/native-build.main.kts --all
+   python3 scripts/native-build.py --all
    ```
 
    Run the native script with `--help` to build Go, Rust, C++, or Geo assets separately.

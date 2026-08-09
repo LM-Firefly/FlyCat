@@ -47,8 +47,8 @@ These versions come from the current repository's `gradle.properties` and GitHub
   Used to build `libloader.so` and `libcompat.so`. The script prefers version 3.22.1.
 </ResponseField>
 
-<ResponseField name="Kotlin CLI" type="2.x" required>
-  Used to run `scripts/native-build.main.kts`. The Gradle Wrapper cannot replace the `kotlin` command.
+<ResponseField name="Python" type="3.10+" required>
+  Used to run `scripts/native-build.py` and the synchronization scripts.
 </ResponseField>
 
 <ResponseField name="Go" type="1.26" required>
@@ -60,11 +60,11 @@ These versions come from the current repository's `gradle.properties` and GitHub
 </ResponseField>
 
 <ResponseField name="Git / patch" type="command line" required>
-  `sync-kernel.sh` uses Git to fetch the core, and the Go Android compatibility patches require GNU `patch`.
+  `sync_kernel.py` uses Git to fetch the core, and the Go Android compatibility patches require GNU `patch`.
 </ResponseField>
 
 <Info>
-  On Windows, install Git for Windows and run `.sh` and `patch` commands in Git Bash. You can run Gradle and Kotlin commands in PowerShell.
+  On Windows, Python, Git, patch, and Gradle can be run directly from PowerShell.
 </Info>
 
 ## Prepare the project
@@ -83,7 +83,7 @@ These versions come from the current repository's `gradle.properties` and GitHub
     Make sure the Android SDK Command-line Tools `bin` directory is in `PATH`.
 
     <CodeGroup>
-      ```bash Linux / macOS / Git Bash
+      ```bash Linux / macOS / Windows PowerShell
       sdkmanager "platforms;android-37" "ndk;30.0.14904198" "cmake;3.22.1"
       ```
 
@@ -110,10 +110,10 @@ These versions come from the current repository's `gradle.properties` and GitHub
   </Step>
 
   <Step title="Sync the mihomo core">
-    Select a core channel in Linux, macOS, or Git Bash:
+    Select a core channel in Linux, macOS, or Windows PowerShell:
 
     ```bash Sync the Alpha core
-    ./scripts/sync-kernel.sh alpha
+    python3 scripts/sync_kernel.py alpha
     ```
 
     <Tabs sync={false}>
@@ -172,7 +172,7 @@ Run the native build script for the first build and whenever the core, Rust, or 
     Build the core and native libraries for all four ABIs and download Geo data.
 
     ```bash Full native build
-    kotlin scripts/native-build.main.kts --all
+    python3 scripts/native-build.py --all
     ```
   </Tab>
 
@@ -180,13 +180,13 @@ Run the native build script for the first build and whenever the core, Rust, or 
     Use this for local debugging to avoid repeating Go, Rust, and C compilation for other ABIs.
 
     <CodeGroup>
-      ```bash Linux / macOS / Git Bash
-      ABI_APP_LIST=arm64-v8a kotlin scripts/native-build.main.kts --go --rust --compat --loader
+      ```bash Linux / macOS / Windows PowerShell
+      ABI_APP_LIST=arm64-v8a python3 scripts/native-build.py --go --rust --compat --loader
       ```
 
       ```powershell PowerShell
       $env:ABI_APP_LIST = "arm64-v8a"
-      kotlin scripts/native-build.main.kts --go --rust --compat --loader
+      python scripts/native-build.py --go --rust --compat --loader
       ```
     </CodeGroup>
   </Tab>

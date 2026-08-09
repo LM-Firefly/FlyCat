@@ -31,15 +31,6 @@ jobs:
       - name: Validate ABI
         run: test "${{ inputs.abi }}" = "arm64-v8a"
 
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "24"
-
-      - name: Setup Kotlin
-        uses: fwilhe2/setup-kotlin@88d53291848568823e529973af5d0cdb8ddf8d87 # main
-
       - name: Setup Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
@@ -59,7 +50,7 @@ jobs:
       - name: Setup Rust
         # nightly + rust-src: the rust build uses -Zbuild-std and
         # -Cpanic=immediate-abort to shrink liboverride.so (~18%), see
-        # RustBuilder in scripts/native-build.main.kts.
+        # RustBuilder in scripts/native_build/rust_builder.py.
         uses: dtolnay/rust-toolchain@efcb852328a9f50117170cc43094fb6f09eaf1ae # nightly
         with:
           toolchain: nightly
@@ -119,8 +110,7 @@ jobs:
 
       - name: Sync kernel
         run: |
-          chmod +x scripts/sync-kernel.sh
-          ./scripts/sync-kernel.sh "${{ inputs.kernel_channel }}"
+          python3 scripts/sync_kernel.py "${{ inputs.kernel_channel }}"
 
       - name: Verify Rust sources
         run: |
@@ -134,7 +124,7 @@ jobs:
           ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.14904198
-        run: kotlin scripts/native-build.main.kts --go --rust --compat --loader
+        run: python3 scripts/native-build.py --go --rust --compat --loader
 
       - name: Verify native outputs
         shell: bash

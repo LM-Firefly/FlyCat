@@ -68,7 +68,7 @@ require (
 	github.com/metacubex/jsonv2 v0.0.0-20260721082349-16b4998c8f89 // indirect
 	github.com/metacubex/kcp-go v0.0.0-20260105040817-550693377604 // indirect
 	github.com/metacubex/mhurl v0.1.0 // indirect
-	github.com/metacubex/mipstack v0.0.0-20260807061409-f72adac977ea // indirect
+    github.com/metacubex/mipstack v0.0.0-20260808050503-d7b2821f2a69 // indirect
 	github.com/metacubex/mlkem v0.1.0 // indirect
 	github.com/metacubex/nftables v0.0.0-20260426003805-208c2c1ba2cb // indirect
 	github.com/metacubex/qpack v0.6.0 // indirect
@@ -140,4 +140,24 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace google.golang.org/protobuf => github.com/metacubex/protobuf-go v0.0.0-20260306035419-7ceee0674686
+    replace google.golang.org/protobuf => github.com/metacubex/protobuf-go <!--
+  - This file is part of YumeBox.
+  -
+  - YumeBox is free software: you can redistribute it and/or modify
+  - it under the terms of the GNU Affero General Public License as
+  - published by the Free Software Foundation, either version 3 of the
+  - License.
+  -
+  - This program is distributed in the hope that it will be useful,
+  - but WITHOUT ANY WARRANTY; without even the implied warranty of
+  - MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  - GNU Affero General Public License for more details.
+  -
+  - You should have received a copy of the GNU Affero General Public License
+  - along with this program. If not, see <https://www.gnu.org/licenses/>.
+  -
+  - Copyright (c)  YumeYucca 2025 - Present
+  -
+  -->
+
+    v0.0.0-20260306035419-7ceee0674686

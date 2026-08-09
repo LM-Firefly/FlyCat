@@ -132,7 +132,7 @@ val apkGeoSegment = if (geoBundle) "builtin" else "external"
 // channel label (Alpha or Meta); fall back to the git checkout under
 // external.mihomo.dir for the short commit.
 // CI APK jobs never have the mihomo tree — they only download jniLibs — so prefer the
-// core-version.properties stamp written by scripts/native-build.main.kts during --go.
+// core-version.properties stamp written by scripts/native-build.py during --go.
 data class MihomoBuildInfo(
     val branch: String,
     val commit: String,
@@ -259,7 +259,7 @@ fun resolveMihomoBuildInfo(rootDir: File): MihomoBuildInfo {
     // Resolution order:
     // 1) -Pcore.branch / -Pcore.commit overrides
     // 2) live git checkout under external.mihomo.dir (local dev — freshest)
-    // 3) core-version.properties stamped by native-build (CI APK job has no mihomo tree)
+    // 3) core-version.properties stamped by the native Python build tool (CI APK job has no mihomo tree)
     val propBranch =
         providers.gradleProperty("core.branch").orNull?.trim()?.takeIf { it.isNotEmpty() }
     val propCommit =

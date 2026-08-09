@@ -13,7 +13,7 @@ profile:
 
 # Kotlin/Java static analysis only. Exclude everything that is not app source:
 #  - lib/      native libs (Go libmihomocore, C PIE shell/libcompat/libloader, Rust liboverride) + mihomo
-#  - scripts/  standalone *.main.kts build tooling (native-build / locale codegen)
+#  - scripts/  standalone Python build tooling and locale codegen
 #  - website/  documentation site (mdx/css)
 #  - .trellis/ task-management workspace
 # Module build/ output is git-ignored and excluded automatically.

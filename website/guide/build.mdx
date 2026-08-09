@@ -47,8 +47,8 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
   用于构建 `libloader.so` 与 `libcompat.so`。脚本优先选择 3.22.1。
 </ResponseField>
 
-<ResponseField name="Kotlin CLI" type="2.x" required>
-  用于执行 `scripts/native-build.main.kts`。Gradle Wrapper 不能替代 `kotlin` 命令。
+<ResponseField name="Python" type="3.10+" required>
+  用于执行 `scripts/native-build.py` 和同步脚本。
 </ResponseField>
 
 <ResponseField name="Go" type="1.26" required>
@@ -60,11 +60,11 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
 </ResponseField>
 
 <ResponseField name="Git / patch" type="command line" required>
-  `sync-kernel.sh` 使用 Git 拉取内核；Go Android 兼容补丁需要 GNU `patch`。
+  `sync_kernel.py` 使用 Git 拉取内核；Go Android 兼容补丁需要 GNU `patch`。
 </ResponseField>
 
 <Info>
-  Windows 建议安装 Git for Windows，并在 Git Bash 中执行 `.sh` 与 `patch` 命令。Gradle 和 Kotlin 命令可以在 PowerShell 中执行。
+  Windows 可在 PowerShell 中直接执行 Python、Git、patch 和 Gradle 命令。
 </Info>
 
 ## 准备项目
@@ -83,7 +83,7 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
     确保 Android SDK Command-line Tools 的 `bin` 目录已加入 `PATH`。
 
     <CodeGroup>
-      ```bash Linux / macOS / Git Bash
+      ```bash Linux / macOS / Windows PowerShell
       sdkmanager "platforms;android-37" "ndk;30.0.14904198" "cmake;3.22.1"
       ```
 
@@ -110,10 +110,10 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
   </Step>
 
   <Step title="同步 mihomo 内核">
-    在 Linux、macOS 或 Git Bash 中选择一个内核通道：
+    在 Linux、macOS 或 Windows PowerShell 中选择一个内核通道：
 
     ```bash 同步 Alpha 内核
-    ./scripts/sync-kernel.sh alpha
+    python3 scripts/sync_kernel.py alpha
     ```
 
     <Tabs sync={false}>
@@ -172,7 +172,7 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
     构建四种 ABI 的内核与原生库，并下载 Geo 数据。
 
     ```bash 完整原生构建
-    kotlin scripts/native-build.main.kts --all
+    python3 scripts/native-build.py --all
     ```
   </Tab>
 
@@ -180,13 +180,13 @@ YumeBox 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译
     适合本机调试，减少 Go、Rust 和 C 的重复编译。
 
     <CodeGroup>
-      ```bash Linux / macOS / Git Bash
-      ABI_APP_LIST=arm64-v8a kotlin scripts/native-build.main.kts --go --rust --compat --loader
+      ```bash Linux / macOS / Windows PowerShell
+      ABI_APP_LIST=arm64-v8a python3 scripts/native-build.py --go --rust --compat --loader
       ```
 
       ```powershell PowerShell
       $env:ABI_APP_LIST = "arm64-v8a"
-      kotlin scripts/native-build.main.kts --go --rust --compat --loader
+      python scripts/native-build.py --go --rust --compat --loader
       ```
     </CodeGroup>
   </Tab>

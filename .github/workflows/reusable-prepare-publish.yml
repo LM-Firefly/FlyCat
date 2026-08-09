@@ -117,8 +117,8 @@ jobs:
           prefix="${{ inputs.artifact_prefix }}"
           channel_segment="${{ inputs.channel_segment }}"
           {
-            echo "external_arm64=$(bash scripts/ci-apk-stem.sh "${prefix}" external arm64-v8a "${channel_segment}" "${tail}")"
-            echo "builtin_arm64=$(bash scripts/ci-apk-stem.sh "${prefix}" builtin arm64-v8a "${channel_segment}" "${tail}")"
+            echo "external_arm64=$(python3 scripts/ci_apk_stem.py "${prefix}" external arm64-v8a "${channel_segment}" "${tail}")"
+            echo "builtin_arm64=$(python3 scripts/ci_apk_stem.py "${prefix}" builtin arm64-v8a "${channel_segment}" "${tail}")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Generate release notes

@@ -61,7 +61,8 @@ YumeBox 目前仅支持 **Android 8.0（API 26）及以上系统**。
 
 YumeBox 不使用 Git submodule。从干净检出开始构建前，需要先准备 Mihomo 源码和生成资源。
 
-1. 安装 **OpenJDK 24**、 **Android SDK 37**、 **NDK 30.0.14904198**、 **CMake 3.22.1**、 **Kotlin CLI**、 **Go 1.26**、 **Rust
+1. 安装 **OpenJDK 24**、 **Android SDK 37**、 **NDK 30.0.14904198**、 **CMake 3.22.1**、 **Python 3.10+**、 **Go 1.26**、
+   **Rust
    nightly**、Git 和 `patch`。
 
    ```bash
@@ -78,8 +79,7 @@ YumeBox 不使用 Git submodule。从干净检出开始构建前，需要先准�
 3. 拉取 Mihomo 源码，可选择 `alpha` 或 `meta`。
 
    ```bash
-   chmod +x scripts/sync-kernel.sh
-   ./scripts/sync-kernel.sh alpha
+   python3 scripts/sync_kernel.py alpha
    ```
 
 4. 准备 Rust。Release 构建应使用 MetaCubeX Go 1.26，并与 CI 一样应用 `.github/patch` 中的补丁。
@@ -93,7 +93,7 @@ YumeBox 不使用 Git submodule。从干净检出开始构建前，需要先准�
 5. 生成本地化源码、原生库和内置 Geo 资源：
 
    ```bash
-   kotlin scripts/native-build.main.kts --all
+   python3 scripts/native-build.py --all
    ```
 
    使用 `--help` 可以单独构建 Go、Rust、C++ 或 Geo 资源。
