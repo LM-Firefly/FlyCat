@@ -19,6 +19,8 @@ NetworkSettings = {
         VpnServiceSummary = "System VPN, global proxy"
         TunTitle = "Tun"
         TunSummary = "Virtual network interface requiring root"
+        EbpfTitle = "eBPF"
+        EbpfSummary = "Root eBPF proxy"
     }
 
     VpnOptions = {
@@ -107,6 +109,6 @@ NetworkSettings = {
 
     Error = {
         VpnDenied = "VPN permission denied"
-        RootRequired = "Tun requires YumeBox to have working root access"
+        RootRequired = "Root mode requires YumeBox to have working root access"
     }
 }

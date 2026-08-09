@@ -21,6 +21,7 @@
 package com.github.yumeyucca.yumebox.runtime.service.core
 
 import android.content.Context
+import com.github.yumeyucca.yumebox.core.model.RunMode
 import com.github.yumeyucca.yumebox.runtime.api.CoreEndpointRef
 import com.github.yumeyucca.yumebox.runtime.api.ProcessController
 import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
@@ -44,6 +45,8 @@ class AndroidProcessController(context: Context) : ProcessController {
     }
 
     override fun isRootDaemonAlive(): Boolean = CoreProcess.isRootDaemonAlive()
+
+    override fun rootDaemonMode(): RunMode? = CoreProcess.rootDaemonMode()
 
     override fun reconnectRoot(): String? = CoreProcess.reconnectRoot(appContext)
 }

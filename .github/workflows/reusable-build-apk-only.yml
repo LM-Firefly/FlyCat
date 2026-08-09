@@ -112,6 +112,7 @@ jobs:
             test -f "jniLibs/${abi}/libmihomocore.so"
             test -f "jniLibs/${abi}/liboverride.so"
             test -f "jniLibs/${abi}/libcompat.so"
+            test -f "jniLibs/${abi}/libebpfbridge.so"
             test -f "jniLibs/${abi}/libloader.so"
           done
           # Core branch/hash stamp from the native job (About / BuildConfig.CORE_*).

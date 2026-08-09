@@ -70,13 +70,17 @@ object RuntimeLog {
         LocalTun("LOCAL"),
 
         /** Root `tun` daemon session, same span of stages as [LocalTun]. */
-        RootTun("ROOT");
+        RootTun("ROOT"),
+
+        /** Root eBPF socket-address bridge session. */
+        RootEbpf("EBPF");
 
         companion object {
             fun forMode(mode: RunMode): Source =
                 when (mode) {
                     RunMode.VpnService -> LocalTun
                     RunMode.Tun -> RootTun
+                    RunMode.Ebpf -> RootEbpf
                 }
         }
     }

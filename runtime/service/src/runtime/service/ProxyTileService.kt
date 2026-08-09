@@ -42,8 +42,8 @@ import com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess
 import com.github.yumeyucca.yumebox.runtime.service.profile.ProfileService
 import com.github.yumeyucca.yumebox.runtime.service.session.RootSessionLauncher
 import com.github.yumeyucca.yumebox.runtime.service.session.RuntimeServiceLauncher
-import com.github.yumeyucca.yumebox.runtime.service.util.sendBroadcastSelf
 import com.github.yumeyucca.yumebox.runtime.service.util.ServiceLogoIcons
+import com.github.yumeyucca.yumebox.runtime.service.util.sendBroadcastSelf
 import kotlinx.coroutines.*
 import tf.gal.yumebox.locale.YumeTxt
 import timber.log.Timber
@@ -151,6 +151,12 @@ class ProxyTileService : TileService() {
                         RunMode.Tun -> {
                             withContext(Dispatchers.IO) {
                                 RootSessionLauncher.start(this@ProxyTileService, currentMode)
+                            }
+                        }
+
+                        RunMode.Ebpf -> {
+                            withContext(Dispatchers.IO) {
+                                RootSessionLauncher.start(this@ProxyTileService, RunMode.Ebpf)
                             }
                         }
                     }

@@ -19,6 +19,8 @@ NetworkSettings = {
         VpnServiceSummary = "Системный VPN, глобальный прокси"
         TunTitle = "Tun"
         TunSummary = "Виртуальный сетевой интерфейс, требующий root"
+        EbpfTitle = "eBPF"
+        EbpfSummary = "Root eBPF прокси"
     }
 
     VpnOptions = {
@@ -107,6 +109,6 @@ NetworkSettings = {
 
     Error = {
         VpnDenied = "Разрешение VPN отклонено"
-        RootRequired = "Для Tun у YumeBox должен быть рабочий root-доступ"
+        RootRequired = "Для root-режима у YumeBox должен быть рабочий root-доступ"
     }
 }

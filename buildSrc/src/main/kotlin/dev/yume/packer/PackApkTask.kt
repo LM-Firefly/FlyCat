@@ -1,13 +1,25 @@
+/*
+ * This file is part of YumeBox.
+ *
+ * YumeBox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ *
+ */
+
 package dev.yume.packer
 
-import java.io.ByteArrayOutputStream
-import java.io.DataOutputStream
-import java.io.File
-import java.security.MessageDigest
-import java.util.zip.CRC32
-import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
-import java.util.zip.ZipOutputStream
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
@@ -16,6 +28,14 @@ import org.gradle.api.tasks.*
 import org.gradle.work.DisableCachingByDefault
 import org.tukaani.xz.LZMA2Options
 import org.tukaani.xz.XZOutputStream
+import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
+import java.io.File
+import java.security.MessageDigest
+import java.util.zip.CRC32
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 
 @DisableCachingByDefault(because = "The output depends on the installed Android SDK toolchain")
 abstract class PackApkTask : DefaultTask() {
@@ -326,7 +346,7 @@ abstract class PackApkTask : DefaultTask() {
         //  - libloader.so is the bootstrap loader itself;
         //  - libmihomo.so and libpreview.so are tiny PIE shells. A non-root app can only
         //    execve() files living in nativeLibraryDir; both dlopen the compressed core payload.
-        val BOOTSTRAP_LIBRARY = Regex("lib/[^/]+/(?:libloader|libmihomo|libpreview)\\.so")
+        val BOOTSTRAP_LIBRARY = Regex("lib/[^/]+/(?:libloader|libmihomo|libpreview|libebpfbridge)\\.so")
         val SIGNATURE_ENTRY =
             Regex("META-INF/[^/]+\\.(?:MF|SF|RSA|DSA|EC)", RegexOption.IGNORE_CASE)
         const val FIXED_TIMESTAMP = 315_532_800_000L

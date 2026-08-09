@@ -124,3 +124,28 @@ fn tun_override_keeps_profile_nameservers_intact() {
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn ebpf_mode_disables_profile_tun_entrypoint() {
+    let temp_dir = temp_dir("compiler-test-ebpf-tun-off");
+    let profile_path = temp_dir.join("config.yaml");
+    std::fs::write(
+        &profile_path,
+        "mode: rule\ntun:\n  enable: true\n  auto-route: true\n",
+    )
+    .expect("write profile yaml");
+
+    let mut request = test_request(&temp_dir, &profile_path);
+    request.run_mode = RunMode::Ebpf;
+    let result = r#override::compile_request(request, false).expect("compile should succeed");
+    assert!(result.success, "compile failed: {:?}", result.error);
+    let root: JsonValue = serde_yaml::from_str(&result.final_yaml).expect("parse final yaml");
+    let tun = root
+        .get("tun")
+        .and_then(JsonValue::as_object)
+        .expect("tun block");
+    assert_eq!(tun.get("enable"), Some(&JsonValue::Bool(false)));
+    assert_eq!(tun.get("auto-route"), Some(&JsonValue::Bool(false)));
+
+    let _ = std::fs::remove_dir_all(&temp_dir);
+}

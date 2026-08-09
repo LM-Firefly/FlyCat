@@ -140,24 +140,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-    replace google.golang.org/protobuf => github.com/metacubex/protobuf-go <!--
-  - This file is part of YumeBox.
-  -
-  - YumeBox is free software: you can redistribute it and/or modify
-  - it under the terms of the GNU Affero General Public License as
-  - published by the Free Software Foundation, either version 3 of the
-  - License.
-  -
-  - This program is distributed in the hope that it will be useful,
-  - but WITHOUT ANY WARRANTY; without even the implied warranty of
-  - MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-  - GNU Affero General Public License for more details.
-  -
-  - You should have received a copy of the GNU Affero General Public License
-  - along with this program. If not, see <https://www.gnu.org/licenses/>.
-  -
-  - Copyright (c)  YumeYucca 2025 - Present
-  -
-  -->
-
-    v0.0.0-20260306035419-7ceee0674686
+    replace google.golang.org/protobuf => github.com/metacubex/protobuf-go  v0.0.0-20260306035419-7ceee0674686

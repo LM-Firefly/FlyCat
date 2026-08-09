@@ -49,6 +49,9 @@ on:
       default_apk_name:
         description: "File name of the default publish APK (arm64-v8a, external geo) — reusable-notify-telegram.yml downloads its per-APK artifact by this exact name."
         value: ${{ jobs.prepare.outputs.default_apk_name }}
+      builtin_apk_name:
+        description: "File name of the arm64-v8a APK with bundled geo databases."
+        value: ${{ jobs.prepare.outputs.builtin_apk_name }}
 
 permissions:
   contents: read
@@ -58,6 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       default_apk_name: ${{ steps.stem.outputs.external_arm64 }}.apk
+      builtin_apk_name: ${{ steps.stem.outputs.builtin_arm64 }}.apk
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -262,8 +266,8 @@ jobs:
       # the raw .apk is stored as-is (no zip wrapper, no recompression) and downloads
       # directly as an installer. NOTE: with archive:false the artifact takes the FILE
       # name and the `name:` input is ignored, so these artifacts appear exactly as the
-      # publish file names from "Prepare publish artifacts". reusable-notify-telegram.yml
-      # downloads the arm64-v8a external-geo one via this workflow's default_apk_name output.
+      # publish file names from "Prepare publish artifacts". The notification workflow downloads
+      # both arm64-v8a variants via the outputs above.
       - name: Upload arm64-v8a APK artifact (external geo)
         uses: actions/upload-artifact@v7
         with:

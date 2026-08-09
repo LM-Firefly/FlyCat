@@ -19,6 +19,8 @@ NetworkSettings = {
         VpnServiceSummary = "システム VPN による全体プロキシ"
         TunTitle = "Tun"
         TunSummary = "Root が必要な仮想ネットワークインターフェース"
+        EbpfTitle = "eBPF"
+        EbpfSummary = "Root eBPF プロキシ"
     }
 
     VpnOptions = {
@@ -107,6 +109,6 @@ NetworkSettings = {
 
     Error = {
         VpnDenied = "VPN 権限が拒否されました"
-        RootRequired = "Tun には YumeBox の利用可能な Root 権限が必要です"
+        RootRequired = "Root モードには YumeBox の利用可能な Root 権限が必要です"
     }
 }

@@ -48,6 +48,7 @@ fun RouteContent(route: Route, navigator: Navigator) {
         Route.NetworkSettings -> NetworkSettingsScreen(navigator)
         Route.VpnServiceOptions -> VpnServiceOptionsScreen()
         Route.TunServiceOptions -> TunServiceOptionsScreen()
+        Route.EbpfServiceOptions -> EbpfServiceOptionsScreen()
         Route.AccessControl -> AccessControlScreen(navigator)
         Route.MetaFeature -> MetaFeatureScreen(navigator)
         Route.Connection -> ConnectionScreen(navigator)

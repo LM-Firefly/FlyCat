@@ -52,6 +52,18 @@ class SessionRuntimeSpecFactory(
 
     fun createRootSpec(runMode: RunMode): RuntimeSpec = createSpec(RuntimeOwner.RootDaemon, runMode)
 
+    /** Native eBPF policy uses the same package-to-UID resolution as Root Tun. */
+    fun resolveEbpfUidPolicy(): EbpfUidPolicy {
+        val access = resolveTunAccessControl()
+        return when (store.accessControlMode) {
+            AccessControlMode.AcceptAll -> EbpfUidPolicy(mode = 0, uids = emptyList())
+            AccessControlMode.AcceptSelected -> EbpfUidPolicy(mode = 1, uids = access.includeUid)
+            AccessControlMode.RejectSelected -> EbpfUidPolicy(mode = 2, uids = access.excludeUid)
+            AccessControlMode.RejectAll ->
+                EbpfUidPolicy(mode = 1, uids = listOf(context.applicationInfo.uid))
+        }
+    }
+
     /** A local, no-TUN core used only to materialize proxy-group state while the app is foregrounded. */
     fun createPreviewSpec(): RuntimeSpec = createSpec(RuntimeOwner.VpnService, RunMode.VpnService, preview = true)
 
@@ -78,6 +90,7 @@ class SessionRuntimeSpecFactory(
         val modeOverrides =
             when {
                 tunConfig != null -> userOverrides + TunOverride.materialize(tunConfig, profileDir)
+                runMode == RunMode.Ebpf -> userOverrides + EbpfOverride.materialize(profileDir)
                 else -> userOverrides
             }
         val overrideSpecs = modeOverrides + GlobalUaOverride.materialize(profileDir)
@@ -91,7 +104,7 @@ class SessionRuntimeSpecFactory(
             ageSecretKey = ageSecretKey,
             overrideSpecs = overrideSpecs,
             runMode = runMode,
-            // Only Root Tun skips compiler patches; VPN keeps DNS/path injection.
+            // Only Root Tun skips compiler patches; VPN and eBPF keep DNS/path injection.
             skipRuntimePatches = skipModePatches,
             preview = preview,
             tunConfig = tunConfig,
@@ -182,6 +195,11 @@ class SessionRuntimeSpecFactory(
         val includeUid: List<Int> = emptyList(),
         val excludeUid: List<Int> = emptyList(),
         val includeAndroidUser: List<Int> = emptyList(),
+    )
+
+    data class EbpfUidPolicy(
+        val mode: Int,
+        val uids: List<Int>,
     )
 
     private companion object {

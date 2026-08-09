@@ -198,7 +198,9 @@ class ProxyFacade(
 
     suspend fun reconcileRuntimeState() = session.reconcile()
 
-    suspend fun reloadProxy(mode: RunMode = networkSettingsStorage.runMode.value) = session.reload(mode)
+    suspend fun reloadProxy(mode: RunMode = networkSettingsStorage.runMode.value) {
+        session.reload(mode)
+    }
 
     suspend fun startProxy(request: RuntimeStartRequest) {
         preview.stop()

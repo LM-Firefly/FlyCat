@@ -23,30 +23,20 @@
 package com.github.yumeyucca.yumebox.screen.settings
 
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import com.github.yumeyucca.yumebox.data.model.AccessControlMode
 import com.github.yumeyucca.yumebox.data.model.RunMode
 import com.github.yumeyucca.yumebox.presentation.component.*
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
+import com.github.yumeyucca.yumebox.presentation.icon.yume.CPU
 import com.github.yumeyucca.yumebox.presentation.icon.yume.PlaneTakeoff
 import com.github.yumeyucca.yumebox.presentation.icon.yume.Tun
 import com.github.yumeyucca.yumebox.presentation.navigation.Route
@@ -54,20 +44,12 @@ import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.runtime.service.core.KernelManager
 import org.koin.androidx.compose.koinViewModel
 import tf.gal.yumebox.locale.YumeTxt
-import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.RadioButton
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 
 /**
  * Network settings entry point. Top: a "run mode" radio picker — one card per mode.
- * `RunMode.VpnService` is always available; the root-only Tun card is greyed out unless
+ * `RunMode.VpnService` is always available; root-only cards are greyed out unless
  * root is granted. Below: advanced options (service config + disable-overrides) and access control.
  * The former parallel HTTP "system proxy" run mode is gone.
  */
@@ -82,6 +64,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
     // Root Tun is only selectable when root is granted; otherwise its card is greyed
     // out.
     val rootAvailable = screen.rootAvailable
+    val ebpfAvailable = screen.ebpfAvailable
     val kernels = screen.kernels
     val context = LocalContext.current
     var showKernelDialog by remember { mutableStateOf(false) }
@@ -113,6 +96,14 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                         enabled = rootAvailable,
                         onSelect = { viewModel.onRunModeChange(RunMode.Tun) },
                     )
+                    ModeCard(
+                        icon = Yume.CPU,
+                        title = YumeTxt.NetworkSettings.RunMode.EbpfTitle,
+                        summary = YumeTxt.NetworkSettings.RunMode.EbpfSummary,
+                        selected = runMode == RunMode.Ebpf,
+                        enabled = ebpfAvailable,
+                        onSelect = { viewModel.onRunModeChange(RunMode.Ebpf) },
+                    )
                 }
             }
             item {
@@ -125,6 +116,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                             when (runMode) {
                                 RunMode.VpnService -> navigator.push(Route.VpnServiceOptions)
                                 RunMode.Tun -> navigator.push(Route.TunServiceOptions)
+                                RunMode.Ebpf -> navigator.push(Route.EbpfServiceOptions)
                             }
                         },
                     )
@@ -243,7 +235,9 @@ private fun KernelSelectionDialog(
             when (state) {
                 0 ->
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = spacing.space24),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = spacing.space24),
                         horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
                     ) {
                         InfiniteProgressIndicator(modifier = Modifier.size(32.dp))
@@ -252,7 +246,9 @@ private fun KernelSelectionDialog(
                     TextButton(
                         text = YumeTxt.NetworkSettings.Kernel.FetchButton,
                         onClick = onRefresh,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = spacing.space8),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = spacing.space8),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                     )
                 else ->
@@ -278,7 +274,9 @@ private fun KernelSelectionDialog(
                             text = YumeTxt.NetworkSettings.Kernel.DownloadButton,
                             onClick = { onDownload(selectedIds) },
                             enabled = selectedIds.isNotEmpty(),
-                            modifier = Modifier.fillMaxWidth().padding(top = spacing.space16),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = spacing.space16),
                             colors = ButtonDefaults.textButtonColorsPrimary(),
                         )
                     }
@@ -316,7 +314,9 @@ private fun ModeCard(
                         } else {
                             top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.disabledOnSecondaryVariant
                         },
-                    modifier = Modifier.padding(start = 4.dp, end = 12.dp).size(24.dp),
+                    modifier = Modifier
+                        .padding(start = 4.dp, end = 12.dp)
+                        .size(24.dp),
                 )
             },
             endActions = {

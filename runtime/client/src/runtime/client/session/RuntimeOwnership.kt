@@ -56,7 +56,10 @@ internal class RuntimeOwnership(
         when (owner) {
             RuntimeOwner.VpnService -> statusStore.queryRuntimePhase(RunMode.VpnService.name)
             RuntimeOwner.RootDaemon ->
-                if (isRootDaemonActive()) RuntimePhase.Running else RuntimePhase.Idle
+                processController.rootDaemonMode()
+                    ?.let { statusStore.queryRuntimePhase(it.name) }
+                    ?.takeIf { isRootDaemonActive() }
+                    ?: RuntimePhase.Idle
 
             RuntimeOwner.RemoteController,
             RuntimeOwner.None -> RuntimePhase.Idle
@@ -69,19 +72,27 @@ internal class RuntimeOwnership(
                 statusStore.queryRuntimeStartedAt(RunMode.VpnService.name)
                     ?: snapshot.startedAt?.takeIf { snapshot.owner == owner }
 
-            RuntimeOwner.RootDaemon -> snapshot.startedAt?.takeIf { snapshot.owner == owner }
+            RuntimeOwner.RootDaemon ->
+                processController.rootDaemonMode()
+                    ?.let { statusStore.queryRuntimeStartedAt(it.name) }
+                    ?: snapshot.startedAt?.takeIf { snapshot.owner == owner }
 
             RuntimeOwner.RemoteController,
             RuntimeOwner.None -> null
         }
     }
 
-    fun localModeForOwner(owner: RuntimeOwner): RunMode? = RuntimeStateMapper.modeForOwner(owner)
+    fun localModeForOwner(owner: RuntimeOwner): RunMode? =
+        when (owner) {
+            RuntimeOwner.RootDaemon -> processController.rootDaemonMode()
+            else -> RuntimeStateMapper.modeForOwner(owner)
+        }
 
     fun ownerForMode(mode: RunMode): RuntimeOwner =
         when (mode) {
             RunMode.VpnService -> RuntimeOwner.VpnService
             RunMode.Tun -> RuntimeOwner.RootDaemon
+            RunMode.Ebpf -> RuntimeOwner.RootDaemon
         }
 
     fun startingSnapshot(

@@ -26,12 +26,13 @@ package com.github.yumeyucca.yumebox.data.controller
 import com.github.yumeyucca.yumebox.core.model.RunMode
 import com.github.yumeyucca.yumebox.data.store.NetworkSettingsStore
 import com.github.yumeyucca.yumebox.data.store.Preference
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class NetworkSettingsController(
     private val store: NetworkSettingsStore,
-    isRunning: () -> Boolean,
+    private val isRunning: () -> Boolean,
     private val restartProxy: suspend (RunMode) -> Unit,
     private val beforeRestart: suspend (RunMode) -> Unit = {},
 ) {
@@ -43,7 +44,14 @@ class NetworkSettingsController(
         )
 
     fun setRunMode(mode: RunMode) {
+        if (store.runMode.value == mode) return
         store.runMode.set(mode)
+        // A mode change is a live runtime operation. The RuntimeSession owns the actual
+        // stop-old-owner/start-new-owner transaction, so this controller only schedules the same
+        // debounced restart used by the other network settings.
+        if (isRunning()) {
+            scheduleRestart()
+        }
     }
 
     fun <T> setAndRestartIfNeeded(preference: Preference<T>, value: T) {
@@ -52,11 +60,18 @@ class NetworkSettingsController(
         scheduleRestart()
     }
 
-    suspend fun startService(mode: RunMode): Result<Unit> = runCatching {
-        store.runMode.set(mode)
-        beforeRestart(mode)
-        withContext(Dispatchers.IO) { restartProxy(mode) }
-    }
+    suspend fun startService(mode: RunMode): Result<Unit> =
+        try {
+            store.runMode.set(mode)
+            beforeRestart(mode)
+            withContext(Dispatchers.IO) { restartProxy(mode) }
+            Result.success(Unit)
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            // eBPF is an explicit user-selected mode. An attach failure must remain visible;
+            // silently changing the persisted mode would make the UI claim a different datapath.
+            Result.failure(error)
+        }
 
     fun requestRestartIfRunning() {
         scheduleRestart()

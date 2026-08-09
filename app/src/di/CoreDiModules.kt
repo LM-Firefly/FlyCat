@@ -87,7 +87,12 @@ val appDataRuntimeModule = module {
             store = get(),
             isRunning = { proxyFacade.isRunning.value },
             resolveActiveMode = {
-                RuntimeStateMapper.modeForOwner(proxyFacade.runtimeSnapshot.value.owner)
+                proxyFacade.runtimeSnapshot.value.let { snapshot ->
+                    snapshot.runMode.takeIf {
+                        snapshot.owner != com.github.yumeyucca.yumebox.runtime.api.RuntimeOwner.None &&
+                                snapshot.owner != com.github.yumeyucca.yumebox.runtime.api.RuntimeOwner.RemoteController
+                    }
+                }
             },
             restartProxy = { mode -> proxyFacade.reloadProxy(mode) },
         )

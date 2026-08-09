@@ -298,7 +298,7 @@ internal class RuntimeSession(private val deps: RuntimeSessionDeps) {
             publishSnapshot(
                 ownership.activeSnapshot(
                     owner = owner,
-                    runMode = configuredMode,
+                    runMode = ownership.localModeForOwner(owner) ?: configuredMode,
                     localPhase = ownership.localRuntimePhaseForOwner(owner),
                     localStartedAt = ownership.localRuntimeStartedAtForOwner(owner),
                 )
@@ -490,7 +490,7 @@ internal class RuntimeSession(private val deps: RuntimeSessionDeps) {
         publishSnapshot(
             ownership.activeSnapshot(
                 owner = owner,
-                runMode = configuredMode,
+                runMode = ownership.localModeForOwner(owner) ?: configuredMode,
                 localPhase = ownership.localRuntimePhaseForOwner(owner),
                 localStartedAt = ownership.localRuntimeStartedAtForOwner(owner),
             )
@@ -541,7 +541,7 @@ internal class RuntimeSession(private val deps: RuntimeSessionDeps) {
     }
 
     suspend fun handleMissingLocalRuntime(snapshot: RuntimeSnapshot, reason: String?) {
-        val mode = RuntimeStateMapper.modeForOwner(snapshot.owner) ?: return
+        val mode = ownership.localModeForOwner(snapshot.owner) ?: return
         statusStore.markRuntimeIdle(mode.name)
         clearRuntimePayload(resetGroups = false)
         publishSnapshot(
@@ -560,7 +560,7 @@ internal class RuntimeSession(private val deps: RuntimeSessionDeps) {
         ) {
             return false
         }
-        val mode = RuntimeStateMapper.modeForOwner(snapshot.owner) ?: return false
+        val mode = ownership.localModeForOwner(snapshot.owner) ?: return false
         return !statusStore.isLocalRuntimeServiceAlive(mode.name)
     }
 

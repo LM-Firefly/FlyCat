@@ -73,7 +73,7 @@ def main() -> int:
     branch = "Alpha" if args.channel.lower() == "alpha" else "Meta"
     update_kernel_properties(project_root / "kernel.properties", branch)
     sync_repo(project_root, branch)
-    run_tidy(project_root / "lib/mihomo")
+    run_tidy(project_root / "lib/mihomo/mihomo")
     run_tidy(project_root / "lib/native/go")
     print(f"Done: selected {args.channel}")
     return 0

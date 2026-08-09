@@ -62,6 +62,7 @@ Home = {
     ProxyMode = {
         Vpn = "VPN"
         Tun = "TUN"
+        Ebpf = "eBPF"
     }
 
     PreviewGuide = {

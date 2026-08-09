@@ -50,6 +50,8 @@ sealed interface Route {
     @Serializable
     data object TunServiceOptions : Route
 
+    data object EbpfServiceOptions : Route
+
     @Serializable
     data object AccessControl : Route
 

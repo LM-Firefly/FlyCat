@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 import shutil
 
-from .cmake_builder import compat_builder, loader_builder, shell_builder
+from .cmake_builder import compat_builder, ebpf_builder, loader_builder, shell_builder
 from .command import command_exists
 from .config import NdkTools, ProjectConfig, SystemDetector
 from .geo import ResourceDownloader
@@ -31,6 +31,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--rust", action="store_true", help="Build Rust config compiler")
     result.add_argument("--loader", action="store_true", help="Build the C/liblzma native payload extractor")
     result.add_argument("--compat", action="store_true", help="Build the out-of-process core bridge")
+    result.add_argument("--ebpf", action="store_true", help="Build the Root eBPF socket bridge")
     result.add_argument("--geo", action="store_true", help="Download Geo databases and BundleMRS.7z")
     result.add_argument("--clean", action="store_true", help="Clean build outputs")
     result.add_argument("--all", action="store_true", help="Build everything")
@@ -44,7 +45,7 @@ def clean_build_outputs(root: Path) -> None:
     for name in ("geoip.metadb.xz", "geosite.dat.xz", "ASN.mmdb.xz"):
         (root / "app/assets" / name).unlink(missing_ok=True)
     for abi in ("arm64-v8a",):
-        for name in ("libmihomo.so", "libpreview.so", "libmihomocore.so", "liboverride.so", "libloader.so", "libcompat.so", "core-version.properties"):
+        for name in ("libmihomo.so", "libpreview.so", "libmihomocore.so", "liboverride.so", "libloader.so", "libcompat.so", "libebpfbridge.so", "core-version.properties"):
             (root / "jniLibs" / abi / name).unlink(missing_ok=True)
     (root / "build/generated/core-version.properties").unlink(missing_ok=True)
     print("[Clean] Done")
@@ -61,14 +62,15 @@ def main(argv: list[str] | None = None) -> int:
     print("=== YumeBox Native Build Tool ===")
     print(f"OS: {SystemDetector.os_name()}, Host: {SystemDetector.host_tag()}")
     config = ProjectConfig(root)
-    explicit = any((args.go, args.coreexe, args.shell, args.rust, args.loader, args.compat, args.geo, args.all))
+    explicit = any((args.go, args.coreexe, args.shell, args.rust, args.loader, args.compat, args.ebpf, args.geo, args.all))
     build_go = not explicit or args.all or args.go or args.coreexe
     build_shell = build_go or args.all or args.shell
     build_rust = not explicit or args.all or args.rust
     build_loader = not explicit or args.all or args.loader
     build_compat = not explicit or args.all or args.compat
+    build_ebpf = not explicit or args.all or args.ebpf
     download_geo = not explicit or args.all or args.geo
-    needs_ndk = build_go or build_shell or build_loader or build_compat
+    needs_ndk = build_go or build_shell or build_loader or build_compat or build_ebpf
     ndk_tools = NdkTools(config) if needs_ndk else None
     if ndk_tools:
         print(f"NDK: {ndk_tools.ndk_dir}")
@@ -86,8 +88,9 @@ def main(argv: list[str] | None = None) -> int:
         loader_builder(config, ndk_tools).build_all()
     if build_compat:
         compat_builder(config, ndk_tools).build_all()
+    if build_ebpf:
+        ebpf_builder(config, ndk_tools).build_all()
     if download_geo:
         ResourceDownloader(config).download_geo_files()
     print("=== Build Complete ===")
     return 0
-

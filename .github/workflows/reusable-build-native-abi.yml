@@ -124,7 +124,7 @@ jobs:
           ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.14904198
-        run: python3 scripts/native-build.py --go --rust --compat --loader
+        run: python3 scripts/native-build.py --go --rust --compat --loader --ebpf
 
       - name: Verify native outputs
         shell: bash
@@ -135,6 +135,7 @@ jobs:
           test -f "jniLibs/${{ inputs.abi }}/libmihomocore.so"
           test -f "jniLibs/${{ inputs.abi }}/liboverride.so"
           test -f "jniLibs/${{ inputs.abi }}/libcompat.so"
+          test -f "jniLibs/${{ inputs.abi }}/libebpfbridge.so"
           test -f "jniLibs/${{ inputs.abi }}/libloader.so"
           test -f "jniLibs/${{ inputs.abi }}/core-version.properties"
 
@@ -148,6 +149,7 @@ jobs:
             jniLibs/${{ inputs.abi }}/libmihomocore.so
             jniLibs/${{ inputs.abi }}/liboverride.so
             jniLibs/${{ inputs.abi }}/libcompat.so
+            jniLibs/${{ inputs.abi }}/libebpfbridge.so
             jniLibs/${{ inputs.abi }}/libloader.so
             jniLibs/${{ inputs.abi }}/core-version.properties
           if-no-files-found: error

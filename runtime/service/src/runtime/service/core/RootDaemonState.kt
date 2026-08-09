@@ -35,13 +35,19 @@ object RootDaemonState {
     private const val KEY_SECRET = "root_daemon_secret"
     private const val KEY_MODE = "root_daemon_mode"
     private const val KEY_START_TIME_TICKS = "root_daemon_start_time_ticks"
+    private const val KEY_BRIDGE_PID = "root_bridge_pid"
+    private const val KEY_BRIDGE_START_TIME_TICKS = "root_bridge_start_time_ticks"
+    private const val KEY_CGROUP_PATH = "root_ebpf_cgroup_path"
 
-    /** [mode] is the launch `--mode` value: "tun". */
+    /** [mode] is the launch `--mode` value: "tun" or "ebpf". */
     data class Record(
         val pid: Int,
         val secret: String,
         val mode: String,
         val startTimeTicks: Long = 0L,
+        val bridgePid: Int = 0,
+        val bridgeStartTimeTicks: Long = 0L,
+        val cgroupPath: String = "",
     )
 
     private fun store() = MMKVProvider().getMMKV(ID)
@@ -52,6 +58,9 @@ object RootDaemonState {
             encode(KEY_SECRET, record.secret)
             encode(KEY_MODE, record.mode)
             encode(KEY_START_TIME_TICKS, record.startTimeTicks)
+            encode(KEY_BRIDGE_PID, record.bridgePid)
+            encode(KEY_BRIDGE_START_TIME_TICKS, record.bridgeStartTimeTicks)
+            encode(KEY_CGROUP_PATH, record.cgroupPath)
         }
     }
 
@@ -67,7 +76,26 @@ object RootDaemonState {
             secret = mmkv.decodeString(KEY_SECRET).orEmpty(),
             mode = mode,
             startTimeTicks = mmkv.decodeLong(KEY_START_TIME_TICKS, 0L),
+            bridgePid = mmkv.decodeInt(KEY_BRIDGE_PID, 0),
+            bridgeStartTimeTicks = mmkv.decodeLong(KEY_BRIDGE_START_TIME_TICKS, 0L),
+            cgroupPath = mmkv.decodeString(KEY_CGROUP_PATH).orEmpty(),
         )
+    }
+
+    fun attachBridge(pid: Int, startTimeTicks: Long, cgroupPath: String) {
+        val record = load() ?: return
+        save(
+            record.copy(
+                bridgePid = pid,
+                bridgeStartTimeTicks = startTimeTicks,
+                cgroupPath = cgroupPath,
+            )
+        )
+    }
+
+    fun detachBridge() {
+        val record = load() ?: return
+        save(record.copy(bridgePid = 0, bridgeStartTimeTicks = 0L, cgroupPath = ""))
     }
 
     fun clear() {
@@ -76,6 +104,9 @@ object RootDaemonState {
             removeValueForKey(KEY_SECRET)
             removeValueForKey(KEY_MODE)
             removeValueForKey(KEY_START_TIME_TICKS)
+            removeValueForKey(KEY_BRIDGE_PID)
+            removeValueForKey(KEY_BRIDGE_START_TIME_TICKS)
+            removeValueForKey(KEY_CGROUP_PATH)
         }
     }
 }

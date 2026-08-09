@@ -226,7 +226,7 @@ class CoreProcess(private val context: Context) {
      * Launch the core as a detached ROOT Tun daemon via `su`: it runs in the root
      * SELinux domain (free to open a kernel TUN and program routes) and, unlike the VPN
      * child core, outlives the app process — reattached over the REST socket ([reconnectRoot]).
-     * [mode] = "tun".
+     * [mode] = "tun" or "ebpf".
      */
     fun startRoot(mode: String, config: String): CoreEndpoint {
         awaitRootStopGrace()
@@ -460,10 +460,21 @@ class CoreProcess(private val context: Context) {
             running = null
         }
 
-        /** True if the persisted root daemon still has the recorded process identity. */
-        fun isRootDaemonAlive(): Boolean {
+        /** True if the persisted mihomo root process still has the recorded process identity. */
+        fun isRootCoreAlive(): Boolean {
             val record = RootDaemonState.load() ?: return false
             return isRootRecordAlive(record)
+        }
+
+        /**
+         * True if the persisted root daemon and, for eBPF mode, its bridge still have the recorded
+         * process identities. The bridge is intentionally checked here for steady-state ownership
+         * reporting, but startup probes must use [isRootCoreAlive] until the bridge is attached.
+         */
+        fun isRootDaemonAlive(): Boolean {
+            val record = RootDaemonState.load() ?: return false
+            if (!isRootRecordAlive(record)) return false
+            return record.mode != RunMode.Ebpf.coreArg || EbpfBridgeProcess.isAlive()
         }
 
         private fun isRootRecordAlive(record: RootDaemonState.Record): Boolean {
@@ -514,10 +525,13 @@ class CoreProcess(private val context: Context) {
         }
 
         /**
-         * The run mode of the persisted root daemon ("tun" → [RunMode]), or null when
+         * The run mode of the persisted root daemon ("tun"/"ebpf" → [RunMode]), or null when
          * none.
          */
         fun rootDaemonMode(): RunMode? = RunMode.fromCoreArg(RootDaemonState.load()?.mode)
+
+        /** PID of the persisted mihomo root daemon, for the standalone eBPF bridge bypass map. */
+        fun rootDaemonPid(): Int? = RootDaemonState.load()?.pid?.takeIf { it > 0 }
 
         /** Last non-blank line of `<runtimeHome>/core.log`. */
         fun coreLogTail(context: Context): String? = runCatching {
@@ -548,6 +562,10 @@ class CoreProcess(private val context: Context) {
             val record = RootDaemonState.load() ?: return null
             if (!isRootRecordAlive(record)) {
                 RootDaemonState.clear()
+                return null
+            }
+            if (record.mode == RunMode.Ebpf.coreArg && !EbpfBridgeProcess.isAlive()) {
+                stopRoot()
                 return null
             }
             current = CoreEndpoint(context.runtimeHomeDir.resolve(SOCK).absolutePath, record.secret)

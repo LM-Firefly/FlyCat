@@ -32,22 +32,27 @@ import com.github.yumeyucca.yumebox.runtime.api.Intents
 import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
 import com.github.yumeyucca.yumebox.runtime.service.RootForegroundService
 import com.github.yumeyucca.yumebox.runtime.service.StatusProvider
+import com.github.yumeyucca.yumebox.runtime.service.config.ServiceStore
 import com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess
+import com.github.yumeyucca.yumebox.runtime.service.core.EbpfBridgeProcess
 import com.github.yumeyucca.yumebox.runtime.service.log.RuntimeLog
+import com.github.yumeyucca.yumebox.runtime.service.root.EbpfCgroupSupport
+import com.github.yumeyucca.yumebox.runtime.service.root.RootAccessSupport
 import kotlinx.coroutines.withTimeout
 
 /**
- * Launches the root [RunMode.Tun] daemon. A foreground notification host tracks
+ * Launches a root [RunMode.Tun] or [RunMode.Ebpf] daemon. A foreground notification host tracks
  * the detached `su` daemon, which remains independently driven over the REST socket
  * ([CoreProcess.reconnectRoot]). Only an explicit [CoreProcess.stopRoot] kills the core.
  */
 object RootSessionLauncher {
     /** Compile the active profile for [mode] and launch the detached root daemon. */
     suspend fun start(context: Context, mode: RunMode) {
-        require(mode == RunMode.Tun) {
+        require(mode == RunMode.Tun || mode == RunMode.Ebpf) {
             "RootSessionLauncher handles root modes only, got $mode"
         }
         val appContext = context.appContextOrSelf
+        RootAccessSupport.requireRootAccess(appContext)
         appContext.requireBuiltinGeoAssets()
         val log = RuntimeLog.writer(appContext, mode)
         log.beginSession(RuntimeLog.Type.Launcher, "root start mode=${mode.name}")
@@ -56,7 +61,8 @@ object RootSessionLauncher {
         try {
             StatusProvider.markRuntimeStarting(mode)
             StartupTaskCoordinator.awaitWarmup()
-            val spec = SessionRuntimeSpecFactory(appContext).createRootSpec(mode)
+            val specFactory = SessionRuntimeSpecFactory(appContext)
+            val spec = specFactory.createRootSpec(mode)
             log.i(
                 RuntimeLog.Type.Launcher,
                 "profile=${spec.profileName} overrides=${spec.overrideSpecs.size}",
@@ -67,10 +73,34 @@ object RootSessionLauncher {
             awaitControllerReady(appContext)
             log.i(RuntimeLog.Type.Launcher, "controller ready")
 
+            if (mode == RunMode.Ebpf) {
+                val settings = ServiceStore()
+                val cgroupPath =
+                    EbpfCgroupSupport.rootCgroupPath()
+                        ?: error("eBPF requires a cgroup v2 mount")
+                val mihomoPid =
+                    CoreProcess.rootDaemonPid()
+                        ?: error("mihomo root PID is unavailable for eBPF bridge")
+                EbpfBridgeProcess.start(
+                    appContext,
+                    mihomoPid,
+                    cgroupPath,
+                    specFactory.resolveEbpfUidPolicy(),
+                    if (settings.dnsHijacking) 0 else 1,
+                    settings.allowIpv6,
+                    resolveEbpfBypassCidrs(settings),
+                )
+                check(EbpfBridgeProcess.isAlive()) {
+                    "eBPF bridge exited during startup: ${EbpfBridgeProcess.diagnosticLog(appContext)}"
+                }
+                log.i(RuntimeLog.Type.Launcher, "eBPF bridge ready cgroupMount=$cgroupPath")
+            }
+
             StatusProvider.markRuntimeRunning(mode)
             broadcast(appContext, Intents.actionRuntimeStarted(appContext.packageName))
             log.i(RuntimeLog.Type.Launcher, "success: root daemon running mode=${mode.name}")
         } catch (error: Throwable) {
+            runCatching { EbpfBridgeProcess.stop() }
             runCatching { CoreProcess.stopRoot() }
             StatusProvider.markRuntimeFailed(mode, error.message)
             RootForegroundService.stop(appContext)
@@ -83,6 +113,7 @@ object RootSessionLauncher {
     fun stop(context: Context) {
         val appContext = context.appContextOrSelf
         val mode = CoreProcess.rootDaemonMode()
+        runCatching { EbpfBridgeProcess.stop() }
         runCatching { CoreProcess.stopRoot() }
         mode?.let { StatusProvider.markRuntimeIdle(it) }
         RootForegroundService.stop(appContext)
@@ -99,7 +130,10 @@ object RootSessionLauncher {
         val deadline = SystemClock.elapsedRealtime() + STARTUP_PROBE_TIMEOUT_MS
         var lastError: Throwable? = null
         while (true) {
-            if (!CoreProcess.isRootDaemonAlive()) {
+            // The eBPF bridge is started after the mihomo controller becomes ready. Checking the
+            // combined daemon state here would reject every fresh eBPF launch before the bridge
+            // has had a chance to attach.
+            if (!CoreProcess.isRootCoreAlive()) {
                 val reason = CoreProcess.coreLogTail(context) ?: "root core exited during startup"
                 error(reason)
             }
@@ -137,6 +171,25 @@ object RootSessionLauncher {
                 (tail?.let { " ($it)" } ?: ""),
             lastError,
         )
+    }
+
+    private fun resolveEbpfBypassCidrs(settings: ServiceStore): List<String> {
+        val explicit =
+            settings.tunRouteExcludeAddress
+                .map(String::trim)
+                .filter(String::isNotEmpty)
+                .filter { settings.allowIpv6 || ':' !in it }
+        if (explicit.isNotEmpty() || !settings.bypassPrivateNetwork) return explicit
+        val privateCidrs = mutableListOf(
+            "10.0.0.0/8",
+            "100.64.0.0/10",
+            "127.0.0.0/8",
+            "169.254.0.0/16",
+            "172.16.0.0/12",
+            "192.168.0.0/16",
+        )
+        if (settings.allowIpv6) privateCidrs += listOf("::1/128", "fc00::/7", "fe80::/10")
+        return privateCidrs
     }
 
     private const val STARTUP_PROBE_INTERVAL_MS = 75L

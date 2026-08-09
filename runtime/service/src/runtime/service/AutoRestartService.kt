@@ -38,6 +38,7 @@ import com.github.yumeyucca.yumebox.data.store.*
 import com.github.yumeyucca.yumebox.runtime.api.Profile
 import com.github.yumeyucca.yumebox.runtime.service.log.RuntimeLog
 import com.github.yumeyucca.yumebox.runtime.service.profile.ProfileService
+import com.github.yumeyucca.yumebox.runtime.service.session.RootSessionLauncher
 import com.github.yumeyucca.yumebox.runtime.service.session.RuntimeServiceLauncher
 import com.github.yumeyucca.yumebox.runtime.service.util.*
 import kotlinx.coroutines.*
@@ -164,49 +165,57 @@ class AutoRestartService : Service() {
                 REASON_PACKAGE_REPLACED -> RuntimeServiceLauncher.SOURCE_AUTO_RESTART_REPLACED
                 else -> RuntimeServiceLauncher.SOURCE_AUTO_RESTART
             }
-        if (runMode == RunMode.VpnService) {
-            if (VpnService.prepare(this) != null) {
-                Timber.tag(TAG).i("Skip auto start: VPN permission is missing")
-                return
+        val activationMode = runMode
+        when (runMode) {
+            RunMode.VpnService -> {
+                if (VpnService.prepare(this) != null) {
+                    Timber.tag(TAG).i("Skip auto start: VPN permission is missing")
+                    return
+                }
+                RuntimeServiceLauncher.start(this, RunMode.VpnService, startupSource)
             }
-            RuntimeServiceLauncher.start(this, RunMode.VpnService, startupSource)
-        } else {
-            // The root Tun daemon survives app death and is reattached on demand — it is not
-            // auto-restarted here.
-            Timber.tag(TAG).i("Skip auto start: root mode $runMode is not auto-restarted")
-            return
+
+            RunMode.Tun ->
+                withContext(Dispatchers.IO) {
+                    RootSessionLauncher.start(this@AutoRestartService, runMode)
+                }
+
+            RunMode.Ebpf ->
+                withContext(Dispatchers.IO) {
+                    RootSessionLauncher.start(this@AutoRestartService, RunMode.Ebpf)
+                }
         }
 
         val activationResult = runCatching {
-            awaitRuntimeActivation(runMode)
+            awaitRuntimeActivation(activationMode)
         }
             .getOrElse { error ->
-                cleanupIncompleteRuntime(runMode)
+                cleanupIncompleteRuntime(activationMode)
                 throw error
             }
-        val log = RuntimeLog.writer(this, runMode)
+        val log = RuntimeLog.writer(this, activationMode)
         when (activationResult) {
             is RuntimeActivationResult.Running -> {
                 log.i(
                     RuntimeLog.Type.AutoStart,
-                    "success: running reason=$reason mode=$runMode",
+                    "success: running reason=$reason mode=$activationMode",
                 )
                 Timber.tag(TAG)
                     .i(
                         "Auto start active: reason=$reason profile=${activeProfile.name}, " +
-                            "mode=$runMode"
+                                "mode=$activationMode"
                     )
             }
 
             is RuntimeActivationResult.Failed -> {
-                cleanupIncompleteRuntime(runMode)
+                cleanupIncompleteRuntime(activationMode)
                 val message = activationResult.error ?: "runtime entered Failed"
                 log.e(RuntimeLog.Type.AutoStart, "failed reason=$reason error=$message")
                 error(message)
             }
 
             is RuntimeActivationResult.TimedOut -> {
-                cleanupIncompleteRuntime(runMode)
+                cleanupIncompleteRuntime(activationMode)
                 val message =
                     "runtime activation timed out in ${activationResult.lastState.phase}" +
                         activationResult.lastState.error?.let { ": $it" }.orEmpty()
@@ -229,7 +238,11 @@ class AutoRestartService : Service() {
         }
 
     private fun cleanupIncompleteRuntime(mode: RunMode) {
-        RuntimeServiceLauncher.stop(this, mode)
+        if (mode == RunMode.VpnService) {
+            RuntimeServiceLauncher.stop(this, mode)
+        } else {
+            RootSessionLauncher.stop(this)
+        }
     }
 
     @Suppress("TooGenericExceptionCaught")

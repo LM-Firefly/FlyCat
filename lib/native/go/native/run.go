@@ -89,7 +89,7 @@ func readStartup(opts options) (rawConfig []byte, tunFd, channelFd int) {
 	tunFd, channelFd = -1, -1
 
 	switch opts.mode {
-	case "tun":
+	case "tun", "ebpf":
 		if opts.configPath == "" {
 			fatal("mode %q requires --config", opts.mode)
 		}
@@ -106,7 +106,7 @@ func readStartup(opts options) (rawConfig []byte, tunFd, channelFd int) {
 		if rawConfig, err = readPreviewSetup(channelFd); err != nil {
 			fatal("read preview setup from channel: %v", err)
 		}
-	default: // vpn
+	case "vpn":
 		value := opts.channel
 		fd, err := strconv.Atoi(value)
 		if err != nil || fd < 0 {
@@ -116,6 +116,8 @@ func readStartup(opts options) (rawConfig []byte, tunFd, channelFd int) {
 		if rawConfig, tunFd, err = readSetup(channelFd); err != nil {
 			fatal("read setup from channel: %v", err)
 		}
+	default:
+		fatal("unsupported run mode %q", opts.mode)
 	}
 
 	// config.Parse fills an empty document with defaults instead of erroring, bringing up a core

@@ -33,7 +33,8 @@ object RuntimeStateMapper {
         snapshot.phase == RuntimePhase.Running
 
     /**
-     * VpnService maps 1:1 to [RunMode.VpnService]; the root daemon always runs [RunMode.Tun].
+     * VpnService maps 1:1 to [RunMode.VpnService]. RootDaemon has two concrete modes and is
+     * resolved from the persisted root process record by [RuntimeOwnership].
      */
     fun modeForOwner(owner: RuntimeOwner): RunMode? =
         when (owner) {

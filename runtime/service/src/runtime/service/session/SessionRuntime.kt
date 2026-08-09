@@ -684,7 +684,7 @@ class SessionRuntime(
         val source =
             when (spec.owner) {
                 RuntimeOwner.VpnService -> RuntimeLog.Source.LocalTun
-                RuntimeOwner.RootDaemon -> RuntimeLog.Source.RootTun
+                RuntimeOwner.RootDaemon -> RuntimeLog.Source.forMode(spec.runMode)
                 RuntimeOwner.RemoteController,
                 RuntimeOwner.None -> return null
             }

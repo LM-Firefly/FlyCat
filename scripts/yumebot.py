@@ -156,7 +156,7 @@ def find_apk_files():
             files.extend(found)
             print(f"[+] Found {len(found)} files in {pattern}")
 
-    files = list(set(files))
+    files = sorted(set(files))
 
     if not files:
         print("[-] No APK files found!")
@@ -226,10 +226,6 @@ def send_files_via_bot_api():
     caption = get_caption()
     print("[+] Caption:", caption)
 
-    file_path = files[0]
-    print(f"[+] Uploading {file_path}...")
-
-    reply_to_id = None
     try:
         photo_name, photo, photo_content_type = load_logo()
         photo_data = {
@@ -254,28 +250,27 @@ def send_files_via_bot_api():
         print(f"[-] Photo send failed: {e}")
 
 
-    with open(file_path, 'rb') as f:
-        data = {
-            'chat_id': CHAT_ID,
-        }
+    all_uploaded = True
+    for file_path in files:
+        print(f"[+] Uploading {file_path}...")
+        try:
+            with open(file_path, 'rb') as f:
+                response = requests.post(
+                    f"{bot_url}/sendDocument",
+                    data={'chat_id': CHAT_ID},
+                    files={'document': f},
+                    timeout=60,
+                )
+            if response.status_code == 200:
+                print(f"[+] {file_path} uploaded successfully!")
+            else:
+                print(f"[-] Failed to upload {file_path}: {response.text}")
+                all_uploaded = False
+        except Exception as e:
+            print(f"[-] Failed to upload {file_path}: {e}")
+            all_uploaded = False
 
-        files_data = {
-            'document': f
-        }
-
-        response = requests.post(
-            f"{bot_url}/sendDocument",
-            data=data,
-            files=files_data,
-            timeout=60,
-        )
-
-    if response.status_code == 200:
-        print(f"[+] {file_path} uploaded successfully!")
-        return True
-    else:
-        print(f"[-] Failed to upload {file_path}: {response.text}")
-        return False
+    return all_uploaded
 
 
 if __name__ == "__main__":

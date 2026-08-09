@@ -31,10 +31,14 @@ import com.github.yumeyucca.yumebox.data.model.RunMode
 import com.github.yumeyucca.yumebox.data.model.TunStack
 import com.github.yumeyucca.yumebox.data.store.NetworkSettingsStore
 import com.github.yumeyucca.yumebox.data.store.Preference
-import com.github.yumeyucca.yumebox.runtime.service.root.RootAccessSupport
+import com.github.yumeyucca.yumebox.runtime.service.core.EbpfBridgeProcess
 import com.github.yumeyucca.yumebox.runtime.service.core.KernelManager
+import com.github.yumeyucca.yumebox.runtime.service.root.EbpfCgroupSupport
+import com.github.yumeyucca.yumebox.runtime.service.root.RootAccessSupport
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Backs both the run-mode picker ([NetworkSettingsScreen]) and the VpnService options page
@@ -70,6 +74,8 @@ class NetworkSettingsViewModel(
     // flow is intended. A non-rooted device fast-fails to false and the root cards stay disabled.
     private val _rootAvailable = MutableStateFlow(false)
     val rootAvailable: StateFlow<Boolean> = _rootAvailable.asStateFlow()
+    private val _ebpfAvailable = MutableStateFlow(false)
+    val ebpfAvailable: StateFlow<Boolean> = _ebpfAvailable.asStateFlow()
     private val _kernels = MutableStateFlow<List<KernelManager.Kernel>>(emptyList())
     private val _kernelStatus = MutableStateFlow("No downloaded kernel installed")
     private val _kernelBusy = MutableStateFlow(false)
@@ -80,6 +86,7 @@ class NetworkSettingsViewModel(
         val disableAllOverride: Boolean = false,
         val accessControlMode: AccessControlMode = AccessControlMode.ALLOW_ALL,
         val rootAvailable: Boolean = false,
+        val ebpfAvailable: Boolean = false,
         val kernels: List<KernelManager.Kernel> = emptyList(),
         val kernelStatus: String = "No downloaded kernel installed",
         val kernelBusy: Boolean = false,
@@ -93,12 +100,14 @@ class NetworkSettingsViewModel(
                 disableAllOverride.state,
                 accessControlMode.state,
                 rootAvailable,
-            ) { mode, disableOverride, accessMode, root ->
+                ebpfAvailable,
+            ) { mode, disableOverride, accessMode, root, ebpf ->
                 NetworkSettingsScreenState(
                     runMode = mode,
                     disableAllOverride = disableOverride,
                     accessControlMode = accessMode,
                     rootAvailable = root,
+                    ebpfAvailable = ebpf,
                 )
             },
             combine(_kernels, _kernelStatus, _kernelBusy, _activeKernelId) { availableKernels, status, busy, active ->
@@ -119,6 +128,7 @@ class NetworkSettingsViewModel(
                     disableAllOverride = disableAllOverride.value,
                     accessControlMode = accessControlMode.value,
                     rootAvailable = false,
+                    ebpfAvailable = false,
                     kernels = emptyList(),
                     kernelStatus = _kernelStatus.value,
                     kernelBusy = false,
@@ -183,7 +193,15 @@ class NetworkSettingsViewModel(
     init {
         _activeKernelId.value = KernelManager.activeKernelId(getApplication())
         viewModelScope.launch {
-            _rootAvailable.value = RootAccessSupport.evaluateAsync(getApplication()).canStartRoot
+            val root = RootAccessSupport.evaluateAsync(getApplication()).canStartRoot
+            _rootAvailable.value = root
+            val cgroupPath = EbpfCgroupSupport.rootCgroupPath()
+            _ebpfAvailable.value =
+                root &&
+                        cgroupPath != null &&
+                        withContext(Dispatchers.IO) {
+                            EbpfBridgeProcess.isCapabilityAvailable(getApplication(), cgroupPath)
+                        }
         }
     }
 

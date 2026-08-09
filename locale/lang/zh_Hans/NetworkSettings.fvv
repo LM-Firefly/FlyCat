@@ -19,6 +19,8 @@ NetworkSettings = {
         VpnServiceSummary = "系统 VPN 全局代理"
         TunTitle = "Tun"
         TunSummary = "需要 Root 的虚拟网卡"
+        EbpfTitle = "eBPF"
+        EbpfSummary = "需要 Root 的 eBPF 转发代理"
     }
 
     VpnOptions = {
@@ -107,6 +109,6 @@ NetworkSettings = {
 
     Error = {
         VpnDenied = "VPN 权限被拒绝"
-        RootRequired = "Tun 需要 YumeBox 已获取可用的 Root 权限"
+        RootRequired = "Root 模式需要 YumeBox 已获取可用的 Root 权限"
     }
 }
