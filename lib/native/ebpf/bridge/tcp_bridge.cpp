@@ -37,7 +37,11 @@ namespace {
 constexpr std::size_t kRelayBufferSize = 32 * 1024;
 constexpr std::size_t kHandshakeBufferSize = 512;
 constexpr std::size_t kMaxTcpSessions = 4096;
-constexpr std::uint32_t kBaseEvents = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
+// EPOLLHUP/EPOLLERR are terminal for a session. RDHUP is subscribed below
+// only while the corresponding source endpoint can still produce input;
+// leaving it in every relay mask creates a level-triggered busy loop after a
+// peer half-closes its stream.
+constexpr std::uint32_t kBaseEvents = EPOLLERR | EPOLLHUP;
 
 bool setNonBlocking(int fd) {
     const int flags = fcntl(fd, F_GETFL, 0);
@@ -170,9 +174,9 @@ void TcpSession::updateEvents() {
     if (state != State::Relay) {
         std::uint32_t proxy_events = kBaseEvents;
         if (state == State::ConnectingProxy || state == State::SendGreeting || state == State::SendConnect) {
-            proxy_events |= EPOLLOUT;
+            proxy_events |= EPOLLOUT | EPOLLRDHUP;
         } else {
-            proxy_events |= EPOLLIN;
+            proxy_events |= EPOLLIN | EPOLLRDHUP;
         }
         if (!modifyEpoll(owner->epoll_fd_, proxy_fd, proxy_events, &proxy_endpoint)) {
             fail();
@@ -185,7 +189,7 @@ void TcpSession::updateEvents() {
     const auto addDirectionEvents = [](const TcpDirection& direction, std::uint32_t* source_events, std::uint32_t* destination_events) {
         if (direction.use_splice) {
             if (!direction.source_eof && !direction.pipe_pending) {
-                *source_events |= EPOLLIN;
+                *source_events |= EPOLLIN | EPOLLRDHUP;
             }
             if (direction.pipe_pending) {
                 *destination_events |= EPOLLOUT;
@@ -193,7 +197,7 @@ void TcpSession::updateEvents() {
             return;
         }
         if (!direction.source_eof && direction.buffer_size < direction.buffer.size()) {
-            *source_events |= EPOLLIN;
+            *source_events |= EPOLLIN | EPOLLRDHUP;
         }
         if (direction.buffer_size != 0) {
             *destination_events |= EPOLLOUT;
@@ -508,6 +512,16 @@ void TcpSession::onEvent(int fd, std::uint32_t events) {
     if (closed) {
         return;
     }
+    if ((events & (EPOLLERR | EPOLLHUP)) != 0) {
+        fail();
+        return;
+    }
+    // A half-close is meaningful only after the SOCKS5 handshake. Closing a
+    // handshaking session here also prevents a persistent RDHUP wakeup.
+    if (state != State::Relay && (events & EPOLLRDHUP) != 0) {
+        fail();
+        return;
+    }
     if (state == State::ConnectingProxy && fd == proxy_fd && (events & (EPOLLOUT | EPOLLERR | EPOLLHUP)) != 0) {
         int socket_error = 0;
         socklen_t socket_error_size = sizeof(socket_error);
@@ -736,7 +750,7 @@ int TcpBridge::run(volatile sig_atomic_t* stop_flag) {
                     session->next = sessions_;
                     sessions_ = session;
                     ++session_count_;
-                    if (!addEpoll(epoll_fd_, proxy_fd, kBaseEvents | EPOLLOUT, &session->proxy_endpoint) ||
+                    if (!addEpoll(epoll_fd_, proxy_fd, kBaseEvents | EPOLLRDHUP | EPOLLOUT, &session->proxy_endpoint) ||
                         !addEpoll(epoll_fd_, client_fd, kBaseEvents, &session->client_endpoint)) {
                         session->markClosed();
                         continue;
