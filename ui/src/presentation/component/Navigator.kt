@@ -41,7 +41,7 @@ class Navigator(initial: List<Any> = emptyList()) {
     val navigation = StackNavigation<Any>()
     /** Pushes [key] onto the stack unless it is already on top (mirrors launchSingleTop). */
     fun push(key: Any) {
-        if (key !in backStack) {
+        if (backStack.lastOrNull() != key) {
             backStack.add(key)
             navigation.pushNew(key)
         }

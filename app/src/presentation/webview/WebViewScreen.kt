@@ -22,10 +22,10 @@
 
 package com.github.yumeyucca.yumebox.presentation.webview
 
-
 import android.app.Activity
+import android.webkit.WebView
 import androidx.activity.compose.BackHandler
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -33,8 +33,18 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun WebViewScreen(initialUrl: String, onBack: (() -> Unit)? = null) {
     val context = LocalContext.current
     val activity = context as? Activity
+    var webView by remember { mutableStateOf<WebView?>(null) }
 
-    BackHandler { onBack?.invoke() ?: activity?.finish() }
+    BackHandler {
+        val currentWebView = webView
+        if (currentWebView?.canGoBack() == true) {
+            currentWebView.goBack()
+        } else {
+            onBack?.invoke() ?: activity?.finish()
+        }
+    }
 
-    MiuixTheme { LocalWebView(initialUrl = initialUrl) }
+    MiuixTheme {
+        LocalWebView(initialUrl = initialUrl, onWebViewCreated = { webView = it })
+    }
 }

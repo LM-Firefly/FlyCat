@@ -57,6 +57,11 @@ class AppNavigationComponent(
     val componentContext: ComponentContext,
     val predictiveBackEnabledAtLaunch: Boolean,
 ) {
+    // The bottom pager is nested in Route.Main, so keep its semantic destination outside the
+    // screen composition while another Activity or a child route is on top.
+    private val mainPageState = mutableIntStateOf(0)
+    private var boundMainRoute: Route.Main? = null
+
     val navigator = Navigator(listOf(Route.Main()))
     internal val childStack =
         componentContext.childStack(
@@ -67,19 +72,45 @@ class AppNavigationComponent(
             // childStack's own callback enabled lets fast gestures bypass the fallback animation.
             handleBackButton = false,
         ) { rawRoute, _ ->
-            RouteChild(rawRoute as Route, navigator)
+            RouteChild(rawRoute as Route, navigator, this)
         }
+
+    internal fun bindMainRoute(route: Route.Main) {
+        if (boundMainRoute != route) {
+            mainPageState.intValue = route.initialPage
+            boundMainRoute = route
+        }
+    }
+
+    internal fun updateMainPage(page: Int) {
+        mainPageState.intValue = page
+    }
+
+    internal val mainPage: Int
+        get() = mainPageState.intValue
 }
 
 internal class RouteChild(
     private val route: Route,
     private val navigator: Navigator,
+    private val navigationComponent: AppNavigationComponent,
 ) {
+    init {
+        if (route is Route.Main) {
+            navigationComponent.bindMainRoute(route)
+        }
+    }
+
     @Composable
     fun Content() {
         CompositionLocalProvider(LocalNavigator provides navigator) {
             when (route) {
-                is Route.Main -> MainScreen(navigator, route.initialPage)
+                is Route.Main ->
+                    MainScreen(
+                        navigator = navigator,
+                        initialPage = navigationComponent.mainPage,
+                        onMainPageChanged = navigationComponent::updateMainPage,
+                    )
                 is Route.MoeWallpaperCrop ->
                     MoeWallpaperCropScreen(
                         navigator,

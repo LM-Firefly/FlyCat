@@ -55,6 +55,7 @@ fun LocalWebView(
     initialUrl: String,
     modifier: Modifier = Modifier,
     enableDebug: Boolean = BuildConfig.DEBUG,
+    onWebViewCreated: (WebView) -> Unit = {},
     onPageFinished: (String) -> Unit = {},
     onPageError: (String, String) -> Unit = { _, _ -> },
 ) {
@@ -114,6 +115,7 @@ fun LocalWebView(
         factory = { ctx ->
             createWebView(ctx, initialUrl, onPageFinished, onPageError).also {
                 webViewRef.value = it
+                onWebViewCreated(it)
             }
         },
         modifier = modifier.windowInsetsPadding(WindowInsets.safeDrawing),

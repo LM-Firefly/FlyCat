@@ -54,23 +54,29 @@ import org.koin.compose.koinInject
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
+fun MainScreen(
+    navigator: Navigator,
+    initialPage: Int = 0,
+    onMainPageChanged: (Int) -> Unit = {},
+) {
     val context = LocalContext.current
     val windowLayoutMode = rememberWindowLayoutMode()
     val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
     val homeViewModel = koinViewModel<HomeViewModel>()
     val featureStore = koinInject<FeatureStore>()
     val nodeSession by homeViewModel.nodeSession.collectAsState()
-    var proxyDestinationCommitted by remember { mutableStateOf(false) }
+    val initialDestination =
+        BottomBarDestination.entries.getOrElse(initialPage.coerceIn(0, 3)) {
+            BottomBarDestination.Home
+        }
+    // Providers is opened above a freshly-created Main(Proxy) route on compact layouts.
+    val initialProxyRequested = remember { initialDestination == BottomBarDestination.Proxy }
+    var proxyDestinationCommitted by remember { mutableStateOf(initialProxyRequested) }
     val visibleDestinations =
         remember(proxyDestinationCommitted) {
             BottomBarDestination.entries.filter { destination ->
                 destination != BottomBarDestination.Proxy || proxyDestinationCommitted
             }
-        }
-    val initialDestination =
-        BottomBarDestination.entries.getOrElse(initialPage.coerceIn(0, 3)) {
-            BottomBarDestination.Home
         }
     val initialMainPage =
         visibleDestinations.indexOf(initialDestination).takeIf { it >= 0 } ?: 0
@@ -86,7 +92,7 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
 
     LaunchedEffect(nodeSession.everReady, mainPagerState.pagerState.isScrollInProgress) {
         // Insert the proxy page only after the first node load and after a swipe has settled.
-        if (!nodeSession.everReady) {
+        if (!nodeSession.everReady && !initialProxyRequested) {
             proxyDestinationCommitted = false
         } else if (!mainPagerState.pagerState.isScrollInProgress) {
             proxyDestinationCommitted = true
@@ -177,6 +183,8 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     }
 
     LaunchedEffect(mainPagerState.pagerState.currentPage) { mainPagerState.syncPage() }
+
+    LaunchedEffect(settledDestination) { onMainPageChanged(settledDestination.ordinal) }
 
     LaunchedEffect(
         mainPagerState.pagerState.currentPage,
