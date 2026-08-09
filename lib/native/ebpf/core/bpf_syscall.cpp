@@ -267,4 +267,62 @@ bool probeSocketAddressCgroupAttach(const char* path) {
     return true;
 }
 
+int cleanupSocketAddressPrograms(const char* path) {
+    if (path == nullptr || path[0] == '\0') {
+        errno = EINVAL;
+        return -1;
+    }
+    const int cgroup_fd = open(path, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (cgroup_fd < 0) return -1;
+
+    const enum bpf_attach_type attach_types[] = {
+        BPF_CGROUP_INET4_CONNECT,
+        BPF_CGROUP_UDP4_SENDMSG,
+        BPF_CGROUP_UDP4_RECVMSG,
+        BPF_CGROUP_INET6_CONNECT,
+        BPF_CGROUP_UDP6_SENDMSG,
+        BPF_CGROUP_UDP6_RECVMSG,
+    };
+    std::uint32_t program_ids[64]{};
+    for (const enum bpf_attach_type attach_type : attach_types) {
+        while (true) {
+            union bpf_attr query{};
+            query.query.target_fd = static_cast<std::uint32_t>(cgroup_fd);
+            query.query.attach_type = attach_type;
+            query.query.prog_ids = reinterpret_cast<std::uint64_t>(program_ids);
+            query.query.prog_cnt = sizeof(program_ids) / sizeof(program_ids[0]);
+            if (bpfSyscall(BPF_PROG_QUERY, &query, sizeof(query)) != 0) {
+                const int saved_errno = errno;
+                close(cgroup_fd);
+                errno = saved_errno;
+                return -1;
+            }
+            const std::uint32_t count = query.query.prog_cnt;
+            if (count == 0) break;
+            bool removed = false;
+            for (std::uint32_t index = 0; index < count; ++index) {
+                union bpf_attr get_fd{};
+                get_fd.start_id = program_ids[index];
+                const int program_fd = static_cast<int>(bpfSyscall(BPF_PROG_GET_FD_BY_ID, &get_fd, sizeof(get_fd)));
+                if (program_fd < 0) continue;
+                struct bpf_prog_info info{};
+                union bpf_attr get_info{};
+                get_info.info.bpf_fd = static_cast<std::uint32_t>(program_fd);
+                get_info.info.info_len = sizeof(info);
+                get_info.info.info = reinterpret_cast<std::uint64_t>(&info);
+                const bool is_yumebox =
+                    bpfSyscall(BPF_OBJ_GET_INFO_BY_FD, &get_info, sizeof(get_info)) == 0 &&
+                    std::strncmp(info.name, "yb_", 3) == 0;
+                if (is_yumebox && detachProgram(cgroup_fd, program_fd, attach_type) == 0) {
+                    removed = true;
+                }
+                close(program_fd);
+            }
+            if (!removed || count < sizeof(program_ids) / sizeof(program_ids[0])) break;
+        }
+    }
+    close(cgroup_fd);
+    return 0;
+}
+
 }  // namespace yumebox::ebpf

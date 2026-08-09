@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <new>
 
 #include <fcntl.h>
@@ -17,6 +18,7 @@
 #include <sys/epoll.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifndef MSG_NOSIGNAL
@@ -36,12 +38,22 @@ namespace {
 
 constexpr std::size_t kRelayBufferSize = 32 * 1024;
 constexpr std::size_t kHandshakeBufferSize = 512;
-constexpr std::size_t kMaxTcpSessions = 4096;
+// Bound fallback relay memory: each non-splice session can own two 32 KiB buffers.
+constexpr std::size_t kMaxTcpSessions = 1024;
+constexpr std::uint64_t kSessionIdleMs = 120'000;
+using RelayBuffer = std::array<std::uint8_t, kRelayBufferSize>;
 // EPOLLHUP/EPOLLERR are terminal for a session. RDHUP is subscribed below
 // only while the corresponding source endpoint can still produce input;
 // leaving it in every relay mask creates a level-triggered busy loop after a
 // peer half-closes its stream.
 constexpr std::uint32_t kBaseEvents = EPOLLERR | EPOLLHUP;
+
+std::uint64_t monotonicMs() {
+    timespec value{};
+    if (clock_gettime(CLOCK_MONOTONIC, &value) != 0) return 0;
+    return static_cast<std::uint64_t>(value.tv_sec) * 1000U +
+        static_cast<std::uint64_t>(value.tv_nsec) / 1'000'000U;
+}
 
 bool setNonBlocking(int fd) {
     const int flags = fcntl(fd, F_GETFL, 0);
@@ -78,9 +90,19 @@ struct TcpDirection final {
     bool pipe_pending = false;
     bool source_eof = false;
     bool destination_shutdown = false;
-    std::array<std::uint8_t, kRelayBufferSize> buffer{};
+    std::unique_ptr<RelayBuffer> buffer;
     std::size_t buffer_offset = 0;
     std::size_t buffer_size = 0;
+
+    [[nodiscard]] bool ensureBuffer() {
+        if (buffer != nullptr) return true;
+        buffer.reset(new (std::nothrow) RelayBuffer);
+        return buffer != nullptr;
+    }
+
+    [[nodiscard]] std::size_t bufferCapacity() const {
+        return buffer == nullptr ? 0 : buffer->size();
+    }
 
     void closePipe() {
         closeFd(&pipe_read);
@@ -90,6 +112,7 @@ struct TcpDirection final {
 
     void closeAll() {
         closePipe();
+        buffer.reset();
     }
 
     [[nodiscard]] bool pending() const {
@@ -122,6 +145,7 @@ struct TcpSession final {
     int proxy_fd = -1;
     State state = State::ConnectingProxy;
     bool closed = false;
+    std::uint64_t last_activity_ms = 0;
     std::array<std::uint8_t, 64> transmit{};
     std::size_t transmit_offset = 0;
     std::size_t transmit_size = 0;
@@ -196,7 +220,7 @@ void TcpSession::updateEvents() {
             }
             return;
         }
-        if (!direction.source_eof && direction.buffer_size < direction.buffer.size()) {
+        if (!direction.source_eof && direction.buffer_size < direction.bufferCapacity()) {
             *source_events |= EPOLLIN | EPOLLRDHUP;
         }
         if (direction.buffer_size != 0) {
@@ -393,6 +417,10 @@ void TcpSession::disableSplice(TcpDirection& direction) {
         fail();
         return;
     }
+    if (!direction.ensureBuffer()) {
+        fail();
+        return;
+    }
     direction.use_splice = false;
     direction.closePipe();
 }
@@ -432,10 +460,14 @@ void TcpSession::handleSplice(TcpDirection& direction, int fd, std::uint32_t eve
 }
 
 bool TcpSession::flushBuffered(TcpDirection& direction) {
+    if (direction.buffer == nullptr) {
+        fail();
+        return false;
+    }
     while (direction.buffer_size != 0) {
         const ssize_t count = send(
             direction.destination,
-            direction.buffer.data() + direction.buffer_offset,
+            direction.buffer->data() + direction.buffer_offset,
             direction.buffer_size,
             MSG_NOSIGNAL);
         if (count > 0) {
@@ -459,6 +491,10 @@ bool TcpSession::flushBuffered(TcpDirection& direction) {
 }
 
 void TcpSession::handleBuffered(TcpDirection& direction, int fd, std::uint32_t events) {
+    if (!direction.ensureBuffer()) {
+        fail();
+        return;
+    }
     if (fd == direction.destination && (events & EPOLLOUT) != 0) {
         if (!flushBuffered(direction)) {
             return;
@@ -468,11 +504,11 @@ void TcpSession::handleBuffered(TcpDirection& direction, int fd, std::uint32_t e
         (events & (EPOLLIN | EPOLLRDHUP | EPOLLHUP)) == 0) {
         return;
     }
-    while (direction.buffer_size < direction.buffer.size()) {
+    while (direction.buffer_size < direction.buffer->size()) {
         const ssize_t count = recv(
             direction.source,
-            direction.buffer.data() + direction.buffer_size,
-            direction.buffer.size() - direction.buffer_size,
+            direction.buffer->data() + direction.buffer_size,
+            direction.buffer->size() - direction.buffer_size,
             0);
         if (count > 0) {
             direction.buffer_size += static_cast<std::size_t>(count);
@@ -512,6 +548,7 @@ void TcpSession::onEvent(int fd, std::uint32_t events) {
     if (closed) {
         return;
     }
+    last_activity_ms = monotonicMs();
     if ((events & (EPOLLERR | EPOLLHUP)) != 0) {
         fail();
         return;
@@ -726,6 +763,7 @@ int TcpBridge::run(volatile sig_atomic_t* stop_flag) {
                     session->proxy_fd = proxy_fd;
                     session->client_endpoint = {session, client_fd};
                     session->proxy_endpoint = {session, proxy_fd};
+                    session->last_activity_ms = monotonicMs();
                     session->original = original;
                     session->client_to_proxy.source = client_fd;
                     session->client_to_proxy.destination = proxy_fd;
@@ -747,6 +785,12 @@ int TcpBridge::run(volatile sig_atomic_t* stop_flag) {
                         session->client_to_proxy.use_splice = false;
                         session->proxy_to_client.use_splice = false;
                     }
+                    if (!session->client_to_proxy.use_splice &&
+                        (!session->client_to_proxy.ensureBuffer() || !session->proxy_to_client.ensureBuffer())) {
+                        session->markClosed();
+                        delete session;
+                        continue;
+                    }
                     session->next = sessions_;
                     sessions_ = session;
                     ++session_count_;
@@ -767,9 +811,13 @@ int TcpBridge::run(volatile sig_atomic_t* stop_flag) {
                 session->onEvent(endpoint->fd, events[index].events);
             }
         }
+        const std::uint64_t now_ms = monotonicMs();
         TcpSession** cursor = &sessions_;
         while (*cursor != nullptr) {
-            if ((*cursor)->closed) {
+            if ((*cursor)->closed ||
+                (now_ms > (*cursor)->last_activity_ms &&
+                 now_ms - (*cursor)->last_activity_ms > kSessionIdleMs)) {
+                (*cursor)->markClosed();
                 TcpSession* dead = *cursor;
                 *cursor = dead->next;
                 delete dead;

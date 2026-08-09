@@ -29,6 +29,7 @@ void stopHandler(int) {
 void printUsage(const char* executable) {
     std::printf(
         "Usage: %s --probe [--cgroup PATH]\n"
+        "       %s --cleanup --cgroup PATH\n"
         "       %s --run [--cgroup PATH] [--bridge-port PORT]\n"
         "                    [--socks-host IPV4] [--socks-port PORT]\n"
         "                    [--mihomo-pid PID]\n"
@@ -37,6 +38,7 @@ void printUsage(const char* executable) {
         "                    [--ipv6 on|off]\n"
         "                    [--bypass-cidrs CIDR[,CIDR...]]\n"
         "       %s --version\n",
+        executable,
         executable,
         executable,
         executable);
@@ -297,6 +299,14 @@ int runBridge(int argc, char** argv) {
         bypass_cidrs.size());
     std::fflush(stderr);
 
+    if (yumebox::ebpf::cleanupSocketAddressPrograms(cgroup_path) != 0) {
+        std::fprintf(
+            stderr,
+            "eBPF bridge: stale hook cleanup unavailable: errno=%d (%s)\n",
+            errno,
+            std::strerror(errno));
+    }
+
     yumebox::ebpf::CgroupRuntime runtime;
     yumebox::ebpf::TcpBridge bridge;
     yumebox::ebpf::UdpBridge udp_bridge;
@@ -391,6 +401,19 @@ int main(int argc, char** argv) {
     }
     if (hasArgument(argc, argv, "--probe")) {
         return probe(argc, argv);
+    }
+    if (hasArgument(argc, argv, "--cleanup")) {
+        const char* cgroup_path = argumentValue(argc, argv, "--cgroup");
+        if (cgroup_path == nullptr) cgroup_path = "/sys/fs/cgroup";
+        if (yumebox::ebpf::cleanupSocketAddressPrograms(cgroup_path) != 0) {
+            std::fprintf(
+                stderr,
+                "eBPF bridge: cleanup failed: errno=%d (%s)\n",
+                errno,
+                std::strerror(errno));
+            return 1;
+        }
+        return 0;
     }
     if (hasArgument(argc, argv, "--run")) {
         return runBridge(argc, argv);

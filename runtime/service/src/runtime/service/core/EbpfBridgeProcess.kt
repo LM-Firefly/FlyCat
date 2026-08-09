@@ -44,6 +44,7 @@ object EbpfBridgeProcess {
     private const val BRIDGE_LOG = "ebpf-bridge.log"
     private const val STOP_GRACE_MS = 1_500L
     private const val STOP_POLL_MS = 50L
+    private const val WATCHDOG_RETRY_COUNT = 1
     private const val PROC_STAT_START_TIME_INDEX_AFTER_COMM = 19
 
     /** Capability-only probe used by the settings gate; it creates no persistent map/program. */
@@ -74,7 +75,7 @@ object EbpfBridgeProcess {
         val logSession = "===== eBPF bridge start epochMillis=${System.currentTimeMillis()} ====="
         val command =
             "printf '%s\\n' ${quote(logSession)} >>${quote(logFile)}; " +
-                    "exec ${quote(executable.absolutePath)} --run " +
+                    "( exec ${quote(executable.absolutePath)} --run " +
                     "--cgroup ${quote(targetCgroup)} " +
                     "--socks-host 127.0.0.1 " +
                     "--socks-port ${EbpfOverride.MIXED_PORT} " +
@@ -84,7 +85,12 @@ object EbpfBridgeProcess {
                     "--dns-mode $dnsMode " +
                     "--ipv6 ${if (enableIpv6) "on" else "off"} " +
                     (if (bypassCidrs.isEmpty()) "" else "--bypass-cidrs ${quote(bypassCidrs.joinToString(","))} ") +
-                    "</dev/null >>${quote(logFile)} 2>&1 & echo \$!"
+                    "</dev/null >>${quote(logFile)} 2>&1 ) & bridge_pid=\$!; " +
+                    "( while kill -0 \$bridge_pid 2>/dev/null; do sleep 1; done; " +
+                    "i=0; while [ \$i -lt $WATCHDOG_RETRY_COUNT ]; do " +
+                    "${quote(executable.absolutePath)} --cleanup --cgroup ${quote(targetCgroup)} " +
+                    "2>&1 | tee -a ${quote(logFile)}; i=\$((i + 1)); sleep 1; done ) >/dev/null 2>&1 & " +
+                    "echo \$bridge_pid"
         val result = Shell.cmd(command).exec()
         val pid = result.out.asSequence().mapNotNull { it.trim().toIntOrNull() }.firstOrNull()
         if (!(result.isSuccess && pid != null && pid > 0)) {

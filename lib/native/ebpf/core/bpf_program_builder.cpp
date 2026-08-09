@@ -20,10 +20,13 @@ constexpr int kTgidStackOffset = -4;
 constexpr int kUidStackOffset = -8;
 constexpr int kKeyStackOffset = -32;
 constexpr int kValueStackOffset = -80;
-constexpr int kSockAddrUserIp4Offset = offsetof(struct bpf_sock_addr, user_ip4);
-constexpr int kSockAddrUserIp6Offset = offsetof(struct bpf_sock_addr, user_ip6);
-constexpr int kSockAddrUserPortOffset = offsetof(struct bpf_sock_addr, user_port);
-constexpr int kSockAddrProtocolOffset = offsetof(struct bpf_sock_addr, protocol);
+// struct bpf_sock_addr is an eBPF context ABI, not a host C++ layout. Some
+// Android NDK linux/bpf.h revisions describe user_ip6 with a different shape,
+// which shifts user_port/protocol and makes the kernel reject the program.
+constexpr int kSockAddrUserIp4Offset = 4;
+constexpr int kSockAddrUserIp6Offset = 8;
+constexpr int kSockAddrUserPortOffset = 24;
+constexpr int kSockAddrProtocolOffset = 36;
 constexpr std::uint32_t kTokenPrefixHost = 0x7f800000U;
 constexpr std::uint32_t kTokenHostMask = 0x007fffffU;
 
@@ -733,6 +736,7 @@ int loadUdp4RecvmsgProgram(int redirect_map_fd, std::uint16_t listener_port) {
 
 bool probeSocketAddressPrograms() {
     const struct bpf_insn instructions[] = {
+        loadX(BPF_W, BPF_REG_0, BPF_REG_1, kSockAddrUserPortOffset),
         alu64Imm(BPF_MOV, BPF_REG_0, 1),
         exitInstruction(),
     };

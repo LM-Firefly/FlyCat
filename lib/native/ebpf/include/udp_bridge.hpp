@@ -56,6 +56,8 @@ public:
 private:
     friend struct UdpSession;
 
+    static constexpr std::size_t kSessionHashCapacity = 512;
+
     void acceptDatagram();
     void processDatagram(const msghdr& message, std::size_t count);
     void queueToClient(
@@ -65,6 +67,10 @@ private:
         std::size_t payload_size);
     void flushToClients();
     void cleanupSessions(std::uint64_t now_ms);
+    [[nodiscard]] std::size_t sessionBucket(const sockaddr_in& client) const;
+    [[nodiscard]] UdpSession* findSession(const sockaddr_in& client) const;
+    void insertSession(UdpSession* session);
+    void removeSession(UdpSession* session);
 
     int listener_fd_ = -1;
     int epoll_fd_ = -1;
@@ -73,9 +79,11 @@ private:
     const char* socks_host_ = nullptr;
     std::uint16_t socks_port_ = 0;
     UdpSession* sessions_ = nullptr;
+    std::array<UdpSession*, kSessionHashCapacity> session_buckets_{};
     std::size_t session_count_ = 0;
     std::size_t response_count_ = 0;
     std::unique_ptr<UdpBatchStorage> batch_;
+    std::unique_ptr<std::uint8_t[]> relay_buffer_;
 };
 
 }  // namespace yumebox::ebpf

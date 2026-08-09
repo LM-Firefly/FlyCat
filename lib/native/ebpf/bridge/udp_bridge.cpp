@@ -9,6 +9,7 @@
 #include <cerrno>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <new>
 
 #include <fcntl.h>
@@ -92,7 +93,7 @@ struct UdpBinding final {
 }  // namespace
 
 struct UdpBatchStorage final {
-    static constexpr std::size_t kBatchSize = 8;
+    static constexpr std::size_t kBatchSize = 4;
     static constexpr std::size_t kControlSize = CMSG_SPACE(sizeof(in_pktinfo));
 
     std::array<std::array<std::uint8_t, kMaxUdpPayload>, kBatchSize> receive_buffers{};
@@ -122,9 +123,11 @@ struct UdpSession final {
 
     static constexpr int kControlEndpoint = 1;
     static constexpr int kRelayEndpoint = 2;
+    static constexpr std::size_t kInitialBindings = 4;
 
     UdpBridge* owner = nullptr;
     UdpSession* next = nullptr;
+    UdpSession* hash_next = nullptr;
     UdpEndpoint control_endpoint{};
     UdpEndpoint relay_endpoint{};
     sockaddr_in client_address{};
@@ -141,12 +144,13 @@ struct UdpSession final {
     std::array<std::uint8_t, kHandshakeBufferSize> receive{};
     std::size_t receive_size = 0;
     std::size_t receive_need = 0;
-    std::array<std::uint8_t, kMaxUdpPayload> datagram{};
+    std::unique_ptr<std::uint8_t[]> pending_datagram;
     std::size_t datagram_size = 0;
     OriginalDestination pending_destination{};
     std::uint8_t pending_token[4]{};
-    std::array<UdpBinding, kMaxBindings> bindings{};
+    std::unique_ptr<UdpBinding[]> bindings;
     std::size_t binding_count = 0;
+    std::size_t binding_capacity = 0;
 
     void markClosed() {
         if (closed) return;
@@ -163,6 +167,11 @@ struct UdpSession final {
         (void)epoll_ctl(owner->epoll_fd_, EPOLL_CTL_DEL, relay_fd, nullptr);
         closeFd(&control_fd);
         closeFd(&relay_fd);
+        pending_datagram.reset();
+        datagram_size = 0;
+        bindings.reset();
+        binding_count = 0;
+        binding_capacity = 0;
     }
 
     void updateEvents() {
@@ -335,7 +344,23 @@ struct UdpSession final {
         }
     }
 
-    void rememberBinding(const OriginalDestination& destination, const std::uint8_t token[4], std::uint64_t now_ms) {
+    bool ensureBindingCapacity(std::size_t required) {
+        if (required <= binding_capacity) return true;
+        if (required > kMaxBindings) return false;
+        std::size_t next_capacity = binding_capacity == 0 ? kInitialBindings : binding_capacity * 2;
+        if (next_capacity < required) next_capacity = required;
+        if (next_capacity > kMaxBindings) next_capacity = kMaxBindings;
+        std::unique_ptr<UdpBinding[]> next(new (std::nothrow) UdpBinding[next_capacity]{});
+        if (next == nullptr) return false;
+        for (std::size_t index = 0; index < binding_count; ++index) {
+            next[index] = bindings[index];
+        }
+        bindings = std::move(next);
+        binding_capacity = next_capacity;
+        return true;
+    }
+
+    bool rememberBinding(const OriginalDestination& destination, const std::uint8_t token[4], std::uint64_t now_ms) {
         for (std::size_t index = 0; index < binding_count; ++index) {
             UdpBinding& binding = bindings[index];
             const std::size_t address_size = destination.family == AF_INET ? 4 : 16;
@@ -347,12 +372,18 @@ struct UdpSession final {
                 }
                 std::memcpy(binding.token_addr, token, 4);
                 binding.last_used_ms = now_ms;
-                return;
+                return true;
             }
         }
-        std::size_t slot = binding_count < bindings.size() ? binding_count++ : 0;
+        std::size_t slot = 0;
+        if (binding_count < kMaxBindings && binding_count == binding_capacity) {
+            if (!ensureBindingCapacity(binding_count + 1)) return false;
+        }
+        if (binding_count < kMaxBindings) {
+            slot = binding_count++;
+        }
         std::uint64_t oldest = UINT64_MAX;
-        if (binding_count == bindings.size()) {
+        if (binding_count == kMaxBindings) {
             for (std::size_t index = 0; index < binding_count; ++index) {
                 if (bindings[index].last_used_ms < oldest) {
                     oldest = bindings[index].last_used_ms;
@@ -367,10 +398,12 @@ struct UdpSession final {
         std::memcpy(bindings[slot].token_addr, token, 4);
         bindings[slot].last_used_ms = now_ms;
         bindings[slot].valid = true;
+        return true;
     }
 
     bool sendDatagram(const OriginalDestination& destination, const std::uint8_t token[4], const std::uint8_t* payload, std::size_t payload_size) {
-        if ((destination.family != AF_INET && destination.family != AF_INET6) ||
+        if (payload == nullptr || payload_size > kMaxUdpPayload ||
+            (destination.family != AF_INET && destination.family != AF_INET6) ||
             destination.protocol != kProtocolUdp) {
             return false;
         }
@@ -378,36 +411,57 @@ struct UdpSession final {
         endpoint.address_type = destination.family == AF_INET ? 0x01 : 0x04;
         std::memcpy(endpoint.address, destination.addr, destination.family == AF_INET ? 4 : 16);
         endpoint.port = destination.port;
-        std::array<std::uint8_t, kMaxUdpPayload + 16> framed{};
-        const std::size_t frame_size = buildUdpDatagram(
+        std::array<std::uint8_t, 22> header{};
+        const std::uint8_t empty_payload = 0;
+        const std::size_t header_size = buildUdpDatagram(
             endpoint,
-            payload,
-            payload_size,
-            framed.data(),
-            framed.size());
-        if (frame_size == 0) return false;
-        const ssize_t sent = sendto(
+            &empty_payload,
+            0,
+            header.data(),
+            header.size());
+        if (header_size == 0) return false;
+        iovec vectors[2] = {
+            {header.data(), header_size},
+            {const_cast<std::uint8_t*>(payload), payload_size},
+        };
+        msghdr message{};
+        message.msg_name = &relay_address;
+        message.msg_namelen = sizeof(relay_address);
+        message.msg_iov = vectors;
+        message.msg_iovlen = 2;
+        const ssize_t sent = sendmsg(
             relay_fd,
-            framed.data(),
-            frame_size,
-            MSG_NOSIGNAL,
-            reinterpret_cast<const sockaddr*>(&relay_address),
-            sizeof(relay_address));
+            &message,
+            MSG_NOSIGNAL);
         if (sent < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)) return true;
-        if (sent != static_cast<ssize_t>(frame_size)) return false;
-        rememberBinding(destination, token, monotonicMs());
-        last_activity_ms = monotonicMs();
+        if (sent != static_cast<ssize_t>(header_size + payload_size)) return false;
+        const std::uint64_t now_ms = monotonicMs();
+        if (!rememberBinding(destination, token, now_ms)) {
+            if (owner->runtime_ != nullptr) {
+                (void)owner->runtime_->releaseUdpDestination(owner->bridge_port_, token);
+            }
+            return false;
+        }
+        last_activity_ms = now_ms;
         return true;
     }
 
     void sendPending() {
         if (!pending_valid || state != State::Relay) return;
+        if (pending_datagram == nullptr) {
+            pending_valid = false;
+            datagram_size = 0;
+            fail();
+            return;
+        }
         const bool sent = sendDatagram(
             pending_destination,
             pending_token,
-            datagram.data(),
+            pending_datagram.get(),
             datagram_size);
         pending_valid = false;
+        pending_datagram.reset();
+        datagram_size = 0;
         if (!sent) fail();
     }
 
@@ -416,11 +470,13 @@ struct UdpSession final {
         const std::uint8_t token[4],
         const std::uint8_t* payload,
         std::size_t payload_size) {
-        if (payload_size > datagram.size()) return false;
+        if (payload == nullptr || payload_size > kMaxUdpPayload) return false;
         last_activity_ms = monotonicMs();
         if (state == State::Relay) return sendDatagram(destination, token, payload, payload_size);
         if (pending_valid) return true;
-        std::memcpy(datagram.data(), payload, payload_size);
+        pending_datagram.reset(new (std::nothrow) std::uint8_t[payload_size]);
+        if (pending_datagram == nullptr) return false;
+        std::memcpy(pending_datagram.get(), payload, payload_size);
         datagram_size = payload_size;
         pending_destination = destination;
         std::memcpy(pending_token, token, 4);
@@ -433,15 +489,24 @@ struct UdpSession final {
     }
 
     void readRelay() {
+        if (owner->relay_buffer_ == nullptr) {
+            owner->relay_buffer_.reset(new (std::nothrow) std::uint8_t[kMaxUdpPayload]);
+        }
+        if (owner->relay_buffer_ == nullptr) {
+            fail();
+            return;
+        }
+        auto* datagram = owner->relay_buffer_.get();
+        const std::uint64_t now_ms = monotonicMs();
         while (true) {
-            const ssize_t count = recv(relay_fd, datagram.data(), datagram.size(), 0);
+            const ssize_t count = recv(relay_fd, datagram, kMaxUdpPayload, 0);
             if (count < 0 && (errno == EINTR)) continue;
             if (count < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) return;
             if (count <= 0) {
                 fail();
                 return;
             }
-            const auto* frame = datagram.data();
+            const auto* frame = datagram;
             const std::size_t size = static_cast<std::size_t>(count);
             if (size < 4 || frame[0] != 0 || frame[1] != 0 || frame[2] != 0) continue;
             std::size_t address_offset = 4;
@@ -470,7 +535,7 @@ struct UdpSession final {
                     binding.destination.port == remote_port &&
                     std::memcmp(binding.destination.addr, remote_addr, binding_address_size) == 0) {
                     selected = &binding;
-                    binding.last_used_ms = monotonicMs();
+                    binding.last_used_ms = now_ms;
                     break;
                 }
             }
@@ -478,7 +543,7 @@ struct UdpSession final {
             if (selected != nullptr) {
                 sendToClient(selected->token_addr, frame + payload_offset, size - payload_offset);
             }
-            last_activity_ms = monotonicMs();
+            last_activity_ms = now_ms;
         }
     }
 
@@ -564,6 +629,7 @@ void UdpBridge::close() {
         sessions_ = session->next;
         delete session;
     }
+    session_buckets_.fill(nullptr);
     session_count_ = 0;
     response_count_ = 0;
     closeFd(&listener_fd_);
@@ -573,6 +639,41 @@ void UdpBridge::close() {
     socks_host_ = nullptr;
     socks_port_ = 0;
     batch_.reset();
+    relay_buffer_.reset();
+}
+
+std::size_t UdpBridge::sessionBucket(const sockaddr_in& client) const {
+    std::uint32_t hash = ntohl(client.sin_addr.s_addr);
+    hash ^= static_cast<std::uint32_t>(ntohs(client.sin_port)) * 0x9e3779b1U;
+    hash ^= hash >> 16U;
+    hash *= 0x85ebca6bU;
+    hash ^= hash >> 13U;
+    return static_cast<std::size_t>(hash & (kSessionHashCapacity - 1));
+}
+
+UdpSession* UdpBridge::findSession(const sockaddr_in& client) const {
+    for (UdpSession* session = session_buckets_[sessionBucket(client)]; session != nullptr; session = session->hash_next) {
+        if (!session->closed && sameEndpoint(session->client_address, client)) return session;
+    }
+    return nullptr;
+}
+
+void UdpBridge::insertSession(UdpSession* session) {
+    const std::size_t bucket = sessionBucket(session->client_address);
+    session->hash_next = session_buckets_[bucket];
+    session_buckets_[bucket] = session;
+}
+
+void UdpBridge::removeSession(UdpSession* session) {
+    UdpSession** cursor = &session_buckets_[sessionBucket(session->client_address)];
+    while (*cursor != nullptr) {
+        if (*cursor == session) {
+            *cursor = session->hash_next;
+            session->hash_next = nullptr;
+            return;
+        }
+        cursor = &(*cursor)->hash_next;
+    }
 }
 
 void UdpBridge::acceptDatagram() {
@@ -631,13 +732,7 @@ void UdpBridge::processDatagram(const msghdr& message, std::size_t count) {
     OriginalDestination destination{};
     if (!runtime_->takeUdpDestination(bridge_port_, token, &destination)) return;
 
-    UdpSession* session = nullptr;
-    for (UdpSession* cursor = sessions_; cursor != nullptr; cursor = cursor->next) {
-        if (!cursor->closed && sameEndpoint(cursor->client_address, *client)) {
-            session = cursor;
-            break;
-        }
-    }
+    UdpSession* session = findSession(*client);
     if (session == nullptr) {
         if (session_count_ >= kMaxUdpSessions) return;
         const int control_fd = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
@@ -663,9 +758,14 @@ void UdpBridge::processDatagram(const msghdr& message, std::size_t count) {
         session->last_activity_ms = monotonicMs();
         session->next = sessions_;
         sessions_ = session;
+        insertSession(session);
         ++session_count_;
         if (!addEpoll(epoll_fd_, control_fd, kBaseEvents | EPOLLOUT, &session->control_endpoint)) {
             session->markClosed();
+            removeSession(session);
+            sessions_ = session->next;
+            delete session;
+            --session_count_;
             return;
         }
         if (result == 0) session->beginGreeting();
@@ -743,6 +843,7 @@ void UdpBridge::cleanupSessions(std::uint64_t now_ms) {
         if (session->closed || (now_ms > session->last_activity_ms && now_ms - session->last_activity_ms > kSessionIdleMs)) {
             session->markClosed();
             *cursor = session->next;
+            removeSession(session);
             delete session;
             --session_count_;
         } else {

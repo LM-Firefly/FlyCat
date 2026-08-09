@@ -51,5 +51,6 @@ private:
 bool isCgroupV2Mount(const char* path);
 int probeMapCreate();
 bool probeSocketAddressCgroupAttach(const char* path);
+int cleanupSocketAddressPrograms(const char* path);
 
 }  // namespace yumebox::ebpf

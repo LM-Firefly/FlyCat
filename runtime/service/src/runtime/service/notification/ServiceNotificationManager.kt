@@ -54,8 +54,6 @@ class ServiceNotificationManager(
     private val serviceStore by lazy { ServiceStore() }
     private val settingsStore by lazy { MMKV.mmkvWithID("settings", MMKV.MULTI_PROCESS_MODE) }
     private val notificationManager by lazy { NotificationManagerCompat.from(service) }
-    private var lastNotificationFingerprint: String? = null
-
     // Once released, the traffic updater must never notify() again — otherwise a tick that was mid
     // queryTrafficNow() (IPC to the core) when the service stopped can re-post the ongoing
     // notification AFTER stopForeground(REMOVE), leaving it stuck on screen.
@@ -93,7 +91,6 @@ class ServiceNotificationManager(
 
     /** Force the current foreground notification to adopt the selected application icon style. */
     fun refreshForIconStyleChange() {
-        lastNotificationFingerprint = null
         refreshRunningNotification(repostForegroundNotification = true)
     }
 
@@ -138,14 +135,9 @@ class ServiceNotificationManager(
             return
         }
         val notification = buildRunningNotification()
-        val fingerprint =
-            "${notification.extras.getCharSequence(Notification.EXTRA_TITLE)}|" +
-                "${notification.extras.getCharSequence(Notification.EXTRA_TEXT)}|" +
-                "${ServiceLogoIcons.resId()}"
         // Re-check after the (possibly slow) core query: the service may have stopped while we
         // were building the notification, and a notify() now would resurrect it.
-        if (!released && fingerprint != lastNotificationFingerprint) {
-            lastNotificationFingerprint = fingerprint
+        if (!released) {
             if (repostForegroundNotification) {
                 service.startForeground(config.notificationId, notification)
             } else {

@@ -5,6 +5,8 @@ import re
 import shutil
 import subprocess  # nosec B404 - only runs fixed git commands from CI env
 import html
+import json
+from contextlib import ExitStack
 from pathlib import Path
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
@@ -250,25 +252,38 @@ def send_files_via_bot_api():
         print(f"[-] Photo send failed: {e}")
 
 
+    # Send all APKs as one Telegram media group.  A separate sendDocument call
+    # for each APK creates one chat message per variant.
     all_uploaded = True
-    for file_path in files:
-        print(f"[+] Uploading {file_path}...")
-        try:
-            with open(file_path, 'rb') as f:
-                response = requests.post(
-                    f"{bot_url}/sendDocument",
-                    data={'chat_id': CHAT_ID},
-                    files={'document': f},
-                    timeout=60,
+    try:
+        media = []
+        upload_files = {}
+        with ExitStack() as stack:
+            for index, file_path in enumerate(files):
+                field_name = f"document{index}"
+                media.append({"type": "document", "media": f"attach://{field_name}"})
+                upload_files[field_name] = (
+                    os.path.basename(file_path),
+                    stack.enter_context(open(file_path, "rb")),
+                    "application/vnd.android.package-archive",
                 )
-            if response.status_code == 200:
-                print(f"[+] {file_path} uploaded successfully!")
-            else:
-                print(f"[-] Failed to upload {file_path}: {response.text}")
-                all_uploaded = False
-        except Exception as e:
-            print(f"[-] Failed to upload {file_path}: {e}")
+                print(f"[+] Queued {file_path} for media group")
+
+            response = requests.post(
+                f"{bot_url}/sendMediaGroup",
+                data={"chat_id": CHAT_ID, "media": json.dumps(media)},
+                files=upload_files,
+                timeout=120,
+            )
+
+        if response.status_code == 200:
+            print(f"[+] Uploaded {len(files)} APKs in one media group")
+        else:
+            print(f"[-] Failed to upload APK media group: {response.text}")
             all_uploaded = False
+    except Exception as e:
+        print(f"[-] Failed to upload APK media group: {e}")
+        all_uploaded = False
 
     return all_uploaded
 
