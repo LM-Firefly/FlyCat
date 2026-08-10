@@ -56,3 +56,10 @@ jobs:
           telegram-bot-api-install/bin/telegram-bot-api --help >/dev/null
           ldd telegram-bot-api-install/bin/telegram-bot-api
 
+      - name: Upload Telegram Bot API binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: telegram-bot-api-server
+          path: telegram-bot-api-install
+          if-no-files-found: error
+          compression-level: 0

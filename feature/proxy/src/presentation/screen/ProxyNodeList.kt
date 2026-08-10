@@ -33,6 +33,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.Velocity
 import com.github.yumeyucca.yumebox.core.model.Proxy
 import com.github.yumeyucca.yumebox.data.model.ProxySortMode
@@ -334,6 +336,8 @@ internal fun NodeListPage(
 
 @Composable
 private fun NodeSearchField(query: String, visible: Boolean, onQueryChange: (String) -> Unit) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     AnimatedVisibility(
         visible = visible,
         enter =
@@ -381,6 +385,12 @@ private fun NodeSearchField(query: String, visible: Boolean, onQueryChange: (Str
                 Modifier
                     .fillMaxWidth()
                     .padding(top = UiDp.dp4, bottom = UiDp.dp8),
-        )
+            )
+    }
+    LaunchedEffect(visible) {
+        if (visible) {
+            focusManager.clearFocus(force = true)
+            keyboardController?.hide()
+        }
     }
 }
