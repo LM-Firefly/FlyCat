@@ -2,6 +2,7 @@
 
 #include "cgroup_runtime.hpp"
 
+#include <atomic>
 #include <cstdint>
 #include <cstddef>
 
@@ -25,7 +26,7 @@ public:
     ~TcpBridge();
 
     bool open(const TcpBridgeConfig& config, CgroupRuntime* runtime);
-    int run(volatile sig_atomic_t* stop_flag);
+    int run(std::atomic_bool* stop_flag);
     void close();
 
     [[nodiscard]] std::uint16_t port() const { return bridge_port_; }

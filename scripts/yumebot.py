@@ -28,6 +28,7 @@ PUBLISH_DIR = os.environ.get("PUBLISH_DIR", "")
 LOGO_PATH = os.environ.get("LOGO_PATH", "website/images/og.webp")
 LOGO_URL = os.environ.get("LOGO_URL", "https://yumebox.gal.tf/images/og.webp")
 COMMIT_MESSAGE = os.environ.get("COMMIT_MESSAGE", "")
+BOT_API_BASE_URL = os.environ.get("BOT_API_BASE_URL", "https://api.telegram.org").rstrip("/")
 
 MAX_LOGO_BYTES = 10 * 1024 * 1024
 
@@ -223,7 +224,7 @@ def send_files_via_bot_api():
     files = find_apk_files()
 
     # Bot API URL
-    bot_url = f"https://api.telegram.org/bot{BOT_TOKEN}"
+    bot_url = f"{BOT_API_BASE_URL}/bot{BOT_TOKEN}"
 
     caption = get_caption()
     print("[+] Caption:", caption)
@@ -252,8 +253,7 @@ def send_files_via_bot_api():
         print(f"[-] Photo send failed: {e}")
 
 
-    # Send all APKs as one Telegram media group.  A separate sendDocument call
-    # for each APK creates one chat message per variant.
+    # Telegram renders a document media group as one album-style chat item.
     all_uploaded = True
     try:
         media = []
@@ -273,7 +273,7 @@ def send_files_via_bot_api():
                 f"{bot_url}/sendMediaGroup",
                 data={"chat_id": CHAT_ID, "media": json.dumps(media)},
                 files=upload_files,
-                timeout=120,
+                timeout=(30, 600),
             )
 
         if response.status_code == 200:

@@ -167,6 +167,10 @@ struct UdpSession final {
         (void)epoll_ctl(owner->epoll_fd_, EPOLL_CTL_DEL, relay_fd, nullptr);
         closeFd(&control_fd);
         closeFd(&relay_fd);
+        if (owner->runtime_ != nullptr && pending_valid) {
+            (void)owner->runtime_->releaseUdpDestination(owner->bridge_port_, pending_token);
+        }
+        pending_valid = false;
         pending_datagram.reset();
         datagram_size = 0;
         bindings.reset();
@@ -250,7 +254,7 @@ struct UdpSession final {
             const ssize_t count = recv(
                 control_fd,
                 receive.data() + receive_size,
-                receive.size() - receive_size,
+                receive_need - receive_size,
                 0);
             if (count > 0) {
                 receive_size += static_cast<std::size_t>(count);
@@ -301,7 +305,7 @@ struct UdpSession final {
             const ssize_t count = recv(
                 control_fd,
                 receive.data() + receive_size,
-                receive.size() - receive_size,
+                receive_need - receive_size,
                 0);
             if (count > 0) {
                 receive_size += static_cast<std::size_t>(count);
@@ -429,12 +433,22 @@ struct UdpSession final {
         message.msg_namelen = sizeof(relay_address);
         message.msg_iov = vectors;
         message.msg_iovlen = 2;
-        const ssize_t sent = sendmsg(
-            relay_fd,
-            &message,
-            MSG_NOSIGNAL);
-        if (sent < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)) return true;
-        if (sent != static_cast<ssize_t>(header_size + payload_size)) return false;
+        ssize_t sent = -1;
+        do {
+            sent = sendmsg(relay_fd, &message, MSG_NOSIGNAL);
+        } while (sent < 0 && errno == EINTR);
+        if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            if (owner->runtime_ != nullptr) {
+                (void)owner->runtime_->releaseUdpDestination(owner->bridge_port_, token);
+            }
+            return true;
+        }
+        if (sent != static_cast<ssize_t>(header_size + payload_size)) {
+            if (owner->runtime_ != nullptr) {
+                (void)owner->runtime_->releaseUdpDestination(owner->bridge_port_, token);
+            }
+            return false;
+        }
         const std::uint64_t now_ms = monotonicMs();
         if (!rememberBinding(destination, token, now_ms)) {
             if (owner->runtime_ != nullptr) {
@@ -473,7 +487,12 @@ struct UdpSession final {
         if (payload == nullptr || payload_size > kMaxUdpPayload) return false;
         last_activity_ms = monotonicMs();
         if (state == State::Relay) return sendDatagram(destination, token, payload, payload_size);
-        if (pending_valid) return true;
+        if (pending_valid) {
+            if (owner->runtime_ != nullptr) {
+                (void)owner->runtime_->releaseUdpDestination(owner->bridge_port_, token);
+            }
+            return true;
+        }
         pending_datagram.reset(new (std::nothrow) std::uint8_t[payload_size]);
         if (pending_datagram == nullptr) return false;
         std::memcpy(pending_datagram.get(), payload, payload_size);
@@ -676,9 +695,9 @@ void UdpBridge::removeSession(UdpSession* session) {
     }
 }
 
-void UdpBridge::acceptDatagram() {
+void UdpBridge::acceptDatagram(const std::atomic_bool* stop_flag) {
     if (batch_ == nullptr) return;
-    while (true) {
+    while (stop_flag == nullptr || !stop_flag->load(std::memory_order_relaxed)) {
         for (std::size_t index = 0; index < UdpBatchStorage::kBatchSize; ++index) {
             batch_->receive_addresses[index] = {};
             batch_->receive_controls[index].fill(0);
@@ -731,12 +750,21 @@ void UdpBridge::processDatagram(const msghdr& message, std::size_t count) {
     if (!has_token) return;
     OriginalDestination destination{};
     if (!runtime_->takeUdpDestination(bridge_port_, token, &destination)) return;
+    const auto releaseToken = [this, &token] {
+        (void)runtime_->releaseUdpDestination(bridge_port_, token);
+    };
 
     UdpSession* session = findSession(*client);
     if (session == nullptr) {
-        if (session_count_ >= kMaxUdpSessions) return;
+        if (session_count_ >= kMaxUdpSessions) {
+            releaseToken();
+            return;
+        }
         const int control_fd = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
-        if (control_fd < 0) return;
+        if (control_fd < 0) {
+            releaseToken();
+            return;
+        }
         sockaddr_in proxy{};
         proxy.sin_family = AF_INET;
         proxy.sin_addr.s_addr = inet_addr(socks_host_);
@@ -744,11 +772,13 @@ void UdpBridge::processDatagram(const msghdr& message, std::size_t count) {
         const int result = connect(control_fd, reinterpret_cast<const sockaddr*>(&proxy), sizeof(proxy));
         if (result != 0 && errno != EINPROGRESS) {
             ::close(control_fd);
+            releaseToken();
             return;
         }
         session = new (std::nothrow) UdpSession();
         if (session == nullptr) {
             ::close(control_fd);
+            releaseToken();
             return;
         }
         session->owner = this;
@@ -766,11 +796,13 @@ void UdpBridge::processDatagram(const msghdr& message, std::size_t count) {
             sessions_ = session->next;
             delete session;
             --session_count_;
+            releaseToken();
             return;
         }
         if (result == 0) session->beginGreeting();
     }
     if (!session->queueOrSend(destination, token, payload, count)) {
+        releaseToken();
         session->markClosed();
     }
 }
@@ -852,13 +884,13 @@ void UdpBridge::cleanupSessions(std::uint64_t now_ms) {
     }
 }
 
-int UdpBridge::run(volatile sig_atomic_t* stop_flag) {
+int UdpBridge::run(std::atomic_bool* stop_flag) {
     if (!valid() || runtime_ == nullptr || !runtime_->active()) {
         errno = EINVAL;
         return -1;
     }
     epoll_event events[64]{};
-    while (stop_flag == nullptr || *stop_flag == 0) {
+    while (stop_flag == nullptr || !stop_flag->load(std::memory_order_relaxed)) {
         const int count = epoll_wait(epoll_fd_, events, 64, 1000);
         if (count < 0) {
             if (errno == EINTR) continue;
@@ -866,7 +898,7 @@ int UdpBridge::run(volatile sig_atomic_t* stop_flag) {
         }
         for (int index = 0; index < count; ++index) {
             if (events[index].data.ptr == nullptr) {
-                acceptDatagram();
+                acceptDatagram(stop_flag);
                 continue;
             }
             auto* endpoint = static_cast<UdpEndpoint*>(events[index].data.ptr);

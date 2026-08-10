@@ -39,6 +39,8 @@ import com.github.yumeyucca.yumebox.runtime.service.log.RuntimeLog
 import com.github.yumeyucca.yumebox.runtime.service.root.EbpfCgroupSupport
 import com.github.yumeyucca.yumebox.runtime.service.root.RootAccessSupport
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Launches a root [RunMode.Tun] or [RunMode.Ebpf] daemon. A foreground notification host tracks
@@ -46,14 +48,22 @@ import kotlinx.coroutines.withTimeout
  * ([CoreProcess.reconnectRoot]). Only an explicit [CoreProcess.stopRoot] kills the core.
  */
 object RootSessionLauncher {
+    private val lifecycleMutex = Mutex()
+
     /** Compile the active profile for [mode] and launch the detached root daemon. */
-    suspend fun start(context: Context, mode: RunMode) {
+    suspend fun start(context: Context, mode: RunMode) =
+        lifecycleMutex.withLock {
+            startLocked(context, mode)
+        }
+
+    private suspend fun startLocked(context: Context, mode: RunMode) {
         require(mode == RunMode.Tun || mode == RunMode.Ebpf) {
             "RootSessionLauncher handles root modes only, got $mode"
         }
         val appContext = context.appContextOrSelf
         RootAccessSupport.requireRootAccess(appContext)
         appContext.requireBuiltinGeoAssets()
+        stopLocked(appContext, broadcastStopped = false)
         val log = RuntimeLog.writer(appContext, mode)
         log.beginSession(RuntimeLog.Type.Launcher, "root start mode=${mode.name}")
 
@@ -100,8 +110,9 @@ object RootSessionLauncher {
             broadcast(appContext, Intents.actionRuntimeStarted(appContext.packageName))
             log.i(RuntimeLog.Type.Launcher, "success: root daemon running mode=${mode.name}")
         } catch (error: Throwable) {
-            runCatching { EbpfBridgeProcess.stop() }
+            runCatching { EbpfBridgeProcess.stop(appContext) }
             runCatching { CoreProcess.stopRoot() }
+            CoreProcess.awaitRootStopGrace()
             StatusProvider.markRuntimeFailed(mode, error.message)
             RootForegroundService.stop(appContext)
             log.e(RuntimeLog.Type.Launcher, "root start failed", error)
@@ -110,14 +121,22 @@ object RootSessionLauncher {
     }
 
     /** Explicitly stop the daemon and release its status slot. */
-    fun stop(context: Context) {
-        val appContext = context.appContextOrSelf
+    suspend fun stop(context: Context) {
+        lifecycleMutex.withLock {
+            stopLocked(context.appContextOrSelf, broadcastStopped = true)
+        }
+    }
+
+    private fun stopLocked(context: Context, broadcastStopped: Boolean) {
         val mode = CoreProcess.rootDaemonMode()
-        runCatching { EbpfBridgeProcess.stop() }
+        runCatching { EbpfBridgeProcess.stop(context) }
         runCatching { CoreProcess.stopRoot() }
+        CoreProcess.awaitRootStopGrace()
         mode?.let { StatusProvider.markRuntimeIdle(it) }
-        RootForegroundService.stop(appContext)
-        broadcast(appContext, Intents.actionRuntimeStopped(appContext.packageName))
+        RootForegroundService.stop(context)
+        if (broadcastStopped) {
+            broadcast(context, Intents.actionRuntimeStopped(context.packageName))
+        }
     }
 
     private fun broadcast(context: Context, action: String) {

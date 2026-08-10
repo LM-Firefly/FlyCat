@@ -220,12 +220,16 @@ class ProxyTileService : TileService() {
     // Mirrors the home-screen stop path: broadcast a stop, tear down the VPN service, and — since
     // the
     // root daemon isn't a service — explicitly stop it (this is a deliberate user stop).
-    private fun stopLocalRuntime() {
+    private suspend fun stopLocalRuntime() {
         runCatching { sendBroadcastSelf(Intent(Intents.ACTION_RUNTIME_REQUEST_STOP)) }
         runCatching {
             applicationContext.stopService(Intent(applicationContext, TunService::class.java))
         }
-        runCatching { RootSessionLauncher.stop(applicationContext) }
+        try {
+            RootSessionLauncher.stop(applicationContext)
+        } catch (error: Exception) {
+            Timber.w(error, "Failed to stop root runtime from tile")
+        }
     }
 
     private fun effectiveMode(snapshot: RuntimeSnapshot): RunMode = snapshot.runMode

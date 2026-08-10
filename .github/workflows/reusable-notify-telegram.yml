@@ -21,6 +21,9 @@ on:
 permissions:
   contents: read
 
+env:
+  TELEGRAM_BOT_API_COMMIT: adfd7f6a8e990272851777eeb3ae0def4216f161
+
 jobs:
   notify:
     runs-on: ubuntu-latest
@@ -50,21 +53,54 @@ jobs:
         id: check_upload
         shell: bash
         run: |
-          if [ -n "${{ secrets.BOT_TOKEN }}" ]; then
+          if [ -n "${{ secrets.BOT_TOKEN }}" ] \
+            && [ -n "${{ secrets.CHAT_ID }}" ] \
+            && [ -n "${{ secrets.TELEGRAM_API_ID }}" ] \
+            && [ -n "${{ secrets.TELEGRAM_API_HASH }}" ]; then
             echo "UPLOAD=true" >> "$GITHUB_OUTPUT"
           else
             echo "UPLOAD=false" >> "$GITHUB_OUTPUT"
+            echo "Telegram upload skipped: BOT_TOKEN, CHAT_ID, TELEGRAM_API_ID and TELEGRAM_API_HASH are all required."
           fi
 
-      - name: Bot session cache
+      - name: Download Telegram Bot API server
         if: steps.check_upload.outputs.UPLOAD == 'true'
-        uses: actions/cache@v5
+        uses: actions/download-artifact@v8
         with:
-          path: scripts/yumebot.session
-          key: ${{ runner.os }}-bot-session-${{ github.ref_name }}-${{ inputs.channel }}
-          restore-keys: |
-            ${{ runner.os }}-bot-session-${{ github.ref_name }}-
-            ${{ runner.os }}-bot-session-
+          name: telegram-bot-api-${{ env.TELEGRAM_BOT_API_COMMIT }}
+          path: telegram-bot-api
+
+      - name: Start local Telegram Bot API server
+        if: steps.check_upload.outputs.UPLOAD == 'true'
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+        run: |
+          set -eu
+          chmod +x telegram-bot-api/bin/telegram-bot-api
+          mkdir -p "$RUNNER_TEMP/telegram-bot-api-data" "$RUNNER_TEMP/telegram-bot-api-temp"
+          telegram-bot-api/bin/telegram-bot-api \
+            --local \
+            --http-port=8081 \
+            --dir="$RUNNER_TEMP/telegram-bot-api-data" \
+            --temp-dir="$RUNNER_TEMP/telegram-bot-api-temp" \
+            >"$RUNNER_TEMP/telegram-bot-api.log" 2>&1 &
+          server_pid=$!
+          echo "TELEGRAM_BOT_API_PID=${server_pid}" >> "$GITHUB_ENV"
+
+          for attempt in $(seq 1 30); do
+            if ! kill -0 "${server_pid}" 2>/dev/null; then
+              cat "$RUNNER_TEMP/telegram-bot-api.log"
+              exit 1
+            fi
+            if curl --silent --show-error --output /dev/null http://127.0.0.1:8081/; then
+              exit 0
+            fi
+            sleep 1
+          done
+
+          cat "$RUNNER_TEMP/telegram-bot-api.log"
+          exit 1
 
       - name: Upload to Telegram
         if: steps.check_upload.outputs.UPLOAD == 'true'
@@ -83,4 +119,16 @@ jobs:
           PUBLISH_DIR: publish
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           LOGO_PATH: website/images/og.webp
+          BOT_API_BASE_URL: http://127.0.0.1:8081
         run: python3 "$GITHUB_WORKSPACE/scripts/yumebot.py"
+
+      - name: Stop local Telegram Bot API server
+        if: always() && steps.check_upload.outputs.UPLOAD == 'true'
+        run: |
+          if [ -n "${TELEGRAM_BOT_API_PID:-}" ]; then
+            kill "$TELEGRAM_BOT_API_PID" 2>/dev/null || true
+            wait "$TELEGRAM_BOT_API_PID" 2>/dev/null || true
+          fi
+          if [ -f "$RUNNER_TEMP/telegram-bot-api.log" ]; then
+            cat "$RUNNER_TEMP/telegram-bot-api.log"
+          fi

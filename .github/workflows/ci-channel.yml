@@ -41,6 +41,14 @@ jobs:
           set -eu
           test "$(awk -F= '$1 == "abi.app.list" { print $2 }' gradle.properties)" = "arm64-v8a"
           test "$(awk -F= '$1 == "abi.extension.list" { print $2 }' gradle.properties)" = "arm64-v8a"
+          test -f scripts/native-build.py
+          test -f scripts/native/cli.py
+          test -f scripts/native/go_core.py
+          test -f lib/native/go/native/entry.go
+          test -f lib/native/go/go.mod
+          test -f lib/native/shell/CMakeLists.txt
+          test -f lib/native/shell/shell.c
+          test -f kernel.properties
           ! rg -q 'channel: smart|kernel_channel: smart|YumeBox-smart' .github/workflows/ci-channel.yml
 
   # Keep the channel and ABI as matrix inputs even while each has one supported value.
@@ -74,6 +82,11 @@ jobs:
       kernel_channel: ${{ matrix.kernel_channel }}
       abi: ${{ matrix.abi }}
     secrets: inherit
+
+  build-telegram-bot-api:
+    name: "02 · Telegram Bot API"
+    needs: validate-channel
+    uses: ./.github/workflows/reusable-build-telegram-bot-api.yml
 
   bundle-native-pre:
     name: "03 · Bundle (Pre)"
@@ -144,7 +157,9 @@ jobs:
 
   notify-pre:
     name: "08 · Notify (Pre)"
-    needs: prepare-publish-pre-app
+    needs:
+      - prepare-publish-pre-app
+      - build-telegram-bot-api
     uses: ./.github/workflows/reusable-notify-telegram.yml
     with:
       channel: pre

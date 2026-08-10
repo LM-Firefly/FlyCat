@@ -591,25 +591,26 @@ class CoreProcess(private val context: Context) {
             RootDaemonState.clear()
             current = null
             record ?: return
+            if (!isRootRecordAlive(record)) return
             dyingRootPid = record.pid
             stopScope.launch {
                 try {
-                    runCatching { Shell.cmd("kill ${record.pid}").exec() }
+                    runCatching { Shell.cmd("kill -TERM ${record.pid}").exec() }
                     val deadline = SystemClock.elapsedRealtime() + ROOT_STOP_GRACE_MS
-                    while (SystemClock.elapsedRealtime() < deadline && isRootPidAlive(record.pid)) {
+                    while (
+                        SystemClock.elapsedRealtime() < deadline &&
+                            isRootRecordAlive(record)
+                    ) {
                         delay(ROOT_STOP_POLL_MS)
                     }
-                    if (isRootPidAlive(record.pid)) {
-                        runCatching { Shell.cmd("kill -9 ${record.pid}").exec() }
+                    if (isRootRecordAlive(record)) {
+                        runCatching { Shell.cmd("kill -KILL ${record.pid}").exec() }
                     }
                 } finally {
                     dyingRootPid = null
                 }
             }
         }
-
-        private fun isRootPidAlive(pid: Int): Boolean =
-            runCatching { Shell.cmd("kill -0 $pid").exec().isSuccess }.getOrDefault(false)
 
         /**
          * Block (bounded) until a dying predecessor has finished tearing down. The daemon's ip

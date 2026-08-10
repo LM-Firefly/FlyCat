@@ -361,23 +361,33 @@ void CgroupRuntime::stop() {
     // the fd presence as the cleanup guard so partial startup never leaves a
     // cgroup hook behind.
     if (cgroup_fd_.valid()) {
+        const auto detach = [this](int program_fd, enum bpf_attach_type attach_type) {
+            if (detachProgram(cgroup_fd_.fd(), program_fd, attach_type) != 0) {
+                std::fprintf(
+                    stderr,
+                    "eBPF bridge: detach cgroup hook type=%d failed: errno=%d (%s)\n",
+                    static_cast<int>(attach_type),
+                    errno,
+                    std::strerror(errno));
+            }
+        };
         if (udp6_recvmsg_program_.valid()) {
-            (void)detachProgram(cgroup_fd_.fd(), udp6_recvmsg_program_.fd(), BPF_CGROUP_UDP6_RECVMSG);
+            detach(udp6_recvmsg_program_.fd(), BPF_CGROUP_UDP6_RECVMSG);
         }
         if (udp6_sendmsg_program_.valid()) {
-            (void)detachProgram(cgroup_fd_.fd(), udp6_sendmsg_program_.fd(), BPF_CGROUP_UDP6_SENDMSG);
+            detach(udp6_sendmsg_program_.fd(), BPF_CGROUP_UDP6_SENDMSG);
         }
         if (connect6_program_.valid()) {
-            (void)detachProgram(cgroup_fd_.fd(), connect6_program_.fd(), BPF_CGROUP_INET6_CONNECT);
+            detach(connect6_program_.fd(), BPF_CGROUP_INET6_CONNECT);
         }
         if (udp4_recvmsg_program_.valid()) {
-            (void)detachProgram(cgroup_fd_.fd(), udp4_recvmsg_program_.fd(), BPF_CGROUP_UDP4_RECVMSG);
+            detach(udp4_recvmsg_program_.fd(), BPF_CGROUP_UDP4_RECVMSG);
         }
         if (udp4_sendmsg_program_.valid()) {
-            (void)detachProgram(cgroup_fd_.fd(), udp4_sendmsg_program_.fd(), BPF_CGROUP_UDP4_SENDMSG);
+            detach(udp4_sendmsg_program_.fd(), BPF_CGROUP_UDP4_SENDMSG);
         }
         if (connect4_program_.valid()) {
-            (void)detachProgram(cgroup_fd_.fd(), connect4_program_.fd(), BPF_CGROUP_INET4_CONNECT);
+            detach(connect4_program_.fd(), BPF_CGROUP_INET4_CONNECT);
         }
     }
     attached_ = false;

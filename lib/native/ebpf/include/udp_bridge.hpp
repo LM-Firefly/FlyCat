@@ -21,6 +21,7 @@
 #include "cgroup_runtime.hpp"
 
 #include <cstddef>
+#include <atomic>
 #include <cstdint>
 #include <array>
 #include <memory>
@@ -48,7 +49,7 @@ public:
     ~UdpBridge();
 
     bool open(const UdpBridgeConfig& config, CgroupRuntime* runtime);
-    int run(volatile sig_atomic_t* stop_flag);
+    int run(std::atomic_bool* stop_flag);
     void close();
 
     [[nodiscard]] bool valid() const { return listener_fd_ >= 0 && epoll_fd_ >= 0; }
@@ -58,7 +59,7 @@ private:
 
     static constexpr std::size_t kSessionHashCapacity = 512;
 
-    void acceptDatagram();
+    void acceptDatagram(const std::atomic_bool* stop_flag);
     void processDatagram(const msghdr& message, std::size_t count);
     void queueToClient(
         const sockaddr_in& client,

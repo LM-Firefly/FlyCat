@@ -44,7 +44,8 @@ object EbpfBridgeProcess {
     private const val BRIDGE_LOG = "ebpf-bridge.log"
     private const val STOP_GRACE_MS = 1_500L
     private const val STOP_POLL_MS = 50L
-    private const val WATCHDOG_RETRY_COUNT = 1
+    private const val DIAGNOSTIC_LOG_LINES = 20
+    private const val DIAGNOSTIC_LOG_LIMIT = 2_000
     private const val PROC_STAT_START_TIME_INDEX_AFTER_COMM = 19
 
     /** Capability-only probe used by the settings gate; it creates no persistent map/program. */
@@ -70,7 +71,7 @@ object EbpfBridgeProcess {
         val targetCgroup = cgroupPath ?: EbpfCgroupSupport.rootCgroupPath()
         check(!targetCgroup.isNullOrBlank()) { "cgroup v2 mount is unavailable" }
 
-        stop()
+        stop(context)
         val logFile = context.runtimeHomeDir.resolve(BRIDGE_LOG).absolutePath
         val logSession = "===== eBPF bridge start epochMillis=${System.currentTimeMillis()} ====="
         val command =
@@ -86,10 +87,6 @@ object EbpfBridgeProcess {
                     "--ipv6 ${if (enableIpv6) "on" else "off"} " +
                     (if (bypassCidrs.isEmpty()) "" else "--bypass-cidrs ${quote(bypassCidrs.joinToString(","))} ") +
                     "</dev/null >>${quote(logFile)} 2>&1 ) & bridge_pid=\$!; " +
-                    "( while kill -0 \$bridge_pid 2>/dev/null; do sleep 1; done; " +
-                    "i=0; while [ \$i -lt $WATCHDOG_RETRY_COUNT ]; do " +
-                    "${quote(executable.absolutePath)} --cleanup --cgroup ${quote(targetCgroup)} " +
-                    "2>&1 | tee -a ${quote(logFile)}; i=\$((i + 1)); sleep 1; done ) >/dev/null 2>&1 & " +
                     "echo \$bridge_pid"
         val result = Shell.cmd(command).exec()
         val pid = result.out.asSequence().mapNotNull { it.trim().toIntOrNull() }.firstOrNull()
@@ -108,6 +105,46 @@ object EbpfBridgeProcess {
     fun isAlive(): Boolean {
         val record = RootDaemonState.load() ?: return false
         if (record.mode != RunMode.Ebpf.coreArg || record.bridgePid <= 0) return false
+        return isRecordedBridgeAlive(record)
+    }
+
+    /** SIGTERM lets the bridge detach its cgroup programs and close BPF maps before mihomo stops. */
+    fun stop(context: Context) {
+        val record = RootDaemonState.load() ?: return
+        val pid = record.bridgePid
+        if (pid <= 0) return
+        if (!isRecordedBridgeAlive(record)) {
+            appendLog(context, "eBPF bridge: stop skipped for stale pid=$pid")
+            RootDaemonState.detachBridge()
+            return
+        }
+        appendLog(context, "eBPF bridge: stop requested pid=$pid")
+        runCatching { Shell.cmd("kill -TERM $pid").exec() }
+        val deadline = SystemClock.elapsedRealtime() + STOP_GRACE_MS
+        while (SystemClock.elapsedRealtime() < deadline && isPidAlive(pid)) {
+            Thread.sleep(STOP_POLL_MS)
+        }
+        if (isPidAlive(pid)) {
+            appendLog(context, "eBPF bridge: SIGTERM timeout, sending SIGKILL pid=$pid")
+            runCatching { Shell.cmd("kill -KILL $pid").exec() }
+        }
+        if (isPidAlive(pid)) {
+            appendLog(context, "eBPF bridge: stop failed, pid still alive=$pid")
+            return
+        }
+        RootDaemonState.detachBridge()
+        appendLog(context, "eBPF bridge: stopped pid=$pid")
+    }
+
+    fun diagnosticLog(context: Context): String =
+        runCatching {
+            val file = context.runtimeHomeDir.resolve(BRIDGE_LOG)
+            if (!file.isFile) return@runCatching ""
+            file.readLines().takeLast(DIAGNOSTIC_LOG_LINES).joinToString("\n").trim().takeLast(DIAGNOSTIC_LOG_LIMIT)
+        }
+            .getOrDefault("")
+
+    private fun isRecordedBridgeAlive(record: RootDaemonState.Record): Boolean {
         val alive = runCatching { Shell.cmd("kill -0 ${record.bridgePid}").exec().isSuccess }
             .getOrDefault(false)
         if (!alive) return false
@@ -127,29 +164,10 @@ object EbpfBridgeProcess {
                 processStartTimeTicks(record.bridgePid) == record.bridgeStartTimeTicks
     }
 
-    /** SIGTERM lets the bridge detach its cgroup programs and close BPF maps before mihomo stops. */
-    fun stop() {
-        val record = RootDaemonState.load() ?: return
-        val pid = record.bridgePid
-        RootDaemonState.detachBridge()
-        if (pid <= 0) return
-        runCatching { Shell.cmd("kill $pid").exec() }
-        val deadline = SystemClock.elapsedRealtime() + STOP_GRACE_MS
-        while (SystemClock.elapsedRealtime() < deadline && isPidAlive(pid)) {
-            Thread.sleep(STOP_POLL_MS)
-        }
-        if (isPidAlive(pid)) {
-            runCatching { Shell.cmd("kill -9 $pid").exec() }
-        }
+    private fun appendLog(context: Context, message: String) {
+        val file = context.runtimeHomeDir.resolve(BRIDGE_LOG).absolutePath
+        runCatching { Shell.cmd("printf '%s\\n' ${quote(message)} >>${quote(file)}").exec() }
     }
-
-    fun diagnosticLog(context: Context): String =
-        runCatching {
-            val file = context.runtimeHomeDir.resolve(BRIDGE_LOG)
-            if (!file.isFile) return@runCatching ""
-            file.readLines().lastOrNull { it.isNotBlank() }?.trim()?.take(500).orEmpty()
-        }
-            .getOrDefault("")
 
     private fun isPidAlive(pid: Int): Boolean =
         runCatching { Shell.cmd("kill -0 $pid").exec().isSuccess }.getOrDefault(false)

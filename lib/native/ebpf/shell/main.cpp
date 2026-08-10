@@ -4,6 +4,7 @@
 #include "tcp_bridge.hpp"
 #include "udp_bridge.hpp"
 
+#include <atomic>
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -20,10 +21,24 @@
 namespace {
 
 constexpr const char* kVersion = "yumebox-ebpf-bridge phase3-ipv4-ipv6-tcp-udp-root";
-volatile sig_atomic_t g_stop = 0;
+std::atomic_bool g_stop{false};
+static_assert(std::atomic_bool::is_always_lock_free);
+volatile sig_atomic_t g_stop_signal = 0;
 
-void stopHandler(int) {
-    g_stop = 1;
+void stopHandler(int signal) {
+    g_stop_signal = signal;
+    g_stop.store(true, std::memory_order_relaxed);
+}
+
+const char* signalName(int signal) {
+    switch (signal) {
+        case SIGTERM:
+            return "SIGTERM";
+        case SIGINT:
+            return "SIGINT";
+        default:
+            return "signal";
+    }
 }
 
 void printUsage(const char* executable) {
@@ -245,14 +260,16 @@ int probe(int argc, char** argv) {
 
 struct UdpThreadContext final {
     yumebox::ebpf::UdpBridge* bridge = nullptr;
-    volatile sig_atomic_t* stop_flag = nullptr;
+    std::atomic_bool* stop_flag = nullptr;
     int result = 0;
+    int error_number = 0;
 };
 
 void* runUdpBridge(void* opaque) {
     auto* context = static_cast<UdpThreadContext*>(opaque);
     context->result = context->bridge->run(context->stop_flag);
-    if (context->result != 0) *context->stop_flag = 1;
+    context->error_number = context->result == 0 ? 0 : errno;
+    if (context->result != 0) context->stop_flag->store(true, std::memory_order_relaxed);
     return nullptr;
 }
 
@@ -352,14 +369,21 @@ int runBridge(int argc, char** argv) {
     struct sigaction action{};
     action.sa_handler = stopHandler;
     sigemptyset(&action.sa_mask);
-    if (sigaction(SIGTERM, &action, nullptr) != 0 || sigaction(SIGINT, &action, nullptr) != 0) {
+    struct sigaction ignore_pipe{};
+    ignore_pipe.sa_handler = SIG_IGN;
+    sigemptyset(&ignore_pipe.sa_mask);
+    if (sigaction(SIGTERM, &action, nullptr) != 0 ||
+        sigaction(SIGINT, &action, nullptr) != 0 ||
+        sigaction(SIGPIPE, &ignore_pipe, nullptr) != 0) {
         std::fprintf(stderr, "eBPF bridge: signal setup failed: errno=%d (%s)\n", errno, std::strerror(errno));
         bridge.close();
         udp_bridge.close();
         runtime.stop();
         return 1;
     }
-    UdpThreadContext udp_thread_context{&udp_bridge, &g_stop, 0};
+    g_stop.store(false, std::memory_order_relaxed);
+    g_stop_signal = 0;
+    UdpThreadContext udp_thread_context{&udp_bridge, &g_stop, 0, 0};
     pthread_t udp_thread{};
     if (pthread_create(&udp_thread, nullptr, runUdpBridge, &udp_thread_context) != 0) {
         std::fprintf(stderr, "eBPF bridge: UDP worker start failed: errno=%d (%s)\n", errno, std::strerror(errno));
@@ -374,16 +398,33 @@ int runBridge(int argc, char** argv) {
         socks_host,
         socks_port);
     const int result = bridge.run(&g_stop);
-    const int saved_errno = errno;
-    g_stop = 1;
+    const int tcp_errno = result == 0 ? 0 : errno;
+    g_stop.store(true, std::memory_order_relaxed);
     (void)pthread_join(udp_thread, nullptr);
     bridge.close();
     udp_bridge.close();
     runtime.stop();
     if (result != 0) {
-        errno = saved_errno;
-        std::fprintf(stderr, "eBPF bridge: event loop failed: errno=%d (%s)\n", errno, std::strerror(errno));
+        std::fprintf(
+            stderr,
+            "eBPF bridge: TCP event loop failed: errno=%d (%s)\n",
+            tcp_errno,
+            std::strerror(tcp_errno));
         return 1;
+    }
+    if (udp_thread_context.result != 0) {
+        const int udp_errno = udp_thread_context.error_number == 0 ? EIO : udp_thread_context.error_number;
+        std::fprintf(
+            stderr,
+            "eBPF bridge: UDP event loop failed: errno=%d (%s)\n",
+            udp_errno,
+            std::strerror(udp_errno));
+        return 1;
+    }
+    if (g_stop_signal != 0) {
+        std::fprintf(stderr, "eBPF bridge: stopped by %s (%d)\n", signalName(g_stop_signal), g_stop_signal);
+    } else {
+        std::fprintf(stderr, "eBPF bridge: stopped by internal request\n");
     }
     return 0;
 }

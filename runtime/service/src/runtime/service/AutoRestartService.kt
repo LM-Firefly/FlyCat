@@ -237,7 +237,7 @@ class AutoRestartService : Service() {
             )
         }
 
-    private fun cleanupIncompleteRuntime(mode: RunMode) {
+    private suspend fun cleanupIncompleteRuntime(mode: RunMode) {
         if (mode == RunMode.VpnService) {
             RuntimeServiceLauncher.stop(this, mode)
         } else {
