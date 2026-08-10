@@ -7,7 +7,7 @@
 
 namespace yumebox::ebpf {
 
-long bpfSyscall(enum bpf_cmd command, union bpf_attr* attributes, unsigned int size);
+long bpfSyscall(enum bpf_cmd command, void* attributes, unsigned int size);
 
 int createMap(
     enum bpf_map_type type,

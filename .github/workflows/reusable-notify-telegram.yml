@@ -63,8 +63,8 @@ jobs:
             echo "Telegram upload skipped: BOT_TOKEN, CHAT_ID, TELEGRAM_API_ID and TELEGRAM_API_HASH are all required."
           fi
 
-      # The builder job saves this exact cache key in its post-job hook. Using the cache directly
-      # avoids first uploading then downloading the same large executable as an artifact.
+      # The dedicated builder usually saves this key first. A cache is not guaranteed to survive
+      # eviction or be available on the first run, so this job can rebuild the server on demand.
       - name: Restore Telegram Bot API server
         if: steps.check_upload.outputs.UPLOAD == 'true'
         id: bot_api_cache
@@ -73,11 +73,39 @@ jobs:
           path: telegram-bot-api-install
           key: ${{ runner.os }}-telegram-bot-api-${{ env.TELEGRAM_BOT_API_COMMIT }}
 
-      - name: Verify Telegram Bot API cache
+      - name: Checkout Telegram Bot API on cache miss
+        if: steps.check_upload.outputs.UPLOAD == 'true' && steps.bot_api_cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v6
+        with:
+          repository: tdlib/telegram-bot-api
+          ref: ${{ env.TELEGRAM_BOT_API_COMMIT }}
+          path: telegram-bot-api-source
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Install Telegram Bot API build dependencies on cache miss
+        if: steps.check_upload.outputs.UPLOAD == 'true' && steps.bot_api_cache.outputs.cache-hit != 'true'
+        run: |
+          set -eu
+          sudo apt-get update
+          sudo apt-get install -y gperf ninja-build libssl-dev zlib1g-dev
+
+      - name: Build Telegram Bot API on cache miss
+        if: steps.check_upload.outputs.UPLOAD == 'true' && steps.bot_api_cache.outputs.cache-hit != 'true'
+        run: |
+          set -eu
+          cmake \
+            -S telegram-bot-api-source \
+            -B telegram-bot-api-build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/telegram-bot-api-install"
+          cmake --build telegram-bot-api-build --target install --parallel "$(nproc)"
+
+      - name: Verify Telegram Bot API server
         if: steps.check_upload.outputs.UPLOAD == 'true'
         run: |
           set -eu
-          test "${{ steps.bot_api_cache.outputs.cache-hit }}" = "true"
           test -x telegram-bot-api-install/bin/telegram-bot-api
 
       - name: Start local Telegram Bot API server
