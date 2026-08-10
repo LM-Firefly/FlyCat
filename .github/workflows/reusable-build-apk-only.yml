@@ -178,15 +178,30 @@ jobs:
             -Papk.output.tail="${{ steps.apk_name.outputs.tail }}"
             -Papk.output.channel="${{ steps.apk_name.outputs.channel_segment }}"
           )
-          ./gradlew --no-daemon "${common_args[@]}" -Pgeo.bundle=true :${{ inputs.module }}:assembleRelease
-          # Stage the geo APKs before the second pass: the package task cleans stale files
-          # it owns, so the two variants cannot share the outputs directory.
+
+          apk_output_dir="${{ inputs.module }}/build/outputs/apk/release"
+          shopt -s nullglob
           mkdir -p apk-stage
-          cp ${{ inputs.module }}/build/outputs/apk/release/*.apk apk-stage/
+          # Do not let a rerun or a second packaging pass reuse an APK left in either
+          # staging directory. Each pass must contribute exactly one named variant.
+          rm -f apk-stage/*.apk "${apk_output_dir}"/*.apk
+
+          ./gradlew --no-daemon "${common_args[@]}" -Pgeo.bundle=true :${{ inputs.module }}:assembleRelease
+          builtin_apks=("${apk_output_dir}"/*-builtin-*.apk)
+          test "${#builtin_apks[@]}" -eq 1
+          cp "${builtin_apks[0]}" apk-stage/
+
+          # AGP may leave the previous variant in its output directory when only a
+          # packaging property changes. Remove it before the external pass so a broad
+          # glob can never copy the builtin APK a second time.
+          rm -f "${apk_output_dir}"/*.apk
+
           # Second pass only re-merges assets and re-packages; compile and R8 stay
           # up to date because geo.bundle feeds no compiler input (no BuildConfig field).
           ./gradlew --no-daemon "${common_args[@]}" -Pgeo.bundle=false :${{ inputs.module }}:assembleRelease
-          cp ${{ inputs.module }}/build/outputs/apk/release/*.apk apk-stage/
+          external_apks=("${apk_output_dir}"/*-external-*.apk)
+          test "${#external_apks[@]}" -eq 1
+          cp "${external_apks[0]}" apk-stage/
 
       - name: Verify staged APK matrix
         shell: bash
