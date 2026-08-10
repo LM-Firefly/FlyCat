@@ -23,28 +23,21 @@
 package com.github.yumeyucca.yumebox.presentation.component
 
 
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
@@ -54,7 +47,6 @@ import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.presentation.theme.Sizes
 import com.github.yumeyucca.yumebox.presentation.theme.Spacing
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
-import com.github.yumeyucca.yumebox.presentation.component.OemSearchInput
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InputField
@@ -151,6 +143,8 @@ fun SearchStatus.SearchPager(
     defaultResult: @Composable () -> Unit = {},
     emptyResult: @Composable () -> Unit = {},
     padding: SearchBarPadding = SearchBarPadding(),
+    expandedTopPadding: Dp? = null,
+    collapseAtExpandedPosition: Boolean = false,
     result: @Composable () -> Unit,
 ) {
     val spacing = AppTheme.spacing
@@ -169,12 +163,15 @@ fun SearchStatus.SearchPager(
     val fullyCollapsed = searchStatus.isCollapsed()
     val active = !fullyCollapsed
     val isExpanded = searchStatus.isExpanded()
+    val keepExpandedPosition =
+        searchStatus.shouldExpand() ||
+            (collapseAtExpandedPosition && searchStatus.current == SearchStatus.Status.COLLAPSING)
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
     val topPadding by
     animateDpAsState(
         targetValue =
-            if (searchStatus.shouldExpand()) {
-                systemBarsPadding + componentSizes.listItemVerticalMinimal
+            if (keepExpandedPosition) {
+                expandedTopPadding ?: (systemBarsPadding + componentSizes.listItemVerticalMinimal)
             } else {
                 max(searchStatus.offsetY, spacing.space0)
             },
@@ -183,10 +180,15 @@ fun SearchStatus.SearchPager(
         finishedListener = { onSearchStatusChange(searchStatus.onAnimationComplete()) },
     )
     val surfaceAlpha by
-    animateFloatAsState(
+        animateFloatAsState(
         targetValue = if (searchStatus.shouldExpand()) 1f else 0f,
         animationSpec = tween(300, easing = LinearOutSlowInEasing),
-        label = "SearchSurfaceAlpha",
+            label = "SearchSurfaceAlpha",
+            finishedListener = {
+                if (collapseAtExpandedPosition && searchStatus.current == SearchStatus.Status.COLLAPSING) {
+                    onSearchStatusChange(searchStatus.onAnimationComplete())
+                }
+            },
     )
 
     BackHandler(enabled = active) {
@@ -238,10 +240,10 @@ private fun SearchPagerTopRow(
 ) {
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(top = topPadding)
-                .background(colorScheme.surface),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = topPadding)
+                    .background(colorScheme.surface),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -339,52 +341,41 @@ private fun SearchBar(
     val componentSizes = AppTheme.sizes
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-
-    val focusRequester = remember { FocusRequester() }
-    var textFieldValue by remember { mutableStateOf(TextFieldValue(searchStatus.searchText)) }
-
-    LaunchedEffect(searchStatus.searchText) {
-        if (textFieldValue.text != searchStatus.searchText) {
-            textFieldValue = TextFieldValue(searchStatus.searchText)
-        }
-    }
-
-    LaunchedEffect(searchStatus.current) {
-        if (searchStatus.isExpanding()) {
-            withFrameNanos { }
-            focusRequester.requestFocus()
-            keyboardController?.show()
-        }
-    }
-
-    OemSearchInput(
-        value = textFieldValue,
-        onValueChange = {
-            textFieldValue = it
-            onSearchStatusChange(searchStatus.copy(searchText = it.text))
-        },
+    InputField(
+        query = searchStatus.searchText,
+        onQueryChange = { onSearchStatusChange(searchStatus.copy(searchText = it)) },
+        label = searchStatus.label,
         modifier =
             modifier
                 .fillMaxWidth()
                 .padding(start = padding.start, end = padding.end)
                 .padding(top = padding.top, bottom = componentSizes.searchBarBottomPadding)
                 .heightIn(min = componentSizes.searchFieldMinHeight),
-        inputModifier = Modifier.focusRequester(focusRequester),
         leadingIcon = { SearchBarLeadingIcon(componentSizes = componentSizes, spacing = spacing) },
         trailingIcon = {
             SearchBarClearButton(
                 searchText = searchStatus.searchText,
                 onClear = {
-                    textFieldValue = TextFieldValue("")
                     onSearchStatusChange(searchStatus.copy(searchText = ""))
                 },
                 componentSizes = componentSizes,
                 spacing = spacing,
             )
         },
-        onImeAction = {
+        onSearch = {
             focusManager.clearFocus(force = true)
             keyboardController?.hide()
+        },
+        expanded = searchStatus.shouldExpand(),
+        onExpandedChange = { expanded ->
+            if (!expanded && searchStatus.shouldExpand()) {
+                onSearchStatusChange(
+                    searchStatus.copy(
+                        searchText = "",
+                        current = SearchStatus.Status.COLLAPSING,
+                    )
+                )
+            }
         },
     )
 }

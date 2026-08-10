@@ -223,8 +223,7 @@ internal fun NodeCard(
 ) {
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
-    val onCardClick =
-        remember(proxy.name, onClick) { onClick?.let { click -> { click(proxy.name) } } }
+    val onCardClick = onClick?.let { click -> { click(proxy.name) } }
 
     NodeSelectableCard(
         isSelected = isSelected,

@@ -72,6 +72,7 @@ fun MainScreen(
     // Providers is opened above a freshly-created Main(Proxy) route on compact layouts.
     val initialProxyRequested = remember { initialDestination == BottomBarDestination.Proxy }
     var proxyDestinationCommitted by remember { mutableStateOf(initialProxyRequested) }
+    var pendingDestination by remember { mutableStateOf<BottomBarDestination?>(null) }
     val visibleDestinations =
         remember(proxyDestinationCommitted) {
             BottomBarDestination.entries.filter { destination ->
@@ -169,8 +170,14 @@ fun MainScreen(
     val bottomBarHazeStyle = YumeHaze.bottomBarStyle(bottomBarBackground)
 
     LaunchedEffect(visibleDestinations) {
+        val pending = pendingDestination
         val currentDestination =
-            previousDestinations.getOrNull(mainPagerState.pagerState.currentPage) ?: settledDestination
+            if (pending != null && pending in visibleDestinations) {
+                pending
+            } else {
+                previousDestinations.getOrNull(mainPagerState.pagerState.currentPage)
+                    ?: settledDestination
+            }
         val targetDestination =
             currentDestination.takeIf { it in visibleDestinations } ?: BottomBarDestination.Config
         val targetPage = visibleDestinations.indexOf(targetDestination)
@@ -180,6 +187,7 @@ fun MainScreen(
         mainPagerState.syncPage()
         settledDestination = targetDestination
         previousDestinations = visibleDestinations
+        if (pending == targetDestination) pendingDestination = null
     }
 
     LaunchedEffect(mainPagerState.pagerState.currentPage) { mainPagerState.syncPage() }
@@ -212,6 +220,11 @@ fun MainScreen(
     val handlePageChange: (BottomBarDestination) -> Unit =
         remember(mainPagerState, visibleDestinations) {
             { destination ->
+                if (destination !in visibleDestinations) {
+                    pendingDestination = destination
+                } else {
+                    pendingDestination = null
+                }
                 val targetDestination =
                     destination.takeIf { it in visibleDestinations } ?: BottomBarDestination.Config
                 mainPagerState.animateToPage(visibleDestinations.indexOf(targetDestination))

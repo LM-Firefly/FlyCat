@@ -23,6 +23,7 @@ package com.github.yumeyucca.yumebox.presentation.screen
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.runtime.*
@@ -33,10 +34,10 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Velocity
+import com.github.yumeyucca.yumebox.core.model.Proxy
 import com.github.yumeyucca.yumebox.data.model.ProxySortMode
 import com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo
 import com.github.yumeyucca.yumebox.domain.model.isSelectable
-import com.github.yumeyucca.yumebox.presentation.component.CenteredText
 import com.github.yumeyucca.yumebox.presentation.component.PaneWidths
 import com.github.yumeyucca.yumebox.presentation.component.ScreenLazyColumn
 import com.github.yumeyucca.yumebox.presentation.screen.node.NodeCard
@@ -47,9 +48,24 @@ import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import com.github.yumeyucca.yumebox.presentation.util.KeepLazyListTopAnchorOnReorder
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.Search
+import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+private fun ProxyGroupInfo.filterNodes(query: String): List<Proxy> {
+    val normalizedQuery = query.trim()
+    if (normalizedQuery.isEmpty()) return proxies
+    return proxies.filter { proxy ->
+        proxy.name.contains(normalizedQuery, ignoreCase = true) ||
+            proxy.title.contains(normalizedQuery, ignoreCase = true) ||
+            proxy.subtitle.contains(normalizedQuery, ignoreCase = true)
+    }
+}
 
 @Composable
 internal fun NodeListPage(
@@ -67,17 +83,14 @@ internal fun NodeListPage(
     onScrollDirectionChanged: (Boolean) -> Unit,
     useAdaptiveGrid: Boolean = false,
     gridState: LazyGridState? = null,
+    searchQuery: String = "",
+    showSearch: Boolean = false,
+    onSearchQueryChange: (String) -> Unit = {},
 ) {
-    if (group == null) {
-        CenteredText(
-            firstLine = YumeTxt.Proxy.Empty.NoNodes,
-            secondLine = YumeTxt.Proxy.Empty.Hint,
-            showEmptyResourceIllustration = true,
-        )
-        return
-    }
+    if (group == null) return
     val spacing = LocalSpacing.current
     val isTesting = testingGroupNames.contains(group.name)
+    val visibleProxies = remember(group.proxies, searchQuery) { group.filterNodes(searchQuery) }
     val listItemKeys = remember(group.proxies) { group.proxies.map { it.name } }
 
     KeepLazyListTopAnchorOnReorder(
@@ -158,6 +171,13 @@ internal fun NodeListPage(
                 verticalArrangement = Arrangement.spacedBy(UiDp.dp6),
                 modifier = Modifier.fillMaxSize(),
             ) {
+                item(key = "__node_search__", span = { GridItemSpan(maxLineSpan) }) {
+                    NodeSearchField(
+                        query = searchQuery,
+                        visible = showSearch,
+                        onQueryChange = onSearchQueryChange,
+                    )
+                }
                 item(key = "__refresh_indicator__", span = { GridItemSpan(maxLineSpan) }) {
                     AnimatedVisibility(
                         visible = isTesting,
@@ -210,7 +230,7 @@ internal fun NodeListPage(
                         }
                     }
                 }
-                items(items = group.proxies, key = { it.name }) { proxy ->
+                items(items = visibleProxies, key = { it.name }) { proxy ->
                     NodeCard(
                         proxy = proxy,
                         isSelected = proxy.name == group.now,
@@ -240,6 +260,13 @@ internal fun NodeListPage(
         onScrollDirectionChanged = onScrollDirectionChanged,
         contentPadding = contentPadding,
     ) {
+        item(key = "__node_search__") {
+            NodeSearchField(
+                query = searchQuery,
+                visible = showSearch,
+                onQueryChange = onSearchQueryChange,
+            )
+        }
         item(key = "__refresh_indicator__") {
             AnimatedVisibility(
                 visible = isTesting,
@@ -288,7 +315,7 @@ internal fun NodeListPage(
         }
 
         nodeGridItems(
-            proxies = group.proxies,
+            proxies = visibleProxies,
             selectedProxyName = group.now,
             onProxyClick = { proxyName ->
                 if (group.isSelectable) {
@@ -301,6 +328,59 @@ internal fun NodeListPage(
             testingProxyNames = testingProxyNames,
             outerHorizontalPadding = UiDp.dp0,
             itemVerticalPadding = UiDp.dp6,
+        )
+    }
+}
+
+@Composable
+private fun NodeSearchField(query: String, visible: Boolean, onQueryChange: (String) -> Unit) {
+    AnimatedVisibility(
+        visible = visible,
+        enter =
+            expandVertically(
+                animationSpec = tween(durationMillis = 220),
+                expandFrom = Alignment.Top,
+            ) + fadeIn(animationSpec = tween(durationMillis = 160)),
+        exit =
+            shrinkVertically(
+                animationSpec = tween(durationMillis = 180),
+                shrinkTowards = Alignment.Top,
+            ) + fadeOut(animationSpec = tween(durationMillis = 120)),
+    ) {
+        InputField(
+            query = query,
+            onQueryChange = onQueryChange,
+            onSearch = {},
+            expanded = false,
+            onExpandedChange = {},
+            label = YumeTxt.Component.Editor.Action.Search,
+            leadingIcon = {
+                Icon(
+                    imageVector = MiuixIcons.Basic.Search,
+                    contentDescription = YumeTxt.Component.Editor.Action.Search,
+                    modifier =
+                        Modifier
+                            .size(UiDp.dp44)
+                            .padding(start = UiDp.dp16, end = UiDp.dp8),
+                )
+            },
+            trailingIcon = {
+                AnimatedVisibility(visible = query.isNotEmpty()) {
+                    Icon(
+                        imageVector = MiuixIcons.Basic.SearchCleanup,
+                        contentDescription = YumeTxt.Component.Button.Clear,
+                        modifier =
+                            Modifier
+                                .size(UiDp.dp44)
+                                .padding(start = UiDp.dp8, end = UiDp.dp16)
+                                .clickable { onQueryChange("") },
+                    )
+                }
+            },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = UiDp.dp4, bottom = UiDp.dp8),
         )
     }
 }

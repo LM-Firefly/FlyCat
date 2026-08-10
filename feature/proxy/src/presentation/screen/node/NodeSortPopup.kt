@@ -41,6 +41,8 @@ internal fun NodeSortPopup(
     sortMode: ProxySortMode,
     alignment: PopupPositionProvider.Align = PopupPositionProvider.Align.Start,
     onNavigateToProviders: (() -> Unit)? = null,
+    searchEnabled: Boolean = false,
+    onSearchToggle: (() -> Unit)? = null,
     onSortSelected: (ProxySortMode) -> Unit,
 ) {
     val entries =
@@ -59,6 +61,20 @@ internal fun NodeSortPopup(
                         },
                 )
             )
+            onSearchToggle?.let { toggleSearch ->
+                add(
+                    DropdownEntry(
+                        items =
+                            listOf(
+                                DropdownItem(
+                                    text = YumeTxt.Component.Editor.Action.Search,
+                                    selected = searchEnabled,
+                                    onClick = toggleSearch,
+                                )
+                            ),
+                    )
+                )
+            }
             onNavigateToProviders?.let { navigateToProviders ->
                 add(
                     DropdownEntry(
