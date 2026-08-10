@@ -297,7 +297,7 @@ void TcpSession::readGreeting() {
         const ssize_t count = recv(
             proxy_fd,
             receive.data() + receive_size,
-            receive_need - receive_size,
+            receive.size() - receive_size,
             0);
         if (count > 0) {
             receive_size += static_cast<std::size_t>(count);
@@ -321,7 +321,7 @@ void TcpSession::readConnectReply() {
         const ssize_t count = recv(
             proxy_fd,
             receive.data() + receive_size,
-            receive_need - receive_size,
+            receive.size() - receive_size,
             0);
         if (count > 0) {
             receive_size += static_cast<std::size_t>(count);
@@ -549,19 +549,7 @@ void TcpSession::onEvent(int fd, std::uint32_t events) {
         return;
     }
     last_activity_ms = monotonicMs();
-    if ((events & EPOLLERR) != 0) {
-        fail();
-        return;
-    }
-    // EPOLLHUP can be delivered with the final readable bytes. During relay it
-    // is an EOF hint, not permission to discard that data; the direction readers
-    // drain it and perform their normal half-close sequence. Before relay there
-    // is no payload to preserve unless a SOCKS reply is readable.
-    if (
-        state != State::Relay &&
-        (events & EPOLLHUP) != 0 &&
-        !((state == State::WaitGreeting || state == State::WaitConnect) && (events & EPOLLIN) != 0)
-    ) {
+    if ((events & (EPOLLERR | EPOLLHUP)) != 0) {
         fail();
         return;
     }

@@ -47,7 +47,7 @@ jobs:
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/telegram-bot-api-install"
-          cmake --build telegram-bot-api-build --target install --parallel 2
+          cmake --build telegram-bot-api-build --target install --parallel "$(nproc)"
 
       - name: Verify Telegram Bot API binary
         run: |
@@ -55,12 +55,4 @@ jobs:
           test -x telegram-bot-api-install/bin/telegram-bot-api
           telegram-bot-api-install/bin/telegram-bot-api --help >/dev/null
           ldd telegram-bot-api-install/bin/telegram-bot-api
-
-      - name: Upload Telegram Bot API artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: telegram-bot-api-${{ env.TELEGRAM_BOT_API_COMMIT }}
-          path: telegram-bot-api-install
-          if-no-files-found: error
-          compression-level: 6
 

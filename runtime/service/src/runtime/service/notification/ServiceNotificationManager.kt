@@ -91,7 +91,7 @@ class ServiceNotificationManager(
 
     /** Force the current foreground notification to adopt the selected application icon style. */
     fun refreshForIconStyleChange() {
-        refreshRunningNotification(repostForegroundNotification = true)
+        refreshRunningNotification()
     }
 
     /**
@@ -126,23 +126,19 @@ class ServiceNotificationManager(
         )
     }
 
-    private fun refreshRunningNotification(repostForegroundNotification: Boolean = false) {
-        // Without POST_NOTIFICATIONS the notify() below is silently dropped anyway; skip the
-        // core queries and notification build. An icon-style change instead re-posts the
-        // foreground notification, which must also work when the app's regular notifications are
-        // disabled but Android still retains the foreground-service entry.
-        if (released || (!repostForegroundNotification && !notificationManager.areNotificationsEnabled())) {
+    private fun refreshRunningNotification() {
+        // This notification belongs to a running foreground service. Re-post it through
+        // startForeground() instead of NotificationManager.notify(): Android may defer ordinary
+        // notify() updates after the app leaves the foreground, while startForeground() remains
+        // the service-owned update path even when POST_NOTIFICATIONS is denied.
+        if (released) {
             return
         }
         val notification = buildRunningNotification()
         // Re-check after the (possibly slow) core query: the service may have stopped while we
         // were building the notification, and a notify() now would resurrect it.
         if (!released) {
-            if (repostForegroundNotification) {
-                service.startForeground(config.notificationId, notification)
-            } else {
-                notificationManager.notify(config.notificationId, notification)
-            }
+            service.startForeground(config.notificationId, notification)
         }
     }
 

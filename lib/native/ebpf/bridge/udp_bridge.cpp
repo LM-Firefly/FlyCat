@@ -254,7 +254,7 @@ struct UdpSession final {
             const ssize_t count = recv(
                 control_fd,
                 receive.data() + receive_size,
-                receive_need - receive_size,
+                receive.size() - receive_size,
                 0);
             if (count > 0) {
                 receive_size += static_cast<std::size_t>(count);
@@ -305,7 +305,7 @@ struct UdpSession final {
             const ssize_t count = recv(
                 control_fd,
                 receive.data() + receive_size,
-                receive_need - receive_size,
+                receive.size() - receive_size,
                 0);
             if (count > 0) {
                 receive_size += static_cast<std::size_t>(count);

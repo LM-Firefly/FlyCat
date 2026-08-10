@@ -502,7 +502,7 @@ int loadIpv6RedirectProgram(
         &allow_jumps,
         &allow_jump_count);
     emitZero(builder, kKeyStackOffset, sizeof(RedirectKey));
-    emitZero(builder, kValueStackOffset, sizeof(OriginalDestination));
+    emitZero(builder, kValueStackOffset, 4);
     builder.emit(loadX(BPF_B, BPF_REG_5, BPF_REG_10, kTgidStackOffset));
     builder.emit(storeImm(BPF_B, BPF_REG_10, kKeyStackOffset + 0, AF_INET));
     builder.emit(storeX(BPF_B, BPF_REG_10, BPF_REG_5, kKeyStackOffset + 1));

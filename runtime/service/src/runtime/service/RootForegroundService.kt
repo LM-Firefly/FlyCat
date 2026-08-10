@@ -20,7 +20,6 @@ import androidx.core.content.ContextCompat
 import com.github.yumeyucca.yumebox.runtime.api.appContextOrSelf
 import com.github.yumeyucca.yumebox.runtime.api.initializeServiceGlobal
 import com.github.yumeyucca.yumebox.runtime.api.Intents
-import com.github.yumeyucca.yumebox.runtime.service.core.CoreProcess
 import com.github.yumeyucca.yumebox.runtime.service.notification.ServiceNotificationManager
 import com.github.yumeyucca.yumebox.runtime.service.util.cancelAndJoinBlocking
 import kotlinx.coroutines.CoroutineScope
@@ -28,7 +27,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * Foreground notification host for the detached root Tun daemon. The core itself remains a
@@ -67,16 +65,9 @@ class RootForegroundService : Service(), CoroutineScope by CoroutineScope(Dispat
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (notificationJob?.isActive != true) {
-            notificationJob =
-                launch {
-                    // The root daemon is independent from the app process. A sticky service can be
-                    // recreated before any Activity reattaches the REST endpoint, so recover that
-                    // endpoint here before the traffic poller starts issuing controller requests.
-                    withContext(Dispatchers.IO) { CoreProcess.reconnectRoot(appContextOrSelf) }
-                    notificationManager.startTrafficUpdate(this).join()
-                }
+            notificationJob = notificationManager.startTrafficUpdate(this)
         }
-        return START_REDELIVER_INTENT
+        return START_NOT_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

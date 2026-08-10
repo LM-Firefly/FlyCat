@@ -63,12 +63,22 @@ jobs:
             echo "Telegram upload skipped: BOT_TOKEN, CHAT_ID, TELEGRAM_API_ID and TELEGRAM_API_HASH are all required."
           fi
 
-      - name: Download Telegram Bot API server
+      # The builder job saves this exact cache key in its post-job hook. Using the cache directly
+      # avoids first uploading then downloading the same large executable as an artifact.
+      - name: Restore Telegram Bot API server
         if: steps.check_upload.outputs.UPLOAD == 'true'
-        uses: actions/download-artifact@v8
+        id: bot_api_cache
+        uses: actions/cache@v5
         with:
-          name: telegram-bot-api-${{ env.TELEGRAM_BOT_API_COMMIT }}
-          path: telegram-bot-api
+          path: telegram-bot-api-install
+          key: ${{ runner.os }}-telegram-bot-api-${{ env.TELEGRAM_BOT_API_COMMIT }}
+
+      - name: Verify Telegram Bot API cache
+        if: steps.check_upload.outputs.UPLOAD == 'true'
+        run: |
+          set -eu
+          test "${{ steps.bot_api_cache.outputs.cache-hit }}" = "true"
+          test -x telegram-bot-api-install/bin/telegram-bot-api
 
       - name: Start local Telegram Bot API server
         if: steps.check_upload.outputs.UPLOAD == 'true'
@@ -77,9 +87,9 @@ jobs:
           TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
         run: |
           set -eu
-          chmod +x telegram-bot-api/bin/telegram-bot-api
+          chmod +x telegram-bot-api-install/bin/telegram-bot-api
           mkdir -p "$RUNNER_TEMP/telegram-bot-api-data" "$RUNNER_TEMP/telegram-bot-api-temp"
-          telegram-bot-api/bin/telegram-bot-api \
+          telegram-bot-api-install/bin/telegram-bot-api \
             --local \
             --http-port=8081 \
             --dir="$RUNNER_TEMP/telegram-bot-api-data" \
