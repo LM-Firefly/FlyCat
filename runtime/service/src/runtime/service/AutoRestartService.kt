@@ -36,6 +36,7 @@ import com.github.yumeyucca.yumebox.core.util.StartupTaskCoordinator
 import com.github.yumeyucca.yumebox.data.model.RunMode
 import com.github.yumeyucca.yumebox.data.store.*
 import com.github.yumeyucca.yumebox.runtime.api.Profile
+import com.github.yumeyucca.yumebox.runtime.service.core.EbpfBridgeProcess
 import com.github.yumeyucca.yumebox.runtime.service.log.RuntimeLog
 import com.github.yumeyucca.yumebox.runtime.service.profile.ProfileService
 import com.github.yumeyucca.yumebox.runtime.service.session.RootSessionLauncher
@@ -127,6 +128,15 @@ class AutoRestartService : Service() {
     }
 
     private suspend fun checkAndAutoStart(reason: String) {
+        // An APK replacement kills app-owned services but not the detached root daemon or eBPF
+        // bridge. Tear them down before checking the restart preference so either setting leaves
+        // no process running code from the replaced APK.
+        if (reason == REASON_PACKAGE_REPLACED) {
+            withContext(Dispatchers.IO) {
+                EbpfBridgeProcess.cleanupOrphanedBridges(this@AutoRestartService)
+                RootSessionLauncher.stop(this@AutoRestartService)
+            }
+        }
         if (!appSettingsStorage.automaticRestart.value) return
         if (RemoteControllerStore.isActive()) {
             Timber.tag(TAG).i("Skip auto start: remote controller mode active")

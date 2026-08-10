@@ -565,11 +565,21 @@ class CoreProcess(private val context: Context) {
                 return null
             }
             if (record.mode == RunMode.Ebpf.coreArg && !EbpfBridgeProcess.isAlive()) {
-                stopRoot()
+                stopRoot(context)
                 return null
             }
             current = CoreEndpoint(context.runtimeHomeDir.resolve(SOCK).absolutePath, record.secret)
             return record.mode
+        }
+
+        /**
+         * Stops a detached root runtime as one unit. The eBPF bridge must be stopped before the
+         * daemon state is cleared, otherwise its persisted PID is lost and the bridge can survive
+         * both an app process restart and an APK replacement.
+         */
+        fun stopRoot(context: Context) {
+            runCatching { EbpfBridgeProcess.stop(context) }
+            stopRoot()
         }
 
         // The su kill returns fast, but libsu's shell round-trip + mihomo's SIGTERM teardown

@@ -1,6 +1,7 @@
 #include "udp_bridge.hpp"
 
 #include "redirect_types.hpp"
+#include "socket_utils.hpp"
 #include "socks5.hpp"
 
 #include <arpa/inet.h>
@@ -40,36 +41,6 @@ constexpr std::size_t kHandshakeBufferSize = 256;
 constexpr std::size_t kMaxBindings = 64;
 constexpr std::uint64_t kSessionIdleMs = 30'000;
 constexpr std::uint32_t kBaseEvents = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
-
-bool addEpoll(int epoll_fd, int fd, std::uint32_t events, void* pointer) {
-    epoll_event event{};
-    event.events = events;
-    event.data.ptr = pointer;
-    return epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event) == 0;
-}
-
-bool modifyEpoll(int epoll_fd, int fd, std::uint32_t events, void* pointer) {
-    epoll_event event{};
-    event.events = events;
-    event.data.ptr = pointer;
-    return epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event) == 0;
-}
-
-void closeFd(int* fd) {
-    if (fd != nullptr && *fd >= 0) {
-        close(*fd);
-        *fd = -1;
-    }
-}
-
-std::uint64_t monotonicMs() {
-    timespec value{};
-    if (clock_gettime(CLOCK_MONOTONIC, &value) != 0) {
-        return 0;
-    }
-    return static_cast<std::uint64_t>(value.tv_sec) * 1000U +
-        static_cast<std::uint64_t>(value.tv_nsec) / 1'000'000U;
-}
 
 bool sameEndpoint(const sockaddr_in& left, const sockaddr_in& right) {
     return left.sin_family == right.sin_family &&

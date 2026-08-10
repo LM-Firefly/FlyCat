@@ -136,6 +136,31 @@ object EbpfBridgeProcess {
         appendLog(context, "eBPF bridge: stopped pid=$pid")
     }
 
+    /**
+     * Removes bridges left by builds that cleared [RootDaemonState] before stopping the bridge.
+     * This is intentionally an upgrade-only migration: normal shutdown always uses the persisted
+     * PID and process start time above.
+     */
+    fun cleanupOrphanedBridges(context: Context) {
+        val pids =
+            runCatching {
+                Shell.cmd(
+                    "for proc in /proc/[0-9]*; do " +
+                        "pid=\${proc##*/}; exe=\$(readlink \"\$proc/exe\" 2>/dev/null); " +
+                        "case \"\${exe%% *}\" in */${CoreArtifacts.BRIDGE_NAME}) echo \$pid;; esac; " +
+                        "done"
+                )
+                    .exec()
+                    .out
+                    .mapNotNull { it.trim().toIntOrNull() }
+            }
+                .getOrDefault(emptyList())
+        pids.forEach { pid ->
+            appendLog(context, "eBPF bridge: cleaning orphan pid=$pid after APK replacement")
+            stopPid(context, pid)
+        }
+    }
+
     fun diagnosticLog(context: Context): String =
         runCatching {
             val file = context.runtimeHomeDir.resolve(BRIDGE_LOG)
@@ -171,6 +196,18 @@ object EbpfBridgeProcess {
 
     private fun isPidAlive(pid: Int): Boolean =
         runCatching { Shell.cmd("kill -0 $pid").exec().isSuccess }.getOrDefault(false)
+
+    private fun stopPid(context: Context, pid: Int) {
+        runCatching { Shell.cmd("kill -TERM $pid").exec() }
+        val deadline = SystemClock.elapsedRealtime() + STOP_GRACE_MS
+        while (SystemClock.elapsedRealtime() < deadline && isPidAlive(pid)) {
+            Thread.sleep(STOP_POLL_MS)
+        }
+        if (isPidAlive(pid)) {
+            appendLog(context, "eBPF bridge: orphan SIGTERM timeout, sending SIGKILL pid=$pid")
+            runCatching { Shell.cmd("kill -KILL $pid").exec() }
+        }
+    }
 
     private fun processStartTimeTicks(pid: Int): Long? =
         runCatching {

@@ -1,6 +1,7 @@
 #include "tcp_bridge.hpp"
 
 #include "redirect_types.hpp"
+#include "socket_utils.hpp"
 #include "socks5.hpp"
 
 #include <arpa/inet.h>
@@ -47,39 +48,6 @@ using RelayBuffer = std::array<std::uint8_t, kRelayBufferSize>;
 // leaving it in every relay mask creates a level-triggered busy loop after a
 // peer half-closes its stream.
 constexpr std::uint32_t kBaseEvents = EPOLLERR | EPOLLHUP;
-
-std::uint64_t monotonicMs() {
-    timespec value{};
-    if (clock_gettime(CLOCK_MONOTONIC, &value) != 0) return 0;
-    return static_cast<std::uint64_t>(value.tv_sec) * 1000U +
-        static_cast<std::uint64_t>(value.tv_nsec) / 1'000'000U;
-}
-
-bool setNonBlocking(int fd) {
-    const int flags = fcntl(fd, F_GETFL, 0);
-    return flags >= 0 && fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0;
-}
-
-bool addEpoll(int epoll_fd, int fd, std::uint32_t events, void* pointer) {
-    epoll_event event{};
-    event.events = events;
-    event.data.ptr = pointer;
-    return epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event) == 0;
-}
-
-bool modifyEpoll(int epoll_fd, int fd, std::uint32_t events, void* pointer) {
-    epoll_event event{};
-    event.events = events;
-    event.data.ptr = pointer;
-    return epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event) == 0;
-}
-
-void closeFd(int* fd) {
-    if (fd != nullptr && *fd >= 0) {
-        close(*fd);
-        *fd = -1;
-    }
-}
 
 struct TcpDirection final {
     int source = -1;

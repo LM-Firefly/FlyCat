@@ -60,6 +60,21 @@ private:
     bool overflow_ = false;
 };
 
+class AllowJumps final {
+public:
+    void add(std::size_t jump) { jumps_[count_++] = jump; }
+
+    void patchAll(Builder& builder, std::size_t target) const {
+        for (std::size_t index = 0; index < count_; ++index) {
+            builder.patchJump(jumps_[index], target);
+        }
+    }
+
+private:
+    std::array<std::size_t, 24> jumps_{};
+    std::size_t count_ = 0;
+};
+
 struct bpf_insn alu64Imm(std::uint8_t operation, std::uint8_t destination, std::int32_t immediate) {
     struct bpf_insn instruction{};
     instruction.code = static_cast<std::uint8_t>(BPF_ALU64 | BPF_OP(operation) | BPF_K);
@@ -188,21 +203,27 @@ void emitUidPolicy(
     Builder& builder,
     int uid_policy_map_fd,
     std::uint8_t uid_policy_mode,
-    std::array<std::size_t, 24>* allow_jumps,
-    std::size_t* allow_jump_count) {
-    if (uid_policy_map_fd < 0 || uid_policy_mode == 0) {
-        return;
-    }
+    AllowJumps* allow_jumps) {
+    // The bridge attaches at the cgroup v2 root because Android SELinux rejects an attach to
+    // many app leaf cgroups. Never redirect framework/root UIDs from that broad attachment:
+    // netd and the system DNS resolver are part of the network substrate the bridge relies on.
+    // Android application and isolated-process UIDs start at 10000.
     builder.emit(callHelper(BPF_FUNC_get_current_uid_gid));
     builder.emit(storeX(BPF_W, BPF_REG_10, BPF_REG_0, kUidStackOffset));
+    builder.emit(loadX(BPF_W, BPF_REG_7, BPF_REG_10, kUidStackOffset));
+    const std::size_t application_uid = builder.emitJump(jumpImm(BPF_JGE, BPF_REG_7, 10000, 0));
+    allow_jumps->add(builder.emitJump(jumpAlways(0)));
+    builder.patchJump(application_uid, builder.size());
+
+    if (uid_policy_map_fd < 0 || uid_policy_mode == 0) return;
     emitMapFd(builder, BPF_REG_1, uid_policy_map_fd);
     builder.emit(alu64Reg(BPF_MOV, BPF_REG_2, BPF_REG_10));
     builder.emit(alu64Imm(BPF_ADD, BPF_REG_2, kUidStackOffset));
     builder.emit(callHelper(BPF_FUNC_map_lookup_elem));
     if (uid_policy_mode == 1) {
-        (*allow_jumps)[(*allow_jump_count)++] = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_0, 0, 0));
+        allow_jumps->add(builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_0, 0, 0)));
     } else if (uid_policy_mode == 2) {
-        (*allow_jumps)[(*allow_jump_count)++] = builder.emitJump(jumpImm(BPF_JNE, BPF_REG_0, 0, 0));
+        allow_jumps->add(builder.emitJump(jumpImm(BPF_JNE, BPF_REG_0, 0, 0)));
     }
 }
 
@@ -210,8 +231,7 @@ void emitIpv4CidrBypass(
     Builder& builder,
     int cidr_map_fd,
     std::uint32_t address,
-    std::array<std::size_t, 24>* allow_jumps,
-    std::size_t* allow_jump_count) {
+    AllowJumps* allow_jumps) {
     if (cidr_map_fd < 0) return;
     emitZero(builder, kKeyStackOffset, 8);
     builder.emit(storeImm(BPF_W, BPF_REG_10, kKeyStackOffset, 32));
@@ -220,7 +240,7 @@ void emitIpv4CidrBypass(
     builder.emit(alu64Reg(BPF_MOV, BPF_REG_2, BPF_REG_10));
     builder.emit(alu64Imm(BPF_ADD, BPF_REG_2, kKeyStackOffset));
     builder.emit(callHelper(BPF_FUNC_map_lookup_elem));
-    (*allow_jumps)[(*allow_jump_count)++] = builder.emitJump(jumpImm(BPF_JNE, BPF_REG_0, 0, 0));
+    allow_jumps->add(builder.emitJump(jumpImm(BPF_JNE, BPF_REG_0, 0, 0)));
 }
 
 void emitIpv6CidrBypass(
@@ -230,8 +250,7 @@ void emitIpv6CidrBypass(
     std::uint32_t word1,
     std::uint32_t word2,
     std::uint32_t word3,
-    std::array<std::size_t, 24>* allow_jumps,
-    std::size_t* allow_jump_count) {
+    AllowJumps* allow_jumps) {
     if (cidr_map_fd < 0) return;
     emitZero(builder, kKeyStackOffset, 20);
     builder.emit(storeImm(BPF_W, BPF_REG_10, kKeyStackOffset, 128));
@@ -243,7 +262,66 @@ void emitIpv6CidrBypass(
     builder.emit(alu64Reg(BPF_MOV, BPF_REG_2, BPF_REG_10));
     builder.emit(alu64Imm(BPF_ADD, BPF_REG_2, kKeyStackOffset));
     builder.emit(callHelper(BPF_FUNC_map_lookup_elem));
-    (*allow_jumps)[(*allow_jump_count)++] = builder.emitJump(jumpImm(BPF_JNE, BPF_REG_0, 0, 0));
+    allow_jumps->add(builder.emitJump(jumpImm(BPF_JNE, BPF_REG_0, 0, 0)));
+}
+
+void emitRedirectPreamble(
+    Builder& builder,
+    int bypass_tgid_map_fd,
+    int uid_policy_map_fd,
+    std::uint8_t uid_policy_mode,
+    AllowJumps* allow_jumps) {
+    builder.emit(alu64Reg(BPF_MOV, BPF_REG_6, BPF_REG_1));
+    builder.emit(callHelper(BPF_FUNC_get_current_pid_tgid));
+    builder.emit(alu64Reg(BPF_MOV, BPF_REG_7, BPF_REG_0));
+    builder.emit(alu64Imm(BPF_RSH, BPF_REG_7, 32));
+    builder.emit(storeX(BPF_W, BPF_REG_10, BPF_REG_7, kTgidStackOffset));
+    emitMapFd(builder, BPF_REG_1, bypass_tgid_map_fd);
+    builder.emit(alu64Reg(BPF_MOV, BPF_REG_2, BPF_REG_10));
+    builder.emit(alu64Imm(BPF_ADD, BPF_REG_2, kTgidStackOffset));
+    builder.emit(callHelper(BPF_FUNC_map_lookup_elem));
+    const std::size_t no_bypass = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_0, 0, 0));
+    allow_jumps->add(builder.emitJump(jumpAlways(0)));
+    builder.patchJump(no_bypass, builder.size());
+    emitUidPolicy(builder, uid_policy_map_fd, uid_policy_mode, allow_jumps);
+}
+
+void emitProtocolFilter(
+    Builder& builder,
+    std::uint8_t protocol_filter,
+    AllowJumps* allow_jumps) {
+    if (protocol_filter == 0) {
+        builder.emit(loadX(BPF_W, BPF_REG_5, BPF_REG_6, kSockAddrProtocolOffset));
+        const std::size_t is_tcp = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_5, kProtocolTcp, 0));
+        allow_jumps->add(builder.emitJump(jumpImm(BPF_JNE, BPF_REG_5, kProtocolUdp, 0)));
+        builder.patchJump(is_tcp, builder.size());
+    } else {
+        builder.emit(alu64Imm(BPF_MOV, BPF_REG_5, protocol_filter));
+    }
+    builder.emit(storeX(BPF_B, BPF_REG_10, BPF_REG_5, kTgidStackOffset));
+}
+
+int finishRedirectProgram(
+    Builder& builder,
+    const AllowJumps& allow_jumps,
+    std::size_t map_update_failed,
+    const char* program_name,
+    enum bpf_attach_type attach_type) {
+    const std::size_t allow_label = emitReturn(builder, 1);
+    const std::size_t drop_label = emitReturn(builder, 0);
+    builder.patchJump(map_update_failed, drop_label);
+    allow_jumps.patchAll(builder, allow_label);
+    if (builder.overflowed()) {
+        errno = EMSGSIZE;
+        return -1;
+    }
+    return loadProgram(
+        builder.data(),
+        builder.size(),
+        program_name,
+        BPF_PROG_TYPE_CGROUP_SOCK_ADDR,
+        attach_type,
+        true);
 }
 
 }  // namespace
@@ -267,64 +345,34 @@ int loadIpv4RedirectProgram(
     }
 
     Builder builder;
-    std::array<std::size_t, 24> allow_jumps{};
-    std::size_t allow_jump_count = 0;
-
-    builder.emit(alu64Reg(BPF_MOV, BPF_REG_6, BPF_REG_1));
-
+    AllowJumps allow_jumps;
     // Root bridge and mihomo are in the same cgroup as intercepted apps. A
     // TGID map is used instead of a single immediate so the launcher can add
     // the mihomo PID after both processes are known.
-    builder.emit(callHelper(BPF_FUNC_get_current_pid_tgid));
-    builder.emit(alu64Reg(BPF_MOV, BPF_REG_7, BPF_REG_0));
-    builder.emit(alu64Imm(BPF_RSH, BPF_REG_7, 32));
-    builder.emit(storeX(BPF_W, BPF_REG_10, BPF_REG_7, kTgidStackOffset));
-    emitMapFd(builder, BPF_REG_1, bypass_tgid_map_fd);
-    builder.emit(alu64Reg(BPF_MOV, BPF_REG_2, BPF_REG_10));
-    builder.emit(alu64Imm(BPF_ADD, BPF_REG_2, kTgidStackOffset));
-    builder.emit(callHelper(BPF_FUNC_map_lookup_elem));
-    const std::size_t no_bypass = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_0, 0, 0));
-    allow_jumps[allow_jump_count++] = builder.emitJump(jumpAlways(0));
-    builder.patchJump(no_bypass, builder.size());
-    emitUidPolicy(builder, uid_policy_map_fd, uid_policy_mode, &allow_jumps, &allow_jump_count);
-
-    if (protocol_filter == 0) {
-        // CONNECT is shared by TCP and connected UDP. Keep both protocols in
-        // one program so kernels without multi-attach support do not need two
-        // programs on BPF_CGROUP_INET4_CONNECT.
-        builder.emit(loadX(BPF_W, BPF_REG_5, BPF_REG_6, kSockAddrProtocolOffset));
-        const std::size_t is_tcp = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_5, kProtocolTcp, 0));
-        allow_jumps[allow_jump_count++] = builder.emitJump(jumpImm(BPF_JNE, BPF_REG_5, kProtocolUdp, 0));
-        builder.patchJump(is_tcp, builder.size());
-    } else {
-        builder.emit(alu64Imm(BPF_MOV, BPF_REG_5, protocol_filter));
-    }
-    // Helpers clobber R1-R5; keep the selected protocol across get_prandom_u32
-    // and the map update setup.
-    builder.emit(storeX(BPF_B, BPF_REG_10, BPF_REG_5, kTgidStackOffset));
+    emitRedirectPreamble(builder, bypass_tgid_map_fd, uid_policy_map_fd, uid_policy_mode, &allow_jumps);
+    emitProtocolFilter(builder, protocol_filter, &allow_jumps);
     builder.emit(loadX(BPF_W, BPF_REG_7, BPF_REG_6, kSockAddrUserIp4Offset));
     builder.emit(loadX(BPF_W, BPF_REG_8, BPF_REG_6, kSockAddrUserPortOffset));
     if (dns_mode == 1) {
         const std::size_t dns_port = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_8, htons(53), 0));
-        allow_jumps[allow_jump_count++] = dns_port;
+        allow_jumps.add(dns_port);
     }
     emitIpv4CidrBypass(
         builder,
         bypass_cidr4_map_fd,
         BPF_REG_7,
-        &allow_jumps,
-        &allow_jump_count);
+        &allow_jumps);
 
     // Keep local, unspecified and multicast destinations outside the bridge.
     // This also prevents a manually addressed token connection from creating
     // a second redirect entry.
-    allow_jumps[allow_jump_count++] = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_7, 0, 0));
+    allow_jumps.add(builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_7, 0, 0)));
     builder.emit(alu64Reg(BPF_MOV, BPF_REG_2, BPF_REG_7));
     builder.emit(endianToBig(BPF_REG_2, 32));
     builder.emit(alu64Reg(BPF_MOV, BPF_REG_3, BPF_REG_2));
     builder.emit(alu64Imm(BPF_RSH, BPF_REG_3, 24));
-    allow_jumps[allow_jump_count++] = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_3, 127, 0));
-    allow_jumps[allow_jump_count++] = builder.emitJump(jumpImm(BPF_JGE, BPF_REG_3, 224, 0));
+    allow_jumps.add(builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_3, 127, 0)));
+    allow_jumps.add(builder.emitJump(jumpImm(BPF_JGE, BPF_REG_3, 224, 0)));
 
     builder.emit(callHelper(BPF_FUNC_get_prandom_u32));
     builder.emit(alu32Reg(BPF_MOV, BPF_REG_9, BPF_REG_0));
@@ -358,24 +406,7 @@ int loadIpv4RedirectProgram(
     builder.emit(storeX(BPF_W, BPF_REG_6, BPF_REG_9, kSockAddrUserIp4Offset));
     builder.emit(alu64Imm(BPF_MOV, BPF_REG_0, htons(listener_port)));
     builder.emit(storeX(BPF_W, BPF_REG_6, BPF_REG_0, kSockAddrUserPortOffset));
-    const std::size_t allow_label = emitReturn(builder, 1);
-    const std::size_t drop_label = emitReturn(builder, 0);
-
-    builder.patchJump(map_update_failed, drop_label);
-    for (std::size_t index = 0; index < allow_jump_count; ++index) {
-        builder.patchJump(allow_jumps[index], allow_label);
-    }
-    if (builder.overflowed()) {
-        errno = EMSGSIZE;
-        return -1;
-    }
-    return loadProgram(
-        builder.data(),
-        builder.size(),
-        program_name,
-        BPF_PROG_TYPE_CGROUP_SOCK_ADDR,
-        attach_type,
-        true);
+    return finishRedirectProgram(builder, allow_jumps, map_update_failed, program_name, attach_type);
 }
 
 int loadTcp4ConnectProgram(
@@ -422,32 +453,9 @@ int loadIpv6RedirectProgram(
     }
 
     Builder builder;
-    std::array<std::size_t, 24> allow_jumps{};
-    std::size_t allow_jump_count = 0;
-    builder.emit(alu64Reg(BPF_MOV, BPF_REG_6, BPF_REG_1));
-
-    builder.emit(callHelper(BPF_FUNC_get_current_pid_tgid));
-    builder.emit(alu64Reg(BPF_MOV, BPF_REG_7, BPF_REG_0));
-    builder.emit(alu64Imm(BPF_RSH, BPF_REG_7, 32));
-    builder.emit(storeX(BPF_W, BPF_REG_10, BPF_REG_7, kTgidStackOffset));
-    emitMapFd(builder, BPF_REG_1, bypass_tgid_map_fd);
-    builder.emit(alu64Reg(BPF_MOV, BPF_REG_2, BPF_REG_10));
-    builder.emit(alu64Imm(BPF_ADD, BPF_REG_2, kTgidStackOffset));
-    builder.emit(callHelper(BPF_FUNC_map_lookup_elem));
-    const std::size_t no_bypass = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_0, 0, 0));
-    allow_jumps[allow_jump_count++] = builder.emitJump(jumpAlways(0));
-    builder.patchJump(no_bypass, builder.size());
-    emitUidPolicy(builder, uid_policy_map_fd, uid_policy_mode, &allow_jumps, &allow_jump_count);
-
-    if (protocol_filter == 0) {
-        builder.emit(loadX(BPF_W, BPF_REG_5, BPF_REG_6, kSockAddrProtocolOffset));
-        const std::size_t is_tcp = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_5, kProtocolTcp, 0));
-        allow_jumps[allow_jump_count++] = builder.emitJump(jumpImm(BPF_JNE, BPF_REG_5, kProtocolUdp, 0));
-        builder.patchJump(is_tcp, builder.size());
-    } else {
-        builder.emit(alu64Imm(BPF_MOV, BPF_REG_5, protocol_filter));
-    }
-    builder.emit(storeX(BPF_B, BPF_REG_10, BPF_REG_5, kTgidStackOffset));
+    AllowJumps allow_jumps;
+    emitRedirectPreamble(builder, bypass_tgid_map_fd, uid_policy_map_fd, uid_policy_mode, &allow_jumps);
+    emitProtocolFilter(builder, protocol_filter, &allow_jumps);
 
     // Preserve the IPv6 destination before any helper call. The address fields
     // are network-byte-order words in struct bpf_sock_addr.
@@ -466,13 +474,13 @@ int loadIpv6RedirectProgram(
     builder.emit(alu64Reg(BPF_MOV, BPF_REG_2, BPF_REG_7));
     builder.emit(endianToBig(BPF_REG_2, 32));
     builder.emit(alu64Imm(BPF_RSH, BPF_REG_2, 24));
-    allow_jumps[allow_jump_count++] = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_2, 255, 0));
+    allow_jumps.add(builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_2, 255, 0)));
 
     const std::size_t first_nonzero = builder.emitJump(jumpImm(BPF_JNE, BPF_REG_7, 0, 0));
     const std::size_t second_nonzero = builder.emitJump(jumpImm(BPF_JNE, BPF_REG_8, 0, 0));
     const std::size_t third_nonzero = builder.emitJump(jumpImm(BPF_JNE, BPF_REG_9, 0, 0));
     const std::size_t not_loopback = builder.emitJump(jumpImm(BPF_JNE, BPF_REG_0, 0x01000000, 0));
-    allow_jumps[allow_jump_count++] = builder.emitJump(jumpAlways(0));
+    allow_jumps.add(builder.emitJump(jumpAlways(0)));
     const std::size_t after_local = builder.size();
     builder.patchJump(first_nonzero, after_local);
     builder.patchJump(second_nonzero, after_local);
@@ -484,13 +492,13 @@ int loadIpv6RedirectProgram(
     builder.emit(loadX(BPF_W, BPF_REG_7, BPF_REG_6, kSockAddrUserIp6Offset + 12));
     builder.emit(endianToBig(BPF_REG_7, 32));
     builder.emit(alu64Imm(BPF_RSH, BPF_REG_7, 24));
-    allow_jumps[allow_jump_count++] = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_7, 127, 0));
+    allow_jumps.add(builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_7, 127, 0)));
     builder.patchJump(not_mapped, builder.size());
 
     builder.emit(loadX(BPF_W, BPF_REG_8, BPF_REG_6, kSockAddrUserPortOffset));
     if (dns_mode == 1) {
         const std::size_t dns_port = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_8, htons(53), 0));
-        allow_jumps[allow_jump_count++] = dns_port;
+        allow_jumps.add(dns_port);
     }
     emitIpv6CidrBypass(
         builder,
@@ -499,8 +507,7 @@ int loadIpv6RedirectProgram(
         BPF_REG_8,
         BPF_REG_9,
         BPF_REG_0,
-        &allow_jumps,
-        &allow_jump_count);
+        &allow_jumps);
     emitZero(builder, kKeyStackOffset, sizeof(RedirectKey));
     emitZero(builder, kValueStackOffset, 4);
     builder.emit(loadX(BPF_B, BPF_REG_5, BPF_REG_10, kTgidStackOffset));
@@ -535,24 +542,7 @@ int loadIpv6RedirectProgram(
     builder.emit(storeX(BPF_W, BPF_REG_6, BPF_REG_9, kSockAddrUserIp6Offset + 12));
     builder.emit(alu64Imm(BPF_MOV, BPF_REG_0, htons(listener_port)));
     builder.emit(storeX(BPF_W, BPF_REG_6, BPF_REG_0, kSockAddrUserPortOffset));
-    const std::size_t allow_label = emitReturn(builder, 1);
-    const std::size_t drop_label = emitReturn(builder, 0);
-
-    builder.patchJump(map_update_failed, drop_label);
-    for (std::size_t index = 0; index < allow_jump_count; ++index) {
-        builder.patchJump(allow_jumps[index], allow_label);
-    }
-    if (builder.overflowed()) {
-        errno = EMSGSIZE;
-        return -1;
-    }
-    return loadProgram(
-        builder.data(),
-        builder.size(),
-        program_name,
-        BPF_PROG_TYPE_CGROUP_SOCK_ADDR,
-        attach_type,
-        true);
+    return finishRedirectProgram(builder, allow_jumps, map_update_failed, program_name, attach_type);
 }
 
 int loadIpv6ConnectProgram(

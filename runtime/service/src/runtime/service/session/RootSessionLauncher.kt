@@ -110,8 +110,7 @@ object RootSessionLauncher {
             broadcast(appContext, Intents.actionRuntimeStarted(appContext.packageName))
             log.i(RuntimeLog.Type.Launcher, "success: root daemon running mode=${mode.name}")
         } catch (error: Throwable) {
-            runCatching { EbpfBridgeProcess.stop(appContext) }
-            runCatching { CoreProcess.stopRoot() }
+            runCatching { CoreProcess.stopRoot(appContext) }
             CoreProcess.awaitRootStopGrace()
             StatusProvider.markRuntimeFailed(mode, error.message)
             RootForegroundService.stop(appContext)
@@ -129,8 +128,7 @@ object RootSessionLauncher {
 
     private fun stopLocked(context: Context, broadcastStopped: Boolean) {
         val mode = CoreProcess.rootDaemonMode()
-        runCatching { EbpfBridgeProcess.stop(context) }
-        runCatching { CoreProcess.stopRoot() }
+        runCatching { CoreProcess.stopRoot(context) }
         CoreProcess.awaitRootStopGrace()
         mode?.let { StatusProvider.markRuntimeIdle(it) }
         RootForegroundService.stop(context)
