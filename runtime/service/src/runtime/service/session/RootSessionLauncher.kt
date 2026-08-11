@@ -41,6 +41,8 @@ import com.github.yumeyucca.yumebox.runtime.service.root.RootAccessSupport
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.net.InetSocketAddress
+import java.net.Socket
 
 /**
  * Launches a root [RunMode.Tun] or [RunMode.Ebpf] daemon. A foreground notification host tracks
@@ -85,6 +87,10 @@ object RootSessionLauncher {
 
             if (mode == RunMode.Ebpf) {
                 val settings = ServiceStore()
+                if (settings.dnsHijacking) {
+                    awaitEbpfDnsListener(appContext)
+                    log.i(RuntimeLog.Type.Launcher, "eBPF DNS listener ready")
+                }
                 val cgroupPath =
                     EbpfCgroupSupport.rootCgroupPath()
                         ?: error("eBPF requires a cgroup v2 mount")
@@ -96,7 +102,7 @@ object RootSessionLauncher {
                     mihomoPid,
                     cgroupPath,
                     specFactory.resolveEbpfUidPolicy(),
-                    if (settings.dnsHijacking) 0 else 1,
+                    settings.dnsHijacking,
                     settings.allowIpv6,
                     resolveEbpfBypassCidrs(settings),
                 )
@@ -190,6 +196,51 @@ object RootSessionLauncher {
         )
     }
 
+    private suspend fun awaitEbpfDnsListener(context: Context) {
+        val deadline = SystemClock.elapsedRealtime() + STARTUP_PROBE_TIMEOUT_MS
+        var lastError: Throwable? = null
+        while (true) {
+            if (!CoreProcess.isRootCoreAlive()) {
+                error(CoreProcess.coreLogTail(context) ?: "root core exited before DNS listener became ready")
+            }
+            val remainingMillis = deadline - SystemClock.elapsedRealtime()
+            if (remainingMillis <= 0L) break
+            val result =
+                runCatching {
+                    withTimeout(remainingMillis) {
+                        Socket().use { socket ->
+                            socket.connect(
+                                InetSocketAddress("127.0.0.1", EbpfOverride.DNS_PORT),
+                                DNS_LISTENER_CONNECT_TIMEOUT_MS,
+                            )
+                        }
+                    }
+                }
+            if (result.isSuccess) return
+            lastError = result.exceptionOrNull()
+            val retryDelay =
+                minOf(
+                    STARTUP_PROBE_INTERVAL_MS,
+                    deadline - SystemClock.elapsedRealtime(),
+                )
+            if (retryDelay <= 0L) break
+            PollingTimers.awaitTick(
+                PollingTimerSpecs.dynamic(
+                    name = "root_ebpf_dns_listener_probe",
+                    intervalMillis = retryDelay,
+                    initialDelayMillis = retryDelay,
+                )
+            )
+        }
+        val tail = CoreProcess.coreLogTail(context)
+        throw IllegalStateException(
+            "root core DNS listener unavailable: " +
+                (lastError?.message ?: lastError?.let { it::class.simpleName } ?: "startup timed out") +
+                (tail?.let { " ($it)" } ?: ""),
+            lastError,
+        )
+    }
+
     private fun resolveEbpfBypassCidrs(settings: ServiceStore): List<String> {
         val explicit =
             settings.tunRouteExcludeAddress
@@ -211,4 +262,5 @@ object RootSessionLauncher {
 
     private const val STARTUP_PROBE_INTERVAL_MS = 75L
     private const val STARTUP_PROBE_TIMEOUT_MS = 2_000L
+    private const val DNS_LISTENER_CONNECT_TIMEOUT_MS = 200
 }

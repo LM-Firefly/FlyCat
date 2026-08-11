@@ -7,6 +7,9 @@ namespace yumebox::ebpf {
 
 constexpr std::uint8_t kProtocolTcp = 6;
 constexpr std::uint8_t kProtocolUdp = 17;
+constexpr std::uint8_t kDnsModeHijack = 0;
+constexpr std::uint8_t kDnsModeBypass = 1;
+constexpr std::uint16_t kDnsPlainPort = 53;
 
 // These layouts are shared by the userspace bridge and the generated
 // BPF instructions. Do not replace them with host-dependent socket structs.

@@ -336,10 +336,13 @@ int loadIpv4RedirectProgram(
     int uid_policy_map_fd,
     std::uint8_t uid_policy_mode,
     std::uint8_t dns_mode,
+    std::uint16_t dns_listener_port,
     int bypass_cidr4_map_fd,
     int bypass_cidr6_map_fd) {
     (void)bypass_cidr6_map_fd;
-    if (redirect_map_fd < 0 || bypass_tgid_map_fd < 0 || listener_port == 0) {
+    if (redirect_map_fd < 0 || bypass_tgid_map_fd < 0 || listener_port == 0 ||
+        dns_mode > kDnsModeBypass ||
+        (dns_mode == kDnsModeHijack && dns_listener_port == 0)) {
         errno = EINVAL;
         return -1;
     }
@@ -353,9 +356,18 @@ int loadIpv4RedirectProgram(
     emitProtocolFilter(builder, protocol_filter, &allow_jumps);
     builder.emit(loadX(BPF_W, BPF_REG_7, BPF_REG_6, kSockAddrUserIp4Offset));
     builder.emit(loadX(BPF_W, BPF_REG_8, BPF_REG_6, kSockAddrUserPortOffset));
-    if (dns_mode == 1) {
-        const std::size_t dns_port = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_8, htons(53), 0));
+    if (dns_mode == kDnsModeBypass) {
+        const std::size_t dns_port =
+            builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_8, htons(kDnsPlainPort), 0));
         allow_jumps.add(dns_port);
+    } else {
+        const std::size_t not_dns =
+            builder.emitJump(jumpImm(BPF_JNE, BPF_REG_8, htons(kDnsPlainPort), 0));
+        builder.emit(storeImm(BPF_W, BPF_REG_6, kSockAddrUserIp4Offset, 0x0100007f));
+        builder.emit(alu64Imm(BPF_MOV, BPF_REG_0, htons(dns_listener_port)));
+        builder.emit(storeX(BPF_W, BPF_REG_6, BPF_REG_0, kSockAddrUserPortOffset));
+        (void)emitReturn(builder, 1);
+        builder.patchJump(not_dns, builder.size());
     }
     emitIpv4CidrBypass(
         builder,
@@ -416,6 +428,7 @@ int loadTcp4ConnectProgram(
     int uid_policy_map_fd,
     std::uint8_t uid_policy_mode,
     std::uint8_t dns_mode,
+    std::uint16_t dns_listener_port,
     int bypass_cidr4_map_fd,
     int bypass_cidr6_map_fd) {
     (void)bypass_cidr4_map_fd;
@@ -429,6 +442,7 @@ int loadTcp4ConnectProgram(
         uid_policy_map_fd,
         uid_policy_mode,
         dns_mode,
+        dns_listener_port,
         bypass_cidr4_map_fd,
         bypass_cidr6_map_fd);
 }
@@ -444,10 +458,13 @@ int loadIpv6RedirectProgram(
     int uid_policy_map_fd,
     std::uint8_t uid_policy_mode,
     std::uint8_t dns_mode,
+    std::uint16_t dns_listener_port,
     int bypass_cidr4_map_fd,
     int bypass_cidr6_map_fd) {
     (void)bypass_cidr4_map_fd;
-    if (redirect_map_fd < 0 || bypass_tgid_map_fd < 0 || listener_port == 0) {
+    if (redirect_map_fd < 0 || bypass_tgid_map_fd < 0 || listener_port == 0 ||
+        dns_mode > kDnsModeBypass ||
+        (dns_mode == kDnsModeHijack && dns_listener_port == 0)) {
         errno = EINVAL;
         return -1;
     }
@@ -496,9 +513,21 @@ int loadIpv6RedirectProgram(
     builder.patchJump(not_mapped, builder.size());
 
     builder.emit(loadX(BPF_W, BPF_REG_8, BPF_REG_6, kSockAddrUserPortOffset));
-    if (dns_mode == 1) {
-        const std::size_t dns_port = builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_8, htons(53), 0));
+    if (dns_mode == kDnsModeBypass) {
+        const std::size_t dns_port =
+            builder.emitJump(jumpImm(BPF_JEQ, BPF_REG_8, htons(kDnsPlainPort), 0));
         allow_jumps.add(dns_port);
+    } else {
+        const std::size_t not_dns =
+            builder.emitJump(jumpImm(BPF_JNE, BPF_REG_8, htons(kDnsPlainPort), 0));
+        builder.emit(storeImm(BPF_W, BPF_REG_6, kSockAddrUserIp6Offset, 0));
+        builder.emit(storeImm(BPF_W, BPF_REG_6, kSockAddrUserIp6Offset + 4, 0));
+        builder.emit(storeImm(BPF_W, BPF_REG_6, kSockAddrUserIp6Offset + 8, static_cast<std::int32_t>(0xffff0000U)));
+        builder.emit(storeImm(BPF_W, BPF_REG_6, kSockAddrUserIp6Offset + 12, 0x0100007f));
+        builder.emit(alu64Imm(BPF_MOV, BPF_REG_0, htons(dns_listener_port)));
+        builder.emit(storeX(BPF_W, BPF_REG_6, BPF_REG_0, kSockAddrUserPortOffset));
+        (void)emitReturn(builder, 1);
+        builder.patchJump(not_dns, builder.size());
     }
     emitIpv6CidrBypass(
         builder,
@@ -552,6 +581,7 @@ int loadIpv6ConnectProgram(
     int uid_policy_map_fd,
     std::uint8_t uid_policy_mode,
     std::uint8_t dns_mode,
+    std::uint16_t dns_listener_port,
     int bypass_cidr4_map_fd,
     int bypass_cidr6_map_fd) {
     return loadIpv6RedirectProgram(
@@ -564,6 +594,7 @@ int loadIpv6ConnectProgram(
         uid_policy_map_fd,
         uid_policy_mode,
         dns_mode,
+        dns_listener_port,
         bypass_cidr4_map_fd,
         bypass_cidr6_map_fd);
 }
@@ -575,6 +606,7 @@ int loadUdp6SendmsgProgram(
     int uid_policy_map_fd,
     std::uint8_t uid_policy_mode,
     std::uint8_t dns_mode,
+    std::uint16_t dns_listener_port,
     int bypass_cidr4_map_fd,
     int bypass_cidr6_map_fd) {
     return loadIpv6RedirectProgram(
@@ -587,6 +619,7 @@ int loadUdp6SendmsgProgram(
         uid_policy_map_fd,
         uid_policy_mode,
         dns_mode,
+        dns_listener_port,
         bypass_cidr4_map_fd,
         bypass_cidr6_map_fd);
 }
@@ -658,6 +691,7 @@ int loadUdp4SendmsgProgram(
     int uid_policy_map_fd,
     std::uint8_t uid_policy_mode,
     std::uint8_t dns_mode,
+    std::uint16_t dns_listener_port,
     int bypass_cidr4_map_fd,
     int bypass_cidr6_map_fd) {
     return loadIpv4RedirectProgram(
@@ -670,6 +704,7 @@ int loadUdp4SendmsgProgram(
         uid_policy_map_fd,
         uid_policy_mode,
         dns_mode,
+        dns_listener_port,
         bypass_cidr4_map_fd,
         bypass_cidr6_map_fd);
 }

@@ -29,7 +29,8 @@ public:
         std::uint8_t uid_policy_mode = 0,
         const std::uint32_t* policy_uids = nullptr,
         std::size_t policy_uid_count = 0,
-        std::uint8_t dns_mode = 0,
+        std::uint8_t dns_mode = kDnsModeBypass,
+        std::uint16_t dns_listener_port = 0,
         bool enable_ipv6 = true,
         const CidrRule* bypass_cidrs = nullptr,
         std::size_t bypass_cidr_count = 0);

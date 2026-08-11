@@ -12,10 +12,6 @@
 
 **An open-source Android client based on the [mihomo](https://github.com/MetaCubeX/mihomo) kernel**
 
-The APK includes the Alpha kernel as an offline baseline. Additional Alpha, Meta, and Smart
-kernels are listed and downloaded from the Kernel-Builder index in Network Settings. A verified
-downloaded kernel is used on the next service start; when none is installed, YumeBox loads the
-bundled Alpha core. `libjavet` is an optional Sub-Store dependency and is downloaded separately.
 
 [Documentation](https://yumebox.gal.tf) · [Download](https://github.com/YumeYucca/YumeBox/releases) · [Feedback](https://github.com/YumeYucca/YumeBox/issues) · [Telegram Group](https://t.me/OOM_Group)
 

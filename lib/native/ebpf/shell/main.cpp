@@ -49,7 +49,7 @@ void printUsage(const char* executable) {
         "                    [--socks-host IPV4] [--socks-port PORT]\n"
         "                    [--mihomo-pid PID]\n"
         "                    [--uid-policy all|include|exclude] [--uids UID[,UID...]]\n"
-        "                    [--dns-mode proxy|bypass]\n"
+        "                    [--dns-mode hijack|bypass] [--dns-port PORT]\n"
         "                    [--ipv6 on|off]\n"
         "                    [--bypass-cidrs CIDR[,CIDR...]]\n"
         "       %s --version\n",
@@ -135,12 +135,12 @@ bool uidListArgument(int argc, char** argv, std::vector<std::uint32_t>* result) 
 
 bool dnsModeArgument(int argc, char** argv, std::uint8_t* result) {
     const char* value = argumentValue(argc, argv, "--dns-mode");
-    if (value == nullptr || std::strcmp(value, "proxy") == 0 || std::strcmp(value, "0") == 0) {
-        *result = 0;
+    if (value == nullptr || std::strcmp(value, "bypass") == 0 || std::strcmp(value, "1") == 0) {
+        *result = yumebox::ebpf::kDnsModeBypass;
         return true;
     }
-    if (std::strcmp(value, "bypass") == 0 || std::strcmp(value, "1") == 0) {
-        *result = 1;
+    if (std::strcmp(value, "hijack") == 0 || std::strcmp(value, "proxy") == 0 || std::strcmp(value, "0") == 0) {
+        *result = yumebox::ebpf::kDnsModeHijack;
         return true;
     }
     return false;
@@ -277,20 +277,25 @@ int runBridge(int argc, char** argv) {
     std::uint32_t bridge_port = 0;
     std::uint32_t socks_port = 0;
     std::uint32_t mihomo_pid = 0;
+    std::uint32_t dns_port = 0;
     std::uint8_t uid_policy_mode = 0;
-    std::uint8_t dns_mode = 0;
+    std::uint8_t dns_mode = yumebox::ebpf::kDnsModeBypass;
     bool enable_ipv6 = true;
     std::vector<std::uint32_t> policy_uids;
     std::vector<yumebox::ebpf::CidrRule> bypass_cidrs;
     if (!unsignedArgument(argc, argv, "--bridge-port", 0, &bridge_port) ||
         !unsignedArgument(argc, argv, "--socks-port", 7890, &socks_port) ||
+        !unsignedArgument(argc, argv, "--dns-port", 0, &dns_port) ||
         !unsignedArgument(argc, argv, "--mihomo-pid", 0, &mihomo_pid) ||
         !uidPolicyArgument(argc, argv, &uid_policy_mode) ||
         !uidListArgument(argc, argv, &policy_uids) ||
         !dnsModeArgument(argc, argv, &dns_mode) ||
         !ipv6ModeArgument(argc, argv, &enable_ipv6) ||
         !cidrListArgument(argc, argv, &bypass_cidrs) ||
-        bridge_port > UINT16_MAX || socks_port == 0 || socks_port > UINT16_MAX) {
+        bridge_port > UINT16_MAX || socks_port == 0 || socks_port > UINT16_MAX ||
+        dns_port > UINT16_MAX ||
+        (dns_mode == yumebox::ebpf::kDnsModeHijack &&
+            (dns_port == 0 || dns_port == socks_port))) {
         std::fprintf(stderr, "eBPF bridge: invalid port or PID argument\n");
         return 2;
     }
@@ -304,7 +309,7 @@ int runBridge(int argc, char** argv) {
     }
     std::fprintf(
         stderr,
-        "eBPF bridge: startup cgroup=%s socks=%s:%u mihomo-pid=%u uid-policy=%u uids=%zu dns-mode=%u ipv6=%s bypass-cidrs=%zu\n",
+        "eBPF bridge: startup cgroup=%s socks=%s:%u mihomo-pid=%u uid-policy=%u uids=%zu dns-mode=%u dns-port=%u ipv6=%s bypass-cidrs=%zu\n",
         cgroup_path,
         socks_host,
         socks_port,
@@ -312,6 +317,7 @@ int runBridge(int argc, char** argv) {
         uid_policy_mode,
         policy_uids.size(),
         dns_mode,
+        dns_port,
         enable_ipv6 ? "on" : "off",
         bypass_cidrs.size());
     std::fflush(stderr);
@@ -336,6 +342,12 @@ int runBridge(int argc, char** argv) {
         std::fprintf(stderr, "eBPF bridge: listener open failed: errno=%d (%s)\n", errno, std::strerror(errno));
         return 1;
     }
+    if (dns_mode == yumebox::ebpf::kDnsModeHijack &&
+        dns_port == static_cast<std::uint32_t>(bridge.port())) {
+        std::fprintf(stderr, "eBPF bridge: DNS listener port collides with bridge port\n");
+        bridge.close();
+        return 1;
+    }
     yumebox::ebpf::UdpBridgeConfig udp_config{
         bridge.port(),
         socks_host,
@@ -355,6 +367,7 @@ int runBridge(int argc, char** argv) {
             policy_uids.data(),
             policy_uids.size(),
             dns_mode,
+            static_cast<std::uint16_t>(dns_port),
             enable_ipv6,
             bypass_cidrs.data(),
             bypass_cidrs.size())) {

@@ -61,7 +61,7 @@ object EbpfBridgeProcess {
         mihomoPid: Int,
         cgroupPath: String? = null,
         uidPolicy: SessionRuntimeSpecFactory.EbpfUidPolicy = SessionRuntimeSpecFactory.EbpfUidPolicy(0, emptyList()),
-        dnsMode: Int = 0,
+        dnsHijacking: Boolean = false,
         enableIpv6: Boolean = true,
         bypassCidrs: List<String> = emptyList(),
     ) {
@@ -83,7 +83,8 @@ object EbpfBridgeProcess {
                     "--mihomo-pid $mihomoPid " +
                     "--uid-policy ${uidPolicy.mode} " +
                     (if (uidPolicy.uids.isEmpty()) "" else "--uids ${uidPolicy.uids.joinToString(",")} ") +
-                    "--dns-mode $dnsMode " +
+                    "--dns-mode ${if (dnsHijacking) "hijack" else "bypass"} " +
+                    "--dns-port ${if (dnsHijacking) EbpfOverride.DNS_PORT else 0} " +
                     "--ipv6 ${if (enableIpv6) "on" else "off"} " +
                     (if (bypassCidrs.isEmpty()) "" else "--bypass-cidrs ${quote(bypassCidrs.joinToString(","))} ") +
                     "</dev/null >>${quote(logFile)} 2>&1 ) & bridge_pid=\$!; " +

@@ -4,18 +4,18 @@
 
 namespace yumebox::ebpf {
 
-// Builds the IPv4 CONNECT program shared by TCP and connected UDP. UDP
+// Builds the socket-address programs shared by TCP and connected UDP. UDP
 // sendmsg/recvmsg have separate programs because their cgroup hook contexts
-// are different.
-// The program stores the original destination in redirect_map and rewrites the
-// connect destination to 127.128.0.0/9:<listener_port>.
+// are different. In hijack mode, DNS port 53 bypasses the bridge and is
+// rewritten directly to the local mihomo DNS listener.
 int loadTcp4ConnectProgram(
     int redirect_map_fd,
     int bypass_tgid_map_fd,
     std::uint16_t listener_port,
     int uid_policy_map_fd = -1,
     std::uint8_t uid_policy_mode = 0,
-    std::uint8_t dns_mode = 0,
+    std::uint8_t dns_mode = 1,
+    std::uint16_t dns_listener_port = 0,
     int bypass_cidr4_map_fd = -1,
     int bypass_cidr6_map_fd = -1);
 
@@ -25,7 +25,8 @@ int loadUdp4SendmsgProgram(
     std::uint16_t listener_port,
     int uid_policy_map_fd = -1,
     std::uint8_t uid_policy_mode = 0,
-    std::uint8_t dns_mode = 0,
+    std::uint8_t dns_mode = 1,
+    std::uint16_t dns_listener_port = 0,
     int bypass_cidr4_map_fd = -1,
     int bypass_cidr6_map_fd = -1);
 
@@ -39,7 +40,8 @@ int loadIpv6ConnectProgram(
     std::uint16_t listener_port,
     int uid_policy_map_fd = -1,
     std::uint8_t uid_policy_mode = 0,
-    std::uint8_t dns_mode = 0,
+    std::uint8_t dns_mode = 1,
+    std::uint16_t dns_listener_port = 0,
     int bypass_cidr4_map_fd = -1,
     int bypass_cidr6_map_fd = -1);
 
@@ -49,7 +51,8 @@ int loadUdp6SendmsgProgram(
     std::uint16_t listener_port,
     int uid_policy_map_fd = -1,
     std::uint8_t uid_policy_mode = 0,
-    std::uint8_t dns_mode = 0,
+    std::uint8_t dns_mode = 1,
+    std::uint16_t dns_listener_port = 0,
     int bypass_cidr4_map_fd = -1,
     int bypass_cidr6_map_fd = -1);
 

@@ -45,27 +45,36 @@ import java.io.File
 object EbpfOverride {
     const val FILE_NAME = "__ebpf_bridge_override__.yaml"
     const val MIXED_PORT = 7890
+    const val DNS_PORT = 1053
 
-    fun buildYaml(): String =
-        YamlCodec.dumpMap(
+    fun buildYaml(dnsHijacking: Boolean): String {
+        val override =
             linkedMapOf<String, Any?>(
                 "mixed-port" to MIXED_PORT,
                 "allow-lan" to false,
                 "bind-address" to "127.0.0.1",
                 "tun" to
-                        linkedMapOf<String, Any?>(
-                            "enable" to false,
-                            "auto-route" to false,
-                            "auto-redirect" to false,
-                            "auto-detect-interface" to false,
-                        ),
+                    linkedMapOf<String, Any?>(
+                        "enable" to false,
+                        "auto-route" to false,
+                        "auto-redirect" to false,
+                        "auto-detect-interface" to false,
+                    ),
             )
-        )
+        if (dnsHijacking) {
+            override["dns"] =
+                linkedMapOf<String, Any?>(
+                    "enable" to true,
+                    "listen" to "127.0.0.1:$DNS_PORT",
+                )
+        }
+        return YamlCodec.dumpMap(override)
+    }
 
-    fun materialize(dir: File): OverrideSpec {
+    fun materialize(dnsHijacking: Boolean, dir: File): OverrideSpec {
         dir.mkdirs()
         val file = File(dir, FILE_NAME)
-        file.writeText(buildYaml())
+        file.writeText(buildYaml(dnsHijacking))
         return OverrideSpec(path = file.absolutePath, ext = "yaml")
     }
 }

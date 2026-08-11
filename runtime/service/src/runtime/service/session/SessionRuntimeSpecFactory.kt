@@ -90,7 +90,8 @@ class SessionRuntimeSpecFactory(
         val modeOverrides =
             when {
                 tunConfig != null -> userOverrides + TunOverride.materialize(tunConfig, profileDir)
-                runMode == RunMode.Ebpf -> userOverrides + EbpfOverride.materialize(profileDir)
+                runMode == RunMode.Ebpf ->
+                    userOverrides + EbpfOverride.materialize(store.dnsHijacking, profileDir)
                 else -> userOverrides
             }
         val overrideSpecs = modeOverrides + GlobalUaOverride.materialize(profileDir)

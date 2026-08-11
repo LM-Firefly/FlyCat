@@ -127,6 +127,7 @@ bool CgroupRuntime::start(
     const std::uint32_t* policy_uids,
     std::size_t policy_uid_count,
     std::uint8_t dns_mode,
+    std::uint16_t dns_listener_port,
     bool enable_ipv6,
     const CidrRule* bypass_cidrs,
     std::size_t bypass_cidr_count) {
@@ -146,7 +147,10 @@ bool CgroupRuntime::start(
     const char* path = cgroup_path == nullptr || cgroup_path[0] == '\0'
         ? "/sys/fs/cgroup"
         : cgroup_path;
-    if (listener_port == 0 || bridge_tgid == 0 || uid_policy_mode > 2 || dns_mode > 1 ||
+    if (listener_port == 0 || bridge_tgid == 0 || uid_policy_mode > 2 ||
+        dns_mode > kDnsModeBypass ||
+        (dns_mode == kDnsModeHijack &&
+            (dns_listener_port == 0 || dns_listener_port == listener_port)) ||
         policy_uid_count > kUidPolicyMapCapacity ||
         (policy_uid_count != 0 && policy_uids == nullptr) ||
         bypass_cidr_count > kBypassCidrMapCapacity ||
@@ -277,6 +281,7 @@ bool CgroupRuntime::start(
         uid_policy_map_.fd(),
         uid_policy_mode,
         dns_mode,
+        dns_listener_port,
         bypass_cidr4_map_.fd(),
         bypass_cidr6_map_.fd());
     if (program_fd < 0) {
@@ -293,6 +298,7 @@ bool CgroupRuntime::start(
         uid_policy_map_.fd(),
         uid_policy_mode,
         dns_mode,
+        dns_listener_port,
         bypass_cidr4_map_.fd(),
         bypass_cidr6_map_.fd());
     if (udp_sendmsg_fd < 0) {
@@ -318,6 +324,7 @@ bool CgroupRuntime::start(
             uid_policy_map_.fd(),
             uid_policy_mode,
             dns_mode,
+            dns_listener_port,
             bypass_cidr4_map_.fd(),
             bypass_cidr6_map_.fd());
         if (connect6_fd < 0) {
@@ -334,6 +341,7 @@ bool CgroupRuntime::start(
             uid_policy_map_.fd(),
             uid_policy_mode,
             dns_mode,
+            dns_listener_port,
             bypass_cidr4_map_.fd(),
             bypass_cidr6_map_.fd());
         if (udp6_sendmsg_fd < 0) {
