@@ -26,17 +26,14 @@ package com.github.yumeyucca.yumebox.screen.settings
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.github.yumeyucca.yumebox.data.model.AccessControlMode
 import com.github.yumeyucca.yumebox.data.model.RunMode
 import com.github.yumeyucca.yumebox.presentation.component.*
@@ -97,7 +94,6 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                         icon = Yume.Tun,
                         title = YumeTxt.NetworkSettings.RunMode.TunTitle,
                         summary = YumeTxt.NetworkSettings.RunMode.TunSummary,
-                        badges = listOf(ModeBadgeType.Root),
                         selected = runMode == RunMode.Tun,
                         enabled = rootAvailable,
                         onSelect = { viewModel.onRunModeChange(RunMode.Tun) },
@@ -106,7 +102,6 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                         icon = Yume.CPU,
                         title = YumeTxt.NetworkSettings.RunMode.EbpfTitle,
                         summary = YumeTxt.NetworkSettings.RunMode.EbpfSummary,
-                        badges = listOf(ModeBadgeType.Root, ModeBadgeType.Alpha),
                         selected = runMode == RunMode.Ebpf,
                         enabled = ebpfAvailable,
                         onSelect = { viewModel.onRunModeChange(RunMode.Ebpf) },
@@ -301,7 +296,6 @@ private fun ModeCard(
     icon: ImageVector,
     title: String,
     summary: String,
-    badges: List<ModeBadgeType> = emptyList(),
     selected: Boolean,
     enabled: Boolean,
     onSelect: () -> Unit,
@@ -348,9 +342,6 @@ private fun ModeCard(
                             top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.disabledOnSecondaryVariant
                         },
                 )
-                badges.forEach { badge ->
-                    ModeBadge(badge = badge, enabled = enabled)
-                }
             }
             Text(
                 text = summary,
@@ -366,43 +357,3 @@ private fun ModeCard(
     }
 }
 
-private enum class ModeBadgeType {
-    Root,
-    Alpha,
-}
-
-@Composable
-private fun ModeBadge(badge: ModeBadgeType, enabled: Boolean) {
-    val spacing = AppTheme.spacing
-    val opacity = AppTheme.opacity
-    val (label, color) =
-        when (badge) {
-            ModeBadgeType.Root -> "Root" to top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary
-            ModeBadgeType.Alpha -> "alpha" to Color(0xFF34A853)
-        }
-    val alpha = if (enabled) 1f else 0.5f
-
-    Surface(
-        color = color.copy(alpha = opacity.subtle * alpha),
-        shape = RoundedCornerShape(50),
-        modifier =
-            Modifier
-                .height(20.dp),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = spacing.space6),
-        ) {
-            Text(
-                text = label,
-                style =
-                    top.yukonga.miuix.kmp.theme.MiuixTheme.textStyles.footnote1.copy(
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                color = color.copy(alpha = alpha),
-                maxLines = 1,
-            )
-        }
-    }
-}
