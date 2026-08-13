@@ -42,6 +42,8 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
     val bottomBarAutoHide by boolFlow(true)
     val topBarBlurEnabled by boolFlow(false)
     val classicHomeEnabled by boolFlow(false)
+    val useSystemWallpaper by boolFlow(true)
+    val systemWallpaperPermissionRequested by boolFlow(false)
     val moeWallpaperUri by strFlow("")
     val moeWallpaperSourceUri by strFlow("")
     val moeWallpaperZoom by floatFlow(1.0f)
@@ -54,11 +56,24 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
     val predictiveBackEnabled by boolFlow(false)
     val predictiveBackMaxProgress by floatFlow(50.0f)
     val singleNodeTest by boolFlow(true)
+    val debugEnabled by boolFlow(false)
 
     val customUserAgent by strFlow("")
 
     init {
         migrateLegacyHomeKeys()
+        resetHomePreviewGuideForWallpaperUpdate()
+        if (!mmkv.containsKey("useSystemWallpaper") &&
+            mmkv.decodeString("moeWallpaperUri").orEmpty().isNotBlank()
+        ) {
+            mmkv.encode("useSystemWallpaper", false)
+        }
+    }
+
+    private fun resetHomePreviewGuideForWallpaperUpdate() {
+        if (mmkv.decodeInt("homePreviewGuideVersion", 0) >= 1) return
+        mmkv.encode("homePreviewGuideShown", false)
+        mmkv.encode("homePreviewGuideVersion", 1)
     }
 
     /**

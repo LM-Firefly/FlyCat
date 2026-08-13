@@ -8,6 +8,13 @@ About = {
         VersionFailed = "加载失败"
     }
 
+    Debug = {
+        Title = "Debug"
+        Enable = "启用 Debug"
+        TestInitialization = "测试初始化"
+        InitializationReset = "初始化状态已重置"
+    }
+
     Section = {
         ProjectLinks = "项目链接"
         Support = "支持"

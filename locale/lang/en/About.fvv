@@ -8,6 +8,13 @@ About = {
         VersionFailed = "Failed to load"
     }
 
+    Debug = {
+        Title = "Debug"
+        Enable = "Enable Debug"
+        TestInitialization = "Test Initialization"
+        InitializationReset = "Initialization state reset"
+    }
+
     Section = {
         ProjectLinks = "Project Links"
         Support = "Support"

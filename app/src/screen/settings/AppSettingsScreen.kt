@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.lifecycle.Lifecycle
 import androidx.core.net.toUri
 import com.github.yumeyucca.yumebox.common.util.AppIconHelper
 import com.github.yumeyucca.yumebox.common.util.LocaleUtil
@@ -42,6 +43,7 @@ import com.github.yumeyucca.yumebox.data.model.AppLanguage
 import com.github.yumeyucca.yumebox.data.model.ThemeMode
 import com.github.yumeyucca.yumebox.presentation.component.*
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
+import com.github.yumeyucca.yumebox.screen.moe.SystemWallpaperPreferenceItem
 import com.github.yumeyucca.yumebox.runtime.api.Intents
 import com.github.yumeyucca.yumebox.screen.settings.component.ThemeColorPickerItem
 import org.koin.androidx.compose.koinViewModel
@@ -115,6 +117,7 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
     val predictiveBackEnabled by viewModel.predictiveBackEnabled.state.collectAsState()
     val predictiveBackMaxProgress by viewModel.predictiveBackMaxProgress.state.collectAsState()
     val classicHomeEnabled = section.classicHomeEnabled
+    val useSystemWallpaper = section.useSystemWallpaper
     val appIconStyle = section.appIconStyle
 
     Title(YumeTxt.AppSettings.Interface.ColorThemeTitle)
@@ -212,6 +215,10 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
             title = YumeTxt.AppSettings.Interface.ClassicHomeTitle,
             checked = classicHomeEnabled,
             onCheckedChange = viewModel::onClassicHomeEnabledChange,
+        )
+        SystemWallpaperPreferenceItem(
+            checked = useSystemWallpaper,
+            onCheckedChange = viewModel::onUseSystemWallpaperChange,
         )
     }
 }

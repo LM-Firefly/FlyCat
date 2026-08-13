@@ -50,6 +50,7 @@ AppSettings = {
         PredictiveBackProgressTitle = "预测返回幅度"
 
         ClassicHomeTitle = "经典首页"
+        SystemWallpaperTitle = "设置为系统壁纸"
         HomeQuoteTitle = "首页一言"
         HomeQuoteDefault = "在安静的线路上，等一朵云完成漫游"
         HomeQuoteAuthorTitle = "一言作者"

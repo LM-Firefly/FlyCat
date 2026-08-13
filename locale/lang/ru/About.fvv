@@ -8,6 +8,13 @@ About = {
         VersionFailed = "Не удалось загрузить"
     }
 
+    Debug = {
+        Title = "Debug"
+        Enable = "Включить Debug"
+        TestInitialization = "Тестовая инициализация"
+        InitializationReset = "Состояние инициализации сброшено"
+    }
+
     Section = {
         ProjectLinks = "Ссылки проекта"
         Support = "Поддержка"

@@ -50,6 +50,7 @@ AppSettings = {
         PredictiveBackProgressTitle = "Predictive Back Amplitude"
 
         ClassicHomeTitle = "Classic Home"
+        SystemWallpaperTitle = "Set as System Wallpaper"
         HomeQuoteTitle = "Home Quote"
         HomeQuoteDefault = "Wait for a cloud to finish roaming on a quiet route"
         HomeQuoteAuthorTitle = "Home Quote Author"

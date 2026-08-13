@@ -50,6 +50,7 @@ AppSettings = {
         PredictiveBackProgressTitle = "Амплитуда возврата"
 
         ClassicHomeTitle = "Классическая главная"
+        SystemWallpaperTitle = "Установить системные обои"
         HomeQuoteTitle = "Цитата на главной"
         HomeQuoteDefault = "На тихом маршруте ждать, пока облако закончит роуминг"
         HomeQuoteAuthorTitle = "Автор цитаты"

@@ -72,6 +72,7 @@ data class AppSettingsBackup(
     val bottomBarAutoHide: Boolean = true,
     val topBarBlurEnabled: Boolean = false,
     val classicHomeEnabled: Boolean = false,
+    val useSystemWallpaper: Boolean = true,
     val moeWallpaperUri: String = "",
     val moeWallpaperSourceUri: String = "",
     val moeWallpaperZoom: Float = 1.0f,

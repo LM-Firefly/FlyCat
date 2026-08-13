@@ -50,6 +50,7 @@ AppSettings = {
         PredictiveBackProgressTitle = "予測戻る振幅"
 
         ClassicHomeTitle = "クラシックホーム"
+        SystemWallpaperTitle = "システム壁紙に設定"
         HomeQuoteTitle = "ホームの一言"
         HomeQuoteDefault = "静かな回線のうえで、雲が回遊を終えるのを待つ"
         HomeQuoteAuthorTitle = "一言の作者"

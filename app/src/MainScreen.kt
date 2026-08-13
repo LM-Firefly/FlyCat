@@ -44,6 +44,7 @@ import com.github.yumeyucca.yumebox.presentation.webview.WebViewUtils
 import com.github.yumeyucca.yumebox.screen.home.HomePager
 import com.github.yumeyucca.yumebox.screen.home.HomeViewModel
 import com.github.yumeyucca.yumebox.screen.moe.MoeHomePage
+import com.github.yumeyucca.yumebox.screen.moe.LocalUseSystemWallpaper
 import com.github.yumeyucca.yumebox.screen.moe.calculateHomeVisibility
 import com.github.yumeyucca.yumebox.screen.profiles.ProfilesPager
 import com.github.yumeyucca.yumebox.screen.settings.AppSettingsViewModel
@@ -107,6 +108,7 @@ fun MainScreen(
     val moeWallpaperZoom by appSettingsViewModel.moeWallpaperZoom.state.collectAsState()
     val moeWallpaperBiasX by appSettingsViewModel.moeWallpaperBiasX.state.collectAsState()
     val moeWallpaperBiasY by appSettingsViewModel.moeWallpaperBiasY.state.collectAsState()
+    val useSystemWallpaper by appSettingsViewModel.useSystemWallpaper.state.collectAsState()
     val selectedPanelType by featureStore.selectedPanelType.state.collectAsState()
     val panelOpenMode by featureStore.panelOpenMode.state.collectAsState()
     val panelUrl = remember(selectedPanelType) { WebViewUtils.getPanelUrl(selectedPanelType) }
@@ -291,6 +293,7 @@ fun MainScreen(
         LocalBottomBarScrollBehavior provides bottomBarScrollBehavior,
         LocalBottomBarHazeState provides if (topBarBlurEnabled) hazeState else null,
         LocalBottomBarHazeStyle provides if (topBarBlurEnabled) bottomBarHazeStyle else null,
+        LocalUseSystemWallpaper provides useSystemWallpaper,
     ) {
         MainContentHost(
             usesSplitShell = usesSplitShell,

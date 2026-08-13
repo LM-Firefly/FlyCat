@@ -66,6 +66,7 @@ class AppSettingsViewModel(
     val bottomBarAutoHide: Preference<Boolean> = settings.bottomBarAutoHide
     val topBarBlurEnabled: Preference<Boolean> = settings.topBarBlurEnabled
     val classicHomeEnabled: Preference<Boolean> = settings.classicHomeEnabled
+    val useSystemWallpaper: Preference<Boolean> = settings.useSystemWallpaper
     val moeWallpaperUri: Preference<String> = settings.moeWallpaperUri
     val moeWallpaperSourceUri: Preference<String> = settings.moeWallpaperSourceUri
     val moeWallpaperZoom: Preference<Float> = settings.moeWallpaperZoom
@@ -112,6 +113,7 @@ class AppSettingsViewModel(
         val topBarBlurEnabled: Boolean = false,
         val pageScale: Float = 1f,
         val classicHomeEnabled: Boolean = false,
+        val useSystemWallpaper: Boolean = true,
         val appIconStyle: AppIconStyle = AppIconStyle.Default,
     )
 
@@ -136,12 +138,14 @@ class AppSettingsViewModel(
                 topBarBlurEnabled.state,
                 pageScale.state,
                 classicHomeEnabled.state,
+                useSystemWallpaper.state,
                 appIconStyle.state,
-            ) { blur, scale, classic, iconStyle ->
+            ) { blur, scale, classic, systemWallpaper, iconStyle ->
                 InterfaceSectionExtras(
                     topBarBlurEnabled = blur,
                     pageScale = scale,
                     classicHomeEnabled = classic,
+                    useSystemWallpaper = systemWallpaper,
                     appIconStyle = iconStyle,
                 )
             },
@@ -150,6 +154,7 @@ class AppSettingsViewModel(
                 topBarBlurEnabled = extra.topBarBlurEnabled,
                 pageScale = extra.pageScale,
                 classicHomeEnabled = extra.classicHomeEnabled,
+                useSystemWallpaper = extra.useSystemWallpaper,
                 appIconStyle = extra.appIconStyle,
             )
         }
@@ -164,6 +169,7 @@ class AppSettingsViewModel(
                     topBarBlurEnabled = topBarBlurEnabled.value,
                     pageScale = pageScale.value,
                     classicHomeEnabled = classicHomeEnabled.value,
+                    useSystemWallpaper = useSystemWallpaper.value,
                     appIconStyle = appIconStyle.value,
                 ),
             )
@@ -172,6 +178,7 @@ class AppSettingsViewModel(
         val topBarBlurEnabled: Boolean,
         val pageScale: Float,
         val classicHomeEnabled: Boolean,
+        val useSystemWallpaper: Boolean,
         val appIconStyle: AppIconStyle,
     )
 
@@ -232,6 +239,7 @@ class AppSettingsViewModel(
     data class MoeHomeSectionState(
         val themeMode: ThemeMode = ThemeMode.Auto,
         val classicHomeEnabled: Boolean = false,
+        val useSystemWallpaper: Boolean = true,
         val moeHomeQuote: String = "",
         val sidebarExpanded: Boolean = false,
     )
@@ -240,12 +248,14 @@ class AppSettingsViewModel(
         combine(
             themeMode.state,
             classicHomeEnabled.state,
+            useSystemWallpaper.state,
             moeHomeQuote.state,
             moeSidebarExpanded.state,
-        ) { theme, classic, quote, sidebar ->
+        ) { theme, classic, systemWallpaper, quote, sidebar ->
             MoeHomeSectionState(
                 themeMode = theme,
                 classicHomeEnabled = classic,
+                useSystemWallpaper = systemWallpaper,
                 moeHomeQuote = quote,
                 sidebarExpanded = sidebar,
             )
@@ -255,6 +265,7 @@ class AppSettingsViewModel(
                 MoeHomeSectionState(
                     themeMode = themeMode.value,
                     classicHomeEnabled = classicHomeEnabled.value,
+                    useSystemWallpaper = useSystemWallpaper.value,
                     moeHomeQuote = moeHomeQuote.value,
                     sidebarExpanded = moeSidebarExpanded.value,
                 ),
@@ -283,6 +294,8 @@ class AppSettingsViewModel(
 
     fun onClassicHomeEnabledChange(enabled: Boolean) = classicHomeEnabled.set(enabled)
 
+    fun onUseSystemWallpaperChange(enabled: Boolean) = useSystemWallpaper.set(enabled)
+
     fun onMoeWallpaperUriChange(uri: String) = moeWallpaperUri.set(uri)
 
     /**
@@ -293,6 +306,7 @@ class AppSettingsViewModel(
      */
     fun applyMoeWallpaper(sourceUri: String, onApplied: () -> Unit) {
         viewModelScope.launch {
+            useSystemWallpaper.set(false)
             val localPath = MoeWallpaperImporter.importToLocal(application, sourceUri)
             if (localPath != null) {
                 moeWallpaperUri.set(localPath)
