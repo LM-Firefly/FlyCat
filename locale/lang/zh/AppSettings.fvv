@@ -50,10 +50,7 @@ AppSettings = {
         SystemWallpaperTitle = "設定為系統桌布"
         HomeQuoteTitle = "首頁一言"
         HomeQuoteDefault = "在安靜的線路上，等一朵雲完成漫遊"
-        HomeQuoteAuthorTitle = "一言作者"
-        HomeQuoteAuthorDefault = "YumeBox"
         EditHomeQuoteTitle = "編輯一言"
-        EditHomeQuoteAuthorTitle = "編輯一言作者"
         HomeWallpaperImportFailed = "無法將桌布複製到本機，已改用原始來源"
     }
 

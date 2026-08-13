@@ -10,7 +10,6 @@ About = {
 
     Debug = {
         Title = "Debug"
-        Enable = "Debug を有効化"
         TestInitialization = "初期化をテスト"
         InitializationReset = "初期化状態をリセットしました"
     }

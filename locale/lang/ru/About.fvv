@@ -10,7 +10,6 @@ About = {
 
     Debug = {
         Title = "Debug"
-        Enable = "Включить Debug"
         TestInitialization = "Тестовая инициализация"
         InitializationReset = "Состояние инициализации сброшено"
     }

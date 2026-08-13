@@ -82,7 +82,6 @@ fun AboutScreen(navigator: Navigator) {
     val scope = rememberCoroutineScope()
     var myBooksTapCount by rememberSaveable { mutableIntStateOf(0) }
     var showDebugPanel by rememberSaveable { mutableStateOf(false) }
-    val debugEnabled by appSettingsStore.debugEnabled.state.collectAsState()
     val scrollBehavior = MiuixScrollBehavior()
     val exportLogsLauncher =
         rememberLauncherForActivityResult(
@@ -194,11 +193,6 @@ fun AboutScreen(navigator: Navigator) {
                     Column {
                         Title(YumeTxt.About.Debug.Title)
                         AppCard {
-                            PreferenceSwitchItem(
-                                title = YumeTxt.About.Debug.Enable,
-                                checked = debugEnabled,
-                                onCheckedChange = appSettingsStore.debugEnabled::set,
-                            )
                             PreferenceArrowItem(
                                 title = YumeTxt.About.Debug.TestInitialization,
                                 onClick = {

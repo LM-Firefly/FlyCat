@@ -50,10 +50,7 @@ AppSettings = {
         SystemWallpaperTitle = "システム壁紙に設定"
         HomeQuoteTitle = "ホームの一言"
         HomeQuoteDefault = "静かな回線のうえで、雲が回遊を終えるのを待つ"
-        HomeQuoteAuthorTitle = "一言の作者"
-        HomeQuoteAuthorDefault = "YumeBox"
         EditHomeQuoteTitle = "一言を編集"
-        EditHomeQuoteAuthorTitle = "一言の作者を編集"
         HomeWallpaperImportFailed = "壁紙をローカルへコピーできなかったため、元のソースを使用します"
     }
 

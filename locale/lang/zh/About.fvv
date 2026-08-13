@@ -10,7 +10,6 @@ About = {
 
     Debug = {
         Title = "Debug"
-        Enable = "啟用 Debug"
         TestInitialization = "測試初始化"
         InitializationReset = "初始化狀態已重設"
     }

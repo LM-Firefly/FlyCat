@@ -70,7 +70,6 @@ class AppSettingsViewModel(
     val moeWallpaperBiasX: Preference<Float> = settings.moeWallpaperBiasX
     val moeWallpaperBiasY: Preference<Float> = settings.moeWallpaperBiasY
     val moeHomeQuote: Preference<String> = settings.moeHomeQuote
-    val moeHomeQuoteAuthor: Preference<String> = settings.moeHomeQuoteAuthor
     val moeSidebarExpanded: Preference<Boolean> = settings.moeSidebarExpanded
     val pageScale: Preference<Float> = settings.pageScale
     val predictiveBackEnabled: Preference<Boolean> = settings.predictiveBackEnabled
@@ -317,7 +316,6 @@ class AppSettingsViewModel(
 
     fun onMoeHomeQuoteChange(quote: String) = moeHomeQuote.set(quote)
 
-    fun onMoeHomeQuoteAuthorChange(author: String) = moeHomeQuoteAuthor.set(author)
 
     fun onMoeSidebarExpandedChange(expanded: Boolean) = moeSidebarExpanded.set(expanded)
 

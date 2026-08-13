@@ -60,7 +60,6 @@ internal class BackupStoreAdapter(
                     moeWallpaperBiasX = appSettings.moeWallpaperBiasX.value,
                     moeWallpaperBiasY = appSettings.moeWallpaperBiasY.value,
                     moeHomeQuote = appSettings.moeHomeQuote.value,
-                    moeHomeQuoteAuthor = appSettings.moeHomeQuoteAuthor.value,
                     moeSidebarExpanded = appSettings.moeSidebarExpanded.value,
                     pageScale = appSettings.pageScale.value,
                     singleNodeTest = appSettings.singleNodeTest.value,
@@ -179,7 +178,6 @@ internal class BackupStoreAdapter(
             appSettings.moeWallpaperBiasX,
             appSettings.moeWallpaperBiasY,
             appSettings.moeHomeQuote,
-            appSettings.moeHomeQuoteAuthor,
             appSettings.moeSidebarExpanded,
             appSettings.pageScale,
             appSettings.singleNodeTest,
@@ -257,7 +255,6 @@ internal class BackupStoreAdapter(
         appSettings.moeWallpaperBiasX.set(value.moeWallpaperBiasX)
         appSettings.moeWallpaperBiasY.set(value.moeWallpaperBiasY)
         appSettings.moeHomeQuote.set(value.moeHomeQuote)
-        appSettings.moeHomeQuoteAuthor.set(value.moeHomeQuoteAuthor)
         appSettings.moeSidebarExpanded.set(value.moeSidebarExpanded)
         appSettings.pageScale.set(value.pageScale)
         appSettings.singleNodeTest.set(value.singleNodeTest)

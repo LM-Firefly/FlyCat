@@ -50,10 +50,7 @@ AppSettings = {
         SystemWallpaperTitle = "Set as System Wallpaper"
         HomeQuoteTitle = "Home Quote"
         HomeQuoteDefault = "Wait for a cloud to finish roaming on a quiet route"
-        HomeQuoteAuthorTitle = "Home Quote Author"
-        HomeQuoteAuthorDefault = "YumeBox"
         EditHomeQuoteTitle = "Edit Home Quote"
-        EditHomeQuoteAuthorTitle = "Edit Home Quote Author"
         HomeWallpaperImportFailed = "Could not copy the wallpaper locally; using the original source"
     }
 
