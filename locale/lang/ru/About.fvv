@@ -10,7 +10,6 @@ About = {
 
     Section = {
         ProjectLinks = "Ссылки проекта"
-        More = "Ещё"
         Support = "Поддержка"
         License = "Лицензия"
     }
@@ -20,11 +19,6 @@ About = {
         ReportIssue = "Сообщить о проблеме"
         ExportSuccess = "Журналы экспортированы"
         ExportFailed = "Не удалось экспортировать журналы"
-    }
-
-    Link = {
-        TelegramGroup = "Группа Telegram"
-        TelegramChannel = "Канал Telegram"
     }
 
     License = {

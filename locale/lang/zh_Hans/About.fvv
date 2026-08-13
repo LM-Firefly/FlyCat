@@ -10,7 +10,6 @@ About = {
 
     Section = {
         ProjectLinks = "项目链接"
-        More = "更多"
         Support = "支持"
         License = "许可证"
     }
@@ -20,11 +19,6 @@ About = {
         ReportIssue = "报告问题"
         ExportSuccess = "日志已导出"
         ExportFailed = "日志导出失败"
-    }
-
-    Link = {
-        TelegramGroup = "Telegram 群组"
-        TelegramChannel = "Telegram 频道"
     }
 
     License = {

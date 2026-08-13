@@ -10,7 +10,6 @@ About = {
 
     Section = {
         ProjectLinks = "プロジェクトリンク"
-        More = "その他"
         Support = "サポート"
         License = "ライセンス"
     }
@@ -20,11 +19,6 @@ About = {
         ReportIssue = "問題を報告"
         ExportSuccess = "ログを書き出しました"
         ExportFailed = "ログの書き出しに失敗しました"
-    }
-
-    Link = {
-        TelegramGroup = "Telegram グループ"
-        TelegramChannel = "Telegram チャンネル"
     }
 
     License = {

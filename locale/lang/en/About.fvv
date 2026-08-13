@@ -10,7 +10,6 @@ About = {
 
     Section = {
         ProjectLinks = "Project Links"
-        More = "More"
         Support = "Support"
         License = "License"
     }
@@ -20,11 +19,6 @@ About = {
         ReportIssue = "Report a Problem"
         ExportSuccess = "Logs exported"
         ExportFailed = "Failed to export logs"
-    }
-
-    Link = {
-        TelegramGroup = "Telegram Group"
-        TelegramChannel = "Telegram Channel"
     }
 
     License = {

@@ -186,22 +186,6 @@ fun AboutScreen(navigator: Navigator) {
                     )
                 }
 
-                Title(YumeTxt.About.Section.More)
-                AppCard {
-                    AboutLinkItem(
-                        title = YumeTxt.About.Link.TelegramGroup,
-                        url = "https://t.me/OOM_Group",
-                        onOpenUrl = { url -> openUrl(context, url) },
-                        showArrow = true,
-                    )
-                    AboutLinkItem(
-                        title = YumeTxt.About.Link.TelegramChannel,
-                        url = "https://t.me/YumeYucca",
-                        onOpenUrl = { url -> openUrl(context, url) },
-                        showArrow = true,
-                    )
-                }
-
                 Title(YumeTxt.About.Section.Support)
                 AppCard {
                     ArrowPreference(
