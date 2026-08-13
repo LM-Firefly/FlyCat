@@ -33,9 +33,6 @@ AppSettings = {
         LanguageRussian = "Русский"
 
         ColorThemeTitle = "テーマ配色"
-        AppIconTitle = "アプリアイコン"
-        AppIconDefault = "デフォルト"
-        AppIconClassic = "クラシック"
         ColorThemePickerTitle = "テーマカラーを選択"
         ColorThemeCodeLabel = "テーマカラーコード (#RRGGBB)"
         ColorThemeCustomSummary = "現在のテーマカラー: %s"
@@ -62,7 +59,6 @@ AppSettings = {
 
     Privacy = {
 
-        HideIconTitle = "アプリアイコンを隠す"
         HideFromRecentsTitle = "履歴カードを隠す"
     }
 
@@ -81,8 +77,6 @@ AppSettings = {
 
     WarningDialog = {
         Title = "警告"
-        HideIconMsg1 = "隠す前に、このアプリの設定画面へアクセスできることを確認してください！"
-        HideIconMsg2 = "HyperOS では、ダイヤルコードを受け取るために自動開始とバックグラウンドポップアップの権限を有効にしてください！"
     }
 
     EditDialog = {

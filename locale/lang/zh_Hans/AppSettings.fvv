@@ -33,9 +33,6 @@ AppSettings = {
         LanguageRussian = "Русский"
 
         ColorThemeTitle = "主题配色"
-        AppIconTitle = "应用图标"
-        AppIconDefault = "默认"
-        AppIconClassic = "经典"
         ColorThemePickerTitle = "选择主题色"
         ColorThemeCodeLabel = "主题色代码（#RRGGBB）"
         ColorThemeCustomSummary = "当前主题色：%s"
@@ -62,7 +59,6 @@ AppSettings = {
 
     Privacy = {
 
-        HideIconTitle = "隐藏应用图标"
         HideFromRecentsTitle = "隐藏后台卡片"
     }
 
@@ -81,8 +77,6 @@ AppSettings = {
 
     WarningDialog = {
         Title = "警告"
-        HideIconMsg1 = "请在隐藏之前确认你能够访问本应用的设置界面！"
-        HideIconMsg2 = "对于 HyperOS, 请开启 自启动 和 后台弹出界面 权限，以接受拨号界面代码！"
     }
 
     EditDialog = {

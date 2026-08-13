@@ -48,8 +48,6 @@ internal class BackupStoreAdapter(
                     automaticRestart = appSettings.automaticRestart.value,
                     autoUpdateCurrentProfileOnStart =
                         appSettings.autoUpdateCurrentProfileOnStart.value,
-                    hideAppIcon = appSettings.hideAppIcon.value,
-                    appIconStyle = appSettings.appIconStyle.value,
                     excludeFromRecents = appSettings.excludeFromRecents.value,
                     showTrafficNotification = appSettings.showTrafficNotification.value,
                     bottomBarAutoHide = appSettings.bottomBarAutoHide.value,
@@ -169,8 +167,6 @@ internal class BackupStoreAdapter(
             appSettings.homePreviewGuideShown,
             appSettings.automaticRestart,
             appSettings.autoUpdateCurrentProfileOnStart,
-            appSettings.hideAppIcon,
-            appSettings.appIconStyle,
             appSettings.excludeFromRecents,
             appSettings.showTrafficNotification,
             appSettings.bottomBarAutoHide,
@@ -249,8 +245,6 @@ internal class BackupStoreAdapter(
         appSettings.homePreviewGuideShown.set(value.homePreviewGuideShown)
         appSettings.automaticRestart.set(value.automaticRestart)
         appSettings.autoUpdateCurrentProfileOnStart.set(value.autoUpdateCurrentProfileOnStart)
-        appSettings.hideAppIcon.set(value.hideAppIcon)
-        appSettings.appIconStyle.set(value.appIconStyle)
         appSettings.excludeFromRecents.set(value.excludeFromRecents)
         appSettings.showTrafficNotification.set(value.showTrafficNotification)
         appSettings.bottomBarAutoHide.set(value.bottomBarAutoHide)

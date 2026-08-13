@@ -30,7 +30,6 @@ import com.github.yumeyucca.yumebox.common.util.toast
 import com.github.yumeyucca.yumebox.core.util.moeWallpaperFile
 import com.github.yumeyucca.yumebox.data.controller.AppSettingsController
 import com.github.yumeyucca.yumebox.data.model.AppColorTheme
-import com.github.yumeyucca.yumebox.data.model.AppIconStyle
 import com.github.yumeyucca.yumebox.data.model.AppLanguage
 import com.github.yumeyucca.yumebox.data.model.ThemeMode
 import com.github.yumeyucca.yumebox.data.store.AppSettingsStore
@@ -59,8 +58,6 @@ class AppSettingsViewModel(
     val automaticRestart: Preference<Boolean> = settings.automaticRestart
     val autoUpdateCurrentProfileOnStart: Preference<Boolean> =
         settings.autoUpdateCurrentProfileOnStart
-    val hideAppIcon: Preference<Boolean> = settings.hideAppIcon
-    val appIconStyle: Preference<AppIconStyle> = settings.appIconStyle
     val excludeFromRecents: Preference<Boolean> = settings.excludeFromRecents
     val showTrafficNotification: Preference<Boolean> = settings.showTrafficNotification
     val bottomBarAutoHide: Preference<Boolean> = settings.bottomBarAutoHide
@@ -114,7 +111,6 @@ class AppSettingsViewModel(
         val pageScale: Float = 1f,
         val classicHomeEnabled: Boolean = false,
         val useSystemWallpaper: Boolean = true,
-        val appIconStyle: AppIconStyle = AppIconStyle.Default,
     )
 
     val interfaceSectionState: StateFlow<InterfaceSectionState> =
@@ -139,14 +135,12 @@ class AppSettingsViewModel(
                 pageScale.state,
                 classicHomeEnabled.state,
                 useSystemWallpaper.state,
-                appIconStyle.state,
-            ) { blur, scale, classic, systemWallpaper, iconStyle ->
+            ) { blur, scale, classic, systemWallpaper ->
                 InterfaceSectionExtras(
                     topBarBlurEnabled = blur,
                     pageScale = scale,
                     classicHomeEnabled = classic,
                     useSystemWallpaper = systemWallpaper,
-                    appIconStyle = iconStyle,
                 )
             },
         ) { base, extra ->
@@ -155,7 +149,6 @@ class AppSettingsViewModel(
                 pageScale = extra.pageScale,
                 classicHomeEnabled = extra.classicHomeEnabled,
                 useSystemWallpaper = extra.useSystemWallpaper,
-                appIconStyle = extra.appIconStyle,
             )
         }
             .stateInWhileSubscribed(
@@ -170,7 +163,6 @@ class AppSettingsViewModel(
                     pageScale = pageScale.value,
                     classicHomeEnabled = classicHomeEnabled.value,
                     useSystemWallpaper = useSystemWallpaper.value,
-                    appIconStyle = appIconStyle.value,
                 ),
             )
 
@@ -179,7 +171,6 @@ class AppSettingsViewModel(
         val pageScale: Float,
         val classicHomeEnabled: Boolean,
         val useSystemWallpaper: Boolean,
-        val appIconStyle: AppIconStyle,
     )
 
     data class ServiceSectionState(
@@ -210,18 +201,16 @@ class AppSettingsViewModel(
             )
 
     data class PrivacySectionState(
-        val hideAppIcon: Boolean = false,
         val excludeFromRecents: Boolean = false,
     )
 
     val privacySectionState: StateFlow<PrivacySectionState> =
-        combine(hideAppIcon.state, excludeFromRecents.state) { hide, exclude ->
-            PrivacySectionState(hideAppIcon = hide, excludeFromRecents = exclude)
+        excludeFromRecents.state.map { exclude ->
+            PrivacySectionState(excludeFromRecents = exclude)
         }
             .stateInWhileSubscribed(
                 viewModelScope,
                 PrivacySectionState(
-                    hideAppIcon = hideAppIcon.value,
                     excludeFromRecents = excludeFromRecents.value,
                 ),
             )
@@ -348,9 +337,7 @@ class AppSettingsViewModel(
     fun onAutoUpdateCurrentProfileOnStartChange(enabled: Boolean) =
         autoUpdateCurrentProfileOnStart.set(enabled)
 
-    fun onHideAppIconChange(hide: Boolean) = hideAppIcon.set(hide)
 
-    fun onAppIconStyleChange(style: AppIconStyle) = appIconStyle.set(style)
 
     fun onExcludeFromRecentsChange(exclude: Boolean) = excludeFromRecents.set(exclude)
 

@@ -33,9 +33,6 @@ AppSettings = {
         LanguageRussian = "Русский"
 
         ColorThemeTitle = "Theme Palette"
-        AppIconTitle = "App Icon"
-        AppIconDefault = "Default"
-        AppIconClassic = "Classic"
         ColorThemePickerTitle = "Pick Theme Color"
         ColorThemeCodeLabel = "Theme Color Code (#RRGGBB)"
         ColorThemeCustomSummary = "Current theme color: %s"
@@ -62,7 +59,6 @@ AppSettings = {
 
     Privacy = {
 
-        HideIconTitle = "Hide App Icon"
         HideFromRecentsTitle = "Hide Recents Card"
     }
 
@@ -81,8 +77,6 @@ AppSettings = {
 
     WarningDialog = {
         Title = "Warning"
-        HideIconMsg1 = "Please make sure you can access this app's settings before hiding!"
-        HideIconMsg2 = "For HyperOS, please enable Auto-start and Background Pop-up permissions to receive dialer codes!"
     }
 
     EditDialog = {

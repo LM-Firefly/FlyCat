@@ -35,10 +35,8 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.Lifecycle
 import androidx.core.net.toUri
-import com.github.yumeyucca.yumebox.common.util.AppIconHelper
 import com.github.yumeyucca.yumebox.common.util.LocaleUtil
 import com.github.yumeyucca.yumebox.common.util.toast
-import com.github.yumeyucca.yumebox.data.model.AppIconStyle
 import com.github.yumeyucca.yumebox.data.model.AppLanguage
 import com.github.yumeyucca.yumebox.data.model.ThemeMode
 import com.github.yumeyucca.yumebox.presentation.component.*
@@ -118,7 +116,6 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
     val predictiveBackMaxProgress by viewModel.predictiveBackMaxProgress.state.collectAsState()
     val classicHomeEnabled = section.classicHomeEnabled
     val useSystemWallpaper = section.useSystemWallpaper
-    val appIconStyle = section.appIconStyle
 
     Title(YumeTxt.AppSettings.Interface.ColorThemeTitle)
     AppCard {
@@ -160,27 +157,6 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
                 ),
             values = AppLanguage.entries,
             onValueChange = viewModel::onAppLanguageChange,
-        )
-        PreferenceEnumItem(
-            title = YumeTxt.AppSettings.Interface.AppIconTitle,
-            currentValue = appIconStyle,
-            items =
-                listOf(
-                    YumeTxt.AppSettings.Interface.AppIconDefault,
-                    YumeTxt.AppSettings.Interface.AppIconClassic,
-                ),
-            values = AppIconStyle.entries,
-            onValueChange = { style ->
-                viewModel.onAppIconStyleChange(style)
-                AppIconHelper.applyStyle(
-                    context = context,
-                    classic = style == AppIconStyle.Classic,
-                    hide = viewModel.hideAppIcon.value,
-                )
-                context.sendBroadcast(
-                    Intent(Intents.ACTION_APP_ICON_STYLE_CHANGED).setPackage(context.packageName)
-                )
-            },
         )
         PreferenceSwitchItem(
             title = YumeTxt.AppSettings.Interface.AutoHideNavbarTitle,
@@ -225,18 +201,10 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
 
 @Composable
 private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
-    val context = LocalContext.current
     val section by viewModel.privacySectionState.collectAsState()
-    val appIconStyle by viewModel.appIconStyle.state.collectAsState()
 
     Title(YumeTxt.AppSettings.Section.Privacy)
     AppCard {
-        HideAppIconPreferenceItem(
-            hideAppIcon = section.hideAppIcon,
-            onHideAppIconChange = viewModel::onHideAppIconChange,
-            context = context,
-            classicIcon = appIconStyle == AppIconStyle.Classic,
-        )
         PreferenceSwitchItem(
             title = YumeTxt.AppSettings.Privacy.HideFromRecentsTitle,
             checked = section.excludeFromRecents,
@@ -298,43 +266,6 @@ private fun AppNetworkSettingsSection(viewModel: AppSettingsViewModel) {
             onConfirm = viewModel::applyCustomUserAgent,
         )
     }
-}
-
-@Composable
-private fun HideAppIconPreferenceItem(
-    hideAppIcon: Boolean,
-    onHideAppIconChange: (Boolean) -> Unit,
-    context: android.content.Context,
-    classicIcon: Boolean,
-) {
-    val showHideIconDialogState = remember { mutableStateOf(false) }
-
-    PreferenceSwitchItem(
-        title = YumeTxt.AppSettings.Privacy.HideIconTitle,
-        checked = hideAppIcon,
-        onCheckedChange = { checked ->
-            if (checked) {
-                showHideIconDialogState.value = true
-            } else {
-                onHideAppIconChange(false)
-                AppIconHelper.toggleIcon(context, hide = false, classic = classicIcon)
-            }
-        },
-    )
-
-    WarningBottomSheet(
-        show = showHideIconDialogState,
-        title = YumeTxt.AppSettings.WarningDialog.Title,
-        messages =
-            listOf(
-                YumeTxt.AppSettings.WarningDialog.HideIconMsg1,
-                YumeTxt.AppSettings.WarningDialog.HideIconMsg2,
-            ),
-        onConfirm = {
-            onHideAppIconChange(true)
-            AppIconHelper.toggleIcon(context, hide = true, classic = classicIcon)
-        },
-    )
 }
 
 @SuppressLint("BatteryLife")

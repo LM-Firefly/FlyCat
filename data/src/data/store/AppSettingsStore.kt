@@ -21,7 +21,6 @@
 package com.github.yumeyucca.yumebox.data.store
 
 import com.github.yumeyucca.yumebox.data.model.AppColorTheme
-import com.github.yumeyucca.yumebox.data.model.AppIconStyle
 import com.github.yumeyucca.yumebox.data.model.AppLanguage
 import com.github.yumeyucca.yumebox.data.model.ThemeMode
 import com.tencent.mmkv.MMKV
@@ -35,8 +34,6 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
     val homePreviewGuideShown by boolFlow(false)
     val automaticRestart by boolFlow(false)
     val autoUpdateCurrentProfileOnStart by boolFlow(true)
-    val hideAppIcon by boolFlow(false)
-    val appIconStyle by enumFlow(AppIconStyle.Default)
     val excludeFromRecents by boolFlow(false)
     val showTrafficNotification by boolFlow(true)
     val bottomBarAutoHide by boolFlow(true)

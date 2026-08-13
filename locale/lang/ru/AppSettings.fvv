@@ -33,9 +33,6 @@ AppSettings = {
         LanguageRussian = "Русский"
 
         ColorThemeTitle = "Палитра темы"
-        AppIconTitle = "Значок приложения"
-        AppIconDefault = "По умолчанию"
-        AppIconClassic = "Классический"
         ColorThemePickerTitle = "Выбрать цвет темы"
         ColorThemeCodeLabel = "Код цвета темы (#RRGGBB)"
         ColorThemeCustomSummary = "Текущий цвет темы: %s"
@@ -62,7 +59,6 @@ AppSettings = {
 
     Privacy = {
 
-        HideIconTitle = "Скрыть значок приложения"
         HideFromRecentsTitle = "Скрыть карточку в недавних"
     }
 
@@ -81,8 +77,6 @@ AppSettings = {
 
     WarningDialog = {
         Title = "Предупреждение"
-        HideIconMsg1 = "Перед скрытием убедитесь, что можете открыть настройки этого приложения!"
-        HideIconMsg2 = "Для HyperOS включите автозапуск и всплывающие окна в фоне, чтобы принимать коды с экрана набора!"
     }
 
     EditDialog = {
