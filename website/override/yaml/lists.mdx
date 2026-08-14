@@ -4,11 +4,11 @@ sidebarTitle: 列表与规则
 icon: list-plus
 ---
 
-本页专门说明列表修饰符。所有示例都假设原配置已经存在对应字段。
+本页专门说明列表修饰符.所有示例都假设原配置已经存在对应字段.
 
 ## `key-start`
 
-将数组项插入原列表开头。
+将数组项插入原列表开头.
 
 ```yaml 插入列表开头.yaml icon="file-code" lines
 rules-start:
@@ -30,11 +30,11 @@ dns-start:
   enable: true
 ```
 
-这两项不会报错，但 `mixed-port` 是标量、`dns` 是对象，因此不会产生列表插入。
+这两项不会报错，但 `mixed-port` 是标量、`dns` 是对象，因此不会产生列表插入.
 
 ## `key-end`
 
-将数组项追加到原列表末尾。对于 `rules`，原配置中的终端 `MATCH` 段会保留在新增内容之后；新增内容内部顺序不变。
+将数组项追加到原列表末尾.对于 `rules`，原配置中的终端 `MATCH` 段会保留在新增内容之后；新增内容内部顺序不变.
 
 ```yaml 追加列表末尾.yaml icon="file-code" lines
 rules-end:
@@ -54,7 +54,7 @@ rules:
 mode-end: global
 ```
 
-`mode` 是标量，`mode-end` 不会把它变成列表，也不会覆盖 `mode`。
+`mode` 是标量，`mode-end` 不会把它变成列表，也不会覆盖 `mode`.
 
 ## `key-merge`
 
@@ -62,12 +62,12 @@ mode-end: global
 
 | 字段类型 | 结果 |
 | --- | --- |
-| 普通列表 | 追加数组项。 |
-| 命名对象列表 | 追加后按 `name` 去重。 |
-| `rules` | 追加后把 `MATCH` 放回末尾。 |
-| 对象映射 | 递归合并映射。 |
-| 普通对象 | 按字面量键合并，嵌套修饰符不再解析。 |
-| 标量 | 忽略。 |
+| 普通列表 | 追加数组项. |
+| 命名对象列表 | 追加后按 `name` 去重. |
+| `rules` | 追加后把 `MATCH` 放回末尾. |
+| 对象映射 | 递归合并映射. |
+| 普通对象 | 按字面量键合并，嵌套修饰符不再解析. |
+| 标量 | 忽略. |
 
 ### 列表追加
 
@@ -108,11 +108,11 @@ mixed-port-merge:
   value: 7890
 ```
 
-`mixed-port` 是标量，`key-merge` 会被忽略，不会把端口变成对象。
+`mixed-port` 是标量，`key-merge` 会被忽略，不会把端口变成对象.
 
 ## `key-force`
 
-`key-force` 直接替换整个字段，并跳过字段类型处理。它适用于清空原列表、替换整个对象或覆盖未知结构。
+`key-force` 直接替换整个字段，并跳过字段类型处理.它适用于清空原列表、替换整个对象或覆盖未知结构.
 
 ```yaml key-force 列表.yaml icon="file-code" lines
 rules-force:
@@ -138,7 +138,7 @@ rules-force:
   - MATCH,PROXY
 ```
 
-最终只剩下 `MATCH,PROXY`，`rules-start` 不会继续执行。
+最终只剩下 `MATCH,PROXY`，`rules-start` 不会继续执行.
 
 ## 简写
 
@@ -146,8 +146,8 @@ rules-force:
 
 | 简写 | 等价写法 | 结果 |
 | --- | --- | --- |
-| `+key` | `key-start` | 插入开头。 |
-| `key+` | `key-end` | 追加末尾。 |
+| `+key` | `key-start` | 插入开头. |
+| `key+` | `key-end` | 追加末尾. |
 
 ```yaml 列表简写.yaml icon="file-code" lines
 +rules:
@@ -173,7 +173,7 @@ mode+:
   - global
 ```
 
-`+mode` 和 `mode+` 只会被识别为列表操作，标量 `mode` 不会被修改。
+`+mode` 和 `mode+` 只会被识别为列表操作，标量 `mode` 不会被修改.
 
 ## `null` 列表项
 
@@ -181,9 +181,9 @@ mode+:
 
 | 值 | 结果 |
 | --- | --- |
-| 数组 | 展开为多个列表项。 |
-| 单个标量或对象 | 作为一个列表项。 |
-| `null` | 不产生列表项。 |
+| 数组 | 展开为多个列表项. |
+| 单个标量或对象 | 作为一个列表项. |
+| `null` | 不产生列表项. |
 
 ```yaml null 列表项.yaml icon="file-code" lines
 rules-end: null
@@ -192,11 +192,11 @@ rules-start:
   - DOMAIN-SUFFIX,example.com,DIRECT
 ```
 
-最终只会插入 `DOMAIN-SUFFIX,example.com,DIRECT`。
+最终只会插入 `DOMAIN-SUFFIX,example.com,DIRECT`.
 
 ## 多个操作的顺序
 
-同一个 YAML 文件可以同时使用多个操作。列表字段的顺序是：
+同一个 YAML 文件可以同时使用多个操作.列表字段的顺序是：
 
 ```yaml 多个列表操作.yaml icon="file-code" lines
 rules:
@@ -228,11 +228,11 @@ rules:
   - MATCH,REPLACED
 ```
 
-如果同一基础键还存在 `key-force`，上面的所有操作都会被跳过。
+如果同一基础键还存在 `key-force`，上面的所有操作都会被跳过.
 
 ## `MATCH` 规则
 
-只有原列表中的字符串且逗号分隔后的第一段是 `MATCH`（不区分大小写）时，才会被识别为终端规则。对象、数字和其他规则不会触发移动；覆写文件新增的规则不会再次扫描。
+只有原列表中的字符串且逗号分隔后的第一段是 `MATCH`（不区分大小写）时，才会被识别为终端规则.对象、数字和其他规则不会触发移动；覆写文件新增的规则不会再次扫描.
 
 ```yaml 终端规则判断.yaml icon="file-code" lines
 rules-end:
@@ -241,4 +241,4 @@ rules-end:
   - match,FINAL
 ```
 
-YumeBox 会从原列表中第一个被识别的位置开始，把后续内容作为终端规则段保留在最后。
+YumeBox 会从原列表中第一个被识别的位置开始，把后续内容作为终端规则段保留在最后.

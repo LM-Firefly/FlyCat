@@ -4,9 +4,9 @@ sidebarTitle: 概览
 icon: file-pen
 ---
 
-<Info>覆写只作用于应用配置，不会改动原始配置，仅在使用时生效。</Info>
+<Info>覆写只作用于应用配置，不会改动原始配置，仅在使用时生效.</Info>
 
-覆写的作用可以概括为：读取原始配置，按顺序应用绑定的覆写，生成本次运行使用的配置。
+覆写的作用可以概括为：读取原始配置，按顺序应用绑定的覆写，生成本次运行使用的配置.
 
 ```mermaid
 ---
@@ -44,12 +44,12 @@ flowchart LR
 
 | 名称 | 作用 |
 | --- | --- |
-| 防止 DNS 泄露 | 添加防泄露规则并启用 `fake-ip`。 |
-| 添加直连规则 | 将百度、腾讯规则插入规则列表开头。 |
-| 布丁狗的订阅转换 | 添加规则集、代理组和分流规则。 |
-| ACL4SSR Online Full | 添加完整的 ACL4SSR 规则集和分流组。 |
+| 防止 DNS 泄露 | 添加防泄露规则并启用 `fake-ip`. |
+| 添加直连规则 | 将百度、腾讯规则插入规则列表开头. |
+| 布丁狗的订阅转换 | 添加规则集、代理组和分流规则. |
+| ACL4SSR Online Full | 添加完整的 ACL4SSR 规则集和分流组. |
 
-<Info>内置覆写不可编辑或删除，需要修改时请先复制。</Info>
+<Info>内置覆写不可编辑或删除，需要修改时请先复制.</Info>
 
 ## 应用覆写
 
@@ -57,13 +57,13 @@ flowchart LR
 
 <Steps>
   <Step title="从订阅卡片应用">
-    打开订阅卡片，进入**编辑订阅 → 设置类型 → 覆写配置**。
+    打开订阅卡片，进入**编辑订阅 → 设置类型 → 覆写配置**.
 
     <Frame><img src="/images/guide/override-profile-settings.jpg" alt="在订阅设置中选择覆写配置" noZoom={true} /></Frame>
   </Step>
 
   <Step title="从覆写配置应用">
-    选择覆写，点击**应用**，勾选目标订阅后确认保存。
+    选择覆写，点击**应用**，勾选目标订阅后确认保存.
 
     <Frame><img src="/images/guide/override-apply-to-profile.jpg" alt="将覆写应用到订阅" noZoom={true} /></Frame>
   </Step>
@@ -72,7 +72,7 @@ flowchart LR
 
 ### 执行顺序
 
-同一订阅应用多个覆写时，YumeBox 按列表顺序执行；后执行的覆写可以修改前面的结果。
+同一订阅应用多个覆写时，YumeBox 按列表顺序执行；后执行的覆写可以修改前面的结果.
 
 ```yaml 原始配置.yaml icon="file-code" lines
 mixed-port: 7890
@@ -103,11 +103,11 @@ rules:
   - MATCH,PROXY
 ```
 
-后续覆写不会重新读取订阅原文，而是接收前一份覆写的结果。
+后续覆写不会重新读取订阅原文，而是接收前一份覆写的结果.
 
 ## 自定义覆写
 
 | 类型 | 用途 | 文档 |
 | --- | --- | --- |
-| YAML | 固定字段、规则和列表修改。 | [YAML 语法](/override/yaml) |
-| JavaScript | 条件判断、动态处理和远程读取。 | [JavaScript 语法](/override/js-override) |
+| YAML | 固定字段、规则和列表修改. | [YAML 语法](/override/yaml) |
+| JavaScript | 条件判断、动态处理和远程读取. | [JavaScript 语法](/override/js-override) |

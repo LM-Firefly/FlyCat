@@ -11,7 +11,7 @@ keywords:
   - Go
 ---
 
-<Info>只运行 Gradle 不会生成缺失的 `jniLibs`；首次构建请先完成原生构建。</Info>
+<Info>只运行 Gradle 不会生成缺失的 `jniLibs`；首次构建请先完成原生构建.</Info>
 
 <Frame><img src="/images/diagrams/yumebox-build-pipeline.svg" alt="YumeBox 本地与 CI 构建链路" noZoom={true} /></Frame>
 
@@ -29,7 +29,7 @@ keywords:
 | cargo-ndk | 最新版本 | 为 Android 编译 Rust |
 | Git、patch | 可用 | 同步内核与应用 Go 补丁 |
 
-当前应用只构建 `arm64-v8a`，对应 Rust target 为 `aarch64-linux-android`。
+当前应用只构建 `arm64-v8a`，对应 Rust target 为 `aarch64-linux-android`.
 
 ## 准备仓库
 
@@ -48,7 +48,7 @@ keywords:
     sdk.dir=C:/Android/Sdk
     ```
 
-    NDK 会根据 `gradle.properties` 中的 `android.ndkVersion` 自动定位。
+    NDK 会根据 `gradle.properties` 中的 `android.ndkVersion` 自动定位.
   </Step>
 
   <Step title="准备 Go 与 Rust">
@@ -58,7 +58,7 @@ keywords:
     cargo install cargo-ndk
     ```
 
-    构建 Go 核心前，还需要将 `.github/patch/` 中的补丁应用到 `go env GOROOT`。CI 会在构建原生组件前自动执行这一步。
+    构建 Go 核心前，还需要将 `.github/patch/` 中的补丁应用到 `go env GOROOT`.CI 会在构建原生组件前自动执行这一步.
 
     在 Git Bash 或 WSL 中执行：
 
@@ -79,7 +79,7 @@ keywords:
   </Step>
 
   <Step title="同步 mihomo">
-    选择一个内核通道。默认使用 Alpha：
+    选择一个内核通道.默认使用 Alpha：
 
     ```bash
     python scripts/sync_kernel.py alpha
@@ -192,7 +192,7 @@ Release 会启用压缩和资源收缩：
 | `external` | 不内置 Geo 数据 | 体积更小，首次启动需要下载 |
 | `builtin` | 内置 Geo 数据 | 首次安装或离线使用 |
 
-两种变体使用相同的应用代码和内核；差异只在 Geo 资源是否打包进 APK。
+两种变体使用相同的应用代码和内核；差异只在 Geo 资源是否打包进 APK.
 
 APK 默认输出到：
 
@@ -201,7 +201,7 @@ app/build/outputs/apk/debug/
 app/build/outputs/apk/release/
 ```
 
-本地构建通常生成 `YumeBox-external.apk` 或 `YumeBox-builtin.apk`。实际文件名以输出目录为准。
+本地构建通常生成 `YumeBox-external.apk` 或 `YumeBox-builtin.apk`.实际文件名以输出目录为准.
 
 ## Release 签名
 
@@ -219,7 +219,7 @@ key.password=你的密钥密码
 | `key.alias` | 签名密钥别名 |
 | `key.password` | 签名密钥密码 |
 
-<Info>不要提交 `release.keystore` 或 `signing.properties`。</Info>
+<Info>不要提交 `release.keystore` 或 `signing.properties`.</Info>
 
 ## CI 构建
 
@@ -230,7 +230,7 @@ key.password=你的密钥密码
 | 发布准备 | 计算版本、生成 SHA-256 和元数据 | 发布目录与更新信息 |
 | Release 发布 | 上传 APK 和元数据 | GitHub Release |
 
-CI 使用 `arm64-v8a`，并通过 `build.number`、`build.hash` 和 `build.branch` 写入构建版本信息。
+CI 使用 `arm64-v8a`，并通过 `build.number`、`build.hash` 和 `build.branch` 写入构建版本信息.
 
 ## 验证安装
 
@@ -238,18 +238,18 @@ CI 使用 `arm64-v8a`，并通过 `build.number`、`build.hash` 和 `build.branc
 adb install -r app/build/outputs/apk/debug/YumeBox-external.apk
 ```
 
-如果文件名不同，先查看 `app/build/outputs/apk/` 中的实际产物。
+如果文件名不同，先查看 `app/build/outputs/apk/` 中的实际产物.
 
 ## 常见问题
 
 | 现象 | 处理 |
 | --- | --- |
-| `jniLibs/arm64-v8a` 缺少 `.so` | 先运行 `python scripts/native-build.py --all`。 |
-| 找不到 Android SDK | 检查 `local.properties` 或 `ANDROID_SDK_ROOT`。 |
-| 找不到 NDK | 安装 `30.0.14904198`，不要使用其他版本替代。 |
-| `cargo-ndk` 或 Rust target 缺失 | 重新安装 nightly、`rust-src` 和 `aarch64-linux-android`。 |
-| Go 补丁无法应用 | 检查补丁是否已经应用，或换用专用 Go SDK。 |
-| `builtin` 缺少 Geo 文件 | 先运行 `python scripts/native-build.py --geo`。 |
-| ABI 不受支持 | 当前项目只支持 `arm64-v8a`。 |
+| `jniLibs/arm64-v8a` 缺少 `.so` | 先运行 `python scripts/native-build.py --all`. |
+| 找不到 Android SDK | 检查 `local.properties` 或 `ANDROID_SDK_ROOT`. |
+| 找不到 NDK | 安装 `30.0.14904198`，不要使用其他版本替代. |
+| `cargo-ndk` 或 Rust target 缺失 | 重新安装 nightly、`rust-src` 和 `aarch64-linux-android`. |
+| Go 补丁无法应用 | 检查补丁是否已经应用，或换用专用 Go SDK. |
+| `builtin` 缺少 Geo 文件 | 先运行 `python scripts/native-build.py --geo`. |
+| ABI 不受支持 | 当前项目只支持 `arm64-v8a`. |
 
-更多构建错误请查看[常见问题](/guide/faq)。
+更多构建错误请查看[常见问题](/guide/faq).

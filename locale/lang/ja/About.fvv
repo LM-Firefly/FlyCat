@@ -31,7 +31,7 @@ About = {
         Libraries = "ライブラリ"
         LibrariesSummary = "このアプリで使用しているサードパーティライブラリを表示"
         AgplName = "GNU Affero General Public License v3.0"
-        AgplDescription = "本プログラムはフリーソフトウェアです。GNU Affero 一般公衆ライセンスの条項に従って再配布および/または改変できます。"
+        AgplDescription = "本プログラムはフリーソフトウェアです.GNU Affero 一般公衆ライセンスの条項に従って再配布および/または改変できます."
     }
 
     Copyright = "© 2025 – Present YumeYucca"

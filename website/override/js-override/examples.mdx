@@ -4,7 +4,7 @@ sidebarTitle: 示例与排错
 icon: bug
 ---
 
-本页按实际需求展示 JavaScript 覆写。每个示例都包含预期结果或失败行为。
+本页按实际需求展示 JavaScript 覆写.每个示例都包含预期结果或失败行为.
 
 ## 修改标量字段
 
@@ -40,7 +40,7 @@ function main(profile) {
 log-level: info
 ```
 
-当条件不满足时，脚本返回原对象，不产生 diff。
+当条件不满足时，脚本返回原对象，不产生 diff.
 
 ## 添加对象字段
 
@@ -78,7 +78,7 @@ rules:
   - MATCH,PROXY
 ```
 
-JavaScript 不会像 YAML 一样自动移动 `MATCH`。如果原列表没有把 `MATCH` 放在最后，脚本也不会替你修正。
+JavaScript 不会像 YAML 一样自动移动 `MATCH`.如果原列表没有把 `MATCH` 放在最后，脚本也不会替你修正.
 
 ## 替换对象或数组
 
@@ -124,7 +124,7 @@ proxies:
   - name: 过期节点 # [!code --]
 ```
 
-如果 `profile.proxies` 不是数组，脚本会使用空数组，最终得到 `proxies: []`。
+如果 `profile.proxies` 不是数组，脚本会使用空数组，最终得到 `proxies: []`.
 
 ## 修改命名策略组
 
@@ -147,7 +147,7 @@ proxy-groups:
       - DIRECT # [!code ++]
 ```
 
-如果找不到 `PROXY`，脚本不会创建新的策略组，也不会报错。
+如果找不到 `PROXY`，脚本不会创建新的策略组，也不会报错.
 
 ## 读取远程 YAML
 
@@ -174,7 +174,7 @@ dns:
   enable: true # [!code ++]
 ```
 
-网络失败、只支持 HTTPS、YAML 内容损坏或 Promise 未完成都会使脚本失败。
+网络失败、只支持 HTTPS、YAML 内容损坏或 Promise 未完成都会使脚本失败.
 
 ## 读取远程 JSON
 
@@ -191,7 +191,7 @@ async function main(profile) {
 }
 ```
 
-如果 `payload.port` 不是数字，脚本会保留原来的 `mixed-port`。
+如果 `payload.port` 不是数字，脚本会保留原来的 `mixed-port`.
 
 ## 请求头和请求体
 
@@ -213,7 +213,7 @@ async function main(profile) {
 }
 ```
 
-对象请求体会在发送前转换为 JSON 字符串。
+对象请求体会在发送前转换为 JSON 字符串.
 
 ## 日志和异常
 
@@ -229,10 +229,10 @@ function main(profile) {
 
 失败时：
 
-- 当前覆写写入 `[exception] 脚本执行失败`。
-- 不会继续执行后续覆写。
-- 普通配置会返回脚本错误和文件路径。
-- 加密配置不会在错误或日志中暴露配置内容和路径。
+- 当前覆写写入 `[exception] 脚本执行失败`.
+- 不会继续执行后续覆写.
+- 普通配置会返回脚本错误和文件路径.
+- 加密配置不会在错误或日志中暴露配置内容和路径.
 
 ## 返回错误值
 
@@ -281,4 +281,4 @@ mixed-port: 1 # [!code --]
 mixed-port: 5 # [!code ++]
 ```
 
-第二个脚本缺少 `main` 时，不会复用第一个脚本的函数，而是直接失败。
+第二个脚本缺少 `main` 时，不会复用第一个脚本的函数，而是直接失败.

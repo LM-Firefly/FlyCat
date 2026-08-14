@@ -4,25 +4,25 @@ sidebarTitle: Field behavior
 icon: list-tree
 ---
 
-YAML 覆写先按字段类型选择处理器，再执行键名修饰符。字段类型决定普通键、`merge` 和列表修饰符的行为。
+YAML 覆写先按字段类型选择处理器，再执行键名修饰符.字段类型决定普通键、`merge` 和列表修饰符的行为.
 
 ## 字段类型
 
 | 类型 | 普通键 | `-merge` | `-start` / `-end` |
 | --- | --- | --- | --- |
-| 标量 | 覆盖原值。 | 忽略。 | 忽略。 |
-| 普通列表 | 替换整个列表。 | 追加数组项。 | 插入或追加数组项。 |
-| 命名对象列表 | 替换后按 `name` 去重。 | 追加后按 `name` 去重。 | 追加后按 `name` 去重。 |
-| `rules` 列表 | 替换后保持 `MATCH` 在最后。 | 追加后保持 `MATCH` 在最后。 | 追加后保持 `MATCH` 在最后。 |
-| 对象 | 递归处理子键。 | 按字面量键合并。 | 忽略。 |
-| 对象映射 | 替换整个映射。 | 递归合并映射。 | 忽略。 |
-| 未知字段 | 对象递归，其他值覆盖。 | 合并对象。 | 对数组生效。 |
+| 标量 | 覆盖原值. | 忽略. | 忽略. |
+| 普通列表 | 替换整个列表. | 追加数组项. | 插入或追加数组项. |
+| 命名对象列表 | 替换后按 `name` 去重. | 追加后按 `name` 去重. | 追加后按 `name` 去重. |
+| `rules` 列表 | 替换后保持 `MATCH` 在最后. | 追加后保持 `MATCH` 在最后. | 追加后保持 `MATCH` 在最后. |
+| 对象 | 递归处理子键. | 按字面量键合并. | 忽略. |
+| 对象映射 | 替换整个映射. | 递归合并映射. | 忽略. |
+| 未知字段 | 对象递归，其他值覆盖. | 合并对象. | 对数组生效. |
 
-`key-force` 不经过上表的字段处理，直接替换整个字段。
+`key-force` 不经过上表的字段处理，直接替换整个字段.
 
 ## 标量字段
 
-标量字段只接受普通键或 `key-force`。普通键会覆盖值，`key-start`、`key-end` 和 `key-merge` 不会把标量转换成列表或对象。
+标量字段只接受普通键或 `key-force`.普通键会覆盖值，`key-start`、`key-end` 和 `key-merge` 不会把标量转换成列表或对象.
 
 ```yaml 修改端口.yaml icon="file-code" lines
 mixed-port: 10801
@@ -44,7 +44,7 @@ mixed-port-merge:
 
 ## 普通列表
 
-普通列表不去重。`key` 替换原列表，`key-start` 插入开头，`key-end` 追加末尾，`key-merge` 在原列表后追加。
+普通列表不去重.`key` 替换原列表，`key-start` 插入开头，`key-end` 追加末尾，`key-merge` 在原列表后追加.
 
 ```yaml 修改认证列表.yaml icon="file-code" lines
 authentication-start:
@@ -70,7 +70,7 @@ authentication-force:
 
 ## 命名对象列表
 
-`proxies` 和 `proxy-groups` 是命名对象列表。项目有非空 `name` 时，同名项目只保留最后出现的项目，并保留最后项目的位置；没有有效 `name` 的项目始终保留。
+`proxies` 和 `proxy-groups` 是命名对象列表.项目有非空 `name` 时，同名项目只保留最后出现的项目，并保留最后项目的位置；没有有效 `name` 的项目始终保留.
 
 ```yaml 覆盖策略组.yaml icon="file-code" lines
 proxy-groups-end:
@@ -109,7 +109,7 @@ proxy-groups-end:
 
 ## `rules` 的特殊行为
 
-`rules` 使用列表语法。应用覆写时，原配置中从第一个终端 `MATCH,...` 开始的规则段会移动到最终位置；覆写文件新增的规则不会再次扫描或移动。
+`rules` 使用列表语法.应用覆写时，原配置中从第一个终端 `MATCH,...` 开始的规则段会移动到最终位置；覆写文件新增的规则不会再次扫描或移动.
 
 ```yaml 规则列表.yaml icon="file-code" lines
 rules-start:
@@ -147,11 +147,11 @@ rules:
   - MATCH,OLD # [!code ++]
 ```
 
-这里最后的 `MATCH,OLD` 来自原配置；新增的 `MATCH,PROXY` 仍按 `rules-end` 的位置保留。
+这里最后的 `MATCH,OLD` 来自原配置；新增的 `MATCH,PROXY` 仍按 `rules-end` 的位置保留.
 
 ## 对象字段
 
-对象字段使用普通键时会递归处理子键。以 `dns` 为例：
+对象字段使用普通键时会递归处理子键.以 `dns` 为例：
 
 ```yaml 修改 DNS 子字段.yaml icon="file-code" lines
 dns:
@@ -159,7 +159,7 @@ dns:
   enhanced-mode: fake-ip
 ```
 
-只会修改 `dns.enable` 和 `dns.enhanced-mode`，原有的 `nameserver` 等子字段会保留。
+只会修改 `dns.enable` 和 `dns.enhanced-mode`，原有的 `nameserver` 等子字段会保留.
 
 ```yaml DNS 子字段 diff.yaml icon="file-code" lines
 dns:
@@ -181,10 +181,10 @@ dns-start:
 
 `key-merge` 的行为取决于字段类型：
 
-- 对普通列表、命名对象列表和 `rules`：追加数组项。
-- 对对象映射：递归合并映射。
-- 对普通对象：按字面量键合并，嵌套键不会再次解析修饰符。
-- 对标量：忽略。
+- 对普通列表、命名对象列表和 `rules`：追加数组项.
+- 对对象映射：递归合并映射.
+- 对普通对象：按字面量键合并，嵌套键不会再次解析修饰符.
+- 对标量：忽略.
 
 ### 映射合并
 
@@ -202,7 +202,7 @@ proxy-providers-merge:
     path: extra.yaml
 ```
 
-原来的 Provider 映射会先被 `proxy-providers` 替换，再由 `proxy-providers-merge` 添加 `interval` 和 `extra`。
+原来的 Provider 映射会先被 `proxy-providers` 替换，再由 `proxy-providers-merge` 添加 `interval` 和 `extra`.
 
 ### 普通对象合并
 
@@ -213,11 +213,11 @@ dns-merge:
     - 223.5.5.5
 ```
 
-`dns-merge` 中的 `nameserver` 会按字面量字段写入；它不会变成 `nameserver-start`，也不会把数组自动追加到原列表。
+`dns-merge` 中的 `nameserver` 会按字面量字段写入；它不会变成 `nameserver-start`，也不会把数组自动追加到原列表.
 
 ## `force`
 
-`key-force` 是最高优先级。只要同一字段存在 `force` 值，其他 `start`、`replace`、`merge` 和 `end` 操作都不会继续执行。
+`key-force` 是最高优先级.只要同一字段存在 `force` 值，其他 `start`、`replace`、`merge` 和 `end` 操作都不会继续执行.
 
 ```yaml 强制替换 DNS.yaml icon="file-code" lines
 dns-force:
@@ -242,11 +242,11 @@ dns-force:
   enable: true
 ```
 
-结果只保留 `dns.enable`，原有的 `nameserver`、`fallback` 等字段都会被删除。
+结果只保留 `dns.enable`，原有的 `nameserver`、`fallback` 等字段都会被删除.
 
 ## 顶层字段表
 
-下表是 YumeBox 当前识别的顶层字段。字段不在表中时，继续使用**未知字段**的通用规则。
+下表是 YumeBox 当前识别的顶层字段.字段不在表中时，继续使用**未知字段**的通用规则.
 
 | 类型 | 字段 |
 | --- | --- |
@@ -257,7 +257,7 @@ dns-force:
 | 规则列表 | `rules` |
 | 嵌套对象 | `dns`、`external-controller-cors`、`profile`、`tun`、`sniffer`、`geox-url`、`clash-for-android` |
 
-`geosite-matcher` 通过最终校验时只接受 `mph` 和 `succinct`；其他值会在覆写执行后被拒绝。
+`geosite-matcher` 通过最终校验时只接受 `mph` 和 `succinct`；其他值会在覆写执行后被拒绝.
 
 ## 嵌套字段表
 
@@ -285,7 +285,7 @@ dns-force:
 
 ## 未知字段
 
-未知字段不会被拒绝：对象递归、标量覆盖、数组使用 `key-start` 和 `key-end`。
+未知字段不会被拒绝：对象递归、标量覆盖、数组使用 `key-start` 和 `key-end`.
 
 ```yaml 未知对象字段.yaml icon="file-code" lines
 experimental:
@@ -301,5 +301,5 @@ experimental:
   enabled: true
 ```
 
-这会写入真实键名 `rules+`，不会向 `rules` 列表追加内容。
+这会写入真实键名 `rules+`，不会向 `rules` 列表追加内容.
 

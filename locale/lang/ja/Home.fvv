@@ -8,7 +8,7 @@ Home = {
         Preparing = "準備中..."
         BuiltinGeoRequired = "先に Builtin 版をインストールしてください"
         StartFailed = "開始に失敗しました: %s"
-        RuntimeUnavailable = "ランタイムを利用できません。もう一度お試しください。"
+        RuntimeUnavailable = "ランタイムを利用できません.もう一度お試しください."
         StopFailed = "停止に失敗しました: %s"
     }
 

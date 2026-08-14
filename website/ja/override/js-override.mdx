@@ -3,16 +3,16 @@ title: JavaScript 構文の概要
 sidebarTitle: JSの概要
 icon: file-braces-corner
 ---
-<Info> スクリプトは、現在の構成コピーのみを変更し、元のサブスクリプション テキストを直接変更しません。 </Info>
+<Info> スクリプトは、現在の構成コピーのみを変更し、元のサブスクリプション テキストを直接変更しません. </Info>
 
 <Prompt description="生成一个符合 YumeBox 运行时约束的 JavaScript 覆写">
-DreamBox の JavaScript オーバーライドを生成してください。
+DreamBox の JavaScript オーバーライドを生成してください.
 
-- `main(profile)` を定義する必要があります。
-- 構成オブジェクトを返す必要があります。非同期リクエストが必要な場合は、`async main(profile)` を使用してください。
-- オブジェクトフィールドを変更する場合は値を直接割り当て、配列を変更する場合は `deepMerge(profile, patch, true)` を使用します。
-- 夢ボックスが提供する `yaml`、`deepMerge`、`fetch`、`console`、`b64e`、`b64d`、`Buffer` のみを使用してください。
-- 配列、文字列、数値、または `undefined` を返さないでください。
+- `main(profile)` を定義する必要があります.
+- 構成オブジェクトを返す必要があります.非同期リクエストが必要な場合は、`async main(profile)` を使用してください.
+- オブジェクトフィールドを変更する場合は値を直接割り当て、配列を変更する場合は `deepMerge(profile, patch, true)` を使用します.
+- 夢ボックスが提供する `yaml`、`deepMerge`、`fetch`、`console`、`b64e`、`b64d`、`Buffer` のみを使用してください.
+- 配列、文字列、数値、または `undefined` を返さないでください.
 
 目標:
 </Prompt>
@@ -21,23 +21,23 @@ DreamBox の JavaScript オーバーライドを生成してください。
 
 <Steps>
   <Step title="ランタイムの初期化">
-    `.js` ファイルが現在のオーバーライド チェーンに初めて表示されるときに、JavaScript ランタイムと組み込みメソッドを初期化します。
+    `.js` ファイルが現在のオーバーライド チェーンに初めて表示されるときに、JavaScript ランタイムと組み込みメソッドを初期化します.
   </Step>
 
   <Step title="構成オブジェクトを渡す">
-    現在の構成は JavaScript オブジェクトに変換され、`profile` パラメーターとして渡されます。
+    現在の構成は JavaScript オブジェクトに変換され、`profile` パラメーターとして渡されます.
   </Step>
 
   <Step title="メインを実行する">
-    スクリプトは `profile` を直接変更することも、新しい構成オブジェクトを返すこともできます。同期戻り値と完了した Promise の両方がサポートされています。
+    スクリプトは `profile` を直接変更することも、新しい構成オブジェクトを返すこともできます.同期戻り値と完了した Promise の両方がサポートされています.
   </Step>
 
   <Step title="戻り値を確認する">
-    戻り値は JSON オブジェクトに変換可能である必要があります。スクリプト エラー、`main` の欠落、または非オブジェクト値の戻りにより、現在のオーバーライド チェーンが停止します。
+    戻り値は JSON オブジェクトに変換可能である必要があります.スクリプト エラー、`main` の欠落、または非オブジェクト値の戻りにより、現在のオーバーライド チェーンが停止します.
   </Step>
 </Steps>
 
-同じオーバーライド チェーンは JavaScript ランタイムを再利用しますが、各スクリプトは分離されたスコープで実行されます。前のスクリプトの `main`、変数、宣言は次のスクリプトに漏洩しません。
+同じオーバーライド チェーンは JavaScript ランタイムを再利用しますが、各スクリプトは分離されたスコープで実行されます.前のスクリプトの `main`、変数、宣言は次のスクリプトに漏洩しません.
 
 ## `main(profile)`
 
@@ -69,7 +69,7 @@ function main(profile) {
 }
 ```
 
-`// [!code --]` と `// [!code ++]` はドキュメントの差分表示にのみ使用され、それ自体は正当な JavaScript コメントです。
+`// [!code --]` と `// [!code ++]` はドキュメントの差分表示にのみ使用され、それ自体は正当な JavaScript コメントです.
 
 ### 条件変更
 
@@ -92,16 +92,16 @@ async function main(profile) {
 }
 ```
 
-Promise は最終的には完了する必要があります。保留中の場合は `async main(profile) did not settle` を返します。
+Promise は最終的には完了する必要があります.保留中の場合は `async main(profile) did not settle` を返します.
 
 ## 戻り値の要件
 
 |戻り値 |結果 |
 | --- | --- |
-|構成オブジェクト |成功しました。次の上書きに引き継ぎます。 |
-| Promise は結果オブジェクトで完了しました |成功。 |
-|配列、文字列、数値、ブール値、`null` または `undefined` |失敗: `JS override result must be an object`。 |
-| JSON に変換できないオブジェクト |コンパイルに失敗し、停止します。 |
+|構成オブジェクト |成功しました.次の上書きに引き継ぎます. |
+| Promise は結果オブジェクトで完了しました |成功. |
+|配列、文字列、数値、ブール値、`null` または `undefined` |失敗: `JS override result must be an object`. |
+| JSON に変換できないオブジェクト |コンパイルに失敗し、停止します. |
 
 エラーの例:
 
@@ -111,4 +111,4 @@ function main(profile) {
 }
 ```
 
-`profile.rules` が配列の場合、スクリプトはその配列を完全な構成として続行せずに失敗します。
+`profile.rules` が配列の場合、スクリプトはその配列を完全な構成として続行せずに失敗します.

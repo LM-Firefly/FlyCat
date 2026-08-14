@@ -7,6 +7,36 @@ icon: clock
 
 <Card title="GitHub Releases" icon="download" horizontal href="https://github.com/YumeYucca/YumeBox/releases" />
 
+<Update label="2026-8-14" tags={["Feature updates","optimization","repair"]} description="v0.6.1">
+## Change
+
+- New: Classic Home and built-in theme switching
+- New: Use the system wallpaper as the Home background, with improved permission guidance and preview
+- New: Wi-Fi automation for running proxy actions based on the connected network
+- New: Single-node and proxy-group latency test buttons, including testing from the delay label
+- New: Node search for quickly finding nodes in the proxy list
+- New: Kernel management, kernel switching, and preview nodes when the proxy is not running
+- New: eBPF DNS hijacking and kernel networking support for improved connection stability
+- New: System options, permission handling, and localized runtime-unavailable messages
+- New: Classic app icon style, Clock and Tags icons, and log export for sharing runtime records
+- Improved: Home, proxy, Provider, WebView, detail-page, and external-panel navigation
+- Improved: External panel opening in the in-app WebView or an external browser
+- Improved: Latency result display, node cards, node lists, node grids, grouping, sorting, and node search
+- Improved: Route transitions, Android predictive-back gestures, touch feedback, click targets, and input fields
+- Improved: First-start initialization, runtime controls, service notifications, stopping, and recovery
+- Improved: Wi-Fi monitoring, service startup, and empty-configuration stopping
+- Improved: Javet installation, Telegram Bot API artifact handling, and CI APK staging
+- Fixed: Proxy tests accidentally selecting nodes, lost or delayed latency results, and single-node test failures
+- Fixed: Wi-Fi state flapping, duplicate service runs, VPN Runtime sockets, fast stop, TCP Relay loops, and UDP forwarding stability
+- Fixed: Proxy locating animation flashes and default theme accent colors
+- Updated: Tailscale to v1.102.2 and the Javet Android version
+- Removed: Legacy icon switching, unused build scripts, and Telegram social links
+- Compatibility: Starting with this version, only arm64 architectures are supported and Android SDK 26 or later is required
+- Documentation: Added multilingual JavaScript override API documentation
+
+  **Full Changelog**: [https://github.com/YumeYucca/YumeBox/compare/v0.6.0...HEAD](https://github.com/YumeYucca/YumeBox/compare/v0.6.0...HEAD)
+</Update>
+
 <Update label="2026-7-27" tags={["Feature updates","optimization","repair"]} description="v0.6.0">
 ## Change
 

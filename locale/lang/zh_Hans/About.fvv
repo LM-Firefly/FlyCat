@@ -31,7 +31,7 @@ About = {
         Libraries = "引用库"
         LibrariesSummary = "查看本应用使用的所有第三方库"
         AgplName = "GNU Affero General Public License v3.0"
-        AgplDescription = "本程序是自由软件：你可以根据 GNU Affero 通用公共许可证的条款重新分发和修改。"
+        AgplDescription = "本程序是自由软件：你可以根据 GNU Affero 通用公共许可证的条款重新分发和修改."
     }
 
     Copyright = "© 2025 – 至今 YumeYucca"

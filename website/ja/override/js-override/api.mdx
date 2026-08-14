@@ -3,23 +3,23 @@ title: 組み込みAPI
 sidebarTitle: 組み込みAPI
 icon: terminal
 ---
-JavaScript オーバーライドは、YumeBox の組み込み JavaScript 環境内で実行されます。次の API は、ランタイムによって提供される完全なグローバル メソッドです。
+JavaScript オーバーライドは、YumeBox の組み込み JavaScript 環境内で実行されます.次の API は、ランタイムによって提供される完全なグローバル メソッドです.
 
 ## `deepMerge(target, patch, isOverride)`
 
-`deepMerge` は、`target` をその場で変更して返します。
+`deepMerge` は、`target` をその場で変更して返します.
 
 |パッチ値 |キー表記 |行動 |
 | --- | --- | --- |
-|オブジェクト | `key` |オブジェクトを再帰的にマージします。 |
-|オブジェクト | `key!` |オブジェクト全体を直接置き換えます。 |
-|配列 | `key` |交換用アレイ。 |
-|配列 | `+key` |配列の先頭に挿入します。 |
-|配列 | `key+` |配列の末尾に追加します。 |
-|オブジェクトまたは配列 | `<key>` |山括弧を削除し、リテラルのキー名として扱います。 |
-|スカラー | `key` |キーと値を直接書き込みます。 |
+|オブジェクト | `key` |オブジェクトを再帰的にマージします. |
+|オブジェクト | `key!` |オブジェクト全体を直接置き換えます. |
+|配列 | `key` |交換用アレイ. |
+|配列 | `+key` |配列の先頭に挿入します. |
+|配列 | `key+` |配列の末尾に追加します. |
+|オブジェクトまたは配列 | `<key>` |山括弧を削除し、リテラルのキー名として扱います. |
+|スカラー | `key` |キーと値を直接書き込みます. |
 
-`+key` と `key+` は、`isOverride` が `true` の場合にのみ配列修飾子として機能します。スクリプトでは、常に `true` を渡すことをお勧めします。
+`+key` と `key+` は、`isOverride` が `true` の場合にのみ配列修飾子として機能します.スクリプトでは、常に `true` を渡すことをお勧めします.
 
 ```js deepMerge 示例.js icon="braces" lines
 function main(profile) {
@@ -45,7 +45,7 @@ dns:
   "enhanced-mode": fake-ip # [!code ++]
 ```
 
-JavaScript の `deepMerge` は、`MATCH` ルールを自動的に最後に移動しません。この動作が必要な場合は、YAML の `rules-end` を使用するか、スクリプト内で配列を自分で処理します。
+JavaScript の `deepMerge` は、`MATCH` ルールを自動的に最後に移動しません.この動作が必要な場合は、YAML の `rules-end` を使用するか、スクリプト内で配列を自分で処理します.
 
 間違った使用法または無効な使用法:
 
@@ -58,13 +58,13 @@ function main(profile) {
 }
 ```
 
-`mixed-port` はスカラーであり、配列修飾子は元の値を拡張しようとします。元の値が数値の場合、通常は反復不可能な型エラーがスローされます。ポートをリストに変換しません。
+`mixed-port` はスカラーであり、配列修飾子は元の値を拡張しようとします.元の値が数値の場合、通常は反復不可能な型エラーがスローされます.ポートをリストに変換しません.
 
 ## `yaml`
 
 ### `yaml.parse(text)`
 
-YAML テキストを JavaScript 値に変換します。 YAML オーバーライドと同じパーサーを使用し、アンカー、エイリアス、`<<` マージ キー、およびトップレベル `proxies` の `reality-opts.short-id` 文字列保護をサポートします。
+YAML テキストを JavaScript 値に変換します. YAML オーバーライドと同じパーサーを使用し、アンカー、エイリアス、`<<` マージ キー、およびトップレベル `proxies` の `reality-opts.short-id` 文字列保護をサポートします.
 
 ```js 解析 YAML.js icon="braces" lines
 function main(profile) {
@@ -79,7 +79,7 @@ dns:
   enable: true # [!code ++]
 ```
 
-無効な YAML を解析すると、直接エラーがスローされます。
+無効な YAML を解析すると、直接エラーがスローされます.
 
 ```js 解析错误 YAML.js icon="braces" lines
 function main(profile) {
@@ -90,7 +90,7 @@ function main(profile) {
 
 ### `yaml.stringify(value)`
 
-JavaScript 値を YAML 文字列に変換します。
+JavaScript 値を YAML 文字列に変換します.
 
 ```js 生成 YAML.js icon="braces" lines
 function main(profile) {
@@ -103,9 +103,9 @@ function main(profile) {
 }
 ```
 
-`yaml.stringify` の結果は文字列であるため、`main` の戻り値として直接使用することはできません。構成オブジェクトを返す必要があります。
+`yaml.stringify` の結果は文字列であるため、`main` の戻り値として直接使用することはできません.構成オブジェクトを返す必要があります.
 
-出力は次のようになります。
+出力は次のようになります.
 
 ```yaml
 log-level: info
@@ -115,18 +115,18 @@ rules:
 
 ## `fetch(input, init)`
 
-組み込みの `fetch` は `http://` のみをサポートし、`https://` はサポートしません。接続、読み取り、書き込みにはそれぞれ 15 秒のタイムアウトがあります。
+組み込みの `fetch` は `http://` のみをサポートし、`https://` はサポートしません.接続、読み取り、書き込みにはそれぞれ 15 秒のタイムアウトがあります.
 
 ### リクエストパラメータ
 
 |パラメータ |タイプ |行動 |
 | --- | --- | --- |
-| `input` |文字列またはオブジェクト | URL 文字列、または `url` を含むオブジェクト。 |
-| `init.method` |文字列 | HTTP メソッド、デフォルトは `GET`。 |
-| `init.headers` |オブジェクト |リクエストヘッダー。 |
-| `init.body` |文字列またはオブジェクト |文字列は直接送信されます。他の値は最初に `JSON.stringify` です。 |
+| `input` |文字列またはオブジェクト | URL 文字列、または `url` を含むオブジェクト. |
+| `init.method` |文字列 | HTTP メソッド、デフォルトは `GET`. |
+| `init.headers` |オブジェクト |リクエストヘッダー. |
+| `init.body` |文字列またはオブジェクト |文字列は直接送信されます.他の値は最初に `JSON.stringify` です. |
 
-`init` の `url`、`method`、`headers`、および `body` は、`input` オブジェクト内の同じ名前の値を上書きします。
+`init` の `url`、`method`、`headers`、および `body` は、`input` オブジェクト内の同じ名前の値を上書きします.
 
 ```js HTTP 请求.js icon="braces" lines
 async function main(profile) {
@@ -146,16 +146,16 @@ async function main(profile) {
 
 |プロパティまたはメソッド |結果 |
 | --- | --- |
-| `ok` | `true` (ステータス コード `200` ～ `299`)。 |
-| `status` | HTTPステータスコード。 |
-| `statusText` | HTTPステータステキスト。 |
-| `url` |リクエストURL。 |
-| `headers.get(name)` |応答ヘッダーを取得し、存在しない場合は `null` を返します。 |
-| `headers.has(name)` |応答ヘッダーが存在するかどうかを確認します。 |
-| `headers.toJSON()` |応答ヘッダー オブジェクトを返します。 |
-| `text()` |テキストを非同期で読み取ります。 |
-| `json()` | JSON を非同期で解析します。 |
-| `yaml()` | YAML を非同期的に解析します。 |
+| `ok` | `true` (ステータス コード `200` ～ `299`). |
+| `status` | HTTPステータスコード. |
+| `statusText` | HTTPステータステキスト. |
+| `url` |リクエストURL. |
+| `headers.get(name)` |応答ヘッダーを取得し、存在しない場合は `null` を返します. |
+| `headers.has(name)` |応答ヘッダーが存在するかどうかを確認します. |
+| `headers.toJSON()` |応答ヘッダー オブジェクトを返します. |
+| `text()` |テキストを非同期で読み取ります. |
+| `json()` | JSON を非同期で解析します. |
+| `yaml()` | YAML を非同期的に解析します. |
 
 ```js 读取 JSON.js icon="braces" lines
 async function main(profile) {
@@ -177,9 +177,9 @@ async function main(profile) {
 }
 ```
 
-スクリプトは、`fetch only supports http:// urls` を含むエラーで失敗します。ネットワーク接続が失敗した場合、URL が空だった場合、または応答を解析できない場合にも、スクリプトは停止します。
+スクリプトは、`fetch only supports http:// urls` を含むエラーで失敗します.ネットワーク接続が失敗した場合、URL が空だった場合、または応答を解析できない場合にも、スクリプトは停止します.
 
-`2xx` 以外の応答は自動的にエラーをスローしないため、`response.ok` を確認する必要があります。
+`2xx` 以外の応答は自動的にエラーをスローしないため、`response.ok` を確認する必要があります.
 
 ```js 检查 HTTP 状态.js icon="braces" lines
 async function main(profile) {
@@ -194,7 +194,7 @@ async function main(profile) {
 
 ## `console`
 
-ログは、現在上書きされているファイルと同じメイン ファイル名で、同じディレクトリにある `.log` ファイルに書き込まれます。古いログは上書きを実行する前に毎回リセットされます。
+ログは、現在上書きされているファイルと同じメイン ファイル名で、同じディレクトリにある `.log` ファイルに書き込まれます.古いログは上書きを実行する前に毎回リセットされます.
 
 |方法 |ログレベル |
 | --- | --- |
@@ -204,7 +204,7 @@ async function main(profile) {
 | `console.error(...)` | `error` |
 | `console.debug(...)` | `debug` |
 
-複数のパラメータはスペースで連結されます。オブジェクトは JSON にシリアル化されます。
+複数のパラメータはスペースで連結されます.オブジェクトは JSON にシリアル化されます.
 
 ```js 日志 API.js icon="braces" lines
 function main(profile) {
@@ -214,20 +214,20 @@ function main(profile) {
 }
 ```
 
-ログの結果は次のようになります。
+ログの結果は次のようになります.
 
 ```text
 [info] "当前模式" "rule"
 [debug] "代理数量" 12
 ```
 
-暗号化構成スクリプトが実行されると、ログ内の構成値は `(redacted, encrypted profile)` に置き換えられます。
+暗号化構成スクリプトが実行されると、ログ内の構成値は `(redacted, encrypted profile)` に置き換えられます.
 
 ## Base64
 
 ### `b64e(value)` および `b64d(value)`
 
-`b64e` は UTF-8 テキストを Base64 にエンコードし、`b64d` は Base64 を UTF-8 テキストにデコードします。
+`b64e` は UTF-8 テキストを Base64 にエンコードし、`b64d` は Base64 を UTF-8 テキストにデコードします.
 
 ```js Base64 API.js icon="braces" lines
 function main(profile) {
@@ -250,12 +250,12 @@ decoded-name: YumeBox
 
 | API |行動 |
 | --- | --- |
-| `Buffer.from(value, "utf8")` | UTF-8 テキストをバッファ オブジェクトに変換します。 |
-| `Buffer.from(value, "base64")` | Base64 テキストをバッファ オブジェクトに変換します。 |
-| `Buffer.isBuffer(value)` | DreamBox バッファ オブジェクトであるかどうかを判断します。 |
-| `buffer.toString("utf8")` | UTF-8 テキストにデコードされます。 |
-| `buffer.toString("base64")` | Base64 テキストを返します。 |
-| `buffer.valueOf()` | UTF-8 テキストを返します。 |
+| `Buffer.from(value, "utf8")` | UTF-8 テキストをバッファ オブジェクトに変換します. |
+| `Buffer.from(value, "base64")` | Base64 テキストをバッファ オブジェクトに変換します. |
+| `Buffer.isBuffer(value)` | DreamBox バッファ オブジェクトであるかどうかを判断します. |
+| `buffer.toString("utf8")` | UTF-8 テキストにデコードされます. |
+| `buffer.toString("base64")` | Base64 テキストを返します. |
+| `buffer.valueOf()` | UTF-8 テキストを返します. |
 
 ```js Buffer API.js icon="braces" lines
 function main(profile) {
@@ -273,4 +273,4 @@ client-name: YumeBox
 client-name-base64: WXVtZUJveA==
 ```
 
-`utf8`、`utf-8`、および `base64` のみがサポートされています。他のエンコーディングでは `Buffer.from() unsupported encoding` または `Buffer.toString() unsupported encoding` がスローされます。
+`utf8`、`utf-8`、および `base64` のみがサポートされています.他のエンコーディングでは `Buffer.from() unsupported encoding` または `Buffer.toString() unsupported encoding` がスローされます.
