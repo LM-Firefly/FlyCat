@@ -1,21 +1,21 @@
 # Build outputs
-**/build/
-**/intermediates/
-**/release
-**/out/
-**/target/
-**/bin/
-**/gen/
 .gradle/
 .kotlin/
+**/bin/
+**/build/
+**/gen/
+**/intermediates/
+**/out/
+**/release
+**/target/
 
 # Build artifacts
-*.apk
-*.aar
 *.aab
+*.aar
 *.ap_
-*.dex
+*.apk
 *.class
+*.dex
 
 # IDE - IntelliJ/Android Studio
 !.idea/codeStyles/
@@ -31,14 +31,14 @@ captures/
 scripts/__pycache__/
 
 # Native build
+!app/src/main/jniLibs/**/*.so
 .cxx/
 .externalNativeBuild/
-cmake-build-*/
-*.so
-!app/src/main/jniLibs/**/*.so
 *.a
 *.o
 *.obj
+*.so
+cmake-build-*/
 /app/pkg/
 /core/pkg/
 /data/pkg/
@@ -47,17 +47,18 @@ cmake-build-*/
 /feature/profiles/pkg/
 /feature/settings/pkg/
 /lib/native/rust/pkg/
+/pack/pkg/
 /platform/pkg/
 /runtime/client/pkg/
 /runtime/service/pkg/
 
 # Signing & secrets
-*.jks
-signing.properties
-local.properties
 .env
-.env.local
 .env.*.local
+.env.local
+*.jks
+local.properties
+signing.properties
 
 # OS junk
 .DS_Store
@@ -66,9 +67,9 @@ Thumbs.db
 *.swp
 
 # Logs & temp
+*.hprof
 *.log
 *.tmp
-*.hprof
 
 # Project specific
 .agents
@@ -88,18 +89,18 @@ Thumbs.db
 /app/release/
 /app/src/androidMain/assets/
 /app/src/main/assets/
-/core/src/foss/golang/mihomo/
-/rule.md
-/google-services.json
-/desktop.ini
 /app/src/main/assets/ASN.mmdb
-/scripts/rewrite-git-email.sh
 /CLAUDE.md
-/docs/override-merge-plan/
-/docs/config/
+/core/src/foss/golang/mihomo/
+/desktop.ini
 /docs/amper
-/lib/mihomo/mihomo/
 /docs/code-review/
+/docs/config/
+/docs/override-merge-plan/
+/google-services.json
+/lib/mihomo/mihomo/
+/rule.md
+/scripts/rewrite-git-email.sh
 # Python bytecode
 __pycache__/
 *.pyc

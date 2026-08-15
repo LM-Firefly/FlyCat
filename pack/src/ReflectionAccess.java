@@ -5,6 +5,8 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+// Intentional use of setAccessible() for Android hidden API bypass — required by design.
+@SuppressWarnings({"PMD.AvoidAccessibilityAlteration", "java:S3011"})
 final class ReflectionAccess {
     private static volatile boolean exempted;
 

@@ -8,7 +8,10 @@ import com.github.lmfirefly.flycat.runtime.api.root.RootAccessStatus
 import com.github.lmfirefly.flycat.runtime.api.root.RootTunStatus
 import com.github.lmfirefly.flycat.runtime.client.RuntimeContractResolver
 import com.github.lmfirefly.flycat.runtime.client.root.RootTunController
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

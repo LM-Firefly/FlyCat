@@ -131,7 +131,9 @@ internal fun StableQrScanner(onScanned: (String) -> Unit) {
             try {
                 val context = previewView.context
                 ProcessCameraProvider.getInstance(context).get().unbindAll()
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+                // Camera cleanup may fail if already released — safe to ignore.
+            }
         },
     )
 }

@@ -47,7 +47,13 @@ import com.github.lmfirefly.flycat.runtime.service.R
 import com.github.lmfirefly.flycat.runtime.service.StatusProvider
 import com.github.lmfirefly.flycat.runtime.service.session.RuntimeServiceLauncher
 import com.github.lmfirefly.flycat.runtime.service.wifi.WifiSsidObserver
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**

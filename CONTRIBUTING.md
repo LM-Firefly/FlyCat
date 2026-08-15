@@ -1,4 +1,4 @@
-## Contributing to FlyCat
+# Contributing to FlyCat
 
 ### Code Style
 

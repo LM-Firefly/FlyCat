@@ -239,10 +239,23 @@ private fun DrawScope.drawOverlayBar(
 }
 
 private fun DrawScope.drawTopRoundedRect(color: Color, leftPx: Float, topPx: Float, widthPx: Float, heightPx: Float, radius: CornerRadius) {
+    if (heightPx <= 0f) return
     val rX = radius.x.coerceAtMost(widthPx / 2f)
     val rY = radius.y.coerceAtMost(heightPx / 2f)
-    val path = Path().apply { addRoundRect(RoundRect(left = leftPx, top = topPx, right = leftPx + widthPx, bottom = topPx + heightPx, topLeftCornerRadius = CornerRadius(rX, rY), topRightCornerRadius = CornerRadius(rX, rY), bottomRightCornerRadius = CornerRadius.Zero, bottomLeftCornerRadius = CornerRadius.Zero)) }
-    drawPath(path = path, color = color)
+    // 优化：通过使用 drawRoundRect 以及在底部绘制扁平矩形（drawRect）来避免路径分配。
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(leftPx, topPx),
+        size = Size(widthPx, heightPx),
+        cornerRadius = CornerRadius(rX, rY)
+    )
+    if (heightPx > rY) {
+        drawRect(
+            color = color,
+            topLeft = Offset(leftPx, topPx + heightPx - rY),
+            size = Size(widthPx, rY)
+        )
+    }
 }
 
 private fun applyIdleWave(fraction: Float, index: Int, phase: Float): Float {

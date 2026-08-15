@@ -52,9 +52,22 @@ fun TopologyChart(connections: List<ConnectionInfo>, onClick: () -> Unit, modifi
     val density = LocalDensity.current
     val topologyKey = remember(connections) {
         if (connections.isEmpty()) 0
-        else connections.size * 31 + connections.first().id.hashCode() + connections.last().id.hashCode()
+        else {
+            var result = connections.size
+            result = 31 * result + connections.first().id.hashCode()
+            result = 31 * result + connections.last().id.hashCode()
+            // 包含部分中间元素，以提高结构敏感度，无需完整列表遍历。
+            if (connections.size > 2) {
+                result = 31 * result + connections[connections.size / 2].id.hashCode()
+            }
+            result
+        }
     }
-    val sankeyData: SankeyData = remember(topologyKey, connections) { runCatching { processConnections(connections) }.onFailure { Timber.e(it, "TopologyChart: failed to process connections") }.getOrElse { SankeyData(emptyList(), emptyList()) } }
+    val sankeyData: SankeyData = remember(topologyKey) {
+        runCatching { processConnections(connections) }
+            .onFailure { Timber.e(it, "TopologyChart: failed to process connections") }
+            .getOrElse { SankeyData(emptyList(), emptyList()) }
+    }
     if (sankeyData.nodes.isEmpty()) {
         Box(modifier = modifier.height(200.dp).fillMaxWidth()) {
             Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {

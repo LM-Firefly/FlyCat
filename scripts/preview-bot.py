@@ -1,6 +1,7 @@
-import requests
-import os
 import glob
+import os
+import sys
+import requests
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
@@ -10,10 +11,10 @@ MESSAGE_THREAD_ID = os.environ.get("MESSAGE_THREAD_ID")
 def check_environ():
     if BOT_TOKEN is None:
         print("[-] Invalid BOT_TOKEN")
-        exit(1)
+        sys.exit(1)
     if CHAT_ID is None:
         print("[-] Invalid CHAT_ID")
-        exit(1)
+        sys.exit(1)
 
 
 def find_preview_files():
@@ -32,7 +33,7 @@ def find_preview_files():
 
     if not files:
         print("[-] No preview files found!")
-        exit(1)
+        sys.exit(1)
 
     files = list(set(files))
     print(f"[+] Total unique files: {len(files)}")
@@ -75,14 +76,13 @@ def send_files_via_bot_api():
     if response.status_code == 200:
         print(f"[+] {file_path} uploaded successfully!")
         return True
-    else:
-        print(f"[-] Failed to upload {file_path}: {response.text}")
-        return False
+    print(f"[-] Failed to upload {file_path}: {response.text}")
+    return False
 
 
 if __name__ == "__main__":
     try:
         send_files_via_bot_api()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[-] Error: {e}")
-        exit(1)
+        sys.exit(1)

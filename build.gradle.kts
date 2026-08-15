@@ -53,9 +53,7 @@ plugins {
   alias(libs.plugins.spotless) apply false
 }
 
-// AGP-created tool configurations (unified-test-platform-*, androidLintTool) and test
-// classpaths resolve independently of the buildscript classpath above, so the same
-// vulnerable-version floors must be enforced on project configurations as well.
+// AGP-created tool configurations (unified-test-platform-*, androidLintTool) and test classpaths resolve independently of the buildscript classpath above, so the same vulnerable-version floors must be enforced on project configurations as well.
 allprojects {
     configurations.configureEach {
         resolutionStrategy.eachDependency {
@@ -64,6 +62,8 @@ allprojects {
                 requested.group == "io.netty" -> useVersion(libs.versions.netty.get())
                 requested.group == "org.apache.httpcomponents" && requested.name == "httpclient" -> useVersion(libs.versions.httpcomponentsHttpClient.get())
                 requested.group == "org.apache.commons" && requested.name == "commons-lang3" -> useVersion(libs.versions.commonsLang3.get())
+                requested.group == "com.google.guava" && requested.name == "guava" -> useVersion(libs.versions.guava.get())
+                requested.group.startsWith("tools.jackson") -> useVersion(libs.versions.jackson3.get())
             }
         }
     }

@@ -7,19 +7,15 @@ require cfa v0.0.0
 require (
 	github.com/bodgit/plumbing v1.3.0 // indirect
 	github.com/bodgit/windows v1.0.1 // indirect
-	github.com/chzyer/readline v1.5.1 // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/ianlancetaylor/demangle v0.0.0-20250417193237-f615e6bd150b // indirect
 	github.com/metacubex/age v0.0.0-20260603010618-28d156b4ea78 // indirect
-	github.com/metacubex/mipstack v0.0.0-20260814080010-eca762ad5638 // indirect
+	github.com/metacubex/mipstack v0.0.0-20260816065001-b7038299fe13 // indirect
 	github.com/metacubex/sevenzip v1.6.4 // indirect
 	github.com/metacubex/sing-shadowsocks v0.2.12 // indirect
 	github.com/metacubex/zerotier-go v0.0.0-20260813124750-13fa6f45da5f // indirect
 	github.com/rasky/go-lzo v0.0.0-20200203143853-96a758eda86e // indirect
 	github.com/stangelandcl/ppmd v0.1.1 // indirect
 	github.com/ulikunitz/xz v0.5.16 // indirect
-	go.uber.org/automaxprocs v1.6.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 )
 
@@ -59,7 +55,7 @@ require (
 	github.com/klauspost/reedsolomon v1.14.1 // indirect
 	github.com/mdlayher/netlink v1.11.2 // indirect
 	github.com/mdlayher/socket v0.6.1 // indirect
-	github.com/metacubex/amneziawg-go v0.0.0-20260726091836-16af3a7a9a29 // indirect
+	github.com/metacubex/amneziawg-go v0.0.0-20260816073447-736a78668832 // indirect
 	github.com/metacubex/ascon v0.1.0 // indirect
 	github.com/metacubex/bart v0.29.0 // indirect
 	github.com/metacubex/bbolt v0.0.0-20260706163408-d4ec34ad7c48 // indirect

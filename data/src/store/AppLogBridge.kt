@@ -76,6 +76,8 @@ object AppLogBuffer : AppLogSettings {
     private val appBuffer = ArrayDeque<String>(MAX_SIZE)
     private val mihomoBuffer = ArrayDeque<String>(MAX_SIZE)
     private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+    private var lastTimestampMs: Long = -1L
+    private var cachedTimestamp: String = ""
     @Volatile
     override var minLogLevel: Int = Log.DEBUG
     private val rwLock = java.util.concurrent.locks.ReentrantReadWriteLock()
@@ -98,7 +100,16 @@ object AppLogBuffer : AppLogSettings {
     }
 
     private fun appendFormatted(priority: Int, tag: String?, message: String) {
-        val time = LocalDateTime.now().format(dateTimeFormatter)
+        val nowMs = System.currentTimeMillis()
+        val time = synchronized(this) {
+            if (nowMs == lastTimestampMs) {
+                cachedTimestamp
+            } else {
+                lastTimestampMs = nowMs
+                cachedTimestamp = LocalDateTime.now().format(dateTimeFormatter)
+                cachedTimestamp
+            }
+        }
         val level = when (priority) {
             Log.VERBOSE -> "VERBOSE"
             Log.DEBUG -> "DEBUG"

@@ -50,6 +50,7 @@ pluginManagement {
 
 // The settings plugin classpath (gropify pulls in Jackson 3) resolves outside the root
 // project's buildscript block, so vulnerable-version floors are enforced here separately.
+// Keep these in sync with gradle/libs.versions.toml (jackson3, netty, guava).
 buildscript {
     configurations["classpath"].resolutionStrategy.eachDependency {
         when {

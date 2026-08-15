@@ -1,10 +1,11 @@
-import requests
-import os
 import glob
+import html
+import os
 import re
 import shutil
 import subprocess  # nosec B404 - only runs fixed git commands from CI env
-import html
+import sys
+import requests
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
@@ -36,13 +37,13 @@ def get_commit_message():
         git = shutil.which("git") or "git"
         try:
             # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit, python.lang.security.audit.dangerous-subprocess-use-tainted-env-args.dangerous-subprocess-use-tainted-env-args
-            result = subprocess.run(  # noqa: S603 # nosec B603 - fixed git argv, sha validated above
+            result = subprocess.run(  # nosec B603 - fixed git argv, sha validated above
                 [git, "log", "-1", "--format=%B", COMMIT_SHA],
                 cwd=os.environ.get("GITHUB_WORKSPACE") or ".",
-                capture_output=True, text=True, timeout=15,
+                capture_output=True, text=True, timeout=15, check=False,
             )
             msg = (result.stdout or "").strip()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"[-] git log failed: {e}")
     return msg
 
@@ -104,6 +105,7 @@ def _commit_lines():
 
 
 def get_caption():
+    """Build HTML caption for the Telegram release message."""
     display_title = TITLE
     if _workflow_label() == "Test" and "test" not in TITLE.lower():
         display_title = f"{TITLE} Test"
@@ -122,16 +124,16 @@ def get_caption():
 def check_environ():
     if BOT_TOKEN is None:
         print("[-] Invalid BOT_TOKEN")
-        exit(1)
+        sys.exit(1)
     if CHAT_ID is None:
         print("[-] Invalid CHAT_ID")
-        exit(1)
+        sys.exit(1)
     if TITLE is None:
         print("[-] Invalid TITLE")
-        exit(1)
+        sys.exit(1)
     if BRANCH is None:
         print("[-] Invalid BRANCH")
-        exit(1)
+        sys.exit(1)
 
 
 def find_apk_files():
@@ -159,7 +161,7 @@ def find_apk_files():
 
     if not files:
         print("[-] No APK files found!")
-        exit(1)
+        sys.exit(1)
 
     print(f"[+] Total files to upload: {len(files)}")
     for f in files:
@@ -199,7 +201,7 @@ def send_files_via_bot_api():
             reply_to_id = photo_resp.json().get("result", {}).get("message_id")
         else:
             print(f"[-] Photo send failed: {photo_resp.text}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[-] Photo send failed: {e}")
 
     with open(file_path, 'rb') as f:
@@ -221,14 +223,13 @@ def send_files_via_bot_api():
     if response.status_code == 200:
         print(f"[+] {file_path} uploaded successfully!")
         return True
-    else:
-        print(f"[-] Failed to upload {file_path}: {response.text}")
-        return False
+    print(f"[-] Failed to upload {file_path}: {response.text}")
+    return False
 
 
 if __name__ == "__main__":
     try:
         send_files_via_bot_api()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[-] Error: {e}")
-        exit(1)
+        sys.exit(1)

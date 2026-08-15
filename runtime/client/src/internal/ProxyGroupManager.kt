@@ -2,7 +2,6 @@ package com.github.lmfirefly.flycat.runtime.client.internal
 
 import com.github.lmfirefly.flycat.core.Clash
 import com.github.lmfirefly.flycat.core.bridge.Bridge
-import com.github.lmfirefly.flycat.core.model.*
 import com.github.lmfirefly.flycat.core.model.profile.Profile
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup
@@ -16,10 +15,20 @@ import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeSnapshot
 import com.github.lmfirefly.flycat.runtime.client.RuntimeBackendRouter
 import com.github.lmfirefly.flycat.runtime.client.remote.ServiceClient
 import com.github.lmfirefly.flycat.runtime.client.root.RootTunController
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import timber.log.Timber

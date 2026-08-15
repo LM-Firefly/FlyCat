@@ -494,14 +494,21 @@ class BackupRepository(
 
 internal fun replaceBackupDirectory(source: File, target: File) {
     if (!source.exists()) return
-    // Atomic swap: rename target → .bak, rename source → target, then clean up.
-    // If process dies mid-operation, startup recovery restores the .bak.
+    // 原子交换：将目标重命名为 .bak，将源重命名为目标，然后进行清理。如果进程在操作过程中终止，启动恢复会还原 .bak 文件。
     val backup = File(target.parentFile, target.name + ".bak")
     backup.deleteRecursively()
     if (target.exists()) {
-        target.renameTo(backup)
+        if (!target.renameTo(backup)) {
+            backup.deleteRecursively()
+            target.copyRecursively(backup, overwrite = true)
+            target.deleteRecursively()
+        }
     }
-    source.renameTo(target)
+    if (!source.renameTo(target)) {
+        target.deleteRecursively()
+        source.copyRecursively(target, overwrite = true)
+        source.deleteRecursively()
+    }
     backup.deleteRecursively()
 }
 

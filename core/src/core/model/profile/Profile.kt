@@ -9,7 +9,7 @@ import com.github.lmfirefly.flycat.core.util.serialization.Parcelizer
 import com.github.lmfirefly.flycat.core.util.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import java.util.*
+import java.util.UUID
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable

@@ -75,8 +75,7 @@ class AutoRestartService : Service() {
     private val foregroundStarted = AtomicBoolean(false)
     private val activationAwaiter = RuntimeActivationAwaiter()
 
-    // Duplicate triggers (boot + replaced racing) are merged: a new onStartCommand
-    // cancels the in-flight coroutine so only the latest reason is acted upon.
+    // 重复的触发器（启动与替换的竞争状态）已被合并：新的onStartCommand会取消正在进行的协程，因此仅处理最新的触发原因。
     private var autoStartJob: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null

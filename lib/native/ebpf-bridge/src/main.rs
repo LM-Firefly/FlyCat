@@ -18,6 +18,9 @@ static STOP_FLAG: AtomicBool = AtomicBool::new(false);
 
 const VERSION: &str = "flycat-ebpf-bridge rust-1.0";
 
+// This is a privileged CLI tool launched by the Android app root daemon.
+// Command-line arguments are the intended input source — not user-facing input.
+// nosemgrep: args-should-not-be-used-for-security-operations
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 

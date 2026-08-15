@@ -118,11 +118,12 @@ class AppTrafficStatisticsCollector(
 
     /** Lightweight total tracker — no snapshot dependency. Close events handle attribution. */
     private suspend fun trackTrafficTotals(totalTraffic: TrafficData) {
-        // Fast path: skip mutex + MMKV when totals unchanged and no pending buckets.
+        val timestamp = System.currentTimeMillis()
+        // 快速路径1：如果总数未变、没有待处理的桶，且尚未到刷写基线的时间，则跳过所有操作。
+        // 这避免了在空闲或低流量活动时每秒都获取互斥锁。
         if (lastTotalUpload >= 0L && lastTotalDownload >= 0L &&
             totalTraffic.upload == lastTotalUpload && totalTraffic.download == lastTotalDownload &&
-            pendingBuckets.isEmpty()) return
-        val timestamp = System.currentTimeMillis()
+            pendingBuckets.isEmpty() && timestamp - lastPersistTimestamp < PERSIST_INTERVAL_MS) return
         val currentProfileId = currentProfileId() ?: runCatching { queryActiveProfileId() }.getOrNull()
         var drainedBuckets: List<PendingTrafficBucket>? = null
         var flushTimestamp = 0L
@@ -130,6 +131,9 @@ class AppTrafficStatisticsCollector(
             val isFirstCall = lastTotalUpload < 0L || lastTotalDownload < 0L
             val profileChanged = !isFirstCall && currentProfileId != lastProfileId
             val trafficReset = !isFirstCall && !profileChanged && (totalTraffic.upload < lastTotalUpload || totalTraffic.download < lastTotalDownload)
+            // 快速路径2：若仅有总量微小变动且无待刷新的存储桶，则限流更新。
+            if (!isFirstCall && !profileChanged && !trafficReset && pendingBuckets.isEmpty() &&
+                timestamp - lastPersistTimestamp < TOTAL_TRACKER_THROTTLE_MS) return
             if (isFirstCall || profileChanged || trafficReset) {
                 initializeTotals(
                     totalTraffic = totalTraffic,
@@ -341,5 +345,6 @@ class AppTrafficStatisticsCollector(
         private const val TAG = "AppTrafficStatsCollector"
         private const val NO_BASELINE = -1L
         private const val PERSIST_INTERVAL_MS = 10_000L
+        private const val TOTAL_TRACKER_THROTTLE_MS = 2_000L
     }
 }

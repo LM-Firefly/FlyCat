@@ -33,6 +33,7 @@ import com.github.lmfirefly.flycat.runtime.service.records.ImportedDao
 import com.github.lmfirefly.flycat.runtime.service.records.SelectionDao
 import com.github.lmfirefly.flycat.runtime.service.util.Log
 import com.github.lmfirefly.flycat.runtime.service.util.sendProfileChanged
+import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -123,8 +124,8 @@ object ProfileProcessor {
                 try {
                     Clash.setAgeSecretKey(snapshot.imported.ageSecretKey)
 
-                    // For local file profiles, the config has already been copied into stagingDir by the caller.
-                    // Skip fetch (force=false) and let native code validate the existing config.yaml directly.
+                    // 对于本地文件配置文件，配置已被调用者复制到 stagingDir 中。
+                    // 跳过 fetch (force=false) 并让本机代码直接验证现有的 config.yaml。
                     val isLocalFile = snapshot.imported.type == Profile.Type.File && snapshot.imported.source.startsWith("content://")
 
                     Clash.fetchAndValid(stagingDir, snapshot.imported.source, !isLocalFile) {
@@ -147,14 +148,14 @@ object ProfileProcessor {
 
                     profileLock.withLock {
                         if (ImportedDao.exists(snapshot.imported.uuid)) {
-                            // Atomic swap: rename old → backup, rename staging → target.
-                            // If process dies mid-operation, startup recovery restores the .bak.
+                            // 原子交换：将旧文件重命名为备份，将暂存文件重命名为目标文件。
+                            // 如果进程在操作过程中终止，启动恢复将还原 .bak 文件。
                             val backupDir = context.importedDir.resolve("${uuid}.bak")
                             backupDir.deleteRecursively()
                             if (targetDir.exists()) {
-                                targetDir.renameTo(backupDir)
+                                moveDirectory(targetDir, backupDir)
                             }
-                            stagingDir.renameTo(targetDir)
+                            moveDirectory(stagingDir, targetDir)
                             backupDir.deleteRecursively()
 
                             val finalName =
@@ -188,8 +189,7 @@ object ProfileProcessor {
                         }
                     }
                 } catch (error: Exception) {
-                    // fault barrier: core fetch runs through the JNI bridge; roll back the staged
-                    // update atomically, then rethrow (with a friendlier message for age errors).
+                    // fault barrier: core fetch runs through the JNI bridge; roll back the staged update atomically, then rethrow (with a friendlier message for age errors).
                     profileLock.withLock {
                         if (
                             !snapshot.hasCommittedConfig &&
@@ -204,12 +204,12 @@ object ProfileProcessor {
                             val backupDir =
                                 context.importedDir.resolve("${uuid}.bak")
                             if (backupDir.exists() && !targetDir.exists()) {
-                                backupDir.renameTo(targetDir)
+                                moveDirectory(backupDir, targetDir)
                             }
                             backupDir.deleteRecursively()
                         }
                     }
-                    // Provide a more user-friendly error message for age decryption failures
+                    // 为Age解密失败提供更加用户友好型的错误消息
                     val errorMessage = error.message ?: ""
                     if (
                         errorMessage.contains("no identities specified") ||
@@ -227,6 +227,15 @@ object ProfileProcessor {
                 }
             }
         }
+    }
+
+    // 将[源文件]移动到[目标位置]，当[File.renameTo]静默失败时（例如在某些Android设备跨文件系统挂载点操作时），回退使用复制+删除的方式。
+    private fun moveDirectory(source: File, target: File) {
+        if (source.renameTo(target)) return
+        // "renameTo 返回 false — 则回退到递归复制"
+        target.deleteRecursively()
+        source.copyRecursively(target, overwrite = true)
+        source.deleteRecursively()
     }
 
     suspend fun delete(context: Context, uuid: UUID) {

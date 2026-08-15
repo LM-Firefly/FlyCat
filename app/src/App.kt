@@ -24,7 +24,6 @@ package com.github.lmfirefly.flycat
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
-import android.util.Log
 import com.github.lmfirefly.flycat.BuildConfig
 import com.github.lmfirefly.flycat.common.util.AppLanguageManager
 import com.github.lmfirefly.flycat.core.Clash
@@ -108,7 +107,7 @@ class App : Application() {
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
             override fun onActivityDestroyed(activity: Activity) = Unit
         })
-        // Stage 1: Core infrastructure (logging, crash handler, native globals)
+        // 阶段1：核心基础架构（logging, crash handler, native globals）
         val koin = try {
             initCoreInfrastructure()
         } catch (e: Exception) {
@@ -116,18 +115,18 @@ class App : Application() {
             CrashHandler.init(this)
             return
         }
-        // Stage 2: Apply user settings (deferred→language already wrapped in attachBaseContext)
+        // 阶段2：应用用户设置
         startupScope.launch {
             safeRun("App", "Apply user settings") { applyUserSettings(koin) }
         }
-        // Stage 2a: Preload native bridge libraries on background thread
+        // 阶段2a：在后台线程上预加载原生桥接库
         startupScope.launch {
             withContext(Dispatchers.IO) {
                 safeRun("App", "Bridge preload") { Bridge.preload() }
             }
         }
-        // On-demand mihomo log→AppLogBuffer subscription.
-        // Enabled only when log preview is visible or runtime log recording is active.
+        // "按需 mihomo 日志→AppLogBuffer 订阅。
+        // 仅在日志预览可见或运行时日志记录激活时启用。"
         val applicationScope = koin.get<CoroutineScope>(named(APPLICATION_SCOPE_NAME))
         applicationScope.launch {
             var streamJob: Job? = null
@@ -166,22 +165,22 @@ class App : Application() {
                     }
             }
         }
-        // Stage 2b: Recover from incomplete file operations (atomic rename leftovers)
+        // 阶段2b：从不完整的文件操作（原子重命名残留物）中恢复
         startupScope.launch {
             withContext(Dispatchers.IO) {
                 safeRun("App", "Startup recovery") { recoverIncompleteOperations() }
             }
         }
-        // Stage 3: Start update check coroutine
+        // 阶段3：启动更新检查协程
         safeRun("App", "Schedule update check") { startUpdateCheck(koin, applicationScope) }
-        // Stage 4: Deferred runtime tasks (geo assets, traffic collector, auto-start)
+        // 阶段4：延迟运行时任务（geo assets, traffic collector, auto-start）
         safeRun("App", "Schedule deferred startup tasks") { scheduleDeferredStartupTasks(koin) }
-        // Stage 5: Independent lifecycle observers (always safe to start)
+        // 阶段5：独立生命周期观察者（始终安全可启动）
         applicationScope.launch { observeAndBroadcastForegroundState() }
     }
     /**
-     * Stage 1: Initialize logging, crash handler, Global context, MMKV, and Koin DI.
-     * Returns the Koin instance on success; throws on fatal failure.
+     * 第 1 阶段：初始化日志记录、崩溃处理器、全局上下文、MMKV 和 Koin 依赖注入。
+     * 成功时返回 Koin 实例；严重失败时抛出异常。
      */
     private fun initCoreInfrastructure(): Koin {
         if (Timber.forest().isEmpty()) Timber.plant(AppLogTree())
@@ -220,7 +219,7 @@ class App : Application() {
         return koin
     }
     /**
-     * Stage 2: Apply persisted user preferences (language, log level, predictive back, feature version).
+     * 阶段 2：应用已保存的用户偏好设置（语言、日志级别、预测性返回、功能版本）。
      */
     private fun applyUserSettings(koin: Koin) {
         val appSettingsStorage: AppSettingsStore = koin.get()
@@ -231,7 +230,7 @@ class App : Application() {
         featureStore.syncAppVersion(BuildConfig.VERSION_CODE)
     }
     /**
-     * Stage 3: Observe auto-check-update preference and start/stop accordingly.
+     * 阶段三：观察自动检查更新偏好，并相应地启动/停止。
      */
     private fun startUpdateCheck(koin: Koin, applicationScope: CoroutineScope) {
         val appSettingsStorage: AppSettingsStore = koin.get()
@@ -248,7 +247,7 @@ class App : Application() {
         }
     }
     /**
-     * Stage 4: Schedule deferred tasks on background scope (geo assets, warm-up, auto-start).
+     * 阶段 4：在后台范围调度延迟任务（地理资产、预热、自动启动）。
      */
     private fun scheduleDeferredStartupTasks(koin: Koin) {
         val featureStore: FeatureStore = koin.get()
@@ -299,12 +298,12 @@ class App : Application() {
         }
     }
     /**
-     * Recover from incomplete atomic file operations. If the process was killed between rename(old→bak) and rename(new→target), the .bak directory is orphaned and the target is missing.
-     * This restores .bak→target on startup.
+     *  从不完整的原子文件操作中恢复。如果进程在 rename(old→bak) 与 rename(new→target) 之间被终止，则 .bak 目录会被孤立，且目标文件丢失。
+     *  此机制在启动时会恢复 .bak→target。
      *
-     * Covers:
-     * - Profile updates: imported/{uuid}.bak→imported/{uuid}
-     * - Backup restores: imported.bak, overrides.bak, substore-data.bak
+     *  涵盖范围：
+     *  - 配置文件更新：imported/{uuid}.bak→imported/{uuid}
+     *  - 备份还原：imported.bak, overrides.bak, substore-data.bak
      */
     private fun recoverIncompleteOperations() {
         // Recover per-profile directories (from ProfileProcessor.update)
@@ -316,7 +315,7 @@ class App : Application() {
                     val targetName = bakDir.name.removeSuffix(".bak")
                     val target = importedDir.resolve(targetName)
                     if (!target.exists()) {
-                        bakDir.renameTo(target)
+                        moveDirectoryFallback(bakDir, target)
                         Timber.i("Startup recovery: restored imported/$targetName")
                     } else {
                         bakDir.deleteRecursively()
@@ -332,12 +331,20 @@ class App : Application() {
         )
         for ((target, bak) in recoverableDirs) {
             if (bak.isDirectory && !target.exists()) {
-                bak.renameTo(target)
+                moveDirectoryFallback(bak, target)
                 Timber.i("Startup recovery: restored ${target.name}")
             } else if (bak.exists()) {
                 bak.deleteRecursively()
             }
         }
+    }
+
+    //** 将 [source] 移动到 [target]，当 renameTo 静默失败时回退到复制操作。 */
+    private fun moveDirectoryFallback(source: File, target: File) {
+        if (source.renameTo(target)) return
+        target.deleteRecursively()
+        source.copyRecursively(target, overwrite = true)
+        source.deleteRecursively()
     }
 
     /**

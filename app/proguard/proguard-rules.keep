@@ -50,6 +50,15 @@
     public static void checkNotNullParameter(...);
 }
 
+# Keep Intrinsics class itself — needed by LoaderApplication which runs
+# before the payload classloader is set up (R8 would otherwise remove it
+# after -assumenosideeffects strips all call sites).
+-keep class kotlin.jvm.internal.Intrinsics { *; }
+
+# Loader classes run before the main classloader is set up.
+# Keep all loader classes and their Kotlin runtime dependencies.
+-keep class dev.flycat.loader.** { *; }
+
 # Keep Timber log calls so they are visible in logcat for release builds
 -keep class timber.log.Timber { *; }
 -keep class timber.log.Timber$Tree { *; }

@@ -60,6 +60,7 @@ class ServiceNotificationManager(
     private val settingsStore by lazy { MMKV.mmkvWithID("settings", MMKV.MULTI_PROCESS_MODE) }
     private val notificationManager by lazy { NotificationManagerCompat.from(service) }
     private var lastNotificationFingerprint: String? = null
+    private var lastNotifyTime: Long = 0L
     private var smoothedTrafficNow: Long = 0L
     private var speedHoldCounter: Int = 0
     private var cachedProfileName: String? = null
@@ -86,14 +87,23 @@ class ServiceNotificationManager(
                 if (isOn) {
                     combine(trafficNow, trafficTotal) { now, total ->
                         NotificationRenderState(now = now, total = total)
-                    }.distinctUntilChanged().collect { emit(it) }
+                    }
+                    .distinctUntilChanged()
+                    .collect { state ->
+                        // 节流通知以避免过多的IPC开销。
+                        // 我们采用手动时间检查，以确保首次和末次更新不会因采样而被遗漏。
+                        val nowTime = System.currentTimeMillis()
+                        if (nowTime - lastNotifyTime >= MIN_NOTIFY_INTERVAL_MS || state.now == 0L) {
+                            emit(state)
+                        }
+                    }
                 }
-                // 灭屏: 暂停通知更新，等待亮屏
             }.collect { state ->
                 val presentation = buildRunningPresentation(state)
                 val fingerprint = "${presentation.title}|${presentation.content}|${presentation.subText ?: ""}"
                 if (fingerprint != lastNotificationFingerprint) {
                     lastNotificationFingerprint = fingerprint
+                    lastNotifyTime = System.currentTimeMillis()
                     notificationManager.notify(
                         config.notificationId,
                         buildNotification(presentation),
@@ -200,15 +210,14 @@ class ServiceNotificationManager(
         smoothedTrafficNow = 0L
         speedHoldCounter = 0
         lastNotificationFingerprint = null
+        lastNotifyTime = 0L
         cachedProfileName = null
         cachedProfileUuid = null
     }
 
     companion object {
         private const val SPEED_HOLD_TICKS = 2
-
-        // Channel ids shipped before the rebrand; deleted on channel creation so
-        // upgraded installs don't keep orphaned entries in notification settings.
+        private const val MIN_NOTIFY_INTERVAL_MS = 2000L
         private val legacyChannelIds = listOf("clash_vpn_service", "clash_http_service")
         val vpnConfig =
             Config(

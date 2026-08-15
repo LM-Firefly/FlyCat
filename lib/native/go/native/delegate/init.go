@@ -44,7 +44,7 @@ func Init(home, versionName, gitVersion string, platformVersion int) {
 		}
 
 		owner := app.QuerySocketOwner(metadata.RawSrcAddr, metadata.RawDstAddr)
-		if owner.UID >= 0 && uint(owner.UID) <= math.MaxUint32 {
+		if owner.UID >= 0 && int64(owner.UID) <= int64(math.MaxUint32) {
 			metadata.Uid = uint32(owner.UID)
 		}
 

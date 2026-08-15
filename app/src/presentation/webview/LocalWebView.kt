@@ -75,7 +75,9 @@ fun LocalWebView(
     LaunchedEffect(enableDebug) {
         try {
             WebView.setWebContentsDebuggingEnabled(enableDebug)
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+            // Debugging may not be supported on all devices/configurations — safe to ignore.
+        }
     }
 
     DisposableEffect(lifecycleOwner) {

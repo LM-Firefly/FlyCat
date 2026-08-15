@@ -11,9 +11,10 @@ import com.github.lmfirefly.flycat.core.util.HttpClientProfile
 import com.github.lmfirefly.flycat.core.util.createHttpClient
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import io.ktor.client.HttpClient
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.isSuccess
 import java.io.File
 import java.io.IOException
 import kotlin.coroutines.coroutineContext

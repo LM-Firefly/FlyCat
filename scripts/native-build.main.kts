@@ -34,7 +34,6 @@ class ProjectConfig {
     private val kernelFile = File("kernel.properties")
     private val localFile = File("local.properties")
     private val gradleFile = File("gradle.properties")
-
     init {
         if (kernelFile.exists()) {
             kernelFile.inputStream().use { properties.load(it) }
@@ -46,22 +45,18 @@ class ProjectConfig {
             gradleFile.inputStream().use { properties.load(it) }
         }
     }
-
     fun getString(key: String, default: String = ""): String {
         return System.getProperty(key)
             ?: System.getenv(key.replace('.', '_').uppercase())
             ?: properties.getProperty(key)
             ?: default
     }
-
     fun getInt(key: String, default: Int): Int {
         return getString(key, default.toString()).toIntOrNull() ?: default
     }
-
     fun getBoolean(key: String, default: Boolean): Boolean {
         return getString(key, default.toString()).toBooleanStrictOrNull() ?: default
     }
-
     fun getCsv(key: String, default: String = ""): List<String> {
         return getString(key, default)
             .split(',')
@@ -80,7 +75,6 @@ object SystemDetector {
             else -> "unknown"
         }
     }
-
     val hostTag: String by lazy {
         val arch = System.getProperty("os.arch")
         when (os) {
@@ -90,7 +84,6 @@ object SystemDetector {
             else -> "linux-x86_64"
         }
     }
-
     fun checkCommandExists(cmd: String): Boolean {
         return try {
             val process = if (os == "windows") {
@@ -129,7 +122,6 @@ fun executeCommand(
         val processBuilder = ProcessBuilder(command)
         workingDir?.let { processBuilder.directory(it) }
         processBuilder.environment().putAll(environment)
-
         val process = processBuilder.start()
         val output = StringBuilder()
         val error = StringBuilder()
@@ -161,7 +153,6 @@ fun executeCommand(
                 }
             }
         }
-
         val exitCode = process.waitFor()
         stdoutThread.join()
         stderrThread.join()
@@ -186,18 +177,15 @@ class NdkTools(private val config: ProjectConfig) {
             require(it.isDirectory) { "Android SDK not found: ${it.absolutePath}" }
         }
     }
-
     val ndkDir: File by lazy {
         val explicitNdk = config.getString("ndk.dir", "")
         val ndkVersion = config.getString("android.ndkVersion", "")
         val ndkPath = explicitNdk.takeIf { it.isNotEmpty() }
             ?: File(sdkDir, "ndk/$ndkVersion").absolutePath
-
         File(ndkPath).also {
             require(it.isDirectory) { "NDK not found: ${it.absolutePath}" }
         }
     }
-
     fun getClangPath(abi: String): String {
         val triple = when (abi) {
             "arm64-v8a" -> "aarch64-linux-android"
@@ -209,26 +197,21 @@ class NdkTools(private val config: ProjectConfig) {
         val ext = if (SystemDetector.os == "windows") ".cmd" else ""
         return File(ndkDir, "toolchains/llvm/prebuilt/${SystemDetector.hostTag}/bin/${triple}${getMinAndroidApi()}-clang${ext}").absolutePath
     }
-
     fun getStripPath(): String {
         val ext = if (SystemDetector.os == "windows") ".exe" else ""
         return File(ndkDir, "toolchains/llvm/prebuilt/${SystemDetector.hostTag}/bin/llvm-strip${ext}").absolutePath
     }
-
     fun getMinAndroidApi(): Int = maxOf(config.getInt("android.minSdk", 24), 24)
-
     fun getCmakePath(): String {
         val ext = if (SystemDetector.os == "windows") ".exe" else ""
         val cmakeRoot = File(sdkDir, "cmake")
         require(cmakeRoot.isDirectory) { "CMake not found under Android SDK: ${cmakeRoot.absolutePath}" }
-
         val preferred = listOf("3.22.1")
             .map { File(cmakeRoot, "$it/bin/cmake$ext") }
             .firstOrNull { it.isFile }
         if (preferred != null) {
             return preferred.absolutePath
         }
-
         return cmakeRoot.listFiles()
             ?.filter { it.isDirectory }
             ?.sortedByDescending { it.name }
@@ -237,19 +220,16 @@ class NdkTools(private val config: ProjectConfig) {
             ?.absolutePath
             ?: error("CMake executable not found under ${cmakeRoot.absolutePath}")
     }
-
     fun getNinjaPath(): String {
         val ext = if (SystemDetector.os == "windows") ".exe" else ""
         val cmakeRoot = File(sdkDir, "cmake")
         require(cmakeRoot.isDirectory) { "CMake not found under Android SDK: ${cmakeRoot.absolutePath}" }
-
         val preferred = listOf("3.22.1")
             .map { File(cmakeRoot, "$it/bin/ninja$ext") }
             .firstOrNull { it.isFile }
         if (preferred != null) {
             return preferred.absolutePath
         }
-
         return cmakeRoot.listFiles()
             ?.filter { it.isDirectory }
             ?.sortedByDescending { it.name }
@@ -324,18 +304,15 @@ class GoBuilder(private val config: ProjectConfig, private val ndkTools: NdkTool
     private val mihomoDir = File("lib/mihomo/mihomo")
     private val kernelPatchDir = File(".github/patches/mihomo")
     private var coreVersionStamp: CoreVersionStamp? = null
-
     private val abiToGoArch = mapOf(
         "arm64-v8a" to "arm64",
         "armeabi-v7a" to "arm",
         "x86" to "386",
         "x86_64" to "amd64"
     )
-
     private val buildTags = config.getCsv("golang.buildTags", "cmfa")
     private val buildFlags = config.getCsv("golang.buildFlags", "-trimpath")
     private val packageName = config.getString("golang.packageName", "cfa/native")
-
     fun buildAll() {
         if (!sourceDir.exists()) {
             println("[Go] Source directory not found: ${sourceDir.absolutePath}")
@@ -349,7 +326,6 @@ class GoBuilder(private val config: ProjectConfig, private val ndkTools: NdkTool
         println("[Go] Building for ABIs: ${abis.joinToString()}")
         abis.forEach { abi -> buildForAbi(abi) }
     }
-
     // Apply patches idempotently before Go build. Already-applied patches are skipped.
     // Mirrors sync-kernel.sh logic: uses external.mihomo.suffix to select variant subdirectory.
     private fun applyKernelPatches() {
@@ -388,22 +364,16 @@ class GoBuilder(private val config: ProjectConfig, private val ndkTools: NdkTool
             println("[Go]   applied: ${effectivePatch.name}")
         }
     }
-
     private fun buildForAbi(abi: String) {
         val arch = abiToGoArch[abi] ?: run {
             println("[Go] Unsupported ABI: $abi")
             return
         }
-
         println("[building] Building for $abi (arch: $arch)...")
-
         val outputLibDir = File(outputDir, abi)
         outputLibDir.mkdirs()
-
         val outputFile = File(outputLibDir, "libmihomo.so")
-
         val env = buildGoEnv(abi)
-
         val command = buildList {
             add("go")
             add("build")
@@ -418,7 +388,6 @@ class GoBuilder(private val config: ProjectConfig, private val ndkTools: NdkTool
             add(outputFile.absolutePath)
             add(packageName.ifBlank { "." })
         }
-
         val result = executeCommand(
             command = command,
             workingDir = sourceDir,
@@ -435,7 +404,6 @@ class GoBuilder(private val config: ProjectConfig, private val ndkTools: NdkTool
             println("[building] Failed to build $abi: $reason")
         }
     }
-
     // Merge soname, version identity, and packed-relocations into ldflags.
     private fun mergeCoreLdflags(baseFlags: List<String>, stamp: CoreVersionStamp?): List<String> {
         val additions = mutableListOf("-extldflags=-Wl,--pack-dyn-relocs=android,-soname,libmihomo.so")
@@ -455,7 +423,6 @@ class GoBuilder(private val config: ProjectConfig, private val ndkTools: NdkTool
         }
         return flags
     }
-
     private fun buildGoEnv(abi: String): Map<String, String> {
         val arch = abiToGoArch.getValue(abi)
         return mapOf(
@@ -466,13 +433,11 @@ class GoBuilder(private val config: ProjectConfig, private val ndkTools: NdkTool
             "CFLAGS" to "-O3 -Werror"
         ) + if (abi == "armeabi-v7a") mapOf("GOARM" to "7") else emptyMap()
     }
-
     private fun copyToAppJni(abi: String, sourceLib: File) {
         val destDir = File(appJniRoot, abi)
         destDir.mkdirs()
         val destLib = File(destDir, "libmihomo.so")
         sourceLib.copyTo(destLib, overwrite = true)
-
         val generatedHeader = File(sourceLib.parentFile, "libmihomo.h")
         if (!generatedHeader.exists()) {
             val fallbackHeader = File(goModuleDir, "libmihomo.h")
@@ -480,7 +445,6 @@ class GoBuilder(private val config: ProjectConfig, private val ndkTools: NdkTool
                 fallbackHeader.copyTo(generatedHeader, overwrite = true)
             }
         }
-
         println("[Go] Copied to ${destLib.absolutePath}")
     }
 }
@@ -490,23 +454,18 @@ class RustBuilder(private val config: ProjectConfig) {
     private val outputDir = File("build/native/rust")
     private val appJniRoot = File("jniLibs")
     private val outputLibraryName = "liboverride.so"
-
     fun buildAll() {
         if (!File(sourceDir, "Cargo.toml").isFile) {
             error("[Rust] Source directory not ready: missing ${File(sourceDir, "Cargo.toml").absolutePath}")
         }
-
         val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
         println("[Rust] Building Android shared library from ${sourceDir.absolutePath}")
         println("[Rust] Host CLI/ELF is not built by this script")
         println("[Rust] Building for ABIs: ${abis.joinToString()}")
-
         abis.forEach { abi -> buildForAbi(abi) }
     }
-
     private fun buildForAbi(abi: String) {
         println("[building] Building for $abi (Rust)...")
-
         val command = listOf(
             "cargo", "ndk",
             "-t", abi,
@@ -517,7 +476,6 @@ class RustBuilder(private val config: ProjectConfig) {
             // toolchain pinned below plus the rust-src component.
             "-Z", "build-std=std,panic_abort",
         )
-
         val result = executeCommand(
             command = command,
             workingDir = sourceDir,
@@ -555,7 +513,6 @@ class RustBuilder(private val config: ProjectConfig) {
             error("[building] Failed to build $abi (Rust): $reason")
         }
     }
-
     private fun copyToAppJni(abi: String, sourceLib: File) {
         val destDir = File(appJniRoot, abi)
         destDir.mkdirs()
@@ -565,65 +522,49 @@ class RustBuilder(private val config: ProjectConfig) {
     }
 }
 
-class LoaderCBuilder(private val config: ProjectConfig, private val ndkTools: NdkTools) {
+class LoaderRustBuilder(private val config: ProjectConfig) {
     private val sourceDir = File("pack/native")
     private val outputDir = File("build/native/loader")
     private val appJniRoot = File("jniLibs")
     private val outputLibraryName = "libloader.so"
-
     fun buildAll() {
-        require(File(sourceDir, "CMakeLists.txt").isFile) {
-            "[Loader] Source directory not ready: missing ${File(sourceDir, "CMakeLists.txt").absolutePath}"
+        require(File(sourceDir, "Cargo.toml").isFile) {
+            "[Loader] Source directory not ready: missing ${File(sourceDir, "Cargo.toml").absolutePath}"
         }
-
         val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
-        println("[Loader] Building native payload extractor for ABIs: ${abis.joinToString()}")
+        println("[Loader] Building native payload extractor (Rust/xz2) for ABIs: ${abis.joinToString()}")
         abis.forEach(::buildForAbi)
     }
-
     private fun buildForAbi(abi: String) {
-        println("[building] Building for $abi (Loader C/liblzma)...")
-        val objDir = File(outputDir, "obj/$abi")
-        val libDir = File(outputDir, abi)
-        objDir.mkdirs()
-        libDir.mkdirs()
-        val toolchain = File(ndkTools.ndkDir, "build/cmake/android.toolchain.cmake")
-        val configure = executeCommand(
-            command = listOf(
-                ndkTools.getCmakePath(),
-                "-S", sourceDir.absolutePath,
-                "-B", objDir.absolutePath,
-                "-G", "Ninja",
-                "-DCMAKE_MAKE_PROGRAM=${ndkTools.getNinjaPath()}",
-                "-DCMAKE_TOOLCHAIN_FILE=${toolchain.absolutePath}",
-                "-DANDROID_ABI=$abi",
-                "-DANDROID_PLATFORM=android-${ndkTools.getMinAndroidApi()}",
-                "-DCMAKE_BUILD_TYPE=Release",
-                "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${libDir.absolutePath}",
+        println("[building] Building for $abi (Loader Rust/xz2)...")
+        val command = listOf(
+            "cargo", "ndk",
+            "-t", abi,
+            "-o", outputDir.absolutePath,
+            "build", "--release", "--lib",
+            "-Z", "build-std=std,panic_abort",
+        )
+        val result = executeCommand(
+            command = command,
+            workingDir = sourceDir,
+            environment = mapOf(
+                "RUSTUP_TOOLCHAIN" to "nightly",
+                "RUSTFLAGS" to listOf(
+                    "-Zunstable-options",
+                    "-Cpanic=immediate-abort",
+                    "-C", "link-arg=-Wl,--gc-sections",
+                    "-C", "link-arg=-Wl,--icf=all",
+                    "-C", "link-arg=-Wl,-soname,libloader.so",
+                ).joinToString(" "),
             ),
             stdoutPrefix = "[building][$abi]",
             stderrPrefix = "[building][$abi]",
             stderrIsError = false,
         )
-        if (!configure.success) {
-            val reason = configure.error.ifBlank { configure.output }.trim()
-            error("[building] Failed to configure $abi (Loader C): $reason")
+        if (!result.success) {
+            val reason = result.error.ifBlank { result.output }.trim()
+            error("[building] Failed to build $abi (Loader Rust): $reason")
         }
-        val build = executeCommand(
-            command = listOf(
-                ndkTools.getCmakePath(),
-                "--build", objDir.absolutePath,
-                "--target", "loader",
-            ),
-            stdoutPrefix = "[building][$abi]",
-            stderrPrefix = "[building][$abi]",
-            stderrIsError = false,
-        )
-        if (!build.success) {
-            val reason = build.error.ifBlank { build.output }.trim()
-            error("[building] Failed to build $abi (Loader C): $reason")
-        }
-
         val sourceLib = File(outputDir, "$abi/$outputLibraryName")
         require(sourceLib.isFile) {
             "[building] Output library not found: ${sourceLib.absolutePath}"
@@ -640,40 +581,35 @@ class EbpfBridgeBuilder(private val config: ProjectConfig) {
     private val outputDir = File("build/native/ebpf-bridge")
     private val appJniRoot = File("jniLibs")
     private val outputBinaryName = "libebpfbridge.so"
-
     fun buildAll() {
         if (!File(sourceDir, "Cargo.toml").isFile) {
             println("[eBPF] Source directory not found, skipping: ${sourceDir.absolutePath}")
             return
         }
-
         val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
         println("[eBPF] Building Rust eBPF bridge from ${sourceDir.absolutePath}")
         println("[eBPF] Building for ABIs: ${abis.joinToString()}")
-
         abis.forEach { abi -> buildForAbi(abi) }
     }
-
     private val abiToTargetTriple = mapOf(
         "arm64-v8a" to "aarch64-linux-android",
         "armeabi-v7a" to "armv7-linux-androideabi",
         "x86" to "i686-linux-android",
         "x86_64" to "x86_64-linux-android",
     )
-
     private fun buildForAbi(abi: String) {
         println("[eBPF] Building for $abi...")
-
         val command = listOf(
             "cargo", "ndk",
             "-t", abi,
             "build", "--release", "--bin", "libebpfbridge",
+            "-Z", "build-std=std,panic_abort",
         )
-
         val result = executeCommand(
             command = command,
             workingDir = sourceDir,
             environment = mapOf(
+                "RUSTUP_TOOLCHAIN" to "nightly",
                 "RUSTFLAGS" to listOf(
                     "-C", "link-arg=-Wl,--gc-sections",
                     "-C", "link-arg=-Wl,--build-id=none",
@@ -704,7 +640,6 @@ class EbpfBridgeBuilder(private val config: ProjectConfig) {
             error("[eBPF] Failed to build $abi: $reason")
         }
     }
-
     private fun copyToAppJni(abi: String, sourceBin: File) {
         val destDir = File(appJniRoot, abi)
         destDir.mkdirs()
@@ -716,33 +651,26 @@ class EbpfBridgeBuilder(private val config: ProjectConfig) {
 
 class ResourceDownloader(private val config: ProjectConfig) {
     private val outputDir = File("build/generated/assets/geo")
-
     fun downloadGeoFiles() {
         outputDir.mkdirs()
-
         val assets = listOf(
             AssetInfo("geoip.metadb", config.getString("asset.geoip.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb"), compress = true),
             AssetInfo("geosite.dat", config.getString("asset.geosite.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"), compress = true),
             AssetInfo("ASN.mmdb", config.getString("asset.asn.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"), compress = true),
             AssetInfo("BundleMRS.7z", config.getString("asset.bundleMRS.url", "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/BundleMRS.7z"), compress = false)
         )
-
         assets.forEach { asset ->
             if (asset.url.isNotEmpty() && asset.url.startsWith("https://")) {
                 downloadFile(asset.name, asset.url, compress = asset.compress)
             }
         }
     }
-
     private data class AssetInfo(val name: String, val url: String, val compress: Boolean)
-
     private fun downloadFile(name: String, url: String, compress: Boolean = false) {
         try {
             println("[Geo] Downloading $name from $url...")
-
             val tempFile = File.createTempFile("geo-", "-${name}")
             tempFile.deleteOnExit()
-
             val connection = URL(url).openConnection()
             connection.connect()
             connection.getInputStream().use { input ->
@@ -750,7 +678,6 @@ class ResourceDownloader(private val config: ProjectConfig) {
                     input.copyTo(output)
                 }
             }
-
             if (compress) {
                 val outputFile = File(outputDir, "${name}.xz")
                 compressToXz(tempFile, outputFile)
@@ -764,7 +691,6 @@ class ResourceDownloader(private val config: ProjectConfig) {
             println("[Geo] Failed to download $name: ${e.message}")
         }
     }
-
     private fun compressToXz(sourceFile: File, outputFile: File) {
         if (outputFile.exists()) {
             outputFile.delete()
@@ -782,13 +708,11 @@ class ResourceDownloader(private val config: ProjectConfig) {
 fun printUsage() {
     println("""
         FlyCat Native Build Tool
-
         Usage: kotlin scripts/native-build.main.kts [options]
-
         Options:
           --go       Build Go native libraries
           --rust     Build Rust config compiler
-          --loader   Build the C/liblzma native payload extractor
+          --loader   Build the Rust/xz2 native payload extractor
           --ebpf     Build Rust eBPF bridge
           --geo      Download Geo databases and BundleMRS.7z into generated assets
           --clean    Clean build outputs
@@ -801,11 +725,9 @@ fun cleanBuildOutputs() {
     println("[Clean] Removing build outputs...")
     File("build/native").deleteRecursively()
     File("build/generated").deleteRecursively()
-
     listOf("geoip.metadb.xz", "geosite.dat.xz", "ASN.mmdb.xz").forEach { name ->
         File("app/assets/$name").delete()
     }
-
     val abis = listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
     abis.forEach { abi ->
         File("jniLibs/$abi/libmihomo.so").delete()
@@ -836,54 +758,42 @@ fun main(args: Array<String>) {
         printUsage()
         return
     }
-
     println(message)
     println("=== FlyCat Native Build Tool ===")
     println("OS: ${SystemDetector.os}, Host: ${SystemDetector.hostTag}")
-
     if (args.contains("--clean")) {
         cleanBuildOutputs()
         return
     }
-
     val config = ProjectConfig()
-
     val buildGo = args.isEmpty() || args.contains("--all") || args.contains("--go")
     val buildRust = args.isEmpty() || args.contains("--all") || args.contains("--rust")
     val buildEbpf = args.isEmpty() || args.contains("--all") || args.contains("--ebpf")
     val buildLoader = args.isEmpty() || args.contains("--all") || args.contains("--loader")
     val downloadGeo = args.isEmpty() || args.contains("--all") || args.contains("--geo")
-
     val needsNdk = buildGo || buildLoader
     val ndkTools by lazy { NdkTools(config) }
-
     if (needsNdk) {
         println("NDK: ${ndkTools.ndkDir.absolutePath}")
     }
     println("Go: ${if (SystemDetector.checkCommandExists("go")) "OK" else "NOT FOUND"}")
     println("Rust: ${if (SystemDetector.checkCommandExists("cargo")) "OK" else "NOT FOUND"}")
     println("XZ library: org.tukaani:xz:1.12")
-
     if (buildGo) {
         GoBuilder(config, ndkTools).buildAll()
     }
-
     if (buildRust) {
         RustBuilder(config).buildAll()
     }
-
     if (buildEbpf) {
         EbpfBridgeBuilder(config).buildAll()
     }
-
     if (buildLoader) {
-        LoaderCBuilder(config, ndkTools).buildAll()
+        LoaderRustBuilder(config).buildAll()
     }
-
     if (downloadGeo) {
         ResourceDownloader(config).downloadGeoFiles()
     }
-
     println("=== Build Complete ===")
 }
 

@@ -35,7 +35,13 @@ import com.github.lmfirefly.flycat.runtime.api.wifi.WifiSsidObservation
 import com.github.lmfirefly.flycat.runtime.api.wifi.WifiSsidProvider
 import com.github.lmfirefly.flycat.runtime.api.wifi.WifiSsidScanResult
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class WifiAutomationViewModel(
