@@ -345,6 +345,6 @@ class AppTrafficStatisticsCollector(
         private const val TAG = "AppTrafficStatsCollector"
         private const val NO_BASELINE = -1L
         private const val PERSIST_INTERVAL_MS = 10_000L
-        private const val TOTAL_TRACKER_THROTTLE_MS = 2_000L
+        private const val TOTAL_TRACKER_THROTTLE_MS = 5_000L
     }
 }

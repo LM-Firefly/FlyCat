@@ -124,7 +124,7 @@ bcprov-jdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bc
 haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
-mmkv = { module = "com.tencent:mmkv" }
+mmkv = { module = "com.tencent:mmkv", version.ref = "mmkv64" }
 rosemoe-language-textmate = { module = "io.github.rosemoe:language-textmate" }
 rosemoe-oniguruma = { module = "io.github.rosemoe:oniguruma-native" }
 libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu" }

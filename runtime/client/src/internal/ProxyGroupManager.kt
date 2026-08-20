@@ -69,6 +69,7 @@ internal class ProxyGroupManager(
     private var pendingGroupsRefreshJob: Job? = null
     private val pendingGroupRefreshJobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
     private var lastProxyGroupsHash: Int = 0
+    private var lastRawGroupsHash: Int = 0
     private var lastProxyGroupVersion = 0L
     private val _proxyGroups = MutableStateFlow<List<ProxyGroupInfo>>(emptyList())
     val proxyGroups: StateFlow<List<ProxyGroupInfo>> = _proxyGroups.asStateFlow()
@@ -179,7 +180,14 @@ internal class ProxyGroupManager(
         }
     }
     fun publishProxyGroups(groups: List<ProxyGroupInfo>, cacheForPreview: Boolean) {
-        val normalizedGroups = enrichProxyGroupDelays(groups)
+        // Quick structural check: skip expensive enrich if raw groups haven't changed.
+        val rawHash = hashProxyGroups(groups)
+        val normalizedGroups = if (rawHash == lastRawGroupsHash && _proxyGroups.value.isNotEmpty()) {
+            _proxyGroups.value
+        } else {
+            enrichProxyGroupDelays(groups)
+        }
+        lastRawGroupsHash = rawHash
         val hash = hashProxyGroups(normalizedGroups)
         if (hash != lastProxyGroupsHash) {
             _proxyGroups.value = normalizedGroups

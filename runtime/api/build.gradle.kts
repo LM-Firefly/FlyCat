@@ -35,5 +35,5 @@ dependencies {
     implementation(project(":core"))
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
-    implementation("com.tencent:mmkv:${rootProject.extra["mmkvVersion"]}")
+    implementation(libs.mmkv)
 }

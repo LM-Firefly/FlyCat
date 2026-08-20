@@ -90,7 +90,7 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
 }
 
 /**
- * WebDAV backup settings, isolated to feature/meta consumers.
+ * WebDAV backup settings, isolated to feature/dashboard consumers.
  */
 class WebDavSettings(mmkv: MMKV) : MMKVPreference(externalMmkv = mmkv), WebDavSettingsReader {
     override val webDavUrl by strFlow("")

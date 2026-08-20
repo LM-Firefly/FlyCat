@@ -21,6 +21,7 @@
 
 package com.github.lmfirefly.flycat.runtime.service.session.telemetry
 
+import android.os.SystemClock
 import com.github.lmfirefly.flycat.core.Clash
 import com.github.lmfirefly.flycat.core.model.ConnectionSnapshot
 import com.github.lmfirefly.flycat.core.model.LogMessage
@@ -56,6 +57,10 @@ internal class SessionRuntimeTelemetry(
     private val recentLogs = ArrayDeque<Pair<Long, String>>()
     @Volatile
     private var localLogObserver: ((LogMessage) -> Unit)? = null
+    @Volatile
+    private var hasActiveConsumer = false
+    @Volatile
+    private var lastConsumerActiveTimestamp = 0L
 
     // 流量数据统一从 TrafficPushHub 读取，不再独立轮询
     val trafficNow: StateFlow<Traffic> = TrafficPushHub.trafficNow
@@ -66,6 +71,8 @@ internal class SessionRuntimeTelemetry(
     }
 
     fun queryRecentLogsJson(sinceSeq: Long): RuntimeLogChunk {
+        hasActiveConsumer = true
+        lastConsumerActiveTimestamp = SystemClock.elapsedRealtime()
         synchronized(recentLogs) {
             val items = recentLogs.filter { it.first > sinceSeq }.map { it.second }
             return RuntimeLogChunk(nextSeq = logSeq.get(), items = items)
@@ -87,12 +94,18 @@ internal class SessionRuntimeTelemetry(
                         val item = receiver.receive()
                         localLogObserver?.invoke(item)
                         host.onLogItem(item)
-                        val encoded = rootTunEncode(item)
-                        val seq = logSeq.incrementAndGet()
-                        synchronized(recentLogs) {
-                            recentLogs.addLast(seq to encoded)
-                            while (recentLogs.size > MAX_BUFFERED_LOGS) {
-                                recentLogs.removeFirst()
+                        if (hasActiveConsumer) {
+                            if (SystemClock.elapsedRealtime() - lastConsumerActiveTimestamp > 30_000L) {
+                                hasActiveConsumer = false
+                            } else {
+                                val encoded = rootTunEncode(item)
+                                val seq = logSeq.incrementAndGet()
+                                synchronized(recentLogs) {
+                                    recentLogs.addLast(seq to encoded)
+                                    while (recentLogs.size > MAX_BUFFERED_LOGS) {
+                                        recentLogs.removeFirst()
+                                    }
+                                }
                             }
                         }
                     }

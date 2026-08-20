@@ -26,6 +26,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -166,6 +167,7 @@ internal class TrafficStatsPoller(
                 pollingJob = scope.launch {
                     var consecutiveFailures = 0
                     var lastPayloadQueryMs = 0L
+                    var pushActiveCount = 0
                     suspend fun refreshPayloadIfDue(nowMs: Long) {
                         if (shouldRefreshPayload() && nowMs - lastPayloadQueryMs >= PollingTimerSpecs.TrafficPoller.PAYLOAD_REFRESH_INTERVAL_MS) {
                             lastPayloadQueryMs = nowMs
@@ -192,9 +194,15 @@ internal class TrafficStatsPoller(
                             if (TrafficPushHub.isActive(PUSH_ACTIVE_THRESHOLD_MS)) {
                                 consecutiveFailures = 0
                                 failureBackoffUntilMs = 0L
+                                pushActiveCount++
                                 refreshPayloadIfDue(nowMs)
+                                // Push 连续活跃时动态降频，减少空唤醒
+                                if (pushActiveCount >= PUSH_ACTIVE_BACKOFF_THRESHOLD) {
+                                    delay(PUSH_ACTIVE_BACKOFF_MS)
+                                }
                                 return@collect
                             }
+                            pushActiveCount = 0
                             runCatching {
                                 // 流量总计+全局网速：仅推送不活跃时轮询（ROOT_TUN/REMOTE 回退）
                                 queryTrafficNow(notify = false)
@@ -383,5 +391,7 @@ internal class TrafficStatsPoller(
         private const val RELIABLE_QUEUE_WARN_INTERVAL_MS = 15_000L
         /** If a push event was received within this window, skip redundant polling (LOCAL_TUN mode). */
         private const val PUSH_ACTIVE_THRESHOLD_MS = 6_000L
+        private const val PUSH_ACTIVE_BACKOFF_THRESHOLD = 3
+        private const val PUSH_ACTIVE_BACKOFF_MS = 10_000L
     }
 }

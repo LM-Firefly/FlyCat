@@ -58,7 +58,6 @@ class LogRecordService : Service() {
         private const val CHANNEL_ID = "log_record_channel"
         private const val CHANNEL_NAME = "日志记录"
         private const val LOG_BUFFER_FLUSH_THRESHOLD_CHARS = 8 * 1024
-
         private const val ACTION_START = "com.github.lmfirefly.flycat.LOG_START"
         private const val ACTION_STOP = "com.github.lmfirefly.flycat.LOG_STOP"
 
@@ -126,7 +125,7 @@ class LogRecordService : Service() {
             ACTION_START -> startRecording()
             ACTION_STOP -> stopRecording()
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {

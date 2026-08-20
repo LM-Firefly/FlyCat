@@ -34,6 +34,7 @@ import com.github.lmfirefly.flycat.core.model.tunnel.TunStack
 import com.github.lmfirefly.flycat.runtime.api.contract.ProxyControlContract
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimePhase
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeStateMapper
+import com.github.lmfirefly.flycat.runtime.api.root.EbpfCapabilityProbe
 import com.github.lmfirefly.flycat.runtime.api.root.RootAccessStatus
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,6 +56,7 @@ class NetworkSettingsViewModel(
     private val settings: NetworkSettingsReader,
     private val controller: NetworkSettingsControllerContract,
     private val proxyFacade: ProxyControlContract,
+    private val ebpfProbe: EbpfCapabilityProbe,
 ) : AndroidViewModel(application) {
 
     val runMode: Preference<RunMode> = settings.runMode
@@ -113,12 +115,10 @@ class NetworkSettingsViewModel(
             _rootAvailable.value = rootStatus.canStartRootTun
             // eBPF requires root + cgroup v2 + BPF capability probe
             if (rootStatus.canStartRootTun) {
-                val cgroupPath = com.github.lmfirefly.flycat.runtime.service.root.EbpfCgroupSupport.rootCgroupPath()
+                val cgroupPath = ebpfProbe.rootCgroupPath()
                 _ebpfAvailable.value = cgroupPath != null &&
                     withContext(Dispatchers.IO) {
-                        com.github.lmfirefly.flycat.runtime.service.root.EbpfBridgeProcess.isCapabilityAvailable(
-                            getApplication(), cgroupPath
-                        )
+                        ebpfProbe.isCapabilityAvailable(getApplication(), cgroupPath)
                     }
             }
         }

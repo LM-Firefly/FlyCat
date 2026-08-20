@@ -138,3 +138,12 @@ interface BackupDataSource {
     suspend fun restoreBackup(input: InputStream)
     fun defaultBackupFileName(now: Long = System.currentTimeMillis()): String
 }
+
+/**
+ * Generic key-value cache contract for feature-level caching needs.
+ * Implementations should live in the `:data` module (e.g. backed by MMKV).
+ */
+interface KeyValueCache {
+    fun getString(key: String): String?
+    fun putString(key: String, value: String)
+}

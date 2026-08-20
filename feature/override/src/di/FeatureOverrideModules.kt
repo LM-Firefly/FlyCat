@@ -21,9 +21,14 @@
 
 package com.github.lmfirefly.flycat.feature.override.di
 
+import com.github.lmfirefly.flycat.feature.override.domain.OverrideCrudUseCase
 import com.github.lmfirefly.flycat.feature.override.presentation.viewmodel.OverrideConfigViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+
+val featureOverrideDomainModule = module {
+    single { OverrideCrudUseCase(get(), get(), get(), get()) }
+}
 
 val featureOverrideViewModelModule = module {
     viewModel {
@@ -32,8 +37,9 @@ val featureOverrideViewModelModule = module {
             bindingReader = get(),
             activeProfileOverrideApplier = get(),
             profileStore = get(),
+            overrideCrud = get(),
         )
     }
 }
 
-val featureOverrideModules = listOf(featureOverrideViewModelModule)
+val featureOverrideModules = listOf(featureOverrideDomainModule, featureOverrideViewModelModule)

@@ -32,9 +32,7 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":locale"))
     implementation(project(":ui"))
-    implementation(project(":data"))
     implementation(project(":runtime:api"))
-    implementation(project(":runtime:service"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -58,6 +56,4 @@ dependencies {
     implementation(libs.miuix.preference)
     implementation(libs.miuix.icons)
     implementation(libs.smali.dexlib2)
-
-    implementation("com.tencent:mmkv:${rootProject.extra["mmkvVersion"]}")
 }

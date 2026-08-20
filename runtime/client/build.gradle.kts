@@ -39,7 +39,7 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
-    implementation("com.tencent:mmkv:${rootProject.extra["mmkvVersion"]}")
+    implementation(libs.mmkv)
 
     implementation(libs.koin.core)
     implementation(libs.timber)

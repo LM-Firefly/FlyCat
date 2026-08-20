@@ -158,13 +158,11 @@ object PollingTimers {
 }
 
 @kotlinx.coroutines.ExperimentalCoroutinesApi
-fun Flow<Long>.throttleWhenScreenOff(screenOn: StateFlow<Boolean>, slowIntervalMs: Long = 5_000L): Flow<Long> = screenOn.transformLatest { isScreenOn ->
+fun Flow<Long>.throttleWhenScreenOff(screenOn: StateFlow<Boolean>): Flow<Long> = screenOn.transformLatest { isScreenOn ->
     if (isScreenOn) {
         this@throttleWhenScreenOff.collect { emit(it) }
     } else {
-        // Keep the API shape but pause emission while screen is off.
-        @Suppress("UNUSED_PARAMETER")
-        val ignored = slowIntervalMs
+        // 灭屏: 暂停发射，等待亮屏
         emptyFlow<Long>().collect { emit(it) }
     }
 }

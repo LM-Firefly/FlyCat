@@ -26,6 +26,7 @@ import androidx.lifecycle.viewModelScope
 import com.github.lmfirefly.flycat.core.contract.LogStoreReader
 import com.github.lmfirefly.flycat.core.model.LogEntry
 import com.github.lmfirefly.flycat.core.model.LogFileInfo
+import com.github.lmfirefly.flycat.feature.log.domain.IncrementalLogReader
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -37,7 +38,10 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class LogViewModel(private val repository: LogStoreReader) : ViewModel() {
+class LogViewModel(
+    private val repository: LogStoreReader,
+    private val incrementalReader: IncrementalLogReader,
+) : ViewModel() {
     companion object {
         private const val LOG_SCREEN_OWNER = "log_screen"
         private const val LOG_DETAIL_OWNER_PREFIX = "log_detail:"
@@ -48,11 +52,6 @@ class LogViewModel(private val repository: LogStoreReader) : ViewModel() {
 
     private val _logFiles = MutableStateFlow<List<LogFileInfo>>(emptyList())
     val logFiles: StateFlow<List<LogFileInfo>> = _logFiles.asStateFlow()
-
-    /** Per-file byte offset tracker for incremental log reading. */
-    private val fileOffsets = mutableMapOf<String, Long>()
-    /** Per-file accumulated entry cache for incremental reading. */
-    private val fileEntryCache = mutableMapOf<String, ArrayDeque<LogEntry>>()
 
     init {
         refreshLogFiles()
@@ -88,32 +87,8 @@ class LogViewModel(private val repository: LogStoreReader) : ViewModel() {
         repository.readLogEntries(fileName)
     }
 
-    /**
-     * Incrementally reads log entries for [fileName]. On first call (or after [resetIncrementalCache])
-     * performs a full tail read; subsequent calls only read newly appended bytes.
-     * Returns entries in reversed order (newest first) for display.
-     */
     suspend fun readLogContentIncremental(fileName: String): List<LogEntry> = withContext(Dispatchers.IO) {
-        val sinceOffset = fileOffsets[fileName] ?: 0L
-        val (newEntries, newOffset) = repository.readLogEntriesSince(fileName, sinceOffset)
-        if (newOffset < sinceOffset) {
-            // File was truncated/rotated — clear cache for this file
-            fileEntryCache.remove(fileName)
-        }
-        if (newEntries.isNotEmpty()) {
-            val cache = fileEntryCache.getOrPut(fileName) { ArrayDeque() }
-            cache.addAll(newEntries)
-            // Keep at most 2000 entries to avoid unbounded growth
-            while (cache.size > 2000) { cache.removeFirst() }
-        }
-        fileOffsets[fileName] = newOffset
-        (fileEntryCache[fileName] ?: emptyList()).toList().asReversed()
-    }
-
-    /** Resets incremental cache for a specific file (e.g. after deletion). */
-    private fun resetIncrementalCache(fileName: String) {
-        fileOffsets.remove(fileName)
-        fileEntryCache.remove(fileName)
+        incrementalReader.readIncremental(fileName)
     }
 
     suspend fun exportMergedLog(fileName: String): String? = withContext(Dispatchers.IO) {
@@ -124,7 +99,7 @@ class LogViewModel(private val repository: LogStoreReader) : ViewModel() {
         viewModelScope.launch {
             val deleted = withContext(Dispatchers.IO) { repository.deleteLogFile(fileName) }
             if (!deleted) return@launch
-            resetIncrementalCache(fileName)
+            incrementalReader.resetFile(fileName)
             refreshLogFiles()
         }
     }
@@ -136,8 +111,7 @@ class LogViewModel(private val repository: LogStoreReader) : ViewModel() {
                 delay(300)
             }
             withContext(Dispatchers.IO) { repository.deleteAllLogs() }
-            fileOffsets.clear()
-            fileEntryCache.clear()
+            incrementalReader.resetAll()
             refreshLogFiles()
         }
     }

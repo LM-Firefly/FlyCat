@@ -23,17 +23,22 @@ package com.github.lmfirefly.flycat.data.di
 
 import com.github.lmfirefly.flycat.core.contract.AppLogSettings
 import com.github.lmfirefly.flycat.core.contract.AppSettingsReader
+import com.github.lmfirefly.flycat.core.contract.BackupDataSource
 import com.github.lmfirefly.flycat.core.contract.FeatureStoreReader
+import com.github.lmfirefly.flycat.core.contract.KeyValueCache
 import com.github.lmfirefly.flycat.core.contract.NetworkInfoReader
 import com.github.lmfirefly.flycat.core.contract.NetworkSettingsReader
 import com.github.lmfirefly.flycat.core.contract.ProxyDisplaySettingsReader
 import com.github.lmfirefly.flycat.core.contract.SubStoreSettings
 import com.github.lmfirefly.flycat.core.contract.TrafficStatisticsRepository
 import com.github.lmfirefly.flycat.core.contract.UpdateSettings
-import com.github.lmfirefly.flycat.data.gateway.NetworkInfoService
+import com.github.lmfirefly.flycat.core.util.backup.BackupArchiveManager
+import com.github.lmfirefly.flycat.data.backup.BackupRepository
+import com.github.lmfirefly.flycat.data.datasource.NetworkInfoService
 import com.github.lmfirefly.flycat.data.logging.AppLogBuffer
 import com.github.lmfirefly.flycat.data.store.AppSettingsStore
 import com.github.lmfirefly.flycat.data.store.FeatureStore
+import com.github.lmfirefly.flycat.data.store.MMKVKeyValueCache
 import com.github.lmfirefly.flycat.data.store.MMKVProvider
 import com.github.lmfirefly.flycat.data.store.NetworkSettingsStore
 import com.github.lmfirefly.flycat.data.store.ProxyDisplaySettingsStore
@@ -56,6 +61,7 @@ val dataStoreModule: Module = module {
     single<MMKV>(named(MMKVProvider.ID_SERVICE_CACHE)) { get<MMKVProvider>().getMMKV(MMKVProvider.ID_SERVICE_CACHE) }
     single<MMKV>(named(MMKVProvider.ID_OVERRIDE_BINDINGS)) { get<MMKVProvider>().getMMKV(MMKVProvider.ID_OVERRIDE_BINDINGS) }
     single<MMKV>(named(MMKVProvider.ID_REMOTE_CONTROLLER)) { get<MMKVProvider>().getMMKV(MMKVProvider.ID_REMOTE_CONTROLLER) }
+    single<MMKV>(named(MMKVProvider.ID_CHINA_APP_DETECTOR_CACHE)) { get<MMKVProvider>().getMMKV(MMKVProvider.ID_CHINA_APP_DETECTOR_CACHE) }
     // ── Store Implementations ─────────────────────────────────────────────────
     single { AppSettingsStore(get<MMKV>(named(MMKVProvider.ID_SETTINGS))) }
     single { NetworkSettingsStore(get(named(MMKVProvider.ID_NETWORK_SETTINGS))) }
@@ -71,4 +77,28 @@ val dataStoreModule: Module = module {
     single<SubStoreSettings> { get<FeatureStore>() }
     single<UpdateSettings> { get<AppSettingsStore>() }
     single<AppLogSettings> { AppLogBuffer }
+    single<KeyValueCache>(named("chinaAppCache")) { MMKVKeyValueCache(get<MMKV>(named(MMKVProvider.ID_CHINA_APP_DETECTOR_CACHE))) }
+}
+
+val dataBackupModule: Module = module {
+    single { BackupArchiveManager() }
+    single {
+        BackupRepository(
+            application = androidApplication(),
+            appSettings = get(),
+            networkSettings = get(),
+            featureSettings = get(),
+            subStoreSettings = get(),
+            proxyDisplaySettings = get(),
+            remoteController = get(),
+            runtimeCommand = get(),
+            broadcastNotifier = get(),
+            bulkStoreReset = get(),
+            serviceState = get(),
+            profileStore = get(),
+            subStoreBackupSupport = get(),
+            archiveManager = get(),
+        )
+    }
+    single<BackupDataSource> { get<BackupRepository>() }
 }

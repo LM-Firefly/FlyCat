@@ -151,20 +151,23 @@ fun MoeHomePage(
     }
 
     val visualControlState = controlState
-    // Tick once a second whether running or idle: running drives the elapsed timer, idle drives the
-    // wall-clock shown in the rail so it always reflects the real time instead of a frozen 00:00.
+    val startedAt = runtimeSnapshot.startedAt
+    val isRunning = visualControlState == HomeProxyControlState.Running
+    // 运行时每秒跳动一次（用于已用计时器）；空闲时每三十秒跳动一次，因为墙面时钟仅显示时与分的精度。
     val now by
-        produceState(initialValue = System.currentTimeMillis()) {
+        produceState(initialValue = System.currentTimeMillis(), isRunning) {
             snapshotFlow { AppForegroundState.foreground.value }
                 .flatMapLatest { fg ->
-                    if (fg) PollingTimers.ticks(PollingTimerSpecs.MoeElapsedClock) else emptyFlow()
+                    when {
+                        !fg -> emptyFlow()
+                        isRunning -> PollingTimers.ticks(PollingTimerSpecs.MoeElapsedClock)
+                        else -> PollingTimers.ticks(PollingTimerSpecs.dynamic("moe_wall_clock", 30_000L, 0L))
+                    }
                 }
                 .collect {
                     value = System.currentTimeMillis()
                 }
         }
-    val startedAt = runtimeSnapshot.startedAt
-    val isRunning = visualControlState == HomeProxyControlState.Running
     val elapsedMillis =
         if (isRunning && startedAt != null && !isRemoteController) {
             (now - startedAt).coerceAtLeast(0L)
@@ -263,7 +266,8 @@ fun MoeHomePage(
         }
     }
 
-    val layoutState = remember(wallpaperUri, wallpaperZoom, wallpaperBiasX, wallpaperBiasY, statusBarTop, pageProgress, sidebarProgress, animatedSidebarToggleProgress, durationPair, batteryPercent, contentSurface, isRunning, trafficData, selectedServerName, selectedServerPing, now, quote.text, quote.author, visualControlState, profilesLoaded, profiles, isRemoteController) {
+    // 现在和durationPair不在布局状态键中——它们每帧都会变化，但只会触发时钟感知的叶子组合函数重组，而非完整的布局重组。
+    val layoutState = remember(wallpaperUri, wallpaperZoom, wallpaperBiasX, wallpaperBiasY, statusBarTop, pageProgress, sidebarProgress, animatedSidebarToggleProgress, batteryPercent, contentSurface, isRunning, trafficData, selectedServerName, selectedServerPing, quote.text, quote.author, visualControlState, profilesLoaded, profiles, isRemoteController) {
         MoeHomeLayoutState(
             wallpaperUri = wallpaperUri,
             wallpaperZoom = wallpaperZoom,
@@ -273,7 +277,6 @@ fun MoeHomePage(
             pageProgress = pageProgress,
             sidebarProgress = sidebarProgress,
             sidebarToggleProgress = animatedSidebarToggleProgress,
-            duration = durationPair,
             batteryPercent = batteryPercent,
             sidebarIcons = sidebarIcons,
             contentSurface = contentSurface,
@@ -281,7 +284,6 @@ fun MoeHomePage(
             traffic = trafficData,
             selectedServerName = selectedServerName,
             selectedServerPing = selectedServerPing,
-            now = now,
             quote = quote.text,
             quoteAuthor = quote.author,
             controlState = visualControlState,
@@ -291,7 +293,7 @@ fun MoeHomePage(
     }
 
     val actions = remember(handleProxyAction, sidebarExpanded) { MoeHomeActions(toggleSidebar = { settings.moeSidebarExpanded.set(!sidebarExpanded) }, pickWallpaper = { hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress); launchWallpaperPicker() }, openSettings = { showHomeSettingsSheet = true }, toggleProxy = handleProxyAction) }
-    with(actions) { MoeHomeLayout(layoutState) }
+    with(actions) { MoeHomeLayout(layoutState, now, durationPair) }
 
     MoeHomeSettingsSheet(
         show = showHomeSettingsSheet,
@@ -321,7 +323,7 @@ fun MoeHomePage(
 private fun rememberMoeBatteryPercent(context: Context): Int? {
     val percent by
         produceState<Int?>(initialValue = null, context) {
-            // registerReceiver for a sticky broadcast is a synchronous binder call; move it off the main thread to keep composition responsive.
+            // 为粘性广播注册接收器是一个同步的Binder调用；将其移出主线程以保持界面响应性。
             val batteryIntent =
                 withContext(Dispatchers.IO) {
                     context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))

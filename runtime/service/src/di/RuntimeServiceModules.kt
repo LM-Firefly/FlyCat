@@ -25,6 +25,7 @@ import com.github.lmfirefly.flycat.core.contract.LogRecordGateway
 import com.github.lmfirefly.flycat.core.contract.ProfileStoreReader
 import com.github.lmfirefly.flycat.core.contract.RuntimeLogWriter
 import com.github.lmfirefly.flycat.core.contract.ServiceStateReader
+import com.github.lmfirefly.flycat.runtime.api.root.EbpfCapabilityProbe
 import com.github.lmfirefly.flycat.runtime.api.wifi.WifiAutomationController
 import com.github.lmfirefly.flycat.runtime.api.wifi.WifiSsidProvider
 import com.github.lmfirefly.flycat.runtime.service.LogRecordServiceGateway
@@ -32,6 +33,7 @@ import com.github.lmfirefly.flycat.runtime.service.android.LogRecordService
 import com.github.lmfirefly.flycat.runtime.service.android.WifiAutomationService
 import com.github.lmfirefly.flycat.runtime.service.config.ServiceStore
 import com.github.lmfirefly.flycat.runtime.service.records.ProfileStore
+import com.github.lmfirefly.flycat.runtime.service.root.EbpfCapabilityProbeImpl
 import com.github.lmfirefly.flycat.runtime.service.wifi.WifiSsidProviderImpl
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -47,6 +49,7 @@ val runtimeServiceModule = module {
     single<LogRecordGateway> { LogRecordServiceGateway() }
     single<RuntimeLogWriter> { RuntimeLogWriter { line -> LogRecordService.writeLog(line) } }
     single<WifiSsidProvider> { WifiSsidProviderImpl(androidContext()) }
+    single<EbpfCapabilityProbe> { EbpfCapabilityProbeImpl() }
     single<WifiAutomationController> {
         val ctx = androidContext()
         object : WifiAutomationController {

@@ -21,11 +21,6 @@
 
 package com.github.lmfirefly.flycat.feature.home.presentation.screen
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -53,10 +48,11 @@ import com.github.lmfirefly.flycat.core.model.traffic.TrafficData
 import com.github.lmfirefly.flycat.presentation.component.chart.TrafficChartConfig
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val SPEED_CHART_SAMPLE_LIMIT = 24
-private const val SPEED_CHART_IDLE_SCROLL_DURATION_MS = 900
 private const val SPEED_CHART_IDLE_WAVE_AMPLITUDE = 0.022f
 private const val SPEED_CHART_IDLE_WAVE_SPAN = 4f
 
@@ -79,15 +75,21 @@ fun SpeedChart(
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { isLifecycleStarted = true }
         isLifecycleStarted = false
     }
-    // Use Animatable so the animation can be started/stopped without slot-table shift.
-    val idlePhaseAnimatable = remember { Animatable(0f) }
+    // 手动10帧/秒循环：每100毫秒步进0.5f，达到SPEED_CHART_SAMPLE_LIMIT时循环重置。
+    var idlePhase by remember { mutableStateOf(0f) }
     val shouldAnimateIdle = isActive && !isRunning && isLifecycleStarted
     LaunchedEffect(shouldAnimateIdle) {
         if (shouldAnimateIdle) {
-            idlePhaseAnimatable.animateTo(targetValue = 1f, animationSpec = infiniteRepeatable(animation = tween(durationMillis = SPEED_CHART_IDLE_SCROLL_DURATION_MS, easing = LinearEasing), repeatMode = RepeatMode.Restart))
-        } else { idlePhaseAnimatable.stop(); idlePhaseAnimatable.snapTo(0f) }
+            while (isActive) {
+                idlePhase = (idlePhase + 0.5f) % SPEED_CHART_SAMPLE_LIMIT.toFloat()
+                delay(100)
+            }
+        } else {
+            idlePhase = 0f
+        }
     }
-    val idlePhase = idlePhaseAnimatable.value
+    // "在可组合主体中读取，以确保Canvas在每个动画帧都重绘。"
+    val currentPhase = idlePhase
 
     Canvas(
         modifier =
@@ -118,7 +120,7 @@ fun SpeedChart(
                 barCornerRadiusPx = barCornerRadiusPx,
                 downloadBarColor = downloadBarColor,
                 uploadBarColor = uploadBarColor,
-                wavePhase = idlePhase * chartBarCount
+                wavePhase = currentPhase
             )
         } else {
             drawStaticBars(

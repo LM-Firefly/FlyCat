@@ -33,7 +33,6 @@ android {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":data"))
     implementation(project(":locale"))
     implementation(project(":runtime:api"))
 
@@ -41,7 +40,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
 
-    implementation("com.tencent:mmkv:${rootProject.extra["mmkvVersion"]}")
+    implementation(libs.mmkv)
 
     implementation(libs.timber)
     implementation(libs.koin.core)

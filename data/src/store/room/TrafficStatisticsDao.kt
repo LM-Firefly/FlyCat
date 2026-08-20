@@ -22,9 +22,9 @@
 package com.github.lmfirefly.flycat.data.store.room
 
 import androidx.room.Dao
-import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Upsert
 import com.github.lmfirefly.flycat.core.model.traffic.AppRouteTrafficUsage
 import com.github.lmfirefly.flycat.core.model.traffic.AppTrafficUsage
 import com.github.lmfirefly.flycat.core.model.traffic.DailyTraffic
@@ -32,53 +32,36 @@ import com.github.lmfirefly.flycat.core.model.traffic.TimeSlotTraffic
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Room DAO for traffic statistics.
+ * 用于流量统计的房间数据访问对象。
  *
- * Declared as an `abstract class` (not an interface) so the accumulate-then-persist logic can live
- * in concrete `@Transaction` methods that call the generated query/insert primitives.
+ * 声明为抽象类（而非接口），以便先插入后持久化的逻辑能存在于具体的 `@Transaction` 方法中，这些方法将调用生成的查询/上插原语。
  *
- * Write model — pre-UPSERT accumulate (minSdk 26 ships SQLite < 3.24, so SQLite `UPSERT`
- * `INSERT ... ON CONFLICT ... DO UPDATE` is unavailable): each row is first `UPDATE`d in place
- * (`total += :delta`); if the `UPDATE` affects 0 rows the row does not exist yet and is `INSERT`ed.
+ * 写入模型——进入SQL循环前，增量数据在内存中通过复合主键进行预合并，然后通过Room的`@Upsert`（`INSERT … ON CONFLICT DO UPDATE`）写入。
  */
 @Dao
 abstract class TrafficStatisticsDao {
 
-    // region writes (accumulate)
+    // 区域写入（更新插入）
 
     /**
-     * Records a batch of app + route deltas and applies 90-day retention, all in one transaction.
-     *
-     * Per (date, app) / (date, app, route): `total_upload += upDelta`, `total_download += downDelta`,
-     * `last_active_at = lastActiveAt`; `app_name`/`route_label` are overwritten only when the incoming
-     * value is non-blank, and `package_name` is `COALESCE`d (new value wins only when non-null).
-     * Records with both deltas `<= 0` are skipped (the caller already filters, but we keep the guard).
-     *
-     * @param retentionCutoffMillis rows with `date_millis < retentionCutoffMillis` are deleted after
-     *   the writes. Pass `0L` (or any non-positive value) to skip retention — all real day buckets
-     *   are positive, so `date_millis < 0` matches nothing.
+     * 在单个事务中记录一批应用与路由的增量变更。
+     * 增量在内存中根据组合主键预先合并，然后才执行SQL，从而避免单批次内对相同单元格的重复调用。
+     * 合并后的行通过 `@Upsert`（INSERT … ON CONFLICT DO UPDATE）写入。
+     * 两个增量均 `<= 0` 的记录将被跳过（调用方已过滤，但保留此防护检查）。
      */
     @Transaction
     open suspend fun recordBatch(
         appDeltas: List<AppTrafficDelta>,
         routeDeltas: List<RouteTrafficDelta>,
-        retentionCutoffMillis: Long,
     ) {
-        appDeltas.forEach { delta ->
-            if (delta.uploadDelta <= 0L && delta.downloadDelta <= 0L) return@forEach
-            val updated =
-                accumulateApp(
-                    dateMillis = delta.dateMillis,
-                    appKey = delta.appKey,
-                    slotIndex = delta.slotIndex,
-                    uploadDelta = delta.uploadDelta,
-                    downloadDelta = delta.downloadDelta,
-                    appName = delta.appName,
-                    packageName = delta.packageName,
-                    lastActiveAt = delta.lastActiveAt,
-                )
-            if (updated == 0) {
-                insertApp(
+        // --- 合并前应用变更（按 dateMillis, appKey, slotIndex）---
+        val mergedApp = LinkedHashMap<AppKey, AppTrafficDailyEntity>()
+        for (delta in appDeltas) {
+            if (delta.uploadDelta <= 0L && delta.downloadDelta <= 0L) continue
+            val key = AppKey(delta.dateMillis, delta.appKey, delta.slotIndex)
+            val existing = mergedApp[key]
+            if (existing == null) {
+                mergedApp[key] =
                     AppTrafficDailyEntity(
                         dateMillis = delta.dateMillis,
                         appKey = delta.appKey,
@@ -89,25 +72,26 @@ abstract class TrafficStatisticsDao {
                         totalDownload = delta.downloadDelta,
                         lastActiveAt = delta.lastActiveAt,
                     )
-                )
+            } else {
+                mergedApp[key] =
+                    existing.copy(
+                        totalUpload = existing.totalUpload + delta.uploadDelta,
+                        totalDownload = existing.totalDownload + delta.downloadDelta,
+                        packageName = existing.packageName ?: delta.packageName,
+                        appName = if (existing.appName.isNotBlank()) existing.appName else delta.appName,
+                        lastActiveAt = maxOf(existing.lastActiveAt, delta.lastActiveAt),
+                    )
             }
         }
 
-        routeDeltas.forEach { delta ->
-            if (delta.uploadDelta <= 0L && delta.downloadDelta <= 0L) return@forEach
-            val updated =
-                accumulateRoute(
-                    dateMillis = delta.dateMillis,
-                    appKey = delta.appKey,
-                    routeKey = delta.routeKey,
-                    slotIndex = delta.slotIndex,
-                    uploadDelta = delta.uploadDelta,
-                    downloadDelta = delta.downloadDelta,
-                    routeLabel = delta.routeLabel,
-                    lastActiveAt = delta.lastActiveAt,
-                )
-            if (updated == 0) {
-                insertRoute(
+        // --- 合并不合路由差异按 (dateMillis, appKey, routeKey, slotIndex) ---
+        val mergedRoute = LinkedHashMap<RouteKey, RouteTrafficDailyEntity>()
+        for (delta in routeDeltas) {
+            if (delta.uploadDelta <= 0L && delta.downloadDelta <= 0L) continue
+            val key = RouteKey(delta.dateMillis, delta.appKey, delta.routeKey, delta.slotIndex)
+            val existing = mergedRoute[key]
+            if (existing == null) {
+                mergedRoute[key] =
                     RouteTrafficDailyEntity(
                         dateMillis = delta.dateMillis,
                         appKey = delta.appKey,
@@ -118,75 +102,42 @@ abstract class TrafficStatisticsDao {
                         totalDownload = delta.downloadDelta,
                         lastActiveAt = delta.lastActiveAt,
                     )
-                )
+            } else {
+                mergedRoute[key] =
+                    existing.copy(
+                        totalUpload = existing.totalUpload + delta.uploadDelta,
+                        totalDownload = existing.totalDownload + delta.downloadDelta,
+                        routeLabel = if (existing.routeLabel.isNotBlank()) existing.routeLabel else delta.routeLabel,
+                        lastActiveAt = maxOf(existing.lastActiveAt, delta.lastActiveAt),
+                    )
             }
         }
 
-        deleteAppOlderThan(retentionCutoffMillis)
-        deleteRouteOlderThan(retentionCutoffMillis)
+        if (mergedApp.isNotEmpty()) upsertApp(mergedApp.values.toList())
+        if (mergedRoute.isNotEmpty()) upsertRoute(mergedRoute.values.toList())
     }
 
-    @Query(
-        """
-        UPDATE app_traffic_daily
-        SET total_upload = total_upload + :uploadDelta,
-            total_download = total_download + :downloadDelta,
-            last_active_at = :lastActiveAt,
-            app_name = CASE WHEN trim(:appName) <> '' THEN :appName ELSE app_name END,
-            package_name = COALESCE(:packageName, package_name)
-        WHERE date_millis = :dateMillis AND app_key = :appKey AND slot_index = :slotIndex
-        """
-    )
-    protected abstract suspend fun accumulateApp(
-        dateMillis: Long,
-        appKey: String,
-        slotIndex: Int,
-        uploadDelta: Long,
-        downloadDelta: Long,
-        appName: String,
-        packageName: String?,
-        lastActiveAt: Long,
-    ): Int
+    @Upsert
+    protected abstract suspend fun upsertApp(entities: List<AppTrafficDailyEntity>)
 
-    @Insert
-    protected abstract suspend fun insertApp(entity: AppTrafficDailyEntity)
+    @Upsert
+    protected abstract suspend fun upsertRoute(entities: List<RouteTrafficDailyEntity>)
 
-    @Query(
-        """
-        UPDATE route_traffic_daily
-        SET total_upload = total_upload + :uploadDelta,
-            total_download = total_download + :downloadDelta,
-            last_active_at = :lastActiveAt,
-            route_label = CASE WHEN trim(:routeLabel) <> '' THEN :routeLabel ELSE route_label END
-        WHERE date_millis = :dateMillis AND app_key = :appKey AND route_key = :routeKey AND slot_index = :slotIndex
-        """
-    )
-    protected abstract suspend fun accumulateRoute(
-        dateMillis: Long,
-        appKey: String,
-        routeKey: String,
-        slotIndex: Int,
-        uploadDelta: Long,
-        downloadDelta: Long,
-        routeLabel: String,
-        lastActiveAt: Long,
-    ): Int
+    //** 复合键，用于预合并应用差异。 */
+    private data class AppKey(val dateMillis: Long, val appKey: String, val slotIndex: Int)
 
-    @Insert
-    protected abstract suspend fun insertRoute(entity: RouteTrafficDailyEntity)
+    /** 用于预合并路由增量的组合键。*/
+    private data class RouteKey(val dateMillis: Long, val appKey: String, val routeKey: String, val slotIndex: Int)
 
-    // endregion
+    // 结束区域
 
-    // region reads (aggregation)
+    // 区域读数（汇总）
 
     /**
-     * Reactive per-app aggregation over `[cutoffMillis, +inf)`, summed and sorted.
+     * 在`[cutoffMillis, +inf)`区间内进行反应式的每应用聚合，结果求和并排序。
      *
-     * The unattributed bucket (`app_key = 'system:unattributed'`,
-     * [com.github.lmfirefly.flycat.data.model.TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY]) always
-     * sorts LAST regardless of its total; every other app is ordered by total bytes descending.
-     * `app_name`/`package_name` are taken from the most-recent row via the SQLite single-`max()`
-     * bare-column rule (`MAX(last_active_at)` picks the winning row's bare columns).
+     * 未归因分类（`app_key = 'system:unattributed'`，[com.github.lmfirefly.flycat.data.model.TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY]）无论其总量如何，始终排在最后；其他所有应用按总字节数降序排列。
+     * `app_name`/`package_name`通过SQLite的单个`max()`裸列规则从最新行中获取（`MAX(last_active_at)`选择获胜行的裸列）。
      */
     @Query(
         """
@@ -231,7 +182,7 @@ abstract class TrafficStatisticsDao {
     )
     abstract fun getDailyTrafficFlow(cutoffMillis: Long): Flow<List<DailyTraffic>>
 
-    /** One-shot variant of [getAppUsagesFlow] for facade parity. */
+    /** [getAppUsagesFlow] 的单次执行版本，用于保持门面一致性。 */
     @Query(
         """
         SELECT app_key AS appKey,
@@ -250,8 +201,8 @@ abstract class TrafficStatisticsDao {
     abstract suspend fun getAppUsagesSorted(cutoffMillis: Long): List<AppTrafficUsage>
 
     /**
-     * Per-route aggregation for a single app over `[cutoffMillis, +inf)`, ordered by total bytes then
-     * recency. `route_label` is taken from the most-recent row (SQLite single-`max()` bare-column rule).
+     * 对单个应用在 `[cutoffMillis, +inf)` 区间内的按路由聚合，按总字节数降序、最近访问时间降序排列。
+     * `route_label` 取自最近一行数据（遵循 SQLite 单 `max()` 裸列规则）。
      */
     @Query(
         """
@@ -273,9 +224,9 @@ abstract class TrafficStatisticsDao {
         cutoffMillis: Long,
     ): List<AppRouteTrafficUsage>
 
-    // endregion
+    // 结束区域
 
-    // region retention & clear
+    // 区域保留与清除
 
     @Transaction
     open suspend fun deleteOlderThan(cutoffMillis: Long) {
@@ -301,5 +252,5 @@ abstract class TrafficStatisticsDao {
     @Query("DELETE FROM route_traffic_daily")
     protected abstract suspend fun clearAllRoute()
 
-    // endregion
+    // 结束区域
 }

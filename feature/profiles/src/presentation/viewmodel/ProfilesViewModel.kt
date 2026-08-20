@@ -31,6 +31,7 @@ import com.github.lmfirefly.flycat.core.model.override.OverrideConfig
 import com.github.lmfirefly.flycat.core.model.profile.Profile
 import com.github.lmfirefly.flycat.core.model.profile.ProfileBinding
 import com.github.lmfirefly.flycat.core.util.coroutine.safeRunSilent
+import com.github.lmfirefly.flycat.feature.profiles.domain.ProfileCrudUseCase
 import com.github.lmfirefly.flycat.feature.profiles.presentation.screen.copyProfileImport
 import com.github.lmfirefly.flycat.presentation.viewmodel.AndroidContractStateViewModel
 import com.github.lmfirefly.flycat.runtime.api.contract.ProfileRepositoryContract
@@ -56,6 +57,7 @@ class ProfilesViewModel(
     private val OverrideApplyExecutor: OverrideApplyExecutor,
     private val proxyControl: ProxyControlContract,
     private val overrideConfigRepository: OverrideConfigRepository,
+    private val profileCrud: ProfileCrudUseCase,
 ) :
     AndroidContractStateViewModel<ProfilesUiState, ProfilesUiEffect>(
         application,
@@ -95,15 +97,12 @@ class ProfilesViewModel(
         refreshProfiles()
     }
 
-    // Fault barrier: any refresh failure is surfaced as UI error state (CE rethrown).
     @Suppress("TooGenericExceptionCaught")
     fun refreshProfiles() {
         viewModelScope.launch {
             try {
                 setLoading(true)
-                val allProfiles = profilesRepository.queryAllProfiles()
-
-                _profiles.value = allProfiles
+                _profiles.value = profileCrud.queryAllProfiles()
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to refresh profiles")
@@ -114,8 +113,6 @@ class ProfilesViewModel(
         }
     }
 
-    // Fault barrier: any create failure rolls back the staged profile and becomes UI error
-    // state (CE rethrown).
     @Suppress("TooGenericExceptionCaught")
     fun createProfile(
         type: Profile.Type,
@@ -126,40 +123,33 @@ class ProfilesViewModel(
         ageSecretKey: String = "",
     ) {
         viewModelScope.launch {
-            var createdUuid: UUID? = null
             try {
                 setLoading(true)
-                val uuid = profilesRepository.createProfile(type, name, source, ageSecretKey)
-                createdUuid = uuid
-
                 _downloadProgress.value =
                     DownloadProgress(percent = 0, message = FlyTxt.ProfilesVM.Progress.Preparing)
 
-                val observer = IFetchObserver { status ->
-                    _downloadProgress.value = status.toDownloadProgress()
+                val uuid = profileCrud.createProfile(
+                    type = type, name = name, source = source, ageSecretKey = ageSecretKey,
+                    onProgress = { status -> _downloadProgress.value = status.toDownloadProgress() },
+                )
+
+                if (uuid == null) {
+                    showError(FlyTxt.ProfilesVM.Message.AddFailed.format("Unknown"))
+                    _downloadProgress.value = null
+                    return@launch
                 }
 
                 if (type == Profile.Type.File && fileUri != null) {
                     getApplication<Application>().copyProfileImport(fileUri, uuid)
                 }
 
-                profilesRepository.updateProfile(uuid, observer)
                 _downloadProgress.value =
-                    DownloadProgress(
-                        percent = 100,
-                        message = FlyTxt.ProfilesVM.Progress.ImportComplete,
-                        isCompleted = true,
-                    )
-
+                    DownloadProgress(percent = 100, message = FlyTxt.ProfilesVM.Progress.ImportComplete, isCompleted = true)
                 showMessage(FlyTxt.ProfilesVM.Message.ProfileAdded.format(name))
                 refreshProfiles()
-                Timber.i("Profile created: $uuid")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to create profile")
-                createdUuid?.let { uuid ->
-                    safeRunSilent("ProfilesVM", "Rollback profile creation: $uuid") { profilesRepository.deleteProfile(uuid) }
-                }
                 refreshProfiles()
                 showError(FlyTxt.ProfilesVM.Message.AddFailed.format(error.message ?: "Unknown"))
                 _downloadProgress.value = null
@@ -169,16 +159,18 @@ class ProfilesViewModel(
         }
     }
 
-    // Fault barrier: any clone failure is surfaced as UI error state (CE rethrown).
     @Suppress("TooGenericExceptionCaught")
     fun cloneProfile(uuid: UUID) {
         viewModelScope.launch {
             try {
                 setLoading(true)
-                val newUuid = profilesRepository.cloneProfile(uuid)
-                showMessage(FlyTxt.ProfilesVM.Message.ProfileAdded.format("Clone"))
+                val newUuid = profileCrud.cloneProfile(uuid)
+                if (newUuid != null) {
+                    showMessage(FlyTxt.ProfilesVM.Message.ProfileAdded.format("Clone"))
+                } else {
+                    showError(FlyTxt.ProfilesVM.Message.AddFailed.format("Unknown"))
+                }
                 refreshProfiles()
-                Timber.i("Profile cloned: from=$uuid to=$newUuid")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to clone profile")
@@ -189,16 +181,17 @@ class ProfilesViewModel(
         }
     }
 
-    // Fault barrier: any delete failure is surfaced as UI error state (CE rethrown).
     @Suppress("TooGenericExceptionCaught")
     fun deleteProfile(uuid: UUID) {
         viewModelScope.launch {
             try {
                 setLoading(true)
-                profilesRepository.deleteProfile(uuid)
-                showMessage(FlyTxt.ProfilesVM.Message.ProfileDeleted)
+                if (profileCrud.deleteProfile(uuid)) {
+                    showMessage(FlyTxt.ProfilesVM.Message.ProfileDeleted)
+                } else {
+                    showError(FlyTxt.ProfilesVM.Message.DeleteFailed.format("Unknown"))
+                }
                 refreshProfiles()
-                Timber.i("Profile deleted: $uuid")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to delete profile")
@@ -209,16 +202,17 @@ class ProfilesViewModel(
         }
     }
 
-    // Fault barrier: any activate failure is surfaced as UI error state (CE rethrown).
     @Suppress("TooGenericExceptionCaught")
     fun activateProfile(uuid: UUID) {
         viewModelScope.launch {
             try {
                 setLoading(true)
-                profilesRepository.setActiveProfile(uuid)
-                showMessage(FlyTxt.ProfilesVM.Message.ProfileUpdated.format("Active"))
+                if (profileCrud.activateProfile(uuid)) {
+                    showMessage(FlyTxt.ProfilesVM.Message.ProfileUpdated.format("Active"))
+                } else {
+                    showError(FlyTxt.ProfilesVM.Message.ToggleFailed.format("Unknown"))
+                }
                 refreshProfiles()
-                Timber.i("Profile activated: $uuid")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to activate profile")
@@ -233,24 +227,14 @@ class ProfilesViewModel(
         viewModelScope.launch {
             try {
                 setLoading(true)
-                val targets = _profiles.value.filter { it.type == Profile.Type.Url }
-                for (profile in targets) {
+                _downloadProgress.value = DownloadProgress(0, FlyTxt.ProfilesVM.Progress.Preparing)
+                val count = profileCrud.updateAllUrlProfiles(
+                    profiles = _profiles.value,
+                    onProgress = { status -> _downloadProgress.value = status.toDownloadProgress() },
+                )
+                if (count > 0) {
                     _downloadProgress.value =
-                        DownloadProgress(0, FlyTxt.ProfilesVM.Progress.Preparing)
-                    profilesRepository.updateProfile(
-                        profile.uuid,
-                        IFetchObserver { status ->
-                            _downloadProgress.value = status.toDownloadProgress()
-                        },
-                    )
-                }
-                if (targets.isNotEmpty()) {
-                    _downloadProgress.value =
-                        DownloadProgress(
-                            percent = 100,
-                            message = FlyTxt.ProfilesVM.Progress.ImportComplete,
-                            isCompleted = true,
-                        )
+                        DownloadProgress(percent = 100, message = FlyTxt.ProfilesVM.Progress.ImportComplete, isCompleted = true)
                     showMessage(FlyTxt.ProfilesPage.Action.UpdateAll)
                 }
                 refreshProfiles()
@@ -269,24 +253,20 @@ class ProfilesViewModel(
         viewModelScope.launch {
             try {
                 setLoading(true)
-                _downloadProgress.value =
-                    DownloadProgress(percent = 0, message = FlyTxt.ProfilesVM.Progress.Preparing)
-
-                val observer = IFetchObserver { status ->
-                    _downloadProgress.value = status.toDownloadProgress()
+                _downloadProgress.value = DownloadProgress(percent = 0, message = FlyTxt.ProfilesVM.Progress.Preparing)
+                val success = profileCrud.updateProfile(
+                    uuid = uuid,
+                    onProgress = { status -> _downloadProgress.value = status.toDownloadProgress() },
+                )
+                if (success) {
+                    _downloadProgress.value =
+                        DownloadProgress(percent = 100, message = FlyTxt.ProfilesVM.Progress.ImportComplete, isCompleted = true)
+                    showMessage(FlyTxt.ProfilesVM.Message.ProfileUpdated.format(uuid.toString()))
+                } else {
+                    showError(FlyTxt.ProfilesVM.Message.UpdateFailed.format("Unknown"))
+                    _downloadProgress.value = null
                 }
-
-                profilesRepository.updateProfile(uuid, observer)
-
-                _downloadProgress.value =
-                    DownloadProgress(
-                        percent = 100,
-                        message = FlyTxt.ProfilesVM.Progress.ImportComplete,
-                        isCompleted = true,
-                    )
-                showMessage(FlyTxt.ProfilesVM.Message.ProfileUpdated.format(uuid.toString()))
                 refreshProfiles()
-                Timber.i("Profile updated: $uuid")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to update profile")
@@ -298,7 +278,6 @@ class ProfilesViewModel(
         }
     }
 
-    // Fault barrier: any patch failure is surfaced as UI error state (CE rethrown).
     @Suppress("TooGenericExceptionCaught")
     fun patchProfile(
         uuid: UUID,
@@ -310,16 +289,12 @@ class ProfilesViewModel(
         viewModelScope.launch {
             try {
                 setLoading(true)
-                profilesRepository.patchProfile(
-                    uuid = uuid,
-                    name = name,
-                    source = source,
-                    interval = interval,
-                    ageSecretKey = ageSecretKey,
-                )
-                showMessage(FlyTxt.ProfilesVM.Message.ProfileUpdated.format(name))
+                if (profileCrud.patchProfile(uuid, name, source, interval, ageSecretKey)) {
+                    showMessage(FlyTxt.ProfilesVM.Message.ProfileUpdated.format(name))
+                } else {
+                    showError(FlyTxt.ProfilesVM.Message.UpdateFailed.format("Unknown"))
+                }
                 refreshProfiles()
-                Timber.i("Profile patched: $uuid")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to patch profile")
@@ -334,7 +309,6 @@ class ProfilesViewModel(
         createProfile(type = Profile.Type.File, name = name, fileUri = uri)
     }
 
-    // Fault barrier: any reorder failure logs and re-syncs the list from storage (CE rethrown).
     @Suppress("TooGenericExceptionCaught")
     fun reorderProfiles(from: Int, to: Int) {
         viewModelScope.launch {
@@ -347,8 +321,7 @@ class ProfilesViewModel(
                 reordered.add(to, moved)
 
                 _profiles.value = reordered
-                profilesRepository.reorderProfiles(reordered.map { it.uuid })
-                Timber.d("Profiles reordered: $from->$to")
+                profileCrud.reorderProfiles(reordered.map { it.uuid })
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to reorder profiles")
@@ -357,25 +330,19 @@ class ProfilesViewModel(
         }
     }
 
-    // Fault barrier: any toggle failure is surfaced as UI error state (CE rethrown).
-    // Cancels the previous toggle coroutine to prevent concurrent profile switches.
     @Suppress("TooGenericExceptionCaught")
     fun toggleProfileEnabled(uuid: UUID) {
         toggleJob?.cancel()
         toggleJob = viewModelScope.launch {
             try {
-                val profile =
-                    profilesRepository.queryProfileByUUID(uuid) ?: error("Profile not found: $uuid")
-
-                if (profile.active) {
-                    profilesRepository.clearActiveProfile(profile)
-                    showMessage(FlyTxt.ProfilesVM.Message.ProfileUpdated.format(profile.name))
+                val newState = profileCrud.toggleProfileEnabled(uuid)
+                if (newState != null) {
+                    val profile = profilesRepository.queryProfileByUUID(uuid)
+                    showMessage(FlyTxt.ProfilesVM.Message.ProfileUpdated.format(profile?.name ?: ""))
                 } else {
-                    profilesRepository.setActiveProfile(uuid)
-                    showMessage(FlyTxt.ProfilesVM.Message.ProfileUpdated.format(profile.name))
+                    showError(FlyTxt.ProfilesVM.Message.ToggleFailed.format("Unknown"))
                 }
                 refreshProfiles()
-                Timber.d("Profile toggled: $uuid, active=${!profile.active}")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Timber.e(error, "Failed to toggle profile")
