@@ -83,6 +83,6 @@ class RuntimeActivationAwaiter(
 
     companion object {
         const val DEFAULT_TIMEOUT_MILLIS = 60_000L
-        const val DEFAULT_POLL_INTERVAL_MILLIS = 250L
+        const val DEFAULT_POLL_INTERVAL_MILLIS = 500L
     }
 }

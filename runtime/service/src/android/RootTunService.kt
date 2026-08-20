@@ -104,7 +104,7 @@ class RootTunService : BaseService() {
                             var lastStatus = cachedStatus
 
                             PollingTimers.ticks(PollingTimerSpecs.RootTunStatusNotification)
-                                .throttleWhenScreenOff(powerController.screenOn, slowIntervalMs = 60_000L)
+                                .throttleWhenScreenOff(powerController.screenOn)
                                 .collect {
                                     if (!powerController.screenOn.value) return@collect
                                     val snapshotResult = runCatching {

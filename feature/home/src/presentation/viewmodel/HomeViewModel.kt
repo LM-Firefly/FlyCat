@@ -35,6 +35,8 @@ import com.github.lmfirefly.flycat.core.model.traffic.TrafficData
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
 import com.github.lmfirefly.flycat.core.model.tunnel.TunnelState
 import com.github.lmfirefly.flycat.core.util.coroutine.AutoStartSessionGate
+import com.github.lmfirefly.flycat.feature.home.domain.ProfileManagementUseCase
+import com.github.lmfirefly.flycat.feature.home.domain.ProxyLifecycleUseCase
 import com.github.lmfirefly.flycat.presentation.viewmodel.AndroidContractStateViewModel
 import com.github.lmfirefly.flycat.presentation.viewmodel.LoadableState
 import com.github.lmfirefly.flycat.runtime.api.contract.ProfileRepositoryContract
@@ -83,6 +85,8 @@ class HomeViewModel(
     private val networkInfoService: NetworkInfoReader,
     private val networkSettingsStore: NetworkSettingsReader,
     private val remoteControllerStore: RemoteControllerStoreReader,
+    private val profileUseCase: ProfileManagementUseCase,
+    private val lifecycleUseCase: ProxyLifecycleUseCase,
 ) :
     AndroidContractStateViewModel<HomeViewModel.HomeUiState, HomeViewModel.HomeUiEffect>(
         application,
@@ -211,17 +215,10 @@ class HomeViewModel(
 
     fun refreshProfiles() {
         viewModelScope.launch {
-            try {
-                val allProfiles = profilesRepository.queryAllProfiles()
-                val active = profilesRepository.queryActiveProfile()
-                _profiles.value = allProfiles
-                _recommendedProfile.value = active
-                _profilesLoaded.value = true
-            } catch (error: Exception) {
-                if (error is CancellationException) throw error
-                Timber.e(error, "Failed to refresh profiles")
-                _profilesLoaded.value = true
-            }
+            val snapshot = profileUseCase.queryProfiles()
+            _profiles.value = snapshot.profiles
+            _recommendedProfile.value = snapshot.recommendedProfile
+            _profilesLoaded.value = snapshot.loaded
         }
     }
 
@@ -281,9 +278,7 @@ class HomeViewModel(
     }
 
     fun refreshRunMode() {
-        val configuredMode = networkSettingsStore.runMode.value
-        _runMode.value =
-            RuntimeStateMapper.resolveDisplayMode(runtimeSnapshot.value, configuredMode)
+        _runMode.value = lifecycleUseCase.resolveDisplayMode(runtimeSnapshot.value)
     }
 
     fun setHomeScreenActive(isActive: Boolean) {
@@ -301,14 +296,13 @@ class HomeViewModel(
         lastReconcileTime = now
         reconcileJob = viewModelScope.launch {
             runCatching {
-                    proxyFacade.reconcileRuntimeState()
-                    refreshProfiles()
-                    refreshRunMode()
-                }
-                .onFailure { error ->
-                    if (error is CancellationException) throw error
-                    Timber.w(error, "Failed to reconcile runtime state for home")
-                }
+                lifecycleUseCase.reconcileRuntimeState()
+                refreshProfiles()
+                refreshRunMode()
+            }.onFailure { error ->
+                if (error is CancellationException) throw error
+                Timber.w(error, "Failed to reconcile runtime state for home")
+            }
         }
     }
 
@@ -316,50 +310,46 @@ class HomeViewModel(
 
     fun switchActiveProfile(profileId: String) {
         viewModelScope.launch {
-            try {
-                val uuid = UUID.fromString(profileId)
-                if (proxyFacade.currentProfile.value?.uuid == uuid) return@launch
-                withContext(Dispatchers.IO) { profilesRepository.setActiveProfile(uuid) }
-                refreshProfiles()
-                if (controlState.value == HomeProxyControlState.Running) { withContext(Dispatchers.IO) { AutoStartSessionGate.clearManualPaused(); proxyFacade.startProxy(networkSettingsStore.runMode.value) } }
-            } catch (error: Exception) { if (error is CancellationException) throw error; Timber.e(error, "Failed to switch active profile"); showError(FlyTxt.Home.Message.ConfigSwitchFailed.format(error.message)) }
+            profileUseCase.switchActiveProfile(
+                profileId = profileId,
+                isRunning = controlState.value == HomeProxyControlState.Running,
+                runMode = networkSettingsStore.runMode.value,
+                onSuccess = { refreshProfiles() },
+                onError = { msg -> showError(FlyTxt.Home.Message.ConfigSwitchFailed.format(msg)) },
+            )
         }
     }
 
     fun reloadProfile() {
         viewModelScope.launch {
-            try {
-                refreshProfiles()
-                if (controlState.value == HomeProxyControlState.Running) { withContext(Dispatchers.IO) { proxyFacade.startProxy(networkSettingsStore.runMode.value) } }
-            } catch (error: Exception) { if (error is CancellationException) throw error; Timber.e(error, "Failed to reload profile"); showError(FlyTxt.Home.Message.ConfigSwitchFailed.format(error.message)) }
+            profileUseCase.reloadProfile(
+                isRunning = controlState.value == HomeProxyControlState.Running,
+                runMode = networkSettingsStore.runMode.value,
+                onSuccess = { refreshProfiles() },
+                onError = { msg -> showError(FlyTxt.Home.Message.ConfigSwitchFailed.format(msg)) },
+            )
         }
     }
 
     fun switchRunMode(mode: RunMode) {
         viewModelScope.launch {
-            try {
-                if (networkSettingsStore.runMode.value == mode) return@launch
-                if (mode == RunMode.Tun) { val rootStatus = proxyFacade.evaluateRootAccess(); if (!rootStatus.canStartRootTun) { showError(rootStatus.rootTunBlockedMessage()); return@launch } }
-                networkSettingsStore.runMode.set(mode)
-                _runMode.value = mode
-                if (controlState.value == HomeProxyControlState.Running) { withContext(Dispatchers.IO) { AutoStartSessionGate.clearManualPaused(); proxyFacade.startProxy(mode) }
-                } else { refreshRunMode() }
-            } catch (error: Exception) {
-                if (error is CancellationException) throw error
-                Timber.e(error, "Failed to switch proxy mode")
-                showError(FlyTxt.Home.Message.StartFailed.format(error.message))
-            }
+            lifecycleUseCase.switchRunMode(
+                mode = mode,
+                isRunning = controlState.value == HomeProxyControlState.Running,
+                onSuccess = { _runMode.value = mode; refreshRunMode() },
+                onError = { msg -> showError(FlyTxt.Home.Message.StartFailed.format(msg)) },
+            )
         }
     }
 
     fun switchTunnelMode(mode: TunnelState.Mode) {
         viewModelScope.launch {
-            try {
-                if (tunnelMode.value == mode) return@launch
-                if (controlState.value != HomeProxyControlState.Running) return@launch
-                val switched = withContext(Dispatchers.IO) { proxyFacade.patchTunnelMode(mode) }
-                if (!switched) { showError(FlyTxt.Home.Message.StartFailed.format("patch tunnel mode failed")) }
-            } catch (error: Exception) { if (error is CancellationException) throw error; Timber.e(error, "Failed to switch tunnel mode"); showError(FlyTxt.Home.Message.StartFailed.format(error.message)) }
+            lifecycleUseCase.switchTunnelMode(
+                mode = mode,
+                currentMode = tunnelMode.value,
+                isRunning = controlState.value == HomeProxyControlState.Running,
+                onError = { msg -> showError(FlyTxt.Home.Message.StartFailed.format(msg)) },
+            )
         }
     }
 
@@ -418,6 +408,7 @@ class HomeViewModel(
         val scratchList = ArrayList<TrafficData>(sampleLimit)
         var writeIndex = 0
         var fillCount = 0
+        var lastEmittedAllZero = false
         viewModelScope.launch {
             _homeScreenActive.flatMapLatest { active -> if (active) trafficData else emptyFlow() }.collect { sample ->
                 val snapshot = runtimeSnapshot.value
@@ -425,6 +416,8 @@ class HomeViewModel(
                     snapshot.phase.running -> sample
                     else -> TrafficData.zero
                 }
+                // Skip StateFlow update when idle: all samples are zero and list content won't change.
+                if (data == TrafficData.zero && lastEmittedAllZero && fillCount >= sampleLimit) return@collect
                 ringBuffer[writeIndex] = data
                 writeIndex = (writeIndex + 1) % sampleLimit
                 fillCount = (fillCount + 1).coerceAtMost(sampleLimit)
@@ -436,6 +429,7 @@ class HomeViewModel(
                     for (i in writeIndex until sampleLimit) scratchList.add(ringBuffer[i])
                     for (i in 0 until writeIndex) scratchList.add(ringBuffer[i])
                 }
+                lastEmittedAllZero = scratchList.all { it == TrafficData.zero }
                 _speedHistory.value = ArrayList(scratchList)
             }
         }

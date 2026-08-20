@@ -21,14 +21,19 @@
 
 package com.github.lmfirefly.flycat.feature.proxy.di
 
+import com.github.lmfirefly.flycat.feature.proxy.domain.ProxyHealthCheckUseCase
 import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProvidersViewModel
 import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProxyViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
+val featureProxyDomainModule = module {
+    single { ProxyHealthCheckUseCase(get()) }
+}
+
 val featureProxyViewModelModule = module {
-    viewModel { ProxyViewModel(get(), get(), get()) }
+    viewModel { ProxyViewModel(get(), get(), get(), get()) }
     viewModel { ProvidersViewModel(get(), get()) }
 }
 
-val featureProxyModules = listOf(featureProxyViewModelModule)
+val featureProxyModules = listOf(featureProxyDomainModule, featureProxyViewModelModule)

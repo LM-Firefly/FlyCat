@@ -25,10 +25,10 @@ import androidx.lifecycle.viewModelScope
 import com.github.lmfirefly.flycat.core.contract.AppSettingsReader
 import com.github.lmfirefly.flycat.core.contract.ProxyDisplaySettingsReader
 import com.github.lmfirefly.flycat.core.contract.ProxyGroupRepository
-import com.github.lmfirefly.flycat.core.contract.ProxySyncPriority
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode
+import com.github.lmfirefly.flycat.feature.proxy.domain.ProxyHealthCheckUseCase
 import com.github.lmfirefly.flycat.presentation.viewmodel.ContractStateViewModel
 import com.github.lmfirefly.flycat.presentation.viewmodel.LoadableState
 import kotlinx.coroutines.CancellationException
@@ -42,13 +42,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 import com.github.lmfirefly.flycat.locale.FlyTxt
 
 class ProxyViewModel(
     private val proxyGroupRepository: ProxyGroupRepository,
     private val proxyDisplaySettingsStore: ProxyDisplaySettingsReader,
     appSettings: AppSettingsReader,
+    private val healthCheck: ProxyHealthCheckUseCase,
 ) :
     ContractStateViewModel<ProxyViewModel.ProxyUiState, ProxyViewModel.ProxyUiEffect>(
         ProxyUiState()
@@ -58,11 +58,6 @@ class ProxyViewModel(
 
     private val _testingProxyNames = MutableStateFlow<Set<String>>(emptySet())
     val testingProxyNames: StateFlow<Set<String>> = _testingProxyNames.asStateFlow()
-
-    companion object {
-        /** Safety timeout for native health-check callbacks that may never complete. */
-        private const val HEALTH_CHECK_TIMEOUT_MS = 5_000L
-    }
 
     /** Shared selected group name for tablet dual-pane (left=groups, right=nodes). */
     private val _uiSelectedGroupName = MutableStateFlow<String?>(null)
@@ -111,17 +106,10 @@ class ProxyViewModel(
                 activeSyncSources.remove(source)
             }
         if (!changed) return
-        proxyGroupRepository.setProxyGroupSyncPriority(
-            priority = if (isActive) ProxySyncPriority.FAST else ProxySyncPriority.OFF,
-            source = source,
-        )
+        healthCheck.updateSyncPriority(isActive, source)
         if (isActive) {
             viewModelScope.launch {
-                runCatching {
-                        if (proxyGroups.value.isEmpty()) {
-                            proxyGroupRepository.refreshProxyGroups()
-                        }
-                    }
+                runCatching { healthCheck.warmUpIfNeeded(isActive, proxyGroups.value) }
                     .onFailure { error -> if (error is CancellationException) throw error }
             }
         }
@@ -139,41 +127,27 @@ class ProxyViewModel(
             setLoading(true)
             clearError()
             val currentGroups = proxyGroups.value
-            val testingTargets: Set<String> =
-                if (groupName != null) {
-                    setOf(groupName)
-                } else {
-                    currentGroups.mapTo(linkedSetOf()) { it.name }
-                }
-            if (testingTargets.isNotEmpty()) {
-                _testingGroupNames.update { it + testingTargets }
+            val result = healthCheck.runHealthCheck(groupName, currentGroups)
+
+            if (result.testingTargets.isNotEmpty()) {
+                _testingGroupNames.update { it + result.testingTargets }
             }
 
-            val result = runCatching {
-                if (groupName != null) {
-                    showMessage(FlyTxt.Proxy.Testing.Group.format(groupName))
-                    withTimeout(HEALTH_CHECK_TIMEOUT_MS) { proxyGroupRepository.healthCheck(groupName) }
-                    delay(1_500L)
-                    proxyGroupRepository.refreshProxyGroup(groupName)
-                    showMessage(FlyTxt.Proxy.Testing.RequestSent)
-                } else {
-                    showMessage(FlyTxt.Proxy.Testing.All)
-                    proxyGroupRepository.healthCheckAll()
-                    if (currentGroups.isNotEmpty()) {
-                        delay(1_500L)
-                        proxyGroupRepository.refreshProxyGroups(force = true)
-                    }
-                }
+            if (groupName != null) {
+                showMessage(FlyTxt.Proxy.Testing.Group.format(groupName))
+                showMessage(FlyTxt.Proxy.Testing.RequestSent)
+            } else {
+                showMessage(FlyTxt.Proxy.Testing.All)
             }
 
             setLoading(false)
 
-            if (testingTargets.isNotEmpty()) {
-                delay(2_200L)
-                _testingGroupNames.update { it - testingTargets }
+            if (result.testingTargets.isNotEmpty()) {
+                delay(result.settleDelayMs)
+                _testingGroupNames.update { it - result.testingTargets }
             }
 
-            result.exceptionOrNull()?.let { error ->
+            result.error?.let { error ->
                 showError(FlyTxt.Proxy.Testing.Failed.format(error.message))
             }
         }
@@ -227,7 +201,7 @@ class ProxyViewModel(
     fun testProxyDelay(groupName: String, proxyName: String) {
         viewModelScope.launch {
             _testingProxyNames.update { it + proxyName }
-            runCatching { withTimeout(HEALTH_CHECK_TIMEOUT_MS) { proxyGroupRepository.healthCheckProxy(groupName, proxyName) } }
+            runCatching { healthCheck.runProxyHealthCheck(groupName, proxyName) }
             delay(500L)
             _testingProxyNames.update { it - proxyName }
         }

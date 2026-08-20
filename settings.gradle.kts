@@ -36,7 +36,13 @@ pluginManagement {
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap")
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
         maven("https://jitpack.io")
-        maven("https://maven.aliyun.com/nexus/content/repositories/releases/")
+        maven("https://maven.aliyun.com/nexus/content/repositories/releases/") {
+            content {
+                excludeGroupAndSubgroups("ren.shiror")
+                excludeGroupAndSubgroups("work.niggergo")
+                excludeGroupAndSubgroups("dev.oom-wg")
+            }
+        }
         maven("https://maven.oom-wg.dev")
         maven("https://oom-maven.sawahara.host") {
             content {
@@ -70,7 +76,13 @@ dependencyResolutionManagement {
         gradlePluginPortal()
         maven("https://jitpack.io")
         maven("https://raw.githubusercontent.com/MetaCubeX/maven-backup/main/releases")
-        maven ("https://maven.aliyun.com/nexus/content/repositories/releases/")
+        maven("https://maven.aliyun.com/nexus/content/repositories/releases/") {
+            content {
+                excludeGroupAndSubgroups("ren.shiror")
+                excludeGroupAndSubgroups("work.niggergo")
+                excludeGroupAndSubgroups("dev.oom-wg")
+            }
+        }
         maven("https://maven.oom-wg.dev")
         maven("https://oom-maven.sawahara.host") {
             content {
@@ -95,16 +107,16 @@ include(
     ":data",
     ":extension",
     ":app",
+    ":feature:about",
+    ":feature:dashboard",
+    ":feature:editor",
     ":feature:home",
     ":feature:log",
+    ":feature:override",
     ":feature:profiles",
+    ":feature:proxy",
     ":feature:settings",
     ":feature:substore",
-    ":feature:proxy",
-    ":feature:override",
-    ":feature:about",
-    ":feature:editor",
-    ":feature:meta",
     ":runtime:api",
     ":runtime:client",
     ":runtime:service",

@@ -8,6 +8,7 @@ ProfilesVM = {
         ProfileUpdated = "設定檔已更新：%s"
         UpdateFailed = "更新設定檔失敗：%s"
         ToggleFailed = "切換狀態失敗：%s"
+        CannotDeleteActiveProfile = "請先停止代理再刪除當前配置"
     }
 
     Progress = {

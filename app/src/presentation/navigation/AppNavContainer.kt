@@ -53,12 +53,12 @@ import com.github.lmfirefly.flycat.R
 import com.github.lmfirefly.flycat.core.contract.AppSettingsReader
 import com.github.lmfirefly.flycat.feature.about.presentation.screen.AboutScreen
 import com.github.lmfirefly.flycat.feature.about.presentation.screen.OpenSourceLicensesScreen
+import com.github.lmfirefly.flycat.feature.dashboard.presentation.screen.ConnectionScreen
+import com.github.lmfirefly.flycat.feature.dashboard.presentation.screen.CustomRoutingRoute
+import com.github.lmfirefly.flycat.feature.dashboard.presentation.screen.RulesScreen
+import com.github.lmfirefly.flycat.feature.dashboard.presentation.screen.TrafficStatisticsContent
 import com.github.lmfirefly.flycat.feature.log.presentation.screen.LogDetailScreen
 import com.github.lmfirefly.flycat.feature.log.presentation.screen.LogScreen
-import com.github.lmfirefly.flycat.feature.meta.presentation.screen.ConnectionScreen
-import com.github.lmfirefly.flycat.feature.meta.presentation.screen.CustomRoutingRoute
-import com.github.lmfirefly.flycat.feature.meta.presentation.screen.RulesScreen
-import com.github.lmfirefly.flycat.feature.meta.presentation.screen.TrafficStatisticsContent
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.AccessControlScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.AppSettingsScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.EbpfServiceOptionsScreen

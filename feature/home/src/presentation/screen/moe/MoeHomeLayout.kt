@@ -63,7 +63,6 @@ internal data class MoeHomeLayoutState(
     val pageProgress: Float,
     val sidebarProgress: Float,
     val sidebarToggleProgress: Float,
-    val duration: MoeDurationPair,
     val batteryPercent: Int?,
     val sidebarIcons: List<MoeSidebarIconItem>,
     val contentSurface: Color,
@@ -71,7 +70,6 @@ internal data class MoeHomeLayoutState(
     val traffic: TrafficData,
     val selectedServerName: String?,
     val selectedServerPing: Int?,
-    val now: Long,
     val quote: String,
     val quoteAuthor: String,
     val controlState: HomeProxyControlState,
@@ -88,7 +86,7 @@ internal class MoeHomeActions(
 
 context(actions: MoeHomeActions)
 @Composable
-internal fun MoeHomeLayout(state: MoeHomeLayoutState) {
+internal fun MoeHomeLayout(state: MoeHomeLayoutState, now: Long, duration: MoeDurationPair) {
     val density = LocalDensity.current
     val backdrop = rememberLayerBackdrop()
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -124,14 +122,14 @@ internal fun MoeHomeLayout(state: MoeHomeLayoutState) {
             },
         ) {
             MoeSidebarContent(
-                topValue = state.duration.top,
-                bottomValue = state.duration.bottom,
+                topValue = duration.top,
+                bottomValue = duration.bottom,
                 batteryPercent = state.batteryPercent,
                 icons = state.sidebarIcons,
                 visibleWidth = sidebarWidthVisible,
             )
         }
-        MoeHomePanel(state, contentStart, heroHeight, sidebar, screenCorner)
+        MoeHomePanel(state, now, contentStart, heroHeight, sidebar, screenCorner)
     }
 }
 
@@ -139,6 +137,7 @@ context(actions: MoeHomeActions)
 @Composable
 private fun MoeHomePanel(
     state: MoeHomeLayoutState,
+    now: Long,
     contentStart: Dp,
     heroHeight: Dp,
     sidebar: Float,
@@ -162,7 +161,7 @@ private fun MoeHomePanel(
             .background(state.contentSurface)
     ) {
         MoeHero(state, heroScale)
-        MoeHomeCopy(state, heroHeight)
+        MoeHomeCopy(state, now, heroHeight)
     }
 }
 
@@ -237,7 +236,7 @@ private fun BoxScope.MoeHero(state: MoeHomeLayoutState, scale: Float) {
 
 context(actions: MoeHomeActions)
 @Composable
-private fun BoxScope.MoeHomeCopy(state: MoeHomeLayoutState, heroHeight: Dp) {
+private fun BoxScope.MoeHomeCopy(state: MoeHomeLayoutState, now: Long, heroHeight: Dp) {
     Column(
         modifier =
             Modifier.align(Alignment.TopStart)
@@ -251,7 +250,7 @@ private fun BoxScope.MoeHomeCopy(state: MoeHomeLayoutState, heroHeight: Dp) {
         verticalArrangement = Arrangement.spacedBy(MoeUi.Hero.belowHeroContentGap),
     ) {
         MoeHomeCopyBlock(
-            nowMillis = state.now,
+            nowMillis = now,
             quoteText = state.quote,
             quoteAuthor = state.quoteAuthor,
             color = MiuixTheme.colorScheme.onBackground,

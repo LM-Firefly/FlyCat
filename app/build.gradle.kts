@@ -422,7 +422,7 @@ dependencies {
     implementation(project(":feature:override"))
     implementation(project(":feature:about"))
     implementation(project(":feature:editor"))
-    implementation(project(":feature:meta"))
+    implementation(project(":feature:dashboard"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -443,8 +443,7 @@ dependencies {
     implementation(libs.decompose)
     implementation(libs.decompose.extensions.compose)
 
-    //noinspection NewerVersionAvailable
-    implementation("com.tencent:mmkv:${rootProject.extra["mmkvVersion"]}")
+    implementation(libs.mmkv)
 
     implementation(libs.koin.core)
     implementation(libs.koin.android)

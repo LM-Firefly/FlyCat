@@ -64,6 +64,7 @@ allprojects {
                 requested.group == "org.apache.commons" && requested.name == "commons-lang3" -> useVersion(libs.versions.commonsLang3.get())
                 requested.group == "com.google.guava" && requested.name == "guava" -> useVersion(libs.versions.guava.get())
                 requested.group.startsWith("tools.jackson") -> useVersion(libs.versions.jackson3.get())
+                requested.group == "com.tencent" && requested.name == "mmkv" -> useVersion(resolvedMmkvVersion)
             }
         }
     }

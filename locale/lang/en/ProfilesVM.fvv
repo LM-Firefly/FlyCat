@@ -8,6 +8,7 @@ ProfilesVM = {
         ProfileUpdated = "Profile updated: %s"
         UpdateFailed = "Update profile failed: %s"
         ToggleFailed = "Toggle state failed: %s"
+        CannotDeleteActiveProfile = "Please stop the proxy before deleting the active profile"
     }
 
     Progress = {

@@ -26,8 +26,8 @@ import android.content.pm.ComponentInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import com.android.tools.smali.dexlib2.dexbacked.DexBackedDexFile
+import com.github.lmfirefly.flycat.core.contract.KeyValueCache
 import com.github.lmfirefly.flycat.core.contract.StoreSynchronizer
-import com.tencent.mmkv.MMKV
 import java.io.File
 import java.util.zip.ZipFile
 import kotlinx.coroutines.Dispatchers
@@ -50,16 +50,14 @@ import kotlinx.coroutines.sync.withPermit
  *    package prefixes; oversized (>100 MB) or unparsable dex entries are
  *    skipped as inconclusive.
  *
- * Tier 3/4 verdicts are cached in a dedicated MMKV keyed by package name and
+ * Tier 3/4 verdicts are cached in a [KeyValueCache] keyed by package name and
  * invalidated via the app's lastUpdateTime, so only the first scan after an
  * (un)install is expensive.
  */
-class ChinaAppDetector(context: Context) {
+class ChinaAppDetector(context: Context, private val cache: KeyValueCache) {
     data class Candidate(val packageName: String, val lastUpdateTime: Long)
 
     private val packageManager: PackageManager = context.packageManager
-
-    private val cache by lazy { MMKV.mmkvWithID(CACHE_ID, MMKV.MULTI_PROCESS_MODE) }
 
     /**
      * Deep scans buffer whole dex entries in memory (up to [MAX_SCANNABLE_DEX_BYTES] each),
@@ -99,7 +97,7 @@ class ChinaAppDetector(context: Context) {
     }
 
     private fun cachedDeepScan(candidate: Candidate): Boolean {
-        cache.decodeString(candidate.packageName)?.let { cached ->
+        cache.getString(candidate.packageName)?.let { cached ->
             val (stamp, verdict) = cached.split('|', limit = 2).takeIf { it.size == 2 }
                 ?: return@let
             if (stamp == candidate.lastUpdateTime.toString()) {
@@ -107,7 +105,7 @@ class ChinaAppDetector(context: Context) {
             }
         }
         val verdict = deepScan(candidate.packageName)
-        cache.encode(candidate.packageName, "${candidate.lastUpdateTime}|$verdict")
+        cache.putString(candidate.packageName, "${candidate.lastUpdateTime}|$verdict")
         return verdict
     }
 
@@ -186,9 +184,6 @@ class ChinaAppDetector(context: Context) {
     }
 
     companion object {
-        // The version suffix invalidates cached verdicts produced by older heuristics.
-        private const val CACHE_ID = "china_app_detector_cache_v2"
-
         // Upper bound for dex entries we are willing to buffer in memory for scanning.
         private const val MAX_SCANNABLE_DEX_BYTES = 100L * 1024 * 1024
 

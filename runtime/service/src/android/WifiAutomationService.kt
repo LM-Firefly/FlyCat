@@ -35,13 +35,12 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import com.github.lmfirefly.flycat.core.contract.NetworkSettingsReader
 import com.github.lmfirefly.flycat.core.model.WifiAutomationAction
 import com.github.lmfirefly.flycat.core.model.WifiAutomationFallbackAction
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
-import com.github.lmfirefly.flycat.data.store.MMKVProvider
-import com.github.lmfirefly.flycat.data.store.NetworkSettingsStore
-import com.github.lmfirefly.flycat.data.store.RemoteControllerStore
 import com.github.lmfirefly.flycat.runtime.api.constants.Intents
+import com.github.lmfirefly.flycat.runtime.api.contract.ProxyControlContract
 import com.github.lmfirefly.flycat.runtime.api.wifi.WifiSsidObservation
 import com.github.lmfirefly.flycat.runtime.service.R
 import com.github.lmfirefly.flycat.runtime.service.StatusProvider
@@ -54,17 +53,18 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import timber.log.Timber
 
 /**
  * User-started foreground service that keeps SSID monitoring alive when the VPN is stopped.
  * It intentionally has no boot receiver: background-location permission is not part of v1.
  */
-class WifiAutomationService : Service() {
+class WifiAutomationService : Service(), KoinComponent {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val settings by lazy {
-        NetworkSettingsStore(MMKVProvider().getMMKV(MMKVProvider.ID_NETWORK_SETTINGS))
-    }
+    private val settings: NetworkSettingsReader by inject()
+    private val proxyControl: ProxyControlContract by inject()
     private var observer: WifiSsidObserver? = null
     private var applyJob: Job? = null
     private val runtimeEventsReceiver =
@@ -121,7 +121,7 @@ class WifiAutomationService : Service() {
 
     private fun applyRule(observation: WifiSsidObservation) {
         if (!settings.wifiAutomationEnabled.value || settings.runMode.value != RunMode.VpnService) return
-        if (RemoteControllerStore.isActive()) return
+        if (proxyControl.isRemoteControllerActive()) return
 
         when (observation) {
             is WifiSsidObservation.Connected -> {

@@ -60,13 +60,13 @@ import com.github.lmfirefly.flycat.data.controller.AccessControlController
 import com.github.lmfirefly.flycat.data.controller.AppSettingsController
 import com.github.lmfirefly.flycat.data.controller.NetworkSettingsCommandExecutor
 import com.github.lmfirefly.flycat.data.controller.NetworkSettingsController
+import com.github.lmfirefly.flycat.data.controller.ProvidersController
+import com.github.lmfirefly.flycat.data.datasource.NetworkInfoService
 import com.github.lmfirefly.flycat.data.executor.ActiveProfileOverrideApplier
 import com.github.lmfirefly.flycat.data.executor.OverrideApplicator
-import com.github.lmfirefly.flycat.data.gateway.NetworkInfoService
 import com.github.lmfirefly.flycat.data.logging.AppLogBuffer
 import com.github.lmfirefly.flycat.data.repository.AppIdentityResolver
 import com.github.lmfirefly.flycat.data.repository.OverrideBindingRepository
-import com.github.lmfirefly.flycat.data.repository.ProvidersController
 import com.github.lmfirefly.flycat.data.store.AppSettingsStore
 import com.github.lmfirefly.flycat.data.store.AppStateManager
 import com.github.lmfirefly.flycat.data.store.BuiltInOverrideFileStore
@@ -166,10 +166,10 @@ val appFoundationModule = module {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// appDataRuntimeModule (merged from RuntimeModule.kt)
+// appDataModule — data-layer bindings (stores, controllers, repositories)
 // ─────────────────────────────────────────────────────────────────────────────
 
-val appDataRuntimeModule = module {
+val appDataModule = module {
     // ── Settings Controllers ──────────────────────────────────────────────────
     single { AppSettingsController(get(), languageApplier = LanguageApplier(AppLanguageManager::apply)) }
     single<AppSettingsControllerContract> { get<AppSettingsController>() }
@@ -207,8 +207,6 @@ val appDataRuntimeModule = module {
     }
     single<AccessControlControllerContract> { get<AccessControlController>() }
     // ── Data Services ─────────────────────────────────────────────────────────
-    single { LogStore(androidApplication(), get()) }
-    single { NetworkInfoService() }
     single {
         val appContext = androidContext()
         ProvidersController(
@@ -259,6 +257,15 @@ val appDataRuntimeModule = module {
     single<ProfileBindingReader> { get<OverrideBindingRepository>() }
     single<ProvidersRepository> { get<ProvidersController>() }
     single<AppIdentityReader> { get<AppIdentityResolver>() }
+    single { AppIdentityResolver(androidContext()) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// appRuntimeModule — runtime-layer bindings (proxy facade, profiles, traffic)
+// ─────────────────────────────────────────────────────────────────────────────
+
+val appRuntimeModule = module {
+    // ── Proxy Runtime ─────────────────────────────────────────────────────────
     single { ProxyFacade(androidContext(), get(), get()) }
     single<ProxyGroupRepository> { get<ProxyFacade>() }
     single<ConnectionRepository> { get<ProxyFacade>() }
@@ -291,7 +298,6 @@ val appDataRuntimeModule = module {
             }
         }
     }
-    single { AppIdentityResolver(androidContext()) }
     single { ProfilesRepository(androidContext()) }
     single<ProfileRepositoryContract> { get<ProfilesRepository>() }
     single {
@@ -326,4 +332,4 @@ val appDataRuntimeModule = module {
 // Combined module list
 // ─────────────────────────────────────────────────────────────────────────────
 
-val coreDiModules: List<Module> = listOf(appFoundationModule, appDataRuntimeModule)
+val coreDiModules: List<Module> = listOf(appFoundationModule, appDataModule, appRuntimeModule)

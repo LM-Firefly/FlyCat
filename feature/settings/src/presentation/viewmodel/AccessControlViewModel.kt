@@ -22,13 +22,11 @@
 package com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel
 
 import android.app.Application
-import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewModelScope
 import com.github.lmfirefly.flycat.core.contract.AccessControlControllerContract
 import com.github.lmfirefly.flycat.core.contract.NetworkSettingsReader
 import com.github.lmfirefly.flycat.core.model.AccessControlMode
+import com.github.lmfirefly.flycat.feature.settings.domain.InstalledAppsUseCase
 import com.github.lmfirefly.flycat.feature.settings.presentation.util.ChinaAppDetector
 import com.github.lmfirefly.flycat.presentation.viewmodel.AndroidContractStateViewModel
 import com.github.lmfirefly.flycat.presentation.viewmodel.LoadableState
@@ -48,6 +46,8 @@ class AccessControlViewModel(
     private val settings: NetworkSettingsReader,
     private val controller: AccessControlControllerContract,
     private val proxyFacade: ProxyControlContract,
+    private val appsUseCase: InstalledAppsUseCase,
+    private val chinaAppDetector: ChinaAppDetector,
 ) :
     AndroidContractStateViewModel<
         AccessControlViewModel.UiState,
@@ -97,8 +97,6 @@ class AccessControlViewModel(
         override fun withMessage(message: String?): UiState = copy(message = message)
     }
 
-    private val chinaAppDetector = ChinaAppDetector(application)
-
     val filteredApps: StateFlow<List<AppInfo>> =
         uiState
             .map { state ->
@@ -124,30 +122,11 @@ class AccessControlViewModel(
     }
 
     private fun checkAndLoad() {
-        val context = getApplication<Application>()
-        val permission = "com.android.permission.GET_INSTALLED_APPS"
-
-        if (proxyFacade.hasRootPackageAccess()) {
+        if (appsUseCase.hasRootPackageAccess()) {
             loadApps()
             return
         }
-
-        val hasPermission =
-            ContextCompat.checkSelfPermission(context, permission) ==
-                PackageManager.PERMISSION_GRANTED
-        if (hasPermission) {
-            loadApps()
-            return
-        }
-
-        val isMiui =
-            runCatching {
-                    val permissionInfo = context.packageManager.getPermissionInfo(permission, 0)
-                    permissionInfo.packageName == "com.lbe.security.miui"
-                }
-                .getOrElse { false }
-
-        if (isMiui) {
+        if (appsUseCase.checkMiuiPermission()) {
             _uiState.update { it.copy(needsMiuiPermission = true, isLoading = false) }
         } else {
             loadApps()
@@ -192,49 +171,15 @@ class AccessControlViewModel(
     }
 
     private fun loadInstalledApps(): List<AppInfo> {
-        val pm = getApplication<Application>().packageManager
-        val selfPackageName = getApplication<Application>().packageName
-
-        val packages =
-            runCatching { pm.getInstalledApplications(PackageManager.GET_META_DATA) }
-                .getOrElse { error ->
-                    if (error is SecurityException) {
-                        loadInstalledAppsFromRoot(pm, selfPackageName)
-                    } else {
-                        throw error
-                    }
-                }
-
-        return packages
-            .filter { it.packageName != selfPackageName }
-            .map { appInfo ->
-                val pkgInfo = runCatching { pm.getPackageInfo(appInfo.packageName, 0) }.getOrNull()
-                AppInfo(
-                    packageName = appInfo.packageName,
-                    label = appInfo.loadLabel(pm).toString(),
-                    isSystemApp = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
-                    installTime = pkgInfo?.firstInstallTime ?: 0L,
-                    updateTime = pkgInfo?.lastUpdateTime ?: 0L,
-                )
-            }
-    }
-
-    private fun loadInstalledAppsFromRoot(
-        pm: PackageManager,
-        selfPackageName: String,
-    ): List<ApplicationInfo> {
-        val packageNames =
-            proxyFacade.queryInstalledRootPackageNames()
-                ?: throw SecurityException("Unable to query installed packages from root shell")
-
-        return packageNames
-            .asSequence()
-            .filterNot { it == selfPackageName }
-            .mapNotNull { packageName ->
-                runCatching { pm.getApplicationInfo(packageName, PackageManager.GET_META_DATA) }
-                    .getOrNull()
-            }
-            .toList()
+        return appsUseCase.loadInstalledApps().map { entry ->
+            AppInfo(
+                packageName = entry.packageName,
+                label = entry.label,
+                isSystemApp = entry.isSystemApp,
+                installTime = entry.installTime,
+                updateTime = entry.updateTime,
+            )
+        }
     }
 
     private fun filterApps(

@@ -46,11 +46,10 @@ import timber.log.Timber
 import java.util.Calendar
 
 /**
- * Facade over traffic statistics persistence.
+ * 面向流量统计持久化的门面接口。
  *
- * Daily per-app / per-route aggregation lives in Room (see [TrafficStatisticsDao]); each record is a
- * row-level accumulate rather than a whole-history JSON rewrite. The only state that stays in MMKV is
- * the collector's resume baseline (last total upload/download + profile id), kept synchronous.
+ * 每日每应用/每路由聚合数据存储于 Room（参见 [TrafficStatisticsDao]），每条记录为行级累积而非全量历史 JSON 重写。
+ * 唯一保留在 MMKV 中的状态是采集器的恢复基准点（最后的总上传/下载量 + 配置 ID），该数据保持同步更新。
  */
 class TrafficStatisticsStore(
     private val mmkv: MMKV,
@@ -110,22 +109,19 @@ class TrafficStatisticsStore(
                     appDeltas.add(AppTrafficDelta(dateMillis = dayKey, appKey = record.appKey, slotIndex = slotIndex, packageName = record.packageName, appName = record.appName, uploadDelta = record.uploadDelta, downloadDelta = record.downloadDelta, lastActiveAt = timestamp))
                     routeDeltas.add(RouteTrafficDelta(dateMillis = dayKey, appKey = record.appKey, routeKey = record.routeKey?.takeIf(String::isNotBlank)?: TrafficStatisticsBuckets.UNATTRIBUTED_ROUTE_KEY, slotIndex = slotIndex, routeLabel = record.routeLabel?.takeIf(String::isNotBlank)?: TrafficStatisticsBuckets.UNATTRIBUTED_ROUTE_NAME, uploadDelta = record.uploadDelta, downloadDelta = record.downloadDelta, lastActiveAt = timestamp))
                 }
-                dao.recordBatch(appDeltas = appDeltas, routeDeltas = routeDeltas, retentionCutoffMillis = System.currentTimeMillis() - (MAX_APP_DAYS_TO_KEEP * DAY_MS))
+                dao.recordBatch(appDeltas = appDeltas, routeDeltas = routeDeltas)
+                cleanupOldRecordsIfNeeded(timestamp)
             }.onFailure { Timber.e(it, "Failed to persist traffic to Room") }
         }
     }
 
-    override fun getAppUsagesFlow(range: StatisticsTimeRange): Flow<List<AppTrafficUsage>> =
-        dao.getAppUsagesFlow(rangeCutoff(range))
+    override fun getAppUsagesFlow(range: StatisticsTimeRange): Flow<List<AppTrafficUsage>> = dao.getAppUsagesFlow(rangeCutoff(range))
 
-    override fun getTimeSlotTrafficFlow(range: StatisticsTimeRange): Flow<List<TimeSlotTraffic>> =
-        dao.getTimeSlotTrafficFlow(rangeCutoff(range))
+    override fun getTimeSlotTrafficFlow(range: StatisticsTimeRange): Flow<List<TimeSlotTraffic>> = dao.getTimeSlotTrafficFlow(rangeCutoff(range))
 
-    override fun getDailyTrafficFlow(range: StatisticsTimeRange): Flow<List<DailyTraffic>> =
-        dao.getDailyTrafficFlow(rangeCutoff(range))
+    override fun getDailyTrafficFlow(range: StatisticsTimeRange): Flow<List<DailyTraffic>> = dao.getDailyTrafficFlow(rangeCutoff(range))
 
-    override suspend fun getAppUsagesSorted(range: StatisticsTimeRange): List<AppTrafficUsage> =
-        dao.getAppUsagesSorted(rangeCutoff(range))
+    override suspend fun getAppUsagesSorted(range: StatisticsTimeRange): List<AppTrafficUsage> = dao.getAppUsagesSorted(rangeCutoff(range))
 
     suspend fun getAppRouteUsages(
         appKey: String,
@@ -193,13 +189,28 @@ class TrafficStatisticsStore(
         return calendar.timeInMillis
     }
 
-    /** Returns 0–11, each representing a2-hour bucket: 0=[0:00–2:00), 1=[2:00–4:00), …, 11=[22:00–24:00). */
+    /** 返回值0–11，每个值代表一个2小时的时间段：0=[0:00–2:00), 1=[2:00–4:00), …, 11=[22:00–24:00)。 */
     private fun getSlotIndex(timestamp: Long): Int {
         val calendar = checkNotNull(dayCalendar.get()).apply { timeInMillis = timestamp }
         return calendar.get(Calendar.HOUR_OF_DAY) / 2
     }
 
     private fun rangeCutoff(range: StatisticsTimeRange): Long = getDayKey(System.currentTimeMillis()) - ((range.days - 1) * DAY_MS)
+
+    /**
+     * 对超过 [MAX_APP_DAYS_TO_KEEP] 天的行执行数据保留删除，但每个日历日最多执行一次。
+     * 上次清理日期键保存在 MMKV 中，因此在进程重启后仍能保持有效状态。
+     */
+    private suspend fun cleanupOldRecordsIfNeeded(timestamp: Long) {
+        val currentDayKey = getDayKey(timestamp)
+        val lastCleanupDay = mmkv.decodeLong(KEY_LAST_RETENTION_CLEANUP_DAY, 0L)
+        if (currentDayKey <= lastCleanupDay) return
+        val retentionCutoffMillis = System.currentTimeMillis() - (MAX_APP_DAYS_TO_KEEP * DAY_MS)
+        runCatching {
+            dao.deleteOlderThan(retentionCutoffMillis)
+            mmkv.encode(KEY_LAST_RETENTION_CLEANUP_DAY, currentDayKey)
+        }.onFailure { Timber.e(it, "Failed to run retention cleanup") }
+    }
 
     private fun flushPendingData() {
         val trafficSnapshot: Triple<Long, Long, String?>?
@@ -265,6 +276,7 @@ class TrafficStatisticsStore(
         private const val KEY_LAST_TRAFFIC_DOWNLOAD = "last_traffic_download_v2"
         private const val KEY_LAST_PROFILE_ID = "last_profile_id_v2"
         private const val KEY_STATS_SCHEMA_VERSION = "traffic_stats_schema_version"
+        private const val KEY_LAST_RETENTION_CLEANUP_DAY = "last_retention_cleanup_day"
         private const val LEGACY_KEY_DAILY_SUMMARIES = "daily_summaries"
         private const val LEGACY_KEY_PROFILE_USAGES = "profile_usages"
         private const val LEGACY_KEY_LAST_TRAFFIC_UPLOAD = "last_traffic_upload"

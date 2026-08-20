@@ -57,7 +57,7 @@ dependencies {
     implementation(libs.androidx.room3.runtime)
     ksp(libs.androidx.room3.compiler)
 
-    implementation("com.tencent:mmkv:${rootProject.extra["mmkvVersion"]}")
+    implementation(libs.mmkv)
 
     testImplementation(libs.junit4)
     testImplementation(libs.androidx.test.core)

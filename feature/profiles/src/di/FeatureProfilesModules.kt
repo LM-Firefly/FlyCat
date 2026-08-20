@@ -21,13 +21,18 @@
 
 package com.github.lmfirefly.flycat.feature.profiles.di
 
+import com.github.lmfirefly.flycat.feature.profiles.domain.ProfileCrudUseCase
 import com.github.lmfirefly.flycat.feature.profiles.presentation.viewmodel.ProfilesViewModel
 import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val featureProfilesViewModelModule = module {
-    viewModel { ProfilesViewModel(androidApplication(), get(), get(), get(), get(), get()) }
+val featureProfilesDomainModule = module {
+    single { ProfileCrudUseCase(get()) }
 }
 
-val featureProfilesModules = listOf(featureProfilesViewModelModule)
+val featureProfilesViewModelModule = module {
+    viewModel { ProfilesViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
+}
+
+val featureProfilesModules = listOf(featureProfilesDomainModule, featureProfilesViewModelModule)

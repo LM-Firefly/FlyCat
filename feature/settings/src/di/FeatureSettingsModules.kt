@@ -21,10 +21,9 @@
 
 package com.github.lmfirefly.flycat.feature.settings.di
 
-import com.github.lmfirefly.flycat.core.contract.BackupDataSource
-import com.github.lmfirefly.flycat.core.util.backup.BackupArchiveManager
-import com.github.lmfirefly.flycat.data.backup.BackupRepository
+import com.github.lmfirefly.flycat.feature.settings.domain.InstalledAppsUseCase
 import com.github.lmfirefly.flycat.feature.settings.presentation.backup.BackupRestoreViewModel
+import com.github.lmfirefly.flycat.feature.settings.presentation.util.ChinaAppDetector
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.AccessControlViewModel
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.AppSettingsViewModel
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.MetaFeatureViewModel
@@ -33,39 +32,22 @@ import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.Remot
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.WifiAutomationViewModel
 import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.dsl.viewModel
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
+
+val featureSettingsDomainModule = module {
+    single { InstalledAppsUseCase(androidApplication(), get()) }
+    single { ChinaAppDetector(androidApplication(), get(named("chinaAppCache"))) }
+}
 
 val featureSettingsViewModelModule = module {
     viewModel { AppSettingsViewModel(androidApplication(), get(), get(), get(), get(), get()) }
-    viewModel { NetworkSettingsViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { NetworkSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { WifiAutomationViewModel(androidApplication(), get(), get(), get()) }
     viewModel { RemoteControllerViewModel(androidApplication(), get(), get()) }
-    viewModel { AccessControlViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { AccessControlViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { MetaFeatureViewModel(get(), get(), get()) }
     viewModel { BackupRestoreViewModel(androidApplication(), get()) }
 }
 
-val featureSettingsBackupModule = module {
-    single { BackupArchiveManager() }
-    single {
-        BackupRepository(
-            application = androidApplication(),
-            appSettings = get(),
-            networkSettings = get(),
-            featureSettings = get(),
-            subStoreSettings = get(),
-            proxyDisplaySettings = get(),
-            remoteController = get(),
-            runtimeCommand = get(),
-            broadcastNotifier = get(),
-            bulkStoreReset = get(),
-            serviceState = get(),
-            profileStore = get(),
-            subStoreBackupSupport = get(),
-            archiveManager = get(),
-        )
-    }
-    single<BackupDataSource> { get<BackupRepository>() }
-}
-
-val featureSettingsModules = listOf(featureSettingsViewModelModule, featureSettingsBackupModule)
+val featureSettingsModules = listOf(featureSettingsDomainModule, featureSettingsViewModelModule)

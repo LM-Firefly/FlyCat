@@ -8,6 +8,7 @@ ProfilesVM = {
         ProfileUpdated = "Профиль обновлён: %s"
         UpdateFailed = "Не удалось обновить профиль: %s"
         ToggleFailed = "Не удалось переключить состояние: %s"
+        CannotDeleteActiveProfile = "Остановите прокси перед удалением активного профиля"
     }
 
     Progress = {

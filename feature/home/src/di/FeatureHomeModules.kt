@@ -21,11 +21,20 @@
 
 package com.github.lmfirefly.flycat.feature.home.di
 
+import com.github.lmfirefly.flycat.feature.home.domain.ProfileManagementUseCase
+import com.github.lmfirefly.flycat.feature.home.domain.ProxyLifecycleUseCase
 import com.github.lmfirefly.flycat.feature.home.presentation.viewmodel.HomeViewModel
 import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val featureHomeViewModelModule = module { viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get(), get()) } }
+val featureHomeDomainModule = module {
+    single { ProfileManagementUseCase(get(), get()) }
+    single { ProxyLifecycleUseCase(get(), get()) }
+}
 
-val featureHomeModules = listOf(featureHomeViewModelModule)
+val featureHomeViewModelModule = module {
+    viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
+}
+
+val featureHomeModules = listOf(featureHomeDomainModule, featureHomeViewModelModule)

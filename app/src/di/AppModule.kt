@@ -22,12 +22,13 @@
 package com.github.lmfirefly.flycat.di
 
 import com.github.lmfirefly.flycat.BuildConfig
+import com.github.lmfirefly.flycat.data.di.dataBackupModule
 import com.github.lmfirefly.flycat.data.di.dataStoreModule
 import com.github.lmfirefly.flycat.feature.about.UpdateBuildConfig
 import com.github.lmfirefly.flycat.feature.about.di.featureUpdateModules
+import com.github.lmfirefly.flycat.feature.dashboard.di.featureDashboardModules
 import com.github.lmfirefly.flycat.feature.home.di.featureHomeModules
 import com.github.lmfirefly.flycat.feature.log.di.featureLogModules
-import com.github.lmfirefly.flycat.feature.meta.di.featureMetaModules
 import com.github.lmfirefly.flycat.feature.override.di.featureOverrideModules
 import com.github.lmfirefly.flycat.feature.profiles.di.featureProfilesModules
 import com.github.lmfirefly.flycat.feature.proxy.di.featureProxyModules
@@ -51,7 +52,7 @@ val appUpdateModule = module {
 
 val appModule: List<Module> =
     coreDiModules +
-        listOf(dataStoreModule, runtimeServiceModule, appUpdateModule) +
+        listOf(dataStoreModule, dataBackupModule, runtimeServiceModule, appUpdateModule) +
         featureUpdateModules +
         featureHomeModules +
         featureLogModules +
@@ -60,4 +61,4 @@ val appModule: List<Module> =
         featureSubStoreModules +
         featureProxyModules +
         featureOverrideModules +
-        featureMetaModules
+        featureDashboardModules

@@ -8,6 +8,7 @@ ProfilesVM = {
         ProfileUpdated = "プロファイルを更新しました: %s"
         UpdateFailed = "プロファイルの更新に失敗しました: %s"
         ToggleFailed = "状態の切り替えに失敗しました: %s"
+        CannotDeleteActiveProfile = "プロキシを停止してからプロファイルを削除してください"
     }
 
     Progress = {
