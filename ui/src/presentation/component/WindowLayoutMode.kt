@@ -46,13 +46,17 @@ enum class WindowLayoutMode {
 @Composable
 fun rememberWindowLayoutMode(): WindowLayoutMode {
     val configuration = LocalConfiguration.current
-    // Judge by the landscape (longer) side so a tablet keeps the dual-pane shell in portrait —
-    // an 8.8" slate in portrait is ~668dp wide but ~1069dp long, which is still a tablet.
-    val longestSideDp = maxOf(configuration.screenWidthDp, configuration.screenHeightDp)
-    return remember(longestSideDp) {
+    // Device class comes from the SHORTEST side (smallestScreenWidthDp semantics): a phone's
+    // tallest side also clears 700dp, so judging by the longest side would wrongly give phones
+    // the split shell in portrait. Tablets keep the shell in every rotation (issue #151 item 1),
+    // while phones only enter the shell when the current width itself is wide (landscape).
+    val shortestSideDp = minOf(configuration.screenWidthDp, configuration.screenHeightDp)
+    val widthDp = configuration.screenWidthDp
+    return remember(shortestSideDp, widthDp) {
         when {
-            longestSideDp >= 700 -> WindowLayoutMode.TwoPane
-            longestSideDp >= 600 -> WindowLayoutMode.RailSingle
+            shortestSideDp >= 700 -> WindowLayoutMode.TwoPane
+            shortestSideDp >= 600 -> WindowLayoutMode.RailSingle
+            widthDp >= 700 -> WindowLayoutMode.TwoPane
             else -> WindowLayoutMode.Compact
         }
     }
