@@ -230,6 +230,10 @@ object NativeLibraryManager {
                 decompressedName
             }
             val actualTargetFile = File(targetFile.parentFile, targetFileName)
+            val canonicalParent = targetFile.parentFile!!.canonicalPath
+            if (!actualTargetFile.canonicalPath.startsWith("$canonicalParent/")) {
+                throw SecurityException("Path traversal detected in zip entry: ${libEntry.name}")
+            }
             if (targetFileName != info.name) {
                 actualLibraryNames[info.name] = targetFileName
             }
@@ -302,6 +306,10 @@ object NativeLibraryManager {
                 decompressedName
             }
             val actualTargetFile = File(targetFile.parentFile, canonicalFileName)
+            val canonicalParent = targetFile.parentFile!!.canonicalPath
+            if (!actualTargetFile.canonicalPath.startsWith("$canonicalParent/")) {
+                throw SecurityException("Path traversal detected in zip entry: ${entry.name}")
+            }
             actualLibraryNames[info.name] = canonicalFileName
 
             zip.getInputStream(entry).use { input ->
