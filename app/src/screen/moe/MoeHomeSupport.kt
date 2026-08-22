@@ -53,6 +53,7 @@ internal object MoeUi {
     object Shape {
         val hero = RoundedCornerShape(moeSpacing.space28)
         val launchButton = RoundedCornerShape(moeRadii.full)
+        val launchButtonRadius = moeRadii.full
     }
 
     object Sidebar {

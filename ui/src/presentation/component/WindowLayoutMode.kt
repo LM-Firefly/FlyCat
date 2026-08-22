@@ -45,11 +45,14 @@ enum class WindowLayoutMode {
 
 @Composable
 fun rememberWindowLayoutMode(): WindowLayoutMode {
-    val widthDp = LocalConfiguration.current.screenWidthDp
-    return remember(widthDp) {
+    val configuration = LocalConfiguration.current
+    // Judge by the landscape (longer) side so a tablet keeps the dual-pane shell in portrait —
+    // an 8.8" slate in portrait is ~668dp wide but ~1069dp long, which is still a tablet.
+    val longestSideDp = maxOf(configuration.screenWidthDp, configuration.screenHeightDp)
+    return remember(longestSideDp) {
         when {
-            widthDp >= 700 -> WindowLayoutMode.TwoPane
-            widthDp >= 600 -> WindowLayoutMode.RailSingle
+            longestSideDp >= 700 -> WindowLayoutMode.TwoPane
+            longestSideDp >= 600 -> WindowLayoutMode.RailSingle
             else -> WindowLayoutMode.Compact
         }
     }

@@ -104,6 +104,7 @@ fun MoeHomePage(
     val moeHomeQuote = moe.moeHomeQuote
     val sidebarExpanded = moe.sidebarExpanded
     val useSystemWallpaper = moe.useSystemWallpaper
+    val wallpaperScrimEnabled = moe.wallpaperScrimEnabled
 
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val batteryPercent = rememberMoeBatteryPercent(context)
@@ -282,6 +283,7 @@ fun MoeHomePage(
             canLaunch = profilesLoaded && profiles.isNotEmpty() && !isRemoteController,
             isRemoteController = isRemoteController,
             usesTabletLayout = windowLayoutMode.usesNavigationRail,
+            wallpaperScrimEnabled = wallpaperScrimEnabled,
         )
     val actions =
         MoeHomeActions(
@@ -303,14 +305,16 @@ fun MoeHomePage(
 
     MoeHomeSettingsSheet(
         show = showHomeSettingsSheet,
-        quote = moeHomeQuote,
+        quote = moe.moeHomeQuote,
         classicHomeEnabled = classicHomeEnabled,
         sidebarExpanded = sidebarExpanded,
         useSystemWallpaper = useSystemWallpaper,
+        wallpaperScrimEnabled = wallpaperScrimEnabled,
         onQuoteChange = appSettingsViewModel::onMoeHomeQuoteChange,
         onClassicHomeEnabledChange = appSettingsViewModel::onClassicHomeEnabledChange,
         onSidebarExpandedChange = appSettingsViewModel::onMoeSidebarExpandedChange,
         onUseSystemWallpaperChange = appSettingsViewModel::onUseSystemWallpaperChange,
+        onWallpaperScrimEnabledChange = appSettingsViewModel::onMoeWallpaperScrimEnabledChange,
         onChangeWallpaper = {
             showHomeSettingsSheet = false
             launchWallpaperPicker()

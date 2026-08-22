@@ -28,12 +28,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -42,6 +40,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.presentation.theme.TrafficChartConfig
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
+import top.yukonga.miuix.kmp.squircle.squircleClip
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val SPEED_CHART_SAMPLE_LIMIT = 24
@@ -82,7 +81,7 @@ fun SpeedChart(
             modifier
                 .fillMaxWidth()
                 .height(UiDp.dp130)
-                .clip(RoundedCornerShape(UiDp.dp12))
+                .squircleClip(UiDp.dp12)
                 .clickable(onClick = onClick)
     ) {
         val barGapPx = componentSizes.speedChartBarGap.toPx()

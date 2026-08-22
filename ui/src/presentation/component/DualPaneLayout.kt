@@ -18,6 +18,7 @@ import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -51,9 +52,12 @@ fun DualPaneLayout(
     showDivider: Boolean = true,
     dividerDraggable: Boolean = true,
     dividerHitWidth: Dp = 16.dp,
+    onLeftFractionChange: ((Float) -> Unit)? = null,
 ) {
-    // Ratio of free width. Survives window resize so both panes scale together.
-    var leftRatio by remember {
+    // Ratio of free width. Survives window resize so both panes scale together, and survives
+    // configuration changes via rememberSaveable; [onLeftFractionChange] mirrors it to storage
+    // so a fresh process restores the user's divider position (issue #151 item 1).
+    var leftRatio by rememberSaveable {
         mutableFloatStateOf(initialLeftFraction.coerceIn(0.2f, 0.8f))
     }
     val density = LocalDensity.current
@@ -88,6 +92,7 @@ fun DualPaneLayout(
             val signed = if (layoutDirection == LayoutDirection.Rtl) -deltaPx else deltaPx
             val nextLeft = (leftRatio * freeWidthPx + signed).coerceIn(minBoundPx, maxBoundPx)
             leftRatio = (nextLeft / freeWidthPx).coerceIn(0.05f, 0.95f)
+            onLeftFractionChange?.invoke(leftRatio)
         }
 
         Row(modifier = Modifier.fillMaxSize()) {

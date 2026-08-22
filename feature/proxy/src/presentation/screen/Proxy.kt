@@ -37,6 +37,7 @@ import com.github.yumeyucca.yumebox.presentation.component.*
 import com.github.yumeyucca.yumebox.presentation.icon.Yume
 import com.github.yumeyucca.yumebox.presentation.icon.yume.Eye
 import com.github.yumeyucca.yumebox.presentation.icon.yume.ListChevronsUpDown
+import com.github.yumeyucca.yumebox.presentation.icon.yume.Speed
 import com.github.yumeyucca.yumebox.presentation.screen.node.NodeSortPopup
 import com.github.yumeyucca.yumebox.presentation.screen.node.nodeGroupItems
 import com.github.yumeyucca.yumebox.presentation.theme.*
@@ -182,6 +183,8 @@ fun ProxyPager(
                     onBack = {},
                     onNavigateToProviders = onNavigateToProviders,
                     onLocateCurrentProxy = locateCurrentProxy,
+                    onTestDelay = null,
+                    isDelayTesting = false,
                     searchEnabled = showNodeSearch,
                     onSearchToggle =
                         selectedGroupName?.let {
@@ -459,6 +462,8 @@ internal fun ProxyShellNodeDetailContent(
                         onBack = {},
                         onNavigateToProviders = onNavigateToProviders,
                         onLocateCurrentProxy = locateCurrentProxy,
+                        onTestDelay = requestSelectedGroupDelayTest,
+                        isDelayTesting = groupName != null && groupName in testingGroupNames,
                         searchEnabled = showNodeSearch,
                         onSearchToggle = {
                             showNodeSearch = !showNodeSearch
@@ -510,6 +515,8 @@ private fun ProxyTopBar(
     onBack: () -> Unit,
     onNavigateToProviders: (() -> Unit)?,
     onLocateCurrentProxy: (() -> Unit)?,
+    onTestDelay: (() -> Unit)?,
+    isDelayTesting: Boolean,
     searchEnabled: Boolean,
     onSearchToggle: (() -> Unit)?,
     showSortPopup: Boolean,
@@ -531,6 +538,22 @@ private fun ProxyTopBar(
                         MiuixIcons.Back,
                         contentDescription = YumeTxt.Component.Navigation.Back,
                     )
+                }
+            } else if (onTestDelay != null) {
+                // The detail pane has no back arrow; use the leading slot for one-tap delay
+                // testing instead of forcing users back to the list's small test button
+                // (issue #151 item 10).
+                IconButton(onClick = onTestDelay) {
+                    if (isDelayTesting) {
+                        InfiniteProgressIndicator(
+                            modifier = Modifier.size(UiDp.dp22),
+                        )
+                    } else {
+                        Icon(
+                            Yume.Speed,
+                            contentDescription = YumeTxt.Proxy.Action.Test,
+                        )
+                    }
                 }
             }
         },

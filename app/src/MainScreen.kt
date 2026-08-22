@@ -104,6 +104,7 @@ fun MainScreen(
     val bottomBarAutoHideEnabled by appSettingsViewModel.bottomBarAutoHide.state.collectAsState()
     val topBarBlurEnabled by appSettingsViewModel.topBarBlurEnabled.state.collectAsState()
     val classicHomeEnabled by appSettingsViewModel.classicHomeEnabled.state.collectAsState()
+    val splitLeftFraction by appSettingsViewModel.splitLeftRatio.state.collectAsState()
     val moeWallpaperUri by appSettingsViewModel.moeWallpaperUri.state.collectAsState()
     val moeWallpaperZoom by appSettingsViewModel.moeWallpaperZoom.state.collectAsState()
     val moeWallpaperBiasX by appSettingsViewModel.moeWallpaperBiasX.state.collectAsState()
@@ -315,6 +316,8 @@ fun MainScreen(
             navigator = navigator,
             detailBackStack = detailBackStack,
             detailNavigator = detailNavigator,
+            splitLeftFraction = splitLeftFraction,
+            onSplitLeftFractionChange = appSettingsViewModel::onSplitLeftRatioChange,
             onOpenPanel = openNetworkPanel,
         )
     }

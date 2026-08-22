@@ -69,6 +69,7 @@ internal data class MoeHomeLayoutState(
     val canLaunch: Boolean,
     val isRemoteController: Boolean,
     val usesTabletLayout: Boolean = false,
+    val wallpaperScrimEnabled: Boolean = true,
 )
 
 internal class MoeHomeActions(
@@ -216,18 +217,24 @@ private fun BoxScope.MoeHero(state: MoeHomeLayoutState, scale: Float) {
             qualityMode = MoeWallpaperQualityMode.Foreground,
             modifier = Modifier.matchParentSize(),
         )
-        Box(
-            Modifier
-                .matchParentSize()
-                .background(
-                    Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        0.64f to Color.Transparent,
-                        0.80f to state.contentSurface.copy(alpha = 0.90f),
-                        1f to state.contentSurface,
+        if (state.wallpaperScrimEnabled) {
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            // Fully opaque from 0.90 so the rounded corner band never lets the
+                            // wallpaper bleed through as a colored line (issue #151 item 6); the
+                            // longer fade avoids the hard mid-way cut (item 5).
+                            0f to Color.Transparent,
+                            0.45f to Color.Transparent,
+                            0.78f to state.contentSurface.copy(alpha = 0.88f),
+                            0.90f to state.contentSurface,
+                            1f to state.contentSurface,
+                        )
                     )
-                )
-        )
+            )
+        }
         AnimatedVisibility(
             visible = state.isRunning,
             modifier =
@@ -300,7 +307,9 @@ private fun MoeTabletHomeLayout(
     val shortHeight = maxHeight < UiDp.dp560
     // Keep the Moe panel readable on ultra-wide screens without a right-side config pane.
     val contentMaxWidth = minOf(maxWidth, UiDp.dp560)
-    val horizontalGutter = ((maxWidth - contentMaxWidth) / 2f).coerceAtLeast(UiDp.dp0)
+    // Phone-landscape panes are barely wider than the content itself; a floor keeps the launch
+    // controls clear of the divider and screen edges instead of pressing against them.
+    val horizontalGutter = ((maxWidth - contentMaxWidth) / 2f).coerceIn(UiDp.dp16, maxWidth / 2f)
     val heroHeightFraction = if (shortHeight) 0.50f else MoeUi.Hero.heightFraction
     val heroHeight = (maxHeight - state.statusBarTop).coerceAtLeast(UiDp.dp0) * heroHeightFraction
 
@@ -346,24 +355,27 @@ private fun MoeTabletHomeLayout(
                     qualityMode = MoeWallpaperQualityMode.Foreground,
                     modifier = Modifier.matchParentSize(),
                 )
-                Box(
-                    Modifier
-                        .matchParentSize()
-                        .background(
-                            Brush.verticalGradient(
-                                0f to Color.Transparent,
-                                0.55f to Color.Transparent,
-                                0.80f to state.contentSurface.copy(alpha = 0.90f),
-                                1f to state.contentSurface,
+                if (state.wallpaperScrimEnabled) {
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    0f to Color.Transparent,
+                                    0.45f to Color.Transparent,
+                                    0.78f to state.contentSurface.copy(alpha = 0.88f),
+                                    0.90f to state.contentSurface,
+                                    1f to state.contentSurface,
+                                )
                             )
-                        )
-                )
+                    )
+                }
                 Row(
                     modifier =
                         Modifier
                             .align(Alignment.TopStart)
                             .fillMaxWidth()
-                            .padding(start = UiDp.dp16, end = UiDp.dp16, top = UiDp.dp14),
+                            .padding(start = MoeUi.Hero.contentHorizontalInset, end = MoeUi.Hero.contentHorizontalInset, top = UiDp.dp14),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

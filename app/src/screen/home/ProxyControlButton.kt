@@ -26,7 +26,6 @@ package com.github.yumeyucca.yumebox.screen.home
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,6 +47,7 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -118,10 +118,10 @@ fun ProxyControlButton(
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(cornerRadius),
                         clip = false,
                     )
-                    .border(
+                    .squircleBorder(
                         width = UiDp.dp0_2,
                         color = MiuixTheme.colorScheme.outline,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(cornerRadius),
+                        cornerRadius = cornerRadius,
                     ),
             colors = ButtonDefaults.buttonColors(MiuixTheme.colorScheme.background),
             cornerRadius = cornerRadius,

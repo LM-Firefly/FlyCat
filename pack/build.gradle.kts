@@ -5,9 +5,11 @@ plugins {
 android {
     namespace = "dev.yume.loader"
 
-    sourceSets.named("main") {
-        java.setSrcDirs(listOf("src"))
-        manifest.srcFile("AndroidManifest.xml")
+    sourceSets {
+        getByName("main") {
+            java.setSrcDirs(listOf("src"))
+            manifest.srcFile("AndroidManifest.xml")
+        }
     }
 
     buildFeatures {

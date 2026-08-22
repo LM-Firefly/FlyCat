@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
@@ -65,7 +66,16 @@ fun CountryFlagCircle(countryCode: String, modifier: Modifier = Modifier, size: 
                     contentScale = ContentScale.Crop,
                 ),
             contentDescription = YumeTxt.Component.Flag.ContentDescription(countryCode),
-            modifier = Modifier.matchParentSize(),
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    // SVG rasterization anti-aliases the circle edge; without the slight
+                    // overdraw those translucent edge pixels blend with the light placeholder
+                    // background and read as a white ring on dark cards (issue #151 item 11).
+                    .graphicsLayer {
+                        scaleX = 1.06f
+                        scaleY = 1.06f
+                    },
             contentScale = ContentScale.Crop,
         )
     }

@@ -27,11 +27,9 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +45,8 @@ import androidx.compose.ui.unit.sp
 import com.github.yumeyucca.yumebox.common.util.formatBytes
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.squircle.squircleBackground
+import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 data class BarChartItem(
@@ -226,18 +226,16 @@ fun TrafficBarChart(
                                         Modifier
                                             .width(actualBarWidth)
                                             .fillMaxHeight(heightFraction)
-                                            .clip(
-                                                RoundedCornerShape(
-                                                    topStart = radii.radius4,
-                                                    topEnd = radii.radius4,
-                                                )
-                                            )
-                                            .background(
+                                            .squircleBackground(
                                                 if (index == activeIndex && showSelectionTip) {
                                                     highlightColor
                                                 } else {
                                                     barColor.copy(alpha = 0.92f)
-                                                }
+                                                },
+                                                topStart = radii.radius4,
+                                                topEnd = radii.radius4,
+                                                bottomEnd = 0.dp,
+                                                bottomStart = 0.dp,
                                             )
                                 )
                             }
@@ -291,8 +289,7 @@ fun TrafficBarChart(
                             .offset(x = bubbleLeft)
                             .width(bubbleWidth)
                             .height(tipBubbleHeight)
-                            .clip(RoundedCornerShape(radii.radius14))
-                            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+                            .squircleSurface(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f), radii.radius14)
                             .padding(horizontal = spacing.space14, vertical = spacing.space10)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(spacing.space2)) {

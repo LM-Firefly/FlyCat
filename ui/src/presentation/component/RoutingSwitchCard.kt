@@ -26,13 +26,11 @@ package com.github.yumeyucca.yumebox.presentation.component
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -43,6 +41,7 @@ import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.squircle.squircleClip
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.github.panpf.sketch.AsyncImage as SketchAsyncImage
 
@@ -160,6 +159,6 @@ private fun RoutingIcon(iconUrl: String?, size: Dp) {
         contentScale = ContentScale.Crop,
         modifier = Modifier
             .size(size)
-            .clip(RoundedCornerShape(spacing.space14)),
+            .squircleClip(spacing.space14),
     )
 }

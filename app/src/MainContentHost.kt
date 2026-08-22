@@ -89,6 +89,8 @@ internal fun MainContentHost(
     navigator: Navigator,
     detailBackStack: List<Any>,
     detailNavigator: Navigator,
+    splitLeftFraction: Float,
+    onSplitLeftFractionChange: (Float) -> Unit,
     onOpenPanel: () -> Unit,
 ) {
     val layoutDirection = LocalLayoutDirection.current
@@ -100,7 +102,10 @@ internal fun MainContentHost(
         label = "main_bottom_bar_reserved_height",
     )
     val pagerFlingBehavior = rememberMainPagerFlingBehavior(mainPagerState.pagerState)
-    val leftLayoutMode = WindowLayoutMode.Compact
+    // The split shell's left pane is only 280–420dp wide; rendering the phone Moe layout there
+    // clips the rail clock and squeezes the panel against the divider (issue #151 items 1/3/8),
+    // so the pager inside the pane always uses the tablet (card) home layout.
+    val leftLayoutMode = WindowLayoutMode.RailSingle
 
     @Composable
     fun paneInnerPadding(scaffoldPadding: PaddingValues, reserveBottomBar: Boolean): PaddingValues {
@@ -167,12 +172,13 @@ internal fun MainContentHost(
                     }
                 }
             },
-            initialLeftFraction = 0.42f,
+            initialLeftFraction = splitLeftFraction,
             minLeftWidth = UiDp.dp280,
             maxLeftWidth = UiDp.dp420,
             minRightWidth = UiDp.dp320,
             showDivider = true,
             dividerDraggable = true,
+            onLeftFractionChange = onSplitLeftFractionChange,
         )
     } else {
         Scaffold { innerPadding ->

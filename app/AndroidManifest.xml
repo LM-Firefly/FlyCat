@@ -65,6 +65,7 @@
         tools:replace="android:appComponentFactory">
         <activity
             android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/Theme.YumeBox.Starting"

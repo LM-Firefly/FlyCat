@@ -32,7 +32,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -40,7 +39,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +61,8 @@ import dev.chrisbanes.haze.hazeEffect
 import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.squircle.squircleBorder
+import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -218,12 +218,11 @@ private fun MoeLaunchConfigButton(surfaceColor: Color, onClick: () -> Unit) {
                     ambientColor = Color.Black.copy(alpha = 0.04f),
                     spotColor = Color.Black.copy(alpha = 0.08f),
                 )
-                .clip(MoeUi.Shape.launchButton)
-                .background(surfaceColor, MoeUi.Shape.launchButton)
-                .border(
+                .squircleSurface(surfaceColor, MoeUi.Shape.launchButtonRadius)
+                .squircleBorder(
                     width = MoeUi.Button.borderWidth,
                     color = borderColor,
-                    shape = MoeUi.Shape.launchButton,
+                    cornerRadius = MoeUi.Shape.launchButtonRadius,
                 )
                 .clickable(
                     interactionSource = interactionSource,
@@ -303,12 +302,11 @@ internal fun MoeLaunchButton(
                     spotColor = Color.Black.copy(alpha = 0.08f),
                 )
                 .height(MoeUi.Button.height)
-                .clip(MoeUi.Shape.launchButton)
-                .background(surfaceColor, MoeUi.Shape.launchButton)
-                .border(
+                .squircleSurface(surfaceColor, MoeUi.Shape.launchButtonRadius)
+                .squircleBorder(
                     width = MoeUi.Button.borderWidth,
                     color = borderColor,
-                    shape = MoeUi.Shape.launchButton,
+                    cornerRadius = MoeUi.Shape.launchButtonRadius,
                 )
                 .clickable(
                     enabled = enabled,
