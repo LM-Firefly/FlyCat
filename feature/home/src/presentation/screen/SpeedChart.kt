@@ -21,6 +21,9 @@
 
 package com.github.lmfirefly.flycat.feature.home.presentation.screen
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,8 +51,6 @@ import com.github.lmfirefly.flycat.core.model.traffic.TrafficData
 import com.github.lmfirefly.flycat.presentation.component.chart.TrafficChartConfig
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val SPEED_CHART_SAMPLE_LIMIT = 24
@@ -75,21 +76,22 @@ fun SpeedChart(
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { isLifecycleStarted = true }
         isLifecycleStarted = false
     }
-    // 手动10帧/秒循环：每100毫秒步进0.5f，达到SPEED_CHART_SAMPLE_LIMIT时循环重置。
-    var idlePhase by remember { mutableStateOf(0f) }
+    val idlePhase = remember { Animatable(0f) }
     val shouldAnimateIdle = isActive && !isRunning && isLifecycleStarted
     LaunchedEffect(shouldAnimateIdle) {
         if (shouldAnimateIdle) {
-            while (isActive) {
-                idlePhase = (idlePhase + 0.5f) % SPEED_CHART_SAMPLE_LIMIT.toFloat()
-                delay(100)
+            while (true) {
+                idlePhase.snapTo(0f)
+                idlePhase.animateTo(
+                    targetValue = SPEED_CHART_SAMPLE_LIMIT.toFloat(),
+                    animationSpec = tween(durationMillis = 1600, easing = LinearEasing),
+                )
             }
         } else {
-            idlePhase = 0f
+            idlePhase.snapTo(0f)
         }
     }
-    // "在可组合主体中读取，以确保Canvas在每个动画帧都重绘。"
-    val currentPhase = idlePhase
+    val currentPhase = idlePhase.value % SPEED_CHART_SAMPLE_LIMIT.toFloat()
 
     Canvas(
         modifier =

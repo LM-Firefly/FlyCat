@@ -6,6 +6,7 @@ import android.app.ApplicationExitInfo
 import android.content.Context
 import android.os.Build
 import android.os.Process
+import android.util.Base64
 import android.util.Log
 import com.github.lmfirefly.flycat.core.contract.AppLogSettings
 import com.tencent.mmkv.MMKV
@@ -127,24 +128,39 @@ object AppLogBuffer : AppLogSettings {
             val target = if (tag == "mihomo") mihomoBuffer else appBuffer
             if (target.size >= MAX_SIZE) { target.removeFirst() }
             target.addLast(logLine)
-        } finally { rwLock.writeLock().unlock() }
+        } finally {
+            rwLock.writeLock().unlock()
+        }
         if (AppLogBridge.runtimeLogRecordingEnabled) {
             AppLogBridge.runtimeLogWriter?.invoke(logLine)
         }
     }
+
     fun getSnapshot(): List<String> {
         rwLock.readLock().lock()
-        try { return combinedBuffer.toList() } finally { rwLock.readLock().unlock() }
+        try {
+            return combinedBuffer.toList()
+        } finally {
+            rwLock.readLock().unlock()
+        }
     }
 
     fun getAppSnapshot(): List<String> {
         rwLock.readLock().lock()
-        try { return appBuffer.toList() } finally { rwLock.readLock().unlock() }
+        try {
+            return appBuffer.toList()
+        } finally {
+            rwLock.readLock().unlock()
+        }
     }
 
     fun getMihomoSnapshot(): List<String> {
         rwLock.readLock().lock()
-        try { return mihomoBuffer.toList() } finally { rwLock.readLock().unlock() }
+        try {
+            return mihomoBuffer.toList()
+        } finally {
+            rwLock.readLock().unlock()
+        }
     }
 }
 
@@ -152,7 +168,9 @@ class AppLogTree : Timber.DebugTree() {
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         super.log(priority, tag, message, t)
         AppLogBuffer.add(priority, tag, message)
-        if (t != null) { AppLogBuffer.add(priority, tag, Log.getStackTraceString(t)) }
+        if (t != null) {
+            AppLogBuffer.add(priority, tag, Log.getStackTraceString(t))
+        }
     }
 }
 
@@ -169,7 +187,10 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
         handleException(ex)
         // Flush all MMKV mmap pages to disk before the process dies.
         runCatching { MMKV.defaultMMKV().sync() }
-        defaultHandler?.uncaughtException(thread, ex) ?: run { Process.killProcess(Process.myPid()); kotlin.system.exitProcess(10) }
+        defaultHandler?.uncaughtException(thread, ex) ?: run {
+            Process.killProcess(Process.myPid())
+            kotlin.system.exitProcess(10)
+        }
     }
     private fun handleException(ex: Throwable?): Boolean {
         if (ex == null) return false
@@ -195,7 +216,9 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
                         recentLogs.forEach { writer.println(it) }
                         writer.println("--- End Recent App Logs ---")
                     }
-                } catch (error: Exception) { Timber.e(error, "Error appending recent logs") }
+                } catch (error: Exception) {
+                    Timber.e(error, "Error appending recent logs")
+                }
             }
             Timber.i("Crash log saved to ${file.absolutePath}")
         } catch (error: Exception) { Timber.e(error, "Error saving crash log") }
@@ -233,11 +256,22 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
                 // Append native/Java trace when available (API 31+)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     try {
-                        info.traceInputStream?.bufferedReader()?.use { reader ->
-                            val trace = reader.readText()
-                            if (trace.isNotBlank()) {
+                        info.traceInputStream?.use { input ->
+                            val bytes = input.readBytes()
+                            if (bytes.isNotEmpty()) {
                                 writer.println("trace=")
-                                writer.println(trace)
+                                if (isLikelyProtobuf(bytes)) {
+                                    // protobuf binary → Base64, preserving full data
+                                    writer.println("encoding=base64")
+                                    writer.println(Base64.encodeToString(bytes, Base64.NO_WRAP))
+                                } else {
+                                    // text tombstone → sanitize non-printable chars
+                                    val trace = bytes.decodeToString()
+                                        .replace("\u0000", "")
+                                        .filter { it.code >= 0x20 || it in "\n\r\t" }
+                                    writer.println("encoding=utf8")
+                                    writer.println(trace)
+                                }
                             }
                         }
                     } catch (_: Exception) { /* best-effort */ }
@@ -254,6 +288,7 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
         const val NATIVE_CRASH = 5
         const val ANR = 6
     }
+
     private fun reasonToString(reason: Int): String {
         return when (reason) {
             ExitReasonCode.CRASH -> "CRASH"
@@ -262,6 +297,15 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
             else -> "OTHER($reason)"
         }
     }
+
+    private fun isLikelyProtobuf(bytes: ByteArray): Boolean {
+        if (bytes.size < 2) return false
+        val head = bytes.take(32)
+        val nullCount = head.count { it == 0.toByte() }
+        val nonAscii = head.count { it.toInt() and 0x80 != 0 }
+        return nullCount > 4 || nonAscii > 8
+    }
+
     private fun collectDeviceInfo(context: Context): Map<String, String> {
         val map = LinkedHashMap<String, String>()
         map["MANUFACTURER"] = Build.MANUFACTURER
