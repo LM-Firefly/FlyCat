@@ -161,8 +161,8 @@ fun combinePaddingValues(localPadding: PaddingValues, mainPadding: PaddingValues
             localPadding.calculateBottomPadding() +
                 mainPadding.calculateBottomPadding() +
                 LocalSpacing.current.space12,
-        start = localPadding.calculateStartPadding(LayoutDirection.Ltr),
-        end = localPadding.calculateEndPadding(LayoutDirection.Ltr),
+        start = maxOf(localPadding.calculateStartPadding(LayoutDirection.Ltr), mainPadding.calculateStartPadding(LayoutDirection.Ltr)),
+        end = maxOf(localPadding.calculateEndPadding(LayoutDirection.Ltr), mainPadding.calculateEndPadding(LayoutDirection.Ltr)),
     )
 
 @Composable

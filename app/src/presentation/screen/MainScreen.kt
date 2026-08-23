@@ -36,9 +36,10 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -62,6 +63,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -115,7 +117,12 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
+fun MainScreen(
+    navigator: Navigator,
+    initialPage: Int = 0,
+    pendingDetailRoute: Route? = null,
+    onConsumePendingDetailRoute: () -> Unit = {},
+) {
     val initialMainPage = initialPage.coerceIn(0, 3)
     val pagerState = rememberPagerState(initialPage = initialMainPage, pageCount = { 4 })
     val mainPagerState = rememberMainPagerState(pagerState)
@@ -204,9 +211,15 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
     val usesSplitShell = windowLayoutMode.usesSplitShell
     val detailNavigator = remember { Navigator(listOf(Route.About)) }
     val detailBackStack = detailNavigator.backStack
-    // Track back stack size changes to ensure recomposition when SecondaryDetailHost pops.
-    var detailBackStackSize by remember { mutableIntStateOf(detailBackStack.size) }
-    LaunchedEffect(detailBackStack.size) { detailBackStackSize = detailBackStack.size }
+
+    // 横竖屏切换时消费从根 navigator 迁移过来的二级路由
+    LaunchedEffect(pendingDetailRoute) {
+        if (pendingDetailRoute != null && usesSplitShell) {
+            detailNavigator.replaceAll(listOf(pendingDetailRoute))
+            onConsumePendingDetailRoute()
+        }
+    }
+
     val pendingDeepLink by MainActivity.pendingDeepLink.collectAsStateWithLifecycle()
     LaunchedEffect(pendingDeepLink) {
         val uri = pendingDeepLink?.toUri() ?: return@LaunchedEffect
@@ -240,9 +253,12 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         MainActivity.clearPendingDeepLink()
     }
 
-    // Leaving the proxy tab should not leave Providers stuck on the right pane.
+    // 仅在从其他标签页切换到代理标签页时重置右栏，避免在代理 tab 内导航到 Providers 时被意外清栈。
+    var lastSettledPage by remember { mutableIntStateOf(initialMainPage) }
     LaunchedEffect(settledMainPage) {
-        if (settledMainPage != 1 && detailBackStack.lastOrNull() is Route.Providers) {
+        val enteringProxyFromOtherTab = settledMainPage == 1 && lastSettledPage != 1
+        lastSettledPage = settledMainPage
+        if (enteringProxyFromOtherTab) {
             detailNavigator.replaceAll(listOf(Route.About))
         }
     }
@@ -270,13 +286,12 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
                     animationSpec = tween(durationMillis = AnimationSpecs.DURATION_SLOW, easing = AnimationSpecs.StandardEasing),
                     label = "main_bottom_bar_reserved_height",
                 )
-            val systemBars = WindowInsets.systemBars.asPaddingValues()
             val mainInnerPadding =
                 PaddingValues(
                     top = innerPadding.calculateTopPadding(),
                     bottom = innerPadding.calculateBottomPadding() + bottomBarReservedHeight,
-                    start = systemBars.calculateStartPadding(layoutDirection),
-                    end = systemBars.calculateEndPadding(layoutDirection),
+                    start = innerPadding.calculateStartPadding(layoutDirection),
+                    end = innerPadding.calculateEndPadding(layoutDirection),
                 )
             Box(Modifier.fillMaxSize()) {
                 HorizontalPager(
@@ -327,30 +342,59 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0) {
         }
         if (usesSplitShell) {
             DualPaneLayout(
-                left = { Scaffold { leftPadding -> mainPagerContent(leftPadding, reserveBottomBar = true) } },
+                left = {
+                    Scaffold { leftPadding ->
+                        // 仅对顶部和左右施加内边距；底部内边距交给 mainPagerContent 处理，使其 Box 延伸到手势条区域后面，BottomEdgeScrim 才能覆盖到屏幕最底部实现沉浸效果。
+                        val splitPadding = PaddingValues(
+                            top = leftPadding.calculateTopPadding(),
+                            start = UiDp.dp0,
+                            end = UiDp.dp0,
+                        )
+                        val bottomPadding = PaddingValues(bottom = leftPadding.calculateBottomPadding())
+                        // 消费全部 systemBars 和 displayCutout，防止内部子 Scaffold 和 TopAppBar 在已由 splitPadding 处理的各侧重复叠加内边距。
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .padding(splitPadding)
+                                .consumeWindowInsets(WindowInsets.systemBars)
+                                .consumeWindowInsets(WindowInsets.displayCutout)
+                        ) {
+                            mainPagerContent(bottomPadding, reserveBottomBar = true)
+                        }
+                    }
+                },
                 right = {
                     Scaffold { rightPadding ->
-                        val systemBars = WindowInsets.systemBars.asPaddingValues()
-                        val rightInnerPadding =
-                            PaddingValues(
-                                top = rightPadding.calculateTopPadding(),
-                                bottom = rightPadding.calculateBottomPadding(),
-                                start = systemBars.calculateStartPadding(layoutDirection),
-                                end = systemBars.calculateEndPadding(layoutDirection),
+                        // 顶部和右侧施加内边距；底部交给内部内容处理，保持手势条区域沉浸。
+                        val splitPadding = PaddingValues(
+                            top = rightPadding.calculateTopPadding(),
+                            start = UiDp.dp0, // 分隔线在左侧，不是屏幕边缘
+                            end = rightPadding.calculateEndPadding(layoutDirection),
+                        )
+                        // 消费全部 systemBars 和 displayCutout，防止内部子 Scaffold 和 TopAppBar 在已由 splitPadding 处理的各侧重复叠加内边距。
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .padding(splitPadding)
+                                .consumeWindowInsets(WindowInsets.systemBars)
+                                .consumeWindowInsets(WindowInsets.displayCutout)
+                        ) {
+                            SecondaryDetailHost(
+                                navigator = detailNavigator,
+                                placeholderContent = if (settledMainPage == 1) {
+                                    {
+                                        ProxyShellNodeDetail(
+                                            mainInnerPadding = PaddingValues(),
+                                            onNavigateToProviders = {
+                                                detailNavigator.push(Route.Providers)
+                                            },
+                                            onOpenPanel = openNetworkPanel,
+                                        )
+                                    }
+                                } else {
+                                    null
+                                },
                             )
-                        Box(Modifier.fillMaxSize().padding(rightInnerPadding)) {
-                            // Always keep SecondaryDetailHost alive to preserve Decompose childStack state.
-                            SecondaryDetailHost(navigator = detailNavigator)
-                            val showProxyNodes = settledMainPage == 1 && (detailBackStackSize == 0 || detailBackStack.lastOrNull() !is Route.Providers)
-                            if (showProxyNodes) {
-                                ProxyShellNodeDetail(
-                                    mainInnerPadding = PaddingValues(),
-                                    onNavigateToProviders = {
-                                        detailNavigator.push(Route.Providers)
-                                    },
-                                    onOpenPanel = openNetworkPanel,
-                                )
-                            }
                         }
                     }
                 },

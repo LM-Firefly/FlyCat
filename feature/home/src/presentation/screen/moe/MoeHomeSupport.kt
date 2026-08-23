@@ -25,6 +25,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,6 +45,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -72,6 +74,7 @@ internal object MoeUi {
 
     object Sidebar {
         const val fraction = 0.25f
+        val minWidth = 100.dp
         val contentOverlap = moeSpacing.space28
         val innerHorizontalPadding = moeSpacing.space12
         val topInset = moeSizes.heroStartButtonSize - moeSpacing.space2
@@ -238,18 +241,32 @@ private fun MoeSidebarIconItemView(item: MoeSidebarIconItem) {
 
 @Composable
 private fun MoeSidebarTimeValue(value: String) {
-    Box(
+    BoxWithConstraints(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
+        // 当侧边栏较窄时（例如在双窗格布局内），缩小时钟字体大小。在43 sp的字号下，两位数字符串宽度约为50 dp；每侧需要约8 dp的留白空间。
+        val targetSize = 43.sp
+        val scaledSize = if (maxWidth > 0.dp) {
+            val maxFontPx = with(LocalDensity.current) { (maxWidth - 16.dp).toPx() }
+            val targetPx = with(LocalDensity.current) { targetSize.toPx() }
+            if (targetPx > maxFontPx && maxFontPx > 0f) {
+                with(LocalDensity.current) { (maxFontPx * 43f / targetPx).toSp() }
+            } else {
+                targetSize
+            }
+        } else {
+            targetSize
+        }
         Text(
             text = value,
             color = Color.White.copy(alpha = MoeUi.Sidebar.timeAlpha),
             style = MiuixTheme.textStyles.title1,
             fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-            fontSize = 43.sp,
+            fontSize = scaledSize,
             letterSpacing = MoeUi.Sidebar.digitLetterSpacing,
             softWrap = false,
+            maxLines = 1,
         )
     }
 }

@@ -24,7 +24,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,7 +54,7 @@ fun DualPaneLayout(
     dividerDraggable: Boolean = true,
     dividerHitWidth: Dp = 16.dp,
 ) {
-    var leftRatio by remember {
+    var leftRatio by rememberSaveable {
         mutableFloatStateOf(initialLeftFraction.coerceIn(0.2f, 0.8f))
     }
     val density = LocalDensity.current

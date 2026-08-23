@@ -15,7 +15,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -35,7 +34,7 @@ import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 
 @Composable
-fun SecondaryDetailHost(navigator: Navigator) {
+fun SecondaryDetailHost(navigator: Navigator, placeholderContent: (@Composable () -> Unit)? = null) {
     val componentContext = remember { DefaultComponentContext(LifecycleRegistry()) }
     val childStack = remember(componentContext, navigator) {
         componentContext.childStack(
@@ -48,9 +47,6 @@ fun SecondaryDetailHost(navigator: Navigator) {
         }
     }
     val stack by childStack.subscribeAsState()
-    SideEffect {
-        navigator.syncBackStack(stack.items.map { it.configuration })
-    }
     val animation: StackAnimation<Any, DetailRouteChild> = remember {
         stackAnimation(fade(tween(AnimationSpecs.DURATION_NAV_FADE)) + slide(tween(AnimationSpecs.DURATION_NAV_SLIDE)) + scale(tween(AnimationSpecs.DURATION_NAV_SCALE)))
     }
@@ -58,7 +54,14 @@ fun SecondaryDetailHost(navigator: Navigator) {
         stack = stack,
         modifier = Modifier.fillMaxSize(),
         animation = animation,
-    ) { child -> child.instance.Content() }
+    ) { child ->
+        val content = placeholderContent
+        if (child.configuration is Route.About && content != null) {
+            content()
+        } else {
+            child.instance.Content()
+        }
+    }
 }
 
 private class DetailRouteChild(private val route: Route, private val navigator: Navigator) {

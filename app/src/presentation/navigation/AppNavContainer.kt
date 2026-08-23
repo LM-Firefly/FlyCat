@@ -26,10 +26,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -72,6 +74,7 @@ import com.github.lmfirefly.flycat.presentation.component.layout.StringListEdito
 import com.github.lmfirefly.flycat.presentation.component.navigation.LocalNavigator
 import com.github.lmfirefly.flycat.presentation.screen.MainScreen
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
+import com.github.lmfirefly.flycat.presentation.util.rememberWindowLayoutMode
 import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.getKoin
 
@@ -135,6 +138,8 @@ class AppNavigationComponent(
     private val mainPageState = mutableIntStateOf(0)
     private var boundMainRoute: Route.Main? = null
     val navigator = Navigator(mutableStateListOf<Any>(Route.AppStart))
+    // 横竖屏切换时暂存待迁移到 detailNavigator 的二级路由
+    var pendingDetailRoute by mutableStateOf<Route?>(null)
     internal val childStack =
         componentContext.childStack(
             source = navigator.navigation,
@@ -170,9 +175,11 @@ internal class RouteChild(
     fun Content() {
         CompositionLocalProvider(LocalNavigator provides navigator) {
             when (route) {
-                is Route.Main -> MainScreen(
+                is Route.Main, is Route.AppStart -> MainScreen(
                     navigator = navigator,
-                    initialPage = navigationComponent.mainPage,
+                    initialPage = if (route is Route.Main) navigationComponent.mainPage else 0,
+                    pendingDetailRoute = navigationComponent.pendingDetailRoute,
+                    onConsumePendingDetailRoute = { navigationComponent.pendingDetailRoute = null },
                 )
                 is Route.MoeWallpaperCrop -> MoeWallpaperCropScreen(
                     navigator = navigator,
@@ -208,6 +215,20 @@ fun AppNavContainer(component: AppNavigationComponent) {
     SideEffect {
         navigator.syncBackStack(stack.items.map { it.configuration })
     }
+
+    // 横竖屏切换时自动迁移二级路由：Split 模式下根 navigator 有二级路由时迁移到 detailNavigator
+    val windowLayoutMode = rememberWindowLayoutMode()
+    LaunchedEffect(windowLayoutMode) {
+        if (windowLayoutMode.usesSplitShell && navigator.backStack.size > 1) {
+            val topRoute = navigator.backStack.lastOrNull()
+            if (topRoute is Route && topRoute !is Route.AppStart && topRoute !is Route.Main) {
+                component.pendingDetailRoute = topRoute
+                // 弹出所有二级路由，使 MainScreen 回到栈顶
+                repeat(navigator.backStack.size - 1) { navigator.pop() }
+            }
+        }
+    }
+
     if (!predictiveBackEnabled) {
         BackHandler(enabled = stack.backStack.isNotEmpty(), onBack = commitBack)
     }

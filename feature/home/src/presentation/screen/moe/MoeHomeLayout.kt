@@ -91,7 +91,10 @@ internal fun MoeHomeLayout(state: MoeHomeLayoutState, now: Long, duration: MoeDu
     val density = LocalDensity.current
     val backdrop = rememberLayerBackdrop()
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val sidebarWidth = maxWidth * MoeUi.Sidebar.fraction
+        // 自适应侧边栏：在狭窄容器（如DualPaneLayout内部）中使用更大的比例，使43sp的时钟文字仍能完整显示。
+        // 全宽平板设备保持默认的0.25比例。
+        val adaptiveFraction = if (maxWidth < 400.dp) 0.35f else MoeUi.Sidebar.fraction
+        val sidebarWidth = (maxWidth * adaptiveFraction).coerceAtLeast(MoeUi.Sidebar.minWidth)
         val contentStart = (sidebarWidth - MoeUi.Sidebar.contentOverlap).coerceAtLeast(UiDp.dp0)
         val screenCorner = getRoundedCorner()
         val sidebarDecorationWidth = maxOf(sidebarWidth, contentStart + screenCorner)

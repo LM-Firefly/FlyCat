@@ -263,21 +263,24 @@ fun ProfileCard(
                             color = updateTint,
                             fontWeight = FontWeight.Medium,
                             fontSize = 15.sp,
+                            softWrap = false,
                         )
                     }
                 }
             }
 
             IconButton(
+                modifier = Modifier.padding(end = spacing.space4),
+                backgroundColor = secondaryContainer,
                 minHeight = componentSizes.compactActionButtonSize,
                 minWidth = componentSizes.compactActionButtonSize,
                 enabled = !isDownloading,
                 onClick = { if (!isDownloading) onEdit(profile) },
-                backgroundColor = secondaryContainer,
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = spacing.space10),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(spacing.space2),
                 ) {
                     Icon(
                         modifier = Modifier.size(spacing.space20),
@@ -286,11 +289,12 @@ fun ProfileCard(
                         contentDescription = FlyTxt.Component.Action.Edit,
                     )
                     Text(
-                        modifier = Modifier.padding(start = spacing.space4, end = componentSizes.textLineCompactSpacing),
+                        modifier = Modifier.padding(end = componentSizes.textLineCompactSpacing),
                         text = FlyTxt.Component.ProfileCard.Edit,
                         color = actionIconTint,
                         fontWeight = FontWeight.Medium,
                         fontSize = 15.sp,
+                        softWrap = false,
                     )
                 }
             }
