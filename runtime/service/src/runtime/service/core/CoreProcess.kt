@@ -466,16 +466,8 @@ class CoreProcess(private val context: Context) {
             return isRootRecordAlive(record)
         }
 
-        /**
-         * True if the persisted root daemon and, for eBPF mode, its bridge still have the recorded
-         * process identities. The bridge is intentionally checked here for steady-state ownership
-         * reporting, but startup probes must use [isRootCoreAlive] until the bridge is attached.
-         */
-        fun isRootDaemonAlive(): Boolean {
-            val record = RootDaemonState.load() ?: return false
-            if (!isRootRecordAlive(record)) return false
-            return record.mode != RunMode.Ebpf.coreArg || EbpfBridgeProcess.isAlive()
-        }
+        /** True if the persisted root daemon still has the recorded process identity. */
+        fun isRootDaemonAlive(): Boolean = isRootCoreAlive()
 
         private fun isRootRecordAlive(record: RootDaemonState.Record): Boolean {
             val alive =
@@ -530,9 +522,6 @@ class CoreProcess(private val context: Context) {
          */
         fun rootDaemonMode(): RunMode? = RunMode.fromCoreArg(RootDaemonState.load()?.mode)
 
-        /** PID of the persisted mihomo root daemon, for the standalone eBPF bridge bypass map. */
-        fun rootDaemonPid(): Int? = RootDaemonState.load()?.pid?.takeIf { it > 0 }
-
         /** Last non-blank line of `<runtimeHome>/core.log`. */
         fun coreLogTail(context: Context): String? = runCatching {
             context.runtimeHomeDir
@@ -564,21 +553,12 @@ class CoreProcess(private val context: Context) {
                 RootDaemonState.clear()
                 return null
             }
-            if (record.mode == RunMode.Ebpf.coreArg && !EbpfBridgeProcess.isAlive()) {
-                stopRoot(context)
-                return null
-            }
             current = CoreEndpoint(context.runtimeHomeDir.resolve(SOCK).absolutePath, record.secret)
             return record.mode
         }
 
-        /**
-         * Stops a detached root runtime as one unit. The eBPF bridge must be stopped before the
-         * daemon state is cleared, otherwise its persisted PID is lost and the bridge can survive
-         * both an app process restart and an APK replacement.
-         */
+        /** Stops the detached root runtime. */
         fun stopRoot(context: Context) {
-            runCatching { EbpfBridgeProcess.stop(context) }
             stopRoot()
         }
 

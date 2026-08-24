@@ -31,6 +31,10 @@ NetworkSettings = {
         SystemProxyTitle = "VPN Built-in System Proxy"
     }
 
+    EbpfOptions = {
+        BypassCnTitle = "Bypass mainland China IPs in kernel"
+    }
+
     TunOptions = {
         Title = "Tun Options"
         IfNameTitle = "Virtual NIC"
@@ -56,6 +60,13 @@ NetworkSettings = {
         DownloadTitle = "Remote kernels"
         FetchButton = "Get latest"
         DownloadButton = "Download"
+        CustomTitle = "Custom kernel"
+        CustomMethodTitle = "Import method"
+        CustomUrlMethod = "Enter plugin URL"
+        CustomFileMethod = "Upload plugin"
+        CustomUrlLabel = "Plugin URL"
+        CustomChooseFile = "Choose plugin file"
+        CustomInstallButton = "Install and enable"
     }
 
     ProxyOptions = {

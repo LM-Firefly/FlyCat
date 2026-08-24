@@ -31,6 +31,10 @@ NetworkSettings = {
         SystemProxyTitle = "VPN 系统代理"
     }
 
+    EbpfOptions = {
+        BypassCnTitle = "国内 IP 不过核心"
+    }
+
     TunOptions = {
         Title = "Tun 配置"
         IfNameTitle = "虚拟网卡"
@@ -56,6 +60,13 @@ NetworkSettings = {
         DownloadTitle = "远程内核"
         FetchButton = "获取最新"
         DownloadButton = "下载"
+        CustomTitle = "自定义内核"
+        CustomMethodTitle = "导入方式"
+        CustomUrlMethod = "填写内核链接"
+        CustomFileMethod = "上传插件"
+        CustomUrlLabel = "插件链接"
+        CustomChooseFile = "选择插件文件"
+        CustomInstallButton = "安装并启用"
     }
 
     ProxyOptions = {

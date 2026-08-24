@@ -297,7 +297,7 @@
 </g>
 <g class="node bm-info"  data-shape="rectangle" data-id="K">
   <rect x="1110.4115" y="215.17999999999998" width="118.273" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="1169.548" y="233.63" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)">eBPF Bridge</text>
+  <text x="1169.548" y="233.63" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)">eBPF listener</text>
 </g>
 <g class="node bm-success"  data-shape="rectangle" data-id="L">
   <rect x="1324.399" y="689.5799999999999" width="86.41" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />

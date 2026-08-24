@@ -36,6 +36,7 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     val runMode by enumFlow(RunMode.VpnService)
 
     val bypassPrivateNetwork by boolFlow(true)
+    val ebpfBypassCn by boolFlow(true)
     val dnsHijack by boolFlow(true)
     val allowBypass by boolFlow(true)
     val enableIPv6 by boolFlow(false)

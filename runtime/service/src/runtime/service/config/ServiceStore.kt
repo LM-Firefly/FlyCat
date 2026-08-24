@@ -108,6 +108,13 @@ class ServiceStore {
             store.provider.setBoolean("bypass_private_network", value)
         }
 
+    var ebpfBypassCn: Boolean
+        get() = readBoolean(newKey = "ebpfBypassCn", legacyKey = "ebpf_bypass_cn", defaultValue = true)
+        set(value) {
+            networkSettings.encode("ebpfBypassCn", value)
+            store.provider.setBoolean("ebpf_bypass_cn", value)
+        }
+
     private var accessControlModeRaw: String
         get() =
             readString(

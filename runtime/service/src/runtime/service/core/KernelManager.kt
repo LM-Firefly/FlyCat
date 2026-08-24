@@ -28,19 +28,26 @@ import kotlinx.serialization.json.Json
 import org.tukaani.xz.XZInputStream
 import timber.log.Timber
 import java.io.File
+import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
+import java.util.zip.ZipFile
 
 /** Downloadable `libmihomocore.so` catalog and installer. Bundled Alpha remains the fallback. */
 object KernelManager {
     const val INDEX_URL =
-        "https://github.com/YumeYucca/Kernel-Builder/releases/download/kernel/kernel-index.json"
+        "https://github.com/YumeYucca/Kernel-Builder/releases/latest/download/kernel-index.json"
     const val BUNDLED_ALPHA_ID = "bundled-alpha"
     private const val CORE_FILE_PREFIX = "libmihomocore-"
     private const val CORE_METADATA_SUFFIX = ".json"
     private const val ACTIVE_FILE = "active-kernel"
     private const val ABI = "arm64-v8a"
     private const val SHELL_ABI = 1
+    private const val MAX_PLUGIN_BYTES = 128L * 1024 * 1024
+    private const val CUSTOM_PLUGIN_FORMAT = "kernel-plugin-v1"
+    private const val CERTIFIED_WORKFLOW = ".github/workflows/build-kernels.yml"
+    private const val CAPABILITY_EBPF = "ebpf"
+    private const val LEGACY_EBPF_ID = "ebpf"
 
     // Kernel-Builder's manifest intentionally carries release, template and toolchain metadata;
     // the runtime validates the fields it consumes while tolerating future metadata additions.
@@ -53,7 +60,21 @@ object KernelManager {
     }
 
     @Serializable
+    data class ReleaseMetadata(val kind: String = "official")
+
+    @Serializable
+    data class BuilderMetadata(
+        val repository: String = "",
+        val workflow: String = "",
+        val runId: String = "",
+        val commit: String = "",
+        val format: String = "",
+    )
+
+    @Serializable
     data class Index(
+        val release: ReleaseMetadata = ReleaseMetadata(),
+        val builder: BuilderMetadata? = null,
         val schemaVersion: Int,
         val defaultKernel: String,
         val abi: String,
@@ -69,10 +90,12 @@ object KernelManager {
         val commit: String,
         val abi: String,
         val shellAbi: Int,
+        val asset: String,
         val downloadUrl: String,
         val sha256: String,
         val sizeBytes: Long,
         val compression: String,
+        val capabilities: Set<String> = emptySet(),
     )
 
     @Serializable
@@ -81,6 +104,7 @@ object KernelManager {
         val name: String,
         val version: String,
         val commit: String,
+        val capabilities: Set<String> = emptySet(),
     )
 
     suspend fun fetchIndex(url: String = INDEX_URL): Index = withContext(Dispatchers.IO) {
@@ -95,30 +119,98 @@ object KernelManager {
     suspend fun install(context: Context, kernel: Kernel): File = installMutex.withLock {
         withContext(Dispatchers.IO) {
             validateKernel(kernel)
-            val directory = libraryDirectory(context).apply { mkdirs() }
-            val archive = File(directory, "$CORE_FILE_PREFIX${kernel.id}.so.xz.download")
-            val expanded = File(directory, "$CORE_FILE_PREFIX${kernel.id}.so.expanded")
-            val target = libraryFile(context, kernel.id)
+            val archive = File(libraryDirectory(context), "$CORE_FILE_PREFIX${kernel.id}.so.xz.download")
             try {
                 download(kernel, archive)
-                check(sha256(archive) == kernel.sha256) { "Kernel archive checksum mismatch" }
-                XZInputStream(archive.inputStream().buffered()).use { input ->
-                    expanded.outputStream().buffered().use { output -> input.copyTo(output) }
-                }
-                check(expanded.length() > 0L) { "Kernel archive is empty" }
-                check(isAndroidArm64Core(expanded)) { "Downloaded file is not a compatible Android ARM64 core" }
-                val metadata = metadataFile(context, kernel.id)
-                if (metadata.exists()) check(metadata.delete()) { "Unable to replace kernel metadata" }
-                replace(target, expanded)
-                runCatching { writeInstalledKernel(context, kernel) }.onFailure {
-                    Timber.tag("KernelManager").w(it, "Unable to save installed kernel version")
-                }
+                installArchive(context, kernel, archive)
             } finally {
                 archive.delete()
-                expanded.delete()
             }
-            target
         }
+    }
+
+    suspend fun installPlugin(context: Context, source: InputStream): Kernel = installMutex.withLock {
+        withContext(Dispatchers.IO) {
+            val plugin = File(context.cacheDir, "kernel-plugin-${System.nanoTime()}.zip")
+            source.use { input ->
+                plugin.outputStream().buffered().use { output -> input.copyTo(output) }
+            }
+            try {
+                check(plugin.length() in 1..MAX_PLUGIN_BYTES) { "Invalid kernel plugin size" }
+                installPluginFile(context, plugin)
+            } finally {
+                plugin.delete()
+            }
+        }
+    }
+
+    suspend fun installPluginUrl(context: Context, url: String): Kernel = installMutex.withLock {
+        withContext(Dispatchers.IO) {
+            require(url.startsWith("https://")) { "Kernel plugin must use HTTPS" }
+            val plugin = File(context.cacheDir, "kernel-plugin-${System.nanoTime()}.zip")
+            try {
+                val response = client.get(url)
+                check(response.status.isSuccess()) { "Kernel plugin request failed: ${response.status}" }
+                response.headers[HttpHeaders.ContentLength]?.toLongOrNull()?.let { length ->
+                    check(length in 1..MAX_PLUGIN_BYTES) { "Invalid kernel plugin size" }
+                }
+                plugin.outputStream().buffered().use { output -> response.bodyAsChannel().copyTo(output) }
+                check(plugin.length() in 1..MAX_PLUGIN_BYTES) { "Invalid kernel plugin size" }
+                installPluginFile(context, plugin)
+            } finally {
+                plugin.delete()
+            }
+        }
+    }
+
+    private fun installPluginFile(context: Context, plugin: File): Kernel {
+        ZipFile(plugin).use { zip ->
+            val names = zip.entries().asSequence().map { it.name }.toSet()
+            check("kernel-index.json" in names) { "Kernel plugin index is missing" }
+            val index = json.decodeFromString<Index>(
+                zip.getInputStream(zip.getEntry("kernel-index.json")).bufferedReader().use { it.readText() },
+            )
+            validateCustomIndex(index)
+            check(names == setOf("kernel-index.json", index.kernels.single().asset)) {
+                "Kernel plugin contains unexpected files"
+            }
+            val kernel = index.kernels.single()
+            val archive = File(libraryDirectory(context), "$CORE_FILE_PREFIX${kernel.id}.so.xz.download")
+            try {
+                zip.getInputStream(zip.getEntry(kernel.asset)).use { input ->
+                    archive.outputStream().buffered().use { output -> input.copyTo(output) }
+                }
+                check(archive.length() == kernel.sizeBytes) { "Kernel plugin archive size mismatch" }
+                installArchive(context, kernel, archive)
+                return kernel
+            } finally {
+                archive.delete()
+            }
+        }
+    }
+
+    private fun installArchive(context: Context, kernel: Kernel, archive: File): File {
+        validateKernel(kernel)
+        check(sha256(archive) == kernel.sha256) { "Kernel archive checksum mismatch" }
+        val directory = libraryDirectory(context).apply { mkdirs() }
+        val expanded = File(directory, "$CORE_FILE_PREFIX${kernel.id}.so.expanded")
+        val target = libraryFile(context, kernel.id)
+        try {
+            XZInputStream(archive.inputStream().buffered()).use { input ->
+                expanded.outputStream().buffered().use { output -> input.copyTo(output) }
+            }
+            check(expanded.length() > 0L) { "Kernel archive is empty" }
+            check(isAndroidArm64Core(expanded)) { "Downloaded file is not a compatible Android ARM64 core" }
+            val metadata = metadataFile(context, kernel.id)
+            if (metadata.exists()) check(metadata.delete()) { "Unable to replace kernel metadata" }
+            replace(target, expanded)
+            runCatching { writeInstalledKernel(context, kernel) }.onFailure {
+                Timber.tag("KernelManager").w(it, "Unable to save installed kernel version")
+            }
+        } finally {
+            expanded.delete()
+        }
+        return target
     }
 
     fun libraryFile(context: Context, id: String): File =
@@ -129,11 +221,11 @@ object KernelManager {
             File(libraryDirectory(context), ACTIVE_FILE).takeIf(File::isFile)?.readText()?.trim()
         }
             .getOrNull()
-            ?.takeIf { it == BUNDLED_ALPHA_ID || (it in setOf("alpha", "meta", "smart") && isInstalled(context, it)) }
+            ?.takeIf { it == BUNDLED_ALPHA_ID || (isKernelId(it) && isInstalled(context, it)) }
             ?: BUNDLED_ALPHA_ID
 
     fun activate(context: Context, id: String) {
-        require(id == BUNDLED_ALPHA_ID || id in setOf("alpha", "meta", "smart"))
+        require(id == BUNDLED_ALPHA_ID || isKernelId(id)) { "Invalid kernel id" }
         if (id != BUNDLED_ALPHA_ID) {
             check(isAndroidArm64Core(libraryFile(context, id))) { "Kernel is not downloaded or is invalid" }
         }
@@ -144,13 +236,34 @@ object KernelManager {
         check(pending.renameTo(marker)) { "Unable to select active kernel" }
     }
 
-    fun installed(context: Context): File? {
+    fun isEbpfKernelActive(context: Context): Boolean {
         val id = activeKernelId(context)
-        return if (id == BUNDLED_ALPHA_ID) null else libraryFile(context, id).takeIf(::isAndroidArm64Core)
+        if (id == BUNDLED_ALPHA_ID || !isInstalled(context, id)) return false
+        return CAPABILITY_EBPF in readInstalledKernel(context, id)?.capabilities.orEmpty() ||
+            id == LEGACY_EBPF_ID
     }
 
+    fun installedKernelIds(context: Context): List<String> =
+        libraryDirectory(context).listFiles().orEmpty()
+            .asSequence()
+            .map { it.name }
+            .filter { it.startsWith(CORE_FILE_PREFIX) && it.endsWith(CORE_METADATA_SUFFIX) }
+            .map { it.removePrefix(CORE_FILE_PREFIX).removeSuffix(CORE_METADATA_SUFFIX) }
+            .filter { isKernelId(it) && isInstalled(context, it) }
+            .distinct()
+            .sorted()
+            .toList()
+
+    fun installedName(context: Context, id: String): String =
+        readInstalledKernel(context, id)?.name?.takeIf { it.isNotBlank() } ?: id
+
+    fun installed(context: Context): File? =
+        activeKernelId(context)
+            .takeIf { it != BUNDLED_ALPHA_ID }
+            ?.let { libraryFile(context, it).takeIf(File::isFile) }
+
     fun isInstalled(context: Context, id: String): Boolean =
-        id == BUNDLED_ALPHA_ID || libraryFile(context, id).let(::isAndroidArm64Core)
+        id == BUNDLED_ALPHA_ID || (isKernelId(id) && libraryFile(context, id).let(::isAndroidArm64Core))
 
     /** Returns the source commit tied to the installed file, never the latest remote commit. */
     fun installedCommit(context: Context, id: String): String? {
@@ -162,7 +275,13 @@ object KernelManager {
         runCatching {
             writeInstalledKernel(
                 context,
-                InstalledKernel(id = id, name = id, version = "$id-$commit", commit = commit),
+                InstalledKernel(
+                    id = id,
+                    name = id,
+                    version = "$id-$commit",
+                    commit = commit,
+                    capabilities = if (id == LEGACY_EBPF_ID) setOf(CAPABILITY_EBPF) else emptySet(),
+                ),
             )
         }.onFailure {
             Timber.tag("KernelManager").w(it, "Unable to cache embedded kernel version")
@@ -206,15 +325,36 @@ object KernelManager {
         index.kernels.forEach(::validateKernel)
     }
 
+    private fun validateCustomIndex(index: Index) {
+        validateIndex(index)
+        check(index.release.kind == "custom") { "Kernel plugin must be a custom release" }
+        val builder = index.builder ?: error("Kernel plugin builder metadata is missing")
+        check(builder.format == CUSTOM_PLUGIN_FORMAT && builder.workflow == CERTIFIED_WORKFLOW) {
+            "Kernel plugin was not produced by the certified workflow"
+        }
+        check(builder.repository.matches(Regex("[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+"))) {
+            "Kernel plugin builder repository is invalid"
+        }
+        check(index.kernels.size == 1) { "Kernel plugin must contain exactly one kernel" }
+    }
+
     private fun validateKernel(kernel: Kernel) {
-        check(kernel.id in setOf("alpha", "meta", "smart")) { "Unknown kernel channel" }
+        check(isKernelId(kernel.id)) { "Invalid kernel channel" }
         check(kernel.abi == ABI && kernel.shellAbi == SHELL_ABI) { "Incompatible kernel" }
+        check(kernel.asset == "kernel-${kernel.id}.so.xz") { "Invalid kernel asset" }
         check(kernel.compression == "xz") { "Unsupported kernel compression" }
-        check(kernel.sizeBytes > 0 && kernel.sizeBytes <= 128L * 1024 * 1024) { "Invalid kernel size" }
+        check(kernel.sizeBytes > 0 && kernel.sizeBytes <= MAX_PLUGIN_BYTES) { "Invalid kernel size" }
         check(kernel.downloadUrl.startsWith("https://")) { "Kernel download must use HTTPS" }
         check(kernel.sha256.matches(Regex("[0-9a-f]{64}"))) { "Invalid kernel checksum" }
         check(kernel.commit.matches(Regex("[0-9a-f]{40}"))) { "Invalid kernel commit" }
+        check(kernel.capabilities.all(::isCapability)) { "Invalid kernel capability" }
     }
+
+    private fun isKernelId(id: String): Boolean =
+        id.matches(Regex("[a-z0-9][a-z0-9-]*")) && id.length <= 48
+
+    private fun isCapability(value: String): Boolean =
+        value.matches(Regex("[a-z0-9][a-z0-9-]*")) && value.length <= 48
 
     private fun metadataFile(context: Context, id: String): File =
         File(libraryDirectory(context), "$CORE_FILE_PREFIX$id$CORE_METADATA_SUFFIX")
@@ -229,7 +369,13 @@ object KernelManager {
     private fun writeInstalledKernel(context: Context, kernel: Kernel) =
         writeInstalledKernel(
             context,
-            InstalledKernel(kernel.id, kernel.name, kernel.version, kernel.commit),
+            InstalledKernel(
+                kernel.id,
+                kernel.name,
+                kernel.version,
+                kernel.commit,
+                kernel.capabilities,
+            ),
         )
 
     private fun writeInstalledKernel(context: Context, metadata: InstalledKernel) {

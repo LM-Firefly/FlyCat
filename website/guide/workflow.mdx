@@ -69,7 +69,7 @@ tun:
   auto-detect-interface: false # [!code ++]
 ```
 
-在 **Vpn Service** 和 **eBPF** 模式中，运行时补丁会关闭上述 Tun 入口；**Tun** 模式会保留 Tun 配置.
+在 **Vpn Service** 模式中，运行时补丁会关闭上述 Tun 入口；**Tun** 和 **eBPF** 模式都保留 profile 自己的配置.
 
 ## 自定义覆写与热重载
 
@@ -135,7 +135,7 @@ Tun 包含应用包名列表的配置在运行中重新加载时不会重新建�
 
 ## 启动模式与服务进程
 
-三种模式共享配置编译流程，但接管流量的宿主不同：**Vpn Service** 使用 Android VPN 服务，**Tun** 使用 Root mihomo 进程，**eBPF** 在 Root mihomo 进程之外再启动 eBPF bridge.
+三种模式共享配置编译流程，但接管流量的宿主不同：**Vpn Service** 使用 Android VPN 服务，**Tun** 使用 Root mihomo 进程，**eBPF** 使用 Root mihomo 内置的 eBPF listener.
 
 ```mermaid
 ---
@@ -161,11 +161,10 @@ flowchart LR
     B -->|eBPF| E[Root mihomo]
     C --> F[VPN 虚拟网卡]
     D --> G[Root Tun 接口]
-    E --> H[eBPF bridge]
-    H --> I[Socket 地址重定向]
+    E --> H[mihomo eBPF listener]
     F --> J[mihomo 控制器与代理链]
     G --> J
-    I --> J
+    H --> J
     J --> K[连接与流量数据]
 
     classDef request fill:#fef3c7,stroke:#d97706,color:#78350f,stroke-width:1.5px;

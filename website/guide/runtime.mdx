@@ -70,16 +70,8 @@ icon: network
 
 <View title="eBPF" icon="cpu">
 
-  <ResponseField name="绕过私有网络" type="boolean" default="true">
-    自动排除常见私有网段，显式排除地址优先.
-  </ResponseField>
-
-  <ResponseField name="DNS 劫持" type="boolean" default="true">
-    启动 eBPF DNS 监听器.
-  </ResponseField>
-
-  <ResponseField name="启用 IPv6" type="boolean" default="false">
-    允许 eBPF 处理 IPv6.
+  <ResponseField name="国内 IP 不过核心" type="boolean" default="true">
+    代写 CN-IP rule provider 和 `ebpf-in` listener；其它配置由 profile 自己负责.
   </ResponseField>
 
 </View>

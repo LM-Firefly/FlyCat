@@ -40,7 +40,7 @@ interface ProcessController {
 
     fun isRootDaemonAlive(): Boolean
 
-    /** Persisted root mode, allowing the owner to distinguish Tun from the eBPF bridge. */
+    /** Persisted root mode, allowing the owner to distinguish Tun from the native eBPF listener. */
     fun rootDaemonMode(): RunMode?
 
     fun reconnectRoot(): String?

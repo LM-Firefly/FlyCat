@@ -69,16 +69,8 @@ icon: network
 
 <View title="eBPF" icon="cpu">
 
-  <ResponseField name="绕过私有网络" type="boolean" default="true">
-    Общие сегменты частной сети автоматически исключаются, предпочтительно явное исключение адресов.
-  </ResponseField>
-
-  <ResponseField name="DNS 劫持" type="boolean" default="true">
-    Запустите прослушиватель DNS eBPF.
-  </ResponseField>
-
-  <ResponseField name="启用 IPv6" type="boolean" default="false">
-    Разрешить eBPF обрабатывать IPv6.
+  <ResponseField name="Обходить IP материкового Китая в ядре" type="boolean" default="true">
+    Записываются rule provider CN-IP и listener `ebpf-in`; остальные параметры остаются в профиле.
   </ResponseField>
 
 </View>

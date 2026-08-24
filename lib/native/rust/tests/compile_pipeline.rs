@@ -126,8 +126,8 @@ fn tun_override_keeps_profile_nameservers_intact() {
 }
 
 #[test]
-fn ebpf_mode_disables_profile_tun_entrypoint() {
-    let temp_dir = temp_dir("compiler-test-ebpf-tun-off");
+fn ebpf_mode_keeps_profile_config_authoritative() {
+    let temp_dir = temp_dir("compiler-test-ebpf-profile");
     let profile_path = temp_dir.join("config.yaml");
     std::fs::write(
         &profile_path,
@@ -146,6 +146,13 @@ fn ebpf_mode_disables_profile_tun_entrypoint() {
         .expect("tun block");
     assert_eq!(tun.get("enable"), Some(&JsonValue::Bool(false)));
     assert_eq!(tun.get("auto-route"), Some(&JsonValue::Bool(false)));
+    assert_eq!(
+        tun.get("auto-detect-interface"),
+        Some(&JsonValue::Bool(false))
+    );
+    assert_eq!(tun.get("auto-redirect"), Some(&JsonValue::Bool(false)));
+    assert!(root.get("interface-name").is_none());
+    assert!(root.get("routing-mark").is_none());
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }

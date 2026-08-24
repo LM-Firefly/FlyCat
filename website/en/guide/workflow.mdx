@@ -68,7 +68,7 @@ tun:
   auto-detect-interface: false # [!code ++]
 ```
 
-In **Vpn Service** and **eBPF** modes, the runtime patch will close the above Tun entry; **Tun** mode will retain the Tun configuration.
+In **Vpn Service** mode, the runtime patch closes the above Tun entry; **Tun** and **eBPF** keep the profile's own configuration authoritative.
 
 ## Custom overwriting and hot reloading
 
@@ -134,7 +134,7 @@ Tun configurations containing a list of application package names will not re-es
 
 ## Startup mode and service process
 
-The three modes share the configuration compilation process, but the hosts that take over the traffic are different: **Vpn Service** uses the Android VPN service, **Tun** uses the Root mihomo process, and **eBPF** starts the eBPF bridge outside the Root mihomo process.
+The three modes share the configuration compilation process, but the hosts that take over the traffic are different: **Vpn Service** uses the Android VPN service, **Tun** uses the Root mihomo process, and **eBPF** uses mihomo's native eBPF listener in that same process.
 
 ```mermaid
 ---
@@ -160,11 +160,10 @@ flowchart LR
     B -->|eBPF| E[Root mihomo]
     C --> F[VPN 虚拟网卡]
     D --> G[Root Tun 接口]
-    E --> H[eBPF bridge]
-    H --> I[Socket 地址重定向]
+    E --> H[mihomo eBPF listener]
     F --> J[mihomo 控制器与代理链]
     G --> J
-    I --> J
+    H --> J
     J --> K[连接与流量数据]
 
     classDef request fill:#fef3c7,stroke:#d97706,color:#78350f,stroke-width:1.5px;

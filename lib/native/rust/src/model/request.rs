@@ -28,9 +28,8 @@ pub struct CompileRequest {
     pub preview: bool,
 }
 
-/// The proxy run mode the app selected. Controls mode-specific config patching — chiefly whether the
-/// compiled `tun:` block is force-disabled (VPN/eBPF) or kept authoritative for a root-created
-/// kernel device (tun). Defaults to `vpn` so older requests without the field compile unchanged.
+/// The proxy run mode the app selected. eBPF and Root Tun keep the profile authoritative except for
+/// eBPF's narrow Tun-conflict guard; VPN runtime patches protect the app-owned fd tunnel.
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum RunMode {

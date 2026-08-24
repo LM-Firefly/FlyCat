@@ -22,7 +22,10 @@
 
 package com.github.yumeyucca.yumebox.screen.settings
 
+import android.net.Uri
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
@@ -33,6 +36,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.github.yumeyucca.yumebox.data.model.AccessControlMode
 import com.github.yumeyucca.yumebox.data.model.RunMode
@@ -70,6 +74,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
     val kernels = screen.kernels
     val context = LocalContext.current
     var showKernelDialog by remember { mutableStateOf(false) }
+    var showCustomKernelDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = { TopBar(title = YumeTxt.NetworkSettings.Title, scrollBehavior = scrollBehavior) }
@@ -98,14 +103,28 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                         enabled = rootAvailable,
                         onSelect = { viewModel.onRunModeChange(RunMode.Tun) },
                     )
-                    ModeCard(
-                        icon = Yume.CPU,
-                        title = YumeTxt.NetworkSettings.RunMode.EbpfTitle,
-                        summary = YumeTxt.NetworkSettings.RunMode.EbpfSummary,
-                        selected = runMode == RunMode.Ebpf,
-                        enabled = ebpfAvailable,
-                        onSelect = { viewModel.onRunModeChange(RunMode.Ebpf) },
-                    )
+                    AnimatedVisibility(
+                        visible = ebpfAvailable,
+                        enter =
+                            expandVertically(
+                                animationSpec = tween(220),
+                                expandFrom = Alignment.Top,
+                            ) + fadeIn(tween(180)),
+                        exit =
+                            shrinkVertically(
+                                animationSpec = tween(180),
+                                shrinkTowards = Alignment.Top,
+                            ) + fadeOut(tween(120)),
+                    ) {
+                        ModeCard(
+                            icon = Yume.CPU,
+                            title = YumeTxt.NetworkSettings.RunMode.EbpfTitle,
+                            summary = YumeTxt.NetworkSettings.RunMode.EbpfSummary,
+                            selected = runMode == RunMode.Ebpf,
+                            enabled = rootAvailable,
+                            onSelect = { viewModel.onRunModeChange(RunMode.Ebpf) },
+                        )
+                    }
                 }
             }
             item {
@@ -135,8 +154,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                     val installedKernelIds = kernels
                         .filter { KernelManager.isInstalled(context, it.id) }
                         .map { it.id }
-                    val locallyInstalledKernelIds = listOf("alpha", "meta", "smart")
-                        .filter { KernelManager.isInstalled(context, it) }
+                    val locallyInstalledKernelIds = KernelManager.installedKernelIds(context)
                     val kernelIds = listOf("bundled-alpha") +
                         (locallyInstalledKernelIds + installedKernelIds).distinct()
                     WindowDropdownPreference(
@@ -153,6 +171,11 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                         title = YumeTxt.NetworkSettings.Kernel.RefreshTitle,
                         summary = null,
                         onClick = { showKernelDialog = true },
+                    )
+                    PreferenceArrowItem(
+                        title = YumeTxt.NetworkSettings.Kernel.CustomTitle,
+                        summary = null,
+                        onClick = { showCustomKernelDialog = true },
                     )
                 }
             }
@@ -190,6 +213,23 @@ fun NetworkSettingsScreen(navigator: Navigator) {
             },
             onDismiss = { showKernelDialog = false },
         )
+
+        CustomKernelDialog(
+            show = showCustomKernelDialog,
+            busy = screen.kernelBusy,
+            status = screen.kernelStatus,
+            onInstallUrl = { url ->
+                viewModel.installCustomPluginUrl(url) { success ->
+                    if (success) showCustomKernelDialog = false
+                }
+            },
+            onInstallFile = { uri ->
+                viewModel.installCustomPlugin(uri) { success ->
+                    if (success) showCustomKernelDialog = false
+                }
+            },
+            onDismiss = { showCustomKernelDialog = false },
+        )
     }
 }
 
@@ -198,9 +238,11 @@ private fun kernelLabel(id: String, commit: String? = null): String {
     val name = when (id) {
         "bundled-alpha" -> YumeTxt.NetworkSettings.Kernel.BundledAlpha
         "alpha" -> "Alpha"
+        "mate" -> "Mate"
         "meta" -> "Meta"
         "smart" -> "Smart"
-        else -> YumeTxt.NetworkSettings.Kernel.BundledAlpha
+        "ebpf" -> "eBPF"
+        else -> KernelManager.installedName(LocalContext.current, id)
     }
     return if (id == KernelManager.BUNDLED_ALPHA_ID || commit == null) {
         name
@@ -290,6 +332,89 @@ private fun KernelSelectionDialog(
                             colors = ButtonDefaults.textButtonColorsPrimary(),
                         )
                     }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CustomKernelDialog(
+    show: Boolean,
+    busy: Boolean,
+    status: String,
+    onInstallUrl: (String) -> Unit,
+    onInstallFile: (Uri) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var mode by remember(show) { mutableStateOf(0) }
+    var url by remember(show) { mutableStateOf(TextFieldValue()) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        onInstallFile(uri)
+    }
+    AppDialog(
+        show = show,
+        title = YumeTxt.NetworkSettings.Kernel.CustomTitle,
+        onDismissRequest = onDismiss,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space12)) {
+            WindowDropdownPreference(
+                title = YumeTxt.NetworkSettings.Kernel.CustomMethodTitle,
+                items = listOf(
+                    YumeTxt.NetworkSettings.Kernel.CustomUrlMethod,
+                    YumeTxt.NetworkSettings.Kernel.CustomFileMethod,
+                ),
+                selectedIndex = mode,
+                onSelectedIndexChange = { mode = it },
+            )
+            AnimatedContent(
+                targetState = mode,
+                transitionSpec = {
+                    fadeIn(tween(160)) togetherWith fadeOut(tween(100)) using
+                        SizeTransform(clip = false)
+                },
+                label = "custom_kernel_method",
+            ) { selectedMode ->
+                if (selectedMode == 0) {
+                    Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space8)) {
+                        OemTextField(
+                            value = url,
+                            onValueChange = { url = it },
+                            label = YumeTxt.NetworkSettings.Kernel.CustomUrlLabel,
+                            useLabelAsPlaceholder = true,
+                            enabled = !busy,
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        TextButton(
+                            text = YumeTxt.NetworkSettings.Kernel.CustomInstallButton,
+                            onClick = { onInstallUrl(url.text) },
+                            enabled = url.text.trim().startsWith("https://") && !busy,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                        )
+                    }
+                } else {
+                    TextButton(
+                        text = YumeTxt.NetworkSettings.Kernel.CustomChooseFile,
+                        onClick = {
+                            launcher.launch(arrayOf("application/zip", "application/octet-stream"))
+                        },
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                    )
+                }
+            }
+            AnimatedVisibility(visible = busy) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    InfiniteProgressIndicator(modifier = Modifier.size(24.dp))
+                }
+            }
+            AnimatedVisibility(
+                visible = status.isNotBlank() && !status.startsWith("No downloaded"),
+            ) {
+                Text(text = status)
             }
         }
     }

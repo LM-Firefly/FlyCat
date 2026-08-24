@@ -26,17 +26,12 @@ import java.io.File
 /** Resolves the APK shell and the selected downloaded core, falling back to bundled Alpha. */
 internal object CoreArtifacts {
     const val SHELL_NAME = "libmihomo.so"
-    const val BRIDGE_NAME = "libebpfbridge.so"
     const val PREVIEW_SHELL_NAME = "libpreview.so"
     const val LIBRARY_NAME = "libmihomocore.so"
     const val LIBRARY_OPTION = "--core-library"
 
     fun shell(context: Context): File =
         File(context.applicationInfo.nativeLibraryDir, SHELL_NAME)
-
-    /** Standalone root eBPF socket-address bridge, shipped beside the mihomo shell. */
-    fun bridge(context: Context): File =
-        File(context.applicationInfo.nativeLibraryDir, BRIDGE_NAME)
 
     fun previewShell(context: Context): File =
         File(context.applicationInfo.nativeLibraryDir, PREVIEW_SHELL_NAME)

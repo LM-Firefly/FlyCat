@@ -31,6 +31,10 @@ NetworkSettings = {
         SystemProxyTitle = "Встроенный системный прокси VPN"
     }
 
+    EbpfOptions = {
+        BypassCnTitle = "Обходить IP материкового Китая в ядре"
+    }
+
     TunOptions = {
         Title = "Параметры Tun"
         IfNameTitle = "Виртуальный NIC"
@@ -56,6 +60,13 @@ NetworkSettings = {
         DownloadTitle = "Удалённые ядра"
         FetchButton = "Получить последние"
         DownloadButton = "Скачать"
+        CustomTitle = "Пользовательское ядро"
+        CustomMethodTitle = "Способ импорта"
+        CustomUrlMethod = "Ввести URL плагина"
+        CustomFileMethod = "Загрузить плагин"
+        CustomUrlLabel = "URL плагина"
+        CustomChooseFile = "Выбрать файл плагина"
+        CustomInstallButton = "Установить и включить"
     }
 
     ProxyOptions = {

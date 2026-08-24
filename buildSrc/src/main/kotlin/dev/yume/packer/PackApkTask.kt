@@ -346,7 +346,7 @@ abstract class PackApkTask : DefaultTask() {
         //  - libloader.so is the bootstrap loader itself;
         //  - libmihomo.so and libpreview.so are tiny PIE shells. A non-root app can only
         //    execve() files living in nativeLibraryDir; both dlopen the compressed core payload.
-        val BOOTSTRAP_LIBRARY = Regex("lib/[^/]+/(?:libloader|libmihomo|libpreview|libebpfbridge)\\.so")
+        val BOOTSTRAP_LIBRARY = Regex("lib/[^/]+/(?:libloader|libmihomo|libpreview)\\.so")
         val SIGNATURE_ENTRY =
             Regex("META-INF/[^/]+\\.(?:MF|SF|RSA|DSA|EC)", RegexOption.IGNORE_CASE)
         const val FIXED_TIMESTAMP = 315_532_800_000L

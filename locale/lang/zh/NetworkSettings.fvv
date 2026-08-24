@@ -31,6 +31,10 @@ NetworkSettings = {
         SystemProxyTitle = "VPN 內建系統代理"
     }
 
+    EbpfOptions = {
+        BypassCnTitle = "中國大陸 IP 不經核心"
+    }
+
     TunOptions = {
         Title = "Tun 設定"
         IfNameTitle = "虛擬網卡"
@@ -56,6 +60,13 @@ NetworkSettings = {
         DownloadTitle = "遠端核心"
         FetchButton = "取得最新"
         DownloadButton = "下載"
+        CustomTitle = "自訂內核"
+        CustomMethodTitle = "匯入方式"
+        CustomUrlMethod = "填寫內核連結"
+        CustomFileMethod = "上傳插件"
+        CustomUrlLabel = "插件連結"
+        CustomChooseFile = "選擇插件檔案"
+        CustomInstallButton = "安裝並啟用"
     }
 
     ProxyOptions = {

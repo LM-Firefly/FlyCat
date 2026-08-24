@@ -72,7 +72,7 @@ object RuntimeLog {
         /** Root `tun` daemon session, same span of stages as [LocalTun]. */
         RootTun("ROOT"),
 
-        /** Root eBPF socket-address bridge session. */
+        /** Root mihomo session using its native eBPF listener. */
         RootEbpf("EBPF");
 
         companion object {

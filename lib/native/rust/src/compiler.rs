@@ -116,8 +116,15 @@ fn compile_root_from_source(
     if !root.is_object() {
         return Err("compiled root config must be an object".to_string());
     }
-    if !request.skip_runtime_patches {
+    // Native eBPF is profile-owned: never inject the VPN/Tun runtime patch set even if an older
+    // caller forgets to set skip_runtime_patches.
+    let apply_runtime_patches =
+        !request.skip_runtime_patches && request.run_mode != crate::model::RunMode::Ebpf;
+    if apply_runtime_patches {
         patch::patch_static_runtime(&mut root, profile_dir, request.run_mode);
+    }
+    if request.run_mode == crate::model::RunMode::Ebpf {
+        patch::disable_ebpf_tun_entrypoint(&mut root);
     }
 
     if request.preview {
@@ -128,7 +135,7 @@ fn compile_root_from_source(
         .as_object_mut()
         .ok_or_else(|| "compiled root config must be an object".to_string())?;
     validate_root_config(object)?;
-    if !request.skip_runtime_patches {
+    if apply_runtime_patches {
         patch::validate_provider_paths(object, profile_dir)?;
     }
 

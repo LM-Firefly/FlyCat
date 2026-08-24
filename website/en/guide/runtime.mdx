@@ -69,16 +69,8 @@ icon: network
 
 <View title="eBPF" icon="cpu">
 
-  <ResponseField name="绕过私有网络" type="boolean" default="true">
-    Common private network segments are automatically excluded, and explicit exclusion of addresses is preferred.
-  </ResponseField>
-
-  <ResponseField name="DNS 劫持" type="boolean" default="true">
-    Start the eBPF DNS listener.
-  </ResponseField>
-
-  <ResponseField name="启用 IPv6" type="boolean" default="false">
-    Allow eBPF to handle IPv6.
+  <ResponseField name="Bypass mainland China IPs in kernel" type="boolean" default="true">
+    Write the CN-IP rule provider and `ebpf-in` listener; all other settings remain profile-owned.
   </ResponseField>
 
 </View>

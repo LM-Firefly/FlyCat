@@ -88,16 +88,3 @@ def loader_builder(config: ProjectConfig, ndk_tools: NdkTools) -> CMakeBuilder:
 
 def compat_builder(config: ProjectConfig, ndk_tools: NdkTools) -> CMakeBuilder:
     return CMakeBuilder(config, ndk_tools, name="Compat", source_relative="lib/native/compat", output_relative="build/native/compat", target="compat", output_names=("libcompat.so",), output_kind="library")
-
-
-def ebpf_builder(config: ProjectConfig, ndk_tools: NdkTools) -> CMakeBuilder:
-    return CMakeBuilder(
-        config,
-        ndk_tools,
-        name="eBPF Bridge",
-        source_relative="lib/native/ebpf",
-        output_relative="build/native/ebpf",
-        target="ebpf-bridge",
-        output_names=("libebpfbridge.so",),
-        output_kind="runtime",
-    )

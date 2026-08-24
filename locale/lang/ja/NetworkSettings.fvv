@@ -31,6 +31,10 @@ NetworkSettings = {
         SystemProxyTitle = "VPN 内蔵システムプロキシ"
     }
 
+    EbpfOptions = {
+        BypassCnTitle = "中国 IP をカーネルでバイパス"
+    }
+
     TunOptions = {
         Title = "Tun 設定"
         IfNameTitle = "仮想 NIC"
@@ -56,6 +60,13 @@ NetworkSettings = {
         DownloadTitle = "リモートカーネル"
         FetchButton = "最新を取得"
         DownloadButton = "ダウンロード"
+        CustomTitle = "カスタムカーネル"
+        CustomMethodTitle = "インポート方法"
+        CustomUrlMethod = "プラグインURLを入力"
+        CustomFileMethod = "プラグインをアップロード"
+        CustomUrlLabel = "プラグインURL"
+        CustomChooseFile = "プラグインファイルを選択"
+        CustomInstallButton = "インストールして有効化"
     }
 
     ProxyOptions = {

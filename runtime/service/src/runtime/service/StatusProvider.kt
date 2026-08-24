@@ -305,8 +305,7 @@ class StatusProvider : ContentProvider() {
             when (mode) {
                 RunMode.VpnService -> vpnServiceAlive
                 RunMode.Tun -> CoreProcess.isRootDaemonAlive()
-                RunMode.Ebpf -> CoreProcess.isRootDaemonAlive() &&
-                        com.github.yumeyucca.yumebox.runtime.service.core.EbpfBridgeProcess.isAlive()
+                RunMode.Ebpf -> CoreProcess.isRootDaemonAlive()
             }
 
         fun clearLegacyStateFiles() {

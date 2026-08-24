@@ -38,12 +38,12 @@ import tf.gal.yumebox.locale.YumeTxt
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 
-/** Settings that are meaningful for the standalone root eBPF socket bridge. */
+/** Settings for the active kernel's native eBPF listener. */
 @Composable
 fun EbpfServiceOptionsScreen() {
     val scrollBehavior = MiuixScrollBehavior()
     val viewModel = koinViewModel<NetworkSettingsViewModel>()
-    val options by viewModel.tunServiceOptionsUiState.collectAsState()
+    val options by viewModel.ebpfServiceOptionsUiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -62,19 +62,9 @@ fun EbpfServiceOptionsScreen() {
                 Title(YumeTxt.NetworkSettings.RunMode.EbpfTitle)
                 AppCard {
                     PreferenceSwitchItem(
-                        title = YumeTxt.NetworkSettings.VpnOptions.BypassPrivateTitle,
-                        checked = options.common.bypassPrivateNetwork,
-                        onCheckedChange = viewModel::onBypassPrivateNetworkChange,
-                    )
-                    PreferenceSwitchItem(
-                        title = YumeTxt.NetworkSettings.VpnOptions.DnsHijackTitle,
-                        checked = options.common.dnsHijack,
-                        onCheckedChange = viewModel::onDnsHijackChange,
-                    )
-                    PreferenceSwitchItem(
-                        title = YumeTxt.NetworkSettings.VpnOptions.EnableIpv6Title,
-                        checked = options.common.enableIPv6,
-                        onCheckedChange = viewModel::onEnableIPv6Change,
+                        title = YumeTxt.NetworkSettings.EbpfOptions.BypassCnTitle,
+                        checked = options.bypassCn,
+                        onCheckedChange = viewModel::onEbpfBypassCnChange,
                     )
                 }
             }

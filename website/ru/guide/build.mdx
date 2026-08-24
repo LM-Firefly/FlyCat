@@ -109,7 +109,6 @@ python scripts/native-build.py --all
 | `--go` | общее ядро ​​mihomo, библиотека предварительного просмотра и оболочка запуска PIE |
 | `--rust` | Компилятор конфигурации Rust `liboverride.so` |
 | `--compat` | Мост связи основного процесса `libcompat.so` |
-| `--ebpf` | Корневой мост сокета eBPF |
 | `--loader` | APK-загрузчик полезной нагрузки `libloader.so` |
 | `--shell` | Создавайте только стартовую оболочку mihomo PIE |
 | `--geo` | Загрузите и сжимайте геоданные с помощью BundleMRS |
@@ -119,12 +118,12 @@ python scripts/native-build.py --all
 
 <CodeGroup>
   ```bash Linux / macOS / Git Bash
-  ABI_APP_LIST=arm64-v8a python scripts/native-build.py --go --rust --compat --loader --ebpf
+  ABI_APP_LIST=arm64-v8a python scripts/native-build.py --go --rust --compat --loader
   ```
 
   ```powershell Windows PowerShell
   $env:ABI_APP_LIST = "arm64-v8a"
-  python scripts/native-build.py --go --rust --compat --loader --ebpf
+  python scripts/native-build.py --go --rust --compat --loader
   ```
 </CodeGroup>
 
@@ -137,7 +136,6 @@ python scripts/native-build.py --all
 | `libpreview.so` | Предварительный просмотр конфигурации |
 | `liboverride.so` | Переопределить компиляцию |
 | `libcompat.so` | Основной коммуникационный мост |
-| `libebpfbridge.so` | Режим моста eBPF |
 | `libloader.so` | Загрузка встроенной полезной нагрузки APK |
 | `core-version.properties` | Информация о ветках ядра, коммитах и ​​сборке |
 
@@ -224,7 +222,7 @@ key.password=你的密钥密码
 
 | Этап | Основная работа | Результаты |
 | --- | --- | --- |
-| Родная сборка | Синхронизировать ядро, собрать Go, Rust, C/C++, eBPF и загрузчик | `native-*` артефакты сборки |
+| Родная сборка | Синхронизировать ядро, собрать Go, Rust, C/C++ и загрузчик | `native-*` артефакты сборки |
 | APK-сборка | Загрузите собственный продукт, упакованный `builtin` и `external` соответственно | Два APK-файла выпуска |
 | Подготовка релиза | Вычислить версию, сгенерировать SHA-256 и метаданные | Каталог выпусков и информация об обновлениях |
 | Релиз | Загрузить APK и метаданные | Релиз на GitHub |

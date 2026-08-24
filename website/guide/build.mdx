@@ -110,7 +110,6 @@ python scripts/native-build.py --all
 | `--go` | mihomo 共享核心、预览库和 PIE 启动壳 |
 | `--rust` | Rust 配置编译器 `liboverride.so` |
 | `--compat` | 核心进程通信桥 `libcompat.so` |
-| `--ebpf` | Root eBPF socket bridge |
 | `--loader` | APK payload loader `libloader.so` |
 | `--shell` | 仅构建 mihomo PIE 启动壳 |
 | `--geo` | 下载并压缩 Geo 数据与 BundleMRS |
@@ -120,12 +119,12 @@ python scripts/native-build.py --all
 
 <CodeGroup>
   ```bash Linux / macOS / Git Bash
-  ABI_APP_LIST=arm64-v8a python scripts/native-build.py --go --rust --compat --loader --ebpf
+  ABI_APP_LIST=arm64-v8a python scripts/native-build.py --go --rust --compat --loader
   ```
 
   ```powershell Windows PowerShell
   $env:ABI_APP_LIST = "arm64-v8a"
-  python scripts/native-build.py --go --rust --compat --loader --ebpf
+  python scripts/native-build.py --go --rust --compat --loader
   ```
 </CodeGroup>
 
@@ -138,7 +137,6 @@ python scripts/native-build.py --all
 | `libpreview.so` | 配置预览 |
 | `liboverride.so` | 覆写编译 |
 | `libcompat.so` | 核心通信桥 |
-| `libebpfbridge.so` | eBPF 模式桥接 |
 | `libloader.so` | APK 原生载荷加载 |
 | `core-version.properties` | 内核分支、提交和构建信息 |
 
@@ -225,7 +223,7 @@ key.password=你的密钥密码
 
 | 阶段 | 主要工作 | 结果 |
 | --- | --- | --- |
-| 原生构建 | 同步内核，构建 Go、Rust、C/C++、eBPF 和 loader | `native-*` 构建产物 |
+| 原生构建 | 同步内核，构建 Go、Rust、C/C++ 和 loader | `native-*` 构建产物 |
 | APK 构建 | 下载原生产物，分别打包 `builtin` 和 `external` | 两个 Release APK |
 | 发布准备 | 计算版本、生成 SHA-256 和元数据 | 发布目录与更新信息 |
 | Release 发布 | 上传 APK 和元数据 | GitHub Release |

@@ -88,11 +88,9 @@ pub fn patch_static_runtime(root: &mut JsonValue, profile_dir: &Path, run_mode: 
     backfill_enabled_dns_without_nameserver(object);
 
     // In the VpnService path the TUN is attached at runtime via a file descriptor; a config-provided
-    // tun block must never open its own /dev/net/tun (it would fail on non-root and fight the
-    // fd-based listener). So force any tun block off — EXCEPT in tun mode, where the compiled tun block is
-    // authoritative and the core opens its own kernel device (auto-route / auto-detect-interface) in
-    // the root domain.
-    if run_mode != RunMode::Tun
+    // tun block must never open its own /dev/net/tun. Native eBPF and Root Tun keep their profile
+    // authoritative because their downloaded mihomo kernels own traffic attachment.
+    if run_mode == RunMode::Vpn
         && let Some(tun) = object.get_mut("tun").and_then(JsonValue::as_object_mut)
     {
         tun.insert("enable".to_string(), JsonValue::Bool(false));
@@ -102,6 +100,25 @@ pub fn patch_static_runtime(root: &mut JsonValue, profile_dir: &Path, run_mode: 
 
     patch_listeners(object);
     patch_providers(object, profile_dir);
+}
+
+/// Native eBPF and mihomo Tun cannot attach at the same time. Keep this narrow mode guard
+/// separate from the broader runtime patch set so eBPF profiles remain otherwise authoritative.
+pub fn disable_ebpf_tun_entrypoint(root: &mut JsonValue) {
+    let Some(object) = root.as_object_mut() else {
+        return;
+    };
+    let Some(tun) = object.get_mut("tun").and_then(JsonValue::as_object_mut) else {
+        return;
+    };
+    for key in [
+        "enable",
+        "auto-route",
+        "auto-detect-interface",
+        "auto-redirect",
+    ] {
+        tun.insert(key.to_string(), JsonValue::Bool(false));
+    }
 }
 
 /// Strip every traffic-facing entry point from the inspect-only core. The launcher adds its own

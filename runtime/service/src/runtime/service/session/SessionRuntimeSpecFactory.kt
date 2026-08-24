@@ -52,18 +52,6 @@ class SessionRuntimeSpecFactory(
 
     fun createRootSpec(runMode: RunMode): RuntimeSpec = createSpec(RuntimeOwner.RootDaemon, runMode)
 
-    /** Native eBPF policy uses the same package-to-UID resolution as Root Tun. */
-    fun resolveEbpfUidPolicy(): EbpfUidPolicy {
-        val access = resolveTunAccessControl()
-        return when (store.accessControlMode) {
-            AccessControlMode.AcceptAll -> EbpfUidPolicy(mode = 0, uids = emptyList())
-            AccessControlMode.AcceptSelected -> EbpfUidPolicy(mode = 1, uids = access.includeUid)
-            AccessControlMode.RejectSelected -> EbpfUidPolicy(mode = 2, uids = access.excludeUid)
-            AccessControlMode.RejectAll ->
-                EbpfUidPolicy(mode = 1, uids = listOf(context.applicationInfo.uid))
-        }
-    }
-
     /** A local, no-TUN core used only to materialize proxy-group state while the app is foregrounded. */
     fun createPreviewSpec(): RuntimeSpec = createSpec(RuntimeOwner.VpnService, RunMode.VpnService, preview = true)
 
@@ -77,6 +65,7 @@ class SessionRuntimeSpecFactory(
         val disableAllUserOverrides = networkSettings.disableAllOverride.value
         val skipModePatches =
             disableAllUserOverrides && runMode == RunMode.Tun
+        val skipRuntimePatches = skipModePatches || runMode == RunMode.Ebpf
         val userOverrides =
             if (disableAllUserOverrides) {
                 emptyList()
@@ -91,10 +80,18 @@ class SessionRuntimeSpecFactory(
             when {
                 tunConfig != null -> userOverrides + TunOverride.materialize(tunConfig, profileDir)
                 runMode == RunMode.Ebpf ->
-                    userOverrides + EbpfOverride.materialize(store.dnsHijacking, profileDir)
+                    userOverrides +
+                        listOfNotNull(
+                            EbpfOverride.materialize(
+                                EbpfOverride.Config(bypassCn = store.ebpfBypassCn),
+                                profileDir,
+                            )
+                        )
                 else -> userOverrides
             }
-        val overrideSpecs = modeOverrides + GlobalUaOverride.materialize(profileDir)
+        val overrideSpecs =
+            if (runMode == RunMode.Ebpf) modeOverrides
+            else modeOverrides + GlobalUaOverride.materialize(profileDir)
         val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
         return RuntimeSpec(
             owner = owner,
@@ -105,8 +102,8 @@ class SessionRuntimeSpecFactory(
             ageSecretKey = ageSecretKey,
             overrideSpecs = overrideSpecs,
             runMode = runMode,
-            // Only Root Tun skips compiler patches; VPN and eBPF keep DNS/path injection.
-            skipRuntimePatches = skipModePatches,
+            // eBPF keeps the profile authoritative; Root Tun only skips patches for disable-all.
+            skipRuntimePatches = skipRuntimePatches,
             preview = preview,
             tunConfig = tunConfig,
             effectiveFingerprint =
@@ -196,11 +193,6 @@ class SessionRuntimeSpecFactory(
         val includeUid: List<Int> = emptyList(),
         val excludeUid: List<Int> = emptyList(),
         val includeAndroidUser: List<Int> = emptyList(),
-    )
-
-    data class EbpfUidPolicy(
-        val mode: Int,
-        val uids: List<Int>,
     )
 
     private companion object {
