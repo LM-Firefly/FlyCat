@@ -156,3 +156,83 @@ fn ebpf_mode_keeps_profile_config_authoritative() {
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn ebpf_cn_override_preserves_profile_providers_and_listeners() {
+    let temp_dir = temp_dir("compiler-test-ebpf-cn-merge");
+    let profile_path = temp_dir.join("config.yaml");
+    std::fs::write(
+        &profile_path,
+        r#"
+mode: rule
+listeners:
+  - name: existing-in
+    type: mixed
+    port: 7890
+rules:
+  - RULE-SET,hijacking,REJECT,no-resolve
+rule-providers:
+  hijacking:
+    type: inline
+    behavior: domain
+    payload:
+      - +.example.com
+"#,
+    )
+    .expect("write profile yaml");
+
+    let override_path = temp_dir.join("__ebpf_cn_override__.yaml");
+    std::fs::write(
+        &override_path,
+        r#"
+listeners+:
+  - name: ebpf-in
+    type: ebpf
+    mode: hybrid
+    dns-mode: hijack
+    bypass-rule-set: [CN-IP]
+    shared:
+      interface: [br0]
+rule-providers-merge:
+  CN-IP:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    interval: 86400
+    path: ./rule_provider/cn-ip.mrs
+    url: https://example.com/cn.mrs
+"#,
+    )
+    .expect("write eBPF override");
+
+    let mut request = test_request(&temp_dir, &profile_path);
+    request.run_mode = RunMode::Ebpf;
+    request.overrides = vec![override_spec(&override_path, "yaml")];
+    let result = r#override::compile_request(request, false).expect("compile should succeed");
+    assert!(result.success, "compile failed: {:?}", result.error);
+    let root: JsonValue = serde_yaml::from_str(&result.final_yaml).expect("parse final yaml");
+
+    let providers = root["rule-providers"]
+        .as_object()
+        .expect("rule providers object");
+    assert!(providers.contains_key("hijacking"));
+    assert!(providers.contains_key("CN-IP"));
+
+    let listeners = root["listeners"].as_array().expect("listeners array");
+    assert!(
+        listeners
+            .iter()
+            .any(|listener| listener["name"] == "existing-in")
+    );
+    assert!(
+        listeners
+            .iter()
+            .any(|listener| listener["name"] == "ebpf-in")
+    );
+    assert_eq!(
+        root["rules"][0],
+        JsonValue::String("RULE-SET,hijacking,REJECT,no-resolve".to_string())
+    );
+
+    let _ = std::fs::remove_dir_all(&temp_dir);
+}

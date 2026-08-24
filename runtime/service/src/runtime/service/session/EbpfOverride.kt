@@ -32,7 +32,7 @@ object EbpfOverride {
         if (!config.bypassCn) return ""
         val override =
             linkedMapOf<String, Any?>(
-                "listeners" to
+                "listeners+" to
                     listOf(
                         linkedMapOf<String, Any?>(
                             "name" to LISTENER_NAME,
@@ -43,7 +43,7 @@ object EbpfOverride {
                             "shared" to linkedMapOf("interface" to listOf("br0")),
                         )
                     ),
-                "rule-providers" to
+                "rule-providers-merge" to
                     linkedMapOf(
                         CN_PROVIDER_NAME to
                             linkedMapOf<String, Any?>(

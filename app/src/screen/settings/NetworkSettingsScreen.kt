@@ -214,10 +214,9 @@ fun NetworkSettingsScreen(navigator: Navigator) {
             onDismiss = { showKernelDialog = false },
         )
 
-        CustomKernelDialog(
+        CustomKernelSheet(
             show = showCustomKernelDialog,
             busy = screen.kernelBusy,
-            status = screen.kernelStatus,
             onInstallUrl = { url ->
                 viewModel.installCustomPluginUrl(url) { success ->
                     if (success) showCustomKernelDialog = false
@@ -338,10 +337,9 @@ private fun KernelSelectionDialog(
 }
 
 @Composable
-private fun CustomKernelDialog(
+private fun CustomKernelSheet(
     show: Boolean,
     busy: Boolean,
-    status: String,
     onInstallUrl: (String) -> Unit,
     onInstallFile: (Uri) -> Unit,
     onDismiss: () -> Unit,
@@ -352,21 +350,42 @@ private fun CustomKernelDialog(
         uri ?: return@rememberLauncherForActivityResult
         onInstallFile(uri)
     }
-    AppDialog(
+    AppActionBottomSheet(
         show = show,
         title = YumeTxt.NetworkSettings.Kernel.CustomTitle,
         onDismissRequest = onDismiss,
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space12)) {
-            WindowDropdownPreference(
-                title = YumeTxt.NetworkSettings.Kernel.CustomMethodTitle,
-                items = listOf(
-                    YumeTxt.NetworkSettings.Kernel.CustomUrlMethod,
-                    YumeTxt.NetworkSettings.Kernel.CustomFileMethod,
-                ),
-                selectedIndex = mode,
-                onSelectedIndexChange = { mode = it },
+        startAction = { AppBottomSheetCloseAction(onClick = onDismiss) },
+        endAction = {
+            AppBottomSheetConfirmAction(
+                enabled = !busy &&
+                    (mode == 1 || url.text.trim().startsWith("https://")),
+                onClick = {
+                    if (mode == 0) {
+                        onInstallUrl(url.text)
+                    } else {
+                        launcher.launch(arrayOf("application/zip", "application/octet-stream"))
+                    }
+                },
             )
+        },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = AppTheme.spacing.space16),
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space12),
+        ) {
+            AppCard(applyHorizontalPadding = false) {
+                WindowDropdownPreference(
+                    title = YumeTxt.NetworkSettings.Kernel.CustomMethodTitle,
+                    items = listOf(
+                        YumeTxt.NetworkSettings.Kernel.CustomUrlMethod,
+                        YumeTxt.NetworkSettings.Kernel.CustomFileMethod,
+                    ),
+                    selectedIndex = mode,
+                    onSelectedIndexChange = { mode = it },
+                )
+            }
             AnimatedContent(
                 targetState = mode,
                 transitionSpec = {
@@ -376,45 +395,35 @@ private fun CustomKernelDialog(
                 label = "custom_kernel_method",
             ) { selectedMode ->
                 if (selectedMode == 0) {
-                    Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space8)) {
-                        OemTextField(
-                            value = url,
-                            onValueChange = { url = it },
-                            label = YumeTxt.NetworkSettings.Kernel.CustomUrlLabel,
-                            useLabelAsPlaceholder = true,
-                            enabled = !busy,
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        TextButton(
-                            text = YumeTxt.NetworkSettings.Kernel.CustomInstallButton,
-                            onClick = { onInstallUrl(url.text) },
-                            enabled = url.text.trim().startsWith("https://") && !busy,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                    OemTextField(
+                        value = url,
+                        onValueChange = { url = it },
+                        label = YumeTxt.NetworkSettings.Kernel.CustomUrlLabel,
+                        useLabelAsPlaceholder = true,
+                        enabled = !busy,
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else {
+                    AppCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        applyHorizontalPadding = false,
+                    ) {
+                        PreferenceArrowItem(
+                            title = YumeTxt.NetworkSettings.Kernel.CustomChooseFile,
+                            onClick = {
+                                if (!busy) {
+                                    launcher.launch(arrayOf("application/zip", "application/octet-stream"))
+                                }
+                            },
                         )
                     }
-                } else {
-                    TextButton(
-                        text = YumeTxt.NetworkSettings.Kernel.CustomChooseFile,
-                        onClick = {
-                            launcher.launch(arrayOf("application/zip", "application/octet-stream"))
-                        },
-                        enabled = !busy,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.textButtonColorsPrimary(),
-                    )
                 }
             }
             AnimatedVisibility(visible = busy) {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     InfiniteProgressIndicator(modifier = Modifier.size(24.dp))
                 }
-            }
-            AnimatedVisibility(
-                visible = status.isNotBlank() && !status.startsWith("No downloaded"),
-            ) {
-                Text(text = status)
             }
         }
     }

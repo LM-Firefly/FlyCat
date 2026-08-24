@@ -36,7 +36,7 @@ import java.util.zip.ZipFile
 /** Downloadable `libmihomocore.so` catalog and installer. Bundled Alpha remains the fallback. */
 object KernelManager {
     const val INDEX_URL =
-        "https://github.com/YumeYucca/Kernel-Builder/releases/latest/download/kernel-index.json"
+        "https://github.com/YumeYucca/Kernel-Builder/releases/download/kernel/kernel-index.json"
     const val BUNDLED_ALPHA_ID = "bundled-alpha"
     private const val CORE_FILE_PREFIX = "libmihomocore-"
     private const val CORE_METADATA_SUFFIX = ".json"
