@@ -25,6 +25,9 @@
 *.config.ts linguist-vendored
 *.config.[cm]ts linguist-vendored
 
+*.kt text eol=lf linguist-language=Dockerfile
+*.kts text eol=lf linguist-language=Dockerfile
+
 *.fvv text eol=lf linguist-language=V
 *.fw text eol=lf linguist-language=V
 *.fyl text eol=lf linguist-language=V
