@@ -22,16 +22,14 @@
 
 package com.github.yumeyucca.yumebox.screen.feature
 
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
-import com.github.yumeyucca.yumebox.common.util.toast
 import com.github.yumeyucca.yumebox.data.model.RemoteBackend
+import com.github.yumeyucca.yumebox.data.model.RemoteProtocol
 import com.github.yumeyucca.yumebox.presentation.component.*
 import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
 import com.github.yumeyucca.yumebox.screen.settings.RemoteControllerViewModel
@@ -44,9 +42,10 @@ import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-fun RemoteControllerSection(viewModel: RemoteControllerViewModel = koinViewModel()) {
-    val context = LocalContext.current
-
+fun RemoteControllerSection(
+    viewModel: RemoteControllerViewModel = koinViewModel(),
+    onRequestLocalNetworkPermission: (RemoteBackend, () -> Unit) -> Unit = { _, action -> action() },
+) {
     val section by viewModel.sectionState.collectAsState()
     val controllerEnabled = section.controllerEnabled
     val backends = section.backends
@@ -54,8 +53,6 @@ fun RemoteControllerSection(viewModel: RemoteControllerViewModel = koinViewModel
 
     var sheetState by remember { mutableStateOf<BackendSheetState?>(null) }
     var sheetVisible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) { viewModel.messages.collect { message -> context.toast(message) } }
 
     val activeBackend = backends.firstOrNull { it.id == activeBackendId } ?: backends.firstOrNull()
     val selectedBackendIndex =
@@ -67,7 +64,14 @@ fun RemoteControllerSection(viewModel: RemoteControllerViewModel = koinViewModel
         PreferenceSwitchItem(
             title = YumeTxt.Feature.RemoteController.ModeTitle,
             checked = controllerEnabled,
-            onCheckedChange = viewModel::setEnabled,
+            onCheckedChange = { enabled ->
+                val backend = activeBackend
+                if (enabled && backend != null) {
+                    onRequestLocalNetworkPermission(backend) { viewModel.setEnabled(true) }
+                } else {
+                    viewModel.setEnabled(false)
+                }
+            },
             enabled = backends.isNotEmpty(),
         )
 
@@ -78,7 +82,30 @@ fun RemoteControllerSection(viewModel: RemoteControllerViewModel = koinViewModel
                 items = backendItems,
                 selectedIndex = selectedBackendIndex,
                 onSelectedIndexChange = { index ->
-                    backends.getOrNull(index)?.let { viewModel.setActive(it.id) }
+                    backends.getOrNull(index)?.let { backend ->
+                        if (controllerEnabled) {
+                            onRequestLocalNetworkPermission(backend) { viewModel.setActive(backend.id) }
+                        } else {
+                            viewModel.setActive(backend.id)
+                        }
+                    }
+                },
+            )
+            WindowDropdownPreference(
+                title = YumeTxt.Feature.RemoteController.Protocol,
+                summary = null,
+                items = RemoteProtocol.entries.map { it.scheme.uppercase() },
+                selectedIndex = RemoteProtocol.entries.indexOf(activeBackend?.protocol),
+                onSelectedIndexChange = { index ->
+                    val protocol = RemoteProtocol.entries[index]
+                    activeBackend?.let { backend ->
+                        val update = { viewModel.setProtocol(backend.id, protocol) }
+                        if (controllerEnabled) {
+                            onRequestLocalNetworkPermission(backend, update)
+                        } else {
+                            update()
+                        }
+                    }
                 },
             )
         }
@@ -107,14 +134,20 @@ fun RemoteControllerSection(viewModel: RemoteControllerViewModel = koinViewModel
             show = sheetVisible,
             state = state.form,
             title =
-                if (state is BackendSheetState.Add) YumeTxt.Feature.RemoteController.AddBackend
-                else YumeTxt.Feature.RemoteController.EditBackend,
+                if (state is BackendSheetState.Add) {
+                    YumeTxt.Feature.RemoteController.AddBackend
+                } else {
+                    YumeTxt.Feature.RemoteController.EditBackend
+                },
             onDismiss = { sheetVisible = false },
             onDismissFinished = { sheetState = null },
             onConfirm = { name, host, port, secret ->
                 when (state) {
-                    is BackendSheetState.Add -> viewModel.addBackend(name, host, port, secret)
-                    is BackendSheetState.Edit ->
+                    is BackendSheetState.Add -> {
+                        viewModel.addBackend(name, host, port, secret)
+                    }
+
+                    is BackendSheetState.Edit -> {
                         state.form.id?.let { id ->
                             viewModel.updateBackend(
                                 RemoteBackend(
@@ -123,9 +156,10 @@ fun RemoteControllerSection(viewModel: RemoteControllerViewModel = koinViewModel
                                     host = host.trim(),
                                     port = port,
                                     secret = secret.trim(),
-                                )
+                                ),
                             )
                         }
+                    }
                 }
                 sheetVisible = false
             },
@@ -156,7 +190,12 @@ private fun BackendEditSheet(
     var port by remember(state) { mutableStateOf(state.port) }
     var secret by remember(state) { mutableStateOf(state.secret) }
 
-    val normalizedHost = host.trim().removePrefix("http://").removePrefix("https://").trimEnd('/')
+    val normalizedHost =
+        host
+            .trim()
+            .removePrefix("http://")
+            .removePrefix("https://")
+            .trimEnd('/')
     val parsedPort = port.trim().toIntOrNull()
     val portValid = parsedPort != null && parsedPort in 1..65535
     val canConfirm = normalizedHost.isNotEmpty() && portValid
@@ -238,7 +277,7 @@ private fun BackendEditSheet(
                         modifier = Modifier.weight(1f),
                         colors =
                             ButtonDefaults.textButtonColors(
-                                textColor = MiuixTheme.colorScheme.error
+                                textColor = MiuixTheme.colorScheme.error,
                             ),
                     )
                 } else {
@@ -251,7 +290,9 @@ private fun BackendEditSheet(
                 TextButton(
                     text = YumeTxt.Component.Button.Confirm,
                     onClick = {
-                        if (canConfirm) onConfirm(name, normalizedHost, parsedPort, secret)
+                        if (canConfirm) {
+                            onConfirm(name, normalizedHost, parsedPort, secret)
+                        }
                     },
                     modifier = Modifier.weight(1f),
                     enabled = canConfirm,
@@ -265,9 +306,13 @@ private fun BackendEditSheet(
 private sealed interface BackendSheetState {
     val form: BackendFormState
 
-    data class Add(override val form: BackendFormState) : BackendSheetState
+    data class Add(
+        override val form: BackendFormState,
+    ) : BackendSheetState
 
-    data class Edit(override val form: BackendFormState) : BackendSheetState
+    data class Edit(
+        override val form: BackendFormState,
+    ) : BackendSheetState
 }
 
 private data class BackendFormState(
@@ -278,7 +323,14 @@ private data class BackendFormState(
     val secret: String,
 ) {
     companion object {
-        fun empty() = BackendFormState(id = null, name = "", host = "", port = "9090", secret = "")
+        fun empty() =
+            BackendFormState(
+                id = null,
+                name = "",
+                host = "",
+                port = "9090",
+                secret = "",
+            )
 
         fun from(backend: RemoteBackend) =
             BackendFormState(
@@ -291,13 +343,20 @@ private data class BackendFormState(
     }
 }
 
-private fun RemoteBackend.displayName(): String = name.ifBlank { "${host}:${port}" }
+private fun RemoteBackend.displayName(): String = name.ifBlank { "$host:$port" }
 
-private data class HostPortInput(val host: String, val port: String)
+private data class HostPortInput(
+    val host: String,
+    val port: String,
+)
 
-private fun parseHostPortInput(raw: String, currentPort: String): HostPortInput {
+private fun parseHostPortInput(
+    raw: String,
+    currentPort: String,
+): HostPortInput {
     val endpoint =
-        raw.trim()
+        raw
+            .trim()
             .removePrefix("http://")
             .removePrefix("https://")
             .substringBefore('/')

@@ -22,6 +22,7 @@
 
 package com.github.yumeyucca.yumebox.presentation.webview
 
+import com.github.yumeyucca.yumebox.data.model.RemoteProtocol
 
 object WebViewUtils {
     private val onlinePanelUrls =
@@ -31,5 +32,11 @@ object WebViewUtils {
             "https://yacd.haishan.me",
         )
 
-    fun getPanelUrl(panelType: Int): String = onlinePanelUrls.getOrElse(panelType) { "" }
+    fun getPanelUrl(
+        panelType: Int,
+        protocol: RemoteProtocol = RemoteProtocol.HTTPS,
+    ): String =
+        onlinePanelUrls
+            .getOrElse(panelType) { "" }
+            .replaceFirst("https", protocol.scheme)
 }

@@ -22,12 +22,12 @@
 
 package com.github.yumeyucca.yumebox.presentation.screen
 
-
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.github.yumeyucca.yumebox.common.util.DeviceUtil
+import com.github.yumeyucca.yumebox.data.model.RemoteProtocol
 import com.github.yumeyucca.yumebox.presentation.component.*
 import com.github.yumeyucca.yumebox.presentation.viewmodel.FeatureViewModel
 import com.github.yumeyucca.yumebox.substore.model.AutoCloseMode
@@ -41,8 +41,8 @@ import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 
 @Composable
 fun FeatureContent(
-    onOpenExternalUrl: (String) -> Unit,
     onOpenInAppUrl: (String) -> Unit,
+    onOpenPanel: (url: String) -> Unit,
     onCreatePanelShortcut: (url: String, label: String) -> Unit = { _, _ -> },
     topSection: @Composable () -> Unit = {},
     bottomSection: @Composable () -> Unit = {},
@@ -66,6 +66,7 @@ fun FeatureContent(
     val isDownloadingJavet = screen.isDownloadingJavet
     val isJavetLoaded = screen.isJavetLoaded
     val selectedPanelType = screen.selectedPanelType
+    val panelProtocol by viewModel.panelProtocol.state.collectAsState()
 
     val panelDisplayNames = listOf("Zashboard", "MetaCubeXD", "Yacd")
 
@@ -82,7 +83,7 @@ fun FeatureContent(
             item {
                 val currentPanelName =
                     panelDisplayNames.getOrElse(selectedPanelType) { YumeTxt.Feature.Panel.Unknown }
-                val panelUrl = panelUrlFor(selectedPanelType)
+                val panelUrl = panelUrlFor(selectedPanelType, panelProtocol)
 
                 Title(YumeTxt.Feature.Panel.Section)
                 AppCard {
@@ -96,6 +97,20 @@ fun FeatureContent(
                         onSelectedIndexChange = { viewModel.setSelectedPanelType(it) },
                     )
 
+                    EnumSelector(
+                        title = YumeTxt.Feature.Panel.OpenMode,
+                        summary = null,
+                        currentValue = panelProtocol,
+                        items = RemoteProtocol.entries.map { it.scheme.uppercase() },
+                        values = RemoteProtocol.entries,
+                        onValueChange = viewModel::setPanelProtocol,
+                    )
+                    ArrowPreference(
+                        title = YumeTxt.Feature.Panel.OpenPanel,
+                        summary = null,
+                        enabled = panelUrl.isNotBlank(),
+                        onClick = { onOpenPanel(panelUrl) },
+                    )
                     ArrowPreference(
                         title = YumeTxt.Feature.Panel.CreateShortcut,
                         summary = null,
@@ -178,10 +193,16 @@ fun FeatureContent(
     }
 }
 
-private fun panelUrlFor(panelType: Int): String =
-    when (panelType) {
-        0 -> "https://board.zash.run.place"
-        1 -> "https://metacubex.github.io/metacubexd"
-        2 -> "https://yacd.haishan.me"
-        else -> "https://board.zash.run.place"
-    }
+private fun panelUrlFor(
+    panelType: Int,
+    protocol: RemoteProtocol,
+): String {
+    val host =
+        when (panelType) {
+            0 -> "board.zash.run.place"
+            1 -> "metacubex.github.io/metacubexd"
+            2 -> "yacd.haishan.me"
+            else -> "board.zash.run.place"
+        }
+    return "${protocol.scheme}://$host"
+}

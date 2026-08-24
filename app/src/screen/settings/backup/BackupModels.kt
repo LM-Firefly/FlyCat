@@ -116,6 +116,7 @@ data class FeatureSettingsBackup(
     val frontendPort: Int = 8080,
     val selectedPanelType: Int = 0,
     val panelOpenMode: LinkOpenMode = LinkOpenMode.IN_APP,
+    val panelProtocol: RemoteProtocol = RemoteProtocol.HTTPS,
     val showWebControlInProxy: Boolean = false,
     val exitUiWhenBackground: Boolean = false,
     val isFirstOpen: Boolean = true,
@@ -197,4 +198,6 @@ data class ImportedBackup(
 }
 
 @Serializable
-data class ServiceBackup(val activeProfile: String? = null)
+data class ServiceBackup(
+    val activeProfile: String? = null,
+)

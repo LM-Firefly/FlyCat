@@ -24,6 +24,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import com.github.yumeyucca.yumebox.data.model.RemoteBackend
+import com.github.yumeyucca.yumebox.data.model.RemoteProtocol
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import timber.log.Timber
@@ -37,16 +38,20 @@ import javax.crypto.spec.GCMParameterSpec
 internal class RemoteBackendStorageCodec(
     private val cipher: RemoteBackendSecretCipher = RemoteBackendSecretCipher,
 ) {
-    fun decode(json: Json, encoded: String): List<RemoteBackend> =
+    fun decode(
+        json: Json,
+        encoded: String,
+    ): List<RemoteBackend> =
         json.decodeFromString<List<StoredRemoteBackend>>(encoded).map { stored ->
             RemoteBackend(
                 id = stored.id,
                 name = stored.name,
                 host = stored.host,
                 port = stored.port,
+                protocol = stored.protocol,
                 secret =
                     when {
-                        stored.secretCiphertext.isNotBlank() ->
+                        stored.secretCiphertext.isNotBlank() -> {
                             runCatching { cipher.decrypt(stored.secretCiphertext) }
                                 .onFailure { error ->
                                     Timber.e(
@@ -54,15 +59,20 @@ internal class RemoteBackendStorageCodec(
                                         "Failed to decrypt remote controller secret for %s",
                                         stored.id,
                                     )
-                                }
-                                .getOrDefault("")
+                                }.getOrDefault("")
+                        }
 
-                        else -> stored.secret.orEmpty()
+                        else -> {
+                            stored.secret.orEmpty()
+                        }
                     },
             )
         }
 
-    fun encode(json: Json, backends: List<RemoteBackend>): String =
+    fun encode(
+        json: Json,
+        backends: List<RemoteBackend>,
+    ): String =
         json.encodeToString(
             backends.map { backend ->
                 StoredRemoteBackend(
@@ -70,10 +80,14 @@ internal class RemoteBackendStorageCodec(
                     name = backend.name,
                     host = backend.host,
                     port = backend.port,
+                    protocol = backend.protocol,
                     secretCiphertext =
-                        backend.secret.takeIf(String::isNotBlank)?.let(cipher::encrypt).orEmpty(),
+                        backend.secret
+                            .takeIf(String::isNotBlank)
+                            ?.let(cipher::encrypt)
+                            .orEmpty(),
                 )
-            }
+            },
         )
 
     @Serializable
@@ -82,6 +96,7 @@ internal class RemoteBackendStorageCodec(
         val name: String,
         val host: String,
         val port: Int,
+        val protocol: RemoteProtocol = RemoteProtocol.HTTP,
         // Legacy field: decoded once and omitted from every new write.
         val secret: String? = null,
         val secretCiphertext: String = "",
@@ -134,14 +149,14 @@ internal object RemoteBackendSecretCipher : RemoteBackendSecretCipherContract {
         runCatching {
             KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KEYSTORE).apply {
                 init(
-                    KeyGenParameterSpec.Builder(
-                        KEY_ALIAS,
-                        KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
-                    )
-                        .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    KeyGenParameterSpec
+                        .Builder(
+                            KEY_ALIAS,
+                            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+                        ).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                         .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                         .setKeySize(256)
-                        .build()
+                        .build(),
                 )
                 generateKey()
             }

@@ -22,8 +22,8 @@
 
 package com.github.yumeyucca.yumebox
 
-
 import android.app.Activity
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,10 +32,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import com.github.yumeyucca.yumebox.common.util.openUrl
+import com.github.yumeyucca.yumebox.common.util.buildRemotePanelUrl
+import com.github.yumeyucca.yumebox.common.util.requiresLocalNetworkPermission
 import com.github.yumeyucca.yumebox.data.store.FeatureStore
-import com.github.yumeyucca.yumebox.data.store.LinkOpenMode
+import com.github.yumeyucca.yumebox.data.store.RemoteControllerStore
 import com.github.yumeyucca.yumebox.presentation.component.*
 import com.github.yumeyucca.yumebox.presentation.navigation.Route
 import com.github.yumeyucca.yumebox.presentation.screen.ProxyPager
@@ -43,8 +45,8 @@ import com.github.yumeyucca.yumebox.presentation.theme.YumeHaze
 import com.github.yumeyucca.yumebox.presentation.webview.WebViewUtils
 import com.github.yumeyucca.yumebox.screen.home.HomePager
 import com.github.yumeyucca.yumebox.screen.home.HomeViewModel
-import com.github.yumeyucca.yumebox.screen.moe.MoeHomePage
 import com.github.yumeyucca.yumebox.screen.moe.LocalUseSystemWallpaper
+import com.github.yumeyucca.yumebox.screen.moe.MoeHomePage
 import com.github.yumeyucca.yumebox.screen.moe.calculateHomeVisibility
 import com.github.yumeyucca.yumebox.screen.profiles.ProfilesPager
 import com.github.yumeyucca.yumebox.screen.settings.AppSettingsViewModel
@@ -65,6 +67,13 @@ fun MainScreen(
     val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
     val homeViewModel = koinViewModel<HomeViewModel>()
     val featureStore = koinInject<FeatureStore>()
+    val remoteControllerStore = koinInject<RemoteControllerStore>()
+    var pendingLocalNetworkAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val localNetworkPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            pendingLocalNetworkAction?.takeIf { granted }?.invoke()
+            pendingLocalNetworkAction = null
+        }
     val nodeSession by homeViewModel.nodeSession.collectAsState()
     val initialDestination =
         BottomBarDestination.entries.getOrElse(initialPage.coerceIn(0, 3)) {
@@ -111,53 +120,72 @@ fun MainScreen(
     val moeWallpaperBiasY by appSettingsViewModel.moeWallpaperBiasY.state.collectAsState()
     val useSystemWallpaper by appSettingsViewModel.useSystemWallpaper.state.collectAsState()
     val selectedPanelType by featureStore.selectedPanelType.state.collectAsState()
-    val panelOpenMode by featureStore.panelOpenMode.state.collectAsState()
-    val panelUrl = remember(selectedPanelType) { WebViewUtils.getPanelUrl(selectedPanelType) }
+    val panelProtocol by featureStore.panelProtocol.state.collectAsState()
+    val panelUrl =
+        remember(selectedPanelType, panelProtocol) {
+            WebViewUtils.getPanelUrl(selectedPanelType, panelProtocol)
+        }
     val openNetworkPanel: () -> Unit = {
-        panelUrl.takeIf { it.isNotBlank() }?.let { url ->
-            when (panelOpenMode) {
-                LinkOpenMode.IN_APP -> WebViewActivity.start(context, url)
-                LinkOpenMode.EXTERNAL_BROWSER -> openUrl(context, url)
+        panelUrl.takeIf { it.isNotBlank() }?.let { panel ->
+            val backend = remoteControllerStore.activeBackend()
+            val targetUrl = backend?.let { buildRemotePanelUrl(panel, it) } ?: panel
+            val openPanel = { WebViewActivity.start(context, targetUrl) }
+            if (
+                backend != null &&
+                Build.VERSION.SDK_INT >= 37 &&
+                backend.requiresLocalNetworkPermission() &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    "android.permission.ACCESS_LOCAL_NETWORK",
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                pendingLocalNetworkAction = openPanel
+                localNetworkPermissionLauncher.launch("android.permission.ACCESS_LOCAL_NETWORK")
+            } else {
+                openPanel()
             }
         }
     }
     val bottomBarScrollBehavior =
         rememberBottomBarScrollBehavior(autoHideEnabled = bottomBarAutoHideEnabled)
     val selectedDestination by
-    remember(mainPagerState, visibleDestinations) {
-        derivedStateOf {
-            if (previousDestinations != visibleDestinations) {
-                previousDestinations.getOrNull(mainPagerState.selectedPage) ?: settledDestination
-            } else {
-                visibleDestinations.getOrElse(mainPagerState.selectedPage) {
-                    BottomBarDestination.Home
+        remember(mainPagerState, visibleDestinations) {
+            derivedStateOf {
+                if (previousDestinations != visibleDestinations) {
+                    previousDestinations.getOrNull(mainPagerState.selectedPage) ?: settledDestination
+                } else {
+                    visibleDestinations.getOrElse(mainPagerState.selectedPage) {
+                        BottomBarDestination.Home
+                    }
                 }
             }
         }
-    }
     val homeVisibility by
-    remember(mainPagerState) {
-        derivedStateOf {
-            calculateHomeVisibility(
-                currentPage = mainPagerState.pagerState.currentPage,
-                currentPageOffsetFraction = mainPagerState.pagerState.currentPageOffsetFraction,
-            )
+        remember(mainPagerState) {
+            derivedStateOf {
+                calculateHomeVisibility(
+                    currentPage = mainPagerState.pagerState.currentPage,
+                    currentPageOffsetFraction = mainPagerState.pagerState.currentPageOffsetFraction,
+                )
+            }
         }
-    }
     // Floating nav bar (with the proxy FAB) shows on the classic home and every other page; the
     // default home has its own chrome, so it stays hidden there.
     val bottomBarVisible by
-    remember(classicHomeEnabled, settledDestination, selectedDestination) {
-        derivedStateOf {
-            when {
-                // Dual-pane shell: still float the left-pane bottom bar when not on Moe home.
-                classicHomeEnabled -> true
-                selectedDestination == BottomBarDestination.Home -> false
-                settledDestination != BottomBarDestination.Home -> true
-                else -> false
+        remember(classicHomeEnabled, settledDestination, selectedDestination) {
+            derivedStateOf {
+                when {
+                    // Dual-pane shell: still float the left-pane bottom bar when not on Moe home.
+                    classicHomeEnabled -> true
+
+                    selectedDestination == BottomBarDestination.Home -> false
+
+                    settledDestination != BottomBarDestination.Home -> true
+
+                    else -> false
+                }
             }
         }
-    }
     val bottomBarBackground =
         MiuixTheme.colorScheme.run {
             surface.takeIf { background.luminance() < 0.5f } ?: background
@@ -205,7 +233,7 @@ fun MainScreen(
 
     val vpnPermissionLauncher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.StartActivityForResult()
+            contract = ActivityResultContracts.StartActivityForResult(),
         ) { result ->
             homeViewModel.onVpnPermissionResult(result.resultCode == Activity.RESULT_OK)
         }
@@ -246,13 +274,14 @@ fun MainScreen(
     LaunchedEffect(pendingDeepLink) {
         val uri = pendingDeepLink?.toUri() ?: return@LaunchedEffect
         when (uri.host) {
-            "page" ->
+            "page" -> {
                 when (uri.lastPathSegment) {
                     "home" -> handlePageChange(BottomBarDestination.Home)
                     "proxy" -> handlePageChange(BottomBarDestination.Proxy)
                     "profiles" -> handlePageChange(BottomBarDestination.Config)
                     "settings" -> handlePageChange(BottomBarDestination.Setting)
                 }
+            }
 
             "screen" -> {
                 val route: Route? =
@@ -324,11 +353,14 @@ fun MainScreen(
 }
 
 @Composable
-private fun MainScreenBackHandler(mainPagerState: MainPagerState, canPopRoute: Boolean) {
+private fun MainScreenBackHandler(
+    mainPagerState: MainPagerState,
+    canPopRoute: Boolean,
+) {
     val canReturnHome by
-    remember(mainPagerState, canPopRoute) {
-        derivedStateOf { mainPagerState.selectedPage != 0 && !canPopRoute }
-    }
+        remember(mainPagerState, canPopRoute) {
+            derivedStateOf { mainPagerState.selectedPage != 0 && !canPopRoute }
+        }
     androidx.activity.compose.BackHandler(enabled = canReturnHome) { mainPagerState.animateToPage(0) }
 }
 
@@ -356,7 +388,7 @@ internal fun MainRootPageContent(state: MainRootPageState) {
                 listOf(
                     Route.Main(initialPage = BottomBarDestination.Proxy.ordinal),
                     Route.Providers,
-                )
+                ),
             )
     }
     when (state.destination) {
@@ -382,15 +414,21 @@ internal fun MainRootPageContent(state: MainRootPageState) {
             }
         }
 
-        BottomBarDestination.Proxy ->
+        BottomBarDestination.Proxy -> {
             ProxyPager(
                 mainInnerPadding = state.mainInnerPadding,
                 onNavigateToProviders = openProvidersFromProxy,
                 isActive = state.selectedDestination == BottomBarDestination.Proxy,
                 windowLayoutMode = state.windowLayoutMode,
             )
+        }
 
-        BottomBarDestination.Config -> ProfilesPager(state.mainInnerPadding, state.windowLayoutMode)
-        BottomBarDestination.Setting -> SettingPager(state.mainInnerPadding, state.windowLayoutMode)
+        BottomBarDestination.Config -> {
+            ProfilesPager(state.mainInnerPadding, state.windowLayoutMode)
+        }
+
+        BottomBarDestination.Setting -> {
+            SettingPager(state.mainInnerPadding, state.windowLayoutMode)
+        }
     }
 }

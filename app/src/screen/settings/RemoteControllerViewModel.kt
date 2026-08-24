@@ -22,31 +22,24 @@
 
 package com.github.yumeyucca.yumebox.screen.settings
 
-
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.yumeyucca.yumebox.common.util.stateInWhileSubscribed
 import com.github.yumeyucca.yumebox.data.model.RemoteBackend
+import com.github.yumeyucca.yumebox.data.model.RemoteProtocol
 import com.github.yumeyucca.yumebox.data.store.RemoteControllerStore
 import com.github.yumeyucca.yumebox.data.store.add
 import com.github.yumeyucca.yumebox.data.store.remove
 import com.github.yumeyucca.yumebox.data.store.update
 import com.github.yumeyucca.yumebox.runtime.client.ProxyFacade
-import io.github.yumeyucca.yumebox.api.ApiClient
-import io.github.yumeyucca.yumebox.api.ApiConfig
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import tf.gal.yumebox.locale.YumeTxt
 
 class RemoteControllerViewModel(
     application: Application,
     private val store: RemoteControllerStore,
     private val proxyFacade: ProxyFacade,
 ) : AndroidViewModel(application) {
-
     val controllerEnabled: StateFlow<Boolean> =
         store.controllerEnabled.state.stateInWhileSubscribed(
             viewModelScope,
@@ -75,25 +68,26 @@ class RemoteControllerViewModel(
                 backends = list,
                 activeBackendId = activeId,
             )
-        }
-            .stateInWhileSubscribed(
-                viewModelScope,
-                SectionState(
-                    controllerEnabled = store.controllerEnabled.value,
-                    backends = store.backends.value,
-                    activeBackendId = store.activeBackendId.value,
-                ),
-            )
-
-    private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 1)
-    val messages: SharedFlow<String> = _messages.asSharedFlow()
+        }.stateInWhileSubscribed(
+            viewModelScope,
+            SectionState(
+                controllerEnabled = store.controllerEnabled.value,
+                backends = store.backends.value,
+                activeBackendId = store.activeBackendId.value,
+            ),
+        )
 
     fun setEnabled(enabled: Boolean) {
         store.controllerEnabled.set(enabled)
         proxyFacade.applyRemoteControllerState()
     }
 
-    fun addBackend(name: String, host: String, port: Int, secret: String) {
+    fun addBackend(
+        name: String,
+        host: String,
+        port: Int,
+        secret: String,
+    ) {
         val backend =
             RemoteBackend(
                 id = RemoteBackend.newId(),
@@ -116,6 +110,16 @@ class RemoteControllerViewModel(
         }
     }
 
+    fun setProtocol(
+        id: String,
+        protocol: RemoteProtocol,
+    ) {
+        store.backends.update({ it.id == id }, { it.copy(protocol = protocol) })
+        if (id == store.activeBackendId.value) {
+            proxyFacade.applyRemoteControllerState()
+        }
+    }
+
     fun deleteBackend(id: String) {
         val wasActive = store.activeBackendId.value == id
         store.backends.remove { it.id == id }
@@ -129,38 +133,5 @@ class RemoteControllerViewModel(
     fun setActive(id: String) {
         store.activeBackendId.set(id)
         proxyFacade.applyRemoteControllerState()
-    }
-
-    fun testConnection(backend: RemoteBackend) {
-        viewModelScope.launch {
-            val result =
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                        val client =
-                            ApiClient(
-                                ApiConfig(
-                                    endpoint = backend.normalizedBaseUrl,
-                                    secret = backend.secret,
-                                )
-                            )
-                        try {
-                            client.tunnelMode()
-                        } finally {
-                            client.close()
-                        }
-                    }
-                }
-            result
-                .onSuccess { state ->
-                    _messages.tryEmit(YumeTxt.Feature.RemoteController.Connected.format(state))
-                }
-                .onFailure { error ->
-                    _messages.tryEmit(
-                        YumeTxt.Feature.RemoteController.ConnectionFailed.format(
-                            error.message ?: error::class.simpleName
-                        )
-                    )
-                }
-        }
     }
 }

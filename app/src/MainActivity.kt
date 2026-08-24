@@ -86,8 +86,6 @@ class MainActivity : FragmentActivity() {
     companion object {
         private const val REQUEST_STARTUP_PERMISSIONS = 1001
         private const val REQUEST_SYSTEM_WALLPAPER_PERMISSION = 1002
-        private const val MIUI_GET_INSTALLED_APPS_PERMISSION =
-            "com.android.permission.GET_INSTALLED_APPS"
         private const val EXTRA_EXIT_UI_WHEN_BACKGROUND = "exit_ui_when_background"
         private val _pendingImportUrl = MutableStateFlow<String?>(null)
         val pendingImportUrl: StateFlow<String?> = _pendingImportUrl.asStateFlow()
@@ -105,17 +103,17 @@ class MainActivity : FragmentActivity() {
     }
 
     private val appSettingsStorage: com.github.yumeyucca.yumebox.data.store.AppSettingsStore by
-    inject()
+        inject()
     private val featureStore: FeatureStore by inject()
     private val networkSettingsStorage:
-            com.github.yumeyucca.yumebox.data.store.NetworkSettingsStore by
-    inject()
+        com.github.yumeyucca.yumebox.data.store.NetworkSettingsStore by
+        inject()
     private val profilesRepository: com.github.yumeyucca.yumebox.runtime.client.ProfilesRepository by
-    inject()
+        inject()
     private val proxyFacade: com.github.yumeyucca.yumebox.runtime.client.ProxyFacade by inject()
     private val serviceCache: MMKV by inject(qualifier = named("service_cache"))
     private val applicationScope: CoroutineScope by
-    inject(qualifier = named(APPLICATION_SCOPE_NAME))
+        inject(qualifier = named(APPLICATION_SCOPE_NAME))
 
     private lateinit var intentController: IntentController
 
@@ -150,18 +148,34 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             val appSettingsViewModel = koinViewModel<AppSettingsViewModel>()
-            val themeMode = appSettingsViewModel.themeMode.state.collectAsState().value
+            val themeMode =
+                appSettingsViewModel.themeMode.state
+                    .collectAsState()
+                    .value
             val themeSeedColorArgb =
-                appSettingsViewModel.themeSeedColorArgb.state.collectAsState().value
+                appSettingsViewModel.themeSeedColorArgb.state
+                    .collectAsState()
+                    .value
             val invertOnPrimaryColors =
-                appSettingsViewModel.invertOnPrimaryColors.state.collectAsState().value
+                appSettingsViewModel.invertOnPrimaryColors.state
+                    .collectAsState()
+                    .value
             val excludeFromRecents =
-                appSettingsViewModel.excludeFromRecents.state.collectAsState().value
+                appSettingsViewModel.excludeFromRecents.state
+                    .collectAsState()
+                    .value
             val topBarBlurEnabled =
-                appSettingsViewModel.topBarBlurEnabled.state.collectAsState().value
-            val pageScale = appSettingsViewModel.pageScale.state.collectAsState().value
+                appSettingsViewModel.topBarBlurEnabled.state
+                    .collectAsState()
+                    .value
+            val pageScale =
+                appSettingsViewModel.pageScale.state
+                    .collectAsState()
+                    .value
             val useSystemWallpaper =
-                appSettingsViewModel.useSystemWallpaper.state.collectAsState().value
+                appSettingsViewModel.useSystemWallpaper.state
+                    .collectAsState()
+                    .value
 
             LaunchedEffect(excludeFromRecents) {
                 this@MainActivity.applyExcludeFromRecents(excludeFromRecents)
@@ -184,9 +198,9 @@ class MainActivity : FragmentActivity() {
                         val topBarHazeStyle = YumeHaze.topBarStyle(topBarBackground)
                         CompositionLocalProvider(
                             LocalTopBarHazeState provides
-                                    if (topBarBlurEnabled) topBarHazeState else null,
+                                if (topBarBlurEnabled) topBarHazeState else null,
                             LocalTopBarHazeStyle provides
-                                    if (topBarBlurEnabled) topBarHazeStyle else null,
+                                if (topBarBlurEnabled) topBarHazeStyle else null,
                         ) {
                             Surface(
                                 modifier = Modifier.fillMaxSize(),
@@ -230,7 +244,7 @@ class MainActivity : FragmentActivity() {
                         appSettingsStorage = appSettingsStorage,
                         networkSettingsStorage = networkSettingsStorage,
                         serviceCache = serviceCache,
-                    )
+                    ),
                 ) {
                     ProxyAutoStartHelper.checkAndAutoStart(this@MainActivity)
                 }
@@ -284,7 +298,8 @@ class MainActivity : FragmentActivity() {
     private fun handleDeepLinkUri(uri: Uri) {
         when (uri.scheme) {
             "clash",
-            "clashmeta" -> {
+            "clashmeta",
+            -> {
                 if (uri.host != "install-config") return
                 val configUrl = uri.getQueryParameter("url")
                 if (!configUrl.isNullOrBlank()) {
@@ -292,33 +307,24 @@ class MainActivity : FragmentActivity() {
                 }
             }
 
-            "yumebox" -> _pendingDeepLink.value = uri.toString()
+            "yumebox" -> {
+                _pendingDeepLink.value = uri.toString()
+            }
         }
     }
 
-    /**
-     * On launch, auto-request the two runtime permissions the app needs: notifications (Android
-     * 13+) and the MIUI dynamic "get installed apps" permission. Both are fired in a single system
-     * dialog sequence; permissions that aren't runtime-requestable on this device/OS are simply
-     * skipped.
-     */
+    /** Requests only the notification permission that is relevant during application startup. */
     private fun requestStartupPermissions(): Boolean {
-        val permissions = buildList {
-            if (
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
-                android.content.pm.PackageManager.PERMISSION_GRANTED
-            ) {
-                add(android.Manifest.permission.POST_NOTIFICATIONS)
+        val permissions =
+            buildList {
+                if (
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+                    android.content.pm.PackageManager.PERMISSION_GRANTED
+                ) {
+                    add(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
             }
-            if (
-                isMiuiGetInstalledAppsDynamicSupported() &&
-                checkSelfPermission(MIUI_GET_INSTALLED_APPS_PERMISSION) !=
-                android.content.pm.PackageManager.PERMISSION_GRANTED
-            ) {
-                add(MIUI_GET_INSTALLED_APPS_PERMISSION)
-            }
-        }
         if (permissions.isNotEmpty()) {
             requestPermissions(permissions.toTypedArray(), REQUEST_STARTUP_PERMISSIONS)
         }
@@ -344,12 +350,6 @@ class MainActivity : FragmentActivity() {
             )
         }
     }
-
-    private fun isMiuiGetInstalledAppsDynamicSupported(): Boolean = runCatching {
-        packageManager.getPermissionInfo(MIUI_GET_INSTALLED_APPS_PERMISSION, 0).packageName ==
-                "com.lbe.security.miui"
-    }
-        .getOrDefault(false)
 
     @Suppress("DEPRECATION")
     private fun applyExcludeFromRecents(exclude: Boolean) {

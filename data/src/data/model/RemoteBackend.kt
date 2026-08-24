@@ -30,22 +30,34 @@ import kotlinx.serialization.Serializable
  * auth configured).
  */
 @Serializable
+enum class RemoteProtocol(
+    val scheme: String,
+) {
+    HTTP("http"),
+    HTTPS("https"),
+}
+
+@Serializable
 data class RemoteBackend(
     val id: String,
     val name: String,
     val host: String,
     val port: Int,
     val secret: String = "",
+    val protocol: RemoteProtocol = RemoteProtocol.HTTP,
 ) {
-    /** Base URL assembled from [host] + [port]. */
+    /** Base URL assembled from [protocol], [host], and [port]. */
     val baseUrl: String
-        get() = "http://${host.trim()}:$port"
+        get() = "${protocol.scheme}://${host.trim()}:$port"
 
     /** Base URL with any trailing slash stripped so paths can be appended directly. */
     val normalizedBaseUrl: String
         get() = baseUrl.trimEnd('/')
 
     companion object {
-        fun newId(): String = java.util.UUID.randomUUID().toString()
+        fun newId(): String =
+            java.util.UUID
+                .randomUUID()
+                .toString()
     }
 }

@@ -97,6 +97,7 @@ internal class BackupStoreAdapter(
                     frontendPort = featureSettings.frontendPort.value,
                     selectedPanelType = featureSettings.selectedPanelType.value,
                     panelOpenMode = featureSettings.panelOpenMode.value,
+                    panelProtocol = featureSettings.panelProtocol.value,
                     showWebControlInProxy = featureSettings.showWebControlInProxy.value,
                     exitUiWhenBackground = featureSettings.exitUiWhenBackground.value,
                     isFirstOpen = featureSettings.isFirstOpen,
@@ -151,8 +152,7 @@ internal class BackupStoreAdapter(
             "profiles",
             "service",
             "override_bindings",
-        )
-            .forEach { id -> mmkvProvider.getMMKV(id).clearAll() }
+        ).forEach { id -> mmkvProvider.getMMKV(id).clearAll() }
         refreshPreferenceCachesAfterRawClear()
     }
 
@@ -213,6 +213,7 @@ internal class BackupStoreAdapter(
             featureSettings.frontendPort,
             featureSettings.selectedPanelType,
             featureSettings.panelOpenMode,
+            featureSettings.panelProtocol,
             featureSettings.showWebControlInProxy,
             featureSettings.exitUiWhenBackground,
         )
@@ -292,6 +293,7 @@ internal class BackupStoreAdapter(
         featureSettings.frontendPort.set(value.frontendPort)
         featureSettings.selectedPanelType.set(value.selectedPanelType)
         featureSettings.panelOpenMode.set(value.panelOpenMode)
+        featureSettings.panelProtocol.set(value.panelProtocol)
         featureSettings.showWebControlInProxy.set(value.showWebControlInProxy)
         featureSettings.exitUiWhenBackground.set(value.exitUiWhenBackground)
         featureSettings.isFirstOpen = value.isFirstOpen

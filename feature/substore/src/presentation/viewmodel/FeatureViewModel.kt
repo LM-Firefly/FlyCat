@@ -29,8 +29,8 @@ import com.github.yumeyucca.yumebox.common.util.DeviceUtil
 import com.github.yumeyucca.yumebox.common.util.toast
 import com.github.yumeyucca.yumebox.core.util.PollingTimerSpecs
 import com.github.yumeyucca.yumebox.core.util.PollingTimers
+import com.github.yumeyucca.yumebox.data.model.RemoteProtocol
 import com.github.yumeyucca.yumebox.data.store.FeatureStore
-import com.github.yumeyucca.yumebox.data.store.LinkOpenMode
 import com.github.yumeyucca.yumebox.data.store.Preference
 import com.github.yumeyucca.yumebox.substore.SubStorePaths
 import com.github.yumeyucca.yumebox.substore.SubStoreServiceController
@@ -55,14 +55,14 @@ class FeatureViewModel(
     val backendPort: Preference<Int> = store.backendPort
     val frontendPort: Preference<Int> = store.frontendPort
     val selectedPanelType: Preference<Int> = store.selectedPanelType
-    val panelOpenMode: Preference<LinkOpenMode> = store.panelOpenMode
+    val panelProtocol: Preference<RemoteProtocol> = store.panelProtocol
     val exitUiWhenBackground: Preference<Boolean> = store.exitUiWhenBackground
     private val autoCloseModePreference: Preference<Int> = store.subStoreAutoCloseMode
 
     private val _autoCloseMode =
         MutableStateFlow(
             AutoCloseMode.entries.getOrNull(autoCloseModePreference.value)
-                ?: AutoCloseMode.ALWAYS_ON
+                ?: AutoCloseMode.ALWAYS_ON,
         )
     val autoCloseMode: StateFlow<AutoCloseMode> = _autoCloseMode.asStateFlow()
 
@@ -148,12 +148,11 @@ class FeatureViewModel(
                 isJavetLoaded = extra.isJavetLoaded,
                 selectedPanelType = extra.selectedPanelType,
             )
-        }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = FeatureScreenState(),
-            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = FeatureScreenState(),
+        )
 
     companion object {
         private const val JAVET_RELEASE_URL =
@@ -172,8 +171,7 @@ class FeatureViewModel(
                     context = application,
                     request = currentServiceRequest(),
                 )
-            }
-                .onSuccess { setupAutoCloseTimer() }
+            }.onSuccess { setupAutoCloseTimer() }
                 .onFailure { error -> showToast(error.message ?: YumeTxt.Util.Error.UnknownError) }
         }
     }
@@ -190,7 +188,9 @@ class FeatureViewModel(
                 false
             }
 
-            else -> true
+            else -> {
+                true
+            }
         }
 
     fun stopService() {
@@ -231,7 +231,7 @@ class FeatureViewModel(
         NativeLibraryManager.initialize(application)
         _isJavetLoaded.value =
             NativeLibraryManager.isLibraryAvailable(NativeLibraryManager.JAVET_LIBRARY_NAME) &&
-                NativeLibraryManager.loadJniLibrary(NativeLibraryManager.JAVET_LIBRARY_NAME)
+            NativeLibraryManager.loadJniLibrary(NativeLibraryManager.JAVET_LIBRARY_NAME)
     }
 
     fun refreshJavetStatus() {
@@ -256,8 +256,8 @@ class FeatureViewModel(
                     val temporaryFile =
                         requireNotNull(
                             NativeLibraryManager.getDownloadTempFile(
-                                NativeLibraryManager.JAVET_LIBRARY_NAME
-                            )
+                                NativeLibraryManager.JAVET_LIBRARY_NAME,
+                            ),
                         )
                     temporaryFile.delete()
                     downloadClient.download(JAVET_RELEASE_URL, temporaryFile) &&
@@ -269,8 +269,8 @@ class FeatureViewModel(
                 }.getOrElse { error ->
                     showToast(
                         YumeTxt.Feature.SubStore.DownloadError.format(
-                            error.message ?: YumeTxt.Util.Error.UnknownError
-                        )
+                            error.message ?: YumeTxt.Util.Error.UnknownError,
+                        ),
                     )
                     false
                 }
@@ -280,7 +280,7 @@ class FeatureViewModel(
                     YumeTxt.Feature.SubStore.JavetDownloadSuccess
                 } else {
                     YumeTxt.Feature.SubStore.JavetDownloadFailed
-                }
+                },
             )
             _isDownloadingJavet.value = false
         }
@@ -290,7 +290,7 @@ class FeatureViewModel(
         selectedPanelType.set(panelType)
     }
 
-    fun setPanelOpenMode(mode: LinkOpenMode) = panelOpenMode.set(mode)
+    fun setPanelProtocol(protocol: RemoteProtocol) = panelProtocol.set(protocol)
 
     fun setExitUiWhenBackground(enabled: Boolean) = exitUiWhenBackground.set(enabled)
 
@@ -338,7 +338,7 @@ class FeatureViewModel(
                         name = "substore_frontend_download_wait",
                         intervalMillis = 200L,
                         initialDelayMillis = 200L,
-                    )
+                    ),
                 )
             }
             downloadSubStoreBackend()
@@ -362,14 +362,13 @@ class FeatureViewModel(
                 if (success) {
                     _isSubStoreInitialized.value = SubStorePaths.isResourcesReady()
                 }
+            }.onFailure { error ->
+                showToast(
+                    YumeTxt.Feature.SubStore.DownloadError.format(
+                        error.message ?: YumeTxt.Util.Error.UnknownError,
+                    ),
+                )
             }
-                .onFailure { error ->
-                    showToast(
-                        YumeTxt.Feature.SubStore.DownloadError.format(
-                            error.message ?: YumeTxt.Util.Error.UnknownError
-                        )
-                    )
-                }
             loadingState.value = false
         }
     }
@@ -378,18 +377,19 @@ class FeatureViewModel(
         cancelAutoCloseTimer()
         val mode = _autoCloseMode.value
         mode.minutes?.let { minutes ->
-            autoCloseJob = viewModelScope.launch {
-                val timeoutMillis = minutes * 60 * 1000L
-                PollingTimers.awaitTick(
-                    PollingTimerSpecs.dynamic(
-                        name = "substore_auto_close",
-                        intervalMillis = timeoutMillis,
-                        initialDelayMillis = timeoutMillis,
+            autoCloseJob =
+                viewModelScope.launch {
+                    val timeoutMillis = minutes * 60 * 1000L
+                    PollingTimers.awaitTick(
+                        PollingTimerSpecs.dynamic(
+                            name = "substore_auto_close",
+                            intervalMillis = timeoutMillis,
+                            initialDelayMillis = timeoutMillis,
+                        ),
                     )
-                )
-                showToast(YumeTxt.Feature.ServiceStatus.AutoClosed)
-                stopService()
-            }
+                    showToast(YumeTxt.Feature.ServiceStatus.AutoClosed)
+                    stopService()
+                }
         }
     }
 
