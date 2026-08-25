@@ -31,6 +31,7 @@ import com.tencent.mmkv.MMKV
 class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv), NetworkSettingsReader {
     override val runMode by enumFlow(RunMode.VpnService)
     override val bypassPrivateNetwork by boolFlow(true)
+    val ebpfBypassCn by boolFlow(true)
     override val dnsHijack by boolFlow(true)
     override val allowBypass by boolFlow(true)
     override val enableIPv6 by boolFlow(false)

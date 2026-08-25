@@ -139,8 +139,9 @@ class SessionRuntimeSpecFactory(
             } else {
                 compiledConfigPipeline.resolveOverrideSpecs(rootResult.profileUuid.toString())
             }
-        // eBPF mode: use EbpfOverride instead of TunOverride (disables TUN, sets mixed-port 7890)
-        val modeOverrides = userOverrides + EbpfOverride.materialize(store.dnsHijacking, profileDir)
+        // eBPF模式：可选中国规则绕行覆盖（eBPF监听器+中国规则提供者）
+        val ebpfOverride = EbpfOverride.materialize(EbpfOverride.Config(bypassCn = store.ebpfBypassCn), profileDir)
+        val modeOverrides = userOverrides + listOfNotNull(ebpfOverride)
         val overrideSpecs = modeOverrides + GlobalUaOverride.materialize(profileDir)
         val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
         return RuntimeSpec(

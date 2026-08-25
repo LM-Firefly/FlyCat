@@ -6,10 +6,26 @@ NetworkSettings = {
         VpnOptions = "Параметры службы"
         Advanced = "Дополнительно"
         ProxyOptions = "Контроль доступа"
+        Kernel = "Управление ядром"
     }
 
     Advanced = {
         DisableOverrideTitle = "Отключить все переопределения"
+    }
+
+    Kernel = {
+        ActiveTitle = "Текущее ядро"
+        RefreshTitle = "Проверить обновления"
+        CustomTitle = "Установить пользовательское ядро"
+        BundledAlpha = "Встроенное Alpha"
+        RestartHint = "После смены ядра требуется перезапуск приложения"
+        RestartDialogTitle = "Ядро переключено"
+        RestartDialogMessage = "Новое ядро вступит в силу при следующем запуске. Перезапустить сейчас?"
+        ActiveTag = "√ Активно"
+        DownloadingTag = "Загрузка..."
+        InstalledTag = "Установлено"
+        PluginFormatTitle = "Формат плагина"
+        PluginFormatBody = "Требуется .zip файл, содержащий:\n • kernel-index.json\n • kernel-{id}.so.xz\nВ индексе должны быть указаны release.kind = \"custom\" и builder.format = \"kernel-plugin-v1\".\nПринимаются только HTTPS ссылки.\nПример: https://github.com/LM-Firefly/Kernel-Builder"
     }
 
     RunMode = {

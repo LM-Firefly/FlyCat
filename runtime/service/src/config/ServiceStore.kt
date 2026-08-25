@@ -154,6 +154,9 @@ class ServiceStore : ServiceStateReader {
             store.provider.setBoolean("dns_hijacking", value)
         }
 
+    val ebpfBypassCn: Boolean
+        get() = readBoolean(newKey = "ebpfBypassCn", legacyKey = "ebpf_bypass_cn", defaultValue = true)
+
     var systemProxy: Boolean
         get() = readBoolean(newKey = "systemProxy", legacyKey = "system_proxy", defaultValue = true)
         set(value) {

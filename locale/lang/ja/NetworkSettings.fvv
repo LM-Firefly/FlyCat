@@ -6,10 +6,26 @@ NetworkSettings = {
         VpnOptions = "サービス設定"
         Advanced = "詳細設定"
         ProxyOptions = "アクセス制御"
+        Kernel = "カーネル管理"
     }
 
     Advanced = {
         DisableOverrideTitle = "すべての上書きを無効化"
+    }
+
+    Kernel = {
+        ActiveTitle = "現在のカーネル"
+        RefreshTitle = "アップデートを確認"
+        CustomTitle = "カスタムカーネルをインストール"
+        BundledAlpha = "バンドル Alpha"
+        RestartHint = "カーネル切替後はアプリの再起動が必要です"
+        RestartDialogTitle = "カーネル切替完了"
+        RestartDialogMessage = "新しいカーネルは次回起動時に有効になります。今すぐ再起動しますか？"
+        ActiveTag = "√ 使用中"
+        DownloadingTag = "ダウンロード中..."
+        InstalledTag = "インストール済み"
+        PluginFormatTitle = "プラグイン形式"
+        PluginFormatBody = ".zip ファイルが必要です。内容：\n • kernel-index.json\n • kernel-{id}.so.xz\nインデックスには release.kind = \"custom\" と builder.format = \"kernel-plugin-v1\" が必要です。\nHTTPS URL のみ受け付けます。\nサンプル：https://github.com/LM-Firefly/Kernel-Builder"
     }
 
     RunMode = {

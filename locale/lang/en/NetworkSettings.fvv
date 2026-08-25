@@ -6,10 +6,26 @@ NetworkSettings = {
         VpnOptions = "Service Options"
         Advanced = "Advanced"
         ProxyOptions = "Access Control"
+        Kernel = "Kernel Management"
     }
 
     Advanced = {
         DisableOverrideTitle = "Disable All Overrides"
+    }
+
+    Kernel = {
+        ActiveTitle = "Active Kernel"
+        RefreshTitle = "Check for Updates"
+        CustomTitle = "Install Custom Kernel"
+        BundledAlpha = "Bundled Alpha"
+        RestartHint = "App restart required after switching kernel"
+        RestartDialogTitle = "Kernel Switched"
+        RestartDialogMessage = "The new kernel will take effect on next launch. Restart now?"
+        ActiveTag = "√ Active"
+        DownloadingTag = "Downloading..."
+        InstalledTag = "Installed"
+        PluginFormatTitle = "Plugin Format"
+        PluginFormatBody = "Requires a .zip file containing:\n • kernel-index.json\n • kernel-{id}.so.xz\nThe index must specify release.kind = \"custom\" and builder.format = \"kernel-plugin-v1\".\nOnly HTTPS URLs are accepted.\nExample: https://github.com/LM-Firefly/Kernel-Builder"
     }
 
     RunMode = {

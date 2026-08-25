@@ -296,7 +296,7 @@ abstract class PackApkTask : DefaultTask() {
     private companion object {
         val DEX_NAME = Regex("classes(?:[2-9][0-9]*)?\\.dex")
         val NATIVE_LIBRARY = Regex("lib/([^/]+)/([^/]+\\.so)")
-        val BOOTSTRAP_LIBRARY = Regex("lib/[^/]+/(?:libloader|libebpfbridge)\\.so")
+        val BOOTSTRAP_LIBRARY = Regex("lib/[^/]+/(?:libloader)\\.so")
         val SIGNATURE_ENTRY = Regex("META-INF/[^/]+\\.(?:MF|SF|RSA|DSA|EC)", RegexOption.IGNORE_CASE)
         const val FIXED_TIMESTAMP = 315_532_800_000L
     }

@@ -43,7 +43,7 @@ import com.github.lmfirefly.flycat.runtime.api.root.RootTunStatusFlow
 import com.github.lmfirefly.flycat.runtime.service.R
 import com.github.lmfirefly.flycat.runtime.service.StatusProvider
 import com.github.lmfirefly.flycat.runtime.service.profile.ProfileManager
-import com.github.lmfirefly.flycat.runtime.service.root.EbpfBridgeProcess
+import com.github.lmfirefly.flycat.runtime.service.root.EbpfBridgeMigration
 import com.github.lmfirefly.flycat.runtime.service.root.RootTunServiceBridge
 import com.github.lmfirefly.flycat.runtime.service.session.RuntimeServiceLauncher
 import com.github.lmfirefly.flycat.runtime.service.session.telemetry.RuntimeStartupLogStore
@@ -156,9 +156,9 @@ class AutoRestartService : Service() {
             return
         }
 
-        // Clean up orphaned eBPF bridges after APK replacement
+        // 在APK替换后清理遗留的eBPF桥接状态
         if (reason == REASON_PACKAGE_REPLACED) {
-            runCatching { EbpfBridgeProcess.cleanupOrphanedBridges(this) }
+            runCatching { EbpfBridgeMigration.clearLegacyBridgeState() }
         }
 
         StartupTaskCoordinator.awaitWarmup()

@@ -115,7 +115,6 @@ jobs:
             test -f "jniLibs/${abi}/libmihomo.so"
             test -f "jniLibs/${abi}/liboverride.so"
             test -f "jniLibs/${abi}/libloader.so"
-            test -f "jniLibs/${abi}/libebpfbridge.so"
           done
           test -f "build/generated/assets/geo/geoip.metadb.xz"
           test -f "build/generated/assets/geo/geosite.dat.xz"

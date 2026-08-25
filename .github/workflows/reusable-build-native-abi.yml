@@ -133,7 +133,6 @@ jobs:
           test -f "jniLibs/${{ inputs.abi }}/libmihomo.so"
           test -f "jniLibs/${{ inputs.abi }}/liboverride.so"
           test -f "jniLibs/${{ inputs.abi }}/libloader.so"
-          test -f "jniLibs/${{ inputs.abi }}/libebpfbridge.so"
 
       - name: Upload ABI artifact
         uses: actions/upload-artifact@v7
@@ -143,7 +142,6 @@ jobs:
             jniLibs/${{ inputs.abi }}/libmihomo.so
             jniLibs/${{ inputs.abi }}/liboverride.so
             jniLibs/${{ inputs.abi }}/libloader.so
-            jniLibs/${{ inputs.abi }}/libebpfbridge.so
           if-no-files-found: error
 
       - name: Upload core version stamp

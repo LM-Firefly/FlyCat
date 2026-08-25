@@ -6,10 +6,26 @@ NetworkSettings = {
         VpnOptions = "服務設定"
         Advanced = "進階選項"
         ProxyOptions = "存取控制"
+        Kernel = "核心管理"
     }
 
     Advanced = {
         DisableOverrideTitle = "停用所有覆寫"
+    }
+
+    Kernel = {
+        ActiveTitle = "當前核心"
+        RefreshTitle = "檢查更新"
+        CustomTitle = "安裝自訂核心"
+        BundledAlpha = "內建 Alpha"
+        RestartHint = "切換核心後需要重啟應用"
+        RestartDialogTitle = "核心已切換"
+        RestartDialogMessage = "新核心將在下次啟動時生效。是否立即重啟？"
+        ActiveTag = "√ 使用中"
+        DownloadingTag = "下載中..."
+        InstalledTag = "已安裝"
+        PluginFormatTitle = "插件格式"
+        PluginFormatBody = "需要一個 .zip 檔案，內含：\n • kernel-index.json\n • kernel-{id}.so.xz\n索引檔案須指定 release.kind = \"custom\" 且 builder.format = \"kernel-plugin-v1\"。\n僅接受 HTTPS 連結。\n示例倉庫：https://github.com/LM-Firefly/Kernel-Builder"
     }
 
     RunMode = {

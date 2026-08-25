@@ -65,8 +65,41 @@ object NativeLibraryLoader {
             Timber.i("Loaded core native libraries from the payload class loader")
             return
         }
+        // 检查KernelManager是否有活动已下载内核
+        val downloadedKernel = tryLoadDownloadedKernel(context)
+        if (downloadedKernel) {
+            return
+        }
         if (!tryLoadFromBundle(context)) {
             loadFromClassLoader()
+        }
+    }
+
+    /**
+     * 尝试加载KernelManager下载的内核而非内置内核。
+     * 直接读取活动内核标记文件（无跨模块依赖）。
+     * 若成功加载已下载的内核则返回true。
+     */
+    @SuppressLint("UnsafeDynamicallyLoadedCode")
+    private fun tryLoadDownloadedKernel(context: Context): Boolean {
+        return try {
+            val libDir = context.filesDir.resolve("lib")
+            val activeFile = java.io.File(libDir, "active-kernel")
+            if (!activeFile.isFile) return false
+            val activeId = activeFile.readText().trim()
+            if (activeId.isEmpty() || activeId == "bundled-alpha") return false
+            val kernelFile = java.io.File(libDir, "libmihomo-$activeId.so")
+            if (!kernelFile.isFile) return false
+            // 确保文件不可写——Android 16+ 会拒绝可写的 .so 文件。
+            kernelFile.setReadOnly()
+            // 从ClassLoader加载liboverride，从下载的内核加载libmihomo
+            System.loadLibrary("override")
+            System.load(kernelFile.absolutePath)
+            Timber.i("Loaded downloaded kernel: $activeId")
+            true
+        } catch (e: Throwable) {
+            Timber.d(e, "No downloaded kernel available, falling back to bundled")
+            false
         }
     }
 

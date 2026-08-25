@@ -471,26 +471,14 @@ class RustBuilder(private val config: ProjectConfig) {
             "-t", abi,
             "-o", outputDir.absolutePath,
             "build", "--release", "--lib",
-            // Rebuild std from source so the size profile (opt-level=z, LTO,
-            // immediate-abort) applies to it too. Requires the nightly
-            // toolchain pinned below plus the rust-src component.
-            "-Z", "build-std=std,panic_abort",
         )
         val result = executeCommand(
             command = command,
             workingDir = sourceDir,
             environment = mapOf(
-                // -Z flags and -Cpanic=immediate-abort are nightly-only; pin via
-                // rustup so the build does not depend on the host default toolchain.
                 "RUSTUP_TOOLCHAIN" to "nightly",
-                // immediate-abort drops all panic message/formatting machinery
-                // (~18% smaller liboverride.so). Panics already aborted the
-                // process (profile panic=abort); they just lose the logcat
-                // message. Compile errors are reported via Result/JSON and are
-                // unaffected. gc-sections + lld ICF fold what LTO leaves behind.
                 "RUSTFLAGS" to listOf(
-                    "-Zunstable-options",
-                    "-Cpanic=immediate-abort",
+                    "-Cpanic=unwind",
                     "-C", "link-arg=-Wl,--gc-sections",
                     "-C", "link-arg=-Wl,--icf=all",
                     "-C", "link-arg=-Wl,-soname,liboverride.so",
@@ -542,7 +530,6 @@ class LoaderRustBuilder(private val config: ProjectConfig) {
             "-t", abi,
             "-o", outputDir.absolutePath,
             "build", "--release", "--lib",
-            "-Z", "build-std=std,panic_abort",
         )
         val result = executeCommand(
             command = command,
@@ -550,8 +537,7 @@ class LoaderRustBuilder(private val config: ProjectConfig) {
             environment = mapOf(
                 "RUSTUP_TOOLCHAIN" to "nightly",
                 "RUSTFLAGS" to listOf(
-                    "-Zunstable-options",
-                    "-Cpanic=immediate-abort",
+                    "-Cpanic=unwind",
                     "-C", "link-arg=-Wl,--gc-sections",
                     "-C", "link-arg=-Wl,--icf=all",
                     "-C", "link-arg=-Wl,-soname,libloader.so",
@@ -573,79 +559,6 @@ class LoaderRustBuilder(private val config: ProjectConfig) {
         destination.parentFile.mkdirs()
         sourceLib.copyTo(destination, overwrite = true)
         println("[Loader] Copied to ${destination.absolutePath}")
-    }
-}
-
-class EbpfBridgeBuilder(private val config: ProjectConfig) {
-    private val sourceDir = File("lib/native/ebpf-bridge")
-    private val outputDir = File("build/native/ebpf-bridge")
-    private val appJniRoot = File("jniLibs")
-    private val outputBinaryName = "libebpfbridge.so"
-    fun buildAll() {
-        if (!File(sourceDir, "Cargo.toml").isFile) {
-            println("[eBPF] Source directory not found, skipping: ${sourceDir.absolutePath}")
-            return
-        }
-        val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
-        println("[eBPF] Building Rust eBPF bridge from ${sourceDir.absolutePath}")
-        println("[eBPF] Building for ABIs: ${abis.joinToString()}")
-        abis.forEach { abi -> buildForAbi(abi) }
-    }
-    private val abiToTargetTriple = mapOf(
-        "arm64-v8a" to "aarch64-linux-android",
-        "armeabi-v7a" to "armv7-linux-androideabi",
-        "x86" to "i686-linux-android",
-        "x86_64" to "x86_64-linux-android",
-    )
-    private fun buildForAbi(abi: String) {
-        println("[eBPF] Building for $abi...")
-        val command = listOf(
-            "cargo", "ndk",
-            "-t", abi,
-            "build", "--release", "--bin", "libebpfbridge",
-            "-Z", "build-std=std,panic_abort",
-        )
-        val result = executeCommand(
-            command = command,
-            workingDir = sourceDir,
-            environment = mapOf(
-                "RUSTUP_TOOLCHAIN" to "nightly",
-                "RUSTFLAGS" to listOf(
-                    "-C", "link-arg=-Wl,--gc-sections",
-                    "-C", "link-arg=-Wl,--build-id=none",
-                    "-C", "link-arg=-Wl,-z,relro",
-                    "-C", "link-arg=-Wl,-z,now",
-                    "-C", "link-arg=-Wl,-soname,$outputBinaryName",
-                ).joinToString(" "),
-            ),
-            stdoutPrefix = "[eBPF][$abi]",
-            stderrPrefix = "[eBPF][$abi]",
-            stderrIsError = false
-        )
-        if (result.success) {
-            // cargo ndk doesn't copy binaries via -o; find in target directory
-            val triple = abiToTargetTriple[abi] ?: error("[eBPF] Unknown ABI: $abi")
-            val targetBin = File(sourceDir, "target/$triple/release/libebpfbridge")
-            val sourceBin = File(outputDir, "$abi/$outputBinaryName")
-            if (targetBin.exists()) {
-                sourceBin.parentFile.mkdirs()
-                targetBin.copyTo(sourceBin, overwrite = true)
-                copyToAppJni(abi, sourceBin)
-                println("[eBPF] Successfully built $abi")
-            } else {
-                error("[eBPF] Output binary not found: ${targetBin.absolutePath}")
-            }
-        } else {
-            val reason = result.error.ifBlank { result.output }.trim()
-            error("[eBPF] Failed to build $abi: $reason")
-        }
-    }
-    private fun copyToAppJni(abi: String, sourceBin: File) {
-        val destDir = File(appJniRoot, abi)
-        destDir.mkdirs()
-        val destBin = File(destDir, outputBinaryName)
-        sourceBin.copyTo(destBin, overwrite = true)
-        println("[eBPF] Copied to ${destBin.absolutePath}")
     }
 }
 
@@ -713,7 +626,6 @@ fun printUsage() {
           --go       Build Go native libraries
           --rust     Build Rust config compiler
           --loader   Build the Rust/xz2 native payload extractor
-          --ebpf     Build Rust eBPF bridge
           --geo      Download Geo databases and BundleMRS.7z into generated assets
           --clean    Clean build outputs
           --all      Build everything (default)
@@ -733,7 +645,6 @@ fun cleanBuildOutputs() {
         File("jniLibs/$abi/libmihomo.so").delete()
         File("jniLibs/$abi/liboverride.so").delete()
         File("jniLibs/$abi/libloader.so").delete()
-        File("jniLibs/$abi/libebpfbridge.so").delete()
         File("jniLibs/$abi/core-version.properties").delete()
     }
     File("build/generated/core-version.properties").delete()
@@ -768,7 +679,6 @@ fun main(args: Array<String>) {
     val config = ProjectConfig()
     val buildGo = args.isEmpty() || args.contains("--all") || args.contains("--go")
     val buildRust = args.isEmpty() || args.contains("--all") || args.contains("--rust")
-    val buildEbpf = args.isEmpty() || args.contains("--all") || args.contains("--ebpf")
     val buildLoader = args.isEmpty() || args.contains("--all") || args.contains("--loader")
     val downloadGeo = args.isEmpty() || args.contains("--all") || args.contains("--geo")
     val needsNdk = buildGo || buildLoader
@@ -784,9 +694,6 @@ fun main(args: Array<String>) {
     }
     if (buildRust) {
         RustBuilder(config).buildAll()
-    }
-    if (buildEbpf) {
-        EbpfBridgeBuilder(config).buildAll()
     }
     if (buildLoader) {
         LoaderRustBuilder(config).buildAll()

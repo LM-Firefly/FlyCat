@@ -24,10 +24,10 @@ package com.github.lmfirefly.flycat.runtime.service.root
 import android.content.Context
 import com.github.lmfirefly.flycat.runtime.api.root.EbpfCapabilityProbe
 
-/** Delegates to the existing runtime:service eBPF objects. */
+/** eBPF 的能力现在由活动内核的能力决定，而非桥接探测器。 */
 class EbpfCapabilityProbeImpl : EbpfCapabilityProbe {
-    override fun rootCgroupPath(): String? = EbpfCgroupSupport.rootCgroupPath()
+    override fun rootCgroupPath(): String? = null
 
     override fun isCapabilityAvailable(context: Context, cgroupPath: String): Boolean =
-        EbpfBridgeProcess.isCapabilityAvailable(context, cgroupPath)
+        com.github.lmfirefly.flycat.core.kernel.KernelManager.isEbpfKernelActive(context)
 }

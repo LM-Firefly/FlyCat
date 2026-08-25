@@ -29,6 +29,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
@@ -47,6 +48,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.lmfirefly.flycat.core.kernel.KernelManager
 import com.github.lmfirefly.flycat.core.model.AccessControlMode
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
 import com.github.lmfirefly.flycat.core.model.tunnel.TunDnsMode
@@ -58,6 +60,7 @@ import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.RootT
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.TunServiceOptionsUiState
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.card.Card
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppFormDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppTextFieldDialog
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
@@ -80,6 +83,11 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 @Composable
 fun NetworkSettingsScreen(navigator: Navigator) {
@@ -118,6 +126,9 @@ fun NetworkSettingsScreen(navigator: Navigator) {
                     showAccessControlMode = uiState.showAccessControlMode,
                     onAccessControlModeChange = viewModel::onAccessControlModeChange,
                 )
+            }
+            item {
+                NetworkKernelSection(viewModel)
             }
         }
     }
@@ -225,6 +236,200 @@ private fun NetworkProxyOptionsSection(
  * selection radio. A disabled mode greys its contents and can't be selected.
  */
 @Composable
+private fun NetworkKernelSection(viewModel: NetworkSettingsViewModel) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val kernels by viewModel.kernels.collectAsStateWithLifecycle()
+    val activeKernelId by viewModel.activeKernelId.collectAsStateWithLifecycle()
+    val kernelBusy by viewModel.kernelBusy.collectAsStateWithLifecycle()
+    val downloadingIds by viewModel.downloadingKernelIds.collectAsStateWithLifecycle()
+    val installedCommits by viewModel.installedKernelCommits.collectAsStateWithLifecycle()
+    var showCustomDialog by remember { mutableStateOf(false) }
+    val restartRequired by viewModel.restartRequired.collectAsStateWithLifecycle()
+
+    Title(FlyTxt.NetworkSettings.Section.Kernel)
+    Card {
+        // 当前激活的内核显示
+        val allKernelIds = listOf(KernelManager.BUNDLED_ALPHA_ID) + kernels.map { it.id }.distinct()
+        val activeIndex = allKernelIds.indexOf(activeKernelId).coerceAtLeast(0)
+        WindowDropdownPreference(
+            title = FlyTxt.NetworkSettings.Kernel.ActiveTitle,
+            summary = kernelLabel(activeKernelId, installedCommits[activeKernelId]),
+            items = allKernelIds.map { id -> kernelLabel(id, installedCommits[id]) },
+            selectedIndex = activeIndex,
+            enabled = !kernelBusy,
+            onSelectedIndexChange = { idx ->
+                val selectedId = allKernelIds[idx]
+                if (selectedId != activeKernelId) {
+                    viewModel.selectKernel(selectedId)
+                }
+            },
+        )
+        // 检查更新
+        PreferenceArrowItem(
+            title = FlyTxt.NetworkSettings.Kernel.RefreshTitle,
+            summary = if (kernels.isNotEmpty()) "${kernels.size} available" else null,
+            onClick = { viewModel.refreshKernels() },
+        )
+        // 显示可用内核及下载/选择按钮
+        if (kernels.isNotEmpty()) {
+            for (kernel in kernels) {
+                val isInstalled = KernelManager.isInstalled(context, kernel.id)
+                val isActive = activeKernelId == kernel.id
+                val isDownloading = kernel.id in downloadingIds
+                PreferenceArrowItem(
+                    title = kernelLabel(kernel.id, kernel.commit),
+                    summary = when {
+                        isDownloading -> FlyTxt.NetworkSettings.Kernel.DownloadingTag
+                        isInstalled && !isActive -> FlyTxt.NetworkSettings.Kernel.InstalledTag
+                        !isInstalled -> kernel.version
+                        else -> null
+                    },
+                    endActions = if (isActive) {
+                        {
+                            top.yukonga.miuix.kmp.basic.Text(
+                                text = FlyTxt.NetworkSettings.Kernel.ActiveTag,
+                                color = colorScheme.primary,
+                            )
+                        }
+                    } else null,
+                    onClick = {
+                        if (!isDownloading) {
+                            if (isInstalled) {
+                                viewModel.selectKernel(kernel.id)
+                            } else {
+                                viewModel.downloadKernels(setOf(kernel.id)) {}
+                            }
+                        }
+                    },
+                )
+            }
+        }
+        // 自定义内核
+        PreferenceArrowItem(
+            title = FlyTxt.NetworkSettings.Kernel.CustomTitle,
+            summary = null,
+            onClick = { showCustomDialog = true },
+        )
+    }
+
+    if (showCustomDialog) {
+        var customUrl by remember { mutableStateOf("") }
+        var showFormatHint by remember { mutableStateOf(false) }
+        AppFormDialog(
+            show = showCustomDialog,
+            title = FlyTxt.NetworkSettings.Kernel.CustomTitle,
+            onDismissRequest = { showCustomDialog = false },
+            onConfirm = {
+                if (customUrl.isNotBlank()) {
+                    viewModel.installCustomPluginUrl(customUrl.trim()) { success ->
+                        if (success) showCustomDialog = false
+                    }
+                }
+            },
+        ) {
+            top.yukonga.miuix.kmp.basic.TextField(
+                value = customUrl,
+                onValueChange = { customUrl = it },
+                label = "https://example.com/kernel-plugin.zip",
+                useLabelAsPlaceholder = true,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                trailingIcon = {
+                    top.yukonga.miuix.kmp.basic.IconButton(
+                        onClick = { showFormatHint = true },
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Icon(
+                            imageVector = MiuixIcons.Info,
+                            contentDescription = null,
+                            tint = colorScheme.onSurfaceVariantSummary,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                },
+            )
+        }
+        if (showFormatHint) {
+            val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+            val annotatedText = androidx.compose.ui.text.buildAnnotatedString {
+                val body = FlyTxt.NetworkSettings.Kernel.PluginFormatBody
+                append(body)
+                val url = "https://github.com/LM-Firefly/Kernel-Builder"
+                val start = body.indexOf(url)
+                if (start >= 0) {
+                    addStyle(
+                        style = androidx.compose.ui.text.SpanStyle(
+                            color = colorScheme.primary,
+                            textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                        ),
+                        start = start,
+                        end = start + url.length,
+                    )
+                    addStringAnnotation("URL", url, start, start + url.length)
+                }
+            }
+            AppFormDialog(
+                show = true,
+                title = FlyTxt.NetworkSettings.Kernel.PluginFormatTitle,
+                onDismissRequest = { showFormatHint = false },
+                onConfirm = { showFormatHint = false },
+            ) {
+                androidx.compose.foundation.text.ClickableText(
+                    text = annotatedText,
+                    style = androidx.compose.ui.text.TextStyle(
+                        color = colorScheme.onSurface
+                    ),
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    onClick = { offset ->
+                        annotatedText.getStringAnnotations("URL", offset, offset)
+                            .firstOrNull()?.let { uriHandler.openUri(it.item) }
+                    },
+                )
+            }
+        }
+    }
+
+    if (restartRequired) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        AppFormDialog(
+            show = true,
+            title = FlyTxt.NetworkSettings.Kernel.RestartDialogTitle,
+            onDismissRequest = { viewModel.dismissRestartPrompt() },
+            onConfirm = {
+                viewModel.dismissRestartPrompt()
+                val pm = context.packageManager
+                val intent = pm.getLaunchIntentForPackage(context.packageName)
+                if (intent != null) {
+                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    context.startActivity(intent)
+                }
+                android.os.Process.killProcess(android.os.Process.myPid())
+            },
+        ) {
+            top.yukonga.miuix.kmp.basic.Text(
+                text = FlyTxt.NetworkSettings.Kernel.RestartDialogMessage,
+            )
+        }
+    }
+}
+
+private fun kernelLabel(id: String, commit: String? = null): String {
+    val name = when (id) {
+        KernelManager.BUNDLED_ALPHA_ID -> FlyTxt.NetworkSettings.Kernel.BundledAlpha
+        "alpha" -> "Alpha"
+        "meta" -> "Meta"
+        "smart" -> "Smart"
+        "ebpf" -> "eBPF"
+        else -> id
+    }
+    return if (id == KernelManager.BUNDLED_ALPHA_ID || commit.isNullOrBlank()) {
+        name
+    } else {
+        "$name-${commit.take(6)}"
+    }
+}
+
+@Composable
 private fun ModeCard(
     icon: ImageVector,
     title: String,
@@ -245,9 +450,9 @@ private fun ModeCard(
                     contentDescription = null,
                     tint =
                         if (enabled) {
-                            top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurface
+                            colorScheme.onSurface
                         } else {
-                            top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.disabledOnSecondaryVariant
+                            colorScheme.disabledOnSecondaryVariant
                         },
                     modifier = Modifier
                         .padding(start = 4.dp, end = 12.dp)

@@ -22,13 +22,8 @@
 package com.github.lmfirefly.flycat.runtime.service.session.transport
 
 import com.github.lmfirefly.flycat.core.Clash
-import com.github.lmfirefly.flycat.core.bridge.Bridge
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
-import com.github.lmfirefly.flycat.core.model.tunnel.TunConfig
-import com.github.lmfirefly.flycat.core.util.YamlCodec
 import com.github.lmfirefly.flycat.runtime.api.session.RuntimeSpec
-import com.github.lmfirefly.flycat.runtime.service.config.ServiceStore
-import com.github.lmfirefly.flycat.runtime.service.root.EbpfOverride
 import com.github.lmfirefly.flycat.runtime.service.session.telemetry.RuntimeStartupLogStore
 import com.topjohnwu.superuser.Shell
 
@@ -49,17 +44,9 @@ class RootTunTransport : RuntimeTransport {
             }
             RunMode.Ebpf -> {
                 startupLogStore.append("ROOT_TUN transport start: begin (eBPF mode)")
-                // eBPF mode: start mihomo with the full profile config (proxies, rules, DNS, etc.) but with TUN disabled and mixed-port 7890 for the eBPF bridge to redirect traffic to.
                 val config = spec.rootTunConfig ?: error("eBPF profile config missing")
-                // Serialize TunConfig to YAML, then merge with eBPF override (disables TUN, sets mixed-port)
-                val tunYaml = YamlCodec.encode(TunConfig.serializer(), config)
-                val tunMap = YamlCodec.loadMap(tunYaml)
-                val ebpfMap = YamlCodec.loadMap(EbpfOverride.buildYaml(ServiceStore().dnsHijacking))
-                val mergedMap = LinkedHashMap<String, Any?>(tunMap).apply { putAll(ebpfMap) }
-                val mergedYaml = YamlCodec.dumpMap(mergedMap)
-                val error = Bridge.nativeStartRootTun(mergedYaml)
-                error?.let { error("eBPF mihomo start failed: $it") }
-                startupLogStore.append("ROOT_TUN transport start: done (eBPF mode, mixed-port=${EbpfOverride.MIXED_PORT})")
+                Clash.startRootTun(config)?.let { error(it) }
+                startupLogStore.append("ROOT_TUN transport start: done (eBPF mode)")
             }
             else -> error("RootTunTransport does not support ${spec.runMode}")
         }

@@ -93,20 +93,7 @@ class RootTunRootService : RootService() {
                 )
                 val startResult = binderTimed { runtime.start(spec) }
                 if (startResult?.success == true && spec.runMode == RunMode.Ebpf) {
-                    try { startEbpfBridge(spec) } catch (error: Throwable) {
-                        // Rollback: bridge failed but mihomo is running — stop everything
-                        startupLogStore.append("ROOT_TUN root-service: eBPF bridge failed, rolling back: ${error.message}")
-                        runCatching { binderTimed { runtime.stop() } }
-                        stateStore.updateStatus(
-                            stateStore.snapshot().copy(
-                                state = RuntimePhase.Failed,
-                                running = false,
-                                runtimeReady = false,
-                                lastError = "eBPF bridge failed: ${error.message}",
-                            )
-                        )
-                        return encodeResult(RuntimeOperationResult(success = false, error = "eBPF bridge failed: ${error.message}"))
-                    }
+                    startupLogStore.append("ROOT_TUN root-service: eBPF mode — native listener is part of mihomo process")
                 }
                 return startResult?.let { encodeResult(it) } ?: encodeTimeoutResult()
             }
@@ -117,7 +104,6 @@ class RootTunRootService : RootService() {
                     "ROOT_TUN root-service: binder branch=restart source=${request.source} mode=${request.mode}"
                 )
                 val spec = createSpec("restart", request.mode)
-                stopEbpfBridge()
                 stateStore.updateStatus(
                     stateStore.snapshot().copy(
                         state = RuntimePhase.Starting,
@@ -127,21 +113,7 @@ class RootTunRootService : RootService() {
                 )
                 val restartResult = binderTimed { runtime.restart(spec) }
                 if (restartResult?.success == true && spec.runMode == RunMode.Ebpf) {
-                    try {
-                        startEbpfBridge(spec)
-                    } catch (error: Throwable) {
-                        startupLogStore.append("ROOT_TUN root-service: restart eBPF bridge failed: ${error.message}")
-                        runCatching { binderTimed { runtime.stop() } }
-                        stateStore.updateStatus(
-                            stateStore.snapshot().copy(
-                                state = RuntimePhase.Failed,
-                                running = false,
-                                runtimeReady = false,
-                                lastError = "eBPF bridge failed: ${error.message}",
-                            )
-                        )
-                        return encodeResult(RuntimeOperationResult(success = false, error = "eBPF bridge failed: ${error.message}"))
-                    }
+                    startupLogStore.append("ROOT_TUN root-service: eBPF mode — native listener active")
                 }
                 return restartResult?.let { encodeResult(it) } ?: encodeTimeoutResult()
             }
@@ -159,11 +131,7 @@ class RootTunRootService : RootService() {
                     startupLogStore.append(
                         "ROOT_TUN root-service: binder branch=reload action=restart currentTransport=$currentTransport nextTransport=${spec.transportFingerprint}"
                     )
-                    stopEbpfBridge()
                     val restartResult = binderTimed { runtime.restart(spec) }
-                    if (restartResult?.success == true && spec.runMode == RunMode.Ebpf) {
-                        startEbpfBridge(spec)
-                    }
                     encodeResult(restartResult ?: return encodeTimeoutResult())
                 } else {
                     startupLogStore.append(
@@ -174,7 +142,6 @@ class RootTunRootService : RootService() {
             }
 
             override fun stopRootTun(): String {
-                stopEbpfBridge()
                 val result = binderTimed { runtime.stop() } ?: return encodeTimeoutResult()
                 if (result.success) {
                     stopSelf()
@@ -257,7 +224,6 @@ class RootTunRootService : RootService() {
             override fun updateProvider(type: String, name: String): String? = binderTimed { runtime.updateProvider(type, name) }
 
             override fun requestStop() {
-                stopEbpfBridge()
                 runtime.requestStop()
                 binderTimed { runtime.stop() }
                 stopSelf()
@@ -305,7 +271,7 @@ class RootTunRootService : RootService() {
     override fun onUnbind(intent: Intent): Boolean = false
 
     override fun onDestroy() {
-        stopEbpfBridge()
+        EbpfBridgeMigration.clearLegacyBridgeState()
         if (this::runtime.isInitialized && runtime.snapshot().phase.running) {
             runtime.requestStop("runtime destroyed")
             binderTimed { runtime.destroy() }
@@ -334,56 +300,6 @@ class RootTunRootService : RootService() {
             RootTunOperationResult.serializer(),
             RootTunOperationResult(success = result.success, error = result.error),
         )
-    }
-
-    private fun startEbpfBridge(spec: RuntimeSpec) {
-        runCatching {
-            val cgroupPath = EbpfCgroupSupport.rootCgroupPath()
-                ?: error("eBPF requires a cgroup v2 mount")
-            val mihomoPid = RootTunTransport.findMihomoPid()
-                ?: error("mihomo root PID is unavailable for eBPF bridge")
-            val uidPolicy = runtimeSpecFactory.resolveEbpfUidPolicy()
-            val settings = ServiceStore()
-            val bypassCidrs = resolveEbpfBypassCidrs(settings)
-            EbpfBridgeProcess.start(
-                this,
-                mihomoPid,
-                cgroupPath,
-                uidPolicy.mode,
-                uidPolicy.uids,
-                dnsHijacking = settings.dnsHijacking,
-                enableIpv6 = settings.allowIpv6,
-                bypassCidrs = bypassCidrs,
-            )
-            check(EbpfBridgeProcess.isAlive()) {
-                "eBPF bridge exited during startup: ${EbpfBridgeProcess.diagnosticLog(this)}"
-            }
-            startupLogStore.append("ROOT_TUN root-service: eBPF bridge ready cgroupMount=$cgroupPath")
-        }.onFailure { error ->
-            startupLogStore.append("ROOT_TUN root-service: eBPF bridge start failed: ${error.message}")
-            throw error
-        }
-    }
-
-    private fun resolveEbpfBypassCidrs(settings: ServiceStore): List<String> {
-        val explicit = settings.rootTunRouteExcludeAddress
-            .map(String::trim)
-            .filter(String::isNotEmpty)
-            .filter { settings.allowIpv6 || ':' !in it }
-        if (explicit.isNotEmpty() || !settings.bypassPrivateNetwork) return explicit
-        return listOf(
-            "0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8",
-            "169.254.0.0/16", "172.16.0.0/12", "192.0.0.0/24", "192.168.0.0/16",
-            "224.0.0.0/4", "240.0.0.0/4", "255.255.255.255/32",
-            "fc00::/7", "fe80::/10", "ff00::/8",
-        )
-    }
-
-    private fun stopEbpfBridge() {
-        runCatching {
-            EbpfBridgeProcess.stop(this)
-            startupLogStore.append("ROOT_TUN root-service: eBPF bridge stopped")
-        }
     }
 
     private fun encodeTimeoutResult(): String = encodeResult(RuntimeOperationResult(success = false, error = "Binder call timed out after ${BINDER_CALL_TIMEOUT_MS}ms"))

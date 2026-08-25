@@ -36,6 +36,7 @@ import com.github.lmfirefly.flycat.runtime.api.contract.RuntimePhase
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeStateMapper
 import com.github.lmfirefly.flycat.runtime.api.root.EbpfCapabilityProbe
 import com.github.lmfirefly.flycat.runtime.api.root.RootAccessStatus
+import com.github.lmfirefly.flycat.core.kernel.KernelManager
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -93,6 +94,9 @@ class NetworkSettingsViewModel(
     private val _errors = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val errors: SharedFlow<String> = _errors.asSharedFlow()
 
+    private val _restartRequired = MutableStateFlow(false)
+    val restartRequired: StateFlow<Boolean> = _restartRequired.asStateFlow()
+
     private val _rootAvailable = MutableStateFlow(false)
     val rootAvailable: StateFlow<Boolean> = _rootAvailable.asStateFlow()
 
@@ -107,19 +111,37 @@ class NetworkSettingsViewModel(
             .distinctUntilChanged()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServiceState.Idle)
 
+    // ── Kernel Manager ──────────────────────────────────────────────────
+    private val _kernels = MutableStateFlow<List<KernelInfo>>(emptyList())
+    val kernels: StateFlow<List<KernelInfo>> = _kernels.asStateFlow()
+
+    private val _activeKernelId = MutableStateFlow(KernelManager.BUNDLED_ALPHA_ID)
+    val activeKernelId: StateFlow<String> = _activeKernelId.asStateFlow()
+
+    private val _kernelBusy = MutableStateFlow(false)
+    val kernelBusy: StateFlow<Boolean> = _kernelBusy.asStateFlow()
+
+    private val _downloadingKernelIds = MutableStateFlow<Set<String>>(emptySet())
+    val downloadingKernelIds: StateFlow<Set<String>> = _downloadingKernelIds.asStateFlow()
+
+    private val _installedKernelCommits = MutableStateFlow<Map<String, String>>(emptyMap())
+    val installedKernelCommits: StateFlow<Map<String, String>> = _installedKernelCommits.asStateFlow()
+
     val currentRunMode: StateFlow<RunMode> = runMode.state
 
     init {
+        _activeKernelId.value = KernelManager.activeKernelId(getApplication())
         viewModelScope.launch {
+            refreshInstalledKernelCommits()
+            refreshKernels(forceNetwork = false) // 初始化时使用本地缓存
             val rootStatus = proxyFacade.evaluateRootAccess()
             _rootAvailable.value = rootStatus.canStartRootTun
             // eBPF requires root + cgroup v2 + BPF capability probe
             if (rootStatus.canStartRootTun) {
                 val cgroupPath = ebpfProbe.rootCgroupPath()
-                _ebpfAvailable.value = cgroupPath != null &&
-                    withContext(Dispatchers.IO) {
-                        ebpfProbe.isCapabilityAvailable(getApplication(), cgroupPath)
-                    }
+                _ebpfAvailable.value = cgroupPath != null && withContext(Dispatchers.IO) {
+                    ebpfProbe.isCapabilityAvailable(getApplication(), cgroupPath)
+                }
             }
         }
     }
@@ -389,8 +411,130 @@ class NetworkSettingsViewModel(
         controller.startService(mode).getOrThrow()
     }
 
+    // ── Kernel Manager methods ───────────────────────────────────────────
+    fun refreshKernels(forceNetwork: Boolean = true, onDone: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            _kernelBusy.value = true
+            try {
+                val ctx = getApplication<Application>()
+                val index = withContext(Dispatchers.IO) { KernelManager.fetchIndex(ctx, forceNetwork = forceNetwork) }
+                _kernels.value = index.kernels.map { k ->
+                    KernelInfo(k.id, k.name, k.version, k.commit, k.capabilities)
+                }
+                _activeKernelId.value = KernelManager.activeKernelId(getApplication())
+                refreshInstalledKernelCommits()
+                onDone(true)
+            } catch (e: Exception) {
+                _errors.tryEmit("Failed to fetch kernel index: ${e.message}")
+                onDone(false)
+            } finally {
+                _kernelBusy.value = false
+            }
+        }
+    }
+
+    fun downloadKernels(ids: Set<String>, onDone: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            _downloadingKernelIds.value = ids
+            var failed = false
+            try {
+                val index = withContext(Dispatchers.IO) { KernelManager.fetchIndex(getApplication(), forceNetwork = true) }
+                for (kernel in index.kernels.filter { it.id in ids }) {
+                    try {
+                        withContext(Dispatchers.IO) { KernelManager.install(getApplication(), kernel) }
+                    } catch (e: Exception) {
+                        _errors.tryEmit("Failed to download ${kernel.name}: ${e.message}")
+                        failed = true
+                    }
+                }
+            } catch (e: Exception) {
+                _errors.tryEmit("Failed to fetch kernel index: ${e.message}")
+                failed = true
+            }
+            _downloadingKernelIds.value = emptySet()
+            if (!failed) {
+                refreshInstalledKernelCommits()
+                // 刷新内核列表以更新已安装状态
+                val index = runCatching { withContext(Dispatchers.IO) { KernelManager.fetchIndex(getApplication(), forceNetwork = true) } }.getOrNull()
+                if (index != null) {
+                    _kernels.value = index.kernels.map { k ->
+                        KernelInfo(k.id, k.name, k.version, k.commit, k.capabilities)
+                    }
+                }
+            }
+            _activeKernelId.value = KernelManager.activeKernelId(getApplication())
+            onDone(!failed)
+        }
+    }
+
+    fun selectKernel(id: String) {
+        viewModelScope.launch {
+            try {
+                if (id == KernelManager.BUNDLED_ALPHA_ID) {
+                    withContext(Dispatchers.IO) { KernelManager.activate(getApplication(), id) }
+                } else if (KernelManager.isInstalled(getApplication(), id)) {
+                    withContext(Dispatchers.IO) { KernelManager.activate(getApplication(), id) }
+                } else {
+                    val index = withContext(Dispatchers.IO) { KernelManager.fetchIndex(getApplication(), forceNetwork = true) }
+                    val kernel = index.kernels.find { it.id == id }
+                    if (kernel != null) {
+                        withContext(Dispatchers.IO) { KernelManager.install(getApplication(), kernel) }
+                        withContext(Dispatchers.IO) { KernelManager.activate(getApplication(), kernel.id) }
+                        refreshInstalledKernelCommits()
+                    }
+                }
+                _activeKernelId.value = id
+                refreshInstalledKernelCommits()
+                if (id != KernelManager.BUNDLED_ALPHA_ID) {
+                    _restartRequired.value = true
+                }
+            } catch (e: Exception) {
+                _errors.tryEmit("Failed to select kernel: ${e.message}")
+            }
+        }
+    }
+
+    fun installCustomPluginUrl(url: String, onDone: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            _kernelBusy.value = true
+            try {
+                val kernel = withContext(Dispatchers.IO) { KernelManager.installPluginUrl(getApplication(), url) }
+                withContext(Dispatchers.IO) { KernelManager.activate(getApplication(), kernel.id) }
+                _activeKernelId.value = kernel.id
+                refreshInstalledKernelCommits()
+                _restartRequired.value = true
+                onDone(true)
+            } catch (e: Exception) {
+                _errors.tryEmit("Failed to install plugin: ${e.message}")
+                onDone(false)
+            } finally {
+                _kernelBusy.value = false
+            }
+        }
+    }
+
+    fun dismissRestartPrompt() {
+        _restartRequired.value = false
+    }
+
+    private suspend fun refreshInstalledKernelCommits() {
+        _installedKernelCommits.value = withContext(Dispatchers.IO) {
+            KernelManager.installedKernelIds(getApplication()).associateWith { id ->
+                KernelManager.installedCommit(getApplication(), id) ?: ""
+            }
+        }
+    }
+
+    data class KernelInfo(
+        val id: String,
+        val name: String,
+        val version: String,
+        val commit: String,
+        val capabilities: Set<String> = emptySet(),
+    )
+
     companion object {
-        private const val DEFAULT_ROOT_TUN_IF_NAME = "Yume"
+        private const val DEFAULT_ROOT_TUN_IF_NAME = "FlyCat"
         private const val DEFAULT_FAKE_IP_RANGE = "198.18.0.1/16"
         private const val DEFAULT_FAKE_IP_RANGE6 = "fc00::/18"
     }

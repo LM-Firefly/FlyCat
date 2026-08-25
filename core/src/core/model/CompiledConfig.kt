@@ -39,9 +39,9 @@ data class CompileRequest(
     val overrides: List<OverrideSpec> = emptyList(),
     val outputPath: String,
     val ageSecretKey: String? = null,
-    // Forwarded to liboverride: in Tun mode it keeps the compiled `tun:` block authoritative (the core opens its own kernel device) instead of force-disabling it as for VpnService.
+    // Forwarded to liboverride: Root Tun and native eBPF keep the profile authoritative, while VpnService protects its app-owned file-descriptor tunnel.
     val runMode: RunMode = RunMode.VpnService,
-    // Root Tun + disable-all only. Skips compiler runtime DNS/path patches so the raw profile stays authoritative. VPN never sets this — user overrides are still cleared by the factory, but system patches remain.
+    // Root Tun + disable-all and native eBPF. Skips broad compiler runtime patches so the raw profile stays authoritative; eBPF still receives the narrow safety guard that disables Tun.
     val skipRuntimePatches: Boolean = false,
 )
 

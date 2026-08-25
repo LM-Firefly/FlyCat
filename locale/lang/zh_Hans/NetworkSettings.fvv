@@ -6,10 +6,26 @@ NetworkSettings = {
         VpnOptions = "服务配置"
         Advanced = "高级选项"
         ProxyOptions = "访问控制"
+        Kernel = "内核管理"
     }
 
     Advanced = {
         DisableOverrideTitle = "禁用所有覆写"
+    }
+
+    Kernel = {
+        ActiveTitle = "当前内核"
+        RefreshTitle = "检查更新"
+        CustomTitle = "安装自定义内核"
+        BundledAlpha = "内置 Alpha"
+        RestartHint = "切换内核后需要重启应用"
+        RestartDialogTitle = "内核已切换"
+        RestartDialogMessage = "新内核将在下次启动时生效。是否立即重启？"
+        ActiveTag = "√ 使用中"
+        DownloadingTag = "下载中..."
+        InstalledTag = "已安装"
+        PluginFormatTitle = "插件格式"
+        PluginFormatBody = "需要一个 .zip 文件，内含：\n • kernel-index.json\n • kernel-{id}.so.xz\n索引文件须指定 release.kind = \"custom\" 且 builder.format = \"kernel-plugin-v1\"。\n仅接受 HTTPS 链接。\n示例仓库：https://github.com/LM-Firefly/Kernel-Builder"
     }
 
     RunMode = {
