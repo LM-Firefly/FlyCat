@@ -23,6 +23,7 @@ package com.github.lmfirefly.flycat.data.store
 
 import com.github.lmfirefly.flycat.core.contract.FeatureStoreReader
 import com.github.lmfirefly.flycat.core.contract.SubStoreSettings
+import com.github.lmfirefly.flycat.core.model.RemoteProtocol
 import com.github.lmfirefly.flycat.core.model.profile.LinkOpenMode
 import com.tencent.mmkv.MMKV
 
@@ -37,6 +38,7 @@ class FeatureStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalM
     override val frontendPort by intFlow(8080)
     override val selectedPanelType by intFlow(0)
     override val panelOpenMode by enumFlow(LinkOpenMode.IN_APP)
+    override val panelProtocol by enumFlow(RemoteProtocol.HTTPS)
     override val showWebControlInProxy by boolFlow(false)
     override val exitUiWhenBackground by boolFlow(false)
     override val subStoreAutoCloseModeOrdinal by intFlow(-1)

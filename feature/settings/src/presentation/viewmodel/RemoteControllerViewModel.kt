@@ -29,17 +29,12 @@ import com.github.lmfirefly.flycat.core.contract.add
 import com.github.lmfirefly.flycat.core.contract.remove
 import com.github.lmfirefly.flycat.core.contract.update
 import com.github.lmfirefly.flycat.core.model.RemoteBackend
-import com.github.lmfirefly.flycat.core.model.tunnel.TunnelState
+import com.github.lmfirefly.flycat.core.model.RemoteProtocol
 import com.github.lmfirefly.flycat.runtime.api.contract.ProxyControlContract
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import com.github.lmfirefly.flycat.locale.FlyTxt
 
 class RemoteControllerViewModel(
@@ -68,9 +63,6 @@ class RemoteControllerViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = store.activeBackendId.value,
         )
-
-    private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 1)
-    val messages: SharedFlow<String> = _messages.asSharedFlow()
 
     fun setEnabled(enabled: Boolean) {
         store.controllerEnabled.set(enabled)
@@ -115,17 +107,10 @@ class RemoteControllerViewModel(
         proxyFacade.applyRemoteControllerState()
     }
 
-    fun testConnection(backend: RemoteBackend) {
-        viewModelScope.launch {
-            val result: Result<TunnelState> =
-                withContext(Dispatchers.IO) {
-                    proxyFacade.testRemoteConnection(backend)
-                }
-            result
-                .onSuccess { state -> _messages.tryEmit(FlyTxt.Settings.RemoteController.ConnectionSuccess.format(state.mode)) }
-                .onFailure { error ->
-                    _messages.tryEmit(FlyTxt.Settings.RemoteController.ConnectionFailed.format(error.message ?: error::class.simpleName))
-                }
+    fun setProtocol(id: String, protocol: RemoteProtocol) {
+        store.backends.update({ it.id == id }, { it.copy(protocol = protocol) })
+        if (id == store.activeBackendId.value) {
+            proxyFacade.applyRemoteControllerState()
         }
     }
 }

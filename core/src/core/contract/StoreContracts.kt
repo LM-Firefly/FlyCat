@@ -26,6 +26,7 @@ import com.github.lmfirefly.flycat.core.model.IpMonitoringState
 import com.github.lmfirefly.flycat.core.model.LogEntry
 import com.github.lmfirefly.flycat.core.model.LogFileInfo
 import com.github.lmfirefly.flycat.core.model.Provider
+import com.github.lmfirefly.flycat.core.model.RemoteProtocol
 import com.github.lmfirefly.flycat.core.model.UpdateProvidersResult
 import com.github.lmfirefly.flycat.core.model.UpdateSource
 import com.github.lmfirefly.flycat.core.model.profile.LinkOpenMode
@@ -96,6 +97,7 @@ interface SubStoreSettings {
     val frontendPort: Preference<Int>
     val selectedPanelType: Preference<Int>
     val panelOpenMode: Preference<LinkOpenMode>
+    val panelProtocol: Preference<RemoteProtocol>
     val exitUiWhenBackground: Preference<Boolean>
     val subStoreAutoCloseModeOrdinal: Preference<Int>
 }

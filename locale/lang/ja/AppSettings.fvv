@@ -66,6 +66,7 @@ AppSettings = {
         HomeWallpaperSourceGallery = "ギャラリーから選択"
         HomeWallpaperSourceUrl = "URL を入力"
         HomeWallpaperUrlDialogTitle = "リモート壁紙を設定"
+        WallpaperScrimTitle = "壁紙下部の暗化"
     }
 
     Privacy = {

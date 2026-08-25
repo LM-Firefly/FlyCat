@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.lmfirefly.flycat.core.model.RemoteProtocol
 import com.github.lmfirefly.flycat.feature.substore.model.AutoCloseMode
 import com.github.lmfirefly.flycat.feature.substore.presentation.viewmodel.FeatureViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
@@ -49,8 +50,8 @@ import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 @Composable
 fun FeatureContent(
     onNavigateBack: () -> Unit,
-    onOpenExternalUrl: (String) -> Unit,
     onOpenInAppUrl: (String) -> Unit,
+    onOpenPanel: (url: String) -> Unit,
     onCreatePanelShortcut: (url: String, label: String) -> Unit = { _, _ -> },
     topSection: @Composable () -> Unit = {},
 ) {
@@ -73,6 +74,7 @@ fun FeatureContent(
     val isJavetLoaded by viewModel.isJavetLoaded.collectAsStateWithLifecycle()
     val isSubStoreInitialized by viewModel.isSubStoreInitialized.collectAsStateWithLifecycle()
     val selectedPanelType by viewModel.selectedPanelType.state.collectAsStateWithLifecycle()
+    val panelProtocol by viewModel.panelProtocol.state.collectAsStateWithLifecycle()
 
     val panelDisplayNames = listOf("Zashboard", "MetaCubeXD", "Yacd")
 
@@ -90,7 +92,7 @@ fun FeatureContent(
             item {
                 val currentPanelName =
                     panelDisplayNames.getOrElse(selectedPanelType) { FlyTxt.Feature.Panel.Unknown }
-                val panelUrl = panelUrlFor(selectedPanelType)
+                val panelUrl = panelUrlFor(selectedPanelType, panelProtocol)
 
                 Title(FlyTxt.Feature.Panel.Section)
                 Card {
@@ -103,7 +105,19 @@ fun FeatureContent(
                         selectedIndex = safeSelectedPanelType,
                         onSelectedIndexChange = { viewModel.setSelectedPanelType(it) },
                     )
-
+                    WindowDropdownPreference(
+                        title = FlyTxt.Feature.Panel.Protocol,
+                        summary = null,
+                        items = RemoteProtocol.entries.map { it.scheme.uppercase() },
+                        selectedIndex = RemoteProtocol.entries.indexOf(panelProtocol),
+                        onSelectedIndexChange = { viewModel.setPanelProtocol(RemoteProtocol.entries[it]) },
+                    )
+                    ArrowPreference(
+                        title = FlyTxt.Feature.Panel.OpenPanel,
+                        summary = null,
+                        enabled = panelUrl.isNotBlank(),
+                        onClick = { onOpenPanel(panelUrl) },
+                    )
                     ArrowPreference(
                         title = FlyTxt.Feature.Panel.CreateShortcut,
                         summary = null,
@@ -181,10 +195,16 @@ fun FeatureContent(
     }
 }
 
-private fun panelUrlFor(panelType: Int): String =
-    when (panelType) {
-        0 -> "https://board.zash.run.place"
-        1 -> "https://metacubex.github.io/metacubexd"
-        2 -> "https://yacd.haishan.me"
-        else -> "https://board.zash.run.place"
-    }
+private fun panelUrlFor(
+    panelType: Int,
+    protocol: RemoteProtocol,
+): String {
+    val host =
+        when (panelType) {
+            0 -> "board.zash.run.place"
+            1 -> "metacubex.github.io/metacubexd"
+            2 -> "yacd.haishan.me"
+            else -> "board.zash.run.place"
+        }
+    return "${protocol.scheme}://$host"
+}

@@ -28,17 +28,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.core.model.RemoteBackend
+import com.github.lmfirefly.flycat.core.model.RemoteProtocol
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.RemoteControllerViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.card.Card
@@ -47,7 +46,6 @@ import com.github.lmfirefly.flycat.presentation.component.misc.PreferenceArrowIt
 import com.github.lmfirefly.flycat.presentation.component.misc.PreferenceSwitchItem
 import com.github.lmfirefly.flycat.presentation.component.misc.Title
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
-import com.github.lmfirefly.flycat.presentation.util.toast
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
@@ -59,8 +57,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun RemoteControllerSection(
     viewModel: RemoteControllerViewModel = koinViewModel(),
+    onRequestLocalNetworkPermission: (RemoteBackend, () -> Unit) -> Unit = { _, action -> action() },
 ) {
-    val context = LocalContext.current
 
     val controllerEnabled by viewModel.controllerEnabled.collectAsStateWithLifecycle()
     val backends by viewModel.backends.collectAsStateWithLifecycle()
@@ -68,8 +66,6 @@ fun RemoteControllerSection(
 
     var sheetState by remember { mutableStateOf<BackendSheetState?>(null) }
     var sheetVisible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) { viewModel.messages.collect { message -> context.toast(message) } }
 
     val activeBackend = backends.firstOrNull { it.id == activeBackendId } ?: backends.firstOrNull()
     val selectedBackendIndex =
@@ -81,7 +77,14 @@ fun RemoteControllerSection(
         PreferenceSwitchItem(
             title = FlyTxt.Feature.RemoteController.ModeTitle,
             checked = controllerEnabled,
-            onCheckedChange = viewModel::setEnabled,
+            onCheckedChange = { enabled ->
+                val backend = activeBackend
+                if (enabled && backend != null) {
+                    onRequestLocalNetworkPermission(backend) { viewModel.setEnabled(true) }
+                } else {
+                    viewModel.setEnabled(false)
+                }
+            },
             enabled = backends.isNotEmpty(),
         )
 
@@ -92,7 +95,30 @@ fun RemoteControllerSection(
                 items = backendItems,
                 selectedIndex = selectedBackendIndex,
                 onSelectedIndexChange = { index ->
-                    backends.getOrNull(index)?.let { viewModel.setActive(it.id) }
+                    backends.getOrNull(index)?.let { backend ->
+                        if (controllerEnabled) {
+                            onRequestLocalNetworkPermission(backend) { viewModel.setActive(backend.id) }
+                        } else {
+                            viewModel.setActive(backend.id)
+                        }
+                    }
+                },
+            )
+            WindowDropdownPreference(
+                title = FlyTxt.Feature.RemoteController.Protocol,
+                summary = null,
+                items = RemoteProtocol.entries.map { it.scheme.uppercase() },
+                selectedIndex = RemoteProtocol.entries.indexOf(activeBackend?.protocol),
+                onSelectedIndexChange = { index ->
+                    val protocol = RemoteProtocol.entries[index]
+                    activeBackend?.let { backend ->
+                        val update = { viewModel.setProtocol(backend.id, protocol) }
+                        if (controllerEnabled) {
+                            onRequestLocalNetworkPermission(backend, update)
+                        } else {
+                            update()
+                        }
+                    }
                 },
             )
         }

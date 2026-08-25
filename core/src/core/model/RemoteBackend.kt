@@ -23,12 +23,19 @@ package com.github.lmfirefly.flycat.core.model
 
 import kotlinx.serialization.Serializable
 
+@Serializable
+enum class RemoteProtocol(
+    val scheme: String,
+) {
+    HTTP("http"),
+    HTTPS("https"),
+}
+
 /**
  * A saved external mihomo controller backend (RESTful API endpoint).
  *
- * When external-controller mode is active, the app steers this backend via its
- * REST API instead of running a local core. [secret] is sent as a
- * `Authorization: Bearer <secret>` header (blank = no auth configured).
+ * When external-controller mode is active, the app steers this backend via its REST API instead of running a local core.
+ * [secret] is sent as a `Authorization: Bearer <secret>` header (blank = no auth configured).
  */
 @Serializable
 data class RemoteBackend(
@@ -37,10 +44,11 @@ data class RemoteBackend(
     val host: String,
     val port: Int,
     val secret: String = "",
+    val protocol: RemoteProtocol = RemoteProtocol.HTTP,
 ) {
-    /** Base URL assembled from [host] + [port]. */
+    /** Base URL assembled from [protocol], [host], and [port]. */
     val baseUrl: String
-        get() = "http://${host.trim()}:$port"
+        get() = "${protocol.scheme}://${host.trim()}:$port"
 
     /** Base URL with any trailing slash stripped so paths can be appended directly. */
     val normalizedBaseUrl: String

@@ -82,6 +82,7 @@ class AppSettingsViewModel(
     val moeHomeQuote: Preference<String> = settings.moeHomeQuote
     val moeHomeQuoteAuthor: Preference<String> = settings.moeHomeQuoteAuthor
     val moeSidebarExpanded: Preference<Boolean> = settings.moeSidebarExpanded
+    val moeWallpaperScrimEnabled: Preference<Boolean> = settings.moeWallpaperScrimEnabled
     val pageScale: Preference<Float> = settings.pageScale
     val predictiveBackEnabled: Preference<Boolean> = settings.predictiveBackEnabled
     val predictiveBackMaxProgress: Preference<Float> = settings.predictiveBackMaxProgress
@@ -263,6 +264,8 @@ class AppSettingsViewModel(
     fun onMoeHomeQuoteAuthorChange(author: String) = moeHomeQuoteAuthor.set(author)
 
     fun onMoeSidebarExpandedChange(expanded: Boolean) = moeSidebarExpanded.set(expanded)
+
+    fun onMoeWallpaperScrimEnabledChange(enabled: Boolean) = moeWallpaperScrimEnabled.set(enabled)
 
     fun clearMoeWallpaperUri() {
         viewModelScope.launch {

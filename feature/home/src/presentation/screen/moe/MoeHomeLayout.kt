@@ -75,6 +75,7 @@ internal data class MoeHomeLayoutState(
     val controlState: HomeProxyControlState,
     val canLaunch: Boolean,
     val isRemoteController: Boolean,
+    val wallpaperScrimEnabled: Boolean = true,
 )
 
 internal class MoeHomeActions(
@@ -199,16 +200,19 @@ private fun BoxScope.MoeHero(state: MoeHomeLayoutState, scale: Float) {
             qualityMode = MoeWallpaperQualityMode.Foreground,
             modifier = Modifier.matchParentSize(),
         )
-        Box(
-            Modifier.matchParentSize().background(
-                Brush.verticalGradient(
-                    0f to Color.Transparent,
-                    0.64f to Color.Transparent,
-                    0.80f to state.contentSurface.copy(alpha = 0.90f),
-                    1f to state.contentSurface,
+        if (state.wallpaperScrimEnabled) {
+            Box(
+                Modifier.matchParentSize().background(
+                    Brush.verticalGradient(
+                        0f to Color.Transparent,
+                        0.45f to Color.Transparent,
+                        0.78f to state.contentSurface.copy(alpha = 0.88f),
+                        0.90f to state.contentSurface,
+                        1f to state.contentSurface,
+                    )
                 )
             )
-        )
+        }
         AnimatedVisibility(
             visible = state.isRunning,
             modifier =

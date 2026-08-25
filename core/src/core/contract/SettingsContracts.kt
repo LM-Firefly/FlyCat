@@ -90,6 +90,7 @@ interface AppSettingsReader {
     val moeHomeQuote: Preference<String>
     val moeHomeQuoteAuthor: Preference<String>
     val moeSidebarExpanded: Preference<Boolean>
+    val moeWallpaperScrimEnabled: Preference<Boolean>
     val pageScale: Preference<Float>
     val predictiveBackEnabled: Preference<Boolean>
     val predictiveBackMaxProgress: Preference<Float>

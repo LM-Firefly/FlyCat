@@ -26,6 +26,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.lmfirefly.flycat.core.contract.Preference
 import com.github.lmfirefly.flycat.core.contract.SubStoreSettings
+import com.github.lmfirefly.flycat.core.model.RemoteProtocol
 import com.github.lmfirefly.flycat.core.model.profile.LinkOpenMode
 import com.github.lmfirefly.flycat.core.util.path.SubStorePaths
 import com.github.lmfirefly.flycat.feature.substore.SubStoreServiceController
@@ -62,6 +63,7 @@ class FeatureViewModel(
     val frontendPort: Preference<Int> = store.frontendPort
     val selectedPanelType: Preference<Int> = store.selectedPanelType
     val panelOpenMode: Preference<LinkOpenMode> = store.panelOpenMode
+    val panelProtocol: Preference<RemoteProtocol> = store.panelProtocol
     val exitUiWhenBackground: Preference<Boolean> = store.exitUiWhenBackground
     private val subStoreAutoCloseModeOrdinal: Preference<Int> = store.subStoreAutoCloseModeOrdinal
 
@@ -255,6 +257,8 @@ class FeatureViewModel(
     }
 
     fun setPanelOpenMode(mode: LinkOpenMode) = panelOpenMode.set(mode)
+
+    fun setPanelProtocol(protocol: RemoteProtocol) = panelProtocol.set(protocol)
 
     fun setExitUiWhenBackground(enabled: Boolean) = exitUiWhenBackground.set(enabled)
 

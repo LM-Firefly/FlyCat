@@ -41,11 +41,13 @@ internal fun MoeHomeSettingsSheet(
     classicHomeEnabled: Boolean,
     homeHitokotoEnabled: Boolean,
     sidebarExpanded: Boolean,
+    wallpaperScrimEnabled: Boolean,
     onQuoteChange: (String) -> Unit,
     onQuoteAuthorChange: (String) -> Unit,
     onClassicHomeEnabledChange: (Boolean) -> Unit,
     onHomeHitokotoEnabledChange: (Boolean) -> Unit,
     onSidebarExpandedChange: (Boolean) -> Unit,
+    onWallpaperScrimEnabledChange: (Boolean) -> Unit,
     onLaunchGalleryPicker: () -> Unit,
     onNavigateToWallpaperCrop: (String) -> Unit,
     onDismiss: () -> Unit,
@@ -56,6 +58,7 @@ internal fun MoeHomeSettingsSheet(
     var draftClassicHomeEnabled by remember(show, classicHomeEnabled) { mutableStateOf(classicHomeEnabled) }
     var draftHomeHitokotoEnabled by remember(show, homeHitokotoEnabled) { mutableStateOf(homeHitokotoEnabled) }
     var draftSidebarExpanded by remember(show, sidebarExpanded) { mutableStateOf(sidebarExpanded) }
+    var draftWallpaperScrimEnabled by remember(show, wallpaperScrimEnabled) { mutableStateOf(wallpaperScrimEnabled) }
     var showUrlInputDialog by remember { mutableStateOf(false) }
     var urlInput by remember { mutableStateOf("") }
     val saveSettings = {
@@ -64,6 +67,7 @@ internal fun MoeHomeSettingsSheet(
         onClassicHomeEnabledChange(draftClassicHomeEnabled)
         onHomeHitokotoEnabledChange(draftHomeHitokotoEnabled)
         onSidebarExpandedChange(draftSidebarExpanded)
+        onWallpaperScrimEnabledChange(draftWallpaperScrimEnabled)
         onDismiss()
     }
 
@@ -82,6 +86,7 @@ internal fun MoeHomeSettingsSheet(
                         PreferenceSwitchItem(title = FlyTxt.AppSettings.Interface.ClassicHomeTitle, checked = draftClassicHomeEnabled, onCheckedChange = { draftClassicHomeEnabled = it })
                         if (draftClassicHomeEnabled) { PreferenceSwitchItem(title = FlyTxt.AppSettings.Interface.HitokotoTitle, summary = FlyTxt.AppSettings.Interface.HitokotoSummary, checked = draftHomeHitokotoEnabled, onCheckedChange = { draftHomeHitokotoEnabled = it }) }
                         if (!draftClassicHomeEnabled) { PreferenceSwitchItem(title = FlyTxt.AppSettings.Interface.SidebarExpandedTitle, checked = draftSidebarExpanded, onCheckedChange = { draftSidebarExpanded = it }) }
+                        if (!draftClassicHomeEnabled) { PreferenceSwitchItem(title = FlyTxt.AppSettings.Interface.WallpaperScrimTitle, checked = draftWallpaperScrimEnabled, onCheckedChange = { draftWallpaperScrimEnabled = it }) }
                     }
                 }
             }

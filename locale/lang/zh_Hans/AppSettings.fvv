@@ -66,6 +66,7 @@ AppSettings = {
         HomeWallpaperSourceGallery = "从相册选择"
         HomeWallpaperSourceUrl = "URL输入"
         HomeWallpaperUrlDialogTitle = "设置远程壁纸"
+        WallpaperScrimTitle = "壁纸底部渐暗"
     }
 
     Privacy = {

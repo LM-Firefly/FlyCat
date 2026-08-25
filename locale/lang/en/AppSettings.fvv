@@ -66,6 +66,7 @@ AppSettings = {
         HomeWallpaperSourceGallery = "Pick from Gallery"
         HomeWallpaperSourceUrl = "Enter URL"
         HomeWallpaperUrlDialogTitle = "Set Remote Wallpaper"
+        WallpaperScrimTitle = "Wallpaper Bottom Dimming"
     }
 
     Privacy = {

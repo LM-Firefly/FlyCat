@@ -66,6 +66,7 @@ AppSettings = {
         HomeWallpaperSourceGallery = "Выбрать из галереи"
         HomeWallpaperSourceUrl = "Введите URL"
         HomeWallpaperUrlDialogTitle = "Установить удалённые обои"
+        WallpaperScrimTitle = "Затемнение нижней части обоев"
     }
 
     Privacy = {

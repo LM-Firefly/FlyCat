@@ -56,6 +56,7 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
     override val moeHomeQuote by strFlow("一个人走 默守一隅清欢")
     override val moeHomeQuoteAuthor by strFlow("Firefly")
     override val moeSidebarExpanded by boolFlow(true)
+    override val moeWallpaperScrimEnabled by boolFlow(true)
     override val pageScale by floatFlow(1.0f)
     override val predictiveBackEnabled by boolFlow(false)
     override val predictiveBackMaxProgress by floatFlow(50.0f)

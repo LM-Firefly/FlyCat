@@ -123,6 +123,7 @@ fun MoeHomePage(
     val moeHomeQuote by settings.moeHomeQuote.state.collectAsStateWithLifecycle()
     val moeHomeQuoteAuthor by settings.moeHomeQuoteAuthor.state.collectAsStateWithLifecycle()
     val sidebarExpanded by settings.moeSidebarExpanded.state.collectAsStateWithLifecycle()
+    val wallpaperScrimEnabled by settings.moeWallpaperScrimEnabled.state.collectAsStateWithLifecycle()
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val batteryPercent = rememberMoeBatteryPercent(context)
     var showHomeSettingsSheet by remember { mutableStateOf(false) }
@@ -267,7 +268,7 @@ fun MoeHomePage(
     }
 
     // 现在和durationPair不在布局状态键中——它们每帧都会变化，但只会触发时钟感知的叶子组合函数重组，而非完整的布局重组。
-    val layoutState = remember(wallpaperUri, wallpaperZoom, wallpaperBiasX, wallpaperBiasY, statusBarTop, pageProgress, sidebarProgress, animatedSidebarToggleProgress, batteryPercent, contentSurface, isRunning, trafficData, selectedServerName, selectedServerPing, quote.text, quote.author, visualControlState, profilesLoaded, profiles, isRemoteController) {
+    val layoutState = remember(wallpaperUri, wallpaperZoom, wallpaperBiasX, wallpaperBiasY, statusBarTop, pageProgress, sidebarProgress, animatedSidebarToggleProgress, batteryPercent, contentSurface, isRunning, trafficData, selectedServerName, selectedServerPing, quote.text, quote.author, visualControlState, profilesLoaded, profiles, isRemoteController, wallpaperScrimEnabled) {
         MoeHomeLayoutState(
             wallpaperUri = wallpaperUri,
             wallpaperZoom = wallpaperZoom,
@@ -289,6 +290,7 @@ fun MoeHomePage(
             controlState = visualControlState,
             canLaunch = profilesLoaded && profiles.isNotEmpty() && !isRemoteController,
             isRemoteController = isRemoteController,
+            wallpaperScrimEnabled = wallpaperScrimEnabled,
         )
     }
 
@@ -302,11 +304,13 @@ fun MoeHomePage(
         classicHomeEnabled = classicHomeEnabled,
         homeHitokotoEnabled = homeHitokotoEnabled,
         sidebarExpanded = sidebarExpanded,
+        wallpaperScrimEnabled = wallpaperScrimEnabled,
         onQuoteChange = { settings.moeHomeQuote.set(it) },
         onQuoteAuthorChange = { settings.moeHomeQuoteAuthor.set(it) },
         onClassicHomeEnabledChange = { settings.classicHomeEnabled.set(it) },
         onHomeHitokotoEnabledChange = { settings.homeHitokotoEnabled.set(it) },
         onSidebarExpandedChange = { settings.moeSidebarExpanded.set(it) },
+        onWallpaperScrimEnabledChange = { settings.moeWallpaperScrimEnabled.set(it) },
         onLaunchGalleryPicker = {
             showHomeSettingsSheet = false
             launchWallpaperPicker()
