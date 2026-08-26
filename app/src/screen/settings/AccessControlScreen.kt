@@ -59,6 +59,8 @@ fun AccessControlScreen(navigator: Navigator) {
     val uiState by viewModel.uiState.collectAsState()
     val filteredApps by viewModel.filteredApps.collectAsState()
 
+    LaunchedEffect(viewModel) { viewModel.refreshSelection() }
+
     var showSortMenu by remember { mutableStateOf(false) }
     var showOpsMenu by remember { mutableStateOf(false) }
     val mainListState = rememberLazyListState()

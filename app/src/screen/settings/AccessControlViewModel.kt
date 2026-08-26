@@ -72,9 +72,8 @@ class AccessControlViewModel(
         val apps: List<AppInfo> = emptyList(),
         val selectedPackages: Set<String> = emptySet(),
         /**
-         * Snapshot of the selected packages taken when the screen loads. Selected-first sorting
-         * only ever looks at this snapshot, so toggling apps never reorders the visible list —
-         * newly selected apps float to the top on the next screen entry instead.
+         * Selection snapshot used for ordering the currently visible list. It is refreshed when
+         * the screen is entered, so changing a checkbox does not immediately move that row.
          */
         val initialSelectedPackages: Set<String> = emptySet(),
         val searchQuery: String = "",
@@ -180,6 +179,20 @@ class AccessControlViewModel(
                     initialSelectedPackages = selectedPackages,
                 )
             }
+        }
+    }
+
+    /**
+     * Synchronize selection-related state when the screen becomes visible again. The ViewModel is
+     * activity-scoped by the Compose Koin owner, so navigating away does not recreate it.
+     */
+    fun refreshSelection() {
+        val selectedPackages = settings.accessControlPackages.value
+        _uiState.update { state ->
+            state.copy(
+                selectedPackages = selectedPackages,
+                initialSelectedPackages = selectedPackages,
+            )
         }
     }
 
