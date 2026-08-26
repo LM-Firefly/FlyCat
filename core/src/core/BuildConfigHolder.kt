@@ -44,4 +44,9 @@ object BuildConfigHolder {
         this.uiBuildId = uiBuildId
         this.kernelGitVersion = kernelGitVersion
     }
+
+    /** 更新内核版本（加载下载内核后由 Bridge 调用）。 */
+    fun updateKernelVersion(version: String) {
+        this.kernelGitVersion = version
+    }
 }

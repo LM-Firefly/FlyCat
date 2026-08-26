@@ -37,6 +37,7 @@ import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeStateMapper
 import com.github.lmfirefly.flycat.runtime.api.root.EbpfCapabilityProbe
 import com.github.lmfirefly.flycat.runtime.api.root.RootAccessStatus
 import com.github.lmfirefly.flycat.core.kernel.KernelManager
+import java.io.File
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -473,8 +474,46 @@ class NetworkSettingsViewModel(
                 if (id == KernelManager.BUNDLED_ALPHA_ID) {
                     withContext(Dispatchers.IO) { KernelManager.activate(getApplication(), id) }
                 } else if (KernelManager.isInstalled(getApplication(), id)) {
-                    withContext(Dispatchers.IO) { KernelManager.activate(getApplication(), id) }
+                    // 已安装的内核：检查 index 是否有同 channel 的更新版本
+                    val index = runCatching {
+                        withContext(Dispatchers.IO) { KernelManager.fetchIndex(getApplication(), forceNetwork = true) }
+                    }.getOrNull()
+                    val installedCommit = withContext(Dispatchers.IO) {
+                        KernelManager.installedCommit(getApplication(), id)
+                    }
+                    // 精确匹配 ID，或匹配同 channel（如 "alpha-xxx" → "alpha"）
+                    val channel = id.substringBefore("-").takeIf { it.isNotEmpty() } ?: id
+                    val latest = index?.kernels?.find { it.id == id }
+                        ?: index?.kernels?.find { it.id.startsWith("$channel-") }
+                    if (latest != null && installedCommit != null && latest.commit != installedCommit) {
+                        // index 有新版本，开始下载并覆盖安装
+                        _downloadingKernelIds.value = setOf(latest.id)
+                        _kernelBusy.value = true
+                        try {
+                            withContext(Dispatchers.IO) { KernelManager.install(getApplication(), latest) }
+                            // 若 ID 变了（如 alpha-f295ba → alpha-fb66af），清理旧文件
+                            if (latest.id != id) {
+                                withContext(Dispatchers.IO) {
+                                    val ctx = getApplication<Application>()
+                                    val libDir = ctx.filesDir.resolve("lib")
+                                    File(libDir, "libmihomo-$id.so").delete()
+                                    File(libDir, "libmihomo-$id.json").delete()
+                                }
+                            }
+                            refreshInstalledKernelCommits()
+                            // 若 ID 变了（channel 匹配），激活新 ID
+                            withContext(Dispatchers.IO) { KernelManager.activate(getApplication(), latest.id) }
+                            _activeKernelId.value = latest.id
+                        } finally {
+                            _downloadingKernelIds.value = emptySet()
+                            _kernelBusy.value = false
+                        }
+                    } else {
+                        withContext(Dispatchers.IO) { KernelManager.activate(getApplication(), id) }
+                        _activeKernelId.value = id
+                    }
                 } else {
+                    // 未安装的内核：下载并激活
                     val index = withContext(Dispatchers.IO) { KernelManager.fetchIndex(getApplication(), forceNetwork = true) }
                     val kernel = index.kernels.find { it.id == id }
                     if (kernel != null) {
@@ -482,10 +521,10 @@ class NetworkSettingsViewModel(
                         withContext(Dispatchers.IO) { KernelManager.activate(getApplication(), kernel.id) }
                         refreshInstalledKernelCommits()
                     }
+                    _activeKernelId.value = id
                 }
-                _activeKernelId.value = id
                 refreshInstalledKernelCommits()
-                if (id != KernelManager.BUNDLED_ALPHA_ID) {
+                if (_activeKernelId.value != KernelManager.BUNDLED_ALPHA_ID) {
                     _restartRequired.value = true
                 }
             } catch (e: Exception) {

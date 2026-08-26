@@ -248,8 +248,9 @@ private fun NetworkKernelSection(viewModel: NetworkSettingsViewModel) {
 
     Title(FlyTxt.NetworkSettings.Section.Kernel)
     Card {
-        // 当前激活的内核显示
-        val allKernelIds = listOf(KernelManager.BUNDLED_ALPHA_ID) + kernels.map { it.id }.distinct()
+        // 下拉仅展示已安装的内核（避免 index 中新 ID 和 marker 文件中旧 ID 同时出现）
+        val installedIds = installedCommits.keys.sorted()
+        val allKernelIds = listOf(KernelManager.BUNDLED_ALPHA_ID) + installedIds
         val activeIndex = allKernelIds.indexOf(activeKernelId).coerceAtLeast(0)
         WindowDropdownPreference(
             title = FlyTxt.NetworkSettings.Kernel.ActiveTitle,

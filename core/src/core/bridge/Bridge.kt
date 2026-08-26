@@ -26,6 +26,7 @@ import android.os.ParcelFileDescriptor
 import androidx.annotation.Keep
 import com.github.lmfirefly.flycat.core.BuildConfigHolder
 import com.github.lmfirefly.flycat.core.Global
+import com.github.lmfirefly.flycat.core.kernel.KernelManager
 import com.github.lmfirefly.flycat.core.util.NativeLibraryLoader
 import com.github.lmfirefly.flycat.core.util.path.runtimeHomeDir
 import kotlinx.coroutines.CompletableDeferred
@@ -193,7 +194,29 @@ object Bridge {
             ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "unknown"
         val sdkVersion = Build.VERSION.SDK_INT
 
-        nativeInit(home, versionName, sdkVersion, BuildConfigHolder.kernelGitVersion)
+        // 读取活动内核的版本信息，而非使用编译时常量。
+        // 这样 web dashboard（/version）会显示实际加载的内核版本。
+        val activeKernelVersion = readActiveKernelVersion(ctx)
+        nativeInit(home, versionName, sdkVersion, activeKernelVersion)
+        if (activeKernelVersion != BuildConfigHolder.kernelGitVersion) {
+            BuildConfigHolder.updateKernelVersion(activeKernelVersion)
+        }
+    }
+
+    /**
+     * 从 KernelManager 元数据读取活动内核的版本字符串。
+     * 若为下载内核则返回 "Name-shortCommit" 格式（如 "Meta-ac017c"），若为内置内核则返回编译时常量。
+     */
+    private fun readActiveKernelVersion(ctx: android.content.Context): String {
+        val activeId = KernelManager.activeKernelId(ctx)
+        if (activeId == KernelManager.BUNDLED_ALPHA_ID) return BuildConfigHolder.kernelGitVersion
+        val name = KernelManager.installedName(ctx, activeId)
+        val commit = KernelManager.installedCommit(ctx, activeId)
+        return if (name.isNotBlank() && !commit.isNullOrBlank()) {
+            "${name}-${commit.take(7)}"
+        } else {
+            BuildConfigHolder.kernelGitVersion
+        }
     }
 }
 
