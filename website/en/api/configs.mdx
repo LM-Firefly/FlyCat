@@ -1,0 +1,156 @@
+---
+title: Runtime Config
+sidebarTitle: Runtime Config
+---
+
+## Get Basic Config
+
+<RequestExample>
+```bash GET /configs
+curl http://127.0.0.1:9093/configs
+```
+</RequestExample>
+
+`GET /configs`
+
+Returns the current runtime configuration (ports, mode, log level, etc.).
+
+### Response
+
+<ResponseField name="200" type="object">
+  Contains `port`, `socks-port`, `mixed-port`, `mode`, `log-level`, and other basic config fields.
+</ResponseField>
+
+---
+
+## Reload Basic Config
+
+<RequestExample>
+```bash PUT /configs
+curl -X PUT http://127.0.0.1:9093/configs \
+  -H "Content-Type: application/json" \
+  -d '{"path": ""}'
+```
+</RequestExample>
+
+`PUT /configs`
+
+Reloads the configuration file from the specified path.
+
+### Query Parameters
+
+<ParamField query="force" type="boolean">
+  Force reload even if the config has not changed.
+</ParamField>
+
+### Request Body
+
+<ParamField body="path" type="string">
+  Config file path. Leave empty to use the current config.
+</ParamField>
+
+<ParamField body="payload" type="string">
+  Pass config content directly. Mutually exclusive with `path`.
+</ParamField>
+
+### Response
+
+<ResponseField name="204" type="null">
+  Reload successful.
+</ResponseField>
+
+---
+
+## Patch Basic Config
+
+<RequestExample>
+```bash PATCH /configs
+curl -X PATCH http://127.0.0.1:9093/configs \
+  -H "Content-Type: application/json" \
+  -d '{"mode": "rule", "log-level": "info"}'
+```
+</RequestExample>
+
+`PATCH /configs`
+
+Partially updates the runtime configuration, modifying only specified fields.
+
+### Request Body
+
+<ParamField body="mode" type="string">
+  Run mode: `global`, `rule`, `direct`.
+</ParamField>
+
+<ParamField body="log-level" type="string">
+  Log level: `silent`, `error`, `warning`, `info`, `debug`.
+</ParamField>
+
+### Response
+
+<ResponseField name="204" type="null">
+  Update successful.
+</ResponseField>
+
+---
+
+## Update GEO Database
+
+<RequestExample>
+```bash POST /configs/geo
+curl -X POST http://127.0.0.1:9093/configs/geo \
+  -H "Content-Type: application/json" \
+  -d '{"path": ""}'
+```
+</RequestExample>
+
+`POST /configs/geo`
+
+Updates GeoIP, GeoSite, and other databases.
+
+### Request Body
+
+<ParamField body="path" type="string">
+  Config file path. Leave empty to use the current config.
+</ParamField>
+
+<ParamField body="payload" type="string">
+  Pass config content directly.
+</ParamField>
+
+### Response
+
+<ResponseField name="204" type="null">
+  Update successful.
+</ResponseField>
+
+---
+
+## Restart Kernel
+
+<RequestExample>
+```bash POST /restart
+curl -X POST http://127.0.0.1:9093/restart \
+  -H "Content-Type: application/json" \
+  -d '{"path": ""}'
+```
+</RequestExample>
+
+`POST /restart`
+
+Restarts the mihomo kernel, optionally loading a new config.
+
+### Request Body
+
+<ParamField body="path" type="string">
+  Config file path. Leave empty to use the current config.
+</ParamField>
+
+<ParamField body="payload" type="string">
+  Pass config content directly.
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="object">
+  Restart result.
+</ResponseField>

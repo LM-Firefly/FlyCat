@@ -1,0 +1,100 @@
+---
+title: Proxy Groups
+sidebarTitle: Proxy Groups
+---
+
+## Get All Proxy Groups
+
+<RequestExample>
+```bash GET /group
+curl http://127.0.0.1:9093/group
+```
+</RequestExample>
+
+`GET /group`
+
+Returns an overview of all proxy groups.
+
+### Response
+
+<ResponseField name="200" type="object">
+  The `proxies` field contains an array of all proxy group [Proxy](#proxy-object) objects.
+</ResponseField>
+
+---
+
+## Get Proxy Group by Name
+
+<RequestExample>
+```bash GET /group/{name}
+curl http://127.0.0.1:9093/group/PROXY
+```
+</RequestExample>
+
+`GET /group/{name}`
+
+Returns detailed information about a specific proxy group.
+
+### Path Parameters
+
+<ParamField path="name" type="string" required>
+  Proxy group name (URL-encoded).
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="object">
+  A single [Proxy](#proxy-object) object.
+</ResponseField>
+
+---
+
+## Test Group Delay
+
+<RequestExample>
+```bash GET /group/{name}/delay
+curl "http://127.0.0.1:9093/group/PROXY/delay?url=http://www.gstatic.com/generate_204&timeout=5000"
+```
+</RequestExample>
+
+`GET /group/{name}/delay`
+
+Tests the latency of all nodes in a proxy group.
+
+### Path Parameters
+
+<ParamField path="name" type="string" required>
+  Proxy group name.
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="url" type="string" required>
+  Delay test URL.
+</ParamField>
+
+<ParamField query="timeout" type="integer" required>
+  Timeout in milliseconds.
+</ParamField>
+
+<ParamField query="expected" type="string">
+  Expected status code. Default `204`.
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="object">
+  A mapping of node name to delay (ms). Timed-out nodes are excluded.
+</ResponseField>
+
+---
+
+### Proxy Object
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `name` | string | Name |
+| `type` | string | Type (e.g. `Selector`, `URLTest`) |
+| `now` | string | Currently selected node |
+| `all` | string[] | All members in the group |
+| `hidden` | boolean | Whether hidden |

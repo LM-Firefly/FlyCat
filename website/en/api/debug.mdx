@@ -1,0 +1,50 @@
+---
+title: Debug
+sidebarTitle: Debug
+---
+
+<Info>The following endpoints are only available when the kernel log level is set to `debug`.</Info>
+
+## Trigger GC
+
+<RequestExample>
+```bash PUT /debug/gc
+curl -X PUT http://127.0.0.1:9093/debug/gc
+```
+</RequestExample>
+
+`PUT /debug/gc`
+
+Triggers Go runtime garbage collection.
+
+### Response
+
+<ResponseField name="204" type="null">
+  GC triggered.
+</ResponseField>
+
+---
+
+## pprof Debug Info
+
+<RequestExample>
+```bash GET /debug/pprof
+curl http://127.0.0.1:9093/debug/pprof
+```
+</RequestExample>
+
+`GET /debug/pprof`
+
+Returns Go pprof performance profiling data.
+
+### Query Parameters
+
+<ParamField query="raw" type="boolean">
+  Return raw pprof data instead of an HTML page.
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="string">
+  HTML page or raw pprof data.
+</ResponseField>

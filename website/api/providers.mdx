@@ -1,0 +1,181 @@
+---
+title: 代理集合
+sidebarTitle: 代理集合
+---
+
+## 获取所有代理集合
+
+<RequestExample>
+```bash GET /providers/proxies
+curl http://127.0.0.1:9093/providers/proxies
+```
+</RequestExample>
+
+`GET /providers/proxies`
+
+返回所有 proxy provider 的概览信息。
+
+### 响应
+
+<ResponseField name="200" type="object">
+  `providers` 字段包含名称到 provider 信息的映射。
+</ResponseField>
+
+---
+
+## 获取指定代理集合
+
+<RequestExample>
+```bash GET /providers/proxies/{name}
+curl http://127.0.0.1:9093/providers/proxies/my-proxy
+```
+</RequestExample>
+
+`GET /providers/proxies/{name}`
+
+返回指定 proxy provider 的详细信息及其节点列表。
+
+### 路径参数
+
+<ParamField path="name" type="string" required>
+  Provider 名称。
+</ParamField>
+
+### 响应
+
+<ResponseField name="200" type="object">
+  | 字段 | 类型 | 说明 |
+  | --- | --- | --- |
+  | `name` | string | 名称 |
+  | `vehicleType` | string | `HTTP` / `File` / `Compatible` / `Inline` |
+  | `proxies` | array | 节点列表 |
+  | `updatedAt` | string | 最后更新时间 |
+</ResponseField>
+
+---
+
+## 更新代理集合
+
+<RequestExample>
+```bash PUT /providers/proxies/{name}
+curl -X PUT http://127.0.0.1:9093/providers/proxies/my-proxy
+```
+</RequestExample>
+
+`PUT /providers/proxies/{name}`
+
+触发指定 proxy provider 的更新（重新拉取）。
+
+### 路径参数
+
+<ParamField path="name" type="string" required>
+  Provider 名称。
+</ParamField>
+
+### 响应
+
+<ResponseField name="204" type="null">
+  更新触发成功。
+</ResponseField>
+
+---
+
+## 代理集合健康检查
+
+<RequestExample>
+```bash GET /providers/proxies/{name}/healthcheck
+curl http://127.0.0.1:9093/providers/proxies/my-proxy/healthcheck
+```
+</RequestExample>
+
+`GET /providers/proxies/{name}/healthcheck`
+
+对 provider 内所有节点执行健康检查。
+
+### 路径参数
+
+<ParamField path="name" type="string" required>
+  Provider 名称。
+</ParamField>
+
+### 响应
+
+<ResponseField name="204" type="null">
+  健康检查已触发。
+</ResponseField>
+
+---
+
+## 获取代理集合内指定代理
+
+<RequestExample>
+```bash GET /providers/proxies/{providerName}/{name}
+curl http://127.0.0.1:9093/providers/proxies/my-proxy/日本节点
+```
+</RequestExample>
+
+`GET /providers/proxies/{providerName}/{name}`
+
+返回 provider 内指定节点的详细信息。
+
+### 路径参数
+
+<ParamField path="providerName" type="string" required>
+  Provider 名称。
+</ParamField>
+
+<ParamField path="name" type="string" required>
+  节点名称。
+</ParamField>
+
+### 响应
+
+<ResponseField name="200" type="object">
+  单个 Proxy 对象。
+</ResponseField>
+
+---
+
+## 测试代理集合内节点延迟
+
+<RequestExample>
+```bash GET /providers/proxies/{providerName}/{name}/healthcheck
+curl "http://127.0.0.1:9093/providers/proxies/my-proxy/日本节点/healthcheck?url=http://www.gstatic.com/generate_204&timeout=5000"
+```
+</RequestExample>
+
+`GET /providers/proxies/{providerName}/{name}/healthcheck`
+
+测试 provider 内指定节点的延迟。
+
+### 路径参数
+
+<ParamField path="providerName" type="string" required>
+  Provider 名称。
+</ParamField>
+
+<ParamField path="name" type="string" required>
+  节点名称。
+</ParamField>
+
+### 查询参数
+
+<ParamField query="url" type="string" required>
+  延迟测试 URL。
+</ParamField>
+
+<ParamField query="timeout" type="integer" required>
+  超时时间（毫秒）。
+</ParamField>
+
+<ParamField query="expected" type="string">
+  期望的状态码。
+</ParamField>
+
+### 响应
+
+<ResponseField name="200" type="object">
+  | 字段 | 类型 | 说明 |
+  | --- | --- | --- |
+  | `delay` | integer | 延迟（ms） |
+</ResponseField>

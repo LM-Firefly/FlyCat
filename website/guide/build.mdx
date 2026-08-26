@@ -121,6 +121,10 @@ FlyCat 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译�
         MetaCubeX `Alpha` 分支，项目默认通道。
       </Tab>
 
+      <Tab title="smart">
+        vernesong `Smart` 分支。
+      </Tab>
+
       <Tab title="meta">
         MetaCubeX `Meta` 分支。
       </Tab>
@@ -181,12 +185,12 @@ FlyCat 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译�
 
     <CodeGroup>
       ```bash Linux / macOS / Git Bash
-      ABI_APP_LIST=arm64-v8a kotlin scripts/native-build.main.kts --go --rust --compat --loader
+      ABI_APP_LIST=arm64-v8a kotlin scripts/native-build.main.kts --go --rust --loader
       ```
 
       ```powershell PowerShell
       $env:ABI_APP_LIST = "arm64-v8a"
-      kotlin scripts/native-build.main.kts --go --rust --compat --loader
+      kotlin scripts/native-build.main.kts --go --rust --loader
       ```
     </CodeGroup>
   </Tab>
@@ -195,15 +199,11 @@ FlyCat 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译�
 ### 可单独执行的任务
 
 <ResponseField name="--go" type="native">
-  构建 mihomo 共享核心 `libmihomocore.so` 和 PIE 启动壳 `libmihomo.so`。
+  构建 mihomo 共享核心 `libmihomo.so`。
 </ResponseField>
 
 <ResponseField name="--rust" type="native">
   构建 Rust 配置编译器，输出 `liboverride.so`。
-</ResponseField>
-
-<ResponseField name="--compat" type="native">
-  构建进程与 Unix socket bridge，输出 `libcompat.so`。
 </ResponseField>
 
 <ResponseField name="--loader" type="native">
@@ -219,7 +219,7 @@ FlyCat 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译�
 </ResponseField>
 
 <Check>
-  成功后，每个目标 ABI 的 `jniLibs/&lt;abi&gt;/` 下应包含 `libmihomo.so`、`libmihomocore.so`、`liboverride.so`、`libcompat.so`、`libloader.so` 和 `core-version.properties`。
+  成功后，每个目标 ABI 的 `jniLibs/&lt;abi&gt;/` 下应包含 `libmihomo.so`、`liboverride.so`、`libloader.so` 和 `core-version.properties`。
 </Check>
 
 ## 构建 APK
@@ -258,7 +258,7 @@ FlyCat 的 APK 由 Android/Kotlin 代码、mihomo Go 内核、Rust 配置编译�
   </Card>
 </Columns>
 
-APK 输出目录为 `app/build/outputs/apk/debug/` 或 `app/build/outputs/apk/release/`。所有构建仅生成 `arm64-v8a` APK。
+APK 输出目录为 `app/build/outputs/apk/debug/` 或 `app/build/outputs/apk/release/`。`assembleDebug` 默认仅构建 `arm64-v8a`；`assembleRelease` 构建包含全部四种 ABI 的 Universal APK。
 
 ## Release 签名
 

@@ -11,7 +11,7 @@ keywords:
   - Go
 ---
 
-The FlyCat APK consists of Android/Kotlin code, the mihomo Go core, a Rust configuration compiler, and two sets of C native libraries. Running Gradle alone does not generate missing `jniLibs`; complete the native build before your first APK build.
+The FlyCat APK consists of Android/Kotlin code, the mihomo Go core, and Rust native libraries (configuration compiler and payload extractor). Running Gradle alone does not generate missing `jniLibs`; complete the native build before your first APK build.
 
 <Columns cols={2}>
   <Card title="Build issues" icon="circle-question-mark" href="/en/guide/faq" horizontal>
@@ -44,7 +44,7 @@ These versions come from the current repository's `gradle.properties` and GitHub
 </ResponseField>
 
 <ResponseField name="CMake" type="3.22.1" required>
-  Used to build `libloader.so` and `libcompat.so`. The script prefers version 3.22.1.
+  Used for C/CMake native library builds. The script prefers version 3.22.1.
 </ResponseField>
 
 <ResponseField name="Kotlin CLI" type="2.x" required>
@@ -121,6 +121,10 @@ These versions come from the current repository's `gradle.properties` and GitHub
         The MetaCubeX `Alpha` branch and the project's default channel.
       </Tab>
 
+      <Tab title="smart">
+        The vernesong `Smart` branch.
+      </Tab>
+
       <Tab title="meta">
         The MetaCubeX `Meta` branch.
       </Tab>
@@ -181,12 +185,12 @@ Run the native build script for the first build and whenever the core, Rust, or 
 
     <CodeGroup>
       ```bash Linux / macOS / Git Bash
-      ABI_APP_LIST=arm64-v8a kotlin scripts/native-build.main.kts --go --rust --compat --loader
+      ABI_APP_LIST=arm64-v8a kotlin scripts/native-build.main.kts --go --rust --loader
       ```
 
       ```powershell PowerShell
       $env:ABI_APP_LIST = "arm64-v8a"
-      kotlin scripts/native-build.main.kts --go --rust --compat --loader
+      kotlin scripts/native-build.main.kts --go --rust --loader
       ```
     </CodeGroup>
   </Tab>
@@ -195,15 +199,11 @@ Run the native build script for the first build and whenever the core, Rust, or 
 ### Individual tasks
 
 <ResponseField name="--go" type="native">
-  Build the mihomo shared core `libmihomocore.so` and PIE launcher `libmihomo.so`.
+  Build the mihomo shared core `libmihomo.so`.
 </ResponseField>
 
 <ResponseField name="--rust" type="native">
   Build the Rust configuration compiler and output `liboverride.so`.
-</ResponseField>
-
-<ResponseField name="--compat" type="native">
-  Build the process and Unix socket bridge and output `libcompat.so`.
 </ResponseField>
 
 <ResponseField name="--loader" type="native">
@@ -219,7 +219,7 @@ Run the native build script for the first build and whenever the core, Rust, or 
 </ResponseField>
 
 <Check>
-  After a successful build, `jniLibs/&lt;abi&gt;/` for every target ABI should contain `libmihomo.so`, `libmihomocore.so`, `liboverride.so`, `libcompat.so`, `libloader.so`, and `core-version.properties`.
+  After a successful build, `jniLibs/&lt;abi&gt;/` for every target ABI should contain `libmihomo.so`, `liboverride.so`, `libloader.so`, and `core-version.properties`.
 </Check>
 
 ## Build the APK
@@ -258,7 +258,7 @@ Run the native build script for the first build and whenever the core, Rust, or 
   </Card>
 </Columns>
 
-APK output is written to `app/build/outputs/apk/debug/` or `app/build/outputs/apk/release/`. All builds generate only an `arm64-v8a` APK.
+APK output is written to `app/build/outputs/apk/debug/` or `app/build/outputs/apk/release/`. `assembleDebug` defaults to `arm64-v8a` only; `assembleRelease` builds a Universal APK containing all four ABIs.
 
 ## Release signing
 

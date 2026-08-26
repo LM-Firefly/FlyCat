@@ -1,0 +1,32 @@
+---
+title: DNS Query
+sidebarTitle: DNS Query
+---
+
+## DNS Query
+
+<RequestExample>
+```bash GET /dns/query
+curl "http://127.0.0.1:9093/dns/query?name=example.com&type=A"
+```
+</RequestExample>
+
+`GET /dns/query`
+
+Resolves a domain using the kernel's built-in DNS resolver.
+
+### Query Parameters
+
+<ParamField query="name" type="string" required>
+  The domain name to query.
+</ParamField>
+
+<ParamField query="type" type="string">
+  Query type, e.g. `A`, `AAAA`, `CNAME`, `MX`. Default `A`.
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="object">
+  DNS query result containing `Question` and `Answer` fields.
+</ResponseField>

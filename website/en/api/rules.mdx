@@ -1,0 +1,50 @@
+---
+title: Rules
+sidebarTitle: Rules
+---
+
+## Get All Rules
+
+<RequestExample>
+```bash GET /rules
+curl http://127.0.0.1:9093/rules
+```
+</RequestExample>
+
+`GET /rules`
+
+Returns all currently loaded rules.
+
+### Response
+
+<ResponseField name="200" type="object">
+  The `rules` field contains an array of rules, each with `type`, `payload`, `proxy`, etc.
+</ResponseField>
+
+---
+
+## Disable Rule
+
+<RequestExample>
+```bash PATCH /rules/disable
+curl -X PATCH http://127.0.0.1:9093/rules/disable \
+  -H "Content-Type: application/json" \
+  -d '{"payload": "DOMAIN-SUFFIX,example.com"}'
+```
+</RequestExample>
+
+`PATCH /rules/disable`
+
+Temporarily disables a rule (effective during runtime only, restored after restart).
+
+### Request Body
+
+<ParamField body="payload" type="string" required>
+  The `payload` value of the rule to disable.
+</ParamField>
+
+### Response
+
+<ResponseField name="204" type="null">
+  Successfully disabled.
+</ResponseField>

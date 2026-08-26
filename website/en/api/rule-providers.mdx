@@ -1,0 +1,48 @@
+---
+title: Rule Providers
+sidebarTitle: Rule Providers
+---
+
+## Get All Rule Providers
+
+<RequestExample>
+```bash GET /providers/rules
+curl http://127.0.0.1:9093/providers/rules
+```
+</RequestExample>
+
+`GET /providers/rules`
+
+Returns an overview of all rule providers.
+
+### Response
+
+<ResponseField name="200" type="object">
+  The `providers` field contains a name-to-rule-provider-info mapping.
+</ResponseField>
+
+---
+
+## Update Rule Provider
+
+<RequestExample>
+```bash PUT /providers/rules/{name}
+curl -X PUT http://127.0.0.1:9093/providers/rules/my-rules
+```
+</RequestExample>
+
+`PUT /providers/rules/{name}`
+
+Triggers an update (re-fetch) for the specified rule provider.
+
+### Path Parameters
+
+<ParamField path="name" type="string" required>
+  Rule provider name.
+</ParamField>
+
+### Response
+
+<ResponseField name="204" type="null">
+  Update triggered.
+</ResponseField>

@@ -548,51 +548,48 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "example": "info"
-                        },
-                        "payload": {
-                          "type": "string",
-                          "example": "..."
-                        }
-                      }
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "日志级别（兼容模式）。",
+                      "example": "info"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "time": {
-                          "type": "string",
-                          "example": "13:19:22"
-                        },
-                        "level": {
-                          "type": "string",
-                          "example": "info"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "key": {
-                                "type": "string"
-                              },
-                              "value": {
-                                "type": "string"
-                              }
-                            }
+                    "payload": {
+                      "type": "string",
+                      "description": "日志内容（兼容模式）。",
+                      "example": "..."
+                    },
+                    "time": {
+                      "type": "string",
+                      "description": "时间戳（structured 模式）。",
+                      "example": "13:19:22"
+                    },
+                    "level": {
+                      "type": "string",
+                      "description": "日志级别（structured 模式）。",
+                      "example": "info"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "日志消息（structured 模式）。"
+                    },
+                    "fields": {
+                      "type": "array",
+                      "description": "附加字段（structured 模式）。",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
                           }
                         }
                       }
                     }
-                  ]
+                  }
                 },
                 "example": {
                   "type": "info",

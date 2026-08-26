@@ -1,0 +1,40 @@
+# @title FlyCat 构建链路
+# @roles critical:A,B,C info:D,E,F,G success:L,M muted:K
+flowchart LR
+    subgraph PREP["准备"]
+        direction TB
+        A["同步 mihomo<br/>Alpha /Meta / Smart"]
+        B["Go + Rust + patch"]
+        C["Android SDK + NDK"]
+    end
+
+    subgraph NATIVE["原生构建"]
+        direction TB
+        D["Go 核心<br/>libmihomo.so"]
+        E["Rust 编译器<br/>liboverride.so"]
+        F["Rust Loader<br/>libloader.so"]
+        G["Geo 数据"]
+    end
+
+    subgraph APK["Gradle 打包"]
+        direction TB
+        H["jniLibs + assets"]
+        I["Debug / Release"]
+        J["builtin / external"]
+    end
+
+    subgraph OUTPUT["产物"]
+        direction TB
+        K["Universal APK<br/>4 ABI"]
+        L["安装 / 发布"]
+    end
+
+    A --> D
+    B --> D
+    B --> E
+    B --> F
+    D --> H
+    E --> H
+    F --> H
+    G --> H
+    H --> I --> J --> K --> L

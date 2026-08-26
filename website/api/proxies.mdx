@@ -1,0 +1,166 @@
+---
+title: 代理
+sidebarTitle: 代理
+---
+
+## 获取所有代理
+
+<RequestExample>
+```bash GET /proxies
+curl http://127.0.0.1:9093/proxies
+```
+</RequestExample>
+
+`GET /proxies`
+
+返回所有代理节点和策略组。
+
+### 响应
+
+<ResponseField name="200" type="object">
+  | 字段 | 类型 | 说明 |
+  | --- | --- | --- |
+  | `proxies` | object | 名称到 [Proxy](#proxy-对象) 的映射 |
+</ResponseField>
+
+---
+
+## 获取指定代理
+
+<RequestExample>
+```bash GET /proxies/{name}
+curl http://127.0.0.1:9093/proxies/日本节点
+```
+</RequestExample>
+
+`GET /proxies/{name}`
+
+返回指定代理或策略组的详细信息。
+
+### 路径参数
+
+<ParamField path="name" type="string" required>
+  代理或策略组名称（URL 编码）。
+</ParamField>
+
+### 响应
+
+<ResponseField name="200" type="object">
+  单个 [Proxy](#proxy-对象) 对象。
+</ResponseField>
+
+---
+
+## 选择代理节点
+
+<RequestExample>
+```bash PUT /proxies/{name}
+curl -X PUT http://127.0.0.1:9093/proxies/PROXY \
+  -H "Content-Type: application/json" \
+  -d '{"name": "日本节点"}'
+```
+</RequestExample>
+
+`PUT /proxies/{name}`
+
+为 Selector 类型策略组选择代理节点。
+
+### 路径参数
+
+<ParamField path="name" type="string" required>
+  策略组名称。
+</ParamField>
+
+### 请求体
+
+<ParamField body="name" type="string" required>
+  要选择的节点名称。
+</ParamField>
+
+### 响应
+
+<ResponseField name="204" type="null">
+  选择成功。
+</ResponseField>
+
+---
+
+## 清除固定选择
+
+<RequestExample>
+```bash DELETE /proxies/{name}
+curl -X DELETE http://127.0.0.1:9093/proxies/PROXY
+```
+</RequestExample>
+
+`DELETE /proxies/{name}`
+
+清除 URLTest / Fallback 策略组的固定选择，恢复自动模式。
+
+### 路径参数
+
+<ParamField path="name" type="string" required>
+  策略组名称。
+</ParamField>
+
+### 响应
+
+<ResponseField name="204" type="null">
+  清除成功。
+</ResponseField>
+
+---
+
+## 测试代理延迟
+
+<RequestExample>
+```bash GET /proxies/{name}/delay
+curl "http://127.0.0.1:9093/proxies/日本节点/delay?url=http://www.gstatic.com/generate_204&timeout=5000"
+```
+</RequestExample>
+
+`GET /proxies/{name}/delay`
+
+测试指定代理节点的延迟。
+
+### 路径参数
+
+<ParamField path="name" type="string" required>
+  代理名称。
+</ParamField>
+
+### 查询参数
+
+<ParamField query="url" type="string" required>
+  延迟测试 URL。
+</ParamField>
+
+<ParamField query="timeout" type="integer" required>
+  超时时间（毫秒）。
+</ParamField>
+
+<ParamField query="expected" type="string">
+  期望的状态码。
+</ParamField>
+
+### 响应
+
+<ResponseField name="200" type="object">
+  | 字段 | 类型 | 说明 |
+  | --- | --- | --- |
+  | `delay` | integer | 延迟（ms） |
+</ResponseField>
+
+---
+
+### Proxy 对象
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `name` | string | 名称 |
+| `type` | string | 类型（如 `Shadowsocks`、`VMess`、`Selector`） |
+| `udp` | boolean | 是否支持 UDP |
+| `alive` | boolean | 当前是否存活 |
+| `now` | string | 当前选中节点（策略组） |
+| `all` | string[] | 组内全部成员（策略组） |
+| `history` | array | 延迟历史 `[{time, delay}]` |

@@ -1,0 +1,42 @@
+---
+title: 缓存
+sidebarTitle: 缓存
+---
+
+## 清除 FakeIP 缓存
+
+<RequestExample>
+```bash POST /cache/fakeip/flush
+curl -X POST http://127.0.0.1:9093/cache/fakeip/flush
+```
+</RequestExample>
+
+`POST /cache/fakeip/flush`
+
+清除 FakeIP 地址池缓存。
+
+### 响应
+
+<ResponseField name="204" type="null">
+  清除成功，无返回内容。
+</ResponseField>
+
+---
+
+## 清除 DNS 缓存
+
+<RequestExample>
+```bash POST /cache/dns/flush
+curl -X POST http://127.0.0.1:9093/cache/dns/flush
+```
+</RequestExample>
+
+`POST /cache/dns/flush`
+
+清除 DNS 解析缓存。
+
+### 响应
+
+<ResponseField name="204" type="null">
+  清除成功，无返回内容。
+</ResponseField>

@@ -1,0 +1,156 @@
+---
+title: 运行配置
+sidebarTitle: 运行配置
+---
+
+## 获取基本配置
+
+<RequestExample>
+```bash GET /configs
+curl http://127.0.0.1:9093/configs
+```
+</RequestExample>
+
+`GET /configs`
+
+返回当前运行配置（端口、模式、日志级别等）。
+
+### 响应
+
+<ResponseField name="200" type="object">
+  包含 `port`、`socks-port`、`mixed-port`、`mode`、`log-level` 等基本配置字段。
+</ResponseField>
+
+---
+
+## 重新加载基本配置
+
+<RequestExample>
+```bash PUT /configs
+curl -X PUT http://127.0.0.1:9093/configs \
+  -H "Content-Type: application/json" \
+  -d '{"path": ""}'
+```
+</RequestExample>
+
+`PUT /configs`
+
+重新加载指定路径的配置文件。
+
+### 查询参数
+
+<ParamField query="force" type="boolean">
+  强制重新加载，即使配置未变化。
+</ParamField>
+
+### 请求体
+
+<ParamField body="path" type="string">
+  配置文件路径。留空使用当前配置。
+</ParamField>
+
+<ParamField body="payload" type="string">
+  直接传入配置内容。与 `path` 二选一。
+</ParamField>
+
+### 响应
+
+<ResponseField name="204" type="null">
+  重新加载成功。
+</ResponseField>
+
+---
+
+## 更新基本配置
+
+<RequestExample>
+```bash PATCH /configs
+curl -X PATCH http://127.0.0.1:9093/configs \
+  -H "Content-Type: application/json" \
+  -d '{"mode": "rule", "log-level": "info"}'
+```
+</RequestExample>
+
+`PATCH /configs`
+
+部分更新运行配置，仅修改指定字段。
+
+### 请求体
+
+<ParamField body="mode" type="string">
+  运行模式：`global`、`rule`、`direct`。
+</ParamField>
+
+<ParamField body="log-level" type="string">
+  日志级别：`silent`、`error`、`warning`、`info`、`debug`。
+</ParamField>
+
+### 响应
+
+<ResponseField name="204" type="null">
+  更新成功。
+</ResponseField>
+
+---
+
+## 更新 GEO 数据库
+
+<RequestExample>
+```bash POST /configs/geo
+curl -X POST http://127.0.0.1:9093/configs/geo \
+  -H "Content-Type: application/json" \
+  -d '{"path": ""}'
+```
+</RequestExample>
+
+`POST /configs/geo`
+
+更新 GeoIP、GeoSite 等数据库。
+
+### 请求体
+
+<ParamField body="path" type="string">
+  配置文件路径。留空使用当前配置。
+</ParamField>
+
+<ParamField body="payload" type="string">
+  直接传入配置内容。
+</ParamField>
+
+### 响应
+
+<ResponseField name="204" type="null">
+  更新成功。
+</ResponseField>
+
+---
+
+## 重启内核
+
+<RequestExample>
+```bash POST /restart
+curl -X POST http://127.0.0.1:9093/restart \
+  -H "Content-Type: application/json" \
+  -d '{"path": ""}'
+```
+</RequestExample>
+
+`POST /restart`
+
+重启 mihomo 内核，可选择加载新配置。
+
+### 请求体
+
+<ParamField body="path" type="string">
+  配置文件路径。留空使用当前配置。
+</ParamField>
+
+<ParamField body="payload" type="string">
+  直接传入配置内容。
+</ParamField>
+
+### 响应
+
+<ResponseField name="200" type="object">
+  重启结果。
+</ResponseField>

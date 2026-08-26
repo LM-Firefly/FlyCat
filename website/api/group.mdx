@@ -1,0 +1,100 @@
+---
+title: 策略组
+sidebarTitle: 策略组
+---
+
+## 获取所有策略组
+
+<RequestExample>
+```bash GET /group
+curl http://127.0.0.1:9093/group
+```
+</RequestExample>
+
+`GET /group`
+
+返回所有策略组的概览信息。
+
+### 响应
+
+<ResponseField name="200" type="object">
+  `proxies` 字段包含所有策略组的 [Proxy](#proxy-对象) 数组。
+</ResponseField>
+
+---
+
+## 获取指定策略组
+
+<RequestExample>
+```bash GET /group/{name}
+curl http://127.0.0.1:9093/group/PROXY
+```
+</RequestExample>
+
+`GET /group/{name}`
+
+返回指定策略组的详细信息。
+
+### 路径参数
+
+<ParamField path="name" type="string" required>
+  策略组名称（URL 编码）。
+</ParamField>
+
+### 响应
+
+<ResponseField name="200" type="object">
+  单个 [Proxy](#proxy-对象) 对象。
+</ResponseField>
+
+---
+
+## 测试策略组延迟
+
+<RequestExample>
+```bash GET /group/{name}/delay
+curl "http://127.0.0.1:9093/group/PROXY/delay?url=http://www.gstatic.com/generate_204&timeout=5000"
+```
+</RequestExample>
+
+`GET /group/{name}/delay`
+
+测试策略组内所有节点的延迟。
+
+### 路径参数
+
+<ParamField path="name" type="string" required>
+  策略组名称。
+</ParamField>
+
+### 查询参数
+
+<ParamField query="url" type="string" required>
+  延迟测试 URL。
+</ParamField>
+
+<ParamField query="timeout" type="integer" required>
+  超时时间（毫秒）。
+</ParamField>
+
+<ParamField query="expected" type="string">
+  期望的状态码，默认 `204`。
+</ParamField>
+
+### 响应
+
+<ResponseField name="200" type="object">
+  节点名到延迟（ms）的映射。超时节点不包含在结果中。
+</ResponseField>
+
+---
+
+### Proxy 对象
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `name` | string | 名称 |
+| `type` | string | 类型（如 `Selector`、`URLTest`） |
+| `now` | string | 当前选中节点 |
+| `all` | string[] | 组内全部成员 |
+| `hidden` | boolean | 是否隐藏 |

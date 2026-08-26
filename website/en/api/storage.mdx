@@ -1,0 +1,86 @@
+---
+title: Storage
+sidebarTitle: Storage
+---
+
+## Get Storage Value
+
+<RequestExample>
+```bash GET /storage/{key}
+curl http://127.0.0.1:9093/storage/my-key
+```
+</RequestExample>
+
+`GET /storage/{key}`
+
+Gets the value of a key from the kernel's key-value store.
+
+### Path Parameters
+
+<ParamField path="key" type="string" required>
+  Storage key name.
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="string">
+  The stored value (string).
+</ResponseField>
+
+---
+
+## Set Storage Value
+
+<RequestExample>
+```bash PUT /storage/{key}
+curl -X PUT http://127.0.0.1:9093/storage/my-key \
+  -H "Content-Type: application/json" \
+  -d '"my-value"'
+```
+</RequestExample>
+
+`PUT /storage/{key}`
+
+Writes or updates a value in the kernel's key-value store.
+
+### Path Parameters
+
+<ParamField path="key" type="string" required>
+  Storage key name.
+</ParamField>
+
+### Request Body
+
+The value to store (JSON string).
+
+### Response
+
+<ResponseField name="204" type="null">
+  Write successful.
+</ResponseField>
+
+---
+
+## Delete Storage Value
+
+<RequestExample>
+```bash DELETE /storage/{key}
+curl -X DELETE http://127.0.0.1:9093/storage/my-key
+```
+</RequestExample>
+
+`DELETE /storage/{key}`
+
+Deletes a key from the kernel's key-value store.
+
+### Path Parameters
+
+<ParamField path="key" type="string" required>
+  Storage key name.
+</ParamField>
+
+### Response
+
+<ResponseField name="204" type="null">
+  Delete successful.
+</ResponseField>

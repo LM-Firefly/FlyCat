@@ -1,0 +1,48 @@
+---
+title: 规则集合
+sidebarTitle: 规则集合
+---
+
+## 获取所有规则集合
+
+<RequestExample>
+```bash GET /providers/rules
+curl http://127.0.0.1:9093/providers/rules
+```
+</RequestExample>
+
+`GET /providers/rules`
+
+返回所有 rule provider 的概览信息。
+
+### 响应
+
+<ResponseField name="200" type="object">
+  `providers` 字段包含名称到规则集合信息的映射。
+</ResponseField>
+
+---
+
+## 更新规则集合
+
+<RequestExample>
+```bash PUT /providers/rules/{name}
+curl -X PUT http://127.0.0.1:9093/providers/rules/my-rules
+```
+</RequestExample>
+
+`PUT /providers/rules/{name}`
+
+触发指定 rule provider 的更新（重新拉取）。
+
+### 路径参数
+
+<ParamField path="name" type="string" required>
+  规则集合名称。
+</ParamField>
+
+### 响应
+
+<ResponseField name="204" type="null">
+  更新触发成功。
+</ResponseField>
