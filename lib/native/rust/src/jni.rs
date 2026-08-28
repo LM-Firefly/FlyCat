@@ -8,6 +8,8 @@ use jni::errors::ThrowRuntimeExAndDefault;
 use jni::objects::{JObject, JString};
 use jni::sys::jstring;
 use jni::{Env, EnvUnowned};
+use std::any::Any;
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use crate::compiler::compile_request;
 use crate::compiler::result::{compile_error_json, encode_compile_result};
@@ -82,10 +84,10 @@ fn handle_compile_request(env: &mut Env, request_json: JString) -> jstring {
         }
     };
 
-    let result = match serde_json::from_str::<CompileRequest>(&payload) {
+    let result = catch_compiler_panic(|| match serde_json::from_str::<CompileRequest>(&payload) {
         Ok(request) => compile_request(request, false),
         Err(err) => Err(format!("decode override request: {err}")),
-    };
+    });
 
     let response_json = match result {
         Ok(result) => encode_compile_result(result),
@@ -94,8 +96,40 @@ fn handle_compile_request(env: &mut Env, request_json: JString) -> jstring {
     new_java_string(env, response_json)
 }
 
+/// Keep an engine panic from unwinding across JNI and killing the hosting Android process.
+fn catch_compiler_panic<T>(compile: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
+    catch_unwind(AssertUnwindSafe(compile)).unwrap_or_else(|panic| {
+        Err(format!(
+            "native override compiler panicked: {}",
+            panic_message(panic)
+        ))
+    })
+}
+
+fn panic_message(panic: Box<dyn Any + Send>) -> String {
+    panic
+        .downcast_ref::<&str>()
+        .map(|message| (*message).to_string())
+        .or_else(|| panic.downcast_ref::<String>().cloned())
+        .unwrap_or_else(|| "unknown panic".to_string())
+}
+
 fn new_java_string(env: &mut Env, content: String) -> jstring {
     env.new_string(content)
         .expect("create JNI response string")
         .into_raw()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::catch_compiler_panic;
+
+    #[test]
+    fn compiler_panic_becomes_a_compile_error() {
+        let result = catch_compiler_panic::<()>(|| panic!("Boa collector failure"));
+        assert_eq!(
+            result,
+            Err("native override compiler panicked: Boa collector failure".to_string())
+        );
+    }
 }

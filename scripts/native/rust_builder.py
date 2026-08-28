@@ -29,12 +29,11 @@ class RustBuilder:
         result = execute_command(
             [
                 "cargo", "ndk", "-t", abi, "-o", str(self.output_dir), "build", "--release", "--lib",
-                "-Z", "build-std=std,panic_abort",
             ],
             working_dir=self.source_dir,
             environment={
                 "RUSTUP_TOOLCHAIN": "nightly",
-                "RUSTFLAGS": "-Zunstable-options -Cpanic=immediate-abort -C link-arg=-Wl,-soname,liboverride.so",
+                "RUSTFLAGS": "-Cpanic=unwind -C link-arg=-Wl,-soname,liboverride.so",
             },
             stdout_prefix=f"[building][{abi}]",
             stderr_prefix=f"[building][{abi}]",
@@ -49,4 +48,3 @@ class RustBuilder:
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(source_lib.read_bytes())
         print(f"[Rust] Copied to {destination}")
-
