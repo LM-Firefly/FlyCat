@@ -12,6 +12,7 @@ pub mod validate;
 
 use std::fs;
 use std::path::Path;
+use std::sync::Mutex;
 
 use serde_json::Value as JsonValue;
 
@@ -31,9 +32,30 @@ struct CompiledRoot {
     warnings: Vec<String>,
 }
 
+// Boa uses interior mutability while constructing and collecting a JS realm. Compiles can be
+// requested concurrently by start/reload, config preview, and group inspection; serialize the
+// full transaction so separate JNI/ABI callers never enter the engine at the same time.
+static COMPILER_LOCK: Mutex<()> = Mutex::new(());
+
+fn with_compile_lock<T>(compile: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
+    // A caught panic poisons std::sync::Mutex. The failed context is dropped during unwinding, so
+    // later compiles can safely acquire the lock and report their own result.
+    let _guard = COMPILER_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    compile()
+}
+
 /// Compiles to the YAML document the core consumes. Rejected for encrypted profiles: writing a
 /// decrypted profile back out as YAML would defeat the encryption.
 pub fn compile_request(
+    request: CompileRequest,
+    write_output: bool,
+) -> Result<CompileResult, String> {
+    with_compile_lock(|| compile_request_unlocked(request, write_output))
+}
+
+fn compile_request_unlocked(
     request: CompileRequest,
     write_output: bool,
 ) -> Result<CompileResult, String> {
@@ -75,6 +97,10 @@ pub fn compile_request(
 /// Compiles to the raw JSON config the core can be fed directly, which is the only supported
 /// output for age-encrypted profiles.
 pub fn compile_raw_request(request: CompileRequest) -> Result<CompileRawResult, String> {
+    with_compile_lock(|| compile_raw_request_unlocked(request))
+}
+
+fn compile_raw_request_unlocked(request: CompileRequest) -> Result<CompileRawResult, String> {
     let compiled = compile_root(&request)?;
     let config_raw = serde_json::to_string(&compiled.root)
         .map_err(|err| format!("encode raw config json: {err}"))?;
@@ -154,4 +180,53 @@ fn load_source_yaml(request: &CompileRequest) -> Result<(String, bool), String> 
     let source_yaml =
         String::from_utf8(plaintext).map_err(|err| format!("source yaml is not utf-8: {err}"))?;
     Ok((source_yaml, encrypted))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::{Arc, Barrier};
+    use std::thread;
+    use std::time::Duration;
+
+    use super::with_compile_lock;
+
+    #[test]
+    fn compile_lock_serializes_concurrent_requests() {
+        let ready = Arc::new(Barrier::new(8));
+        let active = Arc::new(AtomicUsize::new(0));
+        let peak = Arc::new(AtomicUsize::new(0));
+        let mut workers = Vec::new();
+
+        for _ in 0..8 {
+            let ready = Arc::clone(&ready);
+            let active = Arc::clone(&active);
+            let peak = Arc::clone(&peak);
+            workers.push(thread::spawn(move || {
+                ready.wait();
+                with_compile_lock(|| {
+                    let current = active.fetch_add(1, Ordering::SeqCst) + 1;
+                    peak.fetch_max(current, Ordering::SeqCst);
+                    thread::sleep(Duration::from_millis(5));
+                    active.fetch_sub(1, Ordering::SeqCst);
+                    Ok(())
+                })
+                .expect("serialized compile work");
+            }));
+        }
+
+        for worker in workers {
+            worker.join().expect("join compile worker");
+        }
+        assert_eq!(peak.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn compile_lock_recovers_after_panic() {
+        let panic = std::panic::catch_unwind(|| {
+            let _ = with_compile_lock::<()>(|| panic!("compile panic"));
+        });
+        assert!(panic.is_err());
+        assert_eq!(with_compile_lock(|| Ok("recovered")), Ok("recovered"));
+    }
 }

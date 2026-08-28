@@ -10,6 +10,7 @@ use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::thread;
 
+use boa_engine::{Context, Source};
 use serde_json::{Value as JsonValue, json};
 
 use r#override::engine;
@@ -282,4 +283,29 @@ fn many_js_overrides_reuse_runtime_and_accumulate() {
     let result = engine::apply_overrides(json!({ "mode": "rule", "port": 0 }), &overrides, false)
         .expect("multi js chain");
     assert_eq!(result.root.get("port").and_then(JsonValue::as_i64), Some(8));
+}
+
+#[test]
+fn map_and_set_iterator_finalizers_survive_forced_gc() {
+    let mut context = Context::default();
+    for _ in 0..128 {
+        context
+            .eval(Source::from_bytes(
+                r#"
+{
+  const map = new Map();
+  for (let index = 0; index < 128; index++) map.set(index, index);
+  for (const [key] of map.entries()) {
+    if (key % 2 === 0) map.delete(key);
+  }
+  const set = new Set(map.keys());
+  for (const value of set.values()) {
+    if (value % 3 === 0) set.delete(value);
+  }
+}
+"#,
+            ))
+            .expect("Map/Set iterator script");
+        boa_engine::gc::force_collect();
+    }
 }
