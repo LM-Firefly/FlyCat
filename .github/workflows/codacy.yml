@@ -76,21 +76,21 @@ jobs:
 
       # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
-        uses: github/codeql-action/upload-sarif@v4.37.8
+        uses: github/codeql-action/upload-sarif@v4.37.9
         if: env.SPLIT_COUNT == '1'
         with:
           sarif_file: results.sarif
           category: codacy
 
       - name: Upload SARIF part 0
-        uses: github/codeql-action/upload-sarif@v4.37.8
+        uses: github/codeql-action/upload-sarif@v4.37.9
         if: env.SPLIT_COUNT != '1'
         with:
           sarif_file: results_part_0.sarif
           category: codacy-0
 
       - name: Upload SARIF part 1
-        uses: github/codeql-action/upload-sarif@v4.37.8
+        uses: github/codeql-action/upload-sarif@v4.37.9
         if: env.SPLIT_COUNT != '1'
         with:
           sarif_file: results_part_1.sarif
