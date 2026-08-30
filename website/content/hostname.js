@@ -1,4 +1,4 @@
-if (location.hostname === 'yumebox.mintlify.app') {
+if (location.hostname === 'flycat.mintlify.app') {
 	const url = new URL(location.href)
-	location.replace(((url.hostname = 'yumebox.gal.tf'), url))
+	location.replace(((url.hostname = 'FlyCat.gal.tf'), url))
 }

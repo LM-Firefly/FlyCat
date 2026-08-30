@@ -10,12 +10,13 @@ Connection = {
 
     Search = "搜尋"
     SearchHint = "搜尋主機、程序..."
+    CloseAll = "關閉所有連線"
 
     SortBy = "排序:"
     Sort = {
         Time = "時間"
-        Upload = "上傳"
-        Download = "下載"
+        Upload = "上行"
+        Download = "下行"
         Host = "主機"
     }
 
@@ -30,8 +31,6 @@ Connection = {
     }
 
     Detail = {
-        Title = "連線詳情"
-
         Action = {
             Interrupting = "正在中斷連線..."
             Interrupt = "中斷連線"
@@ -40,11 +39,9 @@ Connection = {
         Section = {
             Info = "連線資訊"
             Rule = "規則"
-            Chain = "代理鏈路"
         }
 
         Label = {
-            Host = "目標主機"
             Protocol = "協定"
             Process = "程序"
             SourceAddress = "來源位址"
@@ -54,11 +51,15 @@ Connection = {
             Download = "下載"
             Type = "類型"
             Content = "內容"
-            Chain = "鏈路"
         }
     }
 
     Loading = "載入中..."
     Empty = "暫無作用中連線"
     NoResults = "沒有符合的連線"
+
+    Topology = {
+        EmptyMessage = "暫無作用中連線，點擊開啟連線詳情"
+        OpenPage = "開啟連線頁面"
+    }
 }

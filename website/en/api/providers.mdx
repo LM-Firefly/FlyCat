@@ -1,0 +1,181 @@
+---
+title: Proxy Providers
+sidebarTitle: Proxy Providers
+---
+
+## Get All Proxy Providers
+
+<RequestExample>
+```bash GET /providers/proxies
+curl http://127.0.0.1:9093/providers/proxies
+```
+</RequestExample>
+
+`GET /providers/proxies`
+
+Returns an overview of all proxy providers.
+
+### Response
+
+<ResponseField name="200" type="object">
+  The `providers` field contains a name-to-provider-info mapping.
+</ResponseField>
+
+---
+
+## Get Proxy Provider by Name
+
+<RequestExample>
+```bash GET /providers/proxies/{name}
+curl http://127.0.0.1:9093/providers/proxies/my-proxy
+```
+</RequestExample>
+
+`GET /providers/proxies/{name}`
+
+Returns detailed info and node list of a specific proxy provider.
+
+### Path Parameters
+
+<ParamField path="name" type="string" required>
+  Provider name.
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="object">
+  | Field | Type | Description |
+  | --- | --- | --- |
+  | `name` | string | Name |
+  | `vehicleType` | string | `HTTP` / `File` / `Compatible` / `Inline` |
+  | `proxies` | array | Node list |
+  | `updatedAt` | string | Last update time |
+</ResponseField>
+
+---
+
+## Update Proxy Provider
+
+<RequestExample>
+```bash PUT /providers/proxies/{name}
+curl -X PUT http://127.0.0.1:9093/providers/proxies/my-proxy
+```
+</RequestExample>
+
+`PUT /providers/proxies/{name}`
+
+Triggers an update (re-fetch) for the specified proxy provider.
+
+### Path Parameters
+
+<ParamField path="name" type="string" required>
+  Provider name.
+</ParamField>
+
+### Response
+
+<ResponseField name="204" type="null">
+  Update triggered.
+</ResponseField>
+
+---
+
+## Proxy Provider Health Check
+
+<RequestExample>
+```bash GET /providers/proxies/{name}/healthcheck
+curl http://127.0.0.1:9093/providers/proxies/my-proxy/healthcheck
+```
+</RequestExample>
+
+`GET /providers/proxies/{name}/healthcheck`
+
+Runs a health check on all nodes in the provider.
+
+### Path Parameters
+
+<ParamField path="name" type="string" required>
+  Provider name.
+</ParamField>
+
+### Response
+
+<ResponseField name="204" type="null">
+  Health check triggered.
+</ResponseField>
+
+---
+
+## Get Node from Provider
+
+<RequestExample>
+```bash GET /providers/proxies/{providerName}/{name}
+curl http://127.0.0.1:9093/providers/proxies/my-proxy/JP-Node
+```
+</RequestExample>
+
+`GET /providers/proxies/{providerName}/{name}`
+
+Returns detailed info about a specific node within a provider.
+
+### Path Parameters
+
+<ParamField path="providerName" type="string" required>
+  Provider name.
+</ParamField>
+
+<ParamField path="name" type="string" required>
+  Node name.
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="object">
+  A single Proxy object.
+</ResponseField>
+
+---
+
+## Test Provider Node Delay
+
+<RequestExample>
+```bash GET /providers/proxies/{providerName}/{name}/healthcheck
+curl "http://127.0.0.1:9093/providers/proxies/my-proxy/JP-Node/healthcheck?url=http://www.gstatic.com/generate_204&timeout=5000"
+```
+</RequestExample>
+
+`GET /providers/proxies/{providerName}/{name}/healthcheck`
+
+Tests the latency of a specific node within a provider.
+
+### Path Parameters
+
+<ParamField path="providerName" type="string" required>
+  Provider name.
+</ParamField>
+
+<ParamField path="name" type="string" required>
+  Node name.
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="url" type="string" required>
+  Delay test URL.
+</ParamField>
+
+<ParamField query="timeout" type="integer" required>
+  Timeout in milliseconds.
+</ParamField>
+
+<ParamField query="expected" type="string">
+  Expected status code.
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="object">
+  | Field | Type | Description |
+  | --- | --- | --- |
+  | `delay` | integer | Latency in ms |
+</ResponseField>

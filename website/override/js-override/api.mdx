@@ -4,7 +4,7 @@ sidebarTitle: 内置 API
 icon: terminal
 ---
 
-JavaScript 覆写运行在 YumeBox 内置的 JavaScript 环境中.以下 API 是运行时提供的完整全局方法.
+JavaScript 覆写运行在 FlyCat 内置的 JavaScript 环境中.以下 API 是运行时提供的完整全局方法.
 
 ## `deepMerge(target, patch, isOverride)`
 
@@ -134,7 +134,7 @@ async function main(profile) {
   const response = await fetch("http://127.0.0.1:8080/patch.yaml", {
     method: "GET",
     headers: {
-      "x-client": "YumeBox",
+      "x-client": "FlyCat",
     },
   });
 
@@ -232,7 +232,7 @@ function main(profile) {
 
 ```js Base64 API.js icon="braces" lines
 function main(profile) {
-  const encoded = b64e("YumeBox");
+  const encoded = b64e("FlyCat");
   const decoded = b64d(encoded);
   profile["encoded-name"] = encoded;
   profile["decoded-name"] = decoded;
@@ -244,7 +244,7 @@ function main(profile) {
 
 ```yaml
 encoded-name: WXVtZUJveA==
-decoded-name: YumeBox
+decoded-name: FlyCat
 ```
 
 ### `Buffer`
@@ -253,14 +253,14 @@ decoded-name: YumeBox
 | --- | --- |
 | `Buffer.from(value, "utf8")` | 将 UTF-8 文本转换为缓冲对象. |
 | `Buffer.from(value, "base64")` | 将 Base64 文本转换为缓冲对象. |
-| `Buffer.isBuffer(value)` | 判断是否为 YumeBox 缓冲对象. |
+| `Buffer.isBuffer(value)` | 判断是否为 FlyCat 缓冲对象. |
 | `buffer.toString("utf8")` | 解码为 UTF-8 文本. |
 | `buffer.toString("base64")` | 返回 Base64 文本. |
 | `buffer.valueOf()` | 返回 UTF-8 文本. |
 
 ```js Buffer API.js icon="braces" lines
 function main(profile) {
-  const buffer = Buffer.from("YumeBox", "utf8");
+  const buffer = Buffer.from("FlyCat", "utf8");
   profile["client-name"] = buffer.toString("utf8");
   profile["client-name-base64"] = buffer.toString("base64");
   return profile;
@@ -270,7 +270,7 @@ function main(profile) {
 预期结果：
 
 ```yaml
-client-name: YumeBox
+client-name: FlyCat
 client-name-base64: WXVtZUJveA==
 ```
 

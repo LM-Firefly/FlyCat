@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""YumeBox native build entry point."""
+"""FlyCat native build entry point."""
 
 from native.cli import main
 

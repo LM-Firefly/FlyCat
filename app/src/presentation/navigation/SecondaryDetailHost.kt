@@ -1,24 +1,15 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
- * Copyright (c)  YumeYucca 2025 - Present
- *
  */
 
-package com.github.yumeyucca.yumebox.presentation.navigation
+@file:Suppress("FunctionName")
+
+package com.github.lmfirefly.flycat.presentation.navigation
 
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,15 +20,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.decompose.extensions.compose.stack.Children
-import com.arkivanov.decompose.extensions.compose.stack.animation.*
+import com.arkivanov.decompose.extensions.compose.stack.animation.StackAnimation
+import com.arkivanov.decompose.extensions.compose.stack.animation.fade
+import com.arkivanov.decompose.extensions.compose.stack.animation.plus
+import com.arkivanov.decompose.extensions.compose.stack.animation.scale
+import com.arkivanov.decompose.extensions.compose.stack.animation.slide
+import com.arkivanov.decompose.extensions.compose.stack.animation.stackAnimation
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
-import com.github.yumeyucca.yumebox.presentation.component.LocalNavigator
-import com.github.yumeyucca.yumebox.presentation.component.Navigator
+import com.github.lmfirefly.flycat.presentation.component.navigation.LocalNavigator
+import com.github.lmfirefly.flycat.presentation.navigation.Navigator
+import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 
 @Composable
-fun SecondaryDetailHost(navigator: Navigator) {
+fun SecondaryDetailHost(navigator: Navigator, placeholderContent: (@Composable () -> Unit)? = null) {
     val componentContext = remember { DefaultComponentContext(LifecycleRegistry()) }
     val childStack = remember(componentContext, navigator) {
         componentContext.childStack(
@@ -51,13 +48,20 @@ fun SecondaryDetailHost(navigator: Navigator) {
     }
     val stack by childStack.subscribeAsState()
     val animation: StackAnimation<Any, DetailRouteChild> = remember {
-        stackAnimation(fade(tween(300)) + slide(tween(400)) + scale(tween(500)))
+        stackAnimation(fade(tween(AnimationSpecs.DURATION_NAV_FADE)) + slide(tween(AnimationSpecs.DURATION_NAV_SLIDE)) + scale(tween(AnimationSpecs.DURATION_NAV_SCALE)))
     }
     Children(
         stack = stack,
         modifier = Modifier.fillMaxSize(),
         animation = animation,
-    ) { child -> child.instance.Content() }
+    ) { child ->
+        val content = placeholderContent
+        if (child.configuration is Route.About && content != null) {
+            content()
+        } else {
+            child.instance.Content()
+        }
+    }
 }
 
 private class DetailRouteChild(private val route: Route, private val navigator: Navigator) {

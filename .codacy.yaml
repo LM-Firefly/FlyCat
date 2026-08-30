@@ -10,3 +10,17 @@ engines:
   markdownlint:
     exclude_paths:
       - "PRIVACY_POLICY.md"
+  opengrep:
+    exclude_paths:
+      - "lib/native/rust/**"
+      - "lib/native/ebpf-bridge/**"
+      - "pack/native/**"
+      - "scripts/**/*.py"
+  cppcheck:
+    exclude_paths:
+      - "pack/native/loader.c"
+      - "lib/native/go/native/bridge.c"
+      - "lib/native/go/native/trace.c"
+  deadcode:
+    exclude_paths:
+      - "lib/native/go/**"

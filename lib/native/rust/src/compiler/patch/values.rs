@@ -37,8 +37,7 @@ pub fn into_raw_value(mut value: JsonValue) -> JsonValue {
     value
 }
 
-/// Interprets a patch value as list items: `null` contributes nothing, a list contributes its
-/// items, anything else contributes itself.
+/// Interprets a patch value as list items: `null` contributes nothing, a list contributes its items, anything else contributes itself.
 pub fn collect_array_items(value: JsonValue) -> Vec<JsonValue> {
     match value {
         JsonValue::Null => Vec::new(),
@@ -89,11 +88,7 @@ pub fn merge_raw_map(target: &mut JsonValue, patch: JsonValue) {
     }
 }
 
-/// Keeps the last item per `name`, at that last item's position. Items without a usable `name`
-/// are always kept.
-///
-/// Two linear passes over borrowed names: no per-item `String` is allocated, which matters for
-/// proxy lists with thousands of entries.
+/// Keeps the last item per `name`, at that last item's position. Items without a usable `name` are always kept.
 pub fn dedup_named_items(mut items: Vec<JsonValue>) -> Vec<JsonValue> {
     if items.len() < 2 {
         return items;

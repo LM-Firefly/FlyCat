@@ -1,0 +1,94 @@
+---
+title: 更新
+sidebarTitle: 更新
+---
+
+## 更新内核
+
+<RequestExample>
+```bash POST /upgrade
+curl -X POST http://127.0.0.1:9093/upgrade
+```
+</RequestExample>
+
+`POST /upgrade`
+
+检查并更新 mihomo 内核到最新版本。
+
+### 查询参数
+
+<ParamField query="channel" type="string">
+  更新通道，如 `alpha`、`meta`。
+</ParamField>
+
+<ParamField query="force" type="boolean">
+  强制更新，即使已是最新版本。
+</ParamField>
+
+### 请求体
+
+<ParamField body="path" type="string">
+  配置文件路径。
+</ParamField>
+
+<ParamField body="payload" type="string">
+  直接传入配置内容。
+</ParamField>
+
+### 响应
+
+<ResponseField name="200" type="object">
+  更新结果，包含新版本信息。
+</ResponseField>
+
+---
+
+## 更新面板
+
+<RequestExample>
+```bash POST /upgrade/ui
+curl -X POST http://127.0.0.1:9093/upgrade/ui
+```
+</RequestExample>
+
+`POST /upgrade/ui`
+
+更新管理面板（如果已配置 external-ui）。
+
+### 响应
+
+<ResponseField name="200" type="object">
+  更新结果。
+</ResponseField>
+
+---
+
+## 更新 GEO 数据库
+
+<RequestExample>
+```bash POST /upgrade/geo
+curl -X POST http://127.0.0.1:9093/upgrade/geo \
+  -H "Content-Type: application/json" \
+  -d '{"path": ""}'
+```
+</RequestExample>
+
+`POST /upgrade/geo`
+
+更新 GeoIP、GeoSite 等数据库。
+
+### 请求体
+
+<ParamField body="path" type="string">
+  配置文件路径。
+</ParamField>
+
+<ParamField body="payload" type="string">
+  直接传入配置内容。
+</ParamField>
+
+### 响应
+
+<ResponseField name="204" type="null">
+  更新成功。
+</ResponseField>

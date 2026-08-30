@@ -2,9 +2,8 @@
 Component = {
     ProfileCard = {
         Update = "Update"
-        Export = "Export"
-        Edit = "Edit"
         Delete = "Delete"
+        Edit = "Edit"
         RemoteSubscription = "Remote Subscription"
         LocalFile = "Local File"
         LocalConfig = "Local Configuration"
@@ -18,6 +17,16 @@ Component = {
         MinutesAgo = "%d min ago"
         HoursAgo = "%d hours ago"
         DaysAgo = "%d days ago"
+    }
+
+    Action = {
+        Export = "Export"
+        Delete = "Delete"
+        Update = "Update"
+        Edit = "Edit"
+        Cancel = "Cancel"
+        Reset = "Reset"
+        Add = "Add"
     }
 
     WebView = {
@@ -60,10 +69,45 @@ Component = {
         Starting = "Starting..."
     }
 
+    Update = {
+        Action = {
+            DownloadNow = "Download Now"
+        }
+        Title = {
+            Available = "New Version Available"
+        }
+        Message = {
+            Available = "A new update is available"
+            SelectPackage = "Select Download Package"
+            Tag = "Tag"
+            PackageUniversal = "Universal"
+            PackageExtension = "WithExtension"
+            PackageStandard = "Standard"
+            CurrentVersion = "Current Version"
+            RemoteVersion = "Target Version"
+            Preparing = "Preparing download..."
+            DownloadingWithProgress = "Downloading update package %d%%"
+            Downloading = "Downloading update package..."
+            DownloadReady = "Download complete, ready to install"
+            Error = "Download failed, please try again later"
+            Checking = "Checking for updates..."
+            NoUpdate = "Already on the latest version"
+            CheckFailed = "Failed to check updates: %s"
+            MissingReleaseMetadata = "The latest release is missing update metadata"
+            NoCompatibleAsset = "No compatible APK was found in the latest release"
+            DownloadAlreadyRunning = "The update package is still downloading"
+            InstallPromptOpened = "Download complete, installer opened"
+            InstallFailed = "Failed to open installer: %s"
+        }
+    }
 
     ConfigInput = {
         PortLabel = "Port (leave empty to not modify)"
         CountItems = "%d items"
+        Replace = "Replace"
+        ReplaceSummary = "Replace entire dictionary"
+        Merge = "Merge"
+        MergeSummary = "Overwrites values for matching keys"
     }
 
     BottomBar = {
@@ -102,6 +146,12 @@ Component = {
             TargetDirect = "DIRECT"
             TargetMatch = "MATCH"
             ErrorContentRequired = "Rule content cannot be empty"
+        }
+        ConfigPreview = {
+            Title = "Config Preview"
+            Format = "Format"
+            Save = "Save"
+            SaveFailed = "Save failed"
         }
     }
 }

@@ -1,7 +1,6 @@
 //! How each known config field reacts to an override document.
 //!
-//! `None` means "not part of the known schema" — the patch engine then falls back to generic
-//! object/array handling for that key.
+//! `None` means "not part of the known schema" — the patch engine then falls back to generic object/array handling for that key.
 
 use crate::model::{FieldBehavior, ListStyle, SchemaId};
 

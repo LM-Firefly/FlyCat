@@ -1,14 +1,12 @@
 <Home Page>
 Home = {
-    Title = "YumeBox"
+    Title = "FlyCat"
 
     Message = {
         ConfigSwitched = "Профиль переключён"
         ConfigSwitchFailed = "Не удалось переключить профиль: %s"
         Preparing = "Подготовка..."
-        BuiltinGeoRequired = "Сначала установите версию Builtin"
         StartFailed = "Не удалось запустить: %s"
-        RuntimeUnavailable = "Среда выполнения недоступна. Повторите попытку."
         StopFailed = "Не удалось остановить: %s"
     }
 
@@ -27,8 +25,8 @@ Home = {
     Traffic = {
         UpShort = "UP"
         DownShort = "DOWN"
-        Upload = "ОТПРАВКА"
-        Download = "СКАЧИВАНИЕ"
+        DownloadLong = "ЗАГРУЗКА"
+        UploadLong = "ОТПРАВКА"
         NoProfile = "Нет профиля"
     }
 
@@ -40,17 +38,19 @@ Home = {
         Connecting = "Подключение"
         Disconnecting = "Отключение"
         Running = "Работает"
-        Lost = "Связь потеряна"
+        Lost = "Потеряно"
         TapToStart = "Нажмите, чтобы запустить"
     }
 
-    Settings = {
-        Title = "Настройки главной"
-        Quote = "Цитата"
-        ClassicHome = "Использовать классическую главную"
-        ExpandSidebar = "Развернуть боковую панель"
-        ChangeWallpaper = "Сменить обои"
-        WallpaperScrim = "Затемнение нижней части обоев"
+    Greeting = {
+        Morning = "Доброе утро"
+        Afternoon = "Добрый день"
+        Evening = "Добрый вечер"
+        Night = "Спокойной ночи"
+    }
+
+    Quote = {
+        AuthorPrefix = "—— %s"
     }
 
     Control = {
@@ -60,14 +60,20 @@ Home = {
         Stop = "Стоп"
     }
 
-    ProxyMode = {
+    RunMode = {
         Vpn = "VPN"
         Tun = "TUN"
         Ebpf = "eBPF"
     }
 
+    TunnelMode = {
+        Rule = "По правилам"
+        Global = "Глобальный"
+        Direct = "Напрямую"
+    }
+
     PreviewGuide = {
-        Title = "Добро пожаловать в YumeBox"
+        Title = "Добро пожаловать в FlyCat"
         Description = "Нажмите «Старт» внизу, чтобы подключиться"
         Next = "Далее"
         Start = "Начать"
@@ -75,7 +81,7 @@ Home = {
         WallpaperDescription = "Удерживайте обои, чтобы выбрать изображение из альбома"
         SwipeTitle = "Листайте страницы"
         SwipeDescription = "Смахивайте по главному экрану, чтобы перейти к прокси, профилям и настройкам"
-        AddTitle = "Установить системные обои"
-        AddDescription = "Включите переключатель и предоставьте доступ для использования текущих системных обоев"
+        AddTitle = "Добавить подписку"
+        AddDescription = "Нажмите значок справа сверху и вставьте ссылку"
     }
 }

@@ -2,12 +2,14 @@ name: CI Channel
 
 on:
   push:
-    branches: [ "Yume", "Moe", "Dev" ]
+    branches: [ "Moes", "Devs" ]
     paths-ignore:
       - "**.md"
       - "docs/**"
       - "website/**"
       - ".gitignore"
+  schedule:
+    - cron: "0 18 * * 0"
   workflow_dispatch:
 
 concurrency:
@@ -17,184 +19,368 @@ concurrency:
 permissions:
   contents: write
 
-# Version counter N = commit count of the built commit (`git rev-list --count HEAD`),
-# computed inside reusable-build-apk-only.yml / reusable-prepare-publish.yml after their
-# fetch-depth:0 checkouts - no build_number input is passed from here anymore. versionCode
-# = project.version.code (gradle.properties) + N, one formula shared by channel, PR and
-# official release builds, so releases get unique versionCodes in the same sequence as
-# channel packages. Unlike the retired run_number scheme this survives workflow-file
-# renames, and it stays monotonic vs already-published packages because the commit count
-# grows with every commit and is >= the number of pushes >= run_number. If history is ever
-# rewritten so the count shrinks, bump project.version.code above the last published versionCode.
 jobs:
-  validate-channel:
-    name: "00 · Validate (arm64-v8a)"
+  compute-build-id:
+    name: Compute Build ID
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    outputs:
+      ui_build_id: ${{ steps.stamp.outputs.ui_build_id }}
     steps:
-      - uses: actions/checkout@v6
-
-      - name: Verify channel build contract
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Generate shared build id
+        id: stamp
         shell: bash
         run: |
-          set -eu
-          test "$(awk -F= '$1 == "abi.app.list" { print $2 }' gradle.properties)" = "arm64-v8a"
-          test "$(awk -F= '$1 == "abi.extension.list" { print $2 }' gradle.properties)" = "arm64-v8a"
-          test -f scripts/native-build.py
-          test -f scripts/native/cli.py
-          test -f scripts/native/go_core.py
-          test -f lib/native/go/native/entry.go
-          test -f lib/native/go/go.mod
-          test -f lib/native/shell/CMakeLists.txt
-          test -f lib/native/shell/shell.c
-          test -f kernel.properties
-          ! rg -q 'channel: smart|kernel_channel: smart|YumeBox-smart' .github/workflows/ci-channel.yml
+          build_stamp="$(TZ=Asia/Shanghai date +%Y%m%d%H%M)"
+          commit_short="$(git rev-parse --short=6 HEAD)"
+          echo "ui_build_id=${build_stamp}-${commit_short}" >> "$GITHUB_OUTPUT"
 
-  # Keep the channel and ABI as matrix inputs even while each has one supported value.
-  # Adding a supported target later expands the graph without changing artifact wiring.
   build-geo-pre:
-    name: "01 · Geo (${{ matrix.channel }})"
-    needs: validate-channel
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - channel: pre
+    name: Geo (Pre)
     uses: ./.github/workflows/reusable-build-geo.yml
     with:
-      channel: ${{ matrix.channel }}
+      channel: pre
+    secrets: inherit
+
+  build-geo-smart:
+    name: Geo (Smart)
+    uses: ./.github/workflows/reusable-build-geo.yml
+    with:
+      channel: smart
+    secrets: inherit
+
+  build-native-abi-pre-armeabi-v7a:
+    name: Native armeabi-v7a (Pre)
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: pre
+      kernel_channel: alpha
+      abi: armeabi-v7a
     secrets: inherit
 
   build-native-abi-pre-arm64-v8a:
-    name: "02 · Native (${{ matrix.abi }})"
-    needs: validate-channel
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - channel: pre
-            kernel_channel: alpha
-            abi: arm64-v8a
+    name: Native arm64-v8a (Pre)
     uses: ./.github/workflows/reusable-build-native-abi.yml
     with:
-      channel: ${{ matrix.channel }}
-      kernel_channel: ${{ matrix.kernel_channel }}
-      abi: ${{ matrix.abi }}
+      channel: pre
+      kernel_channel: alpha
+      abi: arm64-v8a
     secrets: inherit
 
-  build-telegram-bot-api:
-    name: "02 · Telegram Bot API"
-    needs: validate-channel
-    uses: ./.github/workflows/reusable-build-telegram-bot-api.yml
+  build-native-abi-pre-x86:
+    name: Native x86 (Pre)
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: pre
+      kernel_channel: alpha
+      abi: x86
+    secrets: inherit
+
+  build-native-abi-pre-x86_64:
+    name: Native x86_64 (Pre)
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: pre
+      kernel_channel: alpha
+      abi: x86_64
+    secrets: inherit
+
+  build-native-abi-smart-armeabi-v7a:
+    name: Native armeabi-v7a (Smart)
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: smart
+      kernel_channel: smart
+      abi: armeabi-v7a
+    secrets: inherit
+
+  build-native-abi-smart-arm64-v8a:
+    name: Native arm64-v8a (Smart)
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: smart
+      kernel_channel: smart
+      abi: arm64-v8a
+    secrets: inherit
+
+  build-native-abi-smart-x86:
+    name: Native x86 (Smart)
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: smart
+      kernel_channel: smart
+      abi: x86
+    secrets: inherit
+
+  build-native-abi-smart-x86_64:
+    name: Native x86_64 (Smart)
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: smart
+      kernel_channel: smart
+      abi: x86_64
+    secrets: inherit
 
   bundle-native-pre:
-    name: "03 · Bundle (Pre)"
+    name: Bundle (Pre)
     needs:
       - build-geo-pre
+      - build-native-abi-pre-armeabi-v7a
       - build-native-abi-pre-arm64-v8a
+      - build-native-abi-pre-x86
+      - build-native-abi-pre-x86_64
     uses: ./.github/workflows/reusable-bundle-native.yml
     with:
       channel: pre
     secrets: inherit
 
+  bundle-native-smart:
+    name: Bundle (Smart)
+    needs:
+      - build-geo-smart
+      - build-native-abi-smart-armeabi-v7a
+      - build-native-abi-smart-arm64-v8a
+      - build-native-abi-smart-x86
+      - build-native-abi-smart-x86_64
+    uses: ./.github/workflows/reusable-bundle-native.yml
+    with:
+      channel: smart
+    secrets: inherit
+
   build-apk-pre-app:
-    name: "05 · APK (Pre)"
-    needs: bundle-native-pre
+    name: APK (Pre)
+    needs:
+      - bundle-native-pre
+      - compute-build-id
     uses: ./.github/workflows/reusable-build-apk-only.yml
     with:
       channel: pre
       module: app
+      artifact_prefix: FlyCat-pre
       release_tag: Pre-release
-      meta_asset_name: YumeBox-pre-meta.json
+      meta_asset_name: FlyCat-pre-meta.json
       raw_apk_artifact_name: apk-raw-pre-app
+      #build_number: ${{ github.run_number }}
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
+      ui_build_id: ${{ needs.compute-build-id.outputs.ui_build_id }}
     secrets: inherit
 
-  verify-native-bundle:
-    name: "04 · Verify bundle (arm64-v8a)"
-    needs: bundle-native-pre
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-    steps:
-      - name: Download bundled native artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: native-pre
-          path: native
+  build-apk-pre-app-with-extension:
+    name: APK with Extension (Pre)
+    needs:
+      - bundle-native-pre
+      - compute-build-id
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: pre
+      module: app
+      artifact_prefix: FlyCat-pre-extension
+      release_tag: Pre-release
+      meta_asset_name: FlyCat-pre-extension-meta.json
+      raw_apk_artifact_name: apk-raw-pre-app-with-extension
+      with_extension: true
+      #build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+      ui_build_id: ${{ needs.compute-build-id.outputs.ui_build_id }}
+    secrets: inherit
 
-      - name: Verify bundled native files
-        shell: bash
-        run: |
-          set -eu
-          abi=arm64-v8a
-          for file in libmihomo.so libpreview.so libmihomocore.so liboverride.so libcompat.so libloader.so core-version.properties; do
-            test -s "native/jniLibs/${abi}/${file}"
-          done
-          for file in geoip.metadb.xz geosite.dat.xz ASN.mmdb.xz BundleMRS.7z; do
-            test -s "native/build/generated/assets/geo/${file}"
-          done
+  build-libjavet:
+    name: Build libjavet.so.xz
+    uses: ./.github/workflows/reusable-build-libjavet.yml
+    with:
+      artifact_name: libjavet
+    secrets: inherit
+
+  build-apk-smart-app:
+    name: APK (Smart)
+    needs:
+      - bundle-native-smart
+      - compute-build-id
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: smart
+      module: app
+      artifact_prefix: FlyCat-smart
+      release_tag: Smart
+      meta_asset_name: FlyCat-smart-meta.json
+      raw_apk_artifact_name: apk-raw-smart-app
+      #build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+      ui_build_id: ${{ needs.compute-build-id.outputs.ui_build_id }}
+    secrets: inherit
+
+  build-apk-smart-app-with-extension:
+    name: APK with Extension (Smart)
+    needs:
+      - bundle-native-smart
+      - compute-build-id
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: smart
+      module: app
+      artifact_prefix: FlyCat-smart-extension
+      release_tag: Smart
+      meta_asset_name: FlyCat-smart-extension-meta.json
+      raw_apk_artifact_name: apk-raw-smart-app-with-extension
+      with_extension: true
+      #build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+      ui_build_id: ${{ needs.compute-build-id.outputs.ui_build_id }}
+    secrets: inherit
 
   prepare-publish-pre-app:
-    name: "06 · Publish (Pre)"
-    needs:
-      - build-apk-pre-app
-      - verify-native-bundle
+    name: Publish APP (Pre)
+    needs: build-apk-pre-app
     uses: ./.github/workflows/reusable-prepare-publish.yml
     with:
       channel: pre
       module: app
-      artifact_prefix: YumeBox
+      artifact_prefix: FlyCat-pre
       release_tag: Pre-release
-      meta_asset_name: YumeBox-pre-meta.json
+      meta_asset_name: FlyCat-pre-meta.json
       raw_apk_artifact_name: apk-raw-pre-app
+      publish_artifact_name: publish-pre-app
+      #build_number: ${{ github.run_number }}
       build_hash: ${{ github.sha }}
       build_branch: ${{ github.ref_name }}
-      apk_name_tail: ${{ needs.build-apk-pre-app.outputs.apk_name_tail }}
     secrets: inherit
 
-  notify-pre:
-    name: "08 · Notify (Pre)"
-    needs:
-      - prepare-publish-pre-app
-      - build-telegram-bot-api
-    uses: ./.github/workflows/reusable-notify-telegram.yml
+  prepare-publish-pre-app-with-extension:
+    name: Publish APP with Extension (Pre)
+    needs: build-apk-pre-app-with-extension
+    uses: ./.github/workflows/reusable-prepare-publish.yml
     with:
       channel: pre
-      apk_artifact_name: ${{ needs.prepare-publish-pre-app.outputs.default_apk_name }}
-      builtin_apk_artifact_name: ${{ needs.prepare-publish-pre-app.outputs.builtin_apk_name }}
-      telegram_title: YumeBox Pre
+      module: app
+      artifact_prefix: FlyCat-pre-extension
+      release_tag: Pre-release
+      meta_asset_name: FlyCat-pre-extension-meta.json
+      raw_apk_artifact_name: apk-raw-pre-app-with-extension
+      publish_artifact_name: publish-pre-app-with-extension
+      #build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
     secrets: inherit
 
-  verify-published-apk:
-    name: "07 · Verify APK (arm64-v8a)"
-    needs: prepare-publish-pre-app
+  prepare-publish-smart-app:
+    name: Publish APP (Smart)
+    needs: build-apk-smart-app
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: smart
+      module: app
+      artifact_prefix: FlyCat-smart
+      release_tag: Smart
+      meta_asset_name: FlyCat-smart-meta.json
+      raw_apk_artifact_name: apk-raw-smart-app
+      publish_artifact_name: publish-smart-app
+      #build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+    secrets: inherit
+
+  prepare-publish-smart-app-with-extension:
+    name: Publish APP with Extension (Smart)
+    needs: build-apk-smart-app-with-extension
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: smart
+      module: app
+      artifact_prefix: FlyCat-smart-extension
+      release_tag: Smart
+      meta_asset_name: FlyCat-smart-extension-meta.json
+      raw_apk_artifact_name: apk-raw-smart-app-with-extension
+      publish_artifact_name: publish-smart-app-with-extension
+      #build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+    secrets: inherit
+
+  publish-release-pre:
+    name: Set Release Tag (Pre-release)
+    needs:
+      - prepare-publish-pre-app
+      - prepare-publish-pre-app-with-extension
+    uses: ./.github/workflows/reusable-publish-release.yml
+    with:
+      channel: pre
+      release_tag: Pre-release
+      release_name: Pre-release
+      prerelease: true
+      publish_artifacts: publish-pre-app,publish-pre-app-with-extension
+      cleanup_assets: true
+      delete_existing_release: true
+    secrets: inherit
+
+  publish-release-smart:
+    name: Set Release Tag (Smart)
+    needs:
+      - prepare-publish-smart-app
+      - prepare-publish-smart-app-with-extension
+    uses: ./.github/workflows/reusable-publish-release.yml
+    with:
+      channel: smart
+      release_tag: Smart
+      release_name: Smart
+      prerelease: true
+      publish_artifacts: publish-smart-app,publish-smart-app-with-extension
+      cleanup_assets: true
+      delete_existing_release: true
+    secrets: inherit
+
+  publish-release-libjavet:
+    name: Set Release Tag (libjavet)
+    needs: build-libjavet
     runs-on: ubuntu-latest
     permissions:
-      actions: read
+      contents: write
     steps:
-      - name: Download published APK artifact
+      - name: Download libjavet artifact
         uses: actions/download-artifact@v8
         with:
-          name: ${{ needs.prepare-publish-pre-app.outputs.default_apk_name }}
-          path: apk
+          name: libjavet
+          path: libjavet
+      - name: Publish libjavet release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: libjavet
+          name: libjavet
+          prerelease: false
+          make_latest: false
+          overwrite_files: true
+          files: |
+            libjavet/libjavet-arm64-v8a.so.xz
+            libjavet/libjavet-x86_64.so.xz
 
-      - name: Verify APK archive
-        shell: bash
-        run: |
-          set -eu
-          shopt -s nullglob
-          apks=(apk/*.apk)
-          test "${#apks[@]}" -eq 1
-          unzip -t "${apks[0]}" >/dev/null
+#  notify-pre:
+#    needs:
+#      - prepare-publish-pre-app
+#      - publish-release-pre
+#    uses: ./.github/workflows/reusable-notify-telegram.yml
+#    with:
+#      channel: pre
+#      release_tag: Pre-release
+#      publish_artifact_name: publish-pre-app
+#      meta_asset_name: FlyCat-pre-meta.json
+#      telegram_title: FlyCat Pre
+#    secrets: inherit
 
-  cleanup-artifacts:
-    name: "09 · Cleanup"
-    needs:
-      - notify-pre
-      - verify-published-apk
-    permissions:
-      actions: write
-    uses: ./.github/workflows/reusable-cleanup-artifacts.yml
+#  notify-smart:
+#    needs:
+#      - prepare-publish-smart-app
+#      - publish-release-smart
+#    uses: ./.github/workflows/reusable-notify-telegram.yml
+#    with:
+#      channel: smart
+#      release_tag: Smart
+#      publish_artifact_name: publish-smart-app
+#      meta_asset_name: FlyCat-smart-meta.json
+#      telegram_title: FlyCat Smart
+#    secrets: inherit

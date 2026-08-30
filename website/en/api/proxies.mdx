@@ -1,0 +1,166 @@
+---
+title: Proxies
+sidebarTitle: Proxies
+---
+
+## Get All Proxies
+
+<RequestExample>
+```bash GET /proxies
+curl http://127.0.0.1:9093/proxies
+```
+</RequestExample>
+
+`GET /proxies`
+
+Returns all proxy nodes and proxy groups.
+
+### Response
+
+<ResponseField name="200" type="object">
+  | Field | Type | Description |
+  | --- | --- | --- |
+  | `proxies` | object | Name-to-[Proxy](#proxy-object) mapping |
+</ResponseField>
+
+---
+
+## Get Proxy by Name
+
+<RequestExample>
+```bash GET /proxies/{name}
+curl http://127.0.0.1:9093/proxies/JP-Node
+```
+</RequestExample>
+
+`GET /proxies/{name}`
+
+Returns detailed information about a specific proxy or group.
+
+### Path Parameters
+
+<ParamField path="name" type="string" required>
+  Proxy or group name (URL-encoded).
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="object">
+  A single [Proxy](#proxy-object) object.
+</ResponseField>
+
+---
+
+## Select Proxy Node
+
+<RequestExample>
+```bash PUT /proxies/{name}
+curl -X PUT http://127.0.0.1:9093/proxies/PROXY \
+  -H "Content-Type: application/json" \
+  -d '{"name": "JP-Node"}'
+```
+</RequestExample>
+
+`PUT /proxies/{name}`
+
+Selects a proxy node for a Selector-type group.
+
+### Path Parameters
+
+<ParamField path="name" type="string" required>
+  Group name.
+</ParamField>
+
+### Request Body
+
+<ParamField body="name" type="string" required>
+  The node name to select.
+</ParamField>
+
+### Response
+
+<ResponseField name="204" type="null">
+  Selection successful.
+</ResponseField>
+
+---
+
+## Clear Fixed Selection
+
+<RequestExample>
+```bash DELETE /proxies/{name}
+curl -X DELETE http://127.0.0.1:9093/proxies/PROXY
+```
+</RequestExample>
+
+`DELETE /proxies/{name}`
+
+Clears the fixed selection for URLTest / Fallback groups, restoring auto mode.
+
+### Path Parameters
+
+<ParamField path="name" type="string" required>
+  Group name.
+</ParamField>
+
+### Response
+
+<ResponseField name="204" type="null">
+  Cleared successfully.
+</ResponseField>
+
+---
+
+## Test Proxy Delay
+
+<RequestExample>
+```bash GET /proxies/{name}/delay
+curl "http://127.0.0.1:9093/proxies/JP-Node/delay?url=http://www.gstatic.com/generate_204&timeout=5000"
+```
+</RequestExample>
+
+`GET /proxies/{name}/delay`
+
+Tests the latency of a specific proxy node.
+
+### Path Parameters
+
+<ParamField path="name" type="string" required>
+  Proxy name.
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="url" type="string" required>
+  Delay test URL.
+</ParamField>
+
+<ParamField query="timeout" type="integer" required>
+  Timeout in milliseconds.
+</ParamField>
+
+<ParamField query="expected" type="string">
+  Expected status code.
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="object">
+  | Field | Type | Description |
+  | --- | --- | --- |
+  | `delay` | integer | Latency in ms |
+</ResponseField>
+
+---
+
+### Proxy Object
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `name` | string | Name |
+| `type` | string | Type (e.g. `Shadowsocks`, `VMess`, `Selector`) |
+| `udp` | boolean | UDP support |
+| `alive` | boolean | Currently alive |
+| `now` | string | Currently selected node (groups) |
+| `all` | string[] | All members (groups) |
+| `history` | array | Delay history `[{time, delay}]` |

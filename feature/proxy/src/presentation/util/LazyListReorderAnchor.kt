@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,16 +15,21 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-@file:Suppress("FunctionName")
-
-package com.github.yumeyucca.yumebox.presentation.util
-
+package com.github.lmfirefly.flycat.feature.proxy.presentation.util
 
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import kotlin.math.abs
 
 @Stable
@@ -56,8 +61,8 @@ fun KeepLazyListTopAnchorOnReorder(
                     val topNow = listState.captureTopAnchor()
                     if (
                         topNow == null ||
-                        topNow.key != anchor.key ||
-                        abs(topNow.offset - anchor.offset) > 1
+                            topNow.key != anchor.key ||
+                            abs(topNow.offset - anchor.offset) > 1
                     ) {
                         listState.scrollToItem(targetIndex, anchor.offset)
                     }

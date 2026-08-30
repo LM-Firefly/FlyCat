@@ -1,14 +1,13 @@
 //! Non-negotiable runtime patches.
 //!
-//! These run after the user's overrides and encode what the app's process model requires from the
-//! core, independent of what the profile asked for.
+//! These run after the user's overrides and encode what the app's process model requires from the core, independent of what the profile asked for.
 
 use std::path::Path;
 
 use serde_json::{Map as JsonMap, Value as JsonValue};
 use sha2::{Digest, Sha256};
 
-use crate::compiler::fingerprint::hex_lower;
+use crate::compiler::hex_lower;
 use crate::compiler::patch::paths::{
     normalize_path, normalize_provider_path, profile_provider_path, runtime_home_dir,
 };
@@ -81,10 +80,8 @@ pub fn patch_static_runtime(root: &mut JsonValue, profile_dir: &Path, run_mode: 
         );
     }
 
-    // `system://` is deliberately NOT appended here, even though CFA's `append-system-dns` asks for
-    // it: that nameserver resolves through `dns.UpdateSystemDNS`, which only an in-process host can
-    // call. This core runs out of process, so the client would be built with an empty server list
-    // and fail every query it is handed. A profile that lists `system://` itself is left alone.
+    // `system://` is deliberately NOT appended here: that nameserver resolves through
+    // `dns.UpdateSystemDNS`, which only an in-process host can call.
     backfill_enabled_dns_without_nameserver(object);
 
     // In the VpnService path the TUN is attached at runtime via a file descriptor; a config-provided
@@ -157,9 +154,7 @@ pub fn patch_preview_runtime(root: &mut JsonValue) {
 }
 
 /// An override may force `dns.enable: true` onto a profile that carries no nameservers (the
-/// built-in Tun override does exactly this when the subscription has no `dns:` block). mihomo
-/// hard-fails on "DNS enabled but NameServer empty", killing the core at parse time — backfill
-/// the defaults so an enabled-but-empty DNS block always resolves.
+/// mihomo hard-fails on "DNS enabled but NameServer empty" — backfill the defaults so an enabled-but-empty DNS block always resolves.
 fn backfill_enabled_dns_without_nameserver(object: &mut JsonMap<String, JsonValue>) {
     let needs_backfill = object
         .get("dns")
@@ -229,12 +224,12 @@ pub fn patch_providers(object: &mut JsonMap<String, JsonValue>, profile_dir: &Pa
             };
             let extension = provider_extension(provider_object, prefix);
             if let Some(path) = provider_object.get("path").and_then(JsonValue::as_str)
-                && !path.trim().is_empty()
-            {
-                let normalized_path = normalize_provider_path(path, profile_dir, prefix, extension);
-                provider_object.insert("path".to_string(), JsonValue::String(normalized_path));
-                continue;
-            }
+                && !path.trim().is_empty() {
+                    let normalized_path =
+                        normalize_provider_path(path, profile_dir, prefix, extension);
+                    provider_object.insert("path".to_string(), JsonValue::String(normalized_path));
+                    continue;
+                }
             if is_inline_provider(provider_object) {
                 continue;
             }
@@ -320,9 +315,8 @@ fn provider_extension(provider: &JsonMap<String, JsonValue>, prefix: &str) -> &'
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use serde_json::json;
-
-    use super::patch_preview_runtime;
 
     #[test]
     fn preview_patch_removes_all_traffic_entry_points() {
@@ -333,26 +327,27 @@ mod tests {
             "redir-port": 7893,
             "tproxy-port": 7894,
             "external-controller": "127.0.0.1:9090",
-            "listeners": [{ "type": "tun" }, { "type": "mixed" }],
-            "tun": { "enable": true, "auto-route": true, "auto-redirect": true }
+            "external-controller-tls": "127.0.0.1:9091",
+            "external-ui": "./ui",
+            "listeners": [{"type": "tun", "name": "test"}],
+            "tun": {"enable": true, "auto-route": true}
         });
 
         patch_preview_runtime(&mut root);
 
-        let object = root.as_object().expect("preview config is an object");
-        for port in [
-            "port",
-            "socks-port",
-            "mixed-port",
-            "redir-port",
-            "tproxy-port",
-        ] {
-            assert_eq!(object[port], 0, "{port} must be disabled");
-        }
-        assert_eq!(object["external-controller"], "");
-        assert_eq!(object["listeners"], json!([]));
-        assert_eq!(object["tun"]["enable"], false);
-        assert_eq!(object["tun"]["auto-route"], false);
-        assert_eq!(object["tun"]["auto-redirect"], false);
+        assert_eq!(root["port"], JsonValue::from(0));
+        assert_eq!(root["socks-port"], JsonValue::from(0));
+        assert_eq!(root["mixed-port"], JsonValue::from(0));
+        assert_eq!(root["redir-port"], JsonValue::from(0));
+        assert_eq!(root["tproxy-port"], JsonValue::from(0));
+        assert_eq!(root["external-controller"], JsonValue::String(String::new()));
+        assert_eq!(root["external-controller-tls"], JsonValue::String(String::new()));
+        assert_eq!(root["external-ui"], JsonValue::String(String::new()));
+        assert_eq!(root["listeners"], JsonValue::Array(Vec::new()));
+        assert_eq!(root["tun"]["enable"], JsonValue::Bool(false));
+        assert_eq!(root["tun"]["auto-route"], JsonValue::Bool(false));
+        assert_eq!(root["tun"]["auto-detect-interface"], JsonValue::Bool(false));
+        assert_eq!(root["tun"]["auto-redirect"], JsonValue::Bool(false));
+        assert_eq!(root["tun"]["strict-route"], JsonValue::Bool(false));
     }
 }

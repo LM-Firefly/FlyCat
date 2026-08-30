@@ -8,9 +8,14 @@ from .version import CoreVersionStamp, resolve_core_version_stamp, write_core_ve
 
 
 class GoCoreBuilder:
-    ABI_TO_GO_ARCH = {"arm64-v8a": "arm64"}
-    OUTPUT_LIBRARY_NAME = "libmihomocore.so"
-    ANDROID_PACKED_RELOCATIONS_LDFLAG = "-extldflags=-Wl,--pack-dyn-relocs=android"
+    ABI_TO_GO_ARCH = {
+        "armeabi-v7a": "arm",
+        "arm64-v8a": "arm64",
+        "x86": "386",
+        "x86_64": "amd64",
+    }
+    OUTPUT_LIBRARY_NAME = "libmihomo.so"
+    ANDROID_PACKED_RELOCATIONS_LDFLAG = "-extldflags=-Wl,--pack-dyn-relocs=android,-soname,libmihomo.so"
 
     def __init__(self, config: ProjectConfig, ndk_tools: NdkTools):
         self.config = config
@@ -46,7 +51,7 @@ class GoCoreBuilder:
         print(f"[GoCore] Applying {len(patches)} mihomo kernel patch(es)")
         for patch in patches:
             already_applied = execute_command(
-                ["git", "apply", "--reverse", "--check", str(patch)],
+                ["git", "apply", "--reverse", "--check", "--ignore-whitespace", str(patch)],
                 working_dir=self.mihomo_dir,
                 print_stdout=False,
                 print_stderr=False,
@@ -56,7 +61,7 @@ class GoCoreBuilder:
                 print(f"[GoCore]   already applied: {patch.name}")
                 continue
             result = execute_command(
-                ["git", "apply", str(patch)],
+                ["git", "apply", "--ignore-whitespace", str(patch)],
                 working_dir=self.mihomo_dir,
                 stdout_prefix="[patch]",
                 stderr_prefix="[patch]",
@@ -78,16 +83,19 @@ class GoCoreBuilder:
         if self.build_tags:
             command.extend(["-tags", ",".join(self.build_tags)])
         command.extend(["-o", str(output_file), self.package_name])
-        result = execute_command(
-            command,
-            working_dir=self.source_dir,
-            environment={
+        environment = {
                 "CGO_ENABLED": "1",
                 "GOOS": "android",
                 "GOARCH": arch,
                 "CC": str(self.ndk_tools.get_clang_path(abi)),
                 "GOCACHE": str(self.root / "build/go-cache"),
-            },
+            }
+        if abi == "armeabi-v7a":
+            environment["GOARM"] = "7"
+        result = execute_command(
+            command,
+            working_dir=self.source_dir,
+            environment=environment,
             stdout_prefix=f"[building][{abi}]",
             stderr_prefix=f"[building][{abi}]",
             stderr_is_error=False,
@@ -119,4 +127,3 @@ class GoCoreBuilder:
             else:
                 flags.insert(index + 1, f"-s -w {inject}")
         return flags
-

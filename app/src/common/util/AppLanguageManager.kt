@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,30 +15,27 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-@file:Suppress("AndroidLintObsoleteSdkInt")
+package com.github.lmfirefly.flycat.common.util
 
-package com.github.yumeyucca.yumebox.common.util
-
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
-import com.github.yumeyucca.yumebox.data.model.AppLanguage
+import com.github.lmfirefly.flycat.core.model.AppLanguage
+import com.github.lmfirefly.flycat.core.util.LocaleUtils
+import java.util.Locale
 import tf.gal.shirosu.fyl.fytxt.FYTxtConfig
-import java.util.*
 
-@SuppressLint("AppBundleLocaleChanges")
 object AppLanguageManager {
-    @Volatile
-    private var activeLanguage: AppLanguage = AppLanguage.System
+    @Volatile private var activeLanguage: AppLanguage = AppLanguage.System
 
-    @Volatile
-    private var activeLocale: Locale = Locale.getDefault()
+    @Volatile private var activeLocale: Locale = Locale.getDefault()
 
     fun apply(language: AppLanguage) {
         activeLanguage = language
@@ -57,7 +54,7 @@ object AppLanguageManager {
         )
 
         Locale.setDefault(locale)
-        LocaleUtil.setCurrentLocale(locale)
+        LocaleUtils.setCurrentLocale(locale)
         when (language) {
             AppLanguage.System -> FYTxtConfig.updateTags(lock = false)
             AppLanguage.Zh -> FYTxtConfig.updateTags(listOf("ZH_HANS"), lock = true)
@@ -92,7 +89,12 @@ object AppLanguageManager {
 
     private fun systemLocale(): Locale {
         val resources = Resources.getSystem()
-        return resources.configuration.locales[0] ?: Locale.getDefault()
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            resources.configuration.locales[0] ?: Locale.getDefault()
+        } else {
+            @Suppress("DEPRECATION")
+            resources.configuration.locale ?: Locale.getDefault()
+        }
     }
 
     private fun applyLocale(configuration: Configuration, locale: Locale) {

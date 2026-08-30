@@ -1,0 +1,50 @@
+---
+title: DEBUG
+sidebarTitle: DEBUG
+---
+
+<Info>以下端点仅在内核日志级别为 `debug` 时可用。</Info>
+
+## 主动 GC
+
+<RequestExample>
+```bash PUT /debug/gc
+curl -X PUT http://127.0.0.1:9093/debug/gc
+```
+</RequestExample>
+
+`PUT /debug/gc`
+
+触发 Go 运行时垃圾回收。
+
+### 响应
+
+<ResponseField name="204" type="null">
+  GC 已触发。
+</ResponseField>
+
+---
+
+## 查看 pprof 调试信息
+
+<RequestExample>
+```bash GET /debug/pprof
+curl http://127.0.0.1:9093/debug/pprof
+```
+</RequestExample>
+
+`GET /debug/pprof`
+
+返回 Go pprof 性能分析数据。
+
+### 查询参数
+
+<ParamField query="raw" type="boolean">
+  返回原始 pprof 数据而非 HTML 页面。
+</ParamField>
+
+### 响应
+
+<ResponseField name="200" type="string">
+  HTML 页面或原始 pprof 数据。
+</ResponseField>

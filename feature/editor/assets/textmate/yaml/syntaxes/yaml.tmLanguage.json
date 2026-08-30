@@ -2,102 +2,56 @@
   "name": "YAML",
   "scopeName": "source.yaml",
   "patterns": [
-    {
-      "include": "#comment"
-    },
-    {
-      "include": "#directive"
-    },
-    {
-      "include": "#document-marker"
-    },
-    {
-      "include": "#block-sequence"
-    },
-    {
-      "include": "#merge-key"
-    },
-    {
-      "include": "#mapping-key"
-    },
-    {
-      "include": "#flow-mapping"
-    },
-    {
-      "include": "#flow-sequence"
-    },
-    {
-      "include": "#anchor"
-    },
-    {
-      "include": "#alias"
-    },
-    {
-      "include": "#tag"
-    },
-    {
-      "include": "#block-scalar"
-    },
-    {
-      "include": "#string"
-    },
-    {
-      "include": "#constant"
-    },
-    {
-      "include": "#number"
-    }
+    { "include": "#comment" },
+    { "include": "#directive" },
+    { "include": "#document-marker" },
+    { "include": "#block-sequence" },
+    { "include": "#merge-key" },
+    { "include": "#mapping-key" },
+    { "include": "#flow-mapping" },
+    { "include": "#flow-sequence" },
+    { "include": "#anchor" },
+    { "include": "#alias" },
+    { "include": "#tag" },
+    { "include": "#block-scalar" },
+    { "include": "#string" },
+    { "include": "#constant" },
+    { "include": "#number" }
   ],
   "repository": {
     "comment": {
       "match": "(?:(?<=\\s)|^)(#).*$",
       "name": "comment.line.number-sign.yaml",
       "captures": {
-        "1": {
-          "name": "punctuation.definition.comment.yaml"
-        }
+        "1": { "name": "punctuation.definition.comment.yaml" }
       }
     },
     "directive": {
       "match": "^(%)(YAML|TAG)\\b.*$",
       "name": "meta.directive.yaml",
       "captures": {
-        "1": {
-          "name": "punctuation.definition.directive.yaml"
-        },
-        "2": {
-          "name": "keyword.other.directive.yaml"
-        }
+        "1": { "name": "punctuation.definition.directive.yaml" },
+        "2": { "name": "keyword.other.directive.yaml" }
       }
     },
     "document-marker": {
       "match": "^(?:(---)|(\\.\\.\\.))\\s*$",
       "captures": {
-        "1": {
-          "name": "keyword.control.document.begin.yaml"
-        },
-        "2": {
-          "name": "keyword.control.document.end.yaml"
-        }
+        "1": { "name": "keyword.control.document.begin.yaml" },
+        "2": { "name": "keyword.control.document.end.yaml" }
       }
     },
     "block-sequence": {
       "match": "(?:^|(?<=\\s))(-)(?=\\s|$)",
       "captures": {
-        "1": {
-          "name": "punctuation.definition.block.sequence.item.yaml"
-        }
+        "1": { "name": "punctuation.definition.block.sequence.item.yaml" }
       }
     },
     "merge-key": {
       "match": "(<<)(\\s*)(:)(?=\\s|$)",
       "captures": {
-        "1": {
-          "name": "entity.name.tag.yaml"
-        },
-        "3": {
-          "name": "punctuation.separator.key-value.mapping.yaml"
-        }
+        "1": { "name": "entity.name.tag.yaml" },
+        "3": { "name": "punctuation.separator.key-value.mapping.yaml" }
       }
     },
     "mapping-key": {
@@ -105,46 +59,26 @@
         {
           "match": "(\")((?:[^\"\\\\]|\\\\.)*)(\")(\\s*)(:)(?=\\s|$)",
           "captures": {
-            "1": {
-              "name": "punctuation.definition.string.begin.yaml"
-            },
-            "2": {
-              "name": "entity.name.tag.yaml string.quoted.double.yaml"
-            },
-            "3": {
-              "name": "punctuation.definition.string.end.yaml"
-            },
-            "5": {
-              "name": "punctuation.separator.key-value.mapping.yaml"
-            }
+            "1": { "name": "punctuation.definition.string.begin.yaml" },
+            "2": { "name": "entity.name.tag.yaml string.quoted.double.yaml" },
+            "3": { "name": "punctuation.definition.string.end.yaml" },
+            "5": { "name": "punctuation.separator.key-value.mapping.yaml" }
           }
         },
         {
           "match": "(')((?:[^']|'')*)(')(\\s*)(:)(?=\\s|$)",
           "captures": {
-            "1": {
-              "name": "punctuation.definition.string.begin.yaml"
-            },
-            "2": {
-              "name": "entity.name.tag.yaml string.quoted.single.yaml"
-            },
-            "3": {
-              "name": "punctuation.definition.string.end.yaml"
-            },
-            "5": {
-              "name": "punctuation.separator.key-value.mapping.yaml"
-            }
+            "1": { "name": "punctuation.definition.string.begin.yaml" },
+            "2": { "name": "entity.name.tag.yaml string.quoted.single.yaml" },
+            "3": { "name": "punctuation.definition.string.end.yaml" },
+            "5": { "name": "punctuation.separator.key-value.mapping.yaml" }
           }
         },
         {
           "match": "(?:^|(?<=[-\\s{\\[,]))([^-?:\\s\\[\\]{}#,&*!|>'\"%@`][^#:]*?)(\\s*)(:)(?=\\s|$)",
           "captures": {
-            "1": {
-              "name": "entity.name.tag.yaml"
-            },
-            "3": {
-              "name": "punctuation.separator.key-value.mapping.yaml"
-            }
+            "1": { "name": "entity.name.tag.yaml" },
+            "3": { "name": "punctuation.separator.key-value.mapping.yaml" }
           }
         }
       ]
@@ -152,132 +86,67 @@
     "flow-mapping": {
       "begin": "(\\{)",
       "beginCaptures": {
-        "1": {
-          "name": "punctuation.definition.mapping.begin.yaml"
-        }
+        "1": { "name": "punctuation.definition.mapping.begin.yaml" }
       },
       "end": "(\\})",
       "endCaptures": {
-        "1": {
-          "name": "punctuation.definition.mapping.end.yaml"
-        }
+        "1": { "name": "punctuation.definition.mapping.end.yaml" }
       },
       "patterns": [
-        {
-          "include": "#comment"
-        },
-        {
-          "match": ",",
-          "name": "punctuation.separator.mapping.yaml"
-        },
+        { "include": "#comment" },
+        { "match": ",", "name": "punctuation.separator.mapping.yaml" },
         {
           "match": "([^-?:\\s\\[\\]{}#,&*!|>'\"%@`][^:,}\\]]*?)(\\s*)(:)(?=\\s|,|$)",
           "captures": {
-            "1": {
-              "name": "entity.name.tag.yaml"
-            },
-            "3": {
-              "name": "punctuation.separator.key-value.mapping.yaml"
-            }
+            "1": { "name": "entity.name.tag.yaml" },
+            "3": { "name": "punctuation.separator.key-value.mapping.yaml" }
           }
         },
-        {
-          "match": ":",
-          "name": "punctuation.separator.key-value.mapping.yaml"
-        },
-        {
-          "include": "#flow-mapping"
-        },
-        {
-          "include": "#flow-sequence"
-        },
-        {
-          "include": "#anchor"
-        },
-        {
-          "include": "#alias"
-        },
-        {
-          "include": "#tag"
-        },
-        {
-          "include": "#string"
-        },
-        {
-          "include": "#constant"
-        },
-        {
-          "include": "#number"
-        }
+        { "match": ":", "name": "punctuation.separator.key-value.mapping.yaml" },
+        { "include": "#flow-mapping" },
+        { "include": "#flow-sequence" },
+        { "include": "#anchor" },
+        { "include": "#alias" },
+        { "include": "#tag" },
+        { "include": "#string" },
+        { "include": "#constant" },
+        { "include": "#number" }
       ]
     },
     "flow-sequence": {
       "begin": "(\\[)",
       "beginCaptures": {
-        "1": {
-          "name": "punctuation.definition.sequence.begin.yaml"
-        }
+        "1": { "name": "punctuation.definition.sequence.begin.yaml" }
       },
       "end": "(\\])",
       "endCaptures": {
-        "1": {
-          "name": "punctuation.definition.sequence.end.yaml"
-        }
+        "1": { "name": "punctuation.definition.sequence.end.yaml" }
       },
       "patterns": [
-        {
-          "include": "#comment"
-        },
-        {
-          "match": ",",
-          "name": "punctuation.separator.sequence.yaml"
-        },
-        {
-          "include": "#flow-mapping"
-        },
-        {
-          "include": "#flow-sequence"
-        },
-        {
-          "include": "#anchor"
-        },
-        {
-          "include": "#alias"
-        },
-        {
-          "include": "#tag"
-        },
-        {
-          "include": "#string"
-        },
-        {
-          "include": "#constant"
-        },
-        {
-          "include": "#number"
-        }
+        { "include": "#comment" },
+        { "match": ",", "name": "punctuation.separator.sequence.yaml" },
+        { "include": "#flow-mapping" },
+        { "include": "#flow-sequence" },
+        { "include": "#anchor" },
+        { "include": "#alias" },
+        { "include": "#tag" },
+        { "include": "#string" },
+        { "include": "#constant" },
+        { "include": "#number" }
       ]
     },
     "anchor": {
       "match": "(&)([^\\s\\[\\]{},]+)",
       "captures": {
-        "1": {
-          "name": "punctuation.definition.anchor.yaml"
-        },
-        "2": {
-          "name": "keyword.control.flow.anchor.yaml"
-        }
+        "1": { "name": "punctuation.definition.anchor.yaml" },
+        "2": { "name": "keyword.control.flow.anchor.yaml" }
       }
     },
     "alias": {
       "match": "(\\*)([^\\s\\[\\]{},]+)",
       "captures": {
-        "1": {
-          "name": "punctuation.definition.alias.yaml"
-        },
-        "2": {
-          "name": "variable.other.alias.yaml"
-        }
+        "1": { "name": "punctuation.definition.alias.yaml" },
+        "2": { "name": "variable.other.alias.yaml" }
       }
     },
     "tag": {
@@ -287,18 +156,10 @@
     "block-scalar": {
       "match": "(?:(\\|)|(>))([1-9])?([-+])?(?=\\s|$)",
       "captures": {
-        "1": {
-          "name": "keyword.control.flow.block-scalar.literal.yaml"
-        },
-        "2": {
-          "name": "keyword.control.flow.block-scalar.folded.yaml"
-        },
-        "3": {
-          "name": "constant.numeric.indentation-indicator.yaml"
-        },
-        "4": {
-          "name": "storage.modifier.chomping-indicator.yaml"
-        }
+        "1": { "name": "keyword.control.flow.block-scalar.literal.yaml" },
+        "2": { "name": "keyword.control.flow.block-scalar.folded.yaml" },
+        "3": { "name": "constant.numeric.indentation-indicator.yaml" },
+        "4": { "name": "storage.modifier.chomping-indicator.yaml" }
       }
     },
     "string": {
@@ -306,15 +167,11 @@
         {
           "begin": "\"",
           "beginCaptures": {
-            "0": {
-              "name": "punctuation.definition.string.begin.yaml"
-            }
+            "0": { "name": "punctuation.definition.string.begin.yaml" }
           },
           "end": "\"",
           "endCaptures": {
-            "0": {
-              "name": "punctuation.definition.string.end.yaml"
-            }
+            "0": { "name": "punctuation.definition.string.end.yaml" }
           },
           "name": "string.quoted.double.yaml",
           "patterns": [
@@ -327,22 +184,15 @@
         {
           "begin": "'",
           "beginCaptures": {
-            "0": {
-              "name": "punctuation.definition.string.begin.yaml"
-            }
+            "0": { "name": "punctuation.definition.string.begin.yaml" }
           },
           "end": "'(?!')",
           "endCaptures": {
-            "0": {
-              "name": "punctuation.definition.string.end.yaml"
-            }
+            "0": { "name": "punctuation.definition.string.end.yaml" }
           },
           "name": "string.quoted.single.yaml",
           "patterns": [
-            {
-              "match": "''",
-              "name": "constant.character.escape.yaml"
-            }
+            { "match": "''", "name": "constant.character.escape.yaml" }
           ]
         }
       ]

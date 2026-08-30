@@ -1,0 +1,25 @@
+---
+title: 内存信息
+sidebarTitle: 内存信息
+---
+
+## 获取实时内存占用
+
+<RequestExample>
+```bash GET /memory
+curl http://127.0.0.1:9093/memory
+```
+</RequestExample>
+
+`GET /memory`
+
+返回当前内核进程的内存占用信息。
+
+### 响应
+
+<ResponseField name="200" type="object">
+  | 字段 | 类型 | 说明 |
+  | --- | --- | --- |
+  | `inuse` | integer | 当前使用量（字节） |
+  | `oslimit` | integer | 系统限制（字节） |
+</ResponseField>

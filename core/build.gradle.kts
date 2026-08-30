@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -14,30 +14,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
- * Copyright (c)  yumeyucca 2025 - Present
+ * Copyright (c)  YumeLira 2025 - Present
  *
  */
 
 plugins {
-    id("com.android.library")
+    id("flycat-android-library")
     kotlin("plugin.serialization")
 }
 
-android {
-    namespace = gropify.project.namespace.core
 
+android {
+    namespace = providers.gradleProperty("project.namespace.core").get()
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
     }
 }
 
 dependencies {
+    implementation(project(":locale"))
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.snake.yaml)
+    implementation(libs.snakeyaml.engine)
     implementation(libs.androidx.annotation.jvm)
     implementation(libs.timber)
     implementation(libs.xz)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
 }

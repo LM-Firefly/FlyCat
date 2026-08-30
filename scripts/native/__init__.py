@@ -1,2 +1,1 @@
-"""YumeBox native build helpers."""
-
+"""FlyCat native build helpers."""

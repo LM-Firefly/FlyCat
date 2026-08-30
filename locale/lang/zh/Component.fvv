@@ -2,22 +2,31 @@
 Component = {
     ProfileCard = {
         Update = "更新"
-        Export = "匯出"
-        Edit = "編輯"
         Delete = "刪除"
+        Edit = "編輯"
         RemoteSubscription = "遠端訂閱"
         LocalFile = "本機檔案"
         LocalConfig = "本機設定檔"
         ClickToUpdate = "點一下更新以取得訂閱資訊"
         Traffic = "流量：%s / %s (%d%%)"
         UsedTraffic = "已用：%s"
-        ExpireAt = "到期：%s (剩餘 %d 天)"
+        ExpireAt = "到期：%s (剩餘%d 天)"
         ExpireToday = "到期：今天"
         Expired = "已過期：%s"
         JustNow = "剛剛"
         MinutesAgo = "%d 分鐘前"
         HoursAgo = "%d 小時前"
         DaysAgo = "%d 天前"
+    }
+
+    Action = {
+        Export = "匯出"
+        Delete = "刪除"
+        Update = "更新"
+        Edit = "編輯"
+        Cancel = "取消"
+        Reset = "重設"
+        Add = "新增"
     }
 
     WebView = {
@@ -60,10 +69,45 @@ Component = {
         Starting = "啟動中..."
     }
 
+    Update = {
+        Action = {
+            DownloadNow = "立即下載"
+        }
+        Title = {
+            Available = "發現新版本"
+        }
+        Message = {
+            Available = "偵測到可用更新"
+            SelectPackage = "選擇下載包"
+            Tag = "標籤"
+            PackageUniversal = "通用包"
+            PackageExtension = "擴充合併包"
+            PackageStandard = "標準包"
+            CurrentVersion = "目前版本"
+            RemoteVersion = "推送版本"
+            Preparing = "正在準備下載..."
+            DownloadingWithProgress = "正在下載更新包 %d%%"
+            Downloading = "正在下載更新包..."
+            DownloadReady = "下載完成，準備安裝"
+            Error = "下載失敗，請稍後重試"
+            Checking = "正在檢查更新..."
+            NoUpdate = "目前已經是最新版本"
+            CheckFailed = "檢查更新失敗：%s"
+            MissingReleaseMetadata = "最新發佈缺少版本元資料"
+            NoCompatibleAsset = "最新發佈中沒有找到適合目前裝置的 APK"
+            DownloadAlreadyRunning = "更新包仍在下載中"
+            InstallPromptOpened = "下載完成，已開啟安裝器"
+            InstallFailed = "開啟安裝器失敗：%s"
+        }
+    }
 
     ConfigInput = {
         PortLabel = "連接埠 (留空表示不修改)"
         CountItems = "%d 項"
+        Replace = "取代"
+        ReplaceSummary = "取代整個字典"
+        Merge = "合併"
+        MergeSummary = "覆寫相符鍵的值"
     }
 
     BottomBar = {
@@ -102,6 +146,12 @@ Component = {
             TargetDirect = "DIRECT"
             TargetMatch = "MATCH"
             ErrorContentRequired = "規則內容不能為空"
+        }
+        ConfigPreview = {
+            Title = "設定預覽"
+            Format = "格式化"
+            Save = "儲存"
+            SaveFailed = "儲存失敗"
         }
     }
 }

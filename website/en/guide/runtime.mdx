@@ -28,16 +28,16 @@ icon: network
   </ResponseField>
 
   <Info> Wifi automation, only supports `Vpn Service` mode </Info>
- 
+
 </View>
 
 <View title="Tun" icon="network">
 
-  <ResponseField name="虚拟网卡" type="string" default="Yume">
+  <ResponseField name="虚拟网卡" type="string" default="FlyCat">
     Tun interface name, cannot be empty.
   </ResponseField>
 
-  <ResponseField name="MTU" type="integer" default="1500">
+  <ResponseField name="MTU" type="integer" default="9000">
     Tun interface size, ranging from `576` to `9000`.
   </ResponseField>
 
@@ -68,6 +68,18 @@ icon: network
 </View>
 
 <View title="eBPF" icon="cpu">
+
+  <ResponseField name="绕过私有网络" type="boolean" default="true">
+    Private addresses are not forwarded by eBPF.
+  </ResponseField>
+
+  <ResponseField name="DNS 劫持" type="boolean" default="true">
+    Hand off DNS requests to mihomo.
+  </ResponseField>
+
+  <ResponseField name="启用 IPv6" type="boolean" default="false">
+    Allow eBPF to handle IPv6 traffic.
+  </ResponseField>
 
   <ResponseField name="Bypass mainland China IPs in kernel" type="boolean" default="true">
     Write the CN-IP rule provider and `ebpf-in` listener; all other settings remain profile-owned.

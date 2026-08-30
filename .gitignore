@@ -1,51 +1,66 @@
 # Build outputs
-**/build/
-**/intermediates/
-**/release
-**/out/
-**/target/
-**/bin/
-**/gen/
 .gradle/
 .kotlin/
+**/bin/
+**/build/
+**/gen/
+**/intermediates/
+**/out/
+**/release
+**/target/
 
 # Build artifacts
-*.apk
-*.aar
 *.aab
+*.aar
 *.ap_
-*.dex
+*.apk
 *.class
+*.dex
 
 # IDE - IntelliJ/Android Studio
-.idea/*
 !.idea/codeStyles/
 !.idea/copyright/
-*.iml
+.idea/*
 .navigation/
+.vs/
+.vscode/
+*.code-workspace
+*.iml
+CppProperties.json
 captures/
+scripts/__pycache__/
 
 # Native build
+!app/src/main/jniLibs/**/*.so
 .cxx/
 .externalNativeBuild/
-cmake-build-*/
-*.so
-!app/src/main/jniLibs/**/*.so
 *.a
 *.o
 *.obj
-# Stamped by scripts/native-build.main.kts next to the native libs (not source).
-jniLibs/**/core-version.properties
+*.so
+cmake-build-*/
+/app/pkg/
+/core/pkg/
+/data/pkg/
+/feature/meta/pkg/
+/feature/override/pkg/
+/feature/profiles/pkg/
+/feature/settings/pkg/
+/lib/native/rust/pkg/
+/pack/pkg/
+/platform/pkg/
+/runtime/client/pkg/
+/runtime/service/pkg/
 
 # Signing & secrets
+.env
+.env.*.local
+.env.local
 *.jks
 *.keystore
+local.properties
 release.keystore
 signing.properties
-local.properties
-.env
-.env.local
-.env.*.local
 
 # OS junk
 .DS_Store
@@ -54,42 +69,42 @@ Thumbs.db
 *.swp
 
 # Logs & temp
+*.hprof
 *.log
 *.tmp
-*.hprof
 
 # Project specific
-/app/src/androidMain/assets/
-/app/src/main/assets/
-/core/src/foss/golang/mihomo/
-/.claude
-/.qoder
-/app/release/
-/app/build/
-/rule.md
-/google-services.json
-/app/google-services.json
-/desktop.ini
-/app/src/main/assets/ASN.mmdb
-/.gradle-user-home/
-/.android-user-home/
-/AGENTS.md
-/scripts/rewrite-git-email.sh
-/.pensieve/
-/CLAUDE.md
-/docs/override-merge-plan/
-/docs/config/
-/docs/amper
-/lib/mihomo/mihomo/
-/.codex/environments/environment.toml
-/docs/code-review/
-.cursor
 .agents
 .codex
+.cursor
+.mimocode
 .trellis
+/.android-user-home/
+/.claude
+/.codex/environments/environment.toml
+/.gradle-user-home/
+/.mimocode
+/.pensieve/
+/.qoder
+/AGENTS.md
+/app/build/
+/app/google-services.json
+/app/release/
+/app/src/androidMain/assets/
+/app/src/main/assets/
+/app/src/main/assets/ASN.mmdb
+/CLAUDE.md
+/core/src/foss/golang/mihomo/
+/desktop.ini
+/docs/amper
+/docs/code-review/
+/docs/config/
+/docs/override-merge-plan/
+/google-services.json
+/lib/mihomo/mihomo/
+/rule.md
+/scripts/rewrite-git-email.sh
 # Python bytecode
 __pycache__/
 *.pyc
-
-.qodana_work/
-/output_*/
+/.vscode

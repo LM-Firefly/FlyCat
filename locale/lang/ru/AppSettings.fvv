@@ -5,17 +5,20 @@ AppSettings = {
     Section = {
         Behavior = "Поведение"
         Interface = "Интерфейс"
+        Navigation = "Навигация"
         Privacy = "Конфиденциальность"
         Service = "Служба"
         Network = "Сеть"
-        Navigation = "Навигация"
         Home = "Главная"
     }
 
     Behavior = {
         AutoStartTitle = "Автозапуск"
+        AutoStartSummary = "Автоматически запускать прокси при открытии приложения и при загрузке устройства"
         AutoUpdateOnStartTitle = "Обновлять при запуске"
+        AutoUpdateOnStartSummary = "Автоматически обновлять текущий профиль при запуске приложения"
         OneChinaTitle = "Придерживаться принципа одного Китая"
+        OneChinaSummary = "Соблюдать принцип одного Китая в приложении"
     }
 
     Interface = {
@@ -25,6 +28,7 @@ AppSettings = {
         ThemeModeLight = "Светлая"
         ThemeModeDark = "Тёмная"
         LanguageTitle = "Язык приложения"
+        LanguageSummary = "Выберите язык приложения"
         LanguageSystem = "Как в системе"
         LanguageChinese = "简体中文"
         LanguageChineseTraditional = "繁體中文"
@@ -34,47 +38,81 @@ AppSettings = {
 
         ColorThemeTitle = "Палитра темы"
         ColorThemePickerTitle = "Выбрать цвет темы"
-        ColorThemeCodeLabel = "Код цвета темы (#RRGGBB)"
+        ColorThemeCodeLabel = "Код цвета темы (#AARRGGBB)"
         ColorThemeCustomSummary = "Текущий цвет темы: %s"
         ThemeColorPolarityInvertTitle = "Инвертировать цвет переднего плана"
+        ThemeColorPolarityInvertSummary = "Если цвета темы выглядят странно, попробуйте включить эту опцию"
         TopBarBlurTitle = "Размытие"
+        TopBarBlurSummary = "Применить размытый фон к"
         AutoHideNavbarTitle = "Автоскрытие панели навигации"
+        AutoHideNavbarSummary = "Скрывать панель навигации при прокрутке вниз и показывать при прокрутке вверх"
 
         PageScaleTitle = "Масштаб страницы"
         PageScaleDialogSummary = "80% - 120%"
-        PredictiveBackTitle = "Предиктивный жест назад"
-        PredictiveBackRestartSummary = "Вступит в силу при следующем запуске приложения"
-        PredictiveBackProgressTitle = "Амплитуда возврата"
 
         ClassicHomeTitle = "Классическая главная"
-        SystemWallpaperTitle = "Установить системные обои"
-        CustomIconTitle = "Пользовательский значок приложения"
+        HitokotoTitle = "Hitokoto"
+        HitokotoSummary = "Показывать цитату Hitokoto на классической главной"
+        SidebarExpandedTitle = "Развернуть боковую панель"
         HomeQuoteTitle = "Цитата на главной"
-        HomeQuoteDefault = "На тихом маршруте ждать, пока облако закончит роуминг"
+        HomeQuoteDefault = "Always believe that something wonderful is about to happen"
+        HomeQuoteAuthorTitle = "Автор цитаты"
+        HomeQuoteAuthorDefault = "Firefly"
         EditHomeQuoteTitle = "Изменить цитату"
+        EditHomeQuoteAuthorTitle = "Изменить автора цитаты"
         HomeWallpaperImportFailed = "Не удалось скопировать обои локально; используется исходный источник"
+        HomeWallpaperSourceTitle = "Источник обоев"
+        HomeWallpaperSourceSummary = "Выбрать из галереи или ввести URL"
+        HomeWallpaperSourceGallery = "Выбрать из галереи"
+        HomeWallpaperSourceUrl = "Введите URL"
+        HomeWallpaperUrlDialogTitle = "Установить удалённые обои"
+        WallpaperScrimTitle = "Затемнение нижней части обоев"
     }
 
     Privacy = {
 
+        HideIconTitle = "Скрыть значок приложения"
+        HideIconSummary = "После скрытия можно открыть через набор *#*#0721#*#*"
         HideFromRecentsTitle = "Скрыть карточку в недавних"
+        HideFromRecentsSummary = "Не показывать это приложение в списке недавних задач"
     }
 
     ServiceSection = {
         TrafficNotificationTitle = "Показывать уведомление о трафике"
+        TrafficNotificationSummary = "Отображать использование трафика в панели уведомлений"
+        LogLevelTitle = "Уровень журнала"
+        LogLevelSummary = "Установить минимальный уровень журнала приложения"
         SingleNodeTestTitle = "Тест одного узла"
+        SingleNodeTestSummary = "Нажмите значок на карточке узла для тестирования задержки"
         ExitUiWhenBackgroundTitle = "Освобождать UI в фоне"
+        ExitUiWhenBackgroundSummary = "Освобождать интерфейс при сворачивании в фон, сохраняя работу прокси"
         BatteryOptimizationTitle = "Без ограничений батареи"
-        BatteryOptimizationAlreadyDisabled = "Оптимизация батареи уже отключена"
+        BatteryOptimizationSummaryEnabled = "Фоновая работа без ограничений разрешена"
+        BatteryOptimizationSummaryDisabled = "Ограничено оптимизацией батареи; нажмите, чтобы исправить"
     }
 
     Network = {
+        UpdateChannelTitle = "Канал обновлений"
+        UpdateChannelSummary = "Выберите канал GitHub Release для проверки обновлений"
+        UpdateChannelStable = "Стабильный"
+        UpdateChannelPre = "Предрелизный"
+        UpdateChannelSmart = "Умный"
+        AutoCheckAppUpdateTitle = "Автопроверка обновлений"
+        AutoCheckAppUpdateSummary = "Автоматически проверять обновления GitHub Release каждые 1 час в фоне"
         CustomUserAgentTitle = "Свой User-Agent"
         CustomUserAgentSummaryDefault = "Не задан, используется значение по умолчанию"
     }
 
+    PredictiveBack = {
+        Title = "Предсказывающий жест назад"
+        RestartSummary = "Вступит в силу при следующем запуске приложения"
+        ProgressTitle = "Амплитуда предсказания"
+    }
+
     WarningDialog = {
         Title = "Предупреждение"
+        HideIconMsg1 = "Перед скрытием убедитесь, что можете открыть настройки этого приложения!"
+        HideIconMsg2 = "Для HyperOS включите автозапуск и всплывающие окна в фоне, чтобы принимать коды с экрана набора!"
     }
 
     EditDialog = {

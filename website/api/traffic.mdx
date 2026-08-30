@@ -1,0 +1,27 @@
+---
+title: 流量信息
+sidebarTitle: 流量信息
+---
+
+## 获取实时流量
+
+<RequestExample>
+```bash GET /traffic
+curl http://127.0.0.1:9093/traffic
+```
+</RequestExample>
+
+`GET /traffic`
+
+建立 SSE 连接，返回实时上下行流量统计。
+
+### 响应
+
+<ResponseField name="200" type="object">
+  每条一行 JSON：
+
+  | 字段 | 类型 | 说明 |
+  | --- | --- | --- |
+  | `up` | integer | 上行字节数 |
+  | `down` | integer | 下行字节数 |
+</ResponseField>

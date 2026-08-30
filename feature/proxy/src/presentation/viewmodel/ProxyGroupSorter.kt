@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,18 +15,22 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-@file:Suppress("RedundantIf", "RemoveExplicitTypeArguments")
+package com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel
 
-package com.github.yumeyucca.yumebox.presentation.viewmodel
-
-import com.github.yumeyucca.yumebox.core.model.Proxy
-import com.github.yumeyucca.yumebox.data.model.ProxySortMode
-import com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo
+import com.github.lmfirefly.flycat.core.model.proxy.Proxy
+import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
+import com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 
 internal class ProxyGroupSorter {
     private data class SortedGroupCacheEntry(
@@ -49,8 +53,8 @@ internal class ProxyGroupSorter {
         sortMode: StateFlow<ProxySortMode>,
     ): StateFlow<List<ProxyGroupInfo>> =
         combine(proxyGroups, sortMode, groupOriginalOrder) { groups, mode, originalOrderCache ->
-            buildSortedProxyGroups(groups, mode, originalOrderCache)
-        }
+                buildSortedProxyGroups(groups, mode, originalOrderCache)
+            }
             .stateIn(
                 scope = scope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -76,7 +80,6 @@ internal class ProxyGroupSorter {
                     )
                     .takeUnless { it.hasSameProxyOrderAs(proxies) } ?: proxies
             }
-
             ProxySortMode.BY_LATENCY -> {
                 val originalIndex =
                     originalOrder.withIndex().associate { (index, name) -> name to index }
@@ -132,12 +135,9 @@ internal class ProxyGroupSorter {
         val nextCache = HashMap<String, SortedGroupCacheEntry>(groups.size)
         val results = groups.map { group ->
             val originalOrder = originalOrderCache[group.name].orEmpty()
-            val cached =
-                previousCache[group.name]?.takeIf { entry ->
-                    entry.sourceGroup == group &&
-                            entry.sortMode == mode &&
-                            entry.originalOrder == originalOrder
-                }
+            val cached = previousCache[group.name]?.takeIf { entry ->
+                entry.sourceGroup == group && entry.sortMode == mode && entry.originalOrder == originalOrder
+            }
             if (cached != null) {
                 nextCache[group.name] = cached
                 cached.result
@@ -155,11 +155,11 @@ internal class ProxyGroupSorter {
                         group.copy(proxies = sortedProxies)
                     }
                 SortedGroupCacheEntry(
-                    sourceGroup = group,
-                    sortMode = mode,
-                    originalOrder = originalOrder,
-                    result = result,
-                )
+                        sourceGroup = group,
+                        sortMode = mode,
+                        originalOrder = originalOrder,
+                        result = result,
+                    )
                     .also { nextCache[group.name] = it }
                     .result
             }

@@ -10,7 +10,6 @@ Proxy = {
         Panel = "Panel"
         Test = "Test"
         Sort = "Sort"
-        LocateCurrent = "Locate current proxy"
     }
 
     Node = {

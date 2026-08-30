@@ -1,47 +1,17 @@
 {
-  "brackets": [
-    [
-      "{",
-      "}"
-    ],
-    [
-      "[",
-      "]"
-    ],
-    [
-      "\"",
-      "\""
-    ]
-  ],
-  "autoClosingPairs": [
-    {
-      "open": "{",
-      "close": "}"
-    },
-    {
-      "open": "[",
-      "close": "]"
-    },
-    {
-      "open": "\"",
-      "close": "\"",
-      "notIn": [
-        "string"
-      ]
-    }
-  ],
-  "surroundingPairs": [
-    [
-      "{",
-      "}"
-    ],
-    [
-      "[",
-      "]"
-    ],
-    [
-      "\"",
-      "\""
-    ]
-  ]
+	"brackets": [
+		["{", "}"],
+		["[", "]"],
+		["\"", "\""]
+	],
+	"autoClosingPairs": [
+		{ "open": "{", "close": "}" },
+		{ "open": "[", "close": "]" },
+		{ "open": "\"", "close": "\"", "notIn": ["string"] }
+	],
+	"surroundingPairs": [
+		["{", "}"],
+		["[", "]"],
+		["\"", "\""]
+	]
 }

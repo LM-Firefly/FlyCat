@@ -8,7 +8,14 @@ import platform
 
 from .command import command_exists
 
-SUPPORTED_ANDROID_ABI = "arm64-v8a"
+ALL_ANDROID_ABIS = ("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+
+ABI_TO_NDK_TARGET = {
+    "armeabi-v7a": "armv7a-linux-androideabi",
+    "arm64-v8a": "aarch64-linux-android",
+    "x86": "i686-linux-android",
+    "x86_64": "x86_64-linux-android",
+}
 
 
 class ProjectConfig:
@@ -139,10 +146,11 @@ class NdkTools:
         return path
 
     def get_clang_path(self, abi: str) -> Path:
-        if abi != SUPPORTED_ANDROID_ABI:
+        target = ABI_TO_NDK_TARGET.get(abi)
+        if not target:
             raise ValueError(f"Unsupported ABI: {abi}")
         extension = ".cmd" if SystemDetector.os_name() == "windows" else ""
-        return self._tool(f"aarch64-linux-android{self.get_min_android_api()}-clang{extension}")
+        return self._tool(f"{target}{self.get_min_android_api()}-clang{extension}")
 
     def get_strip_path(self) -> Path:
         extension = ".exe" if SystemDetector.os_name() == "windows" else ""
@@ -177,7 +185,8 @@ class NdkTools:
 
 
 def configured_abis(config: ProjectConfig) -> list[str]:
-    abis = config.get_csv("abi.app.list", SUPPORTED_ANDROID_ABI)
-    if abis != [SUPPORTED_ANDROID_ABI]:
-        raise RuntimeError(f"Only {SUPPORTED_ANDROID_ABI} is supported; configured ABIs: {', '.join(abis)}")
+    abis = config.get_csv("abi.app.list", ",".join(ALL_ANDROID_ABIS))
+    for abi in abis:
+        if abi not in ALL_ANDROID_ABIS:
+            raise RuntimeError(f"Unsupported ABI: {abi}")
     return abis

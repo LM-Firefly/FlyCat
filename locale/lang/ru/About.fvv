@@ -3,37 +3,18 @@ About = {
     Title = "О приложении"
 
     App = {
-        Description = "Android-клиент с открытым исходным кодом на базе mihomo"
         VersionLoading = "Загрузка..."
         VersionFailed = "Не удалось загрузить"
     }
 
-    Debug = {
-        Title = "Debug"
-        TestInitialization = "Тестовая инициализация"
-        InitializationReset = "Состояние инициализации сброшено"
-    }
-
     Section = {
         ProjectLinks = "Ссылки проекта"
-        More = "Ещё"
-        Support = "Поддержка"
         License = "Лицензия"
     }
 
-    Link = {
-        TelegramGroup = "Группа Telegram"
-        TelegramChannel = "Канал Telegram"
-    }
-
-    Support = {
-        ExportLogs = "Экспорт журналов"
-        ReportIssue = "Сообщить о проблеме"
-        ExportSuccess = "Журналы экспортированы"
-        ExportFailed = "Не удалось экспортировать журналы"
-    }
-
     License = {
+        CheckUpdate = "Проверить обновления"
+        CheckUpdateSummary = "Проверить последний релиз на GitHub вручную"
         Libraries = "Библиотеки"
         LibrariesSummary = "Просмотреть все сторонние библиотеки, используемые в приложении"
         AgplName = "GNU Affero General Public License v3.0"

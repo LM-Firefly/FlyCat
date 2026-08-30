@@ -28,16 +28,16 @@ icon: network
   </ResponseField>
 
   <Info> Автоматизация Wi-Fi, поддерживает только режим `Vpn Service` </Info>
- 
+
 </View>
 
 <View title="Tun" icon="network">
 
-  <ResponseField name="虚拟网卡" type="string" default="Yume">
+  <ResponseField name="虚拟网卡" type="string" default="FlyCat">
     Имя интерфейса Tun. Не может быть пустым.
   </ResponseField>
 
-  <ResponseField name="MTU" type="integer" default="1500">
+  <ResponseField name="MTU" type="integer" default="9000">
     Размер интерфейса Tun: от `576` до `9000`.
   </ResponseField>
 
@@ -68,6 +68,18 @@ icon: network
 </View>
 
 <View title="eBPF" icon="cpu">
+
+  <ResponseField name="绕过私有网络" type="boolean" default="true">
+    Частные адреса не перенаправляются через eBPF.
+  </ResponseField>
+
+  <ResponseField name="DNS 劫持" type="boolean" default="true">
+    Передавайте DNS-запросы mihomo.
+  </ResponseField>
+
+  <ResponseField name="启用 IPv6" type="boolean" default="false">
+    Разрешить eBPF обрабатывать трафик IPv6.
+  </ResponseField>
 
   <ResponseField name="Обходить IP материкового Китая в ядре" type="boolean" default="true">
     Записываются rule provider CN-IP и listener `ebpf-in`; остальные параметры остаются в профиле.

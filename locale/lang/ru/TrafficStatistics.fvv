@@ -1,22 +1,29 @@
 <Traffic Statistics Page>
 TrafficStatistics = {
-    Title = "Статистика"
+    Title = "Статистика трафика"
     EntrySummary = "Просмотр использования трафика"
 
     TimeRange = {
         Today = "Сегодня"
-        Week = "Неделя"
+        Week = "2 недели"
     }
 
     Summary = {
         TodayTraffic = "Трафик за сегодня"
-        WeekTraffic = "Трафик за неделю"
-        Average = "Среднее"
-        DayTrafficTip = "Трафик %s"
+        WeekTraffic = "Трафик за 2 недели"
     }
+
+
 
     Donut = {
         Other = "Другое"
+    }
+
+    Sort = {
+        ByName = "Имя приложения"
+        ByUpload = "Отдача"
+        ByDownload = "Загрузка"
+        ByTotal = "Трафик"
     }
 
     Action = {
@@ -26,29 +33,20 @@ TrafficStatistics = {
 
     Section = {
         Traffic = "Трафик"
-        TopApps = "Топ приложений"
-        TodayApps = "Приложения за сегодня"
-        WeekApps = "Приложения за 7 дней"
-        SystemTraffic = "Системный трафик"
+        PerAppTraffic = "Трафик по приложениям"
         EmptyApps = "Нет статистики по приложениям"
     }
 
     Metric = {
         Download = "Загрузка"
         Upload = "Отдача"
+        Total = "Всего"
         UsageLine = "↓ %s  ↑ %s"
-        SortByName = "Имя"
-        SortByUsage = "Использование"
     }
 
-    Weekday = {
-        Mon = "Пн"
-        Tue = "Вт"
-        Wed = "Ср"
-        Thu = "Чт"
-        Fri = "Пт"
-        Sat = "Сб"
-        Sun = "Вс"
-        Today = "Сегодня"
+    Buckets = {
+        UnknownAppName = "Неизвестное приложение"
+        UnattributedTrafficName = "Неучтённый трафик"
+        UnattributedRouteName = "Неучтённый маршрут"
     }
 }

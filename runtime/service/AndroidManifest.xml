@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ This file is part of YumeBox.
+  ~ This file is part of FlyCat.
   ~
-  ~ YumeBox is free software: you can redistribute it and/or modify
+  ~ FlyCat is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Affero General Public License as
   ~ published by the Free Software Foundation, either version 3 of the
   ~ License.
@@ -23,81 +23,121 @@
           xmlns:tools="http://schemas.android.com/tools">
     <!-- The module declares what its own components need; hosts merge these automatically. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:ignore="ForegroundServicesPolicy"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application>
         <provider
-            android:name="com.github.yumeyucca.yumebox.runtime.service.StatusProvider"
+            android:name="com.github.lmfirefly.flycat.runtime.service.StatusProvider"
             android:authorities="${applicationId}.status"
             android:enabled="true"
             android:exported="false"/>
 
         <service
-            android:name="com.github.yumeyucca.yumebox.runtime.service.TunService"
+            android:name="com.github.lmfirefly.flycat.runtime.service.android.TunService"
             android:exported="false"
             android:foregroundServiceType="specialUse"
-            android:permission="android.permission.BIND_VPN_SERVICE">
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:stopWithTask="false">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="yumebox_vpn"/>
+                android:value="flycat_vpn" />
             <intent-filter>
-                <action android:name="android.net.VpnService"/>
+                <action android:name="android.net.VpnService" />
             </intent-filter>
         </service>
 
         <service
-            android:name="com.github.yumeyucca.yumebox.runtime.service.RootForegroundService"
+            android:name="com.github.lmfirefly.flycat.runtime.service.ClashService"
             android:exported="false"
-            android:stopWithTask="false"
-            android:foregroundServiceType="specialUse">
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="root_tun_notification"/>
+                android:value="flycat_proxy" />
         </service>
 
         <service
-            android:name="com.github.yumeyucca.yumebox.runtime.service.AutoRestartService"
+            android:name="com.github.lmfirefly.flycat.runtime.service.android.LogRecordService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="auto_restart_service"/>
+                android:value="log_record_service" />
         </service>
 
         <service
-            android:name="com.github.yumeyucca.yumebox.runtime.service.WifiAutomationService"
+            android:name="com.github.lmfirefly.flycat.runtime.service.android.AutoRestartService"
             android:exported="false"
-            android:foregroundServiceType="location"/>
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="auto_restart_service" />
+        </service>
 
         <service
-            android:name="com.github.yumeyucca.yumebox.runtime.service.ProxyTileService"
+            android:name="com.github.lmfirefly.flycat.runtime.service.android.RootTunService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="flycat_root_tun" />
+        </service>
+
+        <service
+            android:name="com.github.lmfirefly.flycat.runtime.service.root.RootTunRootService"
+            android:exported="false" />
+
+        <service
+            android:name="com.github.lmfirefly.flycat.runtime.service.android.WifiAutomationService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
+        <service
+            android:name="com.github.lmfirefly.flycat.runtime.service.android.ProxyTileService"
             android:exported="true"
             android:icon="@drawable/ic_logo_service"
             android:label="@string/tile_proxy_label"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
-                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
 
         <receiver
-            android:name="com.github.yumeyucca.yumebox.runtime.service.DialerReceiver"
+            android:name="com.github.lmfirefly.flycat.runtime.service.receiver.DialerReceiver"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.provider.Telephony.SECRET_CODE"/>
-                <data android:host="0721" android:scheme="android_secret_code"/>
+                <action android:name="android.provider.Telephony.SECRET_CODE" />
+                <data android:host="0721" android:scheme="android_secret_code" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
             </intent-filter>
         </receiver>
 
         <receiver
-            android:name="com.github.yumeyucca.yumebox.runtime.service.RestartReceiver"
+            android:name="com.github.lmfirefly.flycat.runtime.service.receiver.RestartReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <provider
+            android:name="com.github.lmfirefly.flycat.runtime.service.FilesProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+
     </application>
 </manifest>

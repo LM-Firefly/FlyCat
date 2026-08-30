@@ -2,18 +2,18 @@
 
 <paths>
     <cache-path
-        name="cached_files"
-        path="."/>
+            name="cached_files"
+            path="."/>
 
     <external-files-path
-        name="external_files"
-        path="."/>
+            name="external_files"
+            path="."/>
 
     <external-path
-        name="public_downloads"
-        path="Download/YumeBox"/>
+            name="public_downloads"
+            path="Download/FlyCat"/>
 
     <files-path
-        name="imported_files"
-        path="imported"/>
+            name="imported_files"
+            path="imported"/>
 </paths>

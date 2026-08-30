@@ -67,6 +67,10 @@ Override = {
         EmptyJavaScript = "JS 文件为空"
     }
 
+    Error = {
+        SaveFailed = "保存覆写失败"
+    }
+
     Export = {
         Failed = "导出失败：%s"
         Success = "已导出配置：%s"
@@ -81,8 +85,8 @@ Override = {
         }
         Delete = {
             Title = "删除配置"
-            InUseMessage = "配置 %s 正在被订阅使用，删除后将解除绑定关系.确定要删除吗？此操作不可恢复."
-            Message = "确定要删除配置 %s 吗？此操作不可恢复."
+            InUseMessage = "配置 %s 正在被订阅使用，删除后将解除绑定关系。确定要删除吗？此操作不可恢复。"
+            Message = "确定要删除配置 %s 吗？此操作不可恢复。"
         }
         Button = {
             Cancel = "取消"
@@ -104,7 +108,6 @@ Override = {
 
     Save = {
         ImportDefaultName = "导入的覆写配置"
-        Failed = "保存覆写失败"
     }
 
 

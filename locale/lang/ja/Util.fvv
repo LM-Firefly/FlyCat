@@ -2,5 +2,8 @@
 Util = {
     Error = {
         UnknownError = "不明なエラー"
+        CannotCreateDir = "ディレクトリを作成できません: %s"
+        TargetNotDir = "ターゲットはディレクトリではありません: %s"
+        PathTraversalDetected = "パストラバーサルを検出しました: %s"
     }
 }

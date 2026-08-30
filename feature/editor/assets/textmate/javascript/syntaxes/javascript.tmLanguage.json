@@ -2,24 +2,12 @@
   "name": "JavaScript",
   "scopeName": "source.js",
   "patterns": [
-    {
-      "include": "#comments"
-    },
-    {
-      "include": "#strings"
-    },
-    {
-      "include": "#numbers"
-    },
-    {
-      "include": "#keywords"
-    },
-    {
-      "include": "#constants"
-    },
-    {
-      "include": "#functions"
-    }
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#keywords" },
+    { "include": "#constants" },
+    { "include": "#functions" }
   ],
   "repository": {
     "comments": {

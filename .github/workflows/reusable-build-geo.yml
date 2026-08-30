@@ -1,4 +1,4 @@
-name: Build Geo
+name: Reusable Build Geo
 
 on:
   workflow_call:
@@ -22,8 +22,17 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Setup Java
+        uses: actions/setup-java@v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Setup Kotlin
+        uses: fwilhe2/setup-kotlin@main
+
       - name: Build geo assets
-        run: python3 scripts/native-build.py --geo
+        run: kotlin scripts/native-build.main.kts --geo
 
       - name: Verify geo outputs
         shell: bash

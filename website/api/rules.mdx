@@ -1,0 +1,50 @@
+---
+title: 规则
+sidebarTitle: 规则
+---
+
+## 获取所有规则
+
+<RequestExample>
+```bash GET /rules
+curl http://127.0.0.1:9093/rules
+```
+</RequestExample>
+
+`GET /rules`
+
+返回当前加载的所有规则。
+
+### 响应
+
+<ResponseField name="200" type="object">
+  `rules` 字段包含规则数组，每条规则包含 `type`、`payload`、`proxy` 等字段。
+</ResponseField>
+
+---
+
+## 临时禁用规则
+
+<RequestExample>
+```bash PATCH /rules/disable
+curl -X PATCH http://127.0.0.1:9093/rules/disable \
+  -H "Content-Type: application/json" \
+  -d '{"payload": "DOMAIN-SUFFIX,example.com"}'
+```
+</RequestExample>
+
+`PATCH /rules/disable`
+
+临时禁用指定规则（运行期间有效，重启后恢复）。
+
+### 请求体
+
+<ParamField body="payload" type="string" required>
+  要禁用的规则的 `payload` 值。
+</ParamField>
+
+### 响应
+
+<ResponseField name="204" type="null">
+  禁用成功。
+</ResponseField>

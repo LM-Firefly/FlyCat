@@ -5,10 +5,6 @@ Service = {
         UnknownProfile = "Unknown profile"
         SpeedLine = "Down %s  Up %s"
         TotalTraffic = "Total %s"
-        LogChannel = "Log recording"
-        LogRecording = "Recording logs"
-        LogRecordingPending = "Recording..."
-        Stop = "Stop"
     }
 
     Tile = {

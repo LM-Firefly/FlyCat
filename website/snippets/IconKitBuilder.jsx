@@ -1,5 +1,5 @@
 export const IconKitBuilder = () => {
-  const WORKER_URL = "https://yumebox-iconkit.yumeyuka.moe";
+  const WORKER_URL = "https://flycat-iconkit.example.com";
   // Mintlify snippets support one directly imported component per file.
   const densities = [
     { name: "mdpi", size: 48, foreground: 108 },
@@ -173,7 +173,7 @@ export const IconKitBuilder = () => {
       const url = URL.createObjectURL(await bundle());
       const link = document.createElement("a");
       link.href = url;
-      link.download = "YumeBox-IconKit.zip";
+      link.download = "FlyCat-IconKit.zip";
       link.click();
       URL.revokeObjectURL(url);
     } catch (reason) {
@@ -186,7 +186,7 @@ export const IconKitBuilder = () => {
       setBusy(true);
       setError(undefined);
       const form = new FormData();
-      form.append("bundle", await bundle(), "YumeBox-IconKit-icons.zip");
+      form.append("bundle", await bundle(), "FlyCat-IconKit-icons.zip");
       const response = await fetch(`${WORKER_URL}/v1/jobs`, {
         method: "POST",
         body: form,

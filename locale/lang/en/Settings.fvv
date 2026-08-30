@@ -9,18 +9,18 @@ Settings = {
 
     UiSettings = {
         App = "App"
-        AppSummary = "Theme, language, and behavior"
+        AppSummary = "Theme · Language · Behavior"
         Network = "Network"
-        NetworkSummary = "Proxy mode, DNS, and access control"
+        NetworkSummary = "Proxy Mode · DNS · Access Control"
         Override = "Override"
-        OverrideSummary = "YAML, JS, and rule overrides"
+        OverrideSummary = "YAML · JS · Rule Override"
         MetaFeatures = "Meta Features"
-        MetaFeaturesSummary = "Connections, logs, rules, and statistics"
+        MetaFeaturesSummary = "Connections · Routing · GeoX · Keys"
     }
 
     More = {
         Lab = "Lab"
-        LabSummary = "Sub-Store and experiments"
+        LabSummary = "Sub-Store · Experiments"
         Logs = "Logs"
         LogsSummary = "Runtime Logs"
         Onboarding = "Setup Guide"
@@ -31,5 +31,10 @@ Settings = {
 
     Error = {
         WebviewFailed = "Unable to open WebView: %s"
+    }
+
+    RemoteController = {
+        ConnectionSuccess = "Connected: mode %s"
+        ConnectionFailed = "Connection failed: %s"
     }
 }

@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,20 +15,29 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumeyucca.yumebox.core.util
+package com.github.lmfirefly.flycat.core.util
 
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.json.*
-import org.yaml.snakeyaml.DumperOptions
-import org.yaml.snakeyaml.Yaml
-import org.yaml.snakeyaml.constructor.SafeConstructor
-import org.yaml.snakeyaml.nodes.Tag
-import org.yaml.snakeyaml.representer.Representer
-import org.yaml.snakeyaml.resolver.Resolver
-import java.util.regex.Pattern
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.longOrNull
+import org.snakeyaml.engine.v2.api.Dump
+import org.snakeyaml.engine.v2.api.DumpSettings
+import org.snakeyaml.engine.v2.api.Load
+import org.snakeyaml.engine.v2.api.LoadSettings
+import org.snakeyaml.engine.v2.common.FlowStyle
+import org.snakeyaml.engine.v2.common.ScalarStyle
 
 object YamlCodec {
     private val json = Json {
@@ -38,19 +47,8 @@ object YamlCodec {
         prettyPrint = true
     }
 
-    private fun newYaml(): Yaml {
-        val options =
-            DumperOptions().apply {
-                defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
-                defaultScalarStyle = DumperOptions.ScalarStyle.PLAIN
-                isPrettyFlow = true
-                indent = 2
-                indicatorIndent = 0
-                width = 160
-                splitLines = false
-            }
-        return Yaml(SafeConstructor(), Representer(), options, JsonBooleanResolver())
-    }
+    private val loader = Load(LoadSettings.builder().build())
+    private val dumper = Dump(DumpSettings.builder().setDefaultFlowStyle(FlowStyle.BLOCK).setDefaultScalarStyle(ScalarStyle.PLAIN).setIndent(2).setWidth(160).build())
 
     fun <T> encode(serializer: KSerializer<T>, value: T): String {
         val element = json.encodeToJsonElement(serializer, value)
@@ -68,19 +66,17 @@ object YamlCodec {
 
     @Suppress("UNCHECKED_CAST")
     fun loadMap(content: String): Map<String, Any?> {
-        if (content.isBlank()) return emptyMap()
         val loaded = loadValue(content)
-        require(loaded is Map<*, *>) { "YAML document root must be a map" }
-        return loaded as Map<String, Any?>
+        return loaded as? Map<String, Any?> ?: emptyMap()
     }
 
-    fun dumpValue(value: Any?): String = newYaml().dump(normalizeYamlValue(value))
+    fun dumpValue(value: Any?): String = dumper.dumpToString(normalizeYamlValue(value))
 
-    fun loadValue(content: String): Any? = normalizeYamlValue(newYaml().load(content))
+    fun loadValue(content: String): Any? = normalizeYamlValue(loader.loadFromString(content))
 
     fun validate(content: String) {
         if (content.isBlank()) return
-        newYaml().load(content)
+        loader.loadFromString(content)
     }
 
     private fun toYamlNode(element: JsonElement): Any? =
@@ -137,21 +133,4 @@ object YamlCodec {
             is Array<*> -> value.map(::normalizeYamlValue)
             else -> value
         }
-
-    private class JsonBooleanResolver : Resolver() {
-        override fun addImplicitResolvers() {
-            addImplicitResolver(Tag.BOOL, JSON_BOOLEAN, "tTfF")
-            addImplicitResolver(Tag.INT, INT, "-+0123456789")
-            addImplicitResolver(Tag.FLOAT, FLOAT, "-+0123456789.")
-            addImplicitResolver(Tag.MERGE, MERGE, "<")
-            addImplicitResolver(Tag.NULL, NULL, "~nN\u0000")
-            addImplicitResolver(Tag.NULL, EMPTY, null)
-            addImplicitResolver(Tag.TIMESTAMP, TIMESTAMP, "0123456789")
-            addImplicitResolver(Tag.YAML, YAML, "!&*")
-        }
-
-        private companion object {
-            val JSON_BOOLEAN: Pattern = Pattern.compile("^(?:true|True|TRUE|false|False|FALSE)$")
-        }
-    }
 }

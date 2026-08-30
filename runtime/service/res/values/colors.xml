@@ -2,9 +2,9 @@
 
 
 <!--
-  ~ This file is part of YumeBox.
+  ~ This file is part of FlyCat.
   ~
-  ~ YumeBox is free software: you can redistribute it and/or modify
+  ~ FlyCat is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Affero General Public License as
   ~ published by the Free Software Foundation, either version 3 of the
   ~ License.
@@ -17,10 +17,10 @@
   ~ You should have received a copy of the GNU Affero General Public License
   ~ along with this program. If not, see <https://www.gnu.org/licenses/>.
   ~
-  ~ Copyright (c)  yumeyucca 2025.
+  ~ Copyright (c)  YumeLira 2025.
   ~
   -->
 
 <resources>
-    <color name="color_yumebox">#1E4376</color>
+    <color name="color_flycat">#1E4376</color>
 </resources>

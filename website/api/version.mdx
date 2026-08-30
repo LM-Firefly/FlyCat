@@ -1,0 +1,47 @@
+---
+title: 版本信息
+sidebarTitle: 版本信息
+---
+
+## 获取版本信息
+
+<RequestExample>
+```bash GET /version
+curl http://127.0.0.1:9093/version
+```
+</RequestExample>
+
+`GET /version`
+
+返回内核版本、操作系统和架构信息。
+
+### 响应
+
+<ResponseField name="200" type="object">
+  | 字段 | 类型 | 说明 |
+  | --- | --- | --- |
+  | `version` | string | mihomo 版本号 |
+  | `meta` | boolean | 是否为 Meta 内核 |
+</ResponseField>
+
+---
+
+## 连通性检查
+
+<RequestExample>
+```bash GET /
+curl http://127.0.0.1:9093/
+```
+</RequestExample>
+
+`GET /`
+
+检查外部控制器是否可访问。
+
+### 响应
+
+<ResponseField name="200" type="object">
+  | 字段 | 类型 | 示例 |
+  | --- | --- | --- |
+  | `hello` | string | `mihomo` |
+</ResponseField>

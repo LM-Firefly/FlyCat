@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,19 +15,18 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-@file:Suppress("UnusedSymbol")
-
-package com.github.yumeyucca.yumebox.core.model
-
+package com.github.lmfirefly.flycat.core.model
 
 enum class GeoFileType {
     GeoIP,
     GeoSite,
     Country,
     ASN,
+    Model,
 }
 
 data class GeoXItem(

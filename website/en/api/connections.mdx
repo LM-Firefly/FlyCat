@@ -1,0 +1,91 @@
+---
+title: Connections
+sidebarTitle: Connections
+---
+
+## Get Connections
+
+<RequestExample>
+```bash GET /connections
+curl http://127.0.0.1:9093/connections
+```
+</RequestExample>
+
+`GET /connections`
+
+Returns information about all active connections.
+
+### Query Parameters
+
+<ParamField query="interval" type="integer">
+  Auto-refresh interval in seconds.
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="object">
+  | Field | Type | Description |
+  | --- | --- | --- |
+  | `downloadTotal` | integer | Total download bytes |
+  | `uploadTotal` | integer | Total upload bytes |
+  | `connections` | array | Connection list |
+
+  Each connection object:
+
+  | Field | Type | Description |
+  | --- | --- | --- |
+  | `id` | string | Connection ID |
+  | `metadata` | object | Source/dest address, protocol, process, etc. |
+  | `upload` | integer | Uploaded bytes |
+  | `download` | integer | Downloaded bytes |
+  | `start` | string | Connection start time |
+  | `chains` | string[] | Proxy chain |
+  | `rule` | string | Matched rule type |
+  | `rulePayload` | string | Matched rule payload |
+</ResponseField>
+
+---
+
+## Close All Connections
+
+<RequestExample>
+```bash DELETE /connections
+curl -X DELETE http://127.0.0.1:9093/connections
+```
+</RequestExample>
+
+`DELETE /connections`
+
+Closes all active connections.
+
+### Response
+
+<ResponseField name="204" type="null">
+  Successfully closed.
+</ResponseField>
+
+---
+
+## Close Connection by ID
+
+<RequestExample>
+```bash DELETE /connections/{id}
+curl -X DELETE http://127.0.0.1:9093/connections/abc123
+```
+</RequestExample>
+
+`DELETE /connections/{id}`
+
+Closes a specific connection by ID.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Connection ID.
+</ParamField>
+
+### Response
+
+<ResponseField name="204" type="null">
+  Successfully closed.
+</ResponseField>

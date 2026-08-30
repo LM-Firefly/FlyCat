@@ -15,7 +15,6 @@ ProfilesPage = {
     Sheet = {
         AddTitle = "プロファイルを追加"
         EditTitle = "プロファイルを編集"
-        Complete = "完了"
     }
 
     Type = {
@@ -101,6 +100,9 @@ ProfilesPage = {
 
     SettingsDialog = {
         Title = "購読設定"
+        SectionType = "設定種別"
+        SectionSubscription = "購読情報"
+        SectionOverride = "上書き設定"
         ChangeLink = "購読リンクを変更"
         CustomRouting = "カスタムルーティング"
         CustomRoutingSummary = "独立したルーティングルール"
@@ -108,11 +110,25 @@ ProfilesPage = {
         EditProfile = "プロファイルを編集"
         OpenConfig = "エディターで開く"
         EditSettings = "購読設定"
-        SectionType = "設定種別"
-        SectionSubscription = "購読情報"
-        SectionOverride = "上書き設定"
         SaveFailed = "プロファイルの保存に失敗しました"
         ConfigMissing = "設定が見つかりません: %s"
         AgeSecretKey = "Age 秘密鍵"
+    }
+
+    AgeKey = {
+        PublicKey = "Age 公開鍵"
+        SecretKey = "Age 秘密鍵"
+        PublicKeyPlaceholder = "age1..."
+        DerivePublicKey = "公開鍵を導出"
+        CopyPublicKey = "公開鍵をコピー"
+        GenerateSecretKey = "秘密鍵を生成"
+        CopySecretKey = "秘密鍵をコピー"
+        HideKey = "キーを隠す"
+        ShowKey = "キーを表示"
+        GeneratedPublicKey = "Age 公開鍵を生成しました: %s"
+        CopiedPublicKey = "Age 公開鍵をコピーしました: %s"
+        GeneratedSecretKey = "Age 秘密鍵を生成しました: %s"
+        CopiedSecretKey = "Age 秘密鍵をコピーしました: %s"
+        GenerateFailed = "生成に失敗しました"
     }
 }

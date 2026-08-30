@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,29 +15,23 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
 plugins {
-    id("com.android.library")
-    kotlin("plugin.compose")
+    id("flycat-compose-library")
     kotlin("plugin.serialization")
 }
 
 android {
-    namespace = "com.github.yumeyucca.yumebox.feature.substore"
-
-    buildFeatures {
-        compose = true
-    }
+    namespace = "com.github.lmfirefly.flycat.feature.substore"
 }
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":common"))
     implementation(project(":locale"))
     implementation(project(":ui"))
-    implementation(project(":data"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -49,12 +43,16 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.okhttp)
     implementation(libs.commons.compress)
     implementation(libs.xz)
     implementation(libs.javet.node.android)
     implementation(libs.timber)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)
+    implementation(libs.miuix.icons)
+    implementation(libs.sketch.compose)
+    implementation(libs.androidx.activity.compose)
 }

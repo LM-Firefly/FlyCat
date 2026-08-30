@@ -1,0 +1,94 @@
+---
+title: Upgrade
+sidebarTitle: Upgrade
+---
+
+## Upgrade Kernel
+
+<RequestExample>
+```bash POST /upgrade
+curl -X POST http://127.0.0.1:9093/upgrade
+```
+</RequestExample>
+
+`POST /upgrade`
+
+Checks and updates the mihomo kernel to the latest version.
+
+### Query Parameters
+
+<ParamField query="channel" type="string">
+  Update channel, e.g. `alpha`, `meta`.
+</ParamField>
+
+<ParamField query="force" type="boolean">
+  Force update even if already on the latest version.
+</ParamField>
+
+### Request Body
+
+<ParamField body="path" type="string">
+  Config file path.
+</ParamField>
+
+<ParamField body="payload" type="string">
+  Pass config content directly.
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="object">
+  Update result with new version info.
+</ResponseField>
+
+---
+
+## Upgrade UI
+
+<RequestExample>
+```bash POST /upgrade/ui
+curl -X POST http://127.0.0.1:9093/upgrade/ui
+```
+</RequestExample>
+
+`POST /upgrade/ui`
+
+Updates the management UI (if external-ui is configured).
+
+### Response
+
+<ResponseField name="200" type="object">
+  Update result.
+</ResponseField>
+
+---
+
+## Upgrade GEO Database
+
+<RequestExample>
+```bash POST /upgrade/geo
+curl -X POST http://127.0.0.1:9093/upgrade/geo \
+  -H "Content-Type: application/json" \
+  -d '{"path": ""}'
+```
+</RequestExample>
+
+`POST /upgrade/geo`
+
+Updates GeoIP, GeoSite, and other databases.
+
+### Request Body
+
+<ParamField body="path" type="string">
+  Config file path.
+</ParamField>
+
+<ParamField body="payload" type="string">
+  Pass config content directly.
+</ParamField>
+
+### Response
+
+<ResponseField name="204" type="null">
+  Update successful.
+</ResponseField>

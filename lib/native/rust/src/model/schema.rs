@@ -1,4 +1,4 @@
-//! Identifiers for the known mihomo config schemas and how their fields merge.
+//! Config schema identifiers used for field ordering and merge rules.
 
 #[derive(Clone, Copy, Debug)]
 pub enum SchemaId {

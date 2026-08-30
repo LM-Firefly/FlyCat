@@ -2,9 +2,8 @@
 Component = {
     ProfileCard = {
         Update = "更新"
-        Export = "エクスポート"
-        Edit = "編集"
         Delete = "削除"
+        Edit = "編集"
         RemoteSubscription = "リモート購読"
         LocalFile = "ローカルファイル"
         LocalConfig = "ローカル設定"
@@ -18,6 +17,16 @@ Component = {
         MinutesAgo = "%d 分前"
         HoursAgo = "%d 時間前"
         DaysAgo = "%d 日前"
+    }
+
+    Action = {
+        Export = "エクスポート"
+        Delete = "削除"
+        Update = "更新"
+        Edit = "編集"
+        Cancel = "キャンセル"
+        Reset = "リセット"
+        Add = "追加"
     }
 
     WebView = {
@@ -60,10 +69,45 @@ Component = {
         Starting = "開始中..."
     }
 
+    Update = {
+        Action = {
+            DownloadNow = "今すぐダウンロード"
+        }
+        Title = {
+            Available = "新しいバージョンがあります"
+        }
+        Message = {
+            Available = "新しい更新があります"
+            SelectPackage = "ダウンロードパッケージを選択"
+            Tag = "タグ"
+            PackageUniversal = "Universal"
+            PackageExtension = "WithExtension"
+            PackageStandard = "Standard"
+            CurrentVersion = "現在のバージョン"
+            RemoteVersion = "対象バージョン"
+            Preparing = "ダウンロードを準備中..."
+            DownloadingWithProgress = "更新パッケージをダウンロード中 %d%%"
+            Downloading = "更新パッケージをダウンロード中..."
+            DownloadReady = "ダウンロード完了、インストール準備OK"
+            Error = "ダウンロードに失敗しました。後でもう一度お試しください"
+            Checking = "更新を確認中..."
+            NoUpdate = "最新バージョンです"
+            CheckFailed = "更新の確認に失敗しました: %s"
+            MissingReleaseMetadata = "最新リリースに更新メタデータがありません"
+            NoCompatibleAsset = "最新リリースに互換性のある APK が見つかりません"
+            DownloadAlreadyRunning = "更新パッケージはダウンロード中です"
+            InstallPromptOpened = "ダウンロード完了、インストーラーを開きました"
+            InstallFailed = "インストーラーを開けませんでした: %s"
+        }
+    }
 
     ConfigInput = {
-        PortLabel = "ポート (空欄で変更しない)"
+        PortLabel = "ポート（空欄で変更しない）"
         CountItems = "%d 件"
+        Replace = "置換"
+        ReplaceSummary = "辞書全体を置換"
+        Merge = "マージ"
+        MergeSummary = "一致するキーの値を上書き"
     }
 
     BottomBar = {
@@ -102,6 +146,12 @@ Component = {
             TargetDirect = "DIRECT"
             TargetMatch = "MATCH"
             ErrorContentRequired = "ルール内容は空にできません"
+        }
+        ConfigPreview = {
+            Title = "設定プレビュー"
+            Format = "フォーマット"
+            Save = "保存"
+            SaveFailed = "保存に失敗しました"
         }
     }
 }

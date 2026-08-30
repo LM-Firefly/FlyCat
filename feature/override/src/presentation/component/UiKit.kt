@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,19 +15,29 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-@file:Suppress("UnusedSymbol", "FunctionName")
+package com.github.lmfirefly.flycat.feature.override.presentation.component
 
-package com.github.yumeyucca.yumebox.presentation.component
-
-
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,17 +45,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.github.yumeyucca.yumebox.presentation.icon.Yume
-import com.github.yumeyucca.yumebox.presentation.icon.yume.chevron
-import com.github.yumeyucca.yumebox.presentation.theme.AppTheme
-import com.github.yumeyucca.yumebox.presentation.component.OemTextField
-import com.github.yumeyucca.yumebox.presentation.theme.UiDp
-import top.yukonga.miuix.kmp.basic.*
+import com.github.lmfirefly.flycat.presentation.component.card.Card
+import com.github.lmfirefly.flycat.presentation.component.misc.Title
+import com.github.lmfirefly.flycat.presentation.icon.FlyCat
+import com.github.lmfirefly.flycat.presentation.icon.flycat.chevron
+import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-val OverrideSectionSpacing = UiDp.dp12
-val OverrideSectionTitleSpacing = UiDp.dp8
-val OverrideSectionBottomSpacing = UiDp.dp32
 
 enum class OverrideActionTone {
     Neutral,
@@ -104,9 +115,7 @@ fun OverrideFormFieldColumn(modifier: Modifier = Modifier, content: @Composable 
     val spacing = AppTheme.spacing
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = spacing.space12),
+        modifier = modifier.fillMaxWidth().padding(horizontal = spacing.space12),
         verticalArrangement = Arrangement.spacedBy(spacing.space12),
     ) {
         content()
@@ -124,7 +133,7 @@ fun OverrideFormField(
     maxLines: Int = 1,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        OemTextField(
+        TextField(
             value = value,
             onValueChange = onValueChange,
             label = label,
@@ -160,7 +169,7 @@ fun OverrideFieldAssistText(text: String, color: Color, modifier: Modifier = Mod
 
 @Composable
 fun OverrideSelectorCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    AppCard(modifier = modifier, insideMargin = PaddingValues(), content = content)
+    Card(modifier = modifier, insideMargin = PaddingValues(), content = content)
 }
 
 @Composable
@@ -183,13 +192,11 @@ fun OverrideSectionCardHeader(
     BasicComponent(
         title = title,
         summary = summary.orEmpty(),
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = sizes.sectionHeaderMinHeight),
+        modifier = Modifier.fillMaxWidth().heightIn(min = sizes.sectionHeaderMinHeight),
         endActions = {
             if (showIndicator) {
                 Icon(
-                    imageVector = Yume.chevron,
+                    imageVector = FlyCat.chevron,
                     contentDescription = null,
                     tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
                     modifier = Modifier.rotate(indicatorRotation.value),
@@ -241,8 +248,7 @@ fun OverrideAdvancedCard(
         OverrideSectionVisibility(visible = expanded) {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
+                    Modifier.fillMaxWidth()
                         .padding(
                             start = spacing.space16,
                             end = spacing.space16,
@@ -271,17 +277,17 @@ fun OverrideCardActionIconButton(
         when (tone) {
             OverrideActionTone.Neutral -> {
                 colorScheme.secondaryContainer.copy(alpha = 0.78f) to
-                        colorScheme.onSurface.copy(alpha = if (enabled) 0.85f else 0.45f)
+                    colorScheme.onSurface.copy(alpha = if (enabled) 0.85f else 0.45f)
             }
 
             OverrideActionTone.Primary -> {
                 colorScheme.primary.copy(alpha = 0.1f) to
-                        colorScheme.primary.copy(alpha = if (enabled) 1f else 0.45f)
+                    colorScheme.primary.copy(alpha = if (enabled) 1f else 0.45f)
             }
 
             OverrideActionTone.Danger -> {
                 colorScheme.error.copy(alpha = 0.1f) to
-                        colorScheme.error.copy(alpha = if (enabled) 1f else 0.45f)
+                    colorScheme.error.copy(alpha = if (enabled) 1f else 0.45f)
             }
         }
 

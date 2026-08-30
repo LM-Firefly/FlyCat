@@ -15,7 +15,6 @@ ProfilesPage = {
     Sheet = {
         AddTitle = "Добавить профиль"
         EditTitle = "Изменить профиль"
-        Complete = "Готово"
     }
 
     Type = {
@@ -101,18 +100,35 @@ ProfilesPage = {
 
     SettingsDialog = {
         Title = "Настройки подписки"
+        SectionType = "Тип настроек"
+        SectionSubscription = "Сведения о подписке"
+        SectionOverride = "Переопределение"
         ChangeLink = "Изменить ссылку подписки"
         CustomRouting = "Своя маршрутизация"
         CustomRoutingSummary = "Отдельные правила маршрутизации"
         NoDescription = "Описание не задано"
         EditProfile = "Изменить профиль"
-        OpenConfig = "Открыть в редакторе"
-        EditSettings = "Настройки подписки"
-        SectionType = "Тип настроек"
-        SectionSubscription = "Сведения о подписке"
-        SectionOverride = "Переопределение"
+        OpenConfig = "Открыть конфигурацию"
+        EditSettings = "Изменить настройки"
         SaveFailed = "Не удалось сохранить профиль"
         ConfigMissing = "Конфигурация не найдена: %s"
         AgeSecretKey = "Секретный ключ Age"
+    }
+
+    AgeKey = {
+        PublicKey = "Открытый ключ Age"
+        SecretKey = "Секретный ключ Age"
+        PublicKeyPlaceholder = "age1..."
+        DerivePublicKey = "Вывести открытый ключ"
+        CopyPublicKey = "Копировать открытый ключ"
+        GenerateSecretKey = "Сгенерировать секретный ключ"
+        CopySecretKey = "Копировать секретный ключ"
+        HideKey = "Скрыть ключ"
+        ShowKey = "Показать ключ"
+        GeneratedPublicKey = "Открытый ключ Age сгенерирован: %s"
+        CopiedPublicKey = "Открытый ключ Age скопирован: %s"
+        GeneratedSecretKey = "Секретный ключ Age сгенерирован: %s"
+        CopiedSecretKey = "Секретный ключ Age скопирован: %s"
+        GenerateFailed = "Генерация не удалась"
     }
 }

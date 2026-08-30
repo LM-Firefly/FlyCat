@@ -6,11 +6,26 @@ NetworkSettings = {
         VpnOptions = "Service Options"
         Advanced = "Advanced"
         ProxyOptions = "Access Control"
-        Kernel = "Kernel"
+        Kernel = "Kernel Management"
     }
 
     Advanced = {
         DisableOverrideTitle = "Disable All Overrides"
+    }
+
+    Kernel = {
+        ActiveTitle = "Active Kernel"
+        RefreshTitle = "Check for Updates"
+        CustomTitle = "Install Custom Kernel"
+        BundledAlpha = "Bundled Alpha"
+        RestartHint = "App restart required after switching kernel"
+        RestartDialogTitle = "Kernel Switched"
+        RestartDialogMessage = "The new kernel will take effect on next launch. Restart now?"
+        ActiveTag = "√ Active"
+        DownloadingTag = "Downloading..."
+        InstalledTag = "Installed"
+        PluginFormatTitle = "Plugin Format"
+        PluginFormatBody = "Requires a .zip file containing:\n • kernel-index.json\n • kernel-{id}.so.xz\nThe index must specify release.kind = \"custom\" and builder.format = \"kernel-plugin-v1\".\nOnly HTTPS URLs are accepted.\nExample: https://github.com/LM-Firefly/Kernel-Builder"
     }
 
     RunMode = {
@@ -23,58 +38,52 @@ NetworkSettings = {
         EbpfSummary = "Root eBPF proxy"
     }
 
+    EbpfOptions = {
+        BypassCnTitle = "Bypass China IPs"
+        BypassCnSummary = "eBPF listener bypasses China IP rule set"
+    }
+
     VpnOptions = {
         BypassPrivateTitle = "Bypass Private Networks"
         DnsHijackTitle = "DNS Hijack"
         AllowBypassTitle = "Allow App Bypass"
         EnableIpv6Title = "Enable IPv6"
         SystemProxyTitle = "VPN Built-in System Proxy"
-    }
-
-    EbpfOptions = {
-        BypassCnTitle = "Bypass mainland China IPs in kernel"
-    }
-
-    TunOptions = {
-        Title = "Tun Options"
-        IfNameTitle = "Virtual NIC"
-        MtuTitle = "MTU"
-        StackTitle = "Network Stack"
-        StackSystem = "System"
-        StackGVisor = "gVisor"
-        StackMixed = "Mixed"
-        AutoRouteTitle = "Auto Route"
-        StrictRouteTitle = "Strict Route"
-        AutoRedirectTitle = "Auto Redirect"
-        DnsModeTitle = "DNS Mode"
-        DnsRedirHost = "RedirHost"
-        DnsFakeIp = "FakeIP"
-        Ipv6Title = "Enable IPv6"
-    }
-
-
-    Kernel = {
-        ActiveTitle = "Active kernel"
-        BundledAlpha = "Builtin"
-        RefreshTitle = "Get latest kernels"
-        DownloadTitle = "Remote kernels"
-        FetchButton = "Get latest"
-        DownloadButton = "Download"
-        CustomTitle = "Custom kernel"
-        CustomMethodTitle = "Import method"
-        CustomUrlMethod = "Enter plugin URL"
-        CustomFileMethod = "Upload plugin"
-        CustomUrlLabel = "Plugin URL"
-        CustomChooseFile = "Choose plugin file"
-        CustomInstallButton = "Install and enable"
+        TunStackTitle = "TUN Stack"
+        TunStackSystem = "System"
+        TunStackGVisor = "GVisor"
+        TunStackMixed = "Mixed"
     }
 
     ProxyOptions = {
+        TunStackTitle = "TUN Stack"
         AccessControlModeTitle = "Access Control Mode"
         AllowAll = "Allow All"
         AllowSelected = "Allow Selected"
         RejectSelected = "Reject Selected"
         ManageAccessControlTitle = "Manage Access Control"
+    }
+
+    RootTun = {
+        IfNameTitle = "Interface Name"
+        IfNameSummary = "Virtual interface name created by RootTun"
+        MtuTitle = "MTU"
+        MtuSummary = "Maximum transmission unit used by RootTun"
+        AutoRouteTitle = "Auto Route"
+        StrictRouteTitle = "Strict Route"
+        AutoRedirectTitle = "Auto Redirect"
+        DnsModeTitle = "DNS Mode"
+        DnsModeRedirHost = "RedirHost"
+        DnsModeFakeIp = "FakeIP"
+        FakeIpRangeTitle = "FakeIP IPv4 Range"
+        FakeIpRangeSummary = "Only effective when DNS mode is FakeIP"
+        FakeIpRange6Title = "FakeIP IPv6 Range"
+        FakeIpRange6Summary = "Only effective when DNS mode is FakeIP"
+    }
+
+    Error = {
+        VpnDenied = "VPN permission denied"
+        RootRequired = "RootTun requires FlyCat to have working root access"
     }
 
     WifiAutomation = {
@@ -100,7 +109,7 @@ NetworkSettings = {
         EmptyRules = "No Wi-Fi rules"
         VpnOnly = "Wi-Fi automation is available only in VPN mode"
         PermissionTitle = "Allow reading Wi-Fi name"
-        PermissionMessage = "Android treats Wi-Fi names as location-sensitive information. YumeBox uses precise location only when you enable automation or tap Scan Wi-Fi, to match rules on this device or show scan results. It does not read GPS or upload Wi-Fi names."
+        PermissionMessage = "Android treats Wi-Fi names as location-sensitive information. FlyCat uses precise location only when you enable automation or tap Scan Wi-Fi, to match rules on this device or show scan results. It does not read GPS or upload Wi-Fi names."
         ApproximateTitle = "Precise location is required"
         ApproximateMessage = "Approximate location still hides the Wi-Fi name. Allow precise location to continue."
         DeniedTitle = "Location permission is required"
@@ -108,7 +117,7 @@ NetworkSettings = {
         SettingsTitle = "Enable location permission in Settings"
         SettingsMessage = "Android will no longer show this permission request. In App info > Permissions > Location, choose Allow only while using the app and enable precise location."
         LocationTitle = "Turn on system location"
-        LocationMessage = "Android hides Wi-Fi names while system location is off. YumeBox does not read GPS."
+        LocationMessage = "Android hides Wi-Fi names while system location is off. FlyCat does not read GPS."
         Grant = "Grant permission"
         OpenSettings = "Open settings"
         TurnOnLocation = "Turn on location"
@@ -116,10 +125,5 @@ NetworkSettings = {
         Duplicate = "This Wi-Fi is already in the rules"
         NoWifi = "No Wi-Fi connection found"
         Unavailable = "Wi-Fi name is unavailable. Check location permission and system location."
-    }
-
-    Error = {
-        VpnDenied = "VPN permission denied"
-        RootRequired = "Root mode requires YumeBox to have working root access"
     }
 }

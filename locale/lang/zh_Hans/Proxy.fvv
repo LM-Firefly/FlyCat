@@ -10,7 +10,6 @@ Proxy = {
         Panel = "面板"
         Test = "测试"
         Sort = "排序"
-        LocateCurrent = "定位当前节点"
     }
 
     Node = {

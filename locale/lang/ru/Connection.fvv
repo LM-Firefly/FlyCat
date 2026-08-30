@@ -10,6 +10,7 @@ Connection = {
 
     Search = "Поиск"
     SearchHint = "Поиск хоста, процесса..."
+    CloseAll = "Закрыть все соединения"
 
     SortBy = "Сортировка:"
     Sort = {
@@ -30,8 +31,6 @@ Connection = {
     }
 
     Detail = {
-        Title = "Сведения о соединении"
-
         Action = {
             Interrupting = "Прерывание соединения..."
             Interrupt = "Прервать соединение"
@@ -40,11 +39,9 @@ Connection = {
         Section = {
             Info = "Информация о соединении"
             Rule = "Правило"
-            Chain = "Цепочка прокси"
         }
 
         Label = {
-            Host = "Хост"
             Protocol = "Протокол"
             Process = "Процесс"
             SourceAddress = "Адрес источника"
@@ -54,11 +51,15 @@ Connection = {
             Download = "Загрузка"
             Type = "Тип"
             Content = "Содержимое"
-            Chain = "Цепочка"
         }
     }
 
     Loading = "Загрузка..."
     Empty = "Нет активных соединений"
     NoResults = "Нет подходящих соединений"
+
+    Topology = {
+        EmptyMessage = "Нет активных соединений. Нажмите, чтобы открыть подробности"
+        OpenPage = "Открыть страницу соединений"
+    }
 }

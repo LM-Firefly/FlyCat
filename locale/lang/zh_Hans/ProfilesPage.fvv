@@ -15,7 +15,6 @@ ProfilesPage = {
     Sheet = {
         AddTitle = "添加配置文件"
         EditTitle = "编辑配置文件"
-        Complete = "完成"
     }
 
     Type = {
@@ -101,18 +100,35 @@ ProfilesPage = {
 
     SettingsDialog = {
         Title = "订阅设置"
+        SectionType = "设置类型"
+        SectionSubscription = "订阅信息"
+        SectionOverride = "覆写配置"
         ChangeLink = "更改订阅链接"
         CustomRouting = "自定义分流"
         CustomRoutingSummary = "独立的分流规则"
         NoDescription = "未设置说明"
         EditProfile = "编辑配置"
-        OpenConfig = "编辑器打开"
-        EditSettings = "订阅设置"
-        SectionType = "设置类型"
-        SectionSubscription = "订阅信息"
-        SectionOverride = "覆写配置"
+        OpenConfig = "打开配置"
+        EditSettings = "编辑设置"
         SaveFailed = "保存配置失败"
         ConfigMissing = "配置不存在：%s"
         AgeSecretKey = "Age 私钥"
+    }
+
+    AgeKey = {
+        PublicKey = "age 公钥"
+        SecretKey = "age 私钥"
+        PublicKeyPlaceholder = "age1..."
+        DerivePublicKey = "派生公钥"
+        CopyPublicKey = "复制公钥"
+        GenerateSecretKey = "生成私钥"
+        CopySecretKey = "复制私钥"
+        HideKey = "隐藏密钥"
+        ShowKey = "显示密钥"
+        GeneratedPublicKey = "已生成 age 公钥：%s"
+        CopiedPublicKey = "已复制 age 公钥：%s"
+        GeneratedSecretKey = "已生成 age 私钥：%s"
+        CopiedSecretKey = "已复制 age 私钥：%s"
+        GenerateFailed = "生成失败"
     }
 }

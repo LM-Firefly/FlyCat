@@ -1,0 +1,81 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+package com.github.lmfirefly.flycat.data.controller
+
+import com.github.lmfirefly.flycat.core.contract.NetworkSettingsControllerContract
+import com.github.lmfirefly.flycat.core.contract.Preference
+import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
+import com.github.lmfirefly.flycat.data.store.NetworkSettingsStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+class NetworkSettingsController(
+    private val store: NetworkSettingsStore,
+    private val isRunning: () -> Boolean,
+    private val commandExecutor: NetworkSettingsCommandExecutor,
+) : NetworkSettingsControllerContract, java.io.Closeable {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var restartJob: Job? = null
+    override fun close() { scope.cancel() }
+
+    override fun setRunMode(mode: RunMode) {
+        store.runMode.set(mode)
+    }
+
+    override fun <T> setAndRestartIfNeeded(preference: Preference<T>, value: T) {
+        if (preference.value == value) return
+        preference.set(value)
+        scheduleRestart()
+    }
+
+    override suspend fun startService(mode: RunMode): Result<Unit> = runCatching {
+        commandExecutor.startService(mode).getOrThrow()
+    }
+
+    override fun requestRestartIfRunning() {
+        scheduleRestart()
+    }
+
+    private fun scheduleRestart() {
+        restartJob?.cancel()
+        restartJob = scope.launch {
+            delay(RESTART_DEBOUNCE_DELAY_MS)
+            if (!isRunning()) return@launch
+            commandExecutor.restartConfiguredService()
+        }
+    }
+
+    companion object {
+        private const val RESTART_DEBOUNCE_DELAY_MS = 300L
+    }
+}
+
+class NetworkSettingsCommandExecutor(private val store: NetworkSettingsStore, private val restartProxy: suspend (RunMode) -> Unit, private val beforeRestart: suspend (RunMode) -> Unit = {}) {
+    suspend fun startService(mode: RunMode): Result<Unit> = runCatching { store.runMode.set(mode); beforeRestart(mode); withContext(Dispatchers.IO) { restartProxy(mode) } }
+    suspend fun restartConfiguredService(): Result<Unit> { val targetMode = store.runMode.value; return startService(targetMode) }
+}

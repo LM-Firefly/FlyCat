@@ -1,0 +1,63 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+package com.github.lmfirefly.flycat.feature.home.presentation.screen
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import com.github.lmfirefly.flycat.core.model.IpMonitoringState
+import com.github.lmfirefly.flycat.core.model.traffic.TrafficData
+import com.github.lmfirefly.flycat.core.model.tunnel.TunnelState
+import com.github.lmfirefly.flycat.presentation.theme.UiDp
+
+@Composable
+fun HomeRunningContent(
+    trafficNow: TrafficData,
+    isRunning: Boolean,
+    profileName: String?,
+    tunnelMode: TunnelState.Mode?,
+    serverName: String?,
+    serverPing: Int?,
+    ipMonitoringState: IpMonitoringState,
+    speedHistory: List<TrafficData>,
+    onChartClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isActive: Boolean = true,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth().padding(vertical = UiDp.dp24),
+        verticalArrangement = Arrangement.spacedBy(UiDp.dp32),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp16)) {
+            NodeInfoDisplay(serverName = serverName, serverPing = serverPing)
+
+            IpInfoDisplay(state = ipMonitoringState)
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
+            SpeedChart(speedHistory = speedHistory, isRunning = isRunning, onClick = onChartClick, isActive = isActive)
+        }
+    }
+}

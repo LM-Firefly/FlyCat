@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,36 +15,32 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
 plugins {
-    id("com.android.library")
-    kotlin("plugin.compose")
+    id("flycat-compose-library")
+    kotlin("plugin.serialization")
 }
 
 android {
-    namespace = "com.github.yumeyucca.yumebox.core.ui"
-
-    buildFeatures {
-        compose = true
-    }
+    namespace = "com.github.lmfirefly.flycat.ui"
 }
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":common"))
     implementation(project(":locale"))
-    implementation(project(":data"))
-    implementation(project(":runtime:api"))
+    implementation(libs.timber)
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.decompose)
     implementation(libs.sketch.compose)
@@ -55,7 +51,6 @@ dependencies {
     implementation(libs.sketch.compose.resources)
     implementation(libs.haze)
     implementation(libs.haze.blur)
-    implementation(libs.haze.blur.materials)
     implementation(libs.shapes)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)
