@@ -34,7 +34,7 @@ Onboarding = {
     Privacy = {
         Title = "Подтвердите условия конфиденциальности"
         Subtitle = "Ознакомьтесь и примите условия, чтобы продолжить"
-        RichTextLead = "Перед использованием YumeBox нужно принять условия конфиденциальности."
+        RichTextLead = "Перед использованием FlyCat нужно принять условия конфиденциальности."
         RichTextPrefix = "Перед продолжением ознакомьтесь и примите "
         RichTextConnector = " и "
         RichTextSuffix = "."
@@ -58,7 +58,7 @@ Onboarding = {
     Project = {
         Github = {
             Title = "Репозиторий GitHub"
-            Summary = "github.com/yumeyucca/YumeBox"
+            Summary = "github.com/LM-Firefly/FlyCat"
         }
         Community = {
             Title = "Сообщество"

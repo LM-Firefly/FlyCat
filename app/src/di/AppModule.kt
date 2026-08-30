@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,67 +15,50 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumeyucca.yumebox.di
+package com.github.lmfirefly.flycat.di
 
-import com.github.yumeyucca.yumebox.screen.home.HomeViewModel
-import com.github.yumeyucca.yumebox.screen.log.LogViewModel
-import com.github.yumeyucca.yumebox.screen.profiles.ProfilesViewModel
-import com.github.yumeyucca.yumebox.screen.rules.RulesViewModel
-import com.github.yumeyucca.yumebox.screen.settings.AccessControlViewModel
-import com.github.yumeyucca.yumebox.screen.settings.AppSettingsViewModel
-import com.github.yumeyucca.yumebox.screen.settings.NetworkSettingsViewModel
-import com.github.yumeyucca.yumebox.screen.settings.RemoteControllerViewModel
-import com.github.yumeyucca.yumebox.screen.settings.WifiAutomationViewModel
-import com.github.yumeyucca.yumebox.screen.settings.backup.BackupRepository
-import com.github.yumeyucca.yumebox.screen.settings.backup.BackupRestoreViewModel
-import com.github.yumeyucca.yumebox.screen.settings.backup.BackupStoreAdapter
-import org.koin.android.ext.koin.androidApplication
+import com.github.lmfirefly.flycat.BuildConfig
+import com.github.lmfirefly.flycat.data.di.dataBackupModule
+import com.github.lmfirefly.flycat.data.di.dataStoreModule
+import com.github.lmfirefly.flycat.feature.about.UpdateBuildConfig
+import com.github.lmfirefly.flycat.feature.about.di.featureUpdateModules
+import com.github.lmfirefly.flycat.feature.dashboard.di.featureDashboardModules
+import com.github.lmfirefly.flycat.feature.home.di.featureHomeModules
+import com.github.lmfirefly.flycat.feature.log.di.featureLogModules
+import com.github.lmfirefly.flycat.feature.override.di.featureOverrideModules
+import com.github.lmfirefly.flycat.feature.profiles.di.featureProfilesModules
+import com.github.lmfirefly.flycat.feature.proxy.di.featureProxyModules
+import com.github.lmfirefly.flycat.feature.settings.di.featureSettingsModules
+import com.github.lmfirefly.flycat.feature.substore.di.featureSubStoreModules
+import com.github.lmfirefly.flycat.runtime.service.di.runtimeServiceModule
 import org.koin.core.module.Module
-import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val appIntegrationModule = module {
+val appUpdateModule = module {
     single {
-        BackupStoreAdapter(
-            appSettings = get(),
-            networkSettings = get(),
-            featureSettings = get(),
-            proxyDisplaySettings = get(),
-            profileLinks = get(),
-            remoteController = get(),
-            proxyFacade = get(),
-            mmkvProvider = get(),
+        UpdateBuildConfig(
+            versionName = BuildConfig.VERSION_NAME,
+            updateSource = BuildConfig.UPDATE_SOURCE,
+            uiBuildId = BuildConfig.UI_BUILD_ID,
+            updateRepository = BuildConfig.UPDATE_REPOSITORY,
+            updateMirrorTemplates = BuildConfig.UPDATE_MIRROR_TEMPLATES,
         )
     }
-    single {
-        BackupRepository(
-            application = androidApplication(),
-            proxyFacade = get(),
-            storeAdapter = get(),
-        )
-    }
-}
-
-val appViewModelModule = module {
-    viewModel { AppSettingsViewModel(androidApplication(), get(), get(), get()) }
-    viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get(), get()) }
-    viewModel { ProfilesViewModel(androidApplication(), get(), get()) }
-    viewModel { NetworkSettingsViewModel(androidApplication(), get(), get()) }
-    viewModel { RemoteControllerViewModel(androidApplication(), get(), get()) }
-    viewModel { AccessControlViewModel(androidApplication(), get(), get()) }
-    viewModel { WifiAutomationViewModel(androidApplication(), get()) }
-    viewModel { LogViewModel(androidApplication()) }
-    viewModel { RulesViewModel(androidApplication()) }
-    viewModel { BackupRestoreViewModel(androidApplication(), get()) }
 }
 
 val appModule: List<Module> =
     coreDiModules +
-            listOf(appIntegrationModule, appViewModelModule) +
-            featureSubStoreModules +
-            featureProxyModules +
-            featureOverrideModules +
-            featureMetaModules
+        listOf(dataStoreModule, dataBackupModule, runtimeServiceModule, appUpdateModule) +
+        featureUpdateModules +
+        featureHomeModules +
+        featureLogModules +
+        featureProfilesModules +
+        featureSettingsModules +
+        featureSubStoreModules +
+        featureProxyModules +
+        featureOverrideModules +
+        featureDashboardModules

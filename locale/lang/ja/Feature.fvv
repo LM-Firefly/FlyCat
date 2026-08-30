@@ -4,24 +4,29 @@ Feature = {
 
     ServiceStatus = {
         Section = "サービス状態"
+        Running = "サービス実行中: %s"
+        NeedExtension = "拡張機能が必要です"
+        NeedSubStore = "Sub-Store リソースが必要です"
+        NotRunning = "サービスが停止しています"
         SwitchStartSubStore = "Sub-Store サービスを開始"
-        OpenSubStorePanel = "Sub-Store パネルを開く"
         AllowLan = "LAN アクセスを許可"
-        AutoCloseModeTitle = "自動クローズタイマー"
+        AllowLanSummary = "LAN デバイスの Sub-Store へのアクセスを許可"
+        AutoCloseModeSummary = "サービスの自動クローズ時間を選択。長時間実行はパフォーマンスに影響します"
         AutoCloseModeAlwaysOn = "常時オン"
         AutoCloseMode5Min = "5 分"
         AutoCloseMode10Min = "10 分"
         AutoClosed = "Sub-Store を自動クローズしました"
+        AutoCloseModeDisabled = "無効"
     }
 
     Panel = {
         Section = "パネル選択"
         SelectPanel = "パネルを選択"
-        OpenMode = "パネルプロトコル"
-        OpenPanel = "外部パネルを開く"
+        Protocol = "プロトコル"
+        OpenPanel = "パネルを開く"
         Unknown = "不明なパネル"
         CreateShortcut = "デスクトップショートカットを作成"
-        CreateShortcutSummary = "現在のパネルをホーム画面に追加し、サイトアイコンを使用"
+        CreateShortcutSummary = "現在のパネルをホーム画面にサイトアイコン付きで追加"
         ShortcutTitle = "ショートカットを作成"
         ShortcutName = "名前"
         ShortcutPickIcon = "アイコンを選択"
@@ -32,61 +37,43 @@ Feature = {
         Section = "外部制御"
         ModeTitle = "外部コントローラーモード"
         ControlBackend = "制御バックエンド"
+        Protocol = "プロトコル"
         AddBackend = "バックエンドを追加"
         EditBackend = "バックエンドを編集"
         Name = "名前"
         Host = "IP / ホスト"
         Port = "ポート"
         Secret = "シークレット（任意）"
-        Protocol = "プロトコル"
         PortRangeError = "ポートは 1-65535 の範囲である必要があります"
-        Connected = "接続しました：モード %s"
-        ConnectionFailed = "接続に失敗しました：%s"
         Delete = "削除"
     }
 
     SubStore = {
-        Section = "Sub-Store リソース"
-        JavetLibraryReady = "ランタイムの準備完了"
-        JavetLibraryDownload = "ランタイムをダウンロードしてインストール"
-        JavetAvailable = "更新を確認"
-        DownloadHint = "タップしてランタイムをインストール"
+        SectionHint = "Sub-Store リソースのダウンロード。拡張機能と静的リソースの両方が必要です。"
+        ExtensionInstalled = "拡張機能はインストール済み"
+        ExtensionInstall = "拡張機能をインストール"
+        JavetAvailable = "Javet ライブラリは利用可能です。タップして状態を更新"
+        JavetPending = "拡張機能はインストール済み、Javet は展開待ちです。タップして状態を更新"
+        DownloadHint = "タップして拡張機能をダウンロード"
+        DownloadJavet = "Javet ランタイムをダウンロード"
+        Downloading = "ダウンロード中..."
         JavetDownloadSuccess = "ランタイムをインストールしました"
         JavetDownloadFailed = "ランタイムのインストールに失敗しました"
         DownloadResources = "リソースをダウンロード"
-        DownloadResourcesSummary = "リソースファイルをダウンロード"
+        DownloadResourcesSummary = "フロントエンドとバックエンドをまとめてダウンロード"
         Not32Bit = "Sub-Store は 32 ビット端末に対応していません"
+        InstallExtension = "先に拡張機能をインストールしてください"
         DownloadSubStoreFirst = "先に Sub-Store リソースをダウンロードしてください"
-        JavetNotReady = "先にランタイムをインストールしてください"
+        JavetNotReady = "Javet ライブラリの準備ができていません。拡張機能が正しくインストールされているか確認してください"
         FrontendDownloadSuccess = "Sub-Store フロントエンドのダウンロードが完了しました"
         FrontendDownloadFailed = "Sub-Store フロントエンドのダウンロードに失敗しました"
         BackendDownloadSuccess = "Sub-Store バックエンドのダウンロードが完了しました"
         BackendDownloadFailed = "Sub-Store バックエンドのダウンロードに失敗しました"
         DownloadError = "ダウンロードエラー: %s"
-    }
-
-    BackupRestore = {
-        Section = "データバックアップ"
-        ExportTitle = "バックアップを書き出し"
-        ExportSummary = "設定、プロファイル、上書き、Sub-Store データを書き出します"
-        RestoreTitle = "バックアップを復元"
-        RestoreSummary = "バックアップファイルを選び、現在の設定を置き換えます"
-        Cancel = "キャンセル"
-
-        RestoreDialog = {
-            Title = "バックアップを復元しますか？"
-            Message = "復元するとプロキシと Sub-Store が停止し、現在の設定、プロファイル、上書き、Sub-Store データが置き換えられます."
-        }
-
-        Message = {
-            ExportSuccess = "バックアップをエクスポートしました."
-            RestoreSuccess = "復元が完了しました.すべての画面を更新するにはアプリを再起動してください."
-        }
-
-        Error = {
-            OpenOutputFailed = "バックアップファイルを書き込めません"
-            OpenInputFailed = "バックアップファイルを読み込めません"
-            OperationFailed = "操作に失敗しました: %s"
-        }
+        Title = "Sub-Store"
+        PortOccupied = "ポート %s または %s は既に使用中です"
+        JavetLoadFailed = "Javet ネイティブライブラリの読み込みに失敗しました"
+        CaseEngineInitFailed = "CaseEngine の初期化に失敗しました"
+        FrontendExtractFailed = "Sub-Store フロントエンドリソースの展開に失敗しました"
     }
 }

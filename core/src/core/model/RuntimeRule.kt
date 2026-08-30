@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,16 +15,18 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumeyucca.yumebox.core.model
+package com.github.lmfirefly.flycat.core.model
 
 import kotlinx.serialization.Serializable
 
 /**
- * One entry from the mihomo `GET /rules` endpoint (runtime rule table). [disabled] is temporary and
- * cleared when the core restarts.
+ * One entry from mihomo runtime `GET /rules`.
+ *
+ * [disabled] is a runtime flag and resets when the core restarts.
  */
 @Serializable
 data class RuntimeRule(

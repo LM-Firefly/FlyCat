@@ -1,24 +1,33 @@
 <Providers Page>
 Providers = {
     Title = "外部資源"
-    
+
     Action = {
         UpdateAll = "更新全部"
         Update = "更新"
         Upload = "上傳"
+        View = "檢視"
         Operation = "操作"
+        OpenInFiles = "開啟 FlyCat 檔案入口"
     }
-    
+
     Empty = {
         NotRunning = "代理未啟動"
         NotRunningHint = "請先啟動代理服務以檢視外部資源"
         NoProviders = "暫無外部資源"
         NoProvidersHint = "目前設定檔未包含外部資源"
     }
-    
+
     Type = {
         ProxyProviders = "代理提供者 (%d)"
         RuleProviders = "規則提供者 (%d)"
+    }
+
+    Info = {
+        ExpireDays = "到期：%s (剩餘%d天)"
+        Expired = "到期：%s (已過期)"
+        RemainingTraffic = "剩餘流量: %s"
+        UsedTraffic = "流量：%s / %s"
     }
 
     VehicleType = {
@@ -27,7 +36,7 @@ Providers = {
         Inline = "內嵌"
         Compatible = "相容"
     }
-    
+
     Message = {
         FetchFailed = "取得外部資源失敗: %s"
         UpdateSuccess = "%s 更新成功"
@@ -35,5 +44,12 @@ Providers = {
         AllUpdated = "全部更新完成"
         UploadSuccess = "%s 上傳成功"
         UploadFailed = "上傳失敗: %s"
+        OpenFileFailed = "開啟檔案失敗: %s"
+        ConvertMrsFailed = "MRS 規則集解碼失敗，可能為 classical 類型或檔案已損壞"
+        CannotReadFile = "無法讀取檔案：%s"
+        FileExceedsLimit = "檔案超過 %dMB 限制"
     }
+    InfoTitle = "目錄說明"
+    InfoSummary = "GeoX 和核心執行時公共檔案位於：%s（應用私有目錄，Android/data 中不可見）。規則和代理提供者會寫入目前設定檔的私有目錄（imported/<設定檔UUID>/providers），可在系統檔案管理器的 FlyCat 入口中存取。"
+    ProviderPath = "資源路徑：%s"
 }

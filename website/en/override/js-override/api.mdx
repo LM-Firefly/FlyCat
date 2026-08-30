@@ -3,7 +3,7 @@ title: Built-in API
 sidebarTitle: Built-in API
 icon: terminal
 ---
-JavaScript overrides run within YumeBox's built-in JavaScript environment. The following APIs are complete global methods provided by the runtime.
+JavaScript overrides run within FlyCat's built-in JavaScript environment. The following APIs are complete global methods provided by the runtime.
 
 ## `deepMerge(target, patch, isOverride)`
 
@@ -133,7 +133,7 @@ async function main(profile) {
   const response = await fetch("http://127.0.0.1:8080/patch.yaml", {
     method: "GET",
     headers: {
-      "x-client": "YumeBox",
+      "x-client": "FlyCat",
     },
   });
 
@@ -231,7 +231,7 @@ When the encryption configuration script is executed, the configuration value in
 
 ```js Base64 API.js icon="braces" lines
 function main(profile) {
-  const encoded = b64e("YumeBox");
+  const encoded = b64e("FlyCat");
   const decoded = b64d(encoded);
   profile["encoded-name"] = encoded;
   profile["decoded-name"] = decoded;
@@ -243,7 +243,7 @@ Expected results:
 
 ```yaml
 encoded-name: WXVtZUJveA==
-decoded-name: YumeBox
+decoded-name: FlyCat
 ```
 
 ### `Buffer`
@@ -252,14 +252,14 @@ decoded-name: YumeBox
 | --- | --- |
 | `Buffer.from(value, "utf8")` | Convert UTF-8 text to a buffer object. |
 | `Buffer.from(value, "base64")` | Convert Base64 text to a buffer object. |
-| `Buffer.isBuffer(value)` | Determine whether it is a YumeBox buffer object. |
+| `Buffer.isBuffer(value)` | Determine whether it is a FlyCat buffer object. |
 | `buffer.toString("utf8")` | Decoded to UTF-8 text. |
 | `buffer.toString("base64")` | Returns Base64 text. |
 | `buffer.valueOf()` | Returns UTF-8 text. |
 
 ```js Buffer API.js icon="braces" lines
 function main(profile) {
-  const buffer = Buffer.from("YumeBox", "utf8");
+  const buffer = Buffer.from("FlyCat", "utf8");
   profile["client-name"] = buffer.toString("utf8");
   profile["client-name-base64"] = buffer.toString("base64");
   return profile;
@@ -269,7 +269,7 @@ function main(profile) {
 Expected results:
 
 ```yaml
-client-name: YumeBox
+client-name: FlyCat
 client-name-base64: WXVtZUJveA==
 ```
 

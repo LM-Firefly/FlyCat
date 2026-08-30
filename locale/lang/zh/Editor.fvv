@@ -1,24 +1,13 @@
-<編輯器>
+<Editor Page>
 Editor = {
-    Title = {
-        Config = "編輯設定"
-        Preview = "設定預覽"
-        Override = "編輯覆寫設定"
-        Profile = "編輯訂閱設定"
+    JsonDiagnostic = {
+        FormatError = "JSON 格式錯誤"
+        MustStartWithBraceOrBracket = "JSON 必須以 '{' 或 '[' 開頭"
+        SyntaxError = "JSON 語法錯誤"
+        UnterminatedStringOrObject = "未終止的字串或物件"
+        Unknown = "未知"
+        Expected = "期望 %s"
+        MissingValue = "缺少值"
+        DuplicateKey = "重複的鍵"
     }
-    Action = {
-        Format = "格式化"
-        Save = "儲存"
-    }
-    Message = {
-        FormatSuccess = "格式化成功"
-        FormatSkipped = "格式化失敗或無需格式化"
-        SaveFailed = "儲存失敗"
-    }
-    Discard = {
-        Title = "未儲存的修改"
-        Summary = "目前有未儲存的修改，確定要放棄嗎？"
-        Confirm = "放棄"
-    }
-    JsonSubtitle = "使用 JSON 格式編輯"
 }

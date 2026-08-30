@@ -10,6 +10,7 @@ Connection = {
 
     Search = "Search"
     SearchHint = "Search host, process..."
+    CloseAll = "Close all connections"
 
     SortBy = "Sort by:"
     Sort = {
@@ -30,8 +31,6 @@ Connection = {
     }
 
     Detail = {
-        Title = "Connection Details"
-
         Action = {
             Interrupting = "Interrupting connection..."
             Interrupt = "Interrupt connection"
@@ -40,11 +39,9 @@ Connection = {
         Section = {
             Info = "Connection Info"
             Rule = "Rule"
-            Chain = "Proxy Chain"
         }
 
         Label = {
-            Host = "Host"
             Protocol = "Protocol"
             Process = "Process"
             SourceAddress = "Source Address"
@@ -54,11 +51,15 @@ Connection = {
             Download = "Download"
             Type = "Type"
             Content = "Content"
-            Chain = "Chain"
         }
     }
 
     Loading = "Loading..."
     Empty = "No active connections"
     NoResults = "No matching connections"
+
+    Topology = {
+        EmptyMessage = "No active connections. Tap to open connection details."
+        OpenPage = "Open connection page"
+    }
 }

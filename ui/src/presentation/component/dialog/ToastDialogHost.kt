@@ -1,0 +1,127 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+package com.github.lmfirefly.flycat.presentation.component.dialog
+
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.util.ToastDialogBridge
+import com.github.lmfirefly.flycat.presentation.util.ToastDialogEvent
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.layout.DialogDefaults
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowDialog
+
+@Composable
+fun ToastDialogHost() {
+    val opacity = AppTheme.opacity
+    val radii = AppTheme.radii
+    val spacing = AppTheme.spacing
+
+    val event by ToastDialogBridge.event.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var eventSnapshot by remember { mutableStateOf<ToastDialogEvent?>(null) }
+    val showDialog = remember { mutableStateOf(false) }
+
+    LaunchedEffect(event) {
+        if (event != null) {
+            eventSnapshot = event
+            showDialog.value = true
+        }
+    }
+
+    eventSnapshot?.let { snapshot ->
+        val copyButtonShape = RoundedCornerShape(16.dp)
+        val copyButtonBgShape = RoundedCornerShape(radii.radius16)
+        WindowDialog(
+            show = showDialog.value,
+            modifier = Modifier,
+            title = snapshot.title,
+            titleColor = DialogDefaults.titleColor(),
+            summary = snapshot.message,
+            summaryColor = DialogDefaults.summaryColor(),
+            backgroundColor = DialogDefaults.backgroundColor(),
+            enableWindowDim = true,
+            onDismissRequest = { showDialog.value = false },
+            onDismissFinished = {
+                ToastDialogBridge.dismiss(snapshot.id)
+                eventSnapshot = null
+                showDialog.value = false
+            },
+            outsideMargin = DialogDefaults.outsideMargin,
+            insideMargin = DialogDefaults.insideMargin,
+            defaultWindowInsetsPadding = true,
+            content = {
+                Box(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .clip(copyButtonShape)
+                            .background(
+                                color =
+                                    MiuixTheme.colorScheme.primary.copy(
+                                        alpha = opacity.subtleStrong
+                                    ),
+                                shape = copyButtonBgShape,
+                            )
+                            .clickable {
+                                val clipboardManager =
+                                    context.getSystemService(Context.CLIPBOARD_SERVICE)
+                                        as ClipboardManager
+                                val textToCopy = snapshot.message.ifBlank { snapshot.title }
+                                clipboardManager.setPrimaryClip(
+                                    ClipData.newPlainText(snapshot.title, textToCopy)
+                                )
+                                showDialog.value = false
+                            }
+                            .padding(vertical = spacing.space14),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = FlyTxt.Component.Button.Copy,
+                        color = MiuixTheme.colorScheme.primary,
+                        style = MiuixTheme.textStyles.body1,
+                    )
+                }
+            },
+        )
+    }
+}

@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,16 +15,17 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumeyucca.yumebox.presentation.util
+package com.github.lmfirefly.flycat.presentation.util
 
 import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import com.github.yumeyucca.yumebox.runtime.api.Profile
+import com.github.lmfirefly.flycat.core.model.profile.Profile
 import java.io.File
 
 const val PROFILE_IMPORT_TYPE_URL = 0
@@ -38,11 +39,11 @@ fun isSubscriptionUrl(value: String): Boolean = subscriptionUrlPattern.matches(v
 
 fun readClipboardSubscriptionUrl(context: Context): String? {
     return runCatching {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clipData = clipboard.primaryClip ?: return null
-        if (clipData.itemCount <= 0) return null
-        clipData.getItemAt(0)?.text?.toString()?.trim()
-    }
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clipData = clipboard.primaryClip ?: return null
+            if (clipData.itemCount <= 0) return null
+            clipData.getItemAt(0)?.text?.toString()?.trim()
+        }
         .getOrNull()
         ?.takeIf { it.isNotBlank() && isSubscriptionUrl(it) }
 }
@@ -51,7 +52,6 @@ fun isYamlConfigFileName(fileName: String): Boolean =
     when (fileName.substringAfterLast(".", "").lowercase()) {
         "yaml",
         "yml" -> true
-
         else -> false
     }
 

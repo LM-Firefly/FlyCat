@@ -2,9 +2,8 @@
 Component = {
     ProfileCard = {
         Update = "Обновить"
-        Export = "Экспорт"
-        Edit = "Изменить"
         Delete = "Удалить"
+        Edit = "Изменить"
         RemoteSubscription = "Удалённая подписка"
         LocalFile = "Локальный файл"
         LocalConfig = "Локальная конфигурация"
@@ -18,6 +17,16 @@ Component = {
         MinutesAgo = "%d мин. назад"
         HoursAgo = "%d ч. назад"
         DaysAgo = "%d дн. назад"
+    }
+
+    Action = {
+        Export = "Экспорт"
+        Delete = "Удалить"
+        Update = "Обновить"
+        Edit = "Изменить"
+        Cancel = "Отмена"
+        Reset = "Сброс"
+        Add = "Добавить"
     }
 
     WebView = {
@@ -60,10 +69,45 @@ Component = {
         Starting = "Запуск..."
     }
 
+    Update = {
+        Action = {
+            DownloadNow = "Скачать сейчас"
+        }
+        Title = {
+            Available = "Доступна новая версия"
+        }
+        Message = {
+            Available = "Доступно новое обновление"
+            SelectPackage = "Выберите пакет для загрузки"
+            Tag = "Тег"
+            PackageUniversal = "Универсальный"
+            PackageExtension = "С расширением"
+            PackageStandard = "Стандартный"
+            CurrentVersion = "Текущая версия"
+            RemoteVersion = "Целевая версия"
+            Preparing = "Подготовка загрузки..."
+            DownloadingWithProgress = "Загрузка пакета обновления %d%%"
+            Downloading = "Загрузка пакета обновления..."
+            DownloadReady = "Загрузка завершена, готово к установке"
+            Error = "Загрузка не удалась, попробуйте позже"
+            Checking = "Проверка обновлений..."
+            NoUpdate = "Уже последняя версия"
+            CheckFailed = "Не удалось проверить обновления: %s"
+            MissingReleaseMetadata = "В последнем релизе отсутствуют метаданные обновления"
+            NoCompatibleAsset = "В последнем релизе не найден совместимый APK"
+            DownloadAlreadyRunning = "Пакет обновления ещё загружается"
+            InstallPromptOpened = "Загрузка завершена, установщик открыт"
+            InstallFailed = "Не удалось открыть установщик: %s"
+        }
+    }
 
     ConfigInput = {
         PortLabel = "Порт (оставьте пустым, чтобы не менять)"
         CountItems = "Элементов: %d"
+        Replace = "Заменить"
+        ReplaceSummary = "Заменить весь словарь"
+        Merge = "Объединить"
+        MergeSummary = "Перезаписывает значения совпадающих ключей"
     }
 
     BottomBar = {
@@ -102,6 +146,12 @@ Component = {
             TargetDirect = "DIRECT"
             TargetMatch = "MATCH"
             ErrorContentRequired = "Содержимое правила не может быть пустым"
+        }
+        ConfigPreview = {
+            Title = "Предпросмотр конфигурации"
+            Format = "Формат"
+            Save = "Сохранить"
+            SaveFailed = "Не удалось сохранить"
         }
     }
 }

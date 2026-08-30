@@ -3,7 +3,7 @@ ProfilesPage = {
     Title = "設定檔"
 
     Action = {
-        UpdateAll = "一鍵更新全部"
+        UpdateAll = "一鍵更新所有"
         AddProfile = "新增設定檔"
     }
 
@@ -15,7 +15,6 @@ ProfilesPage = {
     Sheet = {
         AddTitle = "新增設定檔"
         EditTitle = "編輯設定檔"
-        Complete = "完成"
     }
 
     Type = {
@@ -49,7 +48,7 @@ ProfilesPage = {
     Validation = {
         EnterUrl = "請輸入連結"
         SelectFile = "請選擇檔案"
-        YamlOnly = "僅支援 .yaml 或 .yml 格式"
+        YamlOnly = "僅支援 .yaml 或 .yml 格式的設定檔"
     }
 
     Progress = {
@@ -94,25 +93,42 @@ ProfilesPage = {
         Title = "分享設定檔"
         ShareFile = "分享設定檔"
         ShareLink = "分享訂閱連結"
-        NoLink = "此設定檔沒有訂閱連結"
+        NoLink = "該設定檔沒有訂閱連結"
         ImportedConfigMissing = "匯入設定不存在：%s"
     }
 
 
     SettingsDialog = {
         Title = "訂閱設定"
+        SectionType = "設定類型"
+        SectionSubscription = "訂閱資訊"
+        SectionOverride = "覆寫設定"
         ChangeLink = "變更訂閱連結"
         CustomRouting = "自訂分流"
         CustomRoutingSummary = "獨立的分流規則"
         NoDescription = "未設定說明"
         EditProfile = "編輯設定檔"
-        OpenConfig = "以編輯器開啟"
-        EditSettings = "訂閱設定"
-        SectionType = "設定類型"
-        SectionSubscription = "訂閱資訊"
-        SectionOverride = "覆寫設定"
+        OpenConfig = "開啟設定"
+        EditSettings = "編輯設定"
         SaveFailed = "儲存設定檔失敗"
         ConfigMissing = "設定檔不存在：%s"
         AgeSecretKey = "Age 私鑰"
+    }
+
+    AgeKey = {
+        PublicKey = "age 公鑰"
+        SecretKey = "age 私鑰"
+        PublicKeyPlaceholder = "age1..."
+        DerivePublicKey = "派生公鑰"
+        CopyPublicKey = "複製公鑰"
+        GenerateSecretKey = "產生私鑰"
+        CopySecretKey = "複製私鑰"
+        HideKey = "隱藏金鑰"
+        ShowKey = "顯示金鑰"
+        GeneratedPublicKey = "已產生 age 公鑰：%s"
+        CopiedPublicKey = "已複製 age 公鑰：%s"
+        GeneratedSecretKey = "已產生 age 私鑰：%s"
+        CopiedSecretKey = "已複製 age 私鑰：%s"
+        GenerateFailed = "產生失敗"
     }
 }

@@ -28,16 +28,16 @@ icon: network
   </ResponseField>
 
   <Info> Wifi オートメーション、`Vpn Service` モードのみサポート </Info>
- 
+
 </View>
 
 <View title="Tun" icon="network">
 
-  <ResponseField name="虚拟网卡" type="string" default="Yume">
+  <ResponseField name="虚拟网卡" type="string" default="FlyCat">
     Tun インターフェイス名.空にすることはできません.
   </ResponseField>
 
-  <ResponseField name="MTU" type="integer" default="1500">
+  <ResponseField name="MTU" type="integer" default="9000">
     `576` から `9000` の範囲でインターフェイス サイズを調整します.
   </ResponseField>
 
@@ -68,6 +68,18 @@ icon: network
 </View>
 
 <View title="eBPF" icon="cpu">
+
+  <ResponseField name="绕过私有网络" type="boolean" default="true">
+    プライベート アドレスは eBPF 転送されません.
+  </ResponseField>
+
+  <ResponseField name="DNS 劫持" type="boolean" default="true">
+    DNS リクエストを mihomo に引き渡します.
+  </ResponseField>
+
+  <ResponseField name="启用 IPv6" type="boolean" default="false">
+    eBPF が IPv6 トラフィックを処理できるようにします.
+  </ResponseField>
 
   <ResponseField name="中国 IP をカーネルでバイパス" type="boolean" default="true">
     CN-IP rule provider と `ebpf-in` listener を書き込み、その他の設定は profile を使用します.

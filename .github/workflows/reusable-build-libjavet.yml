@@ -1,0 +1,72 @@
+name: Reusable Build libjavet
+
+on:
+  workflow_call:
+    inputs:
+      artifact_name:
+        description: "Name for the uploaded artifact"
+        required: true
+        type: string
+      checkout_ref:
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Setup Kotlin
+        uses: fwilhe2/setup-kotlin@main
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ""
+
+      - name: Configure local.properties
+        run: |
+          echo "sdk.dir=${ANDROID_SDK_ROOT}" > local.properties
+
+      - name: Build libjavet.so.xz
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :extension:compressJavetNative
+
+      - name: Verify output
+        run: |
+          set -eu
+          test -f "build/generated/libjavet/libjavet-arm64-v8a.so.xz"
+          test -f "build/generated/libjavet/libjavet-x86_64.so.xz"
+          ls -lh build/generated/libjavet/
+
+      - name: Upload libjavet artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: |
+            build/generated/libjavet/libjavet-arm64-v8a.so.xz
+            build/generated/libjavet/libjavet-x86_64.so.xz
+          if-no-files-found: error
+          compression-level: 0

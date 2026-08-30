@@ -1,1 +1,9 @@
-rootProject.name = "yumebox-build-logic"
+rootProject.name = "flycat-build-logic"
+
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs") {
+            from(files("../gradle/libs.versions.toml"))
+        }
+    }
+}

@@ -10,6 +10,7 @@ Connection = {
 
     Search = "検索"
     SearchHint = "ホスト、プロセスを検索..."
+    CloseAll = "すべての接続を閉じる"
 
     SortBy = "並び替え:"
     Sort = {
@@ -30,8 +31,6 @@ Connection = {
     }
 
     Detail = {
-        Title = "接続の詳細"
-
         Action = {
             Interrupting = "接続を切断中..."
             Interrupt = "接続を切断"
@@ -40,11 +39,9 @@ Connection = {
         Section = {
             Info = "接続情報"
             Rule = "ルール"
-            Chain = "プロキシチェーン"
         }
 
         Label = {
-            Host = "ホスト"
             Protocol = "プロトコル"
             Process = "プロセス"
             SourceAddress = "送信元アドレス"
@@ -54,11 +51,15 @@ Connection = {
             Download = "ダウンロード"
             Type = "種類"
             Content = "内容"
-            Chain = "チェーン"
         }
     }
 
     Loading = "読み込み中..."
     Empty = "アクティブな接続はありません"
     NoResults = "一致する接続がありません"
+
+    Topology = {
+        EmptyMessage = "アクティブな接続がありません。タップして接続詳細を開きます"
+        OpenPage = "接続ページを開く"
+    }
 }

@@ -3,37 +3,18 @@ About = {
     Title = "About"
 
     App = {
-        Description = "An open-source Android client based on mihomo"
         VersionLoading = "Loading..."
         VersionFailed = "Failed to load"
     }
 
-    Debug = {
-        Title = "Debug"
-        TestInitialization = "Test Initialization"
-        InitializationReset = "Initialization state reset"
-    }
-
     Section = {
         ProjectLinks = "Project Links"
-        More = "More"
-        Support = "Support"
         License = "License"
     }
 
-    Link = {
-        TelegramGroup = "Telegram Group"
-        TelegramChannel = "Telegram Channel"
-    }
-
-    Support = {
-        ExportLogs = "Export Logs"
-        ReportIssue = "Report a Problem"
-        ExportSuccess = "Logs exported"
-        ExportFailed = "Failed to export logs"
-    }
-
     License = {
+        CheckUpdate = "Check for Updates"
+        CheckUpdateSummary = "Check the latest GitHub release manually"
         Libraries = "Libraries"
         LibrariesSummary = "View all third-party libraries used in this app"
         AgplName = "GNU Affero General Public License v3.0"

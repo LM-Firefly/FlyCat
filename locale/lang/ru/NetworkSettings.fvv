@@ -6,11 +6,26 @@ NetworkSettings = {
         VpnOptions = "Параметры службы"
         Advanced = "Дополнительно"
         ProxyOptions = "Контроль доступа"
-        Kernel = "Ядро"
+        Kernel = "Управление ядром"
     }
 
     Advanced = {
         DisableOverrideTitle = "Отключить все переопределения"
+    }
+
+    Kernel = {
+        ActiveTitle = "Текущее ядро"
+        RefreshTitle = "Проверить обновления"
+        CustomTitle = "Установить пользовательское ядро"
+        BundledAlpha = "Встроенное Alpha"
+        RestartHint = "После смены ядра требуется перезапуск приложения"
+        RestartDialogTitle = "Ядро переключено"
+        RestartDialogMessage = "Новое ядро вступит в силу при следующем запуске. Перезапустить сейчас?"
+        ActiveTag = "√ Активно"
+        DownloadingTag = "Загрузка..."
+        InstalledTag = "Установлено"
+        PluginFormatTitle = "Формат плагина"
+        PluginFormatBody = "Требуется .zip файл, содержащий:\n • kernel-index.json\n • kernel-{id}.so.xz\nВ индексе должны быть указаны release.kind = \"custom\" и builder.format = \"kernel-plugin-v1\".\nПринимаются только HTTPS ссылки.\nПример: https://github.com/LM-Firefly/Kernel-Builder"
     }
 
     RunMode = {
@@ -23,58 +38,52 @@ NetworkSettings = {
         EbpfSummary = "Root eBPF прокси"
     }
 
+    EbpfOptions = {
+        BypassCnTitle = "Обход китайских IP"
+        BypassCnSummary = "eBPF-слушатель обходит набор правил китайских IP"
+    }
+
     VpnOptions = {
         BypassPrivateTitle = "Обходить частные сети"
         DnsHijackTitle = "Перехват DNS"
         AllowBypassTitle = "Разрешить обход приложениями"
         EnableIpv6Title = "Включить IPv6"
         SystemProxyTitle = "Встроенный системный прокси VPN"
-    }
-
-    EbpfOptions = {
-        BypassCnTitle = "Обходить IP материкового Китая в ядре"
-    }
-
-    TunOptions = {
-        Title = "Параметры Tun"
-        IfNameTitle = "Виртуальный NIC"
-        MtuTitle = "MTU"
-        StackTitle = "Сетевой стек"
-        StackSystem = "System"
-        StackGVisor = "gVisor"
-        StackMixed = "Mixed"
-        AutoRouteTitle = "Автомаршрут"
-        StrictRouteTitle = "Строгий маршрут"
-        AutoRedirectTitle = "Автоперенаправление"
-        DnsModeTitle = "Режим DNS"
-        DnsRedirHost = "RedirHost"
-        DnsFakeIp = "FakeIP"
-        Ipv6Title = "Включить IPv6"
-    }
-
-
-    Kernel = {
-        ActiveTitle = "Активное ядро"
-        BundledAlpha = "Builtin"
-        RefreshTitle = "Получить последние ядра"
-        DownloadTitle = "Удалённые ядра"
-        FetchButton = "Получить последние"
-        DownloadButton = "Скачать"
-        CustomTitle = "Пользовательское ядро"
-        CustomMethodTitle = "Способ импорта"
-        CustomUrlMethod = "Ввести URL плагина"
-        CustomFileMethod = "Загрузить плагин"
-        CustomUrlLabel = "URL плагина"
-        CustomChooseFile = "Выбрать файл плагина"
-        CustomInstallButton = "Установить и включить"
+        TunStackTitle = "Сетевой стек TUN"
+        TunStackSystem = "System"
+        TunStackGVisor = "GVisor"
+        TunStackMixed = "Mixed"
     }
 
     ProxyOptions = {
+        TunStackTitle = "Сетевой стек TUN"
         AccessControlModeTitle = "Режим контроля доступа"
         AllowAll = "Разрешить все"
         AllowSelected = "Разрешить выбранные"
         RejectSelected = "Запретить выбранные"
         ManageAccessControlTitle = "Управление контролем доступа"
+    }
+
+    RootTun = {
+        IfNameTitle = "Имя интерфейса"
+        IfNameSummary = "Имя виртуального интерфейса, создаваемого RootTun"
+        MtuTitle = "MTU"
+        MtuSummary = "Максимальный размер пакета для RootTun"
+        AutoRouteTitle = "Автомаршрут"
+        StrictRouteTitle = "Строгий маршрут"
+        AutoRedirectTitle = "Автоперенаправление"
+        DnsModeTitle = "Режим DNS"
+        DnsModeRedirHost = "RedirHost"
+        DnsModeFakeIp = "FakeIP"
+        FakeIpRangeTitle = "Диапазон FakeIP IPv4"
+        FakeIpRangeSummary = "Действует только при режиме DNS FakeIP"
+        FakeIpRange6Title = "Диапазон FakeIP IPv6"
+        FakeIpRange6Summary = "Действует только при режиме DNS FakeIP"
+    }
+
+    Error = {
+        VpnDenied = "Разрешение VPN отклонено"
+        RootRequired = "Для RootTun у FlyCat должен быть рабочий root-доступ"
     }
 
     WifiAutomation = {
@@ -100,7 +109,7 @@ NetworkSettings = {
         EmptyRules = "Нет правил Wi-Fi"
         VpnOnly = "Автоматизация Wi-Fi доступна только в режиме VPN"
         PermissionTitle = "Разрешить чтение имени Wi-Fi"
-        PermissionMessage = "Android считает имена Wi-Fi данными, связанными с местоположением. YumeBox использует точное местоположение только при включении автоматизации или нажатии «Сканировать Wi-Fi», чтобы сопоставить правила на этом устройстве или показать результаты. GPS не читается, имена Wi-Fi не отправляются."
+        PermissionMessage = "Android считает имена Wi-Fi данными, связанными с местоположением. FlyCat использует точное местоположение только при включении автоматизации или нажатии «Сканировать Wi-Fi», чтобы сопоставить правила на этом устройстве или показать результаты. GPS не читается, имена Wi-Fi не отправляются."
         ApproximateTitle = "Требуется точное местоположение"
         ApproximateMessage = "Приблизительное местоположение скрывает имя Wi-Fi. Разрешите точное местоположение."
         DeniedTitle = "Требуется разрешение на местоположение"
@@ -108,7 +117,7 @@ NetworkSettings = {
         SettingsTitle = "Включите разрешение в настройках"
         SettingsMessage = "Android больше не покажет этот запрос. В информации о приложении разрешите местоположение только во время использования и включите точное местоположение."
         LocationTitle = "Включите системное местоположение"
-        LocationMessage = "При выключенном системном местоположении Android скрывает имена Wi-Fi. YumeBox не читает GPS."
+        LocationMessage = "При выключенном системном местоположении Android скрывает имена Wi-Fi. FlyCat не читает GPS."
         Grant = "Разрешить"
         OpenSettings = "Открыть настройки"
         TurnOnLocation = "Включить местоположение"
@@ -116,10 +125,5 @@ NetworkSettings = {
         Duplicate = "Этот Wi-Fi уже есть в правилах"
         NoWifi = "Подключение Wi-Fi не найдено"
         Unavailable = "Имя Wi-Fi недоступно. Проверьте разрешение и системное местоположение."
-    }
-
-    Error = {
-        VpnDenied = "Разрешение VPN отклонено"
-        RootRequired = "Для root-режима у YumeBox должен быть рабочий root-доступ"
     }
 }

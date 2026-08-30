@@ -12,7 +12,7 @@ keywords:
 ---
 <Info> Только запуск Gradle не создаст отсутствующий `jniLibs`; пожалуйста, сначала завершите собственную сборку при первой сборке. </Info>
 
-<Frame><img src="/images/diagrams/yumebox-build-pipeline.svg" alt="Ссылка на локальную сборку YumeBox и сборку CI" noZoom={true} /></Frame>
+<Frame><img src="/images/diagrams/flycat-build-pipeline.svg" alt="Ссылка на локальную сборку FlyCat и сборку CI" noZoom={true} /></Frame>
 
 ## Экологические требования
 
@@ -20,23 +20,22 @@ keywords:
 | --- | --- | --- |
 | OpenJDK | 24 | Компиляция Gradle и Android |
 | Android SDK | API 37 | Компиляция и целевая платформа |
-| Android НДК | 30.0.14904198 | Go, Rust, собственные сборки C/C++ |
-| CMake | 3.22.1 | Создание компонентов C/C++ |
-| Питон | 3.10 или выше | Выполнить сценарий сборки |
+| Android НДК | 30.0.14904198 | Go и Rust, собственные сборки |
+| Kotlin CLI | 2.x | Запуск скрипта сборки (`scripts/native-build.main.kts`) |
 | Перейти | 1,26 | Создание ядра mihomo |
 | Ржавчина | ночной | Компилятор конфигурации сборки |
 | груз-ндк | Последняя версия | Компиляция Rust для Android |
 | Git, патч | Доступно | Синхронизация патчей Go ядра и приложений |
 
-Текущее приложение собирает только `arm64-v8a`, а соответствующая цель Rust — `aarch64-linux-android`.
+Текущее приложение собирает 4 ABI (`armeabi-v7a`, `arm64-v8a`, `x86`, `x86_64`).
 
 ## Подготовьте склад
 
 <Steps>
   <Step title="Получить исходный код">
     ```bash
-    git clone https://github.com/YumeYucca/YumeBox.git
-    cd YumeBox
+    git clone https://github.com/LM-Firefly/FlyCat.git
+    cd FlyCat
     ```
   </Step>
 
@@ -53,7 +52,11 @@ keywords:
   <Step title="Подготовка к Go и Rust">
     ```bash
     rustup toolchain install nightly --component rust-src
-    rustup target add --toolchain nightly aarch64-linux-android
+    rustup target add --toolchain nightly \
+      armv7-linux-androideabi \
+      aarch64-linux-android \
+      i686-linux-android \
+      x86_64-linux-android
     cargo install cargo-ndk
     ```
 
@@ -81,13 +84,19 @@ keywords:
     Выберите канал ядра. Альфа используется по умолчанию:
 
     ```bash
-    python scripts/sync_kernel.py alpha
+    ./scripts/sync-kernel.sh alpha
+    ```
+
+    Вы также можете использовать smart:
+
+    ```bash
+    ./scripts/sync-kernel.sh smart
     ```
 
     Вы также можете использовать мета:
 
     ```bash
-    python scripts/sync_kernel.py meta
+    ./scripts/sync-kernel.sh meta
     ```
   </Step>
 </Steps>
@@ -99,18 +108,16 @@ keywords:
 Полная сборка создаст все собственные библиотеки и загрузит географические данные:
 
 ```bash
-python scripts/native-build.py --all
+kotlin scripts/native-build.main.kts --all
 ```
 
 ###Сборка по компонентам
 
 | Параметры | Выход или функция |
 | --- | --- |
-| `--go` | общее ядро ​​mihomo, библиотека предварительного просмотра и оболочка запуска PIE |
+| `--go` | общее ядро ​​mihomo `libmihomo.so` |
 | `--rust` | Компилятор конфигурации Rust `liboverride.so` |
-| `--compat` | Мост связи основного процесса `libcompat.so` |
 | `--loader` | APK-загрузчик полезной нагрузки `libloader.so` |
-| `--shell` | Создавайте только стартовую оболочку mihomo PIE |
 | `--geo` | Загрузите и сжимайте геоданные с помощью BundleMRS |
 | `--clean` | Очистить родные теги, теги Geo и версии |
 
@@ -118,12 +125,12 @@ python scripts/native-build.py --all
 
 <CodeGroup>
   ```bash Linux / macOS / Git Bash
-  ABI_APP_LIST=arm64-v8a python scripts/native-build.py --go --rust --compat --loader
+  ABI_APP_LIST=arm64-v8a kotlin scripts/native-build.main.kts --go --rust --loader
   ```
 
   ```powershell Windows PowerShell
   $env:ABI_APP_LIST = "arm64-v8a"
-  python scripts/native-build.py --go --rust --compat --loader
+  kotlin scripts/native-build.main.kts --go --rust --loader
   ```
 </CodeGroup>
 
@@ -131,11 +138,8 @@ python scripts/native-build.py --all
 
 | Документация | Цель |
 | --- | --- |
-| `libmihomo.so` | Оболочка запуска mihomo PIE |
-| `libmihomocore.so` | общее ядро ​​mihomo Go |
-| `libpreview.so` | Предварительный просмотр конфигурации |
+| `libmihomo.so` | общее ядро ​​mihomo |
 | `liboverride.so` | Переопределить компиляцию |
-| `libcompat.so` | Основной коммуникационный мост |
 | `libloader.so` | Загрузка встроенной полезной нагрузки APK |
 | `core-version.properties` | Информация о ветках ядра, коммитах и ​​сборке |
 
@@ -198,7 +202,7 @@ app/build/outputs/apk/debug/
 app/build/outputs/apk/release/
 ```
 
-Локальные сборки обычно генерируют `YumeBox-external.apk` или `YumeBox-builtin.apk`. Фактическое имя файла зависит от выходного каталога.
+Локальные сборки обычно генерируют `FlyCat-external.apk` или `FlyCat-builtin.apk`. Фактическое имя файла зависит от выходного каталога.
 
 ## Подпись выпуска
 
@@ -206,7 +210,7 @@ app/build/outputs/apk/release/
 
 ```properties
 keystore.password=你的仓库密码
-key.alias=yumebox
+key.alias=FlyCat
 key.password=你的密钥密码
 ```
 
@@ -232,7 +236,7 @@ CI использует `arm64-v8a` и записывает информацию
 ## Проверьте установку
 
 ```bash
-adb install -r app/build/outputs/apk/debug/YumeBox-external.apk
+adb install -r app/build/outputs/apk/debug/FlyCat-external.apk
 ```
 
 Если имена файлов разные, сначала посмотрите реальный продукт в `app/build/outputs/apk/`.

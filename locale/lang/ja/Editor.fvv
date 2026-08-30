@@ -1,24 +1,13 @@
-<エディター>
+<Editor Page>
 Editor = {
-    Title = {
-        Config = "設定を編集"
-        Preview = "設定プレビュー"
-        Override = "オーバーライド設定を編集"
-        Profile = "プロファイル設定を編集"
+    JsonDiagnostic = {
+        FormatError = "JSON 形式エラー"
+        MustStartWithBraceOrBracket = "JSON は '{' または '[' で始まる必要があります"
+        SyntaxError = "JSON 構文エラー"
+        UnterminatedStringOrObject = "未終了の文字列またはオブジェクト"
+        Unknown = "不明"
+        Expected = "期待: %s"
+        MissingValue = "値がありません"
+        DuplicateKey = "重複するキー"
     }
-    Action = {
-        Format = "整形"
-        Save = "保存"
-    }
-    Message = {
-        FormatSuccess = "整形しました"
-        FormatSkipped = "整形に失敗したか、変更は不要です"
-        SaveFailed = "保存に失敗しました"
-    }
-    Discard = {
-        Title = "未保存の変更"
-        Summary = "未保存の変更があります.破棄しますか？"
-        Confirm = "破棄"
-    }
-    JsonSubtitle = "JSON 形式で編集"
 }

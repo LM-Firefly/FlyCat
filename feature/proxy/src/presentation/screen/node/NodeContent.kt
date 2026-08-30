@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,22 +15,35 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-@file:Suppress("UnusedSymbol", "FunctionName")
-
-package com.github.yumeyucca.yumebox.presentation.screen.node
-
+package com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node
 
 import android.annotation.SuppressLint
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,17 +54,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.github.yumeyucca.yumebox.data.model.normalizeProxySheetHeightFraction
-import com.github.yumeyucca.yumebox.domain.model.ProxyGroupInfo
-import com.github.yumeyucca.yumebox.domain.model.isSelectable
-import com.github.yumeyucca.yumebox.presentation.component.LocalTopBarHazeState
-import com.github.yumeyucca.yumebox.presentation.component.LocalTopBarHazeStyle
-import com.github.yumeyucca.yumebox.presentation.theme.UiDp
-import com.github.yumeyucca.yumebox.presentation.theme.YumeHaze.chromeEffect
+import com.github.lmfirefly.flycat.core.model.proxy.Proxy
+import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
+import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
+import com.github.lmfirefly.flycat.core.model.proxy.normalizeProxySheetHeightFraction
+import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.navigation.LocalTopBarHazeState
+import com.github.lmfirefly.flycat.presentation.component.navigation.LocalTopBarHazeStyle
+import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
-import dev.chrisbanes.haze.blur.HazeProgressive
-import tf.gal.yumebox.locale.YumeTxt
+import dev.chrisbanes.haze.blur.hazeBlur
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -64,18 +79,22 @@ val NodeSheetContentPadding =
 private fun LazyListState.isScrolledFromTop(): Boolean =
     firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
 
-private fun Modifier.nodeTabHaze(state: HazeState?, style: HazeBlurStyle?): Modifier =
-    chromeEffect(
-        state = state,
-        style = style,
-        blurRadius = UiDp.dp30,
-        progressive =
-            HazeProgressive.verticalGradient(
-                startIntensity = 1f,
-                endIntensity = 0f,
-                preferPerformance = true,
-            ),
+private fun Modifier.nodeTabHaze(state: HazeState?, style: HazeBlurStyle?): Modifier {
+    if (state == null || style == null) return this
+    return hazeBlur(
+        input = HazeInput.Sources(state),
+        style = style.then {
+            blurRadius(UiDp.dp30)
+            noiseFactor(0f)
+            progressive(
+                HazeProgressive.verticalGradient(
+                    startIntensity = 1f,
+                    endIntensity = 0f,
+                )
+            )
+        },
     )
+}
 
 @Composable
 internal fun NodeTabs(groups: List<ProxyGroupInfo>, selectedIndex: Int, onSelect: (Int) -> Unit) {
@@ -94,8 +113,7 @@ internal fun NodeTabs(groups: List<ProxyGroupInfo>, selectedIndex: Int, onSelect
     LazyRow(
         state = listState,
         modifier =
-            Modifier
-                .fillMaxWidth()
+            Modifier.fillMaxWidth()
                 .nodeTabHaze(hazeState, hazeStyle)
                 .background(MiuixTheme.colorScheme.surface)
                 .overScrollHorizontal(),
@@ -121,8 +139,7 @@ internal fun NodeTabs(groups: List<ProxyGroupInfo>, selectedIndex: Int, onSelect
 
             Box(
                 modifier =
-                    Modifier
-                        .clip(RoundedCornerShape(UiDp.dp999))
+                    Modifier.clip(RoundedCornerShape(50))
                         .background(background)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -148,10 +165,10 @@ internal fun rememberNodeSheetHeight(sheetHeightFraction: Float): Dp {
 @Composable
 internal fun NodeGroupSheetContent(
     groups: List<ProxyGroupInfo>,
+    displayMode: ProxyDisplayMode,
     testingGroupNames: Set<String>,
     sheetHeightFraction: Float,
     onGroupClick: (ProxyGroupInfo) -> Unit,
-    onGroupTest: (ProxyGroupInfo) -> Unit,
     listState: LazyListState = rememberLazyListState(),
 ) {
     val sheetHeight = rememberNodeSheetHeight(sheetHeightFraction)
@@ -163,10 +180,7 @@ internal fun NodeGroupSheetContent(
     }
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(sheetHeight)
-            .overScrollVertical(),
+        modifier = Modifier.fillMaxWidth().height(sheetHeight).overScrollVertical(),
         state = listState,
         verticalArrangement = Arrangement.spacedBy(UiDp.dp12),
         contentPadding = NodeSheetContentPadding,
@@ -174,8 +188,8 @@ internal fun NodeGroupSheetContent(
     ) {
         nodeGroupItems(
             groups = groups,
+            displayMode = displayMode,
             onGroupClick = onGroupClick,
-            onGroupTest = onGroupTest,
             testingGroupNames = testingGroupNames,
             itemVerticalPadding = UiDp.dp0,
         )
@@ -185,13 +199,16 @@ internal fun NodeGroupSheetContent(
 @Composable
 fun NodeSheetContent(
     group: ProxyGroupInfo,
+    displayMode: ProxyDisplayMode = ProxyDisplayMode.DOUBLE_DETAILED,
     onSelectProxy: (String) -> Unit,
+    onForceSelectProxy: ((String) -> Unit)? = null,
     isDelayTesting: Boolean,
-    testingProxyNames: Set<String> = emptySet(),
+    testingProxyNames: Set<String>,
     onTestDelay: () -> Unit,
-    onTestProxyDelay: (String) -> Unit = {},
+    onTestProxyDelay: (String) -> Unit,
     sheetHeightFraction: Float,
     listState: LazyListState = rememberLazyListState(),
+    pinnedProxyName: String = "",
 ) {
     val sheetHeight = rememberNodeSheetHeight(sheetHeightFraction)
 
@@ -202,10 +219,7 @@ fun NodeSheetContent(
     }
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(sheetHeight)
-            .overScrollVertical(),
+        modifier = Modifier.fillMaxWidth().height(sheetHeight).overScrollVertical(),
         state = listState,
         verticalArrangement = Arrangement.spacedBy(UiDp.dp12),
         contentPadding = NodeSheetContentPadding,
@@ -226,15 +240,13 @@ fun NodeSheetContent(
                     ) + fadeOut(animationSpec = tween(durationMillis = 150)),
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = UiDp.dp12),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = UiDp.dp12),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(UiDp.dp6),
                 ) {
                     InfiniteProgressIndicator(modifier = Modifier.size(UiDp.dp24))
                     Text(
-                        text = YumeTxt.Proxy.Testing.InProgress,
+                        text = FlyTxt.Proxy.Testing.InProgress,
                         style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
@@ -245,15 +257,24 @@ fun NodeSheetContent(
         nodeGridItems(
             proxies = group.proxies,
             selectedProxyName = group.now,
+            pinnedProxyName = pinnedProxyName,
+            displayMode = displayMode,
             onProxyClick = { proxyName ->
-                if (group.isSelectable) {
+                if (group.type == Proxy.Type.Selector) {
                     onSelectProxy(proxyName)
+                } else if (
+                    (group.type == Proxy.Type.URLTest || group.type == Proxy.Type.Fallback) &&
+                    onForceSelectProxy != null
+                ) {
+                    val target = if (proxyName == group.fixed) "" else proxyName
+                    onForceSelectProxy(target)
                 } else {
                     onTestDelay()
                 }
             },
-            onProxyTest = onTestProxyDelay,
+            isDelayTesting = isDelayTesting,
             testingProxyNames = testingProxyNames,
+            onSingleNodeTestClick = onTestProxyDelay,
         )
     }
 }

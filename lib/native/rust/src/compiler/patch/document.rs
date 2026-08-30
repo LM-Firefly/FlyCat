@@ -1,8 +1,6 @@
 //! Application of a user override document onto the config tree.
 //!
-//! The document is consumed: every patch value is moved into the target instead of being
-//! deep-cloned, so applying a rules/proxies override costs one `Vec` move rather than a full
-//! copy of the list.
+//! The document is consumed: every patch value is moved into the target instead of being deep-cloned, so applying a rules/proxies override costs one `Vec` move rather than a full copy of the list.
 
 use serde_json::{Map as JsonMap, Value as JsonValue};
 
@@ -112,8 +110,7 @@ fn apply_field(
     }
 }
 
-/// Fallback for keys outside the known schema: objects merge recursively, scalars replace, and
-/// list modifiers still work.
+/// Fallback for keys outside the known schema: objects merge recursively, scalars replace, and list modifiers still work.
 fn apply_generic_field(
     target_object: &mut JsonMap<String, JsonValue>,
     base_key: &str,

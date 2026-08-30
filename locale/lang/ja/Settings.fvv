@@ -13,14 +13,14 @@ Settings = {
         Network = "ネットワーク"
         NetworkSummary = "プロキシモード、DNS、アクセス制御"
         Override = "上書き"
-        OverrideSummary = "YAML / JS / ルールの上書き"
+        OverrideSummary = "YAML、JS、ルールの上書き"
         MetaFeatures = "Meta 機能"
-        MetaFeaturesSummary = "接続、ログ、ルール、統計"
+        MetaFeaturesSummary = "接続、ルーティング、GeoX、キー"
     }
 
     More = {
         Lab = "ラボ"
-        LabSummary = "Sub-Store と実験機能"
+        LabSummary = "Sub-Store、実験機能"
         Logs = "ログ"
         LogsSummary = "実行ログ"
         Onboarding = "セットアップガイド"
@@ -31,5 +31,10 @@ Settings = {
 
     Error = {
         WebviewFailed = "WebView を開けません: %s"
+    }
+
+    RemoteController = {
+        ConnectionSuccess = "接続成功: モード %s"
+        ConnectionFailed = "接続失敗: %s"
     }
 }

@@ -1,0 +1,91 @@
+---
+title: 连接
+sidebarTitle: 连接
+---
+
+## 获取连接信息
+
+<RequestExample>
+```bash GET /connections
+curl http://127.0.0.1:9093/connections
+```
+</RequestExample>
+
+`GET /connections`
+
+返回当前所有活跃连接的信息。
+
+### 查询参数
+
+<ParamField query="interval" type="integer">
+  自动刷新间隔（秒）。
+</ParamField>
+
+### 响应
+
+<ResponseField name="200" type="object">
+  | 字段 | 类型 | 说明 |
+  | --- | --- | --- |
+  | `downloadTotal` | integer | 总下载字节数 |
+  | `uploadTotal` | integer | 总上传字节数 |
+  | `connections` | array | 连接列表 |
+
+  每个连接对象：
+
+  | 字段 | 类型 | 说明 |
+  | --- | --- | --- |
+  | `id` | string | 连接 ID |
+  | `metadata` | object | 源/目标地址、协议、进程等 |
+  | `upload` | integer | 已上传字节数 |
+  | `download` | integer | 已下载字节数 |
+  | `start` | string | 连接建立时间 |
+  | `chains` | string[] | 代理链路 |
+  | `rule` | string | 命中规则类型 |
+  | `rulePayload` | string | 命中规则内容 |
+</ResponseField>
+
+---
+
+## 关闭所有连接
+
+<RequestExample>
+```bash DELETE /connections
+curl -X DELETE http://127.0.0.1:9093/connections
+```
+</RequestExample>
+
+`DELETE /connections`
+
+关闭所有活跃连接。
+
+### 响应
+
+<ResponseField name="204" type="null">
+  关闭成功。
+</ResponseField>
+
+---
+
+## 关闭指定连接
+
+<RequestExample>
+```bash DELETE /connections/{id}
+curl -X DELETE http://127.0.0.1:9093/connections/abc123
+```
+</RequestExample>
+
+`DELETE /connections/{id}`
+
+关闭指定 ID 的连接。
+
+### 路径参数
+
+<ParamField path="id" type="string" required>
+  连接 ID。
+</ParamField>
+
+### 响应
+
+<ResponseField name="204" type="null">
+  关闭成功。
+</ResponseField>

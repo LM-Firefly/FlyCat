@@ -12,7 +12,7 @@ keywords:
 ---
 <Info> Gradle を実行している場合のみ、欠落している `jniLibs` は生成されません.初めてビルドする場合は、最初にネイティブ ビルドを完了してください. </Info>
 
-<Frame><img src="/images/diagrams/yumebox-build-pipeline.svg" alt="DreamBox ローカルおよび CI ビルド リンク" noZoom={true} /></Frame>
+<Frame><img src="/images/diagrams/flycat-build-pipeline.svg" alt="DreamBox ローカルおよび CI ビルド リンク" noZoom={true} /></Frame>
 
 ## 環境要件
 
@@ -20,23 +20,22 @@ keywords:
 | --- | --- | --- |
 | OpenJDK | 24 | Gradle と Android のコンパイル |
 | Android SDK | API 37 |コンパイルとターゲット プラットフォーム |
-| Android NDK | 30.0.14904198 | Go、Rust、C/C++ ネイティブ ビルド |
-| CMake | 3.22.1 | C/C++ コンポーネントの構築 |
-|パイソン | 3.10以降 |ビルドスクリプトを実行する |
+| Android NDK | 30.0.14904198 | Go と Rust のネイティブ ビルド |
+| Kotlin CLI | 2.x |ビルドスクリプトを実行する (`scripts/native-build.main.kts`) |
 |行く | 1.26 |ミホモコアの構築 |
 |さび |毎晩 |ビルド構成コンパイラ |
 |カーゴNDK |最新バージョン | Android 用の Rust のコンパイル |
 | Git、パッチ |利用可能 |カーネルとアプリケーションの Go パッチを同期する |
 
-現在のアプリケーションは `arm64-v8a` のみをビルドし、対応する Rust ターゲットは `aarch64-linux-android` です.
+現在のアプリケーションは 4 つの ABI（`armeabi-v7a`、`arm64-v8a`、`x86`、`x86_64`）をビルドします.
 
 ## 倉庫を準備する
 
 <Steps>
   <Step title="ソースコードを取得する">
     ```bash
-    git clone https://github.com/YumeYucca/YumeBox.git
-    cd YumeBox
+    git clone https://github.com/LM-Firefly/FlyCat.git
+    cd FlyCat
     ```
   </Step>
 
@@ -53,7 +52,11 @@ keywords:
   <Step title="Go と Rust の準備">
     ```bash
     rustup toolchain install nightly --component rust-src
-    rustup target add --toolchain nightly aarch64-linux-android
+    rustup target add --toolchain nightly \
+      armv7-linux-androideabi \
+      aarch64-linux-android \
+      i686-linux-android \
+      x86_64-linux-android
     cargo install cargo-ndk
     ```
 
@@ -81,13 +84,19 @@ keywords:
     カーネルチャネルを選択します.デフォルトではアルファが使用されます.
 
     ```bash
-    python scripts/sync_kernel.py alpha
+    ./scripts/sync-kernel.sh alpha
+    ```
+
+    smart を使用することもできます.
+
+    ```bash
+    ./scripts/sync-kernel.sh smart
     ```
 
     メタを使用することもできます.
 
     ```bash
-    python scripts/sync_kernel.py meta
+    ./scripts/sync-kernel.sh meta
     ```
   </Step>
 </Steps>
@@ -99,18 +108,16 @@ keywords:
 完全なビルドでは、すべてのネイティブ ライブラリが生成され、地理データがダウンロードされます.
 
 ```bash
-python scripts/native-build.py --all
+kotlin scripts/native-build.main.kts --all
 ```
 
 ###コンポーネントによるビルド
 
 |パラメータ |出力または関数 |
 | --- | --- |
-| `--go` | mihomo 共有コア、プレビュー ライブラリ、PIE 起動シェル |
+| `--go` | mihomo 共有コア `libmihomo.so` |
 | `--rust` | Rust 構成コンパイラ `liboverride.so` |
-| `--compat` |コアプロセス通信ブリッジ `libcompat.so` |
 | `--loader` | APK ペイロード ローダー `libloader.so` |
-| `--shell` | mihomo PIE 起動シェルのみをビルドする |
 | `--geo` | BundleMRS を使用して地理データをダウンロードして圧縮する |
 | `--clean` |ネイティブ、地域、バージョンのタグをクリーンアップ |
 
@@ -118,12 +125,12 @@ python scripts/native-build.py --all
 
 <CodeGroup>
   ```bash Linux / macOS / Git Bash
-  ABI_APP_LIST=arm64-v8a python scripts/native-build.py --go --rust --compat --loader
+  ABI_APP_LIST=arm64-v8a kotlin scripts/native-build.main.kts --go --rust --loader
   ```
 
   ```powershell Windows PowerShell
   $env:ABI_APP_LIST = "arm64-v8a"
-  python scripts/native-build.py --go --rust --compat --loader
+  kotlin scripts/native-build.main.kts --go --rust --loader
   ```
 </CodeGroup>
 
@@ -131,11 +138,8 @@ python scripts/native-build.py --all
 
 |ドキュメント |目的 |
 | --- | --- |
-| `libmihomo.so` | mihomo PIE 起動シェル |
-| `libmihomocore.so` | mihomo Go 共有コア |
-| `libpreview.so` |構成プレビュー |
+| `libmihomo.so` | mihomo 共有コア |
 | `liboverride.so` |コンパイルをオーバーライドする |
-| `libcompat.so` |コアコミュニケーションブリッジ |
 | `libloader.so` | APK ネイティブ ペイロードの読み込み |
 | `core-version.properties` |カーネル ブランチ、コミット、ビルド情報 |
 
@@ -198,7 +202,7 @@ app/build/outputs/apk/debug/
 app/build/outputs/apk/release/
 ```
 
-ローカル ビルドでは通常、`YumeBox-external.apk` または `YumeBox-builtin.apk` が生成されます.実際のファイル名は出力ディレクトリに基づいています.
+ローカル ビルドでは通常、`FlyCat-external.apk` または `FlyCat-builtin.apk` が生成されます.実際のファイル名は出力ディレクトリに基づいています.
 
 ## リリース署名
 
@@ -206,7 +210,7 @@ app/build/outputs/apk/release/
 
 ```properties
 keystore.password=你的仓库密码
-key.alias=yumebox
+key.alias=FlyCat
 key.password=你的密钥密码
 ```
 
@@ -232,7 +236,7 @@ CI は `arm64-v8a` を使用し、`build.number`、`build.hash`、および `bui
 ## インストールを確認する
 
 ```bash
-adb install -r app/build/outputs/apk/debug/YumeBox-external.apk
+adb install -r app/build/outputs/apk/debug/FlyCat-external.apk
 ```
 
 ファイル名が異なる場合は、`app/build/outputs/apk/` で実際の製品を確認してください.

@@ -1,24 +1,13 @@
-<Редактор>
+<Editor Page>
 Editor = {
-    Title = {
-        Config = "Изменить конфигурацию"
-        Preview = "Предпросмотр конфигурации"
-        Override = "Изменить переопределение"
-        Profile = "Изменить профиль"
+    JsonDiagnostic = {
+        FormatError = "Ошибка формата JSON"
+        MustStartWithBraceOrBracket = "JSON должен начинаться с '{' или '['"
+        SyntaxError = "Синтаксическая ошибка JSON"
+        UnterminatedStringOrObject = "Незавершённая строка или объект"
+        Unknown = "Неизвестно"
+        Expected = "Ожидалось %s"
+        MissingValue = "Отсутствует значение"
+        DuplicateKey = "Дублирующийся ключ"
     }
-    Action = {
-        Format = "Форматировать"
-        Save = "Сохранить"
-    }
-    Message = {
-        FormatSuccess = "Форматирование выполнено"
-        FormatSkipped = "Форматирование не удалось или не требуется"
-        SaveFailed = "Ошибка сохранения"
-    }
-    Discard = {
-        Title = "Несохранённые изменения"
-        Summary = "Есть несохранённые изменения. Отменить их?"
-        Confirm = "Отменить"
-    }
-    JsonSubtitle = "Редактировать в формате JSON"
 }

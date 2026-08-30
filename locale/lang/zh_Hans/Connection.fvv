@@ -10,12 +10,13 @@ Connection = {
 
     Search = "搜索"
     SearchHint = "搜索主机、进程..."
+    CloseAll = "关闭所有连接"
 
     SortBy = "排序:"
     Sort = {
         Time = "时间"
-        Upload = "上传"
-        Download = "下载"
+        Upload = "上行"
+        Download = "下行"
         Host = "主机"
     }
 
@@ -30,8 +31,6 @@ Connection = {
     }
 
     Detail = {
-        Title = "连接详情"
-
         Action = {
             Interrupting = "正在打断连接..."
             Interrupt = "打断连接"
@@ -40,11 +39,9 @@ Connection = {
         Section = {
             Info = "连接信息"
             Rule = "规则"
-            Chain = "代理链路"
         }
 
         Label = {
-            Host = "目标主机"
             Protocol = "协议"
             Process = "进程"
             SourceAddress = "源地址"
@@ -54,11 +51,15 @@ Connection = {
             Download = "下载"
             Type = "类型"
             Content = "内容"
-            Chain = "链路"
         }
     }
 
     Loading = "加载中..."
     Empty = "暂无活动连接"
     NoResults = "没有匹配的连接"
+
+    Topology = {
+        EmptyMessage = "暂无活动连接，点击打开连接详情"
+        OpenPage = "打开连接页面"
+    }
 }

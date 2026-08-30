@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,14 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-@file:Suppress("UnusedSymbol")
-
-package com.github.yumeyucca.yumebox.presentation.webview
-
-import com.github.yumeyucca.yumebox.data.model.RemoteProtocol
+package com.github.lmfirefly.flycat.presentation.webview
 
 object WebViewUtils {
     private val onlinePanelUrls =
@@ -32,11 +29,5 @@ object WebViewUtils {
             "https://yacd.haishan.me",
         )
 
-    fun getPanelUrl(
-        panelType: Int,
-        protocol: RemoteProtocol = RemoteProtocol.HTTPS,
-    ): String =
-        onlinePanelUrls
-            .getOrElse(panelType) { "" }
-            .replaceFirst("https", protocol.scheme)
+    fun getPanelUrl(panelType: Int): String = onlinePanelUrls.getOrElse(panelType) { "" }
 }

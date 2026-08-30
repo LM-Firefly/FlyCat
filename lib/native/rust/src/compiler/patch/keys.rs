@@ -136,7 +136,6 @@ pub fn literal_key_inner(key: &str) -> Option<&str> {
 
 /// Strips the angle brackets of an escaped literal key, reusing the allocation.
 pub fn unescape_literal_key(mut key: String) -> String {
-    // Angle-wrapped keys are rare; the byte checks avoid touching the allocation for normal keys.
     let bytes = key.as_bytes();
     if bytes.len() >= 2 && bytes[0] == b'<' && bytes[bytes.len() - 1] == b'>' {
         key.pop();

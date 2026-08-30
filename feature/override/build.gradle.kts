@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,32 +15,23 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
 plugins {
-    id("com.android.library")
+    id("flycat-compose-library")
     kotlin("plugin.serialization")
-    kotlin("plugin.compose")
 }
 
 android {
-    namespace = "com.github.yumeyucca.yumebox.feature.override"
-
-    buildFeatures {
-        compose = true
-    }
+    namespace = "com.github.lmfirefly.flycat.feature.override"
 }
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":common"))
     implementation(project(":locale"))
     implementation(project(":ui"))
-    implementation(project(":data"))
-    implementation(project(":runtime:api"))
-    implementation(project(":runtime:client"))
-    implementation(project(":feature:editor"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -49,6 +40,7 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.koin.core)

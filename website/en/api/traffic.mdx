@@ -1,0 +1,27 @@
+---
+title: Traffic
+sidebarTitle: Traffic
+---
+
+## Get Real-time Traffic
+
+<RequestExample>
+```bash GET /traffic
+curl http://127.0.0.1:9093/traffic
+```
+</RequestExample>
+
+`GET /traffic`
+
+Opens an SSE connection and returns real-time upload/download traffic statistics.
+
+### Response
+
+<ResponseField name="200" type="object">
+  One JSON object per line:
+
+  | Field | Type | Description |
+  | --- | --- | --- |
+  | `up` | integer | Upload bytes |
+  | `down` | integer | Download bytes |
+</ResponseField>

@@ -9,27 +9,32 @@ Settings = {
 
     UiSettings = {
         App = "應用"
-        AppSummary = "主題、語言與行為"
+        AppSummary = "主題 · 語言 · 行為"
         Network = "網路"
-        NetworkSummary = "代理模式、DNS 與存取控制"
+        NetworkSummary = "代理模式 · DNS · 存取控制"
         Override = "覆寫"
-        OverrideSummary = "YAML、JS 與規則覆寫"
+        OverrideSummary = "YAML · JS · 規則覆寫"
         MetaFeatures = "Meta 功能"
-        MetaFeaturesSummary = "連線、日誌、規則與統計"
+        MetaFeaturesSummary = "連線 · 路由 · GeoX · 金鑰"
     }
 
     More = {
         Lab = "實驗室"
-        LabSummary = "Sub-Store 與實驗功能"
+        LabSummary = "Sub-Store · 實驗功能"
         Logs = "日誌"
         LogsSummary = "執行日誌"
         Onboarding = "新手引導"
-        OnboardingSummary = "重新查看歡迎引導"
+        OnboardingSummary = "重新檢視歡迎引導"
         About = "關於"
         AboutSummary = "版本與授權"
     }
 
     Error = {
         WebviewFailed = "無法開啟 WebView：%s"
+    }
+
+    RemoteController = {
+        ConnectionSuccess = "連線成功：模式 %s"
+        ConnectionFailed = "連線失敗：%s"
     }
 }

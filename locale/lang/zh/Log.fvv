@@ -1,36 +1,38 @@
 <Log Page>
 Log = {
     Title = "日誌"
-    Summary = "即時執行日誌"
-    SearchHint = "搜尋日誌"
-
-    Level = {
-        All = "全部"
-        Debug = "Debug"
-        Info = "Info"
-        Warning = "Warning"
-        Error = "Error"
-        Filter = "等級篩選"
-    }
 
     Action = {
-        Export = "匯出"
-        Copied = "已複製日誌"
+        StopRecording = "停止記錄"
+        StartRecording = "開始記錄"
+        SaveRecentLogs = "儲存近期日誌"
+        ClearLogs = "清空日誌"
+        Pause = "暫停記錄"
+        Save = "儲存"
+        Delete = "刪除"
     }
 
     Empty = {
-        Connecting = "正在連線日誌"
-        ConnectingHint = "正在連線核心即時日誌流"
-        Retrying = "正在重新連線日誌"
-        RetryingHint = "連線恢復後會自動繼續顯示"
-        NoLogs = "暫無日誌"
-        LiveHint = "正在從核心即時取得日誌"
-        NoMatch = "沒有符合目前等級的日誌"
-        NoResults = "沒有符合的日誌"
+        NoLogs = "暫無日誌記錄"
+        StartRecordingHint = "點右下角按鈕開始記錄日誌"
+    }
+
+    Message = {
+        SaveFailed = "儲存檔案失敗: %s"
+        Saved = "已儲存: %s"
+        RecentLogSaved = "近期日誌已儲存"
+    }
+
+    Status = {
+        Recording = "記錄中"
     }
 
     Detail = {
-        WaitingLog = "暫無日誌"
-        WillShowWhenGenerated = "有日誌時會顯示在這裡"
+        RealTimeLog = "即時日誌"
+        Loading = "載入中..."
+        WaitingLog = "等待日誌..."
+        LogEmpty = "日誌為空"
+        WillShowWhenGenerated = "日誌將在產生時顯示"
+        NoLogContent = "該檔案沒有日誌內容"
     }
 }

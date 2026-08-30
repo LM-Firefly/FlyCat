@@ -1,7 +1,6 @@
 //! Key order used when serializing the compiled config back to YAML.
 //!
-//! Keys listed here are emitted first, in this order; every other key follows in the map's own
-//! (lexicographic) order.
+//! Keys listed here are emitted first, in this order; every other key follows in the map's own (lexicographic) order.
 
 use crate::model::SchemaId;
 

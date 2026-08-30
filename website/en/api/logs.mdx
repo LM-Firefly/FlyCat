@@ -1,0 +1,48 @@
+---
+title: Logs
+sidebarTitle: Logs
+---
+
+## Get Real-time Logs
+
+<RequestExample>
+```bash GET /logs
+curl http://127.0.0.1:9093/logs
+```
+</RequestExample>
+
+`GET /logs`
+
+Opens an SSE connection and returns a real-time log stream, one JSON object per line.
+
+### Query Parameters
+
+<ParamField query="level" type="string">
+  Log level filter. Values: `info`, `warning`, `error`, `debug`.
+</ParamField>
+
+<ParamField query="format" type="string">
+  Pass `structured` for structured logs (`time`/`level`/`message`/`fields`).
+</ParamField>
+
+### Response
+
+<ResponseField name="200" type="object">
+  Streaming log lines, one JSON object per line.
+
+  Compatible mode (default):
+
+  | Field | Type | Description |
+  | --- | --- | --- |
+  | `type` | string | Log level |
+  | `payload` | string | Log content |
+
+  Structured mode (`format=structured`):
+
+  | Field | Type | Description |
+  | --- | --- | --- |
+  | `time` | string | Timestamp |
+  | `level` | string | Log level |
+  | `message` | string | Log message |
+  | `fields` | array | Extra fields `[{key, value}]` |
+</ResponseField>

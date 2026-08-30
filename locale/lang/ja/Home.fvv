@@ -1,14 +1,12 @@
 <Home Page>
 Home = {
-    Title = "YumeBox"
+    Title = "FlyCat"
 
     Message = {
         ConfigSwitched = "設定を切り替えました"
         ConfigSwitchFailed = "設定の切り替えに失敗しました: %s"
         Preparing = "準備中..."
-        BuiltinGeoRequired = "先に Builtin 版をインストールしてください"
         StartFailed = "開始に失敗しました: %s"
-        RuntimeUnavailable = "ランタイムを利用できません.もう一度お試しください."
         StopFailed = "停止に失敗しました: %s"
     }
 
@@ -27,8 +25,8 @@ Home = {
     Traffic = {
         UpShort = "UP"
         DownShort = "DOWN"
-        Upload = "アップロード"
-        Download = "ダウンロード"
+        DownloadLong = "ダウンロード"
+        UploadLong = "アップロード"
         NoProfile = "プロファイルなし"
     }
 
@@ -40,17 +38,19 @@ Home = {
         Connecting = "接続中"
         Disconnecting = "切断中"
         Running = "実行中"
-        Lost = "切断されました"
+        Lost = "通信不可"
         TapToStart = "タップして開始"
     }
 
-    Settings = {
-        Title = "ホーム設定"
-        Quote = "一言"
-        ClassicHome = "クラシックホームを使用"
-        ExpandSidebar = "サイドバーを展開"
-        ChangeWallpaper = "壁紙を変更"
-        WallpaperScrim = "壁紙の下部を暗くする"
+    Greeting = {
+        Morning = "おはようございます"
+        Afternoon = "こんにちは"
+        Evening = "こんばんは"
+        Night = "おやすみなさい"
+    }
+
+    Quote = {
+        AuthorPrefix = "—— %s"
     }
 
     Control = {
@@ -60,14 +60,20 @@ Home = {
         Stop = "停止"
     }
 
-    ProxyMode = {
+    RunMode = {
         Vpn = "VPN"
         Tun = "TUN"
         Ebpf = "eBPF"
     }
 
+    TunnelMode = {
+        Rule = "ルール"
+        Global = "グローバル"
+        Direct = "ダイレクト"
+    }
+
     PreviewGuide = {
-        Title = "YumeBox へようこそ"
+        Title = "FlyCat へようこそ"
         Description = "下部の「開始」をタップして接続します"
         Next = "次へ"
         Start = "はじめる"
@@ -75,7 +81,7 @@ Home = {
         WallpaperDescription = "壁紙を長押ししてアルバムから選びます"
         SwipeTitle = "ページをスワイプ"
         SwipeDescription = "ホームを横にスワイプしてプロキシ、プロファイル、設定を切り替え"
-        AddTitle = "システム壁紙を設定"
-        AddDescription = "スイッチをオンにして権限を許可すると、現在のシステム壁紙を使用できます"
+        AddTitle = "サブスクリプションを追加"
+        AddDescription = "右上のアイコンをタップし、リンクを貼り付けて追加"
     }
 }

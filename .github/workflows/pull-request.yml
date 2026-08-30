@@ -1,8 +1,8 @@
-name: Pull Request
+name: Pull Request CI
 
 on:
   pull_request:
-    branches: [ "Yume", "Moe", "Dev" ]
+    branches: [ "Moes", "Devs" ]
     paths-ignore:
       - "**.md"
       - "docs/**"
@@ -17,14 +17,20 @@ permissions:
 
 jobs:
   build-geo-pr:
-    name: Geo (PR)
     uses: ./.github/workflows/reusable-build-geo.yml
     with:
       channel: pr
     secrets: inherit
 
+  build-native-abi-pr-armeabi-v7a:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: pr
+      kernel_channel: alpha
+      abi: armeabi-v7a
+    secrets: inherit
+
   build-native-abi-pr-arm64-v8a:
-    name: Native v8a (PR)
     uses: ./.github/workflows/reusable-build-native-abi.yml
     with:
       channel: pr
@@ -32,41 +38,63 @@ jobs:
       abi: arm64-v8a
     secrets: inherit
 
+  build-native-abi-pr-x86:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: pr
+      kernel_channel: alpha
+      abi: x86
+    secrets: inherit
+
+  build-native-abi-pr-x86_64:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: pr
+      kernel_channel: alpha
+      abi: x86_64
+    secrets: inherit
+
   bundle-native-pr:
-    name: Bundle (PR)
     needs:
       - build-geo-pr
+      - build-native-abi-pr-armeabi-v7a
       - build-native-abi-pr-arm64-v8a
+      - build-native-abi-pr-x86
+      - build-native-abi-pr-x86_64
     uses: ./.github/workflows/reusable-bundle-native.yml
     with:
       channel: pr
     secrets: inherit
 
-  # PR builds use the same versionCode formula as channel and release builds: epoch
-  # (project.version.code in gradle.properties) + `git rev-list --count HEAD`, computed
-  # inside reusable-build-apk-only.yml / reusable-prepare-publish.yml (the count covers the
-  # PR merge commit's whole parent chain). The commit hash in versionName (and the PR
-  # number in the release tag) additionally identifies the build.
   build-apk-pr-app:
-    name: APK (PR)
     needs: bundle-native-pr
     uses: ./.github/workflows/reusable-build-apk-only.yml
     with:
       channel: pr
       module: app
+      artifact_prefix: FlyCat-pr
       release_tag: pr-${{ github.event.pull_request.number }}
-      meta_asset_name: YumeBox-pr-meta.json
+      meta_asset_name: FlyCat-pr-meta.json
       raw_apk_artifact_name: apk-raw-pr-app
-      build_hash: ${{ github.event.pull_request.head.sha }}
-      build_branch: ${{ github.event.pull_request.head.ref }}
     secrets: inherit
 
-  # PR builds validate the APK matrix but intentionally do not publish direct
-  # installer artifacts. Fork-run intermediates simply age out because their
-  # read-only GITHUB_TOKEN cannot delete artifacts.
-  cleanup-artifacts:
-    name: Cleanup
+  prepare-publish-pr-app:
     needs: build-apk-pr-app
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: pr
+      module: app
+      artifact_prefix: FlyCat-pr
+      release_tag: pr-${{ github.event.pull_request.number }}
+      meta_asset_name: FlyCat-pr-meta.json
+      raw_apk_artifact_name: apk-raw-pr-app
+      publish_artifact_name: publish-pr-app
+    secrets: inherit
+
+  # Fork PRs get a read-only GITHUB_TOKEN that cannot delete artifacts, so the
+  # cleanup only runs for same-repo PRs; fork-run intermediates simply age out.
+  cleanup-artifacts:
+    needs: prepare-publish-pr-app
     if: github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       actions: write

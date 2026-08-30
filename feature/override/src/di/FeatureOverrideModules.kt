@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,25 +15,31 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumeyucca.yumebox.di
+package com.github.lmfirefly.flycat.feature.override.di
 
-import com.github.yumeyucca.yumebox.presentation.viewmodel.OverrideConfigViewModel
+import com.github.lmfirefly.flycat.feature.override.domain.OverrideCrudUseCase
+import com.github.lmfirefly.flycat.feature.override.presentation.viewmodel.OverrideConfigViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+
+val featureOverrideDomainModule = module {
+    single { OverrideCrudUseCase(get(), get(), get(), get()) }
+}
 
 val featureOverrideViewModelModule = module {
     viewModel {
         OverrideConfigViewModel(
             configRepo = get(),
-            resolver = get(),
-            bindingProvider = get(),
-            activeProfileOverrideReloader = get(),
-            profilesRepository = get(),
+            bindingReader = get(),
+            activeProfileOverrideApplier = get(),
+            profileStore = get(),
+            overrideCrud = get(),
         )
     }
 }
 
-val featureOverrideModules = listOf(featureOverrideViewModelModule)
+val featureOverrideModules = listOf(featureOverrideDomainModule, featureOverrideViewModelModule)

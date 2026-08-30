@@ -1,4 +1,4 @@
-name: Cleanup Artifacts
+name: Reusable Cleanup Artifacts
 
 # Deletes this run's intermediate artifacts (native libs, geo payloads, raw
 # APK stages) once the pipeline has succeeded, keeping only the user-facing
@@ -7,7 +7,7 @@ name: Cleanup Artifacts
 # debugging and job re-runs.
 
 on:
-  workflow_call: { }
+  workflow_call: {}
 
 permissions:
   actions: write
@@ -16,7 +16,7 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
-      - name: Delete intermediate artifacts
+      - name: Delete intermediate artifacts (native-*, apk-raw-*)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,10 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumeyucca.yumebox
+package com.github.lmfirefly.flycat
 
 import android.app.Activity
 import android.content.Context
@@ -34,9 +35,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.WindowCompat
-import com.github.yumeyucca.yumebox.common.util.AppLanguageManager
-import com.github.yumeyucca.yumebox.presentation.webview.WebViewScreen
-import tf.gal.shirosu.fyl.fytxt.compose.FYTxtProvider
+import com.github.lmfirefly.flycat.common.util.AppLanguageManager
+import com.github.lmfirefly.flycat.presentation.webview.WebViewScreen
 
 class WebViewActivity : ComponentActivity() {
     companion object {
@@ -53,7 +53,9 @@ class WebViewActivity : ComponentActivity() {
             context: Context,
             initialUrl: String = "file://${context.filesDir}/frontend/index.html",
         ) {
-            context.startActivity(intent(context, initialUrl))
+            val intent = Intent(context, WebViewActivity::class.java).apply { putExtra(EXTRA_INITIAL_URL, initialUrl) }
+            if (context !is Activity) { intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+            context.startActivity(intent)
         }
     }
 
@@ -92,7 +94,7 @@ class WebViewActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val isDarkMode =
             (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                    Configuration.UI_MODE_NIGHT_YES
+                Configuration.UI_MODE_NIGHT_YES
         val useLightNavigationBarIcons = !isDarkMode
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.setSystemBarsAppearance(
@@ -112,6 +114,11 @@ class WebViewActivity : ComponentActivity() {
         val initialUrl =
             intent.getStringExtra(EXTRA_INITIAL_URL) ?: "file://$filesDir/frontend/index.html"
 
-        setContent { FYTxtProvider { WebViewScreen(initialUrl = initialUrl) } }
+        setContent { WebViewScreen(initialUrl = initialUrl) }
+    }
+    override fun onDestroy() {
+        filePathCallback?.onReceiveValue(null)
+        filePathCallback = null
+        super.onDestroy()
     }
 }

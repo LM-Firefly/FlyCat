@@ -1,7 +1,7 @@
 <!--
-  ~ This file is part of YumeBox.
+  ~ This file is part of FlyCat.
   ~
-  ~ YumeBox is free software: you can redistribute it and/or modify
+  ~ FlyCat is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Affero General Public License as
   ~ published by the Free Software Foundation, either version 3 of the
   ~ License.
@@ -19,21 +19,21 @@
   -->
 
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-        android:width="24dp"
-        android:height="24dp"
-        android:viewportWidth="24"
-        android:viewportHeight="24">
-    <group
-        android:pivotX="12"
-        android:pivotY="12"
-        android:scaleX="0.92"
-        android:scaleY="0.92">
-        <path
-            android:pathData="M5,5a2,2 0,0 1,3.008 -1.728l11.997,6.998a2,2 0,0 1,0.003 3.458l-12,7A2,2 0,0 1,5 19z"
-            android:strokeLineJoin="round"
-            android:strokeWidth="2"
-            android:fillColor="#00000000"
-            android:strokeColor="#000000"
-            android:strokeLineCap="round"/>
-    </group>
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <group
+    android:pivotX="12"
+    android:pivotY="12"
+    android:scaleX="0.92"
+    android:scaleY="0.92">
+    <path
+        android:pathData="M5,5a2,2 0,0 1,3.008 -1.728l11.997,6.998a2,2 0,0 1,0.003 3.458l-12,7A2,2 0,0 1,5 19z"
+        android:strokeLineJoin="round"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeLineCap="round"/>
+  </group>
 </vector>

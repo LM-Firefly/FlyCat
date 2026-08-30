@@ -1,23 +1,19 @@
 plugins {
-    id("com.android.library")
+    id("flycat-android-library")
 }
 
 android {
-    namespace = "dev.yume.loader"
-
+    namespace = "dev.flycat.loader"
     sourceSets {
         getByName("main") {
-            java.setSrcDirs(listOf("src"))
-            manifest.srcFile("AndroidManifest.xml")
+            java.directories.apply {
+                clear()
+                add("src")
+            }
         }
-    }
-
-    buildFeatures {
-        buildConfig = false
     }
 }
 
 dependencies {
     implementation(libs.hiddenapibypass)
-    implementation(libs.androidx.annotation.jvm)
 }

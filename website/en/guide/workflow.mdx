@@ -3,13 +3,13 @@ title: Workflow
 sidebarTitle: Workflow
 icon: route
 ---
-YumeBox is responsible for managing configuration, overwriting and running sessions; mihomo is responsible for parsing nodes, establishing connections and providing running data.
+FlyCat is responsible for managing configuration, overwriting and running sessions; mihomo is responsible for parsing nodes, establishing connections and providing running data.
 
 ## Overall architecture
 
-This diagram shows the complete architecture of YumeBox from configuration entry to running data: how configuration, override, session, core, system access and observation data are connected to each other.
+This diagram shows the complete architecture of FlyCat from configuration entry to running data: how configuration, override, session, core, system access and observation data are connected to each other.
 
-<Frame><img src="/images/diagrams/yumebox-architecture.svg" alt="Architecture diagram of all functions of YumeBox" noZoom={true} /></Frame>
+<Frame><img src="/images/diagrams/flycat-architecture.svg" alt="Architecture diagram of all functions of FlyCat" noZoom={true} /></Frame>
 
 ## Configuration enablement and node resolution
 
@@ -72,7 +72,7 @@ In **Vpn Service** mode, the runtime patch closes the above Tun entry; **Tun** a
 
 ## Custom overwriting and hot reloading
 
-After the custom override is saved, YumeBox will re-apply the override chain currently being used by the configuration. The running configuration will not modify the original subscription text; when reloading fails, the running session will try to restore the last valid configuration.
+After the custom override is saved, FlyCat will re-apply the override chain currently being used by the configuration. The running configuration will not modify the original subscription text; when reloading fails, the running session will try to restore the last valid configuration.
 
 ```mermaid
 ---

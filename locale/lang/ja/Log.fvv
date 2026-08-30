@@ -1,36 +1,38 @@
 <Log Page>
 Log = {
     Title = "ログ"
-    Summary = "リアルタイム実行ログ"
-    SearchHint = "ログを検索"
-
-    Level = {
-        All = "すべて"
-        Debug = "Debug"
-        Info = "Info"
-        Warning = "Warning"
-        Error = "Error"
-        Filter = "レベル絞り込み"
-    }
 
     Action = {
-        Export = "書き出し"
-        Copied = "ログをコピーしました"
+        StopRecording = "記録を停止"
+        StartRecording = "記録を開始"
+        SaveRecentLogs = "最近のログを保存"
+        ClearLogs = "ログを消去"
+        Pause = "記録を一時停止"
+        Save = "保存"
+        Delete = "削除"
     }
 
     Empty = {
-        Connecting = "ログに接続中"
-        ConnectingHint = "コアのライブログストリームを開いています"
-        Retrying = "ログへ再接続中"
-        RetryingHint = "接続が復帰すると自動で再開します"
-        NoLogs = "ログはまだありません"
-        LiveHint = "コアからライブログを受信中"
-        NoMatch = "選択したレベルに一致するログがありません"
-        NoResults = "一致するログがありません"
+        NoLogs = "ログ記録がありません"
+        StartRecordingHint = "右下のボタンをタップしてログの記録を開始"
+    }
+
+    Message = {
+        SaveFailed = "ファイルの保存に失敗しました: %s"
+        Saved = "保存しました: %s"
+        RecentLogSaved = "最近のログを保存しました"
+    }
+
+    Status = {
+        Recording = "記録中"
     }
 
     Detail = {
-        WaitingLog = "ログはまだありません"
+        RealTimeLog = "リアルタイムログ"
+        Loading = "読み込み中..."
+        WaitingLog = "ログを待っています..."
+        LogEmpty = "ログは空です"
         WillShowWhenGenerated = "ログが生成されるとここに表示されます"
+        NoLogContent = "このファイルにログの内容がありません"
     }
 }

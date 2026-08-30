@@ -1,36 +1,38 @@
 <Log Page>
 Log = {
     Title = "日志"
-    Summary = "实时运行日志"
-    SearchHint = "搜索日志"
-
-    Level = {
-        All = "全部"
-        Debug = "Debug"
-        Info = "Info"
-        Warning = "Warning"
-        Error = "Error"
-        Filter = "等级筛选"
-    }
 
     Action = {
-        Export = "导出"
-        Copied = "已复制日志"
+        StopRecording = "停止记录"
+        StartRecording = "开始记录"
+        SaveRecentLogs = "保存近期日志"
+        ClearLogs = "清空日志"
+        Pause = "暂停记录"
+        Save = "保存"
+        Delete = "删除"
     }
 
     Empty = {
-        Connecting = "正在连接日志"
-        ConnectingHint = "正在连接内核实时日志流"
-        Retrying = "正在重连日志"
-        RetryingHint = "连接恢复后将自动继续显示"
-        NoLogs = "暂无日志"
-        LiveHint = "正在从内核实时获取日志"
-        NoMatch = "没有符合当前等级的日志"
-        NoResults = "没有匹配的日志"
+        NoLogs = "暂无日志记录"
+        StartRecordingHint = "点击右下角按钮开始记录日志"
+    }
+
+    Message = {
+        SaveFailed = "保存文件失败: %s"
+        Saved = "已保存: %s"
+        RecentLogSaved = "近期日志已保存"
+    }
+
+    Status = {
+        Recording = "记录中"
     }
 
     Detail = {
-        WaitingLog = "暂无日志"
-        WillShowWhenGenerated = "有日志时会显示在这里"
+        RealTimeLog = "实时日志"
+        Loading = "加载中..."
+        WaitingLog = "等待日志..."
+        LogEmpty = "日志为空"
+        WillShowWhenGenerated = "日志将在产生时显示"
+        NoLogContent = "该文件没有日志内容"
     }
 }

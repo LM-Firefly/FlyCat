@@ -1,9 +1,7 @@
 //! Provider path normalization.
 //!
-//! mihomo resolves relative provider paths against its runtime home, while profiles ship paths in
-//! every imaginable shape (`./ruleset/x.yaml`, `providers/rules/x.mrs`, absolute paths from another
-//! device). Everything is rewritten to a path under `<profile_dir>/providers/<prefix>/`, expressed
-//! relative to the runtime home so the compiled config stays portable.
+//! mihomo resolves relative provider paths against its runtime home, while profiles ship paths in every imaginable shape (`./ruleset/x.yaml`, `providers/rules/x.mrs`, absolute paths from another device).
+//! Everything is rewritten to a path under `<profile_dir>/providers/<prefix>/`, expressed relative to the runtime home so the compiled config stays portable.
 
 use std::path::{Component, Path, PathBuf};
 
@@ -44,6 +42,7 @@ pub fn relative_to_runtime_home(profile_dir: &Path, path: &Path) -> String {
         .unwrap_or_else(|| path.to_path_buf())
         .to_string_lossy()
         .replace('\\', "/")
+        .to_string()
 }
 
 const CONTAINER_DIRS: [&str; 6] = [
@@ -106,7 +105,7 @@ pub fn runtime_home_dir(profile_dir: &Path) -> PathBuf {
         .unwrap_or_else(|| profile_dir.to_path_buf())
 }
 
-fn relative_path_from(path: &Path, base: &Path) -> Option<PathBuf> {
+pub fn relative_path_from(path: &Path, base: &Path) -> Option<PathBuf> {
     let path_components = path.components().collect::<Vec<_>>();
     let base_components = base.components().collect::<Vec<_>>();
 
@@ -147,4 +146,17 @@ pub fn normalize_path(path: impl AsRef<Path>) -> PathBuf {
         }
     }
     normalized
+}
+
+pub fn provider_extension(provider: &serde_json::Map<String, serde_json::Value>, prefix: &str) -> &'static str {
+    if prefix == "rules"
+        && provider
+            .get("format")
+            .and_then(serde_json::Value::as_str)
+            .map(|value| value.eq_ignore_ascii_case("mrs"))
+            .unwrap_or(false)
+    {
+        return "mrs";
+    }
+    "yaml"
 }

@@ -1,0 +1,42 @@
+---
+title: Cache
+sidebarTitle: Cache
+---
+
+## Flush FakeIP Cache
+
+<RequestExample>
+```bash POST /cache/fakeip/flush
+curl -X POST http://127.0.0.1:9093/cache/fakeip/flush
+```
+</RequestExample>
+
+`POST /cache/fakeip/flush`
+
+Clears the FakeIP address pool cache.
+
+### Response
+
+<ResponseField name="204" type="null">
+  Successfully cleared.
+</ResponseField>
+
+---
+
+## Flush DNS Cache
+
+<RequestExample>
+```bash POST /cache/dns/flush
+curl -X POST http://127.0.0.1:9093/cache/dns/flush
+```
+</RequestExample>
+
+`POST /cache/dns/flush`
+
+Clears the DNS resolution cache.
+
+### Response
+
+<ResponseField name="204" type="null">
+  Successfully cleared.
+</ResponseField>

@@ -1,36 +1,38 @@
 <Log Page>
 Log = {
     Title = "Logs"
-    Summary = "Live runtime logs"
-    SearchHint = "Search logs"
-
-    Level = {
-        All = "All"
-        Debug = "Debug"
-        Info = "Info"
-        Warning = "Warning"
-        Error = "Error"
-        Filter = "Level filter"
-    }
 
     Action = {
-        Export = "Export"
-        Copied = "Log copied"
+        StopRecording = "Stop Recording"
+        StartRecording = "Start Recording"
+        SaveRecentLogs = "Save Recent Logs"
+        ClearLogs = "Clear Logs"
+        Pause = "Pause Recording"
+        Save = "Save"
+        Delete = "Delete"
     }
 
     Empty = {
-        Connecting = "Connecting to logs"
-        ConnectingHint = "Opening the live core log stream"
-        Retrying = "Reconnecting to logs"
-        RetryingHint = "Live logs will resume automatically"
-        NoLogs = "No logs yet"
-        LiveHint = "Streaming live logs from the core"
-        NoMatch = "No logs match the selected level"
-        NoResults = "No matching logs"
+        NoLogs = "No log records"
+        StartRecordingHint = "Click the bottom-right button to start recording logs"
+    }
+
+    Message = {
+        SaveFailed = "Save file failed: %s"
+        Saved = "Saved: %s"
+        RecentLogSaved = "Recent logs saved"
+    }
+
+    Status = {
+        Recording = "Recording"
     }
 
     Detail = {
-        WaitingLog = "No logs yet"
-        WillShowWhenGenerated = "Logs appear here as they are produced"
+        RealTimeLog = "Real-time Log"
+        Loading = "Loading..."
+        WaitingLog = "Waiting for logs..."
+        LogEmpty = "Log is empty"
+        WillShowWhenGenerated = "Logs will appear when generated"
+        NoLogContent = "This file has no log content"
     }
 }

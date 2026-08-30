@@ -1,7 +1,6 @@
 //! JSON encoding of compile results, shared by the JNI, C ABI and CLI entry points.
 //!
-//! Every entry point must answer with a well-formed result document even when encoding itself
-//! fails, hence the hard-coded fallbacks.
+//! Every entry point must answer with a well-formed result document even when encoding itself fails, hence the hard-coded fallbacks.
 
 use crate::model::{CompileRawResult, CompileResult};
 
@@ -38,20 +37,30 @@ pub fn compile_raw_error_json(message: impl Into<String>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::Value as JsonValue;
 
     #[test]
     fn error_documents_are_well_formed() {
-        for payload in [
-            compile_error_json("boom"),
-            compile_raw_error_json("boom"),
+        let payloads = [
+            compile_error_json("compile failed"),
+            compile_raw_error_json("raw compile failed"),
+            encode_compile_result(CompileResult {
+                success: false,
+                fingerprint: String::new(),
+                final_yaml: String::new(),
+                warnings: Vec::new(),
+                error: Some("test error".to_string()),
+            }),
             COMPILE_ENCODE_FALLBACK.to_string(),
-            COMPILE_ERROR_FALLBACK.to_string(),
             COMPILE_RAW_ERROR_FALLBACK.to_string(),
-        ] {
-            let parsed: JsonValue = serde_json::from_str(&payload).expect("valid json");
-            assert_eq!(parsed["success"], JsonValue::Bool(false));
-            assert!(parsed["error"].is_string());
+        ];
+        for payload in &payloads {
+            let value: serde_json::Value =
+                serde_json::from_str(payload).expect("error document must be valid JSON");
+            assert_eq!(value["success"], serde_json::json!(false));
+            assert!(
+                value["error"].is_string(),
+                "error field must be a string in: {payload}"
+            );
         }
     }
 }

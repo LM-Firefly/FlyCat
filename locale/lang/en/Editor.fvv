@@ -1,24 +1,13 @@
-<Editor>
+<Editor Page>
 Editor = {
-    Title = {
-        Config = "Edit configuration"
-        Preview = "Configuration preview"
-        Override = "Edit override configuration"
-        Profile = "Edit profile configuration"
+    JsonDiagnostic = {
+        FormatError = "JSON format error"
+        MustStartWithBraceOrBracket = "JSON must start with '{' or '['"
+        SyntaxError = "JSON syntax error"
+        UnterminatedStringOrObject = "Unterminated string or object"
+        Unknown = "Unknown"
+        Expected = "Expected %s"
+        MissingValue = "Missing value"
+        DuplicateKey = "Duplicate key"
     }
-    Action = {
-        Format = "Format"
-        Save = "Save"
-    }
-    Message = {
-        FormatSuccess = "Formatted"
-        FormatSkipped = "Formatting failed or no changes were needed"
-        SaveFailed = "Save failed"
-    }
-    Discard = {
-        Title = "Unsaved changes"
-        Summary = "There are unsaved changes. Discard them?"
-        Confirm = "Discard"
-    }
-    JsonSubtitle = "Edit as JSON"
 }

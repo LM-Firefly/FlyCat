@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,17 +15,15 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-@file:Suppress("FunctionName")
-
-package com.github.yumeyucca.yumebox.presentation.webview
+package com.github.lmfirefly.flycat.presentation.webview
 
 import android.app.Activity
-import android.webkit.WebView
 import androidx.activity.compose.BackHandler
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -33,18 +31,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun WebViewScreen(initialUrl: String, onBack: (() -> Unit)? = null) {
     val context = LocalContext.current
     val activity = context as? Activity
-    var webView by remember { mutableStateOf<WebView?>(null) }
 
-    BackHandler {
-        val currentWebView = webView
-        if (currentWebView?.canGoBack() == true) {
-            currentWebView.goBack()
-        } else {
-            onBack?.invoke() ?: activity?.finish()
-        }
-    }
+    BackHandler { onBack?.invoke() ?: activity?.finish() }
 
-    MiuixTheme {
-        LocalWebView(initialUrl = initialUrl, onWebViewCreated = { webView = it })
-    }
+    MiuixTheme { LocalWebView(initialUrl = initialUrl) }
 }

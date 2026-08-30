@@ -1,14 +1,12 @@
 <Home Page>
 Home = {
-    Title = "YumeBox"
+    Title = "FlyCat"
 
     Message = {
         ConfigSwitched = "Config switched"
         ConfigSwitchFailed = "Config switch failed: %s"
         Preparing = "Preparing..."
-        BuiltinGeoRequired = "Please install the Builtin version first"
         StartFailed = "Start failed: %s"
-        RuntimeUnavailable = "Runtime is unavailable. Please try again."
         StopFailed = "Stop failed: %s"
     }
 
@@ -27,8 +25,8 @@ Home = {
     Traffic = {
         UpShort = "UP"
         DownShort = "DOWN"
-        Upload = "UPLOAD"
-        Download = "DOWNLOAD"
+        DownloadLong = "DOWNLOAD"
+        UploadLong = "UPLOAD"
         NoProfile = "No Profile"
     }
 
@@ -40,17 +38,19 @@ Home = {
         Connecting = "Connecting"
         Disconnecting = "Disconnecting"
         Running = "Running"
-        Lost = "Disconnected"
+        Lost = "Lost"
         TapToStart = "Tap to start"
     }
 
-    Settings = {
-        Title = "Home settings"
-        Quote = "Quote"
-        ClassicHome = "Use classic Home"
-        ExpandSidebar = "Expand sidebar"
-        ChangeWallpaper = "Change wallpaper"
-        WallpaperScrim = "Bottom dimming on wallpaper"
+    Greeting = {
+        Morning = "Good morning"
+        Afternoon = "Good afternoon"
+        Evening = "Good evening"
+        Night = "Good night"
+    }
+
+    Quote = {
+        AuthorPrefix = "—— %s"
     }
 
     Control = {
@@ -60,14 +60,20 @@ Home = {
         Stop = "Stop"
     }
 
-    ProxyMode = {
+    RunMode = {
         Vpn = "VPN"
         Tun = "TUN"
         Ebpf = "eBPF"
     }
 
+    TunnelMode = {
+        Rule = "Rule"
+        Global = "Global"
+        Direct = "Direct"
+    }
+
     PreviewGuide = {
-        Title = "Welcome to YumeBox"
+        Title = "Welcome to FlyCat"
         Description = "Tap Start at the bottom to connect"
         Next = "Next"
         Start = "Get started"
@@ -75,7 +81,7 @@ Home = {
         WallpaperDescription = "Long-press the wallpaper to pick from your album"
         SwipeTitle = "Swipe pages"
         SwipeDescription = "Swipe across Home to switch to Proxy, Profiles, and Settings"
-        AddTitle = "Set System Wallpaper"
-        AddDescription = "Enable the switch and grant access to use your current system wallpaper"
+        AddTitle = "Add subscription"
+        AddDescription = "Click the icon in the upper right corner and paste the link to add it"
     }
 }

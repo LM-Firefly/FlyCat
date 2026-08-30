@@ -1,24 +1,33 @@
 <Providers Page>
 Providers = {
     Title = "外部リソース"
-    
+
     Action = {
         UpdateAll = "すべて更新"
         Update = "更新"
         Upload = "アップロード"
+        View = "表示"
         Operation = "操作"
+        OpenInFiles = "FlyCat ファイルエントリを開く"
     }
-    
+
     Empty = {
         NotRunning = "プロキシが起動していません"
         NotRunningHint = "外部リソースを表示するにはプロキシを開始してください"
         NoProviders = "外部リソースがありません"
         NoProvidersHint = "現在のプロファイルに外部リソースがありません"
     }
-    
+
     Type = {
         ProxyProviders = "プロキシプロバイダー (%d)"
         RuleProviders = "ルールプロバイダー (%d)"
+    }
+
+    Info = {
+        ExpireDays = "期限: %s (残り %d 日)"
+        Expired = "期限: %s (期限切れ)"
+        RemainingTraffic = "残り: %s"
+        UsedTraffic = "通信量: %s / %s"
     }
 
     VehicleType = {
@@ -27,7 +36,7 @@ Providers = {
         Inline = "インライン"
         Compatible = "互換"
     }
-    
+
     Message = {
         FetchFailed = "リソースの取得に失敗しました: %s"
         UpdateSuccess = "%s を更新しました"
@@ -35,5 +44,12 @@ Providers = {
         AllUpdated = "すべて更新しました"
         UploadSuccess = "%s をアップロードしました"
         UploadFailed = "アップロードに失敗しました: %s"
+        OpenFileFailed = "ファイルを開けませんでした: %s"
+        ConvertMrsFailed = "MRS ルールセットのデコードに失敗しました。クラシックタイプまたはファイル破損の可能性があります"
+        CannotReadFile = "ファイルを読み込めません: %s"
+        FileExceedsLimit = "ファイルが %dMB の制限を超えています"
     }
+    InfoTitle = "ディレクトリに関する注意"
+    InfoSummary = "Geo アセットと共有ランタイムファイルは %s にあります（アプリ専用ストレージで Android/data 以下からは表示されません）。ルールおよびプロキシプロバイダーはアクティブなプロファイルの専用ディレクトリ（imported/<profile-uuid>/providers）に書き込まれ、システムファイルマネージャーの FlyCat エントリからアクセスできます。"
+    ProviderPath = "リソースパス: %s"
 }

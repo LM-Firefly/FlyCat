@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,14 +15,13 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-@file:Suppress("UnusedSymbol")
+package com.github.lmfirefly.flycat.core.model
 
-package com.github.yumeyucca.yumebox.core.model
-
-
+import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -40,14 +39,10 @@ data class CompileRequest(
     val overrides: List<OverrideSpec> = emptyList(),
     val outputPath: String,
     val ageSecretKey: String? = null,
-    // Forwarded to liboverride: Root Tun and native eBPF keep the profile authoritative, while
-    // VpnService protects its app-owned file-descriptor tunnel.
+    // Forwarded to liboverride: Root Tun and native eBPF keep the profile authoritative, while VpnService protects its app-owned file-descriptor tunnel.
     val runMode: RunMode = RunMode.VpnService,
-    // Root Tun + disable-all and native eBPF. Skips broad compiler runtime patches so the raw
-    // profile stays authoritative; eBPF still receives the narrow safety guard that disables Tun.
+    // Root Tun + disable-all and native eBPF. Skips broad compiler runtime patches so the raw profile stays authoritative; eBPF still receives the narrow safety guard that disables Tun.
     val skipRuntimePatches: Boolean = false,
-    /** Internal launch role. Preview is not a user-selectable [RunMode]. */
-    val preview: Boolean = false,
 )
 
 @Serializable

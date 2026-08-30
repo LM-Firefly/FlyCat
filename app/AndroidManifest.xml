@@ -1,28 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  ~ This file is part of YumeBox.
-  ~
-  ~ YumeBox is free software: you can redistribute it and/or modify
-  ~ it under the terms of the GNU Affero General Public License as
-  ~ published by the Free Software Foundation, either version 3 of the
-  ~ License.
-  ~
-  ~ This program is distributed in the hope that it will be useful,
-  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
-  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-  ~ GNU Affero General Public License for more details.
-  ~
-  ~ You should have received a copy of the GNU Affero General Public License
-  ~ along with this program. If not, see <https://www.gnu.org/licenses/>.
-  ~
-  ~ Copyright (c)  YumeYucca 2025 - Present
-  ~
-  -->
-
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur"/>
+    <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur" />
 
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.telephony" android:required="false"/>
@@ -33,10 +13,13 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:ignore="ForegroundServicesPolicy"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <uses-permission android:name="com.android.permission.GET_INSTALLED_APPS"/>
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
-                     tools:ignore="PackageVisibilityPolicy,QueryAllPackagesPermission"/>
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="PackageVisibilityPolicy,QueryAllPackagesPermission"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
                      tools:ignore="BatteryLife"/>
@@ -49,28 +32,24 @@
                      android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
                      tools:ignore="AllFilesAccessPolicy,ScopedStorage"/>
+    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" tools:ignore="SmsAndCallLogPolicy"/>
     <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
-        android:name="${applicationClass}"
-        android:appComponentFactory="${componentFactory}"
-        android:allowBackup="true"
-        android:enableOnBackInvokedCallback="true"
-        tools:targetApi="33"
-        android:icon="@mipmap/ic_launcher"
-        android:label="${appName}"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.YumeBox"
-        android:usesCleartextTraffic="true"
-        tools:ignore="MissingApplicationIcon,Instantiatable,MissingClass"
-        tools:replace="android:appComponentFactory">
+            android:name="${applicationClass}"
+            android:allowBackup="true"
+            android:enableOnBackInvokedCallback="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="${appName}"
+            android:supportsRtl="true"
+            android:theme="@style/Theme.FlyCat"
+            android:usesCleartextTraffic="true">
         <activity
-            android:name=".MainActivity"
-            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:theme="@style/Theme.YumeBox.Starting"
-            android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
+                android:name=".MainActivity"
+                android:enableOnBackInvokedCallback="true"
+                android:exported="true"
+                android:launchMode="singleTop"
+                android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -91,26 +70,26 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="yumebox"/>
+                <data android:scheme="flycat"/>
             </intent-filter>
             <intent-filter>
-                <action android:name="com.github.yumeyucca.yumebox.action.START_CLASH"/>
+                <action android:name="${applicationId}.action.START_CLASH"/>
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
             <intent-filter>
-                <action android:name="com.github.yumeyucca.yumebox.action.STOP_CLASH"/>
+                <action android:name="${applicationId}.action.STOP_CLASH"/>
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </activity>
 
         <activity
-            android:name=".ProxySheetActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:finishOnTaskLaunch="true"
-            android:launchMode="singleInstance"
-            android:taskAffinity=""
-            android:theme="@style/Theme.YumeBox.Translucent.Popup"/>
+                android:name=".ProxySheetActivity"
+                android:excludeFromRecents="true"
+                android:exported="false"
+                android:finishOnTaskLaunch="true"
+                android:launchMode="singleInstance"
+                android:taskAffinity=""
+                android:theme="@style/Theme.FlyCat.Translucent.Popup"/>
 
         <activity
             android:name=".WebViewActivity"
@@ -119,15 +98,12 @@
             android:hardwareAccelerated="true"/>
 
         <activity-alias
-            android:name=".MainActivityAlias"
-            android:exported="true"
-            android:enabled="true"
-            android:icon="@mipmap/ic_launcher"
-            android:roundIcon="@mipmap/ic_launcher"
-            android:targetActivity=".MainActivity">
+                android:name=".MainActivityAlias"
+                android:exported="true"
+                android:targetActivity=".MainActivity">
             <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts"/>
+                    android:name="android.app.shortcuts"
+                    android:resource="@xml/shortcuts"/>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -135,23 +111,29 @@
         </activity-alias>
 
         <meta-data
-            android:name="org.chromium.webapk.shell_apk"
-            android:value=""/>
+                android:name="org.chromium.webapk.shell_apk"
+                android:value=""/>
         <meta-data
-            android:name="com.android.stamp.type"
-            android:value="STAMP_TYPE_DISTRIBUTION_APK"/>
+                android:name="com.android.stamp.type"
+                android:value="STAMP_TYPE_DISTRIBUTION_APK"/>
         <meta-data
-            android:name="com.android.stamp.source"
-            android:value="https://play.google.com/store"/>
+                android:name="com.android.stamp.source"
+                android:value="https://play.google.com/store"/>
 
         <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
+                android:name=".runtime.service.StatusProvider"
+                android:authorities="${applicationId}.status"
+                android:enabled="true"
+                android:exported="false"/>
+
+        <provider
+                android:name="androidx.core.content.FileProvider"
+                android:authorities="${applicationId}.fileprovider"
+                android:exported="false"
+                android:grantUriPermissions="true">
             <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths"/>
+                    android:name="android.support.FILE_PROVIDER_PATHS"
+                    android:resource="@xml/file_paths"/>
         </provider>
 
     </application>

@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,20 +15,18 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-@file:Suppress("FunctionName")
-
-package com.github.yumeyucca.yumebox.presentation.theme
-
+package com.github.lmfirefly.flycat.presentation.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
-import com.github.yumeyucca.yumebox.data.model.ThemeMode
+import com.github.lmfirefly.flycat.core.model.ThemeMode
 import tf.gal.shirosu.fyl.fytxt.compose.FYTxtProvider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 

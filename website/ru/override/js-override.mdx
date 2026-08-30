@@ -5,13 +5,13 @@ icon: file-braces-corner
 ---
 Скрипт <Info> изменяет только текущую копию конфигурации и не изменяет напрямую исходный текст подписки. </Info>
 
-<Prompt description="生成一个符合 YumeBox 运行时约束的 JavaScript 覆写">
-Создайте переопределение JavaScript для YumeBox.
+<Prompt description="生成一个符合 FlyCat 运行时约束的 JavaScript 覆写">
+Создайте переопределение JavaScript для FlyCat.
 
 - `main(profile)` должен быть определен.
 - Должен быть возвращен объект конфигурации; используйте `async main(profile)`, когда требуются асинхронные запросы.
 — Назначайте значения напрямую при изменении полей объекта и используйте `deepMerge(profile, patch, true)` при изменении массивов.
-- Используйте только `yaml`, `deepMerge`, `fetch`, `console`, `b64e`, `b64d` и `Buffer`, предоставленные YumeBox.
+- Используйте только `yaml`, `deepMerge`, `fetch`, `console`, `b64e`, `b64d` и `Buffer`, предоставленные FlyCat.
 – Не возвращайте массивы, строки, числа или `undefined`.
 
 Цель:

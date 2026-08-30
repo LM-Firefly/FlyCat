@@ -1,11 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.YumeBox" parent="android:Theme.Material.NoActionBar"/>
-
-    <style name="Theme.YumeBox.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
-        <item name="windowSplashScreenAnimationDuration">0</item>
-        <item name="postSplashScreenTheme">@style/Theme.YumeBox</item>
-    </style>
+    <style name="Theme.FlyCat" parent="android:Theme.Material.NoActionBar" />
 </resources>

@@ -1,0 +1,47 @@
+---
+title: Version
+sidebarTitle: Version
+---
+
+## Get Version Info
+
+<RequestExample>
+```bash GET /version
+curl http://127.0.0.1:9093/version
+```
+</RequestExample>
+
+`GET /version`
+
+Returns kernel version, OS, and architecture information.
+
+### Response
+
+<ResponseField name="200" type="object">
+  | Field | Type | Description |
+  | --- | --- | --- |
+  | `version` | string | mihomo version |
+  | `meta` | boolean | Whether it is a Meta kernel |
+</ResponseField>
+
+---
+
+## Connectivity Check
+
+<RequestExample>
+```bash GET /
+curl http://127.0.0.1:9093/
+```
+</RequestExample>
+
+`GET /`
+
+Checks if the external controller is accessible.
+
+### Response
+
+<ResponseField name="200" type="object">
+  | Field | Type | Example |
+  | --- | --- | --- |
+  | `hello` | string | `mihomo` |
+</ResponseField>

@@ -1,0 +1,25 @@
+---
+title: Memory
+sidebarTitle: Memory
+---
+
+## Get Memory Usage
+
+<RequestExample>
+```bash GET /memory
+curl http://127.0.0.1:9093/memory
+```
+</RequestExample>
+
+`GET /memory`
+
+Returns the current memory usage of the kernel process.
+
+### Response
+
+<ResponseField name="200" type="object">
+  | Field | Type | Description |
+  | --- | --- | --- |
+  | `inuse` | integer | Current usage in bytes |
+  | `oslimit` | integer | System limit in bytes |
+</ResponseField>

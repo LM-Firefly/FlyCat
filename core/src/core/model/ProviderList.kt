@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,18 +15,16 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-
-@file:Suppress("JavaDefaultMethodsNotOverriddenByDelegation")
-
-package com.github.yumeyucca.yumebox.core.model
+package com.github.lmfirefly.flycat.core.model
 
 import android.os.Parcel
 import android.os.Parcelable
-import com.github.yumeyucca.yumebox.core.util.createListFromParcelSlice
-import com.github.yumeyucca.yumebox.core.util.writeToParcelSlice
+import com.github.lmfirefly.flycat.core.util.serialization.createListFromParcelSlice
+import com.github.lmfirefly.flycat.core.util.serialization.writeToParcelSlice
 
 class ProviderList(providers: List<Provider>) : List<Provider> by providers, Parcelable {
     constructor(parcel: Parcel) : this(Provider.createListFromParcelSlice(parcel, 0, 20))

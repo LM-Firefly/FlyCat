@@ -3,7 +3,8 @@ MetaFeature = {
     Title = "Meta 機能"
 
     Section = {
-        ConnectionAndTraffic = "接続、ログ、ルール"
+        ConnectionAndTraffic = "接続と通信量"
+        BackupRestore = "バックアップとリストア"
         Routing = "ルーティング"
     }
 
@@ -16,27 +17,13 @@ MetaFeature = {
         Title = "カスタムルーティング"
         Summary = "独立したルーティングルール設定"
         EditYaml = "YAML を編集"
-        ManualYamlPresetDiscarded = "手動編集した YAML を保護するため、未保存のプリセット変更を破棄しました."
         GroupTypeTitle = "グループ種別"
         GroupTypeUrlTest = "UrlTest"
         GroupTypeFallback = "Fallback"
         UrlTestRegionGroupTitle = "UrlTest 地域グループ"
         FallbackRegionGroupTitle = "Fallback 地域グループ"
-        Region = {
-            HongKong = "香港自動グループ"
-            Taiwan = "台湾自動グループ"
-            Japan = "日本自動グループ"
-            Singapore = "シンガポール自動グループ"
-            UnitedStates = "米国自動グループ"
-            Other = "その他の地域自動グループ"
-        }
-        Item = {
-            Proxy = "プロキシルール"
-            Ads = "広告ブロック"
-            China = "中国本土を直接接続"
-            Global = "中国国外の地域ルール"
-            Match = "最終 MATCH"
-        }
+        SaveFailed = "保存に失敗しました"
+        EditButton = "編集"
     }
 
     RuntimeRules = {
@@ -49,6 +36,28 @@ MetaFeature = {
         DownloadComplete = "ダウンロード完了: %d/%d"
     }
 
+    Backup = {
+        BackupTitle = "データをバックアップ"
+        BackupSummary = "現在のユーザーデータを zip ファイルにエクスポート"
+        RestoreTitle = "データをリストア"
+        RestoreSummary = "zip ファイルから現在のユーザーデータを上書き"
+        BackupDialogTitle = "バックアップ中"
+        BackupDialogMessage = "現在のユーザーデータをパッケージングしています。お待ちください"
+        RestoreDialogTitle = "リストア中"
+        RestoreDialogMessage = "現在のユーザーデータを展開・復元しています。お待ちください"
+        RestoreConfirmTitle = "リストアの確認"
+        RestoreConfirmMessage = "リストアすると現在のユーザーデータが上書きされます。先にバックアップを作成することをお勧めします。リストア後はアプリを再起動してください。"
+        BackupSuccess = "バックアップ完了"
+        RestoreSuccess = "リストア完了。アプリを再起動してください"
+        RestoreSuccessTitle = "リストア完了"
+        RestoreSuccessMessage = "%s\n\nリストアしたデータを適用するために今すぐ再起動しますか？"
+        WebDavRestoreSuccess = "WebDAV リストア完了: %s"
+        RestartNow = "今すぐ再起動"
+        RestartLaunchNotFound = "再起動に失敗しました: ランチャーエントリが見つかりません"
+        BackupFailed = "バックアップに失敗しました: %s"
+        RestoreFailed = "リストアに失敗しました: %s"
+    }
+
     AgeKey = {
         Section = "Age キー"
         X25519Title = "X25519"
@@ -57,5 +66,39 @@ MetaFeature = {
         PublicKey = "公開鍵"
         Generate = "生成"
         DerivePublicKey = "公開鍵を導出"
+    }
+
+    WebDav = {
+        ConfigTitle = "WebDAV 設定"
+        ConfigSummary = "WebDAV のアドレス、サブディレクトリ、アカウント、パスワードを設定"
+        TestTitle = "WebDAV 接続テスト"
+        TestSummary = "WebDAV 設定の可用性を確認"
+        TestLoadingTitle = "WebDAV テスト"
+        TestLoadingMessage = "WebDAV に接続中。お待ちください"
+        TestSuccess = "WebDAV は利用可能です"
+        TestFailed = "WebDAV テストに失敗しました: %s"
+        ConfigRequired = "先に WebDAV 設定を完了してください"
+        BackupTitle = "WebDAV クラウドバックアップ"
+        BackupSummary = "現在のデータをパッケージして WebDAV にアップロード"
+        BackupLoadingTitle = "WebDAV バックアップ"
+        BackupLoadingMessage = "バックアップを作成してアップロード中。お待ちください"
+        BackupSuccess = "WebDAV バックアップ完了: %s"
+        BackupFailed = "WebDAV バックアップに失敗しました: %s"
+        RestoreTitle = "WebDAV クラウドリストア（最新）"
+        RestoreSummary = "WebDAV から最新のバックアップをダウンロードしてリストア"
+        RestoreConfirmTitle = "WebDAV リストアの確認"
+        RestoreConfirmMessage = "現在のユーザーデータが上書きされます。先にローカルまたはクラウドのバックアップを作成することをお勧めします。"
+        RestoreLoadingTitle = "WebDAV リストア"
+        RestoreLoadingMessage = "最新のバックアップをダウンロードしてリストア中。お待ちください"
+        RestoreFailed = "WebDAV リストアに失敗しました: %s"
+        ConfigUrlExample = "URL の例: https://dav.jianguoyun.com/dav/"
+        ValidationUrlRequired = "WebDAV URL を入力してください"
+        ValidationAccountRequired = "WebDAV アカウントを入力してください"
+        ValidationPasswordRequired = "WebDAV パスワードを入力してください"
+        ConfigSaved = "WebDAV 設定を保存しました"
+        LabelUrl = "WebDAV URL"
+        LabelDir = "サブディレクトリ（任意）"
+        LabelAccount = "アカウント"
+        LabelPassword = "パスワード"
     }
 }

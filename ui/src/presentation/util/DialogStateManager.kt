@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,13 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-@file:Suppress("UnusedSymbol")
-
-package com.github.yumeyucca.yumebox.presentation.util
-
+package com.github.lmfirefly.flycat.presentation.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -112,8 +110,7 @@ class DialogState<T>(
  *
  * @return A remembered DialogState instance
  */
-@Composable
-fun rememberDialogVisibilityState(): DialogState<Unit> = remember { DialogState() }
+@Composable fun rememberDialogVisibilityState(): DialogState<Unit> = remember { DialogState() }
 
 /**
  * Creates and remembers a [DialogState] with associated payload type.
@@ -121,8 +118,7 @@ fun rememberDialogVisibilityState(): DialogState<Unit> = remember { DialogState(
  * @param T The type of payload associated with the dialog
  * @return A remembered DialogState instance
  */
-@Composable
-fun <T> rememberDialogState(): DialogState<T> = remember { DialogState() }
+@Composable fun <T> rememberDialogState(): DialogState<T> = remember { DialogState() }
 
 /**
  * Specialized dialog state for common confirm/delete scenarios.

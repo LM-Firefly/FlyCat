@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,13 +15,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-package com.github.yumeyucca.yumebox.common.util
+package com.github.lmfirefly.flycat.common.util
 
 import android.net.Uri
-import com.github.yumeyucca.yumebox.data.model.RemoteBackend
+import com.github.lmfirefly.flycat.core.model.RemoteBackend
 
 /** Builds a dashboard URL that opens its controller setup with the selected backend. */
 fun buildRemotePanelUrl(
@@ -42,4 +43,5 @@ fun buildRemotePanelUrl(
 }
 
 /** Android 17 local-network protection does not apply to connections within this process. */
-fun RemoteBackend.requiresLocalNetworkPermission(): Boolean = host.trim().lowercase() !in setOf("127.0.0.1", "::1", "[::1]", "localhost")
+fun RemoteBackend.requiresLocalNetworkPermission(): Boolean =
+    host.trim().lowercase() !in setOf("127.0.0.1", "::1", "[::1]", "localhost")

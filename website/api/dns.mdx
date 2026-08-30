@@ -1,0 +1,32 @@
+---
+title: 域名查询
+sidebarTitle: 域名查询
+---
+
+## DNS 查询
+
+<RequestExample>
+```bash GET /dns/query
+curl "http://127.0.0.1:9093/dns/query?name=example.com&type=A"
+```
+</RequestExample>
+
+`GET /dns/query`
+
+通过内核内置 DNS 解析器查询域名。
+
+### 查询参数
+
+<ParamField query="name" type="string" required>
+  要查询的域名。
+</ParamField>
+
+<ParamField query="type" type="string">
+  查询类型，如 `A`、`AAAA`、`CNAME`、`MX` 等。默认 `A`。
+</ParamField>
+
+### 响应
+
+<ResponseField name="200" type="object">
+  DNS 查询结果，包含 `Question` 和 `Answer` 字段。
+</ResponseField>

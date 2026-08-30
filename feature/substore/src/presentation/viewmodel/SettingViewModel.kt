@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,23 +15,32 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
-@file:Suppress("UnusedSymbol", "CanBeParameter")
-
-package com.github.yumeyucca.yumebox.presentation.viewmodel
+package com.github.lmfirefly.flycat.feature.substore.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.yumeyucca.yumebox.data.store.FeatureStore
-import com.github.yumeyucca.yumebox.substore.SubStoreServiceController
+import com.github.lmfirefly.flycat.core.contract.SubStoreNavigationHandler
+import com.github.lmfirefly.flycat.core.contract.SubStoreSettings
+import com.github.lmfirefly.flycat.feature.substore.SubStoreServiceController
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
-class SettingViewModel(private val store: FeatureStore) : ViewModel() {
+class SubStoreNavigationHandlerImpl : SubStoreNavigationHandler {
+    private val _openUrlEvents = MutableSharedFlow<String>()
+    override val openUrlEvents: SharedFlow<String> = _openUrlEvents.asSharedFlow()
+
+    suspend fun emitOpenUrl(url: String) {
+        _openUrlEvents.emit(url)
+    }
+}
+
+class SettingViewModel(private val store: SubStoreSettings, private val navigationHandler: SubStoreNavigationHandlerImpl) : ViewModel() {
     val backendPort = store.backendPort
     val frontendPort = store.frontendPort
 
@@ -39,14 +48,16 @@ class SettingViewModel(private val store: FeatureStore) : ViewModel() {
     val events: SharedFlow<SettingEvent> = _events.asSharedFlow()
 
     val isSubStoreRunning: Boolean
-        get() = SubStoreServiceController.snapshot.value.isActive
+        get() = SubStoreServiceController.snapshot.value.isRunning
 
     fun onSubStoreCardClicked() {
         if (!isSubStoreRunning) return
         val host = currentHost()
         val frontendUrl = buildUrl(host, frontendPort.value)
         val backendUrl = buildUrl(host, backendPort.value)
-        emitEvent(SettingEvent.OpenWebView("$frontendUrl/subs?api=$backendUrl"))
+        val url = "$frontendUrl/subs?api=$backendUrl"
+        emitEvent(SettingEvent.OpenWebView(url))
+        viewModelScope.launch { navigationHandler.emitOpenUrl(url) }
     }
 
     // `0.0.0.0` is a bind address, not a browser target.

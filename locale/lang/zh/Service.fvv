@@ -5,10 +5,6 @@ Service = {
         UnknownProfile = "未知設定檔"
         SpeedLine = "下行 %s  上行 %s"
         TotalTraffic = "總流量 %s"
-        LogChannel = "日誌記錄"
-        LogRecording = "正在記錄日誌"
-        LogRecordingPending = "日誌記錄中..."
-        Stop = "停止"
     }
 
     Tile = {

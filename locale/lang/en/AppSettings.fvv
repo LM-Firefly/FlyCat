@@ -5,17 +5,20 @@ AppSettings = {
     Section = {
         Behavior = "Behavior"
         Interface = "Interface"
+        Navigation = "Navigation"
         Privacy = "Privacy"
         Service = "Service"
         Network = "Network"
-        Navigation = "Navigation"
         Home = "Home"
     }
 
     Behavior = {
         AutoStartTitle = "Auto Start"
+        AutoStartSummary = "Automatically start proxy service on app launch and boot"
         AutoUpdateOnStartTitle = "Update on Start"
+        AutoUpdateOnStartSummary = "Automatically update the current profile on app launch"
         OneChinaTitle = "One-China Policy"
+        OneChinaSummary = "Enforce the One-China policy within the app"
     }
 
     Interface = {
@@ -25,6 +28,7 @@ AppSettings = {
         ThemeModeLight = "Light"
         ThemeModeDark = "Dark"
         LanguageTitle = "App Language"
+        LanguageSummary = "Choose the app language"
         LanguageSystem = "Follow System"
         LanguageChinese = "简体中文"
         LanguageChineseTraditional = "繁體中文"
@@ -34,47 +38,81 @@ AppSettings = {
 
         ColorThemeTitle = "Theme Palette"
         ColorThemePickerTitle = "Pick Theme Color"
-        ColorThemeCodeLabel = "Theme Color Code (#RRGGBB)"
+        ColorThemeCodeLabel = "Theme Color Code (#AARRGGBB)"
         ColorThemeCustomSummary = "Current theme color: %s"
         ThemeColorPolarityInvertTitle = "Invert Theme Foreground"
+        ThemeColorPolarityInvertSummary = "If themed colors look odd, try enabling this"
         TopBarBlurTitle = "Blur"
+        TopBarBlurSummary = "Apply a  blur background to"
         AutoHideNavbarTitle = "Auto-hide Navbar"
+        AutoHideNavbarSummary = "Hide navbar on scroll down and show on scroll up"
 
         PageScaleTitle = "Page Scale"
         PageScaleDialogSummary = "80% - 120%"
-        PredictiveBackTitle = "Predictive Back Gesture"
-        PredictiveBackRestartSummary = "Takes effect the next time the app starts"
-        PredictiveBackProgressTitle = "Predictive Back Amplitude"
 
         ClassicHomeTitle = "Classic Home"
-        SystemWallpaperTitle = "Set as System Wallpaper"
-        CustomIconTitle = "Custom App Icon"
+        HitokotoTitle = "Hitokoto"
+        HitokotoSummary = "Show Hitokoto quote on classic home TopBar"
+        SidebarExpandedTitle = "Expand Sidebar"
         HomeQuoteTitle = "Home Quote"
-        HomeQuoteDefault = "Wait for a cloud to finish roaming on a quiet route"
+        HomeQuoteDefault = "Always believe that something wonderful is about to happen"
+        HomeQuoteAuthorTitle = "Home Quote Author"
+        HomeQuoteAuthorDefault = "Firefly"
         EditHomeQuoteTitle = "Edit Home Quote"
+        EditHomeQuoteAuthorTitle = "Edit Home Quote Author"
         HomeWallpaperImportFailed = "Could not copy the wallpaper locally; using the original source"
+        HomeWallpaperSourceTitle = "Wallpaper Source"
+        HomeWallpaperSourceSummary = "Pick from gallery or enter a URL"
+        HomeWallpaperSourceGallery = "Pick from Gallery"
+        HomeWallpaperSourceUrl = "Enter URL"
+        HomeWallpaperUrlDialogTitle = "Set Remote Wallpaper"
+        WallpaperScrimTitle = "Wallpaper Bottom Dimming"
     }
 
     Privacy = {
 
+        HideIconTitle = "Hide App Icon"
+        HideIconSummary = "After hiding, you can open via dialer *#*#0721#*#*"
         HideFromRecentsTitle = "Hide Recents Card"
+        HideFromRecentsSummary = "Do not show this app in the recent tasks list (recents card)"
     }
 
     ServiceSection = {
         TrafficNotificationTitle = "Show Traffic Notification"
+        TrafficNotificationSummary = "Display traffic usage in notification bar"
+        LogLevelTitle = "Log Level"
+        LogLevelSummary = "Set the minimum app runtime log level"
         SingleNodeTestTitle = "Single Node Test"
+        SingleNodeTestSummary = "Tap icon on node card to test individual node delay"
         ExitUiWhenBackgroundTitle = "Release UI In Background"
+        ExitUiWhenBackgroundSummary = "Release the activity UI when the app is fully hidden in background while keeping the proxy service running"
         BatteryOptimizationTitle = "Unrestricted Battery"
-        BatteryOptimizationAlreadyDisabled = "Battery optimization is already disabled"
+        BatteryOptimizationSummaryEnabled = "Background activity is unrestricted"
+        BatteryOptimizationSummaryDisabled = "Restricted by battery optimization; tap to fix"
     }
 
     Network = {
+        UpdateChannelTitle = "Update Channel"
+        UpdateChannelSummary = "Choose which GitHub Release channel is used for update checks"
+        UpdateChannelStable = "Stable"
+        UpdateChannelPre = "Pre-release"
+        UpdateChannelSmart = "Smart"
+        AutoCheckAppUpdateTitle = "Auto-check App Updates"
+        AutoCheckAppUpdateSummary = "Check GitHub Release updates automatically every 1 hour in background"
         CustomUserAgentTitle = "Custom User-Agent"
         CustomUserAgentSummaryDefault = "Not set, using default"
     }
 
+    PredictiveBack = {
+        Title = "Predictive Back Gesture"
+        RestartSummary = "Takes effect the next time the app starts"
+        ProgressTitle = "Predictive Back Amplitude"
+    }
+
     WarningDialog = {
         Title = "Warning"
+        HideIconMsg1 = "Please make sure you can access this app's settings before hiding!"
+        HideIconMsg2 = "For HyperOS, please enable Auto-start and Background Pop-up permissions to receive dialer codes!"
     }
 
     EditDialog = {

@@ -1,0 +1,86 @@
+---
+title: 存储
+sidebarTitle: 存储
+---
+
+## 获取存储值
+
+<RequestExample>
+```bash GET /storage/{key}
+curl http://127.0.0.1:9093/storage/my-key
+```
+</RequestExample>
+
+`GET /storage/{key}`
+
+获取内核键值存储中指定 key 的值。
+
+### 路径参数
+
+<ParamField path="key" type="string" required>
+  存储键名。
+</ParamField>
+
+### 响应
+
+<ResponseField name="200" type="string">
+  存储的值（字符串）。
+</ResponseField>
+
+---
+
+## 写入存储值
+
+<RequestExample>
+```bash PUT /storage/{key}
+curl -X PUT http://127.0.0.1:9093/storage/my-key \
+  -H "Content-Type: application/json" \
+  -d '"my-value"'
+```
+</RequestExample>
+
+`PUT /storage/{key}`
+
+写入或更新内核键值存储中的值。
+
+### 路径参数
+
+<ParamField path="key" type="string" required>
+  存储键名。
+</ParamField>
+
+### 请求体
+
+请求体为要存储的值（JSON 字符串）。
+
+### 响应
+
+<ResponseField name="204" type="null">
+  写入成功。
+</ResponseField>
+
+---
+
+## 删除存储值
+
+<RequestExample>
+```bash DELETE /storage/{key}
+curl -X DELETE http://127.0.0.1:9093/storage/my-key
+```
+</RequestExample>
+
+`DELETE /storage/{key}`
+
+删除内核键值存储中指定 key 的值。
+
+### 路径参数
+
+<ParamField path="key" type="string" required>
+  存储键名。
+</ParamField>
+
+### 响应
+
+<ResponseField name="204" type="null">
+  删除成功。
+</ResponseField>

@@ -15,7 +15,7 @@ Settings = {
         Override = "Переопределения"
         OverrideSummary = "YAML, JS и переопределение правил"
         MetaFeatures = "Функции Meta"
-        MetaFeaturesSummary = "Соединения, журналы, правила и статистика"
+        MetaFeaturesSummary = "Соединения, маршрутизация, GeoX и ключи"
     }
 
     More = {
@@ -31,5 +31,10 @@ Settings = {
 
     Error = {
         WebviewFailed = "Не удалось открыть WebView: %s"
+    }
+
+    RemoteController = {
+        ConnectionSuccess = "Подключено: режим %s"
+        ConnectionFailed = "Ошибка подключения: %s"
     }
 }

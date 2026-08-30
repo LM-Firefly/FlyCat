@@ -8,8 +8,7 @@ ProfilesVM = {
         ProfileUpdated = "配置已更新：%s"
         UpdateFailed = "更新配置失败：%s"
         ToggleFailed = "切换状态失败：%s"
-        ProvidersPartial = "配置已保存，%d 个外部资源失败：%s"
-        ProvidersUndiscovered = "配置已保存，但未能识别外部资源列表"
+        CannotDeleteActiveProfile = "请先停止代理再删除当前配置"
     }
 
     Progress = {

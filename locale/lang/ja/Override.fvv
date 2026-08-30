@@ -67,6 +67,10 @@ Override = {
         EmptyJavaScript = "JS ファイルが空です"
     }
 
+    Error = {
+        SaveFailed = "上書きの保存に失敗しました"
+    }
+
     Export = {
         Failed = "書き出しに失敗しました: %s"
         Success = "設定を書き出しました: %s"
@@ -81,8 +85,8 @@ Override = {
         }
         Delete = {
             Title = "設定を削除"
-            InUseMessage = "設定 %s は購読で使用中です.削除すると関連付けが解除されます.本当に削除しますか？この操作は元に戻せません."
-            Message = "設定 %s を削除しますか？この操作は元に戻せません."
+            InUseMessage = "設定 %s は購読で使用中です。削除すると関連付けが解除されます。本当に削除しますか？この操作は元に戻せません。"
+            Message = "設定 %s を削除しますか？この操作は元に戻せません。"
         }
         Button = {
             Cancel = "キャンセル"
@@ -104,7 +108,6 @@ Override = {
 
     Save = {
         ImportDefaultName = "インポートした上書き設定"
-        Failed = "上書き設定の保存に失敗しました"
     }
 
 

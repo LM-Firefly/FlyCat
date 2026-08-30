@@ -1,22 +1,40 @@
 diff --git a/listener/sing_tun/server_notandroid.go b/listener/sing_tun/server_notandroid.go
-index e393d4ca..dd3778ad 100644
+index e393d4ca..071ea0e5 100644
 --- a/listener/sing_tun/server_notandroid.go
 +++ b/listener/sing_tun/server_notandroid.go
-@@ -3,9 +3,18 @@
+@@ -3,9 +3,36 @@
  package sing_tun
  
  import (
++	"math"
 +	"runtime"
 +
  	tun "github.com/metacubex/sing-tun"
++	"github.com/metacubex/sing/common/ranges"
  )
  
-+// On Android, build the uid-range routing rules (CFA no-ops this — its Java VpnService does per-app
-+// routing — but root Tun opens its own auto-route device and needs them, else every uid incl. the
-+// core's own is pulled into the tun and loops). android-user expansion needs no PackageManager.
++// On Android with cmfa build tag, server_android.go (which has PackageManager-based
++// UID routing) is excluded. This file is compiled instead. Without explicit UID rules,
++// the kernel TUN auto-route may not correctly scope which UIDs enter the tunnel,
++// causing per-app traffic to bypass mihomo's Tracker (PushUploaded/PushDownloaded)
++// -- the statistic.DefaultManager.Total() then under-counts.
++//
++// Fix: when no IncludeUID is configured (empty = all apps), inject a catch-all UID
++// range so every app's traffic flows through the tracked proxy connections.
++// BuildAndroidRules with nil PackageManager still sets the kernel-level uid routing
++// via sing-tun.
  func (l *Listener) buildAndroidRules(tunOptions *tun.Options) error {
 +	if runtime.GOOS != "android" {
 +		return nil
++	}
++	// When IncludeUID is empty the caller intends "all UIDs". Ensure sing-tun sees
++	// an explicit range rather than nothing, so the kernel TUN routing table is
++	// populated. Use math.MaxUint32 to cover all Android UIDs including multi-user
++	// (uid = userId*100000+appId).
++	if len(tunOptions.IncludeUID) == 0 {
++		tunOptions.IncludeUID = []ranges.Range[uint32]{
++			ranges.New[uint32](0, math.MaxUint32),
++		}
 +	}
 +	tunOptions.BuildAndroidRules(nil, l.handler)
  	return nil

@@ -1,7 +1,7 @@
 /*
- * This file is part of YumeBox.
+ * This file is part of FlyCat.
  *
- * YumeBox is free software: you can redistribute it and/or modify
+ * FlyCat is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License.
@@ -15,15 +15,16 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
  *
  */
 
 @file:Suppress("UnstableApiUsage")
 
-rootProject.name = "YumeBox"
+
+rootProject.name = "FlyCat"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
-
 enableFeaturePreview("STABLE_CONFIGURATION_CACHE")
 
 pluginManagement {
@@ -32,26 +33,35 @@ pluginManagement {
         mavenCentral()
         google()
         gradlePluginPortal()
-
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap")
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
         maven("https://jitpack.io")
-        maven("https://maven.oom-wg.dev") {
-            content { includeGroupByRegex("ren\\.shiror\\.(fyl\\.fytxt|fvv)(\\..+)?") }
-        }
         maven("https://maven.aliyun.com/nexus/content/repositories/releases/") {
-            content { excludeGroupByRegex("ren\\.shiror\\.(fyl\\.fytxt|fvv)(\\..+)?") }
+            content {
+                excludeGroupAndSubgroups("ren.shiror")
+                excludeGroupAndSubgroups("work.niggergo")
+                excludeGroupAndSubgroups("dev.oom-wg")
+            }
+        }
+        maven("https://maven.oom-wg.dev")
+        maven("https://oom-maven.sawahara.host") {
+            content {
+                includeGroupAndSubgroups("ren.shiror")
+                includeGroupAndSubgroups("work.niggergo")
+                includeGroupAndSubgroups("dev.oom-wg")
+            }
         }
     }
 }
 
-// The settings plugin classpath resolves outside the root project's buildscript block,
-// so vulnerable-version floors are enforced here separately.
+// 设置插件的类路径（gropify引入Jackson 3）在根项目的构建脚本块外部解析，因此此处单独强制执行易受攻击版本的最低版本要求。
+// 请保持与gradle/libs.versions.toml（jackson3、netty、guava）中的版本同步。
 buildscript {
     configurations["classpath"].resolutionStrategy.eachDependency {
         when {
             requested.group.startsWith("tools.jackson") -> useVersion("3.1.5")
-            requested.group == "io.netty" -> useVersion("4.1.136.Final")
+            requested.group == "io.netty" -> useVersion("4.2.17.Final")
+            requested.group == "com.google.guava" -> useVersion("32.0.0-android")
         }
     }
 }
@@ -64,15 +74,24 @@ dependencyResolutionManagement {
         mavenCentral()
         google()
         gradlePluginPortal()
-
         maven("https://jitpack.io")
         maven("https://raw.githubusercontent.com/MetaCubeX/maven-backup/main/releases")
-        maven("https://maven.oom-wg.dev") {
-            content { includeGroupByRegex("ren\\.shiror\\.(fyl\\.fytxt|fvv)(\\..+)?") }
-        }
         maven("https://maven.aliyun.com/nexus/content/repositories/releases/") {
-            content { excludeGroupByRegex("ren\\.shiror\\.(fyl\\.fytxt|fvv)(\\..+)?") }
+            content {
+                excludeGroupAndSubgroups("ren.shiror")
+                excludeGroupAndSubgroups("work.niggergo")
+                excludeGroupAndSubgroups("dev.oom-wg")
+            }
         }
+        maven("https://maven.oom-wg.dev")
+        maven("https://oom-maven.sawahara.host") {
+            content {
+                includeGroupAndSubgroups("ren.shiror")
+                includeGroupAndSubgroups("work.niggergo")
+                includeGroupAndSubgroups("dev.oom-wg")
+            }
+        }
+        maven("https://maven.kr328.app/releases")
     }
 }
 
@@ -81,49 +100,23 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-gropify {
-    isEnabled = true
-    global {
-        common {
-            isEnabled = true
-            useTypeAutoConversion = true
-            useValueInterpolation = true
-            existsPropertyFiles("gradle.properties", addDefault = false)
-            excludeKeys(
-                "signing.store.password",
-                "signing.key.password",
-                "signing.store.path",
-                "signing.key.alias",
-            )
-        }
-        android {
-            generateDirPath = "build/generated/gropify"
-            sourceSetName = "main"
-            packageName = "com.github.yumeyucca.yumebox.yumebox.generated"
-            useKotlin = true
-            isRestrictedAccessEnabled = false
-            isIsolationEnabled = true
-        }
-    }
-    projects(":core", ":extension") {
-        android { isEnabled = false }
-    }
-}
-
 include(
-    ":api",
     ":core",
-    ":common",
     ":locale",
     ":ui",
     ":data",
     ":extension",
     ":app",
-    ":feature:substore",
-    ":feature:proxy",
-    ":feature:override",
+    ":feature:about",
+    ":feature:dashboard",
     ":feature:editor",
-    ":feature:meta",
+    ":feature:home",
+    ":feature:log",
+    ":feature:override",
+    ":feature:profiles",
+    ":feature:proxy",
+    ":feature:settings",
+    ":feature:substore",
     ":runtime:api",
     ":runtime:client",
     ":runtime:service",
