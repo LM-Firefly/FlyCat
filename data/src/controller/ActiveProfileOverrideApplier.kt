@@ -19,7 +19,7 @@
  *
  */
 
-package com.github.lmfirefly.flycat.data.executor
+package com.github.lmfirefly.flycat.data.controller
 
 import com.github.lmfirefly.flycat.core.contract.OverrideApplier
 import com.github.lmfirefly.flycat.core.model.profile.Profile
