@@ -1,0 +1,13 @@
+<Editor Page>
+Editor = {
+    JsonDiagnostic = {
+        FormatError = "Ошибка формата JSON"
+        MustStartWithBraceOrBracket = "JSON должен начинаться с '{' или '['"
+        SyntaxError = "Синтаксическая ошибка JSON"
+        UnterminatedStringOrObject = "Незавершённая строка или объект"
+        Unknown = "Неизвестно"
+        Expected = "Ожидалось %s"
+        MissingValue = "Отсутствует значение"
+        DuplicateKey = "Дублирующийся ключ"
+    }
+}

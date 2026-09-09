@@ -1,0 +1,50 @@
+---
+title: "更新日志"
+sidebarTitle: "更新日志"
+description: "FlyCat 项目的版本更新记录和变更历史"
+rss: "true"
+icon: "clock"
+---
+
+<Card title="GitHub Releases" icon="download" horizontal href="https://github.com/LM-Firefly/FlyCat/releases">
+</Card>
+
+<Update label="2026-09-09" tags={["里程碑","功能更新"]} description="v0.5.6 · FlyCat 独立维护初始化">
+  ## FlyCat 正式作为独立项目维护
+
+  与上游 YumeBox 仓库解除 fork 关系，合并全部历史 commit 为单个初始化提交。
+
+  ### 架构重构
+
+  - 全局重命名 `dev.yume` → `dev.flycat`
+  - 重构为模块化架构：`:core` / `:ui` / `:data` / `:runtime:{api,client,service}` / `:feature:{about,dashboard,editor,home,log,override,profiles,proxy,settings,substore}`
+  - `:core` 引入契约接口层；模型按领域重组
+  - `:data` 扁平化：移除中间层，重组为 store/repository/executor/controller
+  - `:runtime:client` / `:runtime:service` 重写
+
+  ### 原生层
+
+  - 移除 C++ JNI 层，Rust JNI 大幅扩展
+  - Go native 重构：新增 tunnel/config/app/tun/proxy 子模块
+  - Rust JS 引擎与 compiler 模块重组
+
+  ### 新增功能
+
+  - Moe 首页（布局/骨架屏/壁纸/拓扑图/速度图/流量展示）
+  - 连接管理页面（详情面板/速度显示/一键关闭）
+  - 流量统计（分时段柱状图/分应用排序）
+  - WebDAV 备份恢复 / WiFi 自动化 / Age 加密
+  - GitHubUpdateManager 自动更新
+  - RootTun 服务架构
+  - 日语/俄语/繁体中文 locale 支持
+
+  ### 网站
+
+  - 深链 scheme 更正为 `flycat://`
+  - 模块依赖图按实现重写
+  - Mermaid 暗色模式适配
+  - SPA 导航修复（GitHub Pages 子路径部署）
+  - 应用指南设置项与实现对齐
+
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.6)
+</Update>

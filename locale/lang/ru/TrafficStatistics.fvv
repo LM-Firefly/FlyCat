@@ -1,0 +1,52 @@
+<Traffic Statistics Page>
+TrafficStatistics = {
+    Title = "Статистика трафика"
+    EntrySummary = "Просмотр использования трафика"
+
+    TimeRange = {
+        Today = "Сегодня"
+        Week = "2 недели"
+    }
+
+    Summary = {
+        TodayTraffic = "Трафик за сегодня"
+        WeekTraffic = "Трафик за 2 недели"
+    }
+
+
+
+    Donut = {
+        Other = "Другое"
+    }
+
+    Sort = {
+        ByName = "Имя приложения"
+        ByUpload = "Отдача"
+        ByDownload = "Загрузка"
+        ByTotal = "Трафик"
+    }
+
+    Action = {
+        Clear = "Очистить статистику"
+        ClearSuccess = "Статистика очищена"
+    }
+
+    Section = {
+        Traffic = "Трафик"
+        PerAppTraffic = "Трафик по приложениям"
+        EmptyApps = "Нет статистики по приложениям"
+    }
+
+    Metric = {
+        Download = "Загрузка"
+        Upload = "Отдача"
+        Total = "Всего"
+        UsageLine = "↓ %s  ↑ %s"
+    }
+
+    Buckets = {
+        UnknownAppName = "Неизвестное приложение"
+        UnattributedTrafficName = "Неучтённый трафик"
+        UnattributedRouteName = "Неучтённый маршрут"
+    }
+}

@@ -1,0 +1,87 @@
+<Home Page>
+Home = {
+    Title = "FlyCat"
+
+    Message = {
+        ConfigSwitched = "Config switched"
+        ConfigSwitchFailed = "Config switch failed: %s"
+        Preparing = "Preparing..."
+        StartFailed = "Start failed: %s"
+        StopFailed = "Stop failed: %s"
+    }
+
+    Control = {
+        HintAddProfile = "Please add a profile first"
+        HintEnableProfile = "Please enable a profile in Config page first"
+    }
+
+    NodeInfo = {
+        Node = "Node"
+        Delay = "Delay"
+        Unknown = "Unknown"
+        DelayValue = "%dms"
+    }
+
+    Traffic = {
+        UpShort = "UP"
+        DownShort = "DOWN"
+        DownloadLong = "DOWNLOAD"
+        UploadLong = "UPLOAD"
+        NoProfile = "No Profile"
+    }
+
+    IpInfo = {
+        ExitIp = "Exit IP"
+    }
+
+    Status = {
+        Connecting = "Connecting"
+        Disconnecting = "Disconnecting"
+        Running = "Running"
+        Lost = "Lost"
+        TapToStart = "Tap to start"
+    }
+
+    Greeting = {
+        Morning = "Good morning"
+        Afternoon = "Good afternoon"
+        Evening = "Good evening"
+        Night = "Good night"
+    }
+
+    Quote = {
+        AuthorPrefix = "—— %s"
+    }
+
+    Control = {
+        HintAddProfile = "Please add a profile first"
+        HintEnableProfile = "Please enable a profile in Config page first"
+        Start = "Start"
+        Stop = "Stop"
+    }
+
+    RunMode = {
+        Vpn = "VPN"
+        Tun = "TUN"
+        Ebpf = "eBPF"
+    }
+
+    TunnelMode = {
+        Rule = "Rule"
+        Global = "Global"
+        Direct = "Direct"
+    }
+
+    PreviewGuide = {
+        Title = "Welcome to FlyCat"
+        Description = "Tap Start at the bottom to connect"
+        Next = "Next"
+        Start = "Get started"
+        WallpaperTitle = "Change wallpaper"
+        WallpaperDescription = "Long-press the wallpaper to pick from your album"
+        SwipeTitle = "Swipe pages"
+        SwipeDescription = "Swipe across Home to switch to Proxy, Profiles, and Settings"
+        AddTitle = "Add subscription"
+        AddDescription = "Click the icon in the upper right corner and paste the link to add it"
+    }
+}

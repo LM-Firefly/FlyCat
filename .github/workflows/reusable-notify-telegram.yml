@@ -1,0 +1,80 @@
+name: Reusable Notify Telegram
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        required: true
+        type: string
+      release_tag:
+        required: true
+        type: string
+      publish_artifact_name:
+        required: true
+        type: string
+      meta_asset_name:
+        required: true
+        type: string
+      telegram_title:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download publish artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ inputs.publish_artifact_name }}
+          path: publish
+
+      - name: Check upload availability
+        id: check_upload
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.BOT_TOKEN }}" ]; then
+            echo "UPLOAD=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "UPLOAD=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bot session cache
+        if: steps.check_upload.outputs.UPLOAD == 'true'
+        uses: actions/cache@v6
+        with:
+          path: scripts/yumebot.session
+          key: ${{ runner.os }}-bot-session-${{ github.ref_name }}-${{ inputs.channel }}
+          restore-keys: |
+            ${{ runner.os }}-bot-session-${{ github.ref_name }}-
+            ${{ runner.os }}-bot-session-
+
+      - name: Upload to Telegram
+        if: steps.check_upload.outputs.UPLOAD == 'true'
+        env:
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          MESSAGE_THREAD_ID: ${{ secrets.MESSAGE_THREAD_ID }}
+          TITLE: ${{ inputs.telegram_title }}
+          BRANCH: ${{ github.ref_name }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+          COMMIT_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+          PUBLISH_DIR: publish
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          LOGO_URL: https://yumebox.gal.tf/logo/Yume.webp
+        run: python3 $GITHUB_WORKSPACE/scripts/yumebot.py

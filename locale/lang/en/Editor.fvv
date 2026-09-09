@@ -1,0 +1,13 @@
+<Editor Page>
+Editor = {
+    JsonDiagnostic = {
+        FormatError = "JSON format error"
+        MustStartWithBraceOrBracket = "JSON must start with '{' or '['"
+        SyntaxError = "JSON syntax error"
+        UnterminatedStringOrObject = "Unterminated string or object"
+        Unknown = "Unknown"
+        Expected = "Expected %s"
+        MissingValue = "Missing value"
+        DuplicateKey = "Duplicate key"
+    }
+}

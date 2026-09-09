@@ -1,0 +1,48 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeLira 2025 - Present
+ *
+ */
+
+plugins {
+    id("flycat-android-library")
+    kotlin("plugin.serialization")
+}
+
+
+android {
+    namespace = providers.gradleProperty("project.namespace.core").get()
+    defaultConfig {
+        consumerProguardFiles("consumer-rules.pro")
+    }
+}
+
+dependencies {
+    implementation(project(":locale"))
+    implementation(libs.androidx.lifecycle.viewmodel)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.snakeyaml.engine)
+    implementation(libs.androidx.annotation.jvm)
+    implementation(libs.timber)
+    implementation(libs.xz)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+}

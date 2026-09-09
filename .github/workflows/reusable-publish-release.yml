@@ -1,0 +1,126 @@
+name: Reusable Publish Release
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        required: true
+        type: string
+      release_tag:
+        required: true
+        type: string
+      release_name:
+        required: true
+        type: string
+      prerelease:
+        required: true
+        type: boolean
+      publish_artifacts:
+        required: true
+        type: string
+      cleanup_assets:
+        required: true
+        type: boolean
+      delete_existing_release:
+        description: "Delete the existing release and git tag before publishing"
+        required: false
+        type: boolean
+        default: false
+      run_id:
+        description: "Workflow run ID to download artifacts from (defaults to current run)"
+        required: false
+        type: string
+        default: ""
+      artifact_repository:
+        description: "Repository to download artifacts from (owner/repo, defaults to current repo)"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Download publish artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: publish-${{ inputs.channel }}-*
+          path: publish
+          merge-multiple: true
+          run-id: ${{ inputs.run_id || github.run_id }}
+          repository: ${{ inputs.artifact_repository || github.repository }}
+
+      - name: Delete existing release and tag
+        if: inputs.delete_existing_release
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const tag = '${{ inputs.release_tag }}';
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            try {
+              const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+              await github.rest.repos.deleteRelease({ owner, repo, release_id: release.data.id });
+              core.info(`Deleted release for tag ${tag}`);
+            } catch (error) {
+              if (error.status === 404) core.info(`Release ${tag} not found, skip.`);
+              else throw error;
+            }
+
+            try {
+              await github.rest.git.getRef({ owner, repo, ref: `tags/${tag}` });
+              await github.rest.git.deleteRef({ owner, repo, ref: `tags/${tag}` });
+              core.info(`Deleted git tag ${tag}`);
+            } catch (error) {
+              if (error.status === 404 || error.status === 422) core.info(`Tag ${tag} not found, skip.`);
+              else throw error;
+            }
+
+      - name: Cleanup existing assets for rolling tag
+        if: inputs.cleanup_assets
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const tag = '${{ inputs.release_tag }}';
+            try {
+              const release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag
+              });
+              const assets = release.data.assets || [];
+              for (const asset of assets) {
+                await github.rest.repos.deleteReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  asset_id: asset.id
+                });
+                core.info(`Deleted asset ${asset.name}`);
+              }
+            } catch (error) {
+              if (error.status === 404) {
+                core.info(`Release for tag ${tag} not found, skip cleanup.`);
+              } else {
+                throw error;
+              }
+            }
+
+      - name: Publish release assets
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          name: ${{ inputs.release_name }}
+          body_path: publish/meta/release-notes.txt
+          prerelease: ${{ inputs.prerelease }}
+          draft: false
+          target_commitish: ${{ github.sha }}
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          make_latest: ${{ inputs.channel == 'stable' }}
+          files: publish/*.apk

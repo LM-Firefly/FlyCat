@@ -1,0 +1,22 @@
+{
+  "languages": [
+    {
+      "grammar": "textmate/yaml/syntaxes/yaml.tmLanguage.json",
+      "name": "yaml",
+      "scopeName": "source.yaml",
+      "languageConfiguration": "textmate/yaml/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/javascript/syntaxes/javascript.tmLanguage.json",
+      "name": "javascript",
+      "scopeName": "source.js",
+      "languageConfiguration": "textmate/javascript/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/json/syntaxes/json.tmLanguage.json",
+      "name": "json",
+      "scopeName": "source.json",
+      "languageConfiguration": "textmate/json/language-configuration.json"
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+name: Deploy Website
+
+on:
+  push:
+    branches: [Moes]
+    paths:
+      - 'website/**'
+      - '.github/workflows/deploy-website.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Website
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+
+      - name: Install pnpm and Mint CLI
+        run: |
+          npm install -g pnpm
+          export PNPM_HOME="$HOME/.local/share/pnpm"
+          export PATH="$PNPM_HOME:$PATH"
+          pnpm config set global-bin-dir "$PNPM_HOME"
+          pnpm add -g mint
+          echo "$PNPM_HOME" >> "$GITHUB_PATH"
+
+      - name: Export static site
+        working-directory: website
+        run: mint export --output export.zip
+
+      - name: Unpack static site
+        run: |
+          mkdir -p _site
+          unzip -q website/export.zip -d _site
+          rm -f _site/serve.js '_site/Start Docs.command' '_site/Start Docs.bat'
+          touch _site/.nojekyll
+
+      - name: Fix asset paths for GitHub Pages subpath
+        run: |
+          # 1. Rewrite absolute paths in HTML attributes.
+          find _site -name '*.html' -exec sed -i \
+            -e 's|href="/|href="/FlyCat/|g' \
+            -e 's|src="/|src="/FlyCat/|g' \
+            -e 's|action="/|action="/FlyCat/|g' \
+            {} +
+          # 2. Protect already-prefixed _next paths so step 3 never double-prefixes them.
+          find _site \( -name '*.html' -o -name '*.txt' -o -name '*.js' \) -exec sed -i \
+            -e 's|/FlyCat/_next/|@@FLYCAT_NEXT@@|g' \
+            {} +
+          # 3. Rewrite the remaining root-absolute _next references, including the ones
+          #    embedded in the RSC flight data (self.__next_f) that step 1 does not touch.
+          #    Without this, client-only components (e.g. Mermaid) request their chunks at
+          #    /_next/... and 404 under the /FlyCat/ subpath, so the diagrams never render.
+          find _site \( -name '*.html' -o -name '*.txt' -o -name '*.js' \) -exec sed -i \
+            -e 's|/_next/|/FlyCat/_next/|g' \
+            {} +
+          # 4. Restore the protected paths.
+          find _site \( -name '*.html' -o -name '*.txt' -o -name '*.js' \) -exec sed -i \
+            -e 's|@@FLYCAT_NEXT@@|/FlyCat/_next/|g' \
+            {} +
+          # 5. Rewrite absolute paths inside CSS url().
+          find _site -name '*.css' -exec sed -i \
+            -e 's|url(/|url(/FlyCat/|g' \
+            {} +
+
+      - name: Fix SPA navigation for GitHub Pages subpath
+        run: |
+          # mint export bakes basePath="" into the Next.js Turbopack runtime.
+          # When the SPA router handles client-side clicks it strips the /FlyCat/
+          # prefix and navigates to bare root paths that 404 on GitHub Pages.
+          # Inject a script before </head> that intercepts internal <a> clicks
+          # and forces a full-page load at the correct /FlyCat/ path instead.
+          python3 -c "
+          import glob, re
+          script = '<script id=\"gh-pages-basepath-fix\">(function(){var P=\"/FlyCat\";document.addEventListener(\"click\",function(e){var a=e.target&&e.target.closest(\"a[href]\");if(!a)return;var h=a.getAttribute(\"href\");if(!h||h.charAt(0)!==\"/\"||h.charAt(1)===\"/\")return;var u=new URL(h,location.origin);if(u.origin!==location.origin)return;var t=u.pathname;if(t.indexOf(P+\"/\")===0||t===P){e.preventDefault();e.stopPropagation();location.href=u.pathname+u.search+u.hash;return}e.preventDefault();e.stopPropagation();location.href=P+t+u.search+u.hash},true)})()</script>'
+          for f in glob.glob('_site/**/*.html', recursive=True):
+              with open(f, 'r') as fh: html = fh.read()
+              html = html.replace('</head>', script + '</head>')
+              with open(f, 'w') as fh: fh.write(html)
+          "
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5

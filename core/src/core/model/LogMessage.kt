@@ -1,0 +1,80 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+@file:UseSerializers(DateSerializer::class)
+
+package com.github.lmfirefly.flycat.core.model
+
+import android.os.Parcel
+import android.os.Parcelable
+import com.github.lmfirefly.flycat.core.util.serialization.DateSerializer
+import com.github.lmfirefly.flycat.core.util.serialization.Parcelizer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
+import java.util.Date
+
+@Serializable
+data class LogMessage(
+    val level: Level,
+    val message: String,
+    val time: Date,
+) : Parcelable {
+    @Serializable
+    enum class Level {
+        @SerialName("debug") Debug,
+        @SerialName("info") Info,
+        @SerialName("warning") Warning,
+        @SerialName("error") Error,
+        @SerialName("silent") Silent,
+        @SerialName("unknown") Unknown,
+    }
+
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        Parcelizer.encodeToParcel(serializer(), parcel, this)
+    }
+
+    override fun describeContents(): Int = 0
+
+    companion object {
+        @JvmField
+        val CREATOR =
+            object : Parcelable.Creator<LogMessage> {
+                override fun createFromParcel(parcel: Parcel): LogMessage =
+                    Parcelizer.decodeFromParcel(serializer(), parcel)
+
+                override fun newArray(size: Int): Array<LogMessage?> = arrayOfNulls(size)
+            }
+    }
+}
+
+data class LogFileInfo(
+    val name: String,
+    val createdAt: Long,
+    val size: Long,
+    val isRecording: Boolean,
+)
+
+data class LogEntry(
+    val time: String,
+    val level: LogMessage.Level,
+    val message: String,
+)

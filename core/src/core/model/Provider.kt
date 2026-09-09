@@ -1,0 +1,94 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+package com.github.lmfirefly.flycat.core.model
+
+import android.os.Parcel
+import android.os.Parcelable
+import com.github.lmfirefly.flycat.core.util.serialization.Parcelizer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
+
+@Serializable
+data class SubscriptionInfo(
+    @SerialName("Upload") val upload: Long = 0,
+    @SerialName("Download") val download: Long = 0,
+    @SerialName("Total") val total: Long = 0,
+    @SerialName("Expire") val expire: Long = 0
+) : Parcelable {
+    override fun writeToParcel(parcel: Parcel, flags: Int) { Parcelizer.encodeToParcel(serializer(), parcel, this) }
+    override fun describeContents(): Int = 0
+    companion object CREATOR : Parcelable.Creator<SubscriptionInfo> {
+        override fun createFromParcel(parcel: Parcel): SubscriptionInfo = Parcelizer.decodeFromParcel(serializer(), parcel)
+        override fun newArray(size: Int): Array<SubscriptionInfo?> = arrayOfNulls(size)
+    }
+}
+
+@Serializable
+data class Provider(
+    val name: String,
+    val type: Type,
+    val vehicleType: VehicleType,
+    val updatedAt: Long,
+    val path: String = "",
+    val subscriptionInfo: SubscriptionInfo? = null,
+    val count: Int = 0,
+    val format: Format = Format.Yaml,
+    @SerialName("age-secret-key")
+    val ageSecretKey: String = "",
+) : Parcelable, Comparable<Provider> {
+    enum class Format {
+        @SerialName("YamlRule")
+        Yaml,
+        @SerialName("MrsRule")
+        Mrs,
+    }
+
+    enum class Type {
+        Proxy,
+        Rule,
+    }
+
+    enum class VehicleType {
+        HTTP,
+        File,
+        Inline,
+        Compatible,
+    }
+
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        Parcelizer.encodeToParcel(serializer(), parcel, this)
+    }
+
+    override fun describeContents(): Int = 0
+
+    override fun compareTo(other: Provider): Int =
+        compareValuesBy(this, other, Provider::type, Provider::name)
+
+    companion object CREATOR : Parcelable.Creator<Provider> {
+        override fun createFromParcel(parcel: Parcel): Provider =
+            Parcelizer.decodeFromParcel(serializer(), parcel)
+
+        override fun newArray(size: Int): Array<Provider?> = arrayOfNulls(size)
+    }
+}
+
+data class UpdateProvidersResult(val failedProviders: List<String>)

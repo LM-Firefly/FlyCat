@@ -1,0 +1,78 @@
+name: Reusable Bundle Native
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Download geo artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: native-${{ inputs.channel }}-geo
+          path: build/generated/assets/geo
+
+      - name: Download arm64-v8a artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: native-${{ inputs.channel }}-arm64-v8a
+          path: jniLibs/arm64-v8a
+
+      - name: Download armeabi-v7a artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: native-${{ inputs.channel }}-armeabi-v7a
+          path: jniLibs/armeabi-v7a
+
+      - name: Download x86 artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: native-${{ inputs.channel }}-x86
+          path: jniLibs/x86
+
+      - name: Download x86_64 artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: native-${{ inputs.channel }}-x86_64
+          path: jniLibs/x86_64
+
+      - name: Download core version stamp
+        uses: actions/download-artifact@v8
+        with:
+          name: native-${{ inputs.channel }}-core-stamp
+          path: build/generated
+
+      - name: Verify bundled outputs
+        shell: bash
+        run: |
+          set -eu
+          for abi in arm64-v8a armeabi-v7a x86 x86_64; do
+            test -f "jniLibs/${abi}/libmihomo.so"
+            test -f "jniLibs/${abi}/liboverride.so"
+            test -f "jniLibs/${abi}/libloader.so"
+          done
+          test -f "build/generated/assets/geo/geoip.metadb.xz"
+          test -f "build/generated/assets/geo/geosite.dat.xz"
+          test -f "build/generated/assets/geo/ASN.mmdb.xz"
+          test -f "build/generated/assets/geo/BundleMRS.7z"
+          test -f "build/generated/core-version.properties"
+
+      - name: Upload native bundle artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-${{ inputs.channel }}
+          path: |
+            jniLibs
+            build/generated/assets/geo
+            build/generated/core-version.properties
+          if-no-files-found: error

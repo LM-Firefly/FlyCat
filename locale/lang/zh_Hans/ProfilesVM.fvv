@@ -1,0 +1,23 @@
+<Profiles ViewModel>
+ProfilesVM = {
+    Message = {
+        ProfileAdded = "配置已添加：%s"
+        AddFailed = "添加配置失败：%s"
+        ProfileDeleted = "配置已删除"
+        DeleteFailed = "删除配置失败：%s"
+        ProfileUpdated = "配置已更新：%s"
+        UpdateFailed = "更新配置失败：%s"
+        ToggleFailed = "切换状态失败：%s"
+        CannotDeleteActiveProfile = "请先停止代理再删除当前配置"
+    }
+
+    Progress = {
+        Preparing = "准备下载..."
+        Verifying = "正在验证配置..."
+        ImportComplete = "导入完成"
+    }
+
+    Error = {
+        ProfileNotExist = "配置不存在"
+    }
+}

@@ -1,0 +1,65 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+package com.github.lmfirefly.flycat.data.store
+
+import com.github.lmfirefly.flycat.core.contract.NetworkSettingsReader
+import com.github.lmfirefly.flycat.core.model.AccessControlMode
+import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
+import com.github.lmfirefly.flycat.core.model.tunnel.TunDnsMode
+import com.github.lmfirefly.flycat.core.model.tunnel.TunStack
+import com.tencent.mmkv.MMKV
+
+class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv), NetworkSettingsReader {
+    override val runMode by enumFlow(RunMode.VpnService)
+    override val bypassPrivateNetwork by boolFlow(true)
+    override val ebpfBypassCn by boolFlow(false)
+    override val dnsHijack by boolFlow(true)
+    override val allowBypass by boolFlow(true)
+    override val enableIPv6 by boolFlow(false)
+    override val systemProxy by boolFlow(true)
+    override val disableAllOverride by boolFlow(false)
+    override val tunStack by enumFlow(TunStack.GVisor)
+    override val tunRouteExcludeAddress by stringListFlow(emptyList())
+    override val tunIfName by strFlow("FlyCat")
+    override val tunMtu by intFlow(9000)
+    override val tunAutoRoute by boolFlow(true)
+    override val tunStrictRoute by boolFlow(false)
+    override val tunAutoRedirect by boolFlow(true)
+    override val tunIncludeAndroidUser by intListFlow(emptyList())
+    override val tunDnsMode by enumFlow(TunDnsMode.RedirHost)
+    override val tunFakeIpRange by strFlow("198.18.0.1/16")
+    override val tunFakeIpRange6 by strFlow("fc00::/18")
+    override val accessControlMode by enumFlow(AccessControlMode.ALLOW_ALL)
+    override val accessControlPackages by stringSetFlow(emptySet())
+    override val accessControlShowSystemApps by boolFlow(false)
+    override val accessControlSelectedFirst by boolFlow(true)
+    override val wifiAutomationEnabled by boolFlow(false)
+    override val wifiAutomationLocationRequested by boolFlow(false)
+    override val wifiAutomationRules: Preference<List<com.github.lmfirefly.flycat.core.model.WifiAutomationRule>> by
+        jsonListFlow(
+            default = emptyList(),
+            decode = { source -> decodeFromString<List<com.github.lmfirefly.flycat.core.model.WifiAutomationRule>>(source) },
+            encode = { rules -> encodeToString(rules) },
+        )
+    override val wifiAutomationOtherWifiAction by enumFlow(com.github.lmfirefly.flycat.core.model.WifiAutomationFallbackAction.Keep)
+    override val wifiAutomationNoWifiAction by enumFlow(com.github.lmfirefly.flycat.core.model.WifiAutomationFallbackAction.Keep)
+}

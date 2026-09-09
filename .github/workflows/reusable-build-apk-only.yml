@@ -1,0 +1,172 @@
+name: Reusable Build APK Only
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        required: true
+        type: string
+      module:
+        required: true
+        type: string
+      artifact_prefix:
+        required: true
+        type: string
+      release_tag:
+        required: true
+        type: string
+      meta_asset_name:
+        required: true
+        type: string
+      raw_apk_artifact_name:
+        required: true
+        type: string
+      with_extension:
+        required: false
+        type: boolean
+        default: false
+      checkout_ref:
+        required: false
+        type: string
+        default: ''
+      build_number:
+        description: "Deprecated compatibility input; versionCode is derived from git commit count in this workflow."
+        required: false
+        type: string
+        default: ""
+      build_hash:
+        description: "Commit sha of the build; first 8 chars go into versionName (<base>[.<branch>].<hash8>)."
+        required: false
+        type: string
+        default: ""
+      build_branch:
+        description: "Branch name; normalized (lowercase, [^a-z0-9] runs -> '-') into the versionName branch segment."
+        required: false
+        type: string
+        default: ""
+      ui_build_id:
+        description: "Shared build-id (<yyyyMMddHHmm>-<shortSha>). When set, all parallel jobs reuse the same id."
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      NDK_CACHE_ROOT: ${{ github.workspace }}/.ndk
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Setup Kotlin
+        uses: fwilhe2/setup-kotlin@main
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ""
+
+      - name: Cache NDK
+        id: cache-ndk
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.14904198
+          key: ${{ runner.os }}-ndk-30.0.14904198-v2
+          restore-keys: |
+            ${{ runner.os }}-ndk-30.0.14904198-v2-
+
+      - name: Install NDK
+        if: steps.cache-ndk.outputs.cache-hit != 'true'
+        run: sdkmanager "ndk;30.0.14904198"
+
+      - name: Configure local.properties
+        run: |
+          echo "sdk.dir=${ANDROID_SDK_ROOT}" > local.properties
+          echo "ndk.dir=${ANDROID_SDK_ROOT}/ndk/30.0.14904198" >> local.properties
+
+      - name: Download native artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: native-${{ inputs.channel }}
+
+      - name: Verify native and geo inputs
+        shell: bash
+        run: |
+          set -eu
+          for abi in arm64-v8a armeabi-v7a x86 x86_64; do
+            test -f "jniLibs/${abi}/libmihomo.so"
+            test -f "jniLibs/${abi}/liboverride.so"
+            test -f "jniLibs/${abi}/libloader.so"
+          done
+          test -f "build/generated/assets/geo/geoip.metadb.xz"
+          test -f "build/generated/assets/geo/geosite.dat.xz"
+          test -f "build/generated/assets/geo/ASN.mmdb.xz"
+          test -f "build/generated/assets/geo/BundleMRS.7z"
+
+      - name: Write signing config
+        run: |
+          if [ -n "${{ secrets.SIGNING_STORE_PASSWORD }}" ]; then
+            echo "keystore.password=${{ secrets.SIGNING_STORE_PASSWORD }}" > signing.properties
+            echo "key.alias=${{ secrets.SIGNING_KEY_ALIAS }}" >> signing.properties
+            echo "key.password=${{ secrets.SIGNING_KEY_PASSWORD }}" >> signing.properties
+            echo "keystore.path=release.keystore" >> signing.properties
+          fi
+
+      - name: Build Release APKs
+        shell: bash
+        env:
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          BUILD_HASH: ${{ inputs.build_hash }}
+          BUILD_BRANCH: ${{ inputs.build_branch }}
+        run: |
+          set -eu
+          chmod +x gradlew
+          if [ -n "${{ inputs.ui_build_id }}" ]; then
+            ui_build_id="${{ inputs.ui_build_id }}"
+          else
+            build_stamp="$(TZ=Asia/Shanghai date +%Y%m%d%H%M)"
+            commit_short="$(git rev-parse --short=6 HEAD)"
+            ui_build_id="${build_stamp}-${commit_short}"
+          fi
+          build_number="$(git rev-list --count HEAD)"
+          EXTRA_ARGS=""
+          if [ "${{ inputs.with_extension }}" = "true" ]; then
+            EXTRA_ARGS="-PwithExtension=true"
+          fi
+          ./gradlew --no-daemon \
+            -Pupdate.channel="${{ inputs.channel }}" \
+            -Pupdate.tag="${{ inputs.release_tag }}" \
+            -Pupdate.metaAssetName="${{ inputs.meta_asset_name }}" \
+            -Pupdate.uiBuildId="${ui_build_id}" \
+            -Pbuild.number="${build_number}" \
+            -Pbuild.hash="${BUILD_HASH:0:8}" \
+            -Pbuild.branch="${BUILD_BRANCH}" \
+            $EXTRA_ARGS \
+            :${{ inputs.module }}:assembleRelease
+
+      - name: Upload raw APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.raw_apk_artifact_name }}
+          path: ${{ inputs.module }}/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          # APKs are already zip-compressed; store them uncompressed in the artifact zip.
+          compression-level: 0

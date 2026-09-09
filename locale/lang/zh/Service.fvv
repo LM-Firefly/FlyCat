@@ -1,0 +1,18 @@
+<Service>
+Service = {
+    Notification = {
+        Running = "執行中"
+        UnknownProfile = "未知設定檔"
+        SpeedLine = "下行 %s  上行 %s"
+        TotalTraffic = "總流量 %s"
+    }
+
+    Tile = {
+        ClickToOpen = "點一下開啟應用"
+        ClickToStartProxy = "啟動代理"
+        ClickToStopProxy = "停止代理"
+        Connecting = "連線中..."
+        Disconnecting = "斷線中..."
+    }
+
+}

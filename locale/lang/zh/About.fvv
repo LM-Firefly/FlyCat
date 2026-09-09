@@ -1,0 +1,25 @@
+<About Page>
+About = {
+    Title = "關於"
+
+    App = {
+        VersionLoading = "Loading..."
+        VersionFailed = "Failed to load"
+    }
+
+    Section = {
+        ProjectLinks = "專案連結"
+        License = "授權"
+    }
+
+    License = {
+        CheckUpdate = "檢查更新"
+        CheckUpdateSummary = "手動檢查 GitHub Release 更新"
+        Libraries = "引用函式庫"
+        LibrariesSummary = "View all third-party libraries used in this app"
+        AgplName = "GNU Affero General Public License v3.0"
+        AgplDescription = "This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License."
+    }
+
+    Copyright = "© 2025 – 至今 YumeYucca"
+}

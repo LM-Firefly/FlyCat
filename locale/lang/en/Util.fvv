@@ -1,0 +1,9 @@
+<Util>
+Util = {
+    Error = {
+        UnknownError = "Unknown error"
+        CannotCreateDir = "Cannot create directory: %s"
+        TargetNotDir = "Target is not a directory: %s"
+        PathTraversalDetected = "Path traversal detected: %s"
+    }
+}

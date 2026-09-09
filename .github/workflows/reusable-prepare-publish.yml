@@ -1,0 +1,240 @@
+name: Reusable Prepare Publish
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        required: true
+        type: string
+      module:
+        required: true
+        type: string
+      artifact_prefix:
+        required: true
+        type: string
+      release_tag:
+        required: true
+        type: string
+      meta_asset_name:
+        required: true
+        type: string
+      raw_apk_artifact_name:
+        required: true
+        type: string
+      publish_artifact_name:
+        required: true
+        type: string
+      build_number:
+        description: "Deprecated; versionCode is now derived from the build timestamp (yyyyMMdd)."
+        required: false
+        type: string
+        default: ""
+      build_hash:
+        description: "Commit sha of the build; first 8 chars go into versionName (<base>[.<branch>].<hash8>)."
+        required: false
+        type: string
+        default: ""
+      build_branch:
+        description: "Branch name; normalized into the versionName branch segment."
+        required: false
+        type: string
+        default: ""
+      checkout_ref:
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Download raw APK artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ inputs.raw_apk_artifact_name }}
+          path: ${{ inputs.module }}/build/outputs/apk/release
+
+      - name: Read version info
+        id: version
+        shell: bash
+        env:
+          BUILD_HASH: ${{ inputs.build_hash }}
+          BUILD_BRANCH: ${{ inputs.build_branch }}
+        run: |
+          set -eu
+          base_version_name="$(grep '^project.version.name=' gradle.properties | cut -d= -f2-)"
+          branch_segment="$(printf '%s' "${BUILD_BRANCH}" \
+            | tr '[:upper:]' '[:lower:]' \
+            | sed -e 's/[^a-z0-9]/-/g' -e 's/--*/-/g' -e 's/^-//' -e 's/-$//')"
+
+          if [ -n "${BUILD_HASH}" ]; then
+            if [ -n "${branch_segment}" ]; then
+              version_name="${base_version_name}.${branch_segment}.${BUILD_HASH:0:8}"
+            else
+              version_name="${base_version_name}.${BUILD_HASH:0:8}"
+            fi
+          else
+            version_name="${base_version_name}"
+          fi
+
+          version_code="$(TZ=Asia/Shanghai date +%Y%m%d)"
+          echo "version_name=${version_name}" >> "$GITHUB_OUTPUT"
+          echo "version_code=${version_code}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate release notes
+        shell: bash
+        run: |
+          set -eu
+          mkdir -p publish/meta
+          notes_file="publish/meta/release-notes.txt"
+
+          if [ "${{ inputs.channel }}" = "stable" ]; then
+            prev_tag="$(git tag --sort=-version:refname | grep '^v' | grep -Fxv "${{ inputs.release_tag }}" | head -n 1 || true)"
+            if [ -n "$prev_tag" ]; then
+              git log --pretty='- %s (%h)' "${prev_tag}..HEAD" > "$notes_file"
+            else
+              git log --pretty='- %s (%h)' -n 20 > "$notes_file"
+            fi
+          else
+            git log --pretty='- %s (%h)' -n 20 > "$notes_file"
+          fi
+
+          if [ ! -s "$notes_file" ]; then
+            echo "- No release notes." > "$notes_file"
+          fi
+
+      - name: Prepare publish artifacts
+        shell: bash
+        run: |
+          set -eu
+          mkdir -p publish
+          version_name="${{ steps.version.outputs.version_name }}"
+          version_code="${{ steps.version.outputs.version_code }}"
+          release_url="https://github.com/${{ github.repository }}/releases/tag/${{ inputs.release_tag }}"
+          publish_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          while IFS= read -r file; do
+            base="$(basename "$file")"
+            abi="universal"
+            case "$base" in
+              *arm64-v8a*) abi="arm64-v8a" ;;
+              *armeabi-v7a*) abi="armeabi-v7a" ;;
+              *x86_64*) abi="x86_64" ;;
+              *x86*) abi="x86" ;;
+              *) abi="universal" ;;
+            esac
+
+            if [[ "$base" =~ -([0-9]{12}-[0-9a-fA-F]{5,8})\.apk$ ]]; then
+              build_id="${BASH_REMATCH[1]}"
+            else
+              echo "::error::Could not extract build_id from $base" >&2
+              exit 1
+            fi
+            new_name="${{ inputs.artifact_prefix }}-${abi}-${build_id}.apk"
+            cp -f "$file" "publish/${new_name}"
+          done < <(find "${{ inputs.module }}/build/outputs/apk/release" -maxdepth 1 -type f -name '*.apk' | sort)
+
+          if [ ! -d publish ] || [ -z "$(ls -A publish)" ]; then
+            echo "No APK generated" >&2
+            exit 1
+          fi
+
+          export CHANNEL="${{ inputs.channel }}"
+          export MODULE="${{ inputs.module }}"
+          export ARTIFACT_PREFIX="${{ inputs.artifact_prefix }}"
+          export RELEASE_TAG="${{ inputs.release_tag }}"
+          export META_ASSET_NAME="${{ inputs.meta_asset_name }}"
+          export VERSION_NAME="${version_name}"
+          export VERSION_CODE="${version_code}"
+          export RELEASE_URL="${release_url}"
+          export PUBLISHED_AT="${publish_time}"
+
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          publish_dir = Path("publish")
+          release_notes_path = Path("publish/meta/release-notes.txt")
+          channel = os.environ["CHANNEL"]
+          module = os.environ["MODULE"]
+          artifact_prefix = os.environ["ARTIFACT_PREFIX"]
+          release_tag = os.environ["RELEASE_TAG"]
+          meta_asset_name = os.environ["META_ASSET_NAME"]
+          repo = os.environ["GITHUB_REPOSITORY"]
+          sha = os.environ["GITHUB_SHA"]
+          version_name = os.environ["VERSION_NAME"]
+          version_code = int(os.environ["VERSION_CODE"])
+          release_url = os.environ["RELEASE_URL"]
+          published_at = os.environ["PUBLISHED_AT"]
+          release_notes = release_notes_path.read_text(encoding="utf-8").strip() if release_notes_path.exists() else ""
+
+          packages = []
+          for apk in sorted(publish_dir.glob("*.apk")):
+              name = apk.name
+              abi = "universal"
+              if "-arm64-v8a.apk" in name:
+                  abi = "arm64-v8a"
+              elif "-armeabi-v7a.apk" in name:
+                  abi = "armeabi-v7a"
+              elif "-x86_64.apk" in name:
+                  abi = "x86_64"
+              elif "-x86.apk" in name:
+                  abi = "x86"
+
+              h = hashlib.sha256()
+              with apk.open("rb") as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                      h.update(chunk)
+
+              packages.append({
+                  "abi": abi,
+                  "fileName": name,
+                  "downloadUrl": f"https://github.com/{repo}/releases/download/{release_tag}/{name}",
+                  "size": apk.stat().st_size,
+                  "sha256": h.hexdigest(),
+                  "isUniversal": abi == "universal",
+              })
+
+          meta = {
+              "schemaVersion": 1,
+              "channel": channel,
+              "module": module,
+              "artifactPrefix": artifact_prefix,
+              "tag": release_tag,
+              "versionName": version_name,
+              "versionCode": version_code,
+              "publishedAt": published_at,
+              "commitSha": sha,
+              "releaseNotes": release_notes,
+              "releaseUrl": release_url,
+              "packages": packages,
+          }
+
+          meta_dir = Path("publish/meta")
+          meta_dir.mkdir(parents=True, exist_ok=True)
+          (meta_dir / meta_asset_name).write_text(
+              json.dumps(meta, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.publish_artifact_name }}
+          path: publish/*.apk
+          if-no-files-found: error

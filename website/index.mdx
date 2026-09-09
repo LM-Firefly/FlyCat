@@ -1,0 +1,228 @@
+---
+title: "FlyCat"
+sidebarTitle: "介绍"
+description: 基于 mihomo 内核的开源 Android 客户端
+icon: "house"
+---
+
+<Frame>
+  <img
+    src="logo/FlyCat.webp"
+    noZoom={true}
+  />
+</Frame>
+
+<Info>如果结局是分开，那相遇的意义是什么 --  **恋×シンアイ彼女**</Info>
+
+## 特别
+
+**[FlyCat](https://github.com/LM-Firefly/FlyCat) 是一个基于 [YumeBox](https://github.com/YumeYucca/YumeBox) 的开源 Android 客户端，使用 [mihomo](https://github.com/MetaCubeX/mihomo) 作为内核，提供代理管理与配置覆写等功能。**
+
+**FlyCat 继承了 YumeBox 的核心理念：尽可能少地覆写原配置中的内容，非必要不进行覆写，拒绝将明确的配置[字段](https://wiki.metacubex.one/config/)抽象为模棱两可的功能开关。**
+## 发展
+
+FlyCat 基于 YumeBox 持续迭代，未来将一直保持 **开源 & 免费**，承诺不会有任何收集隐私、上传数据或广告行为。
+
+
+## 下载
+如果需要历史版本，请查看 [更新日志](/update/history)
+<Card title="下载" icon="square-arrow-down" horizontal href="https://github.com/LM-Firefly/FlyCat/releases">
+   前往 Github Release 下载安装包
+</Card>
+
+
+## 快速开始
+
+<CardGroup cols={2}>
+    <Card title="下载发布版本" icon="download" href="https://github.com/LM-Firefly/FlyCat/releases">
+        在 GitHub Releases 获取最新 APK。
+    </Card>
+
+    <Card title="GitHub 仓库" icon="github" href="https://github.com/LM-Firefly/FlyCat">
+        查看源码、提交 Issue、参与贡献。
+    </Card>
+
+    <Card title="问题反馈" icon="bug" href="https://github.com/LM-Firefly/FlyCat/issues">
+        遇到问题或有建议时在此反馈。
+    </Card>
+
+    <Card title="更新日志" icon="clock" href="/update/history">
+        查看版本更新历史
+    </Card>
+</CardGroup>
+
+
+## 其他资料
+
+<CardGroup cols={2}>
+    <Card title="Mihomo 内核" icon="cpu" href="https://github.com/MetaCubeX/mihomo">
+        基于 MetaCubeX/mihomo 内核，稳定可靠。
+    </Card>
+
+    <Card title="强大的覆写支持" icon="box" href="/override/override">
+        使用修饰符的自定义覆写配置,对订阅进行覆写
+    </Card>
+
+    <Card title="SubStore 支持" icon="store" href="https://github.com/sub-store-org/Sub-Store">
+        可选 SubStore 支持，配置管理更方便。
+    </Card>
+
+    <Card title="Web 面板" icon="monitor" href="https://github.com/MetaCubeX/metacubexd">
+        内置 Web 面板，便于管理和监控。
+    </Card>
+
+    <Card title="配置文档" icon="settings" href="https://wiki.metacubex.one/config/">
+        查看 mihomo 配置说明与最佳实践。
+    </Card>
+</CardGroup>
+
+## 模块依赖
+
+```mermaid
+%%{init: {"theme": "base", "flowchart": {"curve": "basis", "htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 46}, "themeVariables": {"primaryColor": "#0d2818", "primaryBorderColor": "#16a34a", "primaryTextColor": "#a7f3d0", "lineColor": "#4b5563", "background": "transparent", "fontSize": "14px", "fontFamily": "Inter, ui-sans-serif, system-ui"}}}%%
+flowchart TB
+    app([":app"])
+
+    subgraph Feat["功能模块 · :feature:*"]
+        direction LR
+        home([":home"])
+        profiles([":profiles"])
+        settings([":settings"])
+        proxy([":proxy"])
+        dashboard([":dashboard"])
+        override([":override"])
+        editor([":editor"])
+        substore([":substore"])
+        log([":log"])
+        about([":about"])
+    end
+
+    ui([":ui"])
+
+    subgraph Rt["运行时 · :runtime:*"]
+        direction LR
+        client([":client"])
+        service([":service"])
+        rapi([":api"])
+    end
+
+    data([":data"])
+
+    subgraph Base["基础设施"]
+        direction LR
+        core([":core"])
+        locale([":locale"])
+    end
+
+    app --> Feat
+    app --> ui
+    app --> data
+    app --> Rt
+    app --> Base
+
+    Feat --> ui
+    Feat --> Base
+    home --> rapi
+    profiles --> rapi
+    settings --> rapi
+
+    ui --> Base
+    data --> Base
+    data --> rapi
+
+    client --> core
+    client --> rapi
+    service --> Base
+    service --> rapi
+    rapi --> core
+    core --> locale
+
+    classDef app fill:#0d2818,stroke:#16a34a,color:#a7f3d0
+    classDef mid fill:#0c1929,stroke:#2563eb,color:#93c5fd
+    classDef base fill:#1f2937,stroke:#6b7280,color:#d1d5db
+
+    style Feat fill:transparent,stroke:#6b7280,stroke-width:1px,rx:8,ry:8
+    style Rt fill:transparent,stroke:#6b7280,stroke-width:1px,rx:8,ry:8
+    style Base fill:transparent,stroke:#6b7280,stroke-width:1px,rx:8,ry:8
+
+    class app app
+    class home,profiles,settings,proxy,dashboard,override,editor,substore,log,about,ui,client,service,rapi mid
+    class core,locale,data base
+```
+
+## 启动流程
+
+```mermaid
+%%{init: {"theme": "base", "flowchart": {"curve": "basis", "htmlLabels": true, "nodeSpacing": 36, "rankSpacing": 50}, "themeVariables": {"primaryColor": "#0d2818", "primaryBorderColor": "#16a34a", "primaryTextColor": "#a7f3d0", "lineColor": "#4b5563", "background": "transparent", "fontSize": "14px", "fontFamily": "Inter, ui-sans-serif, system-ui"}}}%%
+flowchart TB
+    subgraph Boot["进程启动"]
+        direction LR
+        Init["应用初始化<br/>Global · MMKV · Koin"]
+        Load["内核装载<br/>override · bridge · clash"]
+        Init --> Load
+    end
+
+    subgraph Sources["订阅 · 可多个"]
+        direction LR
+        PA(["订阅 A"])
+        PB(["订阅 B · 活动"])
+        PC(["订阅 C"])
+    end
+
+    subgraph Override["覆写绑定"]
+        direction LR
+        OY["YAML 覆写"]
+        Chain["绑定链<br/>metadata.yaml"]
+        OJ["JS 覆写"]
+        Chain --> OY
+        Chain --> OJ
+    end
+
+    Compile["配置编译 · liboverride<br/>读取 · 解密 · 合并 · 锚点 · 脚本"]
+    Kernel["libmihomo 内核<br/>内存加载运行配置"]
+
+    subgraph Transport["流量接管 · 择一"]
+        direction LR
+        Http["HTTP 代理"]
+        Tun["VPN TUN"]
+        Root["Root TUN"]
+    end
+
+    Snap["运行快照<br/>状态轮询"]
+
+    Load --> Compile
+    PB ==>|活动订阅| Compile
+    PA -. 候选 .-> Compile
+    PC -. 候选 .-> Compile
+    OY --> Compile
+    OJ --> Compile
+    Compile --> Kernel
+    Kernel --> Http
+    Kernel --> Tun
+    Kernel --> Root
+    Http --> Snap
+    Tun --> Snap
+    Root --> Snap
+    Snap -. 恢复节点选择 .-> Kernel
+
+    classDef boot fill:#0c1929,stroke:#2563eb,color:#93c5fd
+    classDef profile fill:#1f2937,stroke:#6b7280,color:#d1d5db
+    classDef active fill:#0d2818,stroke:#16a34a,color:#a7f3d0,font-weight:bold
+    classDef bind fill:#1e1033,stroke:#a855f7,color:#d8b4fe
+    classDef compiler fill:#0d2818,stroke:#16a34a,color:#a7f3d0
+    classDef core fill:#0d2818,stroke:#22c55e,color:#bbf7d0
+    classDef transport fill:#1c0a0a,stroke:#ef4444,color:#fca5a5
+
+    style Boot fill:transparent,stroke:#6b7280,stroke-width:1px,rx:8,ry:8
+    style Sources fill:transparent,stroke:#6b7280,stroke-width:1px,rx:8,ry:8
+    style Override fill:transparent,stroke:#6b7280,stroke-width:1px,rx:8,ry:8
+    style Transport fill:transparent,stroke:#6b7280,stroke-width:1px,rx:8,ry:8
+
+    class Init,Load boot
+    class PA,PC profile
+    class PB active
+    class Chain,OY,OJ bind
+    class Compile compiler
+    class Kernel,Snap core
+    class Http,Tun,Root transport
+```

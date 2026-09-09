@@ -1,0 +1,23 @@
+<Profiles ViewModel>
+ProfilesVM = {
+    Message = {
+        ProfileAdded = "Profile added: %s"
+        AddFailed = "Add profile failed: %s"
+        ProfileDeleted = "Profile deleted"
+        DeleteFailed = "Delete profile failed: %s"
+        ProfileUpdated = "Profile updated: %s"
+        UpdateFailed = "Update profile failed: %s"
+        ToggleFailed = "Toggle state failed: %s"
+        CannotDeleteActiveProfile = "Please stop the proxy before deleting the active profile"
+    }
+
+    Progress = {
+        Preparing = "Preparing download..."
+        Verifying = "Verifying configuration..."
+        ImportComplete = "Import complete"
+    }
+
+    Error = {
+        ProfileNotExist = "Profile does not exist"
+    }
+}

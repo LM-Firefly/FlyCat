@@ -1,0 +1,40 @@
+<Settings Page>
+Settings = {
+    Title = "Settings"
+
+    Section = {
+        UiSettings = "UI Settings"
+        More = "More"
+    }
+
+    UiSettings = {
+        App = "App"
+        AppSummary = "Theme · Language · Behavior"
+        Network = "Network"
+        NetworkSummary = "Proxy Mode · DNS · Access Control"
+        Override = "Override"
+        OverrideSummary = "YAML · JS · Rule Override"
+        MetaFeatures = "Meta Features"
+        MetaFeaturesSummary = "Connections · Routing · GeoX · Keys"
+    }
+
+    More = {
+        Lab = "Lab"
+        LabSummary = "Sub-Store · Experiments"
+        Logs = "Logs"
+        LogsSummary = "Runtime Logs"
+        Onboarding = "Setup Guide"
+        OnboardingSummary = "Replay the welcome guide"
+        About = "About"
+        AboutSummary = "Version & License"
+    }
+
+    Error = {
+        WebviewFailed = "Unable to open WebView: %s"
+    }
+
+    RemoteController = {
+        ConnectionSuccess = "Connected: mode %s"
+        ConnectionFailed = "Connection failed: %s"
+    }
+}

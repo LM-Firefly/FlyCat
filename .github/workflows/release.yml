@@ -1,0 +1,249 @@
+name: Release Stable
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Stable release tag, for manual run (example: v0.5.0)"
+        required: true
+        type: string
+
+concurrency:
+  group: release-stable-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  validate-version:
+    name: Validate Version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Validate release version
+        shell: bash
+        run: |
+          set -eu
+          release_tag="${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}"
+          expected_version="${release_tag#v}"
+          actual_version="$(grep '^project.version.name=' gradle.properties | cut -d= -f2-)"
+          if [ "${actual_version}" != "${expected_version}" ]; then
+            echo "::error::release tag ${release_tag} expects project.version.name=${expected_version}, got ${actual_version}"
+            exit 1
+          fi
+
+  compute-build-id:
+    name: Compute Build ID
+    needs: validate-version
+    runs-on: ubuntu-latest
+    outputs:
+      ui_build_id: ${{ steps.stamp.outputs.ui_build_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Generate shared build id
+        id: stamp
+        shell: bash
+        run: |
+          build_stamp="$(TZ=Asia/Shanghai date +%Y%m%d%H%M)"
+          commit_short="$(git rev-parse --short=6 HEAD)"
+          echo "ui_build_id=${build_stamp}-${commit_short}" >> "$GITHUB_OUTPUT"
+
+  build-geo-stable:
+    name: Geo (Stable)
+    uses: ./.github/workflows/reusable-build-geo.yml
+    with:
+      channel: stable
+    secrets: inherit
+
+  build-native-abi-stable-armeabi-v7a:
+    name: Native armeabi-v7a (Stable)
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: stable
+      kernel_channel: alpha
+      abi: armeabi-v7a
+    secrets: inherit
+
+  build-native-abi-stable-arm64-v8a:
+    name: Native arm64-v8a (Stable)
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: stable
+      kernel_channel: alpha
+      abi: arm64-v8a
+    secrets: inherit
+
+  build-native-abi-stable-x86:
+    name: Native x86 (Stable)
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: stable
+      kernel_channel: alpha
+      abi: x86
+    secrets: inherit
+
+  build-native-abi-stable-x86_64:
+    name: Native x86_64 (Stable)
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: stable
+      kernel_channel: alpha
+      abi: x86_64
+    secrets: inherit
+
+  bundle-native-stable:
+    name: Bundle (Stable)
+    needs:
+      - build-geo-stable
+      - build-native-abi-stable-armeabi-v7a
+      - build-native-abi-stable-arm64-v8a
+      - build-native-abi-stable-x86
+      - build-native-abi-stable-x86_64
+    uses: ./.github/workflows/reusable-bundle-native.yml
+    with:
+      channel: stable
+    secrets: inherit
+
+  build-apk-stable-app:
+    name: APK (Stable)
+    needs:
+      - validate-version
+      - bundle-native-stable
+      - compute-build-id
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: stable
+      module: app
+      artifact_prefix: FlyCat-stable
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      meta_asset_name: FlyCat-stable-meta.json
+      raw_apk_artifact_name: apk-raw-stable-app
+      #build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+      ui_build_id: ${{ needs.compute-build-id.outputs.ui_build_id }}
+    secrets: inherit
+
+  build-apk-stable-app-with-extension:
+    name: APK with Extension (Stable)
+    needs:
+      - validate-version
+      - bundle-native-stable
+      - compute-build-id
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: stable
+      module: app
+      artifact_prefix: FlyCat-stable-extension
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      meta_asset_name: FlyCat-stable-extension-meta.json
+      raw_apk_artifact_name: apk-raw-stable-app-with-extension
+      with_extension: true
+      #build_number: ${{ github.run_number }}
+      build_hash: ${{ github.sha }}
+      build_branch: ${{ github.ref_name }}
+      ui_build_id: ${{ needs.compute-build-id.outputs.ui_build_id }}
+    secrets: inherit
+
+  build-libjavet:
+    name: Build libjavet.so.xz
+    needs: validate-version
+    uses: ./.github/workflows/reusable-build-libjavet.yml
+    with:
+      artifact_name: libjavet
+    secrets: inherit
+
+  prepare-publish-stable-app:
+    name: Publish APP (Stable)
+    needs: build-apk-stable-app
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: stable
+      module: app
+      artifact_prefix: FlyCat-stable
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      meta_asset_name: FlyCat-stable-meta.json
+      raw_apk_artifact_name: apk-raw-stable-app
+      publish_artifact_name: publish-stable-app
+    secrets: inherit
+
+  prepare-publish-stable-app-with-extension:
+    name: Publish APP with Extension (Stable)
+    needs: build-apk-stable-app-with-extension
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: stable
+      module: app
+      artifact_prefix: FlyCat-stable-extension
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      meta_asset_name: FlyCat-stable-extension-meta.json
+      raw_apk_artifact_name: apk-raw-stable-app-with-extension
+      publish_artifact_name: publish-stable-app-with-extension
+    secrets: inherit
+
+  publish-release-stable:
+    name: Set Release Tag (Stable)
+    needs:
+      - prepare-publish-stable-app
+      - prepare-publish-stable-app-with-extension
+    uses: ./.github/workflows/reusable-publish-release.yml
+    with:
+      channel: stable
+      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      release_name: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+      prerelease: false
+      publish_artifacts: publish-stable-app,publish-stable-app-with-extension
+      cleanup_assets: true
+      delete_existing_release: true
+    secrets: inherit
+
+  publish-release-libjavet:
+    name: Set Release Tag (libjavet)
+    needs:
+      - validate-version
+      - build-libjavet
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download libjavet artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: libjavet
+          path: libjavet
+      - name: Publish libjavet release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: libjavet
+          name: libjavet
+          prerelease: false
+          make_latest: false
+          overwrite_files: true
+          files: |
+            libjavet/libjavet-arm64-v8a.so.xz
+            libjavet/libjavet-x86_64.so.xz
+
+#  notify-stable:
+#    needs:
+#      - prepare-publish-stable-app
+#      - publish-release-stable
+#    uses: ./.github/workflows/reusable-notify-telegram.yml
+#    with:
+#      channel: stable
+#      release_tag: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+#      publish_artifact_name: publish-stable-app
+#      meta_asset_name: FlyCat-stable-meta.json
+#      telegram_title: FlyCat Stable
+#    secrets: inherit

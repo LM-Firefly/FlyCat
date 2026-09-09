@@ -1,0 +1,25 @@
+<About Page>
+About = {
+    Title = "О приложении"
+
+    App = {
+        VersionLoading = "Загрузка..."
+        VersionFailed = "Не удалось загрузить"
+    }
+
+    Section = {
+        ProjectLinks = "Ссылки проекта"
+        License = "Лицензия"
+    }
+
+    License = {
+        CheckUpdate = "Проверить обновления"
+        CheckUpdateSummary = "Проверить последний релиз на GitHub вручную"
+        Libraries = "Библиотеки"
+        LibrariesSummary = "Просмотреть все сторонние библиотеки, используемые в приложении"
+        AgplName = "GNU Affero General Public License v3.0"
+        AgplDescription = "Эта программа — свободное ПО: вы можете распространять и/или изменять её на условиях GNU Affero General Public License."
+    }
+
+    Copyright = "© 2025 – Present YumeYucca"
+}

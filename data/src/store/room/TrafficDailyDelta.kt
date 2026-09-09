@@ -1,0 +1,47 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+package com.github.lmfirefly.flycat.data.store.room
+
+/**
+ * DAO write-input carriers. Time-agnostic: the facade computes [dateMillis] (midnight day bucket), [slotIndex] (2-hour bucket within the day, 0–11) and [lastActiveAt] and hands fully-resolved rows down. The DAO only accumulates and persists.
+ */
+data class AppTrafficDelta(
+    val dateMillis: Long,
+    val appKey: String,
+    val slotIndex: Int,
+    val packageName: String? = null,
+    val appName: String,
+    val uploadDelta: Long,
+    val downloadDelta: Long,
+    val lastActiveAt: Long,
+)
+
+data class RouteTrafficDelta(
+    val dateMillis: Long,
+    val appKey: String,
+    val routeKey: String,
+    val slotIndex: Int,
+    val routeLabel: String,
+    val uploadDelta: Long,
+    val downloadDelta: Long,
+    val lastActiveAt: Long,
+)

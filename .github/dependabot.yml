@@ -1,0 +1,94 @@
+version: 2
+registries:
+  maven-google:
+    type: maven-repository
+    # url: https://maven.google.com
+    url: https://dl.google.com/dl/android/maven2/
+    password: dummy
+    username: dummy
+  maven-central:
+    type: maven-repository
+    url: https://repo1.maven.org/maven2/
+    password: dummy
+    username: dummy
+  maven-jitpack:
+    type: maven-repository
+    url: https://jitpack.io
+    password: dummy
+    username: dummy
+
+updates:
+  - package-ecosystem: cargo
+    directory: /lib/native/rust
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "deps"
+    labels:
+      - dependencies
+      - rust
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: gomod
+    directory: /lib/native/go
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "deps"
+    labels:
+      - dependencies
+      - go
+    groups:
+      go-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "deps"
+    labels:
+      - dependencies
+      - kotlin
+      - gradle
+    groups:
+      gradle-dependencies:
+        patterns:
+          - "*"
+      kotlin_KSP:
+        patterns:
+          - "org.jetbrains.kotlin:*"
+          - "com.google.devtools.ksp"
+
+  - package-ecosystem: gomod
+    directory: /lib/mihomo
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "deps"
+    labels:
+      - dependencies
+      - go
+    groups:
+      go-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: npm
+    directory: "modules/web"
+    schedule:
+      interval: "weekly"

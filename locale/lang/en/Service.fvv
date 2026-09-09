@@ -1,0 +1,18 @@
+<Service>
+Service = {
+    Notification = {
+        Running = "Running"
+        UnknownProfile = "Unknown profile"
+        SpeedLine = "Down %s  Up %s"
+        TotalTraffic = "Total %s"
+    }
+
+    Tile = {
+        ClickToOpen = "Click to open app"
+        ClickToStartProxy = "Start proxy"
+        ClickToStopProxy = "Stop proxy"
+        Connecting = "Connecting..."
+        Disconnecting = "Disconnecting..."
+    }
+
+}

@@ -1,0 +1,101 @@
+name: Pull Request CI
+
+on:
+  pull_request:
+    branches: [ "Moes", "Devs" ]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "website/**"
+
+concurrency:
+  group: pr-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-geo-pr:
+    uses: ./.github/workflows/reusable-build-geo.yml
+    with:
+      channel: pr
+    secrets: inherit
+
+  build-native-abi-pr-armeabi-v7a:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: pr
+      kernel_channel: alpha
+      abi: armeabi-v7a
+    secrets: inherit
+
+  build-native-abi-pr-arm64-v8a:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: pr
+      kernel_channel: alpha
+      abi: arm64-v8a
+    secrets: inherit
+
+  build-native-abi-pr-x86:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: pr
+      kernel_channel: alpha
+      abi: x86
+    secrets: inherit
+
+  build-native-abi-pr-x86_64:
+    uses: ./.github/workflows/reusable-build-native-abi.yml
+    with:
+      channel: pr
+      kernel_channel: alpha
+      abi: x86_64
+    secrets: inherit
+
+  bundle-native-pr:
+    needs:
+      - build-geo-pr
+      - build-native-abi-pr-armeabi-v7a
+      - build-native-abi-pr-arm64-v8a
+      - build-native-abi-pr-x86
+      - build-native-abi-pr-x86_64
+    uses: ./.github/workflows/reusable-bundle-native.yml
+    with:
+      channel: pr
+    secrets: inherit
+
+  build-apk-pr-app:
+    needs: bundle-native-pr
+    uses: ./.github/workflows/reusable-build-apk-only.yml
+    with:
+      channel: pr
+      module: app
+      artifact_prefix: FlyCat-pr
+      release_tag: pr-${{ github.event.pull_request.number }}
+      meta_asset_name: FlyCat-pr-meta.json
+      raw_apk_artifact_name: apk-raw-pr-app
+    secrets: inherit
+
+  prepare-publish-pr-app:
+    needs: build-apk-pr-app
+    uses: ./.github/workflows/reusable-prepare-publish.yml
+    with:
+      channel: pr
+      module: app
+      artifact_prefix: FlyCat-pr
+      release_tag: pr-${{ github.event.pull_request.number }}
+      meta_asset_name: FlyCat-pr-meta.json
+      raw_apk_artifact_name: apk-raw-pr-app
+      publish_artifact_name: publish-pr-app
+    secrets: inherit
+
+  # Fork PRs get a read-only GITHUB_TOKEN that cannot delete artifacts, so the
+  # cleanup only runs for same-repo PRs; fork-run intermediates simply age out.
+  cleanup-artifacts:
+    needs: prepare-publish-pr-app
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      actions: write
+    uses: ./.github/workflows/reusable-cleanup-artifacts.yml

@@ -1,0 +1,25 @@
+<About Page>
+About = {
+    Title = "情報"
+
+    App = {
+        VersionLoading = "読み込み中..."
+        VersionFailed = "読み込みに失敗しました"
+    }
+
+    Section = {
+        ProjectLinks = "プロジェクトリンク"
+        License = "ライセンス"
+    }
+
+    License = {
+        CheckUpdate = "更新を確認"
+        CheckUpdateSummary = "最新の GitHub リリースを手動で確認"
+        Libraries = "ライブラリ"
+        LibrariesSummary = "このアプリで使用しているサードパーティライブラリを表示"
+        AgplName = "GNU Affero General Public License v3.0"
+        AgplDescription = "本プログラムはフリーソフトウェアです。GNU Affero 一般公衆ライセンスの条項に従って再配布および/または改変できます。"
+    }
+
+    Copyright = "© 2025 – Present YumeYucca"
+}

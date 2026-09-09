@@ -1,0 +1,9 @@
+<Util>
+Util = {
+    Error = {
+        UnknownError = "Неизвестная ошибка"
+        CannotCreateDir = "Не удалось создать каталог: %s"
+        TargetNotDir = "Цель не является каталогом: %s"
+        PathTraversalDetected = "Обнаружен обход пути: %s"
+    }
+}

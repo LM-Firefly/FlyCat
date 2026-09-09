@@ -1,0 +1,49 @@
+#-------------------------------------------------------------------------------#
+#        Discover additional configuration options in our documentation         #
+#               https://www.jetbrains.com/help/qodana/github.html               #
+#-------------------------------------------------------------------------------#
+
+name: Qodana
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - Moe
+      - Dev
+
+jobs:
+  qodana:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      # MLang (locale/build/generated/.../fytxt.kt) is produced by a standalone Kotlin script,
+      # NOT by Gradle, and is git-ignored. Without it every module's MLang.* references fail to
+      # resolve and Qodana's Gradle import/analysis breaks. (The native .so libs are NOT needed —
+      # they are loaded at runtime, not during Kotlin analysis.)
+      - name: Setup Java
+        uses: actions/setup-java@v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: 'Qodana Scan'
+        uses: JetBrains/qodana-action@v2026.2
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+        with:
+          # When pr-mode is set to true, Qodana analyzes only the files that have been changed
+          pr-mode: false
+          use-caches: true
+          post-pr-comment: true
+          use-annotations: true
+          # Upload Qodana results (SARIF, other artifacts, logs) as an artifact to the job
+          upload-result: false
+          # quick-fixes available in Ultimate and Ultimate Plus plans
+          push-fixes: 'none'

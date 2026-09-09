@@ -1,0 +1,341 @@
+/*
+ * This file is part of FlyCat.
+ *
+ * FlyCat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c)  YumeYucca 2025 - Present
+ * Based on YumeBox by YumeYucca
+ *
+ */
+
+package com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel
+
+import android.app.Application
+import androidx.lifecycle.viewModelScope
+import com.github.lmfirefly.flycat.core.contract.AccessControlControllerContract
+import com.github.lmfirefly.flycat.core.contract.NetworkSettingsReader
+import com.github.lmfirefly.flycat.core.model.AccessControlMode
+import com.github.lmfirefly.flycat.feature.settings.domain.InstalledAppsUseCase
+import com.github.lmfirefly.flycat.feature.settings.presentation.util.ChinaAppDetector
+import com.github.lmfirefly.flycat.presentation.viewmodel.AndroidContractStateViewModel
+import com.github.lmfirefly.flycat.presentation.viewmodel.LoadableState
+import com.github.lmfirefly.flycat.runtime.api.contract.ProxyControlContract
+import com.github.lmfirefly.flycat.locale.FlyTxt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+class AccessControlViewModel(
+    application: Application,
+    private val settings: NetworkSettingsReader,
+    private val controller: AccessControlControllerContract,
+    private val proxyFacade: ProxyControlContract,
+    private val appsUseCase: InstalledAppsUseCase,
+    private val chinaAppDetector: ChinaAppDetector,
+) :
+    AndroidContractStateViewModel<
+        AccessControlViewModel.UiState,
+        AccessControlViewModel.AccessControlUiEffect,
+    >(application, UiState()) {
+
+    data class AppInfo(
+        val packageName: String,
+        val label: String,
+        val isSystemApp: Boolean,
+        val installTime: Long = 0L,
+        val updateTime: Long = 0L,
+    )
+
+    enum class SortMode {
+        PACKAGE_NAME,
+        LABEL,
+        INSTALL_TIME,
+        UPDATE_TIME;
+
+        val displayName: String
+            get() =
+                when (this) {
+                    PACKAGE_NAME -> FlyTxt.AccessControl.SortMode.PackageName
+                    LABEL -> FlyTxt.AccessControl.SortMode.Label
+                    INSTALL_TIME -> FlyTxt.AccessControl.SortMode.InstallTime
+                    UPDATE_TIME -> FlyTxt.AccessControl.SortMode.UpdateTime
+                }
+    }
+
+    data class UiState(
+        override val isLoading: Boolean = true,
+        val apps: List<AppInfo> = emptyList(),
+        val selectedPackages: Set<String> = emptySet(),
+        val searchQuery: String = "",
+        val showSystemApps: Boolean = false,
+        val sortMode: SortMode = SortMode.LABEL,
+        val selectedFirst: Boolean = true,
+        val needsMiuiPermission: Boolean = false,
+        override val message: String? = null,
+        override val error: String? = null,
+    ) : LoadableState<UiState> {
+        override fun withLoading(loading: Boolean): UiState = copy(isLoading = loading)
+
+        override fun withError(error: String?): UiState = copy(error = error)
+
+        override fun withMessage(message: String?): UiState = copy(message = message)
+    }
+
+    val filteredApps: StateFlow<List<AppInfo>> =
+        uiState
+            .map { state ->
+                filterApps(
+                    apps = state.apps,
+                    selectedPackages = state.selectedPackages,
+                    query = state.searchQuery,
+                    showSystemApps = state.showSystemApps,
+                    sortMode = state.sortMode,
+                    selectedFirst = state.selectedFirst,
+                )
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    sealed interface AccessControlUiEffect {
+        data class ShowMessage(val message: String) : AccessControlUiEffect
+
+        data class ShowError(val message: String) : AccessControlUiEffect
+    }
+
+    init {
+        checkAndLoad()
+    }
+
+    private fun checkAndLoad() {
+        if (appsUseCase.hasRootPackageAccess()) {
+            loadApps()
+            return
+        }
+        if (appsUseCase.checkMiuiPermission()) {
+            _uiState.update { it.copy(needsMiuiPermission = true, isLoading = false) }
+        } else {
+            loadApps()
+        }
+    }
+
+    fun onPermissionResult() {
+        _uiState.update { it.copy(needsMiuiPermission = false) }
+        loadApps()
+    }
+
+    fun onAccessControlModeChange(mode: AccessControlMode) {
+        controller.setAccessControlMode(mode)
+    }
+
+    private fun loadApps() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            val selectedPackages = settings.accessControlPackages.value
+            val showSystemApps = settings.accessControlShowSystemApps.value
+            val selectedFirst = settings.accessControlSelectedFirst.value
+            val apps =
+                runCatching { withContext(Dispatchers.IO) { loadInstalledApps() } }
+                    .getOrElse {
+                        _uiState.update { state ->
+                            state.copy(isLoading = false, needsMiuiPermission = true)
+                        }
+                        return@launch
+                    }
+
+            _uiState.update { state ->
+                state.copy(
+                    isLoading = false,
+                    apps = apps,
+                    selectedPackages = selectedPackages,
+                    showSystemApps = showSystemApps,
+                    selectedFirst = selectedFirst,
+                )
+            }
+        }
+    }
+
+    private fun loadInstalledApps(): List<AppInfo> {
+        return appsUseCase.loadInstalledApps().map { entry ->
+            AppInfo(
+                packageName = entry.packageName,
+                label = entry.label,
+                isSystemApp = entry.isSystemApp,
+                installTime = entry.installTime,
+                updateTime = entry.updateTime,
+            )
+        }
+    }
+
+    private fun filterApps(
+        apps: List<AppInfo>,
+        selectedPackages: Set<String>,
+        query: String,
+        showSystemApps: Boolean,
+        sortMode: SortMode = SortMode.LABEL,
+        selectedFirst: Boolean = true,
+        descending: Boolean = false,
+    ): List<AppInfo> {
+        val filtered = apps.filter { app ->
+            val matchesQuery =
+                query.isEmpty() ||
+                    app.label.contains(query, ignoreCase = true) ||
+                    app.packageName.contains(query, ignoreCase = true)
+            val matchesSystemFilter = showSystemApps || !app.isSystemApp
+            matchesQuery && matchesSystemFilter
+        }
+        val baseComparator =
+            when (sortMode) {
+                SortMode.PACKAGE_NAME -> compareBy<AppInfo> { it.packageName.lowercase() }
+                SortMode.LABEL -> compareBy { it.label.lowercase() }
+                SortMode.INSTALL_TIME -> compareBy<AppInfo> { it.installTime }
+                SortMode.UPDATE_TIME -> compareBy<AppInfo> { it.updateTime }
+            }
+        val comparator = if (selectedFirst) {
+            compareByDescending<AppInfo> { selectedPackages.contains(it.packageName) }
+                .then(if (descending) baseComparator.reversed() else baseComparator)
+        } else {
+            if (descending) baseComparator.reversed() else baseComparator
+        }
+        return filtered.sortedWith(comparator)
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _uiState.update { state -> state.copy(searchQuery = query) }
+    }
+
+    fun onSortModeChange(mode: SortMode) {
+        _uiState.update { state -> state.copy(sortMode = mode) }
+    }
+
+    fun onSelectedFirstChange(selectedFirst: Boolean) {
+        settings.accessControlSelectedFirst.set(selectedFirst)
+        _uiState.update { state -> state.copy(selectedFirst = selectedFirst) }
+    }
+
+    fun onShowSystemAppsChange(show: Boolean) {
+        settings.accessControlShowSystemApps.set(show)
+        _uiState.update { state -> state.copy(showSystemApps = show) }
+    }
+
+    fun onAppSelectionChange(packageName: String, selected: Boolean) {
+        _uiState.update { state ->
+            state.copy(
+                selectedPackages =
+                    if (selected) {
+                        state.selectedPackages + packageName
+                    } else {
+                        state.selectedPackages - packageName
+                    }
+            )
+        }
+        persistSelectionAndApply()
+    }
+
+    fun selectAll() {
+        val currentFilteredPackages = filteredApps.value.mapTo(linkedSetOf()) { it.packageName }
+        _uiState.update { state ->
+            state.copy(selectedPackages = state.selectedPackages + currentFilteredPackages)
+        }
+        persistSelectionAndApply()
+    }
+
+    fun deselectAll() {
+        val currentFilteredPackages = filteredApps.value.mapTo(linkedSetOf()) { it.packageName }
+        _uiState.update { state ->
+            state.copy(selectedPackages = state.selectedPackages - currentFilteredPackages)
+        }
+        persistSelectionAndApply()
+    }
+
+    fun invertSelection() {
+        val currentFilteredPackages = filteredApps.value.mapTo(linkedSetOf()) { it.packageName }
+        _uiState.update { state ->
+            val newSelectedPackages = state.selectedPackages.toMutableSet()
+            currentFilteredPackages.forEach { pkg ->
+                if (!newSelectedPackages.add(pkg)) {
+                    newSelectedPackages.remove(pkg)
+                }
+            }
+            state.copy(selectedPackages = newSelectedPackages)
+        }
+        persistSelectionAndApply()
+    }
+
+    fun selectChinaAppsInCurrentList() = applyRegionalSelectionInCurrentList(selectChina = true)
+
+    fun selectNonChinaAppsInCurrentList() =
+        applyRegionalSelectionInCurrentList(selectChina = false)
+
+    /**
+     * China-app membership is computed on demand (FlClash-style deep scan behind
+     * [ChinaAppDetector]'s cache): the first run dex-scans undecided APKs and can take a
+     * while, so the list's loading state is raised for the duration.
+     */
+    private fun applyRegionalSelectionInCurrentList(selectChina: Boolean) {
+        val currentFiltered = filteredApps.value
+        if (currentFiltered.isEmpty()) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val chinaPackages =
+                runCatching {
+                        chinaAppDetector.detectChinaPackages(
+                            currentFiltered.map {
+                                ChinaAppDetector.Candidate(it.packageName, it.updateTime)
+                            }
+                        )
+                    }
+                    .getOrElse {
+                        _uiState.update { state -> state.copy(isLoading = false) }
+                        return@launch
+                    }
+            _uiState.update { state ->
+                val currentPackages = currentFiltered.mapTo(linkedSetOf()) { it.packageName }
+                val targetPackages =
+                    currentFiltered
+                        .filter { (it.packageName in chinaPackages) == selectChina }
+                        .mapTo(linkedSetOf()) { it.packageName }
+                state.copy(
+                    isLoading = false,
+                    selectedPackages =
+                        state.selectedPackages.minus(currentPackages).plus(targetPackages),
+                )
+            }
+            persistSelectionAndApply()
+        }
+    }
+
+    fun exportPackages(): String = _uiState.value.selectedPackages.joinToString("\n")
+
+    fun importPackages(text: String): Int {
+        val packages = text.lines().map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        val validPackages =
+            packages.intersect(_uiState.value.apps.mapTo(linkedSetOf()) { it.packageName })
+
+        _uiState.update { state ->
+            state.copy(selectedPackages = state.selectedPackages + validPackages)
+        }
+
+        persistSelectionAndApply()
+        return validPackages.size
+    }
+
+    private fun persistSelectionAndApply() {
+        controller.applyPackages(_uiState.value.selectedPackages)
+    }
+}

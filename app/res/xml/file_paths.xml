@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<paths>
+    <cache-path
+            name="cached_files"
+            path="."/>
+
+    <external-files-path
+            name="external_files"
+            path="."/>
+
+    <external-path
+            name="public_downloads"
+            path="Download/FlyCat"/>
+
+    <files-path
+            name="imported_files"
+            path="imported"/>
+</paths>

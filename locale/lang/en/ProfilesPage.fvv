@@ -1,0 +1,134 @@
+<Profiles Page>
+ProfilesPage = {
+    Title = "Profiles"
+
+    Action = {
+        UpdateAll = "Update All"
+        AddProfile = "Add Profile"
+    }
+
+    Empty = {
+        NoProfiles = "No profiles"
+        Hint = "Click top-right to add profile"
+    }
+
+    Sheet = {
+        AddTitle = "Add Profile"
+        EditTitle = "Edit Profile"
+    }
+
+    Type = {
+        Title = "Profile Type"
+        Subscription = "Subscription URL"
+        LocalFile = "Local File"
+        QrScan = "Scan QR Code"
+    }
+
+    Input = {
+        ProfileName = "Profile Name"
+        SubscriptionUrl = "Subscription URL (HTTP/HTTPS)"
+        SelectFile = "Click to select file"
+        NewProfile = "New Profile"
+        AgeSecretKey = "Age Secret Key (optional)"
+    }
+
+    QrScanner = {
+        NeedPermission = "Camera permission required"
+        NeedCamera = "Camera permission required for scanning"
+        SelectFromAlbum = "Select QR code from album"
+        RecognizeSuccess = "Recognition successful"
+        RecognizeFailed = "Failed to recognize QR code"
+        RecognizeError = "Recognition failed: %s"
+    }
+
+    Message = {
+        UnknownFile = "Unknown file"
+    }
+
+    Validation = {
+        EnterUrl = "Please enter URL"
+        SelectFile = "Please select a file"
+        YamlOnly = "Only .yaml or .yml format supported"
+    }
+
+    Progress = {
+        Downloading = "Downloading..."
+    }
+
+    Button = {
+        Cancel = "Cancel"
+        Confirm = "Confirm"
+    }
+
+    DeleteDialog = {
+        Title = "Delete Profile"
+        Message = "Are you sure you want to delete '%s'?"
+        Confirm = "Delete"
+    }
+
+    EditDialog = {
+        Title = "Edit Profile Name"
+    }
+
+    LinkSettings = {
+        Title = "Link Settings"
+        OpenMode = "Open Mode"
+        OpenModeInApp = "In App"
+        OpenModeExternal = "External Browser"
+        DefaultLink = "Default Link"
+        DefaultLinkSummary = "Link opened when clicking top-left shortcut button"
+        AddLink = "Add Link"
+        EditLink = "Edit Link"
+        Name = "Name"
+        Url = "URL"
+        Close = "Close"
+        Validation = {
+            EnterName = "Please enter name"
+            EnterUrl = "Please enter URL"
+            InvalidUrl = "Please enter a valid URL"
+        }
+    }
+
+    ShareDialog = {
+        Title = "Share Profile"
+        ShareFile = "Share Config File"
+        ShareLink = "Share Subscription Link"
+        NoLink = "This profile has no subscription link"
+        ImportedConfigMissing = "Imported config missing: %s"
+    }
+
+
+    SettingsDialog = {
+        Title = "Subscription Settings"
+        SectionType = "Setting Type"
+        SectionSubscription = "Subscription Info"
+        SectionOverride = "Override Config"
+        ChangeLink = "Change Subscription Link"
+        CustomRouting = "Custom Routing"
+        CustomRoutingSummary = "Standalone routing rules"
+        NoDescription = "No description set"
+        EditProfile = "Edit Profile"
+        OpenConfig = "Open Config"
+        EditSettings = "Edit Settings"
+        SaveFailed = "Failed to save profile"
+        ConfigMissing = "Config not found: %s"
+        AgeSecretKey = "Age Secret Key"
+    }
+
+    AgeKey = {
+        PublicKey = "Age Public Key"
+        SecretKey = "Age Secret Key"
+        PublicKeyPlaceholder = "age1..."
+        DerivePublicKey = "Derive public key"
+        CopyPublicKey = "Copy public key"
+        GenerateSecretKey = "Generate secret key"
+        CopySecretKey = "Copy secret key"
+        HideKey = "Hide key"
+        ShowKey = "Show key"
+        GeneratedPublicKey = "Age public key generated: %s"
+        CopiedPublicKey = "Age public key copied: %s"
+        GeneratedSecretKey = "Age secret key generated: %s"
+        CopiedSecretKey = "Age secret key copied: %s"
+        GenerateFailed = "Generation failed"
+    }
+}
