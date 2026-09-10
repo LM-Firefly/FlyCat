@@ -115,6 +115,18 @@ class ProxyViewModel(
         }
     }
 
+    /**
+     * 当应用在代理页面激活时返回前台时调用。
+     * 强制刷新以从长时间后台运行后可能存在的过期缓存数据中恢复。
+     */
+    fun onForegroundResume() {
+        if (activeSyncSources.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { proxyGroupRepository.refreshProxyGroups(force = true) }
+                .onFailure { error -> if (error is CancellationException) throw error }
+        }
+    }
+
     fun refreshGroup(groupName: String) {
         viewModelScope.launch {
             runCatching { proxyGroupRepository.refreshProxyGroup(groupName) }

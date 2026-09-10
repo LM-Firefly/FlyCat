@@ -24,6 +24,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -57,6 +59,7 @@ internal class ProxyGroupManager(
     private companion object {
         const val PROXY_DELAY_CACHE_TTL_MS = 5 * 60 * 1000L
         const val PROXY_SELECT_FULL_REFRESH_DELAY_MS = 400L
+        const val PROXY_GROUP_QUERY_TIMEOUT_MS = 8_000L
     }
     private var previewCacheEntry: PreviewCacheEntry? = null
     private var previewProfile: Profile? = null
@@ -92,8 +95,9 @@ internal class ProxyGroupManager(
             }
             var missingLocalRuntime = false
             val groups =
-                withContext(Dispatchers.IO) {
-                    try {
+                withTimeoutOrNull(PROXY_GROUP_QUERY_TIMEOUT_MS) {
+                    withContext(Dispatchers.IO) {
+                        try {
                             if (!snapshot.running) {
                                 return@withContext queryPreviewProxyGroups(appContext, connectCurrentBackend)
                             }
@@ -112,8 +116,7 @@ internal class ProxyGroupManager(
                                     .queryAllProxyGroups(excludeNotSelectable = false)
                                     .let(::toProxyGroupInfos)
                             }
-                        }
-                        catch (e: CancellationException) { throw e }
+                        } catch (e: CancellationException) { throw e }
                         catch (error: Exception) {
                             Timber.e(error, "Failed to refresh proxy groups")
                             missingLocalRuntime = snapshot.owner != RuntimeOwner.RootTun &&
@@ -121,6 +124,7 @@ internal class ProxyGroupManager(
                                 snapshot.owner != RuntimeOwner.RemoteController
                             null
                         }
+                    }
                 }
             if (groups != null && (groups.isNotEmpty() || snapshot.running)) {
                 publishProxyGroups(groups, cacheForPreview = true)
@@ -148,15 +152,18 @@ internal class ProxyGroupManager(
         connectCurrentBackend: suspend () -> Unit,
     ) {
         if (!snapshot.running) {
-            if (_proxyGroups.value.isEmpty()) {
+            // 即使未运行，若组不在缓存中，也应尝试刷新。
+            // 这样可以防止从长时间后台恢复后，过时数据阻塞界面。
+            if (_proxyGroups.value.isEmpty() || _proxyGroups.value.none { it.name == name }) {
                 refreshProxyGroups(appContext, snapshot, isRootSessionActive, connectCurrentBackend)
             }
             return
         }
         refreshProxyGroupsMutex.withLock {
             val updatedGroup =
-                withContext(Dispatchers.IO) {
-                    try {
+                withTimeoutOrNull(PROXY_GROUP_QUERY_TIMEOUT_MS) {
+                    withContext(Dispatchers.IO) {
+                        try {
                             if (snapshot.owner == RuntimeOwner.RootTun && !isRootSessionActive()) {
                                 error("RootTun runtime not ready")
                             }
@@ -168,12 +175,12 @@ internal class ProxyGroupManager(
                                 connectCurrentBackend()
                                 toProxyGroupInfo(ServiceClient.clash().queryProxyGroup(name, sort))
                             }
-                        }
-                        catch (e: CancellationException) { throw e }
+                        } catch (e: CancellationException) { throw e }
                         catch (error: Exception) {
                             Timber.e(error, "Failed to refresh proxy group: %s", name)
                             null
                         }
+                    }
                 } ?: return
             val updatedGroups = attachChainPaths(updateCachedProxyGroup(updatedGroup))
             publishProxyGroups(updatedGroups, cacheForPreview = true)
@@ -469,9 +476,15 @@ internal class ProxyGroupManager(
             onLocal = { ServiceClient.clash().patchSelector(group, proxyName) },
         )
         if (ok) {
-            delay(200L)
-            refreshGroupDirect(group, ProxySort.Default)
-            onScheduleFullRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
+            // 乐观局部更新以使界面立即反映更改，即使延迟刷新被过时的互斥锁阻塞。
+            applyLocalForceSelection(group = group, proxyName = proxyName)
+            scope.launch {
+                runCatching {
+                    delay(200L)
+                    refreshGroupDirect(group, ProxySort.Default)
+                    onScheduleFullRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
+                }
+            }
         }
         return ok
     }
@@ -542,8 +555,14 @@ internal class ProxyGroupManager(
             onLocal = { ServiceClient.clash().healthCheckProxy(group, proxyName) },
         )
         Timber.d("Health check proxy done: group=%s proxy=%s delay=%s", group, proxyName, delay)
-        refreshGroupDirect(group, ProxySort.Default)
-        onScheduleFullRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
+        // 刷新操作采用“即发即忘”方式，以便调用方能立即返回。
+        // 若 refreshProxyGroupsMutex 正被一个卡住的后台同步任务持有，此操作也不会被阻塞。
+        scope.launch {
+            runCatching {
+                refreshGroupDirect(group, ProxySort.Default)
+                onScheduleFullRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
+            }
+        }
         return delay
     }
 
@@ -568,6 +587,6 @@ internal class ProxyGroupManager(
             val nextNow = if (desired.isNotEmpty()) desired else info.now.trim()
             info.copy(now = nextNow, fixed = desired)
         }
-        publishProxyGroups(updatedGroups, cacheForPreview = true)
+        publishProxyGroups(attachChainPaths(updatedGroups), cacheForPreview = true)
     }
 }

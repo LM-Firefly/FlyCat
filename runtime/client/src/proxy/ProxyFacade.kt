@@ -567,6 +567,7 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
             traffic.queryTrafficTotal(notify = false)
             traffic.notifyTrafficUpdated()
             traffic.refreshTunnelMode()
+            traffic.refreshConnectionSnapshot()
         } else {
             traffic.reset()
         }
