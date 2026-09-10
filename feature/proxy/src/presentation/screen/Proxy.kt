@@ -58,6 +58,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
@@ -218,6 +220,11 @@ fun ProxyPager(
     }
 
     LaunchedEffect(isActive) { proxyViewModel.ensureCoreLoaded(isActive, source = "proxy_page") }
+
+    // 应用在长时间后台运行后返回前台时强制刷新，因为WhileSubscribed(5000)会停止上游收集，且同步循环可能已被限流或阻塞在旧互斥锁后面。
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        if (isActive) proxyViewModel.onForegroundResume()
+    }
 
     DisposableEffect(proxyViewModel) {
         onDispose { proxyViewModel.ensureCoreLoaded(false, source = "proxy_page") }
