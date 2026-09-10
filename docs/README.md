@@ -13,25 +13,41 @@
 
 **An open-source Android client based on the [mihomo](https://github.com/MetaCubeX/mihomo) kernel**
 
-[Documentation](https://yumebox.gal.tf) · [Download](https://github.com/LM-Firefly/FlyCat/releases) · [Feedback](https://github.com/LM-Firefly/FlyCat/issues) · [Telegram Group](https://t.me/OOM_Group)
+[Documentation](https://lm-firefly.github.io/FlyCat/) · [Download](https://github.com/LM-Firefly/FlyCat/releases) · [Feedback](https://github.com/LM-Firefly/FlyCat/issues)
 
 </div>
+
+## Features
+
+- **Modular architecture**: Fully modularized into `core` / `ui` / `data` / `runtime:{api,client,service}` / 10 feature modules
+- **Override system**: YAML + JavaScript override with field modifiers (`start`/`end`/`merge`/`force`), binding chains, and Rust-native compilation engine
+- **Multiple kernel channels**: `alpha`, `meta`, `smart` — switchable via kernel manager with per-channel ABI support
+- **Root TUN**: VPN-free traffic interception with automatic routing and DNS mode (RedirHost / FakeIP)
+- **Moe Home**: Custom home page with wallpaper, proxy chain topology visualization, speed chart, and traffic display
+- **Connection management**: Detailed connection view with speed display and one-tap close all
+- **Traffic statistics**: Time-based stacked bar charts with per-app traffic ranking
+- **Web dashboard**: Built-in MetaCubeXD / Zashboard / Yacd panel support
+- **SubStore**: Optional SubStore integration for subscription management
+- **Backup & restore**: WebDAV backup with Age encryption support
+- **Multi-language**: English, 简体中文, 繁體中文, 日本語, Русский
+- **Deep links**: `flycat://` scheme for direct navigation to pages and screens
+- **WiFi automation**: Automatic profile switching based on WiFi SSID
+- **Access control**: Per-app and per-domain proxy routing rules
+- **Native layer**: Rust JNI engine (override compiler + JS runtime) + Go native (tunnel/config/proxy) + Rust lib.rs loader
 
 ## Usage
 
 FlyCat currently only supports **Android 8.0 (API 26) and above**.
 
 - Download the installation package for your architecture from the [Release](https://github.com/LM-Firefly/FlyCat/releases) page
-- For more information, visit the official documentation: [yumebox.gal.tf](https://yumebox.gal.tf)
-- Override configuration syntax reference: [Override document](https://yumebox.gal.tf/override/override)
+- For more information, visit the official documentation: [lm-firefly.github.io/FlyCat](https://lm-firefly.github.io/FlyCat/)
+- Override configuration syntax reference: [Override document](https://lm-firefly.github.io/FlyCat/override/override)
 
 If this project is helpful to you, please give it a Star — it is the motivation for continuous updates.
 
 ### Feedback and suggestions
 
 If you encounter a bug, or have ideas and suggestions for improvements, please submit them on the [Issues](https://github.com/LM-Firefly/FlyCat/issues) page.
-
-For more discussion and feedback, join the group: [@OOM_WG](https://t.me/OOM_Group)
 
 ### Contributing
 
@@ -107,14 +123,14 @@ FlyCat does not use Git submodules. A clean checkout needs the mihomo source and
 7. Build the APK:
 
    ```bash
-   # arm64-v8a debug APK without bundled Geo data (local default)
+   # arm64-v8a debug APK (local default)
    ./gradlew :app:assembleDebug
 
-   # arm64-v8a debug APK with Geo databases and BundleMRS.7z
-   ./gradlew -Pgeo.bundle=true :app:assembleDebug
+   # Release APKs for every configured ABI plus a universal APK
+   ./gradlew -Pbuild.allAbis=true :app:assembleRelease
 
-   # release APKs for every configured ABI plus a universal APK
-   ./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
+   # Release APK with extension (arm64-v8a and x86_64, includes Javet libs)
+   ./gradlew assembleReleaseWithExtension
    ```
 
-   APKs are written to `app/build/outputs/apk/<build-type>/`. External builds omit Geo assets and `BundleMRS.7z`; mihomo downloads them when needed. On Windows, use `gradlew.bat`.
+   APKs are written to `app/build/outputs/apk/<build-type>/`. Geo assets (geoip.metadb, geosite.dat, ASN.mmdb, BundleMRS.7z) are always bundled. On Windows, use `gradlew.bat`.
