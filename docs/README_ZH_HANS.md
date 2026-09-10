@@ -13,25 +13,41 @@
 
 **一个基于 [mihomo](https://github.com/MetaCubeX/mihomo) 内核的开源 Android 客户端**
 
-[官方文档](https://yumebox.gal.tf) · [下载](https://github.com/LM-Firefly/FlyCat/releases) · [反馈](https://github.com/LM-Firefly/FlyCat/issues) · [Telegram 群组](https://t.me/OOM_Group)
+[官方文档](https://lm-firefly.github.io/FlyCat/) · [下载](https://github.com/LM-Firefly/FlyCat/releases) · [反馈](https://github.com/LM-Firefly/FlyCat/issues)
 
 </div>
+
+## 功能特性
+
+- **模块化架构**：完全模块化，分为 `core` / `ui` / `data` / `runtime:{api,client,service}` / 10 个功能模块
+- **覆写系统**：YAML + JavaScript 覆写，支持字段修饰符（`start`/`end`/`merge`/`force`）、绑定链、Rust 原生编译引擎
+- **多内核通道**：`alpha`、`meta`、`smart` 可切换，支持多 ABI
+- **Root TUN**：无需 VPN，Root 权限直接接管流量，支持 RedirHost / FakeIP DNS 模式
+- **Moe 首页**：自定义壁纸、代理链路拓扑图、速度图表、流量展示
+- **连接管理**：详细连接视图，支持速度显示与一键关闭全部连接
+- **流量统计**：分时段堆叠柱状图，支持分应用流量排序
+- **Web 面板**：内置 MetaCubeXD / Zashboard / Yacd 面板
+- **SubStore**：可选 SubStore 集成，方便订阅管理
+- **备份恢复**：WebDAV 备份，支持 Age 加密
+- **多语言**：English、简体中文、繁體中文、日本語、Русский
+- **深度链接**：`flycat://` 协议直达页面和设置
+- **WiFi 自动化**：根据 WiFi SSID 自动切换配置
+- **访问控制**：按应用和域名配置代理路由规则
+- **原生层**：Rust JNI 引擎（覆写编译器 + JS 运行时）+ Go 原生（tunnel/config/proxy）+ Rust lib.rs loader
 
 ## 使用
 
 FlyCat 目前仅支持 **Android 8.0（API 26）及以上系统**。
 
 - 前往 [Release](https://github.com/LM-Firefly/FlyCat/releases) 页面下载对应架构的安装包
-- 更多内容请访问官方文档：[yumebox.gal.tf](https://yumebox.gal.tf)
-- 覆写配置语法参考：[覆写文档](https://yumebox.gal.tf/override/override)
+- 更多内容请访问官方文档：[lm-firefly.github.io/FlyCat](https://lm-firefly.github.io/FlyCat/)
+- 覆写配置语法参考：[覆写文档](https://lm-firefly.github.io/FlyCat/override/override)
 
 如果这个项目对你有帮助，请点一个 Star，这是持续更新的动力。
 
 ### 反馈与建议
 
 如果遇到 Bug，或有想法与改进建议，请在 [Issues](https://github.com/LM-Firefly/FlyCat/issues) 页面提交。
-
-更多讨论与反馈可加入群组：[@OOM_WG](https://t.me/OOM_Group)
 
 ### 参与贡献
 
@@ -107,14 +123,14 @@ FlyCat 不使用 Git submodule。从干净检出开始构建前，需要先准�
 7. 构建 APK：
 
    ```bash
-   # 本地默认：不内置 Geo 数据的 arm64-v8a Debug APK
+   # 本地默认：arm64-v8a Debug APK
    ./gradlew :app:assembleDebug
 
-   # 内置 Geo 数据库与 BundleMRS.7z 的 arm64-v8a Debug APK
-   ./gradlew -Pgeo.bundle=true :app:assembleDebug
-
    # 为所有已配置 ABI 构建 Release APK，并额外生成通用 APK
-   ./gradlew -Pbuild.allAbis=true -Pgeo.bundle=true :app:assembleRelease
+   ./gradlew -Pbuild.allAbis=true :app:assembleRelease
+
+   # Release APK（含扩展，arm64-v8a 和 x86_64，包含 Javet 库）
+   ./gradlew assembleReleaseWithExtension
    ```
 
-   APK 输出到 `app/build/outputs/apk/<build-type>/`。外置版本不包含 Geo 资源和 `BundleMRS.7z`，Mihomo 会按需下载。Windows 请使用 `gradlew.bat`。
+   APK 输出到 `app/build/outputs/apk/<build-type>/`。Geo 资源（geoip.metadb、geosite.dat、ASN.mmdb、BundleMRS.7z）始终内置。Windows 请使用 `gradlew.bat`。
