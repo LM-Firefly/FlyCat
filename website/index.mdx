@@ -183,9 +183,9 @@ flowchart TB
 
     subgraph Transport["流量接管 · 择一"]
         direction LR
-        Http["HTTP 代理"]
-        Tun["VPN TUN"]
-        Root["Root TUN"]
+        Vpn["VPN"]
+        RootTun["Root TUN"]
+        EbpfTun["eBPF TUN"]
     end
 
     Snap["运行快照<br/>状态轮询"]
@@ -197,12 +197,12 @@ flowchart TB
     OY --> Compile
     OJ --> Compile
     Compile --> Kernel
-    Kernel --> Http
-    Kernel --> Tun
-    Kernel --> Root
-    Http --> Snap
-    Tun --> Snap
-    Root --> Snap
+    Kernel --> Vpn
+    Kernel --> RootTun
+    Kernel --> EbpfTun
+    Vpn --> Snap
+    RootTun --> Snap
+    EbpfTun --> Snap
     Snap -. 恢复节点选择 .-> Kernel
 
     classDef boot fill:#0c1929,stroke:#2563eb,color:#93c5fd
@@ -224,5 +224,5 @@ flowchart TB
     class Chain,OY,OJ bind
     class Compile compiler
     class Kernel,Snap core
-    class Http,Tun,Root transport
+    class Vpn,RootTun,EbpfTun transport
 ```
