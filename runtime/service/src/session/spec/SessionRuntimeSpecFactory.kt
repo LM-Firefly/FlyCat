@@ -139,9 +139,18 @@ class SessionRuntimeSpecFactory(
             } else {
                 compiledConfigPipeline.resolveOverrideSpecs(rootResult.profileUuid.toString())
             }
-        // eBPF模式：可选中国规则绕行覆盖（eBPF监听器+中国规则提供者）
-        val ebpfOverride = EbpfOverride.materialize(EbpfOverride.Config(bypassCn = store.ebpfBypassCn), profileDir)
-        val modeOverrides = userOverrides + listOfNotNull(ebpfOverride)
+        // eBPF模式：始终注入本地 cgroup listener；可选 CN bypass 覆写
+        val uidPolicy = resolveEbpfUidPolicy()
+        val ebpfOverride =
+            EbpfOverride.materialize(
+                EbpfOverride.Config(
+                    bypassCn = store.ebpfBypassCn,
+                    includeUid = if (uidPolicy.mode == 1) uidPolicy.uids else emptyList(),
+                    excludeUid = if (uidPolicy.mode == 2) uidPolicy.uids else emptyList(),
+                ),
+                profileDir,
+            )
+        val modeOverrides = userOverrides + ebpfOverride
         // eBPF keeps the profile authoritative — skip GlobalUaOverride.
         val overrideSpecs = modeOverrides
         val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
