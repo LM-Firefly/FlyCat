@@ -49,24 +49,28 @@ internal class RootTunRuntimeHost(
     private var lastRuntimeSpec: RuntimeSpec? = null
 
     override val context: Context = service
-    override val mode: RunMode = RunMode.Tun
+    private var _mode: RunMode = RunMode.Tun
+    override val mode: RunMode get() = _mode
+
+    private val effectiveRunMode: RunMode get() = lastRuntimeSpec?.runMode ?: _mode
 
     override fun onStarting(spec: RuntimeSpec) {
         startedBroadcastSent = false
         lastRuntimeSpec = spec
+        _mode = spec.runMode
         StatusProvider.clearLegacyStateFiles()
-        StatusProvider.markRuntimeStarting(RunMode.Tun)
+        StatusProvider.markRuntimeStarting(spec.runMode)
     }
 
     override fun onStarted(spec: RuntimeSpec) {
         lastRuntimeSpec = spec
-        StatusProvider.markRuntimeRunning(RunMode.Tun)
+        StatusProvider.markRuntimeRunning(spec.runMode)
         service.sendClashStarted()
         startedBroadcastSent = true
     }
 
     override fun onStopped(reason: String?) {
-        StatusProvider.markRuntimeIdle(RunMode.Tun)
+        StatusProvider.markRuntimeIdle(effectiveRunMode)
         service.sendClashStopped(reason)
     }
 
@@ -92,7 +96,7 @@ internal class RootTunRuntimeHost(
     override fun onLogItem(log: LogMessage) = Unit
 
     override fun reportFailure(error: String) {
-        StatusProvider.markRuntimeFailed(RunMode.Tun)
+        StatusProvider.markRuntimeFailed(effectiveRunMode)
         statePublisher.update(
             statePublisher
                 .snapshot()

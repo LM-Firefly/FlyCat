@@ -70,7 +70,7 @@ object RootTunRuntimeRecovery : RootTunRuntimeRecoveryContract {
             RootTunStatusFlow.markIdle(message)
         }
 
-        StatusProvider.markRuntimeIdle(RunMode.Tun)
+        StatusProvider.markRuntimeIdle(StatusProvider.runningMode ?: RunMode.Tun)
         runCatching { RootTunService.stop(appContext) }
         runCatching { RootService.stop(Intent(appContext, RootTunRootService::class.java)) }
 
