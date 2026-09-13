@@ -52,7 +52,7 @@ fn compile_request_unlocked(
 
     let compiled = compile_root(&request)?;
 
-    let final_yaml = serde_yaml::to_string(&normalize::normalize_root(compiled.root))
+    let final_yaml = noyalib::to_string(&normalize::normalize_root(compiled.root))
         .map_err(|err| format!("encode final yaml: {err}"))?;
     let fingerprint = fingerprint_for(request.profile_uuid.as_bytes(), final_yaml.as_bytes());
 

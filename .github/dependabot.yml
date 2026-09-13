@@ -57,13 +57,22 @@ updates:
       prefix: "deps"
     labels:
       - dependencies
+      - java
       - kotlin
       - gradle
     groups:
+      androidx:
+        patterns:
+          - "androidx.*"
       gradle-dependencies:
         patterns:
           - "*"
-      kotlin_KSP:
+      kotlin-compose:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "org.jetbrains.compose*"
+          - "org.jetbrains.kotlinx*"
+      kotlin-ksp:
         patterns:
           - "org.jetbrains.kotlin:*"
           - "com.google.devtools.ksp"
@@ -87,6 +96,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - dependencies
+      - github_actions
 
   - package-ecosystem: npm
     directory: "modules/web"

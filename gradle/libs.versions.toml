@@ -14,7 +14,7 @@ koin = "4.2.2"
 timber = "5.0.1"
 ktor = "3.5.2"
 miuix = "0.9.4-rc01"
-haze = "2.0.0-beta01"
+haze = "2.0.0-rc01"
 sketch4 = "4.6.0"
 mlkitBarcodeScanning = "17.3.0"
 reorderable = "3.1.0"
@@ -27,10 +27,9 @@ decompose = "3.5.0"
 hiddenApiBypass = "6.1"
 biometric = "1.4.0-alpha07"
 xz = "1.12"
-shapes = "1.2.0"
-snakeYaml = "v1.18-android"
-snakeyamlEngine = "3.1"
-bcprov = "1.85.2"
+shapes = "1.2.1"
+snakeyamlEngine = "3.1.1"
+bcprov = "1.86"
 libsu = "6.0.0"
 composeDestinations = "2.3.0"
 room3 = "3.0.2"
@@ -41,10 +40,10 @@ smaliDexlib2 = "3.0.9"
 
 # Plugin & build-only versions
 androidGradlePlugin = "9.5.0-alpha02"
-kotlin = "2.4.10"
+kotlin = "2.4.20"
 jetbrainsCompose = "1.11.1"
 ksp = "2.3.11"
-spotless = "8.10.0"
+spotless = "8.10.2"
 protobuf = "3.25.9"
 jdom2 = "2.0.6.1"
 jose4j = "0.9.6"
@@ -109,7 +108,6 @@ aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref
 aboutlibraries-compose = { module = "com.mikepenz:aboutlibraries-compose", version.ref = "aboutLibraries" }
 hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenApiBypass" }
 shapes = { module = "io.github.kyant0:shapes", version.ref = "shapes" }
-snake-yaml = { module = "com.github.bmoliveira:snake-yaml", version.ref = "snakeYaml" }
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 javet-node-android = { module = "com.caoccao.javet:javet-node-android", version.ref = "javetNodeAndroid" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }

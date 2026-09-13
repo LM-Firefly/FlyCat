@@ -31,6 +31,7 @@ buildscript {
             when {
                 requested.group == "com.google.protobuf" -> useVersion(libs.versions.protobuf.get())
                 requested.group == "org.bouncycastle" && requested.name == "bcprov-jdk18on" -> useVersion(libs.versions.bcprov.get())
+                requested.group == "org.bouncycastle" && requested.name == "bcpkix-jdk18on" -> useVersion(libs.versions.bcprov.get())
                 requested.group == "org.jdom" && requested.name == "jdom2" -> useVersion(libs.versions.jdom2.get())
                 requested.group == "org.bitbucket.b_c" && requested.name == "jose4j" -> useVersion(libs.versions.jose4j.get())
                 requested.group == "com.fasterxml.jackson.core" && requested.name == "jackson-core" -> useVersion(libs.versions.jacksonCore.get())
@@ -59,6 +60,7 @@ allprojects {
         resolutionStrategy.eachDependency {
             when {
                 requested.group == "org.bouncycastle" && requested.name == "bcprov-jdk18on" -> useVersion(libs.versions.bcprov.get())
+                requested.group == "org.bouncycastle" && requested.name == "bcpkix-jdk18on" -> useVersion(libs.versions.bcprov.get())
                 requested.group == "io.netty" -> useVersion(libs.versions.netty.get())
                 requested.group == "org.apache.httpcomponents" && requested.name == "httpclient" -> useVersion(libs.versions.httpcomponentsHttpClient.get())
                 requested.group == "org.apache.commons" && requested.name == "commons-lang3" -> useVersion(libs.versions.commonsLang3.get())

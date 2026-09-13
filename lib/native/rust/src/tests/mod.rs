@@ -104,7 +104,7 @@ fn compile_root_with_geosite_matcher(
     }
 
     let profile_path = temp_dir.join("profile.yaml");
-    let yaml = serde_yaml::to_string(&normalize_root(JsonValue::Object(root)))
+    let yaml = noyalib::to_string(&normalize_root(JsonValue::Object(root)))
         .expect("serialize profile yaml");
     fs::write(&profile_path, yaml).expect("write profile yaml");
 
@@ -143,7 +143,7 @@ fn compile_request_accepts_explicit_geosite_matcher() {
     let result = compile_root_with_geosite_matcher(Some(json!("mph")))
         .expect("compile request should succeed");
     assert!(result.success);
-    let root: JsonValue = serde_yaml::from_str(&result.final_yaml).expect("parse final yaml");
+    let root: JsonValue = noyalib::from_str(&result.final_yaml).expect("parse final yaml");
     assert_eq!(
         root.get("geosite-matcher").and_then(JsonValue::as_str),
         Some("mph")
@@ -550,7 +550,7 @@ rule-providers:
     let request = test_request(&temp_dir, &profile_path);
 
     let result = compile_request(request, false).expect("compile request should succeed");
-    let root: JsonValue = serde_yaml::from_str(&result.final_yaml).expect("parse final yaml");
+    let root: JsonValue = noyalib::from_str(&result.final_yaml).expect("parse final yaml");
     let expected_path = provider_path_from_runtime_home(&temp_dir, "geolocation-!cn.yaml");
     assert_eq!(
         root["rule-providers"]["geolocation-!cn"]["path"].as_str(),
@@ -593,7 +593,7 @@ rule-providers:
     let request = test_request(&temp_dir, &profile_path);
 
     let result = compile_request(request, false).expect("compile request should succeed");
-    let root: JsonValue = serde_yaml::from_str(&result.final_yaml).expect("parse final yaml");
+    let root: JsonValue = noyalib::from_str(&result.final_yaml).expect("parse final yaml");
     let expected_path = provider_path_from_runtime_home(&temp_dir, "ads_domain.mrs");
     assert_eq!(
         root["rule-providers"]["ads_domain"]["path"].as_str(),
@@ -636,7 +636,7 @@ rule-providers:
     let request = test_request(&temp_dir, &profile_path);
 
     let result = compile_request(request, false).expect("compile request should succeed");
-    let root: JsonValue = serde_yaml::from_str(&result.final_yaml).expect("parse final yaml");
+    let root: JsonValue = noyalib::from_str(&result.final_yaml).expect("parse final yaml");
     let expected_path = provider_path_from_runtime_home(&temp_dir, "advertising.yaml");
     assert_eq!(
         root["rule-providers"]["advertising"]["path"].as_str(),
@@ -690,7 +690,7 @@ rule-providers:
     let request = test_request(&temp_dir, &profile_path);
 
     let result = compile_request(request, false).expect("compile request should succeed");
-    let root: JsonValue = serde_yaml::from_str(&result.final_yaml).expect("parse final yaml");
+    let root: JsonValue = noyalib::from_str(&result.final_yaml).expect("parse final yaml");
     let expected_path = provider_path_from_runtime_home(&temp_dir, "geolocation-!cn.yaml");
     assert_eq!(
         root["rule-providers"]["geolocation-!cn"]["path"].as_str(),
