@@ -41,7 +41,7 @@ smaliDexlib2 = "3.0.9"
 
 # Plugin & build-only versions
 androidGradlePlugin = "9.5.0-alpha02"
-kotlin = "2.4.10"
+kotlin = "2.4.20"
 jetbrainsCompose = "1.11.1"
 ksp = "2.3.11"
 spotless = "8.10.0"
