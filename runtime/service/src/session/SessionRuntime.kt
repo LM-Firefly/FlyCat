@@ -36,6 +36,7 @@ import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySort
 import com.github.lmfirefly.flycat.core.model.tunnel.TunnelState
+import com.github.lmfirefly.flycat.core.util.TrafficPushHub
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeOwner
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimePhase
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeSnapshot
@@ -682,6 +683,8 @@ class SessionRuntime(
         // The compiled tun package lists mirror the loaded config; drop them with the core so a
         // stale profile's lists never drive per-app routing in the next session.
         CompiledTunPackages.clear()
+        // 清除过时的流量数据，以便下一次会话的通知从零开始，而不是继承上一次会话的最后数值。
+        TrafficPushHub.reset()
         runCatching { Clash.stopTun() }
         runCatching { Clash.stopRootTun() }
         runCatching { Clash.stopHttp() }
