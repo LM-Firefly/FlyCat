@@ -50,11 +50,13 @@ class ProfileCrudUseCase(
         source: String = "",
         ageSecretKey: String = "",
         onProgress: ((FetchStatus) -> Unit)? = null,
+        onBeforeUpdate: (suspend (UUID) -> Unit)? = null,
     ): UUID? {
         var createdUuid: UUID? = null
         return try {
             val uuid = profilesRepository.createProfile(type, name, source, ageSecretKey)
             createdUuid = uuid
+            onBeforeUpdate?.invoke(uuid)
             val observer = IFetchObserver { status -> onProgress?.invoke(status) }
             profilesRepository.updateProfile(uuid, observer)
             uuid
