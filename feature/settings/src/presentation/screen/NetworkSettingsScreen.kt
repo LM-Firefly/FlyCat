@@ -497,6 +497,7 @@ internal fun CommonTunServiceOptions(
                 FlyTxt.NetworkSettings.VpnOptions.TunStackSystem,
                 FlyTxt.NetworkSettings.VpnOptions.TunStackGVisor,
                 FlyTxt.NetworkSettings.VpnOptions.TunStackMixed,
+                FlyTxt.NetworkSettings.VpnOptions.TunStackMips,
             ),
         values = TunStack.entries,
         onValueChange = actions.onTunStackChange,

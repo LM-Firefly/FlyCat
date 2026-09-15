@@ -193,6 +193,8 @@ class ServiceStore : ServiceStateReader {
                     "gvisor" -> "gvisor"
                     "Mixed",
                     "mixed" -> "mixed"
+                    "Mips",
+                    "mips" -> "mips"
                     else -> "system"
                 }
             }
@@ -207,6 +209,7 @@ class ServiceStore : ServiceStateReader {
                     "system" -> "System"
                     "gvisor" -> "GVisor"
                     "mixed" -> "Mixed"
+                    "mips" -> "Mips"
                     else -> "System"
                 },
             )
