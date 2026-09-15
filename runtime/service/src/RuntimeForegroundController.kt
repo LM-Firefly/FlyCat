@@ -12,6 +12,7 @@ import com.github.lmfirefly.flycat.core.Clash
 import com.github.lmfirefly.flycat.core.appContextOrSelf
 import com.github.lmfirefly.flycat.core.model.LogMessage
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
+import com.github.lmfirefly.flycat.core.util.TrafficPushHub
 import com.github.lmfirefly.flycat.runtime.api.constants.Intents
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeSnapshot
 import com.github.lmfirefly.flycat.runtime.api.session.RuntimeSpec
@@ -196,6 +197,8 @@ internal class RuntimeForegroundController(
         notificationJob = null
         notificationManager.resetSpeedSmoothing()
         stopForegroundService()
+        // 同步重置流量数据以在重新启动服务前清除陈旧值。由于下方异步的 runtime.destroy() 可能在替代会话抢先获取核心所有权时被跳过，因此我们不能仅依赖 teardownCore() 方法。
+        TrafficPushHub.reset()
         if (isRuntimeInitialized) {
             runtime.requestStop(reason)
             // Always call destroy() to guarantee core cleanup (Clash.reset via teardownCore).
