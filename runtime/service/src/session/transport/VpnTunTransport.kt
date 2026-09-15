@@ -295,11 +295,9 @@ class VpnTunTransport(
             )
         private val httpProxyBlackList =
             listOf(
-                "*zhihu.com",
-                "*zhimg.com",
-                "*jd.com",
-                "100ime-iat-api.xfyun.cn",
-                "*360buyimg.com",
+                "*.linksys.com",
+                "*.linksyssmartwifi.com",
+                "*.mijia.tech",
             )
     }
 }
