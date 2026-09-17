@@ -41,6 +41,7 @@ import com.github.lmfirefly.flycat.core.model.WifiAutomationFallbackAction
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
 import com.github.lmfirefly.flycat.runtime.api.constants.Intents
 import com.github.lmfirefly.flycat.runtime.api.contract.ProxyControlContract
+import com.github.lmfirefly.flycat.runtime.api.contract.ProfileRepositoryContract
 import com.github.lmfirefly.flycat.runtime.api.wifi.WifiSsidObservation
 import com.github.lmfirefly.flycat.runtime.service.R
 import com.github.lmfirefly.flycat.runtime.service.StatusProvider
@@ -53,6 +54,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.UUID
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import timber.log.Timber
@@ -65,6 +67,7 @@ class WifiAutomationService : Service(), KoinComponent {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val settings: NetworkSettingsReader by inject()
     private val proxyControl: ProxyControlContract by inject()
+    private val profileRepository: ProfileRepositoryContract by inject()
     private var observer: WifiSsidObserver? = null
     private var applyJob: Job? = null
     private val runtimeEventsReceiver =
@@ -119,37 +122,61 @@ class WifiAutomationService : Service(), KoinComponent {
             }
     }
 
-    private fun applyRule(observation: WifiSsidObservation) {
+    private suspend fun applyRule(observation: WifiSsidObservation) {
         if (!settings.wifiAutomationEnabled.value || settings.runMode.value != RunMode.VpnService) return
         if (proxyControl.isRemoteControllerActive()) return
 
         when (observation) {
             is WifiSsidObservation.Connected -> {
-                val action =
-                    settings.wifiAutomationRules.value.firstOrNull { it.ssid == observation.ssid }?.action
-                if (action == null) {
-                    applyFallbackAction(settings.wifiAutomationOtherWifiAction.value)
+                val rule =
+                    settings.wifiAutomationRules.value.firstOrNull { it.ssid == observation.ssid }
+                if (rule == null) {
+                    applyFallbackAction(
+                        settings.wifiAutomationOtherWifiAction.value,
+                        settings.wifiAutomationOtherWifiProfileUuid.value.ifBlank { null },
+                    )
                 } else {
-                    applySsidAction(action)
+                    applySsidAction(rule.action, rule.profileUuid)
                 }
             }
 
-            WifiSsidObservation.NoWifi -> applyFallbackAction(settings.wifiAutomationNoWifiAction.value)
+            WifiSsidObservation.NoWifi ->
+                applyFallbackAction(
+                    settings.wifiAutomationNoWifiAction.value,
+                    settings.wifiAutomationNoWifiProfileUuid.value.ifBlank { null },
+                )
             WifiSsidObservation.Unavailable -> Unit
         }
     }
 
-    private fun applySsidAction(action: WifiAutomationAction) {
+    private suspend fun applySsidAction(action: WifiAutomationAction, profileUuid: String?) {
         when (action) {
-            WifiAutomationAction.Start -> startVpnIfPossible()
+            WifiAutomationAction.Start -> {
+                switchProfileIfNeeded(profileUuid)
+                startVpnIfPossible()
+            }
+
             WifiAutomationAction.Stop -> stopVpn()
         }
     }
 
-    private fun applyFallbackAction(action: WifiAutomationFallbackAction) {
+    private suspend fun switchProfileIfNeeded(profileUuid: String?) {
+        if (profileUuid == null) return
+        val uuid = runCatching { UUID.fromString(profileUuid) }.getOrNull() ?: return
+        val profile = profileRepository.queryProfileByUUID(uuid) ?: return
+        if (!profile.active) {
+            profileRepository.setActiveProfile(uuid)
+        }
+    }
+
+    private suspend fun applyFallbackAction(action: WifiAutomationFallbackAction, profileUuid: String?) {
         when (action) {
             WifiAutomationFallbackAction.Keep -> Unit
-            WifiAutomationFallbackAction.Start -> startVpnIfPossible()
+            WifiAutomationFallbackAction.Start -> {
+                switchProfileIfNeeded(profileUuid)
+                startVpnIfPossible()
+            }
+
             WifiAutomationFallbackAction.Stop -> stopVpn()
         }
     }
