@@ -63,7 +63,7 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     override val enableIPv6 by boolFlow(false)
     override val systemProxy by boolFlow(true)
     override val disableAllOverride by boolFlow(false)
-    override val tunStack by enumFlow(TunStack.GVisor)
+    override val tunStack by enumFlow(TunStack.System)
     override val tunRouteExcludeAddress by stringListFlow(emptyList())
     override val tunIfName by strFlow("FlyCat")
     override val tunMtu by intFlow(9000)
@@ -88,4 +88,6 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
         )
     override val wifiAutomationOtherWifiAction by enumFlow(WifiAutomationFallbackAction.Keep)
     override val wifiAutomationNoWifiAction by enumFlow(WifiAutomationFallbackAction.Keep)
+    override val wifiAutomationOtherWifiProfileUuid by strFlow("")
+    override val wifiAutomationNoWifiProfileUuid by strFlow("")
 }
