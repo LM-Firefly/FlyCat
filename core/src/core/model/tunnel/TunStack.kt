@@ -25,4 +25,5 @@ enum class TunStack {
     System,
     GVisor,
     Mixed,
+    Mips,
 }

@@ -53,6 +53,7 @@ class RootTunTransport : RuntimeTransport {
     }
 
     override fun stop() {
+        // 防御性措施：无论模式如何，停止所有可能的监听器；空操作无害。
         Clash.stopRootTun()
         Clash.stopHttp()
         Clash.stopTun()

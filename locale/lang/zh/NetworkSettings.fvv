@@ -49,6 +49,11 @@ NetworkSettings = {
         AllowBypassTitle = "允許應用繞過"
         EnableIpv6Title = "執行 IPv6"
         SystemProxyTitle = "VPN 系統代理"
+        TunStackTitle = "TUN 協定堆疊"
+        TunStackSystem = "System"
+        TunStackGVisor = "GVisor"
+        TunStackMixed = "Mixed"
+        TunStackMips = "Mips"
     }
 
     ProxyOptions = {

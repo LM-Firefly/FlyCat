@@ -53,6 +53,7 @@ NetworkSettings = {
         TunStackSystem = "System"
         TunStackGVisor = "GVisor"
         TunStackMixed = "Mixed"
+        TunStackMips = "Mips"
     }
 
     ProxyOptions = {

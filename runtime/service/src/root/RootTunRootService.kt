@@ -95,6 +95,12 @@ class RootTunRootService : RootService() {
                 if (startResult?.success == true && spec.runMode == RunMode.Ebpf) {
                     startupLogStore.append("ROOT_TUN root-service: eBPF mode — native listener is part of mihomo process")
                 }
+                if (startResult?.success == false && spec.runMode == RunMode.Ebpf) {
+                    startupLogStore.append("ROOT_TUN root-service: eBPF start failed — ${startResult.error}")
+                    val hint = "Consider switching to Root TUN mode if eBPF is not supported on this kernel."
+                    val enhanced = startResult.error?.let { "$it\n$hint" } ?: hint
+                    return encodeResult(startResult.copy(error = enhanced))
+                }
                 return startResult?.let { encodeResult(it) } ?: encodeTimeoutResult()
             }
 

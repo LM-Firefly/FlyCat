@@ -136,12 +136,17 @@ class NetworkSettingsViewModel(
             refreshKernels(forceNetwork = false) // 初始化时使用本地缓存
             val rootStatus = proxyFacade.evaluateRootAccess()
             _rootAvailable.value = rootStatus.canStartRootTun
-            // eBPF requires root + eBPF-capable kernel
-            if (rootStatus.canStartRootTun) {
-                _ebpfAvailable.value = withContext(Dispatchers.IO) {
-                    KernelManager.isEbpfKernelActive(getApplication())
-                }
-            }
+            refreshEbpfAvailability()
+        }
+    }
+
+    private suspend fun refreshEbpfAvailability() {
+        if (!_rootAvailable.value) {
+            _ebpfAvailable.value = false
+            return
+        }
+        _ebpfAvailable.value = withContext(Dispatchers.IO) {
+            KernelManager.isEbpfKernelActive(getApplication())
         }
     }
 
@@ -536,6 +541,7 @@ class NetworkSettingsViewModel(
                     _activeKernelId.value = id
                 }
                 refreshInstalledKernelCommits()
+                refreshEbpfAvailability()
                 if (_activeKernelId.value != KernelManager.BUNDLED_ALPHA_ID) {
                     _restartRequired.value = true
                 }
@@ -553,6 +559,7 @@ class NetworkSettingsViewModel(
                 withContext(Dispatchers.IO) { KernelManager.activate(getApplication(), kernel.id) }
                 _activeKernelId.value = kernel.id
                 refreshInstalledKernelCommits()
+                refreshEbpfAvailability()
                 _restartRequired.value = true
                 onDone(true)
             } catch (e: Exception) {
