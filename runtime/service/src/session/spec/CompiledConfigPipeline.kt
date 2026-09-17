@@ -69,9 +69,11 @@ class CompiledConfigPipeline(private val context: Context) {
         val overrides = mutableListOf<OverrideSpec>()
         binding?.overrideIds.orEmpty().filterNot(::isReservedOverrideId).distinct().forEach {
             overrideId ->
-            val file =
-                resolveUserOverrideFile(overridesDir, overrideId, metadata)
-                    ?: error("Override config not found for profile=$profileUuid id=$overrideId")
+            val file = resolveUserOverrideFile(overridesDir, overrideId, metadata)
+            if (file == null) {
+                logger?.invoke("override resolve: SKIP missing id=$overrideId profile=$profileUuid")
+                return@forEach
+            }
             val spec = file.toOverrideSpec()
             logger?.invoke(describeOverrideFile(file, overrideId))
             userOverrides += spec

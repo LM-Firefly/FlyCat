@@ -99,8 +99,8 @@ AppSettings = {
         UpdateChannelSmart = "Smart"
         AutoCheckAppUpdateTitle = "Auto-check App Updates"
         AutoCheckAppUpdateSummary = "Check GitHub Release updates automatically every 1 hour in background"
-        CustomUserAgentTitle = "Custom User-Agent"
-        CustomUserAgentSummaryDefault = "Not set, using default"
+        CustomUserAgentTitle = "Core & Subscription User-Agent"
+        CustomUserAgentSummaryDefault = "Not set (default: ClashMetaForAndroid)"
     }
 
     PredictiveBack = {

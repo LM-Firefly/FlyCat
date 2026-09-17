@@ -31,7 +31,7 @@ interface OverrideConfigRepository {
     fun getUserConfigsFlow(): Flow<List<OverrideConfig>>
     suspend fun getById(id: String): OverrideConfig?
     fun getConfigContent(id: String): String?
-    fun saveConfigContent(id: String, content: String): Boolean
+    suspend fun saveConfigContent(id: String, content: String): Boolean
     suspend fun save(config: OverrideConfig)
     suspend fun delete(id: String): Boolean
     suspend fun duplicate(id: String): OverrideConfig?

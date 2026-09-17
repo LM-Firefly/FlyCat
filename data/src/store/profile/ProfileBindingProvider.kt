@@ -50,4 +50,7 @@ interface ProfileBindingProvider {
     suspend fun removeOverrideFromAllBindings(overrideId: String)
 
     suspend fun clearOverrides(profileId: String)
+
+    /** Refresh in-memory cache from the given snapshot. Used after MetadataIndexStore direct mutations. */
+    suspend fun refreshFromMetadata(chains: Map<String, ProfileBinding>)
 }
