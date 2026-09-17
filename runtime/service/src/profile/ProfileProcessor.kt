@@ -22,6 +22,14 @@
 package com.github.lmfirefly.flycat.runtime.service.profile
 
 import android.content.Context
+import androidx.work.Constraints
+import androidx.work.CoroutineWorker
+import androidx.work.Data
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkerParameters
+import androidx.work.WorkManager
 import com.github.lmfirefly.flycat.core.Clash
 import com.github.lmfirefly.flycat.core.importedDir
 import com.github.lmfirefly.flycat.core.model.FetchStatus
@@ -35,6 +43,7 @@ import com.github.lmfirefly.flycat.runtime.service.util.Log
 import com.github.lmfirefly.flycat.runtime.service.util.sendProfileChanged
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
@@ -185,6 +194,11 @@ object ProfileProcessor {
                                 )
                             ImportedDao.update(updated)
 
+                            AutoUpdate.replace(
+                                context,
+                                snapshot.imported.uuid,
+                                updated.interval,
+                            )
                             context.sendProfileChanged(snapshot.imported.uuid)
                         }
                     }
@@ -263,5 +277,118 @@ object ProfileProcessor {
                 context.sendProfileChanged(uuid)
             }
         }
+    }
+
+    /**
+     * 基于WorkManager的定期订阅自动更新。
+     * 每个配置了 `interval ≥ [MIN_INTERVAL_SECONDS]` 的URL配置文件都会创建一个独立的周期性工作条目。
+     */
+    object AutoUpdate {
+        const val MIN_INTERVAL_SECONDS = 15 * 60L
+        private const val TAG = "ProfileAutoUpdate"
+
+        fun schedule(context: Context, uuid: UUID, intervalSeconds: Long) {
+            if (intervalSeconds < MIN_INTERVAL_SECONDS) {
+                cancel(context, uuid)
+                return
+            }
+            enqueue(context, uuid, intervalSeconds, ExistingPeriodicWorkPolicy.KEEP)
+        }
+
+        fun replace(context: Context, uuid: UUID, intervalSeconds: Long) {
+            if (intervalSeconds < MIN_INTERVAL_SECONDS) {
+                cancel(context, uuid)
+                return
+            }
+            enqueue(context, uuid, intervalSeconds, ExistingPeriodicWorkPolicy.UPDATE)
+        }
+
+        fun cancel(context: Context, uuid: UUID) {
+            WorkManager.getInstance(context).cancelUniqueWork(workName(uuid))
+            Timber.tag(TAG).i("Cancelled auto-update for $uuid")
+        }
+
+        /**在应用启动时同步所有URL配置文件。**/
+        fun scheduleAll(context: Context) {
+            val profiles = ImportedDao.queryAll()
+            var scheduled = 0
+            for (imported in profiles) {
+                if (imported.type != Profile.Type.Url) continue
+                if (imported.interval >= MIN_INTERVAL_SECONDS) {
+                    schedule(context, imported.uuid, imported.interval)
+                    scheduled++
+                }
+            }
+            Timber.tag(TAG).i("scheduleAll: $scheduled profiles scheduled out of ${profiles.size}")
+        }
+
+        private fun enqueue(
+            context: Context,
+            uuid: UUID,
+            intervalSeconds: Long,
+            policy: ExistingPeriodicWorkPolicy,
+        ) {
+            val inputData = Data.Builder()
+                .putString(ProfileAutoUpdateWorker.KEY_PROFILE_UUID, uuid.toString())
+                .build()
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val request = PeriodicWorkRequestBuilder<ProfileAutoUpdateWorker>(
+                repeatInterval = intervalSeconds,
+                repeatIntervalTimeUnit = TimeUnit.SECONDS,
+            )
+                .setInputData(inputData)
+                .setConstraints(constraints)
+                .addTag("profile_update")
+                .addTag("profile_update_$uuid")
+                .build()
+            WorkManager.getInstance(context)
+                .enqueueUniquePeriodicWork(workName(uuid), policy, request)
+            Timber.tag(TAG).i("Scheduled auto-update for $uuid every ${intervalSeconds}s ($policy)")
+        }
+
+        private fun workName(uuid: UUID): String = "profile_auto_update_$uuid"
+    }
+}
+
+/**
+ * 周期性更新单个订阅配置文件。
+ * 由 [ProfileProcessor.AutoUpdate] 为每个 `间隔` ≥ 15 分钟的配置文件调度。
+ */
+class ProfileAutoUpdateWorker(
+    appContext: Context,
+    params: WorkerParameters,
+) : CoroutineWorker(appContext, params) {
+
+    override suspend fun doWork(): Result {
+        val uuidStr = inputData.getString(KEY_PROFILE_UUID) ?: return Result.failure()
+        val uuid = runCatching { UUID.fromString(uuidStr) }.getOrElse {
+            Timber.tag(TAG).w("Invalid UUID in worker input: $uuidStr")
+            return Result.failure()
+        }
+        val imported = ImportedDao.queryByUUID(uuid)
+        if (imported == null) {
+            Timber.tag(TAG).i("Profile $uuid no longer exists, cancelling update")
+            return Result.failure()
+        }
+        if (imported.interval < ProfileProcessor.AutoUpdate.MIN_INTERVAL_SECONDS) {
+            Timber.tag(TAG).i("Profile $uuid interval too short (${imported.interval}s), skipping")
+            return Result.success()
+        }
+        return try {
+            Timber.tag(TAG).i("Auto-updating profile: ${imported.name} ($uuid)")
+            ProfileProcessor.update(applicationContext, uuid, null)
+            Timber.tag(TAG).i("Auto-update complete: ${imported.name}")
+            Result.success()
+        } catch (error: Exception) {
+            Timber.tag(TAG).w(error, "Auto-update failed for profile $uuid")
+            Result.retry()
+        }
+    }
+
+    companion object {
+        private const val TAG = "ProfileAutoUpdate"
+        const val KEY_PROFILE_UUID = "profile_uuid"
     }
 }

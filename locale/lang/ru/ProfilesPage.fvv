@@ -30,6 +30,8 @@ ProfilesPage = {
         SelectFile = "Нажмите, чтобы выбрать файл"
         NewProfile = "Новый профиль"
         AgeSecretKey = "Секретный ключ Age (необязательно)"
+        AutoUpdateInterval = "Интервал автообновления (сек)"
+        AutoUpdateIntervalHint = "Мин. 900 сек (15 мин), 0 или пусто = отключено"
     }
 
     QrScanner = {

@@ -140,6 +140,7 @@ class ProfileManager(private val context: Context) :
             )
 
         ImportedDao.update(updated)
+        ProfileProcessor.AutoUpdate.replace(context, uuid, interval)
         context.sendProfileChanged(uuid)
     }
 
@@ -148,6 +149,7 @@ class ProfileManager(private val context: Context) :
     }
 
     override suspend fun delete(uuid: UUID) {
+        ProfileProcessor.AutoUpdate.cancel(context, uuid)
         ProfileProcessor.delete(context, uuid)
     }
 

@@ -62,6 +62,7 @@ import com.github.lmfirefly.flycat.runtime.api.contract.AppScreenState
 import com.github.lmfirefly.flycat.runtime.client.ProxyFacade
 import com.github.lmfirefly.flycat.runtime.client.util.ProxyAutoStartUtils
 import com.github.lmfirefly.flycat.runtime.service.android.WifiAutomationService
+import com.github.lmfirefly.flycat.runtime.service.profile.ProfileProcessor
 import com.tencent.mmkv.MMKV
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -259,6 +260,7 @@ class App : Application() {
             safeRun("App", "Ensure Moe wallpaper local copy") { ensureMoeWallpaperLocalCopy(koin.get()) }
             safeRun("App", "Init traffic collector") { koin.get<AppTrafficStatisticsCollector>() }
             safeRun("App", "Proxy preview warm-up") { koin.get<ProxyFacade>().awaitProxyGroupWarmUp() }
+            safeRun("App", "Schedule profile auto-update") { ProfileProcessor.AutoUpdate.scheduleAll(this@App) }
             if (featureStore.isFirstTimeOpen()) {
                 withContext(Dispatchers.IO) {
                     safeRun("App", "First-open asset initialization") {

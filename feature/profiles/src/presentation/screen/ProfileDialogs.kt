@@ -41,6 +41,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,6 +59,7 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import com.github.lmfirefly.flycat.core.model.override.OverrideConfig
 import com.github.lmfirefly.flycat.core.model.override.OverrideInternalConstants
@@ -134,6 +136,7 @@ internal fun ProfileSettingsDialog(
         mutableStateOf(TextFieldValue(profile.source, TextRange(profile.source.length)))
     }
     var editAgeSecretKey by remember { mutableStateOf(TextFieldValue()) }
+    var editInterval by remember { mutableStateOf("") }
     var ageSecretKeyEdited by remember { mutableStateOf(false) }
     var customRoutingSelected by remember { mutableStateOf(false) }
     var pendingSelectedOverrideIds by remember { mutableStateOf(emptyList<String>()) }
@@ -165,6 +168,7 @@ internal fun ProfileSettingsDialog(
             editName = TextFieldValue(profile.name, TextRange(profile.name.length))
             editSource = TextFieldValue(profile.source, TextRange(profile.source.length))
             editAgeSecretKey = TextFieldValue()
+            editInterval = if (profile.interval > 0) profile.interval.toString() else ""
             ageSecretKeyEdited = false
             overrideSelectionInitialized = false
             customRoutingSelected = false
@@ -196,6 +200,7 @@ internal fun ProfileSettingsDialog(
                     val trimmedName = editName.text.trim()
                     val trimmedSource = editSource.text.trim()
                     val trimmedAgeSecretKey = editAgeSecretKey.text.trim()
+                    val newInterval = editInterval.toLongOrNull() ?: 0L
                     val targetSource =
                         if (profile.type == Profile.Type.Url && trimmedSource.isNotEmpty()) {
                             trimmedSource
@@ -203,12 +208,13 @@ internal fun ProfileSettingsDialog(
                             profile.source
                         }
                     val hasMetaChanges =
-                        trimmedName != profile.name || targetSource != profile.source || ageSecretKeyEdited
+                        trimmedName != profile.name || targetSource != profile.source || ageSecretKeyEdited || newInterval != profile.interval
                     if (trimmedName.isNotEmpty() && targetSource.isNotEmpty() && hasMetaChanges) {
                         onSaveProfileMeta(
                             ProfileMetaUpdate(
                                 name = trimmedName,
                                 source = targetSource,
+                                interval = newInterval,
                                 updateAgeSecretKey = ageSecretKeyEdited,
                                 ageSecretKey = if (ageSecretKeyEdited) trimmedAgeSecretKey else null,
                             )
@@ -281,6 +287,20 @@ internal fun ProfileSettingsDialog(
                                     useLabelAsPlaceholder = true,
                                     modifier = Modifier.fillMaxWidth(),
                                     maxLines = 2,
+                                )
+                                TextField(
+                                    value = editInterval,
+                                    onValueChange = { editInterval = it.filter(Char::isDigit).take(6) },
+                                    label = FlyTxt.ProfilesPage.Input.AutoUpdateInterval,
+                                    useLabelAsPlaceholder = true,
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                                Text(
+                                    text = FlyTxt.ProfilesPage.Input.AutoUpdateIntervalHint,
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.outline,
                                 )
                             }
                             // Age secret key
@@ -498,6 +518,7 @@ private fun reorderVisibleOverrideIds(
 internal data class ProfileMetaUpdate(
     val name: String,
     val source: String,
+    val interval: Long,
     val updateAgeSecretKey: Boolean,
     val ageSecretKey: String?,
 )

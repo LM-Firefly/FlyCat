@@ -123,6 +123,8 @@ internal fun AddProfileSheet(
     var ageSecretKey by remember { mutableStateOf("") }
     var ageSecretKeyTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
     var initialAgeSecretKey by remember { mutableStateOf("") }
+    var interval by remember { mutableStateOf("") }
+    var intervalTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
     var error by remember { mutableStateOf("") }
     var isDownloading by remember { mutableStateOf(false) }
 
@@ -159,6 +161,8 @@ internal fun AddProfileSheet(
         ageSecretKey = ""
         ageSecretKeyTextFieldValue = TextFieldValue()
         initialAgeSecretKey = ""
+        interval = ""
+        intervalTextFieldValue = TextFieldValue()
         error = ""
         isDownloading = false
         hasShownCompleteAnimation = false
@@ -221,6 +225,8 @@ internal fun AddProfileSheet(
                     TextRange(profileToEdit.ageSecretKey.length),
                 )
                 initialAgeSecretKey = profileToEdit.ageSecretKey
+                interval = if (profileToEdit.interval > 0) profileToEdit.interval.toString() else ""
+                intervalTextFieldValue = textFieldValueAtEnd(interval)
                 if (profileToEdit.type == Profile.Type.Url) {
                     selectedTypeIndex = PROFILE_IMPORT_TYPE_URL
                     applyUrlText(profileToEdit.source)
@@ -348,20 +354,22 @@ internal fun AddProfileSheet(
         if (selectedTypeIndex == PROFILE_IMPORT_TYPE_URL) {
             if (profileToEdit != null) {
                 val trimmedAgeSecretKey = ageSecretKeyTextFieldValue.text.trim()
+                val newInterval = intervalTextFieldValue.text.toLongOrNull() ?: 0L
                 onUpdateProfile(
                     profileToEdit.uuid,
                     nameTextFieldValue.text,
                     urlTextFieldValue.text,
-                    profileToEdit.interval,
+                    newInterval,
                     if (trimmedAgeSecretKey != initialAgeSecretKey) trimmedAgeSecretKey else null,
                 )
             } else {
                 val trimmedAgeSecretKey = ageSecretKeyTextFieldValue.text.trim()
+                val newInterval = intervalTextFieldValue.text.toLongOrNull() ?: 0L
                 onAddProfile(
                     nameTextFieldValue.text.ifBlank { FlyTxt.ProfilesPage.Input.NewProfile },
                     urlTextFieldValue.text,
                     Profile.Type.Url,
-                    0L,
+                    newInterval,
                     null,
                     trimmedAgeSecretKey,
                 )
@@ -467,6 +475,7 @@ internal fun AddProfileSheet(
                         urlTextFieldValue = urlTextFieldValue,
                         fileNameTextFieldValue = fileNameTextFieldValue,
                         ageSecretKeyTextFieldValue = ageSecretKeyTextFieldValue,
+                        intervalTextFieldValue = intervalTextFieldValue,
                         error = error,
                         hasCameraPermission = hasCameraPermission,
                         showCameraPreview = showCameraPreview,
@@ -490,6 +499,11 @@ internal fun AddProfileSheet(
                         onAgeSecretKeyChange = { updatedTextFieldValue ->
                             ageSecretKeyTextFieldValue = updatedTextFieldValue
                             ageSecretKey = updatedTextFieldValue.text
+                        },
+                        onIntervalChange = { updatedTextFieldValue ->
+                            val filtered = updatedTextFieldValue.text.filter(Char::isDigit).take(6)
+                            intervalTextFieldValue = TextFieldValue(filtered, TextRange(filtered.length))
+                            interval = filtered
                         },
                         onPickFile = { launcher.launch("*/*") },
                         onSelectQrImage = { qrImageLauncher.launch("image/*") },

@@ -19,6 +19,7 @@ sketch4 = "4.6.0"
 mlkitBarcodeScanning = "17.3.0"
 reorderable = "3.1.0"
 aboutLibraries = "15.1.1"
+workRuntime = "2.10.1"
 commonsCompress = "1.28.0"
 javetNodeAndroid = "5.0.10"
 mmkv64 = "2.4.1"
@@ -122,6 +123,7 @@ haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
 mmkv = { module = "com.tencent:mmkv", version.ref = "mmkv64" }
+androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntime" }
 rosemoe-language-textmate = { module = "io.github.rosemoe:language-textmate" }
 rosemoe-oniguruma = { module = "io.github.rosemoe:oniguruma-native" }
 libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu" }

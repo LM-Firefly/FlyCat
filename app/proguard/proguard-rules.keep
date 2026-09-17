@@ -5,6 +5,12 @@
 -adaptclassstrings
 
 # ========================================
+# WorkManager (Room-based internal DB)
+# ========================================
+# WorkManager 2.10+ uses Room for WorkDatabase; R8 strips the no-arg constructor that Room instantiates via reflection.
+-keep class androidx.work.impl.WorkDatabase_Impl { *; }
+
+# ========================================
 # Native / Android Core
 # ========================================
 # JNI keep rules are exported by :core, which owns the bridge contract.
@@ -34,9 +40,7 @@
 # ========================================
 # Kotlin / Serialization (targeted)
 # ========================================
-# kotlinx.serialization and the Android optimized default configuration supply
-# the required serializer and attribute rules. Keep only the unrelated warning
-# suppression required by animal-sniffer's optional JRE annotation.
+# kotlinx.serialization and the Android optimized default configuration supply the required serializer and attribute rules. Keep only the unrelated warning suppression required by animal-sniffer's optional JRE annotation.
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
 
 # Optional micro-optimization: strip Kotlin runtime null-check helpers
@@ -50,9 +54,7 @@
     public static void checkNotNullParameter(...);
 }
 
-# Keep Intrinsics class itself — needed by LoaderApplication which runs
-# before the payload classloader is set up (R8 would otherwise remove it
-# after -assumenosideeffects strips all call sites).
+# Keep Intrinsics class itself — needed by LoaderApplication which runs before the payload classloader is set up (R8 would otherwise remove it after -assumenosideeffects strips all call sites).
 -keep class kotlin.jvm.internal.Intrinsics { *; }
 
 # Loader classes run before the main classloader is set up.
