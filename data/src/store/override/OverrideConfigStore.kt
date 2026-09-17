@@ -43,6 +43,7 @@ import java.io.File
 class OverrideConfigStore(
     private val context: Context,
     private val metadataIndexStore: MetadataIndexStore,
+    private val bindingProvider: ProfileBindingProvider,
 ) : OverrideConfigRepository {
     companion object {
         const val INTERNAL_RUNTIME_PREFIX = "__runtime__"
@@ -142,6 +143,7 @@ class OverrideConfigStore(
                 return@withContext false
             }
             val updatedIndex = metadataIndexStore.removeConfigWithBindings(id)
+            bindingProvider.refreshFromMetadata(updatedIndex.profileChains)
             val userConfigsById =
                 configsFlow.value.associateBy(OverrideConfig::id).toMutableMap().apply {
                     remove(id)
@@ -212,16 +214,17 @@ class OverrideConfigStore(
         return runCatching { file.readText() }.getOrNull()
     }
 
-    override fun saveConfigContent(id: String, content: String): Boolean {
-        val metadataIndex = metadataIndexStore.getCachedIndex() ?: return false
-        val metadata = metadataIndex.getById(id) ?: return false
-        return runCatching {
+    override suspend fun saveConfigContent(id: String, content: String): Boolean = withContext(Dispatchers.IO) {
+        val metadataIndex = metadataIndexStore.getIndex()
+        val metadata = metadataIndex.getById(id) ?: return@withContext false
+        runCatching {
             val file = findConfigFile(metadata) ?: resolveConfigFile(id, metadata.contentType)
             file.parentFile?.mkdirs()
             file.writeText(content)
-            val updatedIndex = metadataIndexStore.updateConfigsSync(metadataIndex.upsert(metadata.copy(updatedAt = System.currentTimeMillis())))
-            // Build the updated config directly from the content we just wrote,
-            // avoiding a redundant read-back from disk.
+            val updatedIndex = metadataIndexStore.updateConfigs { existingConfigs ->
+                val existing = existingConfigs[id] ?: return@updateConfigs existingConfigs
+                existingConfigs + (id to existing.copy(updatedAt = System.currentTimeMillis()))
+            }
             val now = updatedIndex.getById(id)?.updatedAt ?: metadata.updatedAt
             val updatedConfig = OverrideConfig(id = metadata.id, name = metadata.name, description = metadata.description, contentType = metadata.contentType, content = content, createdAt = metadata.createdAt, updatedAt = now)
             val userConfigsById = configsFlow.value.associateBy(OverrideConfig::id).toMutableMap().apply { put(id, updatedConfig) }

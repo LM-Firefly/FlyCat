@@ -29,11 +29,14 @@ class OverrideApplicator(private val resolver: OverrideBindingRepository, privat
     override suspend fun applyOverride(profileId: String): Boolean {
         return try {
             val overrideIds = resolver.resolveIds(profileId)
-            val resolvedSpecs = resolver.resolveSpecs(overrideIds)
-            val missingOverrideCount = overrideIds.size - resolvedSpecs.size
-            Timber.i("Apply override chain: profile=%s ids=%s specs=%s resolved=%d missing=%d", profileId, overrideIds.joinToString(","), resolvedSpecs.joinToString(",") { spec -> "${spec.ext}:${spec.path}" }, resolvedSpecs.size, missingOverrideCount)
-            if (missingOverrideCount > 0) { Timber.w("Override chain: %d/%d configs missing for profile=%s, applying remaining", missingOverrideCount, overrideIds.size, profileId) }
-            if (resolvedSpecs.isEmpty()) { Timber.w("Override chain completely empty after resolution: profile=%s", profileId); return false }
+            if (overrideIds.isEmpty()) {
+                Timber.d("No overrides bound for profile=%s, notifying runtime to clear", profileId)
+                notifyRuntimeOverrideChanged()
+                return true
+            }
+            val missingCount = overrideIds.count { !resolver.exists(it) }
+            Timber.i("Apply override chain: profile=%s count=%d missing=%d", profileId, overrideIds.size, missingCount)
+            if (missingCount > 0) { Timber.w("Override chain: %d/%d configs missing for profile=%s", missingCount, overrideIds.size, profileId) }
             notifyRuntimeOverrideChanged()
             true
         } catch (error: Exception) { // fault barrier: any resolver/broadcast failure degrades to false

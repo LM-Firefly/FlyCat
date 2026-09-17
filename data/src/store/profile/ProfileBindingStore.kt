@@ -120,6 +120,11 @@ class ProfileBindingStore(context: Context, private val metadataIndexStore: Meta
             bindingsStateFlow.value = updatedIndex.profileChains
         }
 
+    override suspend fun refreshFromMetadata(chains: Map<String, ProfileBinding>) =
+        withContext(Dispatchers.IO) {
+            bindingsStateFlow.value = chains
+        }
+
     suspend fun setOverrides(profileId: String, overrideIds: List<String>) {
         val existing = getBinding(profileId)
         val binding =

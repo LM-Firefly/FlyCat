@@ -33,9 +33,7 @@ val featureOverrideDomainModule = module {
 val featureOverrideViewModelModule = module {
     viewModel {
         OverrideConfigViewModel(
-            configRepo = get(),
             bindingReader = get(),
-            activeProfileOverrideApplier = get(),
             profileStore = get(),
             overrideCrud = get(),
         )

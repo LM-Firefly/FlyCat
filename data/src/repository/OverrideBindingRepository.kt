@@ -38,6 +38,8 @@ class OverrideBindingRepository(private val configStore: OverrideConfigStore, pr
 
     suspend fun resolveSpecs(overrideIds: List<String>): List<OverrideSpec> = resolveOrderedSpecs(overrideIds)
 
+    suspend fun exists(overrideId: String): Boolean = configStore.exists(overrideId)
+
     suspend fun getProfilesUsingOverride(overrideId: String): List<String> = bindingProvider.getProfilesUsingOverride(overrideId)
 
     override suspend fun isOverrideInUse(overrideId: String): Boolean = bindingProvider.isOverrideInUse(overrideId)

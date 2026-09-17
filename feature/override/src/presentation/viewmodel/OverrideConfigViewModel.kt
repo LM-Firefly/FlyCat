@@ -23,8 +23,6 @@ package com.github.lmfirefly.flycat.feature.override.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.lmfirefly.flycat.core.contract.OverrideApplier
-import com.github.lmfirefly.flycat.core.contract.OverrideConfigRepository
 import com.github.lmfirefly.flycat.core.contract.ProfileBindingReader
 import com.github.lmfirefly.flycat.core.contract.ProfileStoreReader
 import com.github.lmfirefly.flycat.core.model.override.OverrideConfig
@@ -42,9 +40,7 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 class OverrideConfigViewModel(
-    private val configRepo: OverrideConfigRepository,
     private val bindingReader: ProfileBindingReader,
-    private val activeProfileOverrideApplier: OverrideApplier,
     private val profileStore: ProfileStoreReader,
     private val overrideCrud: OverrideCrudUseCase,
 ) : ViewModel() {
@@ -84,9 +80,8 @@ class OverrideConfigViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val builtIns = configRepo.getBuiltInConfigs()
+                val (builtIns, users) = overrideCrud.loadConfigs()
                 _builtInConfigs.value = builtIns
-                val users = configRepo.getUserConfigs()
                 _userConfigs.value = users
                 loadUsageCounts()
             } catch (error: Exception) { // fault barrier: top-level ViewModel load handler, log and reset loading
@@ -100,14 +95,12 @@ class OverrideConfigViewModel(
     fun getConfigById(id: String): OverrideConfig? = configs.find { it.id == id }
         ?: _builtInConfigs.value.find { it.id == id }
 
-    suspend fun getConfigContent(configId: String): String? = withContext(Dispatchers.IO) { configRepo.getConfigContent(configId) }
+    suspend fun getConfigContent(configId: String): String? = withContext(Dispatchers.IO) { overrideCrud.getConfigContent(configId) }
 
-    suspend fun saveConfigContent(configId: String, content: String): Boolean = withContext(Dispatchers.IO) {
-        val saved = configRepo.saveConfigContent(configId, content)
-        if (!saved) return@withContext false
-        activeProfileOverrideApplier.reapplyActiveProfileIfUsingOverride(configId)
-        refresh()
-        true
+    suspend fun saveConfigContent(configId: String, content: String): Boolean {
+        val saved = overrideCrud.saveConfigContent(configId, content)
+        if (saved) refresh()
+        return saved
     }
 
     fun createConfig(name: String, description: String? = null, contentType: OverrideContentType) {
@@ -150,7 +143,7 @@ class OverrideConfigViewModel(
                 }
             _userConfigs.value = reorderedConfigs
 
-            runCatching { configRepo.reorderUserConfigs(reorderedConfigs.map(OverrideConfig::id)) }
+            runCatching { overrideCrud.reorderUserConfigs(reorderedConfigs.map(OverrideConfig::id)) }
                 .onFailure { error -> Timber.tag(TAG).e(error, "Failed to reorder overrides") }
             refresh()
         }

@@ -226,7 +226,7 @@ val appDataModule = module {
     single { ProfileBindingStore(androidContext(), get()) }
     single<ProfileBindingProvider> { get<ProfileBindingStore>() }
     single { BuiltInOverrideFileStore(androidContext()) }
-    single { OverrideConfigStore(androidContext(), get()) }
+    single { OverrideConfigStore(androidContext(), get(), get()) }
     single { OverrideBindingRepository(get(), get()) }
     single {
         val appContext = androidContext()
