@@ -27,6 +27,9 @@ import com.tencent.mmkv.MMKV
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
+//** 旧版 include-android-user 默认值：[0, 10] 仅覆盖所有者+工作配置文件。空值 = 所有用户。 */
+val LEGACY_INCLUDE_ANDROID_USERS = listOf(0, 10)
+
 class ServiceStore : ServiceStateReader {
     private val store = Store(MMKV.mmkvWithID("service", MMKV.MULTI_PROCESS_MODE).asStoreProvider())
     private val networkSettings = MMKV.mmkvWithID("network_settings", MMKV.MULTI_PROCESS_MODE)
@@ -222,7 +225,7 @@ class ServiceStore : ServiceStateReader {
         }
 
     var rootTunIfName: String
-        get() = readString("rootTunIfName", "root_tun_if_name", "Yume")
+        get() = readString("rootTunIfName", "root_tun_if_name", "FlyCat")
         set(value) {
             networkSettings.encode("rootTunIfName", value)
             store.provider.setString("root_tun_if_name", value)

@@ -26,6 +26,7 @@ import com.github.lmfirefly.flycat.core.importedDir
 import com.github.lmfirefly.flycat.core.model.tunnel.TunConfig
 import com.github.lmfirefly.flycat.core.model.tunnel.TunDnsMode
 import com.github.lmfirefly.flycat.runtime.api.root.rootTunEncode
+import com.github.lmfirefly.flycat.runtime.service.config.LEGACY_INCLUDE_ANDROID_USERS
 import com.github.lmfirefly.flycat.runtime.service.config.ServiceStore
 import com.github.lmfirefly.flycat.runtime.service.records.ImportedDao
 import com.github.lmfirefly.flycat.runtime.service.records.ProfileStore
@@ -280,7 +281,6 @@ class RootTunConfigFactory(
      * Legacy value [0, 10] is migrated to empty list (= all Android users), matching YumeBox's semantics where empty means "all users".
      */
     private fun resolveIncludeAndroidUser(stored: List<Int>): List<Int> {
-        val LEGACY_INCLUDE_ANDROID_USERS = listOf(0, 10)
         val filtered = stored.filter { it >= 0 }.distinct().sorted()
         if (filtered == LEGACY_INCLUDE_ANDROID_USERS) {
             // Legacy migration: [0, 10] → empty (= all Android users)
@@ -328,7 +328,7 @@ class RootTunConfigFactory(
     }
 
     companion object {
-        private const val IF_NAME = "Yume"
+        private const val IF_NAME = "FlyCat"
         private const val MTU = 1500
         private const val INET4 = "172.19.0.1/30"
         private const val INET6 = "fdfe:dcba:9876::1/126"

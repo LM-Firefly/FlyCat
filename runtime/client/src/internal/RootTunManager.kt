@@ -21,8 +21,10 @@ import timber.log.Timber
 
 class RootTunManager(private val context: Context) {
     private companion object {
-        const val ROOT_TUN_BOOTSTRAP_ATTEMPTS = 20
-        const val ROOT_TUN_BOOTSTRAP_DELAY_MS = 300L
+        const val ROOT_TUN_BOOTSTRAP_ATTEMPTS = 15
+        const val ROOT_TUN_BOOTSTRAP_FAST_DELAY_MS = 300L
+        const val ROOT_TUN_BOOTSTRAP_SLOW_DELAY_MS = 1000L
+        const val ROOT_TUN_BOOTSTRAP_FAST_PHASE = 10
     }
     private val appContext: Context = context.appContextOrSelf
     private val rootTunStateStore by lazy { RuntimeContractResolver.rootTunStateStore(appContext) }
@@ -112,7 +114,12 @@ class RootTunManager(private val context: Context) {
                             }
                         }
                         if (attempt < ROOT_TUN_BOOTSTRAP_ATTEMPTS - 1) {
-                            delay(ROOT_TUN_BOOTSTRAP_DELAY_MS)
+                            val delayMs = if (attempt < ROOT_TUN_BOOTSTRAP_FAST_PHASE) {
+                                ROOT_TUN_BOOTSTRAP_FAST_DELAY_MS
+                            } else {
+                                ROOT_TUN_BOOTSTRAP_SLOW_DELAY_MS
+                            }
+                            delay(delayMs)
                         }
                     }
                     // All attempts exhausted — report failure so UI can show a meaningful state

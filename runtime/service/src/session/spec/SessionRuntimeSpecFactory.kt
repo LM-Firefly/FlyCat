@@ -31,6 +31,7 @@ import com.github.lmfirefly.flycat.core.model.tunnel.TunConfig
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeOwner
 import com.github.lmfirefly.flycat.runtime.api.session.RuntimeSpec
 import com.github.lmfirefly.flycat.runtime.service.config.AccessControlMode
+import com.github.lmfirefly.flycat.runtime.service.config.LEGACY_INCLUDE_ANDROID_USERS
 import com.github.lmfirefly.flycat.runtime.service.config.ServiceStore
 import com.github.lmfirefly.flycat.runtime.service.records.ImportedDao
 import com.github.lmfirefly.flycat.runtime.service.root.EbpfOverride
@@ -149,6 +150,7 @@ class SessionRuntimeSpecFactory(
                     excludeUid = if (uidPolicy.mode == 2) uidPolicy.uids else emptyList(),
                 ),
                 profileDir,
+                log,
             )
         val modeOverrides = userOverrides + ebpfOverride
         // eBPF keeps the profile authoritative — skip GlobalUaOverride.
@@ -256,10 +258,6 @@ class SessionRuntimeSpecFactory(
         val excludeUid: List<Int> = emptyList(),
         val includeAndroidUser: List<Int> = emptyList(),
     )
-
-    private companion object {
-        private val LEGACY_INCLUDE_ANDROID_USERS = listOf(0, 10)
-    }
 
     private fun requireActiveProfile(): Imported {
         val profileId = store.activeProfile ?: error("No active profile selected")

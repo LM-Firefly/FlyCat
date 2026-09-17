@@ -24,6 +24,8 @@ package com.github.lmfirefly.flycat.runtime.service.root
 import com.github.lmfirefly.flycat.core.model.OverrideSpec
 import com.github.lmfirefly.flycat.core.util.YamlCodec
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 
 /**
  * 生成mihomo核心使用的eBPF监听器覆盖YAML。
@@ -89,18 +91,43 @@ object EbpfOverride {
         return YamlCodec.dumpMap(override)
     }
     /** 始终返回非空的 [OverrideSpec] —— 在eBPF模式下，eBPF监听器是必需的。 */
-    fun materialize(config: Config, dir: File): OverrideSpec {
+    fun materialize(config: Config, dir: File, log: ((String) -> Unit)? = null): OverrideSpec {
         dir.mkdirs()
         val file = File(dir, FILE_NAME)
         val providerPath = if (config.bypassCn) {
             val providerFile = File(dir, "rule_provider/cn-ip.mrs")
             providerFile.parentFile?.mkdirs()
+            if (!providerFile.exists()) {
+                preDownloadCnProvider(providerFile, log)
+            }
             providerFile.absolutePath
         } else {
             null
         }
         file.writeText(buildYaml(config, providerPath))
         return OverrideSpec(path = file.absolutePath, ext = "yaml")
+    }
+
+    private fun preDownloadCnProvider(target: File, log: ((String) -> Unit)?) {
+        log?.invoke("eBPF CN bypass: downloading cn-ip.mrs from $CN_PROVIDER_URL")
+        runCatching {
+            val conn = URL(CN_PROVIDER_URL).openConnection() as HttpURLConnection
+            conn.connectTimeout = 10_000
+            conn.readTimeout = 30_000
+            conn.connect()
+            if (conn.responseCode != 200) {
+                log?.invoke("eBPF CN bypass: download failed with HTTP ${conn.responseCode}")
+                return@runCatching
+            }
+            conn.inputStream.use { input ->
+                target.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            log?.invoke("eBPF CN bypass: cn-ip.mrs downloaded (${target.length()} bytes)")
+        }.onFailure { e ->
+            log?.invoke("eBPF CN bypass: download failed — ${e.message}. mihomo will retry at runtime.")
+        }
     }
 }
 
