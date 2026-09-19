@@ -37,7 +37,7 @@ room3 = "3.0.2"
 robolectric = "4.16.1"
 junit4 = "4.13.2"
 androidxTestCore = "1.7.0"
-smaliDexlib2 = "3.0.9"
+smaliDexlib2 = "3.0.10"
 
 # Plugin & build-only versions
 androidGradlePlugin = "9.5.0-alpha02"
