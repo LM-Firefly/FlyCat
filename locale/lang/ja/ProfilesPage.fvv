@@ -30,6 +30,8 @@ ProfilesPage = {
         SelectFile = "タップしてファイルを選択"
         NewProfile = "新規プロファイル"
         AgeSecretKey = "Age 秘密鍵（任意）"
+        AutoUpdateInterval = "自動更新間隔（秒）"
+        AutoUpdateIntervalHint = "最小 1800 秒（30 分）、0 または空 = 無効"
     }
 
     QrScanner = {

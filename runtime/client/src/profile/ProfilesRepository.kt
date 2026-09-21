@@ -52,10 +52,11 @@ class ProfilesRepository(private val context: Context) : ProfileRepositoryContra
         name: String,
         source: String,
         ageSecretKey: String,
+        interval: Long,
     ): UUID =
         safeApiCall(TAG, "createProfile") {
                 Timber.d("Creating profile: type=$type, name=$name")
-                profileService().create(type, name, source, ageSecretKey)
+                profileService().create(type, name, source, ageSecretKey, interval)
             }
             .getOrThrow()
 

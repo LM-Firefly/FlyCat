@@ -32,7 +32,6 @@ import com.github.lmfirefly.flycat.runtime.service.config.ServiceStore
 import com.github.lmfirefly.flycat.runtime.service.profile.ProfileProcessor
 import com.github.lmfirefly.flycat.runtime.service.records.ImportedDao
 import com.github.lmfirefly.flycat.runtime.service.records.ProfileStore
-import com.github.lmfirefly.flycat.runtime.service.util.directoryLastModified
 import com.github.lmfirefly.flycat.runtime.service.util.generateProfileUUID
 import com.github.lmfirefly.flycat.runtime.service.util.sendProfileChanged
 import java.io.FileNotFoundException
@@ -56,18 +55,18 @@ class ProfileManager(private val context: Context) :
         type: Profile.Type,
         name: String, source: String,
         ageSecretKey: String,
+        interval: Long,
     ): UUID {
         val uuid = generateProfileUUID()
         val normalizedName = name.trim().ifBlank { "New Profile" }
         val now = System.currentTimeMillis()
-
         val imported =
             Imported(
                 uuid = uuid,
                 name = normalizedName,
                 type = type,
                 source = source,
-                interval = 0,
+                interval = interval,
                 upload = 0,
                 total = 0,
                 download = 0,
@@ -75,18 +74,14 @@ class ProfileManager(private val context: Context) :
                 createdAt = now,
                 ageSecretKey = normalizeAgeSecretKey(ageSecretKey).orEmpty(),
             )
-
         ImportedDao.insert(imported)
-
+        ProfileProcessor.AutoUpdate.reschedule(context)
         return uuid
     }
 
     override suspend fun clone(uuid: UUID): UUID {
         val newUUID = generateProfileUUID()
-
-        val imported =
-            ImportedDao.queryByUUID(uuid) ?: throw FileNotFoundException("profile $uuid not found")
-
+        val imported = ImportedDao.queryByUUID(uuid) ?: throw FileNotFoundException("profile $uuid not found")
         val now = System.currentTimeMillis()
         val newImported =
             Imported(
@@ -101,18 +96,14 @@ class ProfileManager(private val context: Context) :
                 expire = imported.expire,
                 createdAt = now,
                 ageSecretKey = imported.ageSecretKey,
+                updatedAt = imported.updatedAt,
             )
-
         val sourceDir = context.importedDir.resolve(uuid.toString())
         val targetDir = context.importedDir.resolve(newUUID.toString())
-
         if (!sourceDir.exists()) throw FileNotFoundException("profile $uuid not found")
-
         targetDir.deleteRecursively()
         sourceDir.copyRecursively(targetDir)
-
         ImportedDao.insert(newImported)
-
         return newUUID
     }
 
@@ -123,9 +114,7 @@ class ProfileManager(private val context: Context) :
         interval: Long,
         ageSecretKey: String?,
     ) {
-        val imported =
-            ImportedDao.queryByUUID(uuid) ?: throw FileNotFoundException("profile $uuid not found")
-
+        val imported = ImportedDao.queryByUUID(uuid) ?: throw FileNotFoundException("profile $uuid not found")
         val updated =
             imported.copy(
                 name = name,
@@ -138,8 +127,8 @@ class ProfileManager(private val context: Context) :
                         imported.ageSecretKey
                     },
             )
-
         ImportedDao.update(updated)
+        ProfileProcessor.AutoUpdate.reschedule(context)
         context.sendProfileChanged(uuid)
     }
 
@@ -149,16 +138,14 @@ class ProfileManager(private val context: Context) :
 
     override suspend fun delete(uuid: UUID) {
         ProfileProcessor.delete(context, uuid)
+        ProfileProcessor.AutoUpdate.reschedule(context)
     }
 
     override suspend fun queryByUUID(uuid: UUID): Profile? = resolveProfile(uuid)
 
     override suspend fun queryAll(): List<Profile> {
         val uuids = withContext(Dispatchers.IO) { ImportedDao.queryAllUUIDs() }
-
-        val orderIndex =
-            ProfileStore.loadProfileOrder().withIndex().associate { it.value to it.index }
-
+        val orderIndex = ProfileStore.loadProfileOrder().withIndex().associate { it.value to it.index }
         return uuids
             .mapNotNull { resolveProfile(it) }
             .sortedBy { orderIndex[it.uuid] ?: Int.MAX_VALUE }
@@ -166,7 +153,6 @@ class ProfileManager(private val context: Context) :
 
     override suspend fun queryActive(): Profile? {
         val active = store.activeProfile ?: return null
-
         return if (ImportedDao.exists(active)) {
             resolveProfile(active)
         } else {
@@ -190,21 +176,17 @@ class ProfileManager(private val context: Context) :
     override suspend fun reorder(uuids: List<UUID>) {
         val existing = ImportedDao.queryAllUUIDs()
         val existingSet = existing.toSet()
-
         val normalized = buildList {
             uuids.forEach { uuid -> if (uuid in existingSet && uuid !in this) add(uuid) }
             existing.forEach { uuid -> if (uuid !in this) add(uuid) }
         }
-
         ProfileStore.saveProfileOrder(normalized)
     }
 
     private suspend fun resolveProfile(uuid: UUID): Profile? {
         val imported = ImportedDao.queryByUUID(uuid) ?: return null
-
         val active = store.activeProfile
         val name = ProfileNameUtils.resolveDisplayName(imported.name, imported.source)
-
         return Profile(
             uuid,
             name,
@@ -216,13 +198,10 @@ class ProfileManager(private val context: Context) :
             imported.download,
             imported.total,
             imported.expire,
-            resolveUpdatedAt(uuid),
+            imported.updatedAt,
             imported.ageSecretKey,
         )
     }
-
-    private fun resolveUpdatedAt(uuid: UUID): Long =
-        context.importedDir.resolve(uuid.toString()).directoryLastModified ?: -1
 
     private fun normalizeAgeSecretKey(value: String?): String? =
         value?.trim()?.takeIf { it.isNotEmpty() }

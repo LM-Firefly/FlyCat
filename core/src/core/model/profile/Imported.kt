@@ -41,4 +41,5 @@ data class Imported(
     val expire: Long,
     val createdAt: Long,
     val ageSecretKey: String = "",
+    val updatedAt: Long = 0L,
 )

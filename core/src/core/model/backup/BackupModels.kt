@@ -174,6 +174,7 @@ data class ImportedBackup(
     val expire: Long,
     val createdAt: Long,
     val ageSecretKey: String = "",
+    val updatedAt: Long = 0L,
 ) {
     fun toImported(): Imported =
         Imported(
@@ -188,6 +189,7 @@ data class ImportedBackup(
             expire = expire,
             createdAt = createdAt,
             ageSecretKey = ageSecretKey,
+            updatedAt = updatedAt,
         )
 
     companion object {
@@ -204,6 +206,7 @@ data class ImportedBackup(
                 expire = imported.expire,
                 createdAt = imported.createdAt,
                 ageSecretKey = imported.ageSecretKey,
+                updatedAt = imported.updatedAt,
             )
     }
 }
