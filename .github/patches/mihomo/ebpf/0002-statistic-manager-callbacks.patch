@@ -1,5 +1,5 @@
 From: FlyCat local customization
-Subject: [PATCH] tunnel/statistic: add event-driven traffic push & idle-aware ticker (smart)
+Subject: [PATCH] tunnel/statistic: add event-driven traffic push & idle-aware ticker (ebpf)
 
 Add trafficDirty flag, OnJoin/OnLeave/OnTrafficUpdate callbacks, and
 idle-adaptive ticker to Manager for real-time traffic statistics push
@@ -14,7 +14,7 @@ index 69ea5928..86292f05 100644
 +++ b/tunnel/statistic/manager.go
 @@ -26,26 +26,38 @@ func init() {
  }
-
+ 
  type Manager struct {
 -	connections   xsync.Map[string, Tracker]
 -	smartTarget   xsync.Map[string, *xsync.Map[string, bool]]
@@ -43,7 +43,7 @@ index 69ea5928..86292f05 100644
 +	OnLeave             func(*TrackerInfo)
 +	OnTrafficUpdate     func(uploadTotal, downloadTotal, uploadSpeed, downloadSpeed int64)
  }
-
+ 
  func (m *Manager) Join(c Tracker) {
  	m.connections.Store(c.ID(), c)
  	m.joinSmartTarget(c)
@@ -51,7 +51,7 @@ index 69ea5928..86292f05 100644
 +		m.OnJoin(c.Info())
 +	}
  }
-
+ 
  func (m *Manager) Leave(c Tracker) {
  	m.connections.Delete(c.ID())
  	m.leaveSmartTarget(c)
@@ -59,7 +59,7 @@ index 69ea5928..86292f05 100644
 +		m.OnLeave(c.Info())
 +	}
  }
-
+ 
  func (m *Manager) Get(id string) (c Tracker) {
 @@ -64,11 +76,13 @@ func (m *Manager) Range(f func(c Tracker) bool) {
  func (m *Manager) PushUploaded(size int64) {
@@ -67,13 +67,13 @@ index 69ea5928..86292f05 100644
  	m.uploadTotal.Add(size)
 +	m.trafficDirty.Store(true)
  }
-
+ 
  func (m *Manager) PushDownloaded(size int64) {
  	m.downloadTemp.Add(size)
  	m.downloadTotal.Add(size)
 +	m.trafficDirty.Store(true)
  }
-
+ 
  func (m *Manager) Now() (up int64, down int64) {
 @@ -113,14 +127,40 @@ func (m *Manager) ResetStatistic() {
  	m.downloadTemp.Store(0)
@@ -83,11 +83,11 @@ index 69ea5928..86292f05 100644
 +	m.lastPushedUpSpeed = 0
 +	m.lastPushedDownSpeed = 0
  }
-
+ 
  func (m *Manager) handle() {
  	ticker := time.NewTicker(time.Second)
 +	idleCount := 0
-
+ 
  	for range ticker.C {
 -		m.uploadBlip.Store(m.uploadTemp.Swap(0))
 -		m.downloadBlip.Store(m.downloadTemp.Swap(0))
@@ -117,12 +117,12 @@ index 69ea5928..86292f05 100644
 +		}
  	}
  }
-
+ 
 diff --git a/tunnel/statistic/tracker.go b/tunnel/statistic/tracker.go
-index 3172210d..0148850d 100644
+index 728bc112..73ac049d 100644
 --- a/tunnel/statistic/tracker.go
 +++ b/tunnel/statistic/tracker.go
-@@ -48,6 +48,8 @@ type TrackerInfo struct {
+@@ -49,6 +49,8 @@ type TrackerInfo struct {
  	RulePayload     string       `json:"rulePayload"`
  	MaxUploadRate   atomic.Int64 `json:"maxUploadRate"`
  	MaxDownloadRate atomic.Int64 `json:"maxDownloadRate"`
@@ -130,8 +130,8 @@ index 3172210d..0148850d 100644
 +	InitialDownload int64 `json:"-"` // download counter snapshot at connection creation
  }
  
- type tcpTracker struct {
-@@ -162,6 +164,8 @@ func NewTCPTracker(conn C.Conn, manager *Manager, metadata *C.Metadata, rule C.R
+ // stallWindow bounds how quickly a payload-less connection must close to
+@@ -209,6 +211,8 @@ func NewTCPTracker(conn C.Conn, manager *Manager, metadata *C.Metadata, rule C.R
  			Rule:          "",
  			UploadTotal:   atomic.NewInt64(uploadTotal),
  			DownloadTotal: atomic.NewInt64(downloadTotal),
@@ -139,8 +139,8 @@ index 3172210d..0148850d 100644
 +			InitialDownload: downloadTotal,
  		},
  		pushToManager:        pushToManager,
- 		uploadBucketWindow:   newBucketWindow(10, 100),
-@@ -267,6 +271,8 @@ func NewUDPTracker(conn C.PacketConn, manager *Manager, metadata *C.Metadata, ru
+ 		initialUpload:        uploadTotal,
+@@ -319,6 +323,8 @@ func NewUDPTracker(conn C.PacketConn, manager *Manager, metadata *C.Metadata, ru
  			Rule:          "",
  			UploadTotal:   atomic.NewInt64(uploadTotal),
  			DownloadTotal: atomic.NewInt64(downloadTotal),

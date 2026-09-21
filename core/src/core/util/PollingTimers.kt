@@ -74,6 +74,7 @@ object PollingTimerSpecs {
     val RuntimeRootLogPolling = PollingTimerSpec("runtime_root_log_polling", 2_000L, 0L)
     val RootTunStatusNotification = PollingTimerSpec("root_tun_status_notification", 2_000L, 0L)
     val SessionConnectionTracking = PollingTimerSpec("session_connection_tracking", 1_000L, 0L)
+    val RemoteControllerProbe = PollingTimerSpec("remote_controller_probe", 5_000L, 5_000L)
     val ProxyHealthcheckRefresh = PollingTimerSpec("proxy_healthcheck_refresh", 2_500L, 2_500L)
 
     object TrafficPoller {
@@ -84,24 +85,25 @@ object PollingTimerSpecs {
         const val FAILURE_BACKOFF_STEP_MS = 1_000L
         const val FAILURE_BACKOFF_MAX_MS = 15_000L
         const val BACKGROUND_INTERVAL_MS = 5_000L
-        const val SCREEN_OFF_INTERVAL_MS = 120_000L
+        /** 灭屏完全挂起（非降频）——见 [throttleByScene] 的 screenOffIntervalMs=0。 */
+        const val SCREEN_OFF_INTERVAL_MS = 0L
     }
 
     object Telemetry {
         const val BACKGROUND_INTERVAL_MS = 5_000L
-        const val SCREEN_OFF_INTERVAL_MS = 120_000L
+        const val SCREEN_OFF_INTERVAL_MS = 0L
     }
 
     object ProxyGroupSync {
         const val FAST_BACKGROUND_MS = 5_000L
-        const val FAST_SCREEN_OFF_MS = 60_000L
+        const val FAST_SCREEN_OFF_MS = 0L
         const val SLOW_BACKGROUND_MS = 30_000L
-        const val SLOW_SCREEN_OFF_MS = 120_000L
+        const val SLOW_SCREEN_OFF_MS = 0L
     }
 
     object RootLogPolling {
         const val BACKGROUND_INTERVAL_MS = 10_000L
-        const val SCREEN_OFF_INTERVAL_MS = 60_000L
+        const val SCREEN_OFF_INTERVAL_MS = 0L
     }
 
     object LogFlush {
@@ -167,12 +169,29 @@ fun Flow<Long>.throttleWhenScreenOff(screenOn: StateFlow<Boolean>): Flow<Long> =
     }
 }
 
+/**
+ * 按前台/灭屏场景节流上游 tick。
+ *
+ * - 亮屏 + 前台：原速透传上游
+ * - 亮屏 + 后台：以 [backgroundIntervalMs] 自建定时器
+ * - 灭屏：[screenOffIntervalMs] > 0 时以该间隔降频；= 0 时完全挂起（省电首选）
+ *
+ * 灭屏挂起时不会持有上游 ticks 订阅，共享 ticker 可在 WhileSubscribed 超时后真正停下。
+ */
 @kotlinx.coroutines.ExperimentalCoroutinesApi
-fun Flow<Long>.throttleByScene(screenOn: StateFlow<Boolean>, appForeground: StateFlow<Boolean>, backgroundIntervalMs: Long, @Suppress("UNUSED_PARAMETER") screenOffIntervalMs: Long): Flow<Long> = combine(screenOn, appForeground) { isOn, isFg -> isOn to isFg }.transformLatest { (isScreenOn, isForeground) ->
+fun Flow<Long>.throttleByScene(screenOn: StateFlow<Boolean>, appForeground: StateFlow<Boolean>, backgroundIntervalMs: Long, screenOffIntervalMs: Long = 0L): Flow<Long> = combine(screenOn, appForeground) { isOn, isFg -> isOn to isFg }.transformLatest { (isScreenOn, isForeground) ->
     when {
         !isScreenOn -> {
-            // 灭屏: 挂起不发射，等待亮屏后 transformLatest 自动切换
-            awaitCancellation()
+            if (screenOffIntervalMs <= 0L) {
+                awaitCancellation()
+            } else {
+                flow {
+                    while (currentCoroutineContext().isActive) {
+                        emit(SystemClock.elapsedRealtime())
+                        delay(screenOffIntervalMs)
+                    }
+                }.collect { emit(it) }
+            }
         }
         !isForeground -> flow {
             while (currentCoroutineContext().isActive) {

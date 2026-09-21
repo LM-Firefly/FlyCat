@@ -93,11 +93,62 @@ type ConnectionJoinEvent struct {
 	ProviderChains []string  `json:"providerChains"`
 }
 
-// ConnectionCloseEvent carries only the dynamic counters needed when a connection closes.
+// ConnectionCloseEvent 携带已关闭连接的动态计数器和匹配结果。
+// 完整的元数据被省略（在加入时已交付；它是该高周转路径上最大的字段）。规则/链被保留，因为匹配可能在加入之后才最终确定。
+// 包/进程/uid 被保留作为精简身份标识，以便缓存未命中的关闭事件在没有元数据块的情况下仍可归因。
 type ConnectionCloseEvent struct {
-	ID       string `json:"id"`
-	Upload   int64  `json:"upload"`
-	Download int64  `json:"download"`
+	ID             string   `json:"id"`
+	Upload         int64    `json:"upload"`
+	Download       int64    `json:"download"`
+	UploadDelta    int64    `json:"uploadDelta"`
+	DownloadDelta  int64    `json:"downloadDelta"`
+	Rule           string   `json:"rule"`
+	RulePayload    string   `json:"rulePayload"`
+	Chains         []string `json:"chains"`
+	ProviderChains []string `json:"providerChains"`
+	PackageName    string   `json:"packageName,omitempty"`
+	ProcessName    string   `json:"process,omitempty"`
+	UID            int64    `json:"uid,omitempty"`
+}
+
+// fillCloseIdentity 仅从追踪器元数据中提取 packageName/process/uid，因此缓存未命中关闭时仍可归属，而无需附带完整的元数据块。
+func fillCloseIdentity(event *ConnectionCloseEvent, meta any) {
+	type identityMeta interface {
+		GetProcess() string
+		GetUid() int64
+	}
+	switch m := meta.(type) {
+	case *C.Metadata:
+		if m == nil {
+			return
+		}
+		event.ProcessName = m.Process
+		if m.Uid != 0 {
+			event.UID = int64(m.Uid)
+		}
+	case map[string]any:
+		if v, ok := m["packageName"].(string); ok {
+			event.PackageName = v
+		}
+		if v, ok := m["process"].(string); ok {
+			event.ProcessName = v
+		}
+		switch u := m["uid"].(type) {
+		case float64:
+			event.UID = int64(u)
+		case int64:
+			event.UID = u
+		case int:
+			event.UID = int64(u)
+		}
+	default:
+		if im, ok := meta.(identityMeta); ok {
+			event.ProcessName = im.GetProcess()
+			if uid := im.GetUid(); uid != 0 {
+				event.UID = uid
+			}
+		}
+	}
 }
 
 // SetConnectionLeaveListener registers a callback invoked when a connection is closed.
@@ -109,10 +160,17 @@ func SetConnectionLeaveListener(listener func(*ConnectionCloseEvent)) {
 
 	statistic.DefaultManager.OnLeave = func(info *statistic.TrackerInfo) {
 		event := &ConnectionCloseEvent{
-			ID:       info.UUID.String(),
-			Upload:   info.UploadTotal.Load(),
-			Download: info.DownloadTotal.Load(),
+			ID:             info.UUID.String(),
+			Upload:         info.UploadTotal.Load(),
+			Download:       info.DownloadTotal.Load(),
+			UploadDelta:    info.UploadTotal.Load() - info.InitialUpload,
+			DownloadDelta:  info.DownloadTotal.Load() - info.InitialDownload,
+			Rule:           info.Rule,
+			RulePayload:    info.RulePayload,
+			Chains:         info.Chain,
+			ProviderChains: info.ProviderChain,
 		}
+		fillCloseIdentity(event, info.Metadata)
 		listener(event)
 	}
 }

@@ -56,7 +56,6 @@ class AppTrafficStatisticsCollector(
     private val trafficStatisticsStore: TrafficStatisticsStore,
     private val appIdentityResolver: AppIdentityResolver,
     private val trafficTotalFlow: StateFlow<Traffic>,
-    private val connectionJoinFlow: ReceiveChannel<ConnectionInfo>,
     private val connectionCloseFlow: ReceiveChannel<ConnectionInfo>,
     private val queryActiveProfileId: suspend () -> String?,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(2)),
@@ -64,7 +63,6 @@ class AppTrafficStatisticsCollector(
     private var collectionJob: Job? = null
     private var monitoringJob: Job? = null
     private val mutex = Mutex()
-    private val connectionBaselines = linkedMapOf<String, ConnectionBaseline>()
     private var lastTotalUpload = NO_BASELINE
     private var lastTotalDownload = NO_BASELINE
     private var lastProfileId: String? = null
@@ -95,12 +93,6 @@ class AppTrafficStatisticsCollector(
                 lastTotalUpload = trafficStatisticsStore.getLastTrafficUpload()
                 lastTotalDownload = trafficStatisticsStore.getLastTrafficDownload()
                 lastProfileId = trafficStatisticsStore.getLastProfileId()
-                connectionBaselines.clear()
-            }
-            launch {
-                for (joined in connectionJoinFlow) {
-                    handleConnectionJoin(joined)
-                }
             }
             launch {
                 for (closed in connectionCloseFlow) {
@@ -158,17 +150,6 @@ class AppTrafficStatisticsCollector(
         }
     }
 
-    private suspend fun handleConnectionJoin(joined: ConnectionInfo) {
-        mutex.withLock {
-            connectionBaselines[joined.id] =
-                ConnectionBaseline(
-                    upload = joined.upload,
-                    download = joined.download,
-                    hint = AppIdentityHint.from(joined.metadata),
-                )
-        }
-    }
-
     private fun initializeTotals(
         totalTraffic: TrafficData,
         profileId: String?,
@@ -187,17 +168,17 @@ class AppTrafficStatisticsCollector(
 
     private suspend fun handleConnectionClose(closed: ConnectionInfo) {
         mutex.withLock {
-            val baseline = connectionBaselines.remove(closed.id) ?: return
-            val uploadDelta = (closed.upload - baseline.upload).coerceAtLeast(0L)
-            val downloadDelta = (closed.download - baseline.download).coerceAtLeast(0L)
+            val uploadDelta = closed.uploadDelta.coerceAtLeast(0L)
+            val downloadDelta = closed.downloadDelta.coerceAtLeast(0L)
             if (uploadDelta <= 0L && downloadDelta <= 0L) return
+            val hint = AppIdentityHint.from(closed.metadata)
             val routeKey = resolveRouteKey(closed)
-            val bucketKey = buildTrafficBucketKey(baseline.hint, routeKey)
+            val bucketKey = buildTrafficBucketKey(hint, routeKey)
             val existing = pendingBuckets[bucketKey]
             if (existing == null) {
                 pendingBuckets[bucketKey] =
                     PendingTrafficBucket(
-                        identityHint = baseline.hint,
+                        identityHint = hint,
                         routeKey = routeKey,
                         routeLabel = resolveRouteLabel(closed, routeKey),
                         uploadDelta = uploadDelta,
@@ -219,7 +200,6 @@ class AppTrafficStatisticsCollector(
         mutex.withLock {
             drainedBuckets = drainPendingBucketsLocked()
             flushTimestamp = System.currentTimeMillis()
-            connectionBaselines.clear()
             lastTotalUpload = NO_BASELINE
             lastTotalDownload = NO_BASELINE
             lastProfileId = null
@@ -305,17 +285,10 @@ class AppTrafficStatisticsCollector(
             persistDrainedBuckets(timestamp = System.currentTimeMillis(), buckets = drainedBuckets)
         }
         trafficStatisticsStore.flushNow()
-        connectionBaselines.clear()
         scope.cancel()
     }
 
     override fun close() = stop()
-
-    private data class ConnectionBaseline(
-        val upload: Long,
-        val download: Long,
-        val hint: AppIdentityHint,
-    )
 
     private data class AppIdentityHint(
         val packageName: String,

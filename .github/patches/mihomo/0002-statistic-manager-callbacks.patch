@@ -4,13 +4,17 @@ Subject: [PATCH] tunnel/statistic: add event-driven traffic push & idle-aware ti
 Add trafficDirty flag, OnJoin/OnLeave/OnTrafficUpdate callbacks, and
 idle-adaptive ticker to Manager for real-time traffic statistics push
 to the Android layer, with power-aware fallback to 5s polling when idle.
+
+Add InitialUpload/InitialDownload fields to TrackerInfo so consumers
+can compute per-connection traffic deltas without maintaining external
+baselines (B1 design: delta at source).
 diff --git a/tunnel/statistic/manager.go b/tunnel/statistic/manager.go
 index c69746db..6ddcd90a 100644
 --- a/tunnel/statistic/manager.go
 +++ b/tunnel/statistic/manager.go
 @@ -26,23 +26,35 @@ func init() {
  }
- 
+
  type Manager struct {
 -	connections   xsync.Map[string, Tracker]
 -	uploadTemp    atomic.Int64
@@ -37,21 +41,21 @@ index c69746db..6ddcd90a 100644
 +	OnLeave             func(*TrackerInfo)
 +	OnTrafficUpdate     func(uploadTotal, downloadTotal, uploadSpeed, downloadSpeed int64)
  }
- 
+
  func (m *Manager) Join(c Tracker) {
  	m.connections.Store(c.ID(), c)
 +	if m.OnJoin != nil {
 +		m.OnJoin(c.Info())
 +	}
  }
- 
+
  func (m *Manager) Leave(c Tracker) {
  	m.connections.Delete(c.ID())
 +	if m.OnLeave != nil {
 +		m.OnLeave(c.Info())
 +	}
  }
- 
+
  func (m *Manager) Get(id string) (c Tracker) {
 @@ -61,11 +73,13 @@ func (m *Manager) Range(f func(c Tracker) bool) {
  func (m *Manager) PushUploaded(size int64) {
@@ -59,13 +63,13 @@ index c69746db..6ddcd90a 100644
  	m.uploadTotal.Add(size)
 +	m.trafficDirty.Store(true)
  }
- 
+
  func (m *Manager) PushDownloaded(size int64) {
  	m.downloadTemp.Add(size)
  	m.downloadTotal.Add(size)
 +	m.trafficDirty.Store(true)
  }
- 
+
  func (m *Manager) Now() (up int64, down int64) {
 @@ -110,14 +124,40 @@ func (m *Manager) ResetStatistic() {
  	m.downloadTemp.Store(0)
@@ -75,11 +79,11 @@ index c69746db..6ddcd90a 100644
 +	m.lastPushedUpSpeed = 0
 +	m.lastPushedDownSpeed = 0
  }
- 
+
  func (m *Manager) handle() {
  	ticker := time.NewTicker(time.Second)
 +	idleCount := 0
- 
+
  	for range ticker.C {
 -		m.uploadBlip.Store(m.uploadTemp.Swap(0))
 -		m.downloadBlip.Store(m.downloadTemp.Swap(0))
@@ -109,4 +113,35 @@ index c69746db..6ddcd90a 100644
 +		}
  	}
  }
- 
+
+diff --git a/tunnel/statistic/tracker.go b/tunnel/statistic/tracker.go
+index 2fbb1cf9..b79316ae 100644
+--- a/tunnel/statistic/tracker.go
++++ b/tunnel/statistic/tracker.go
+@@ -31,6 +31,8 @@ type TrackerInfo struct {
+ 	ProviderChain C.Chain      `json:"providerChains"`
+ 	Rule          string       `json:"rule"`
+ 	RulePayload   string       `json:"rulePayload"`
++	InitialUpload   int64 `json:"-"` // upload counter snapshot at connection creation
++	InitialDownload int64 `json:"-"` // download counter snapshot at connection creation
+ }
+
+ type tcpTracker struct {
+@@ -131,6 +133,8 @@ func NewTCPTracker(conn C.Conn, manager *Manager, metadata *C.Metadata, rule C.R
+ 			Rule:          "",
+ 			UploadTotal:   atomic.NewInt64(uploadTotal),
+ 			DownloadTotal: atomic.NewInt64(downloadTotal),
++			InitialUpload:   uploadTotal,
++			InitialDownload: downloadTotal,
+ 		},
+ 		pushToManager: pushToManager,
+ 	}
+@@ -223,6 +227,8 @@ func NewUDPTracker(conn C.PacketConn, manager *Manager, metadata *C.Metadata, ru
+ 			Rule:          "",
+ 			UploadTotal:   atomic.NewInt64(uploadTotal),
+ 			DownloadTotal: atomic.NewInt64(downloadTotal),
++			InitialUpload:   uploadTotal,
++			InitialDownload: downloadTotal,
+ 		},
+ 		pushToManager: pushToManager,
+ 	}

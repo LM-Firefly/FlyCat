@@ -308,7 +308,6 @@ val appRuntimeModule = module {
             trafficStatisticsStore = get(),
             appIdentityResolver = get(),
             trafficTotalFlow = facade.trafficTotal,
-            connectionJoinFlow = facade.reliableConnectionJoinEvents,
             connectionCloseFlow = facade.reliableConnectionCloseEvents,
             queryActiveProfileId = {
                 facade.refreshCurrentProfile()

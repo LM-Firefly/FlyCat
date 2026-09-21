@@ -31,6 +31,11 @@ func coreInit(home, versionName, gitVersion C.c_string, sdkVersion C.int) {
 	g := C.GoString(gitVersion)
 	s := int(sdkVersion)
 
+	// 安卓的 RSS 上限。仅 GOMEMLIMIT 就足以防止堆不断膨胀；请不要在此处将 GOGC 收紧到 100 以下——较低的 GOGC 会以电池/CPU 为代价换取内存，且实测在后台表现更差。
+	// 512 MiB 为地理数据/DNS 缓存留出了余量。
+	debug.SetMemoryLimit(512 << 20) // 512 MiB
+	debug.SetGCPercent(100)         // keep default pacing; let GOMEMLIMIT do the RSS work
+
 	delegate.Init(h, v, g, s)
 
 	reset()
@@ -54,6 +59,16 @@ func forceGc() {
 		runtime.GC()
 		debug.FreeOSMemory()
 	}()
+}
+
+//export setMemoryLimit
+func setMemoryLimit(bytes C.int64_t) {
+	limit := int64(bytes)
+	if limit <= 0 {
+		limit = 512 << 20 // default 512 MiB
+	}
+	old := debug.SetMemoryLimit(limit)
+	log.Infoln("[APP] GOMEMLIMIT %d MiB -> %d MiB", old>>20, limit>>20)
 }
 
 //export setCustomUserAgent
