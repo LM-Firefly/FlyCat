@@ -24,8 +24,10 @@ package com.github.lmfirefly.flycat.feature.proxy.domain
 import com.github.lmfirefly.flycat.core.contract.ProxyGroupRepository
 import com.github.lmfirefly.flycat.core.contract.ProxySyncPriority
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Encapsulates proxy group health check and sync priority orchestration
@@ -51,19 +53,21 @@ class ProxyHealthCheckUseCase(
             currentGroups.mapTo(linkedSetOf()) { it.name }
         }
 
+        proxyGroupRepository.markDelayTestActive(true)
         val result = runCatching {
             if (groupName != null) {
                 withTimeout(HEALTH_CHECK_TIMEOUT_MS) { proxyGroupRepository.healthCheck(groupName) }
                 delay(POST_CHECK_DELAY_MS)
-                proxyGroupRepository.refreshProxyGroup(groupName)
+                withTimeoutOrNull(2_000L) { proxyGroupRepository.refreshProxyGroup(groupName) }
             } else {
-                proxyGroupRepository.healthCheckAll()
+                withTimeout(HEALTH_CHECK_TIMEOUT_MS) { proxyGroupRepository.healthCheckAll() }
                 if (currentGroups.isNotEmpty()) {
                     delay(POST_CHECK_DELAY_MS)
-                    proxyGroupRepository.refreshProxyGroups(force = true)
+                    withTimeoutOrNull(3_000L) { proxyGroupRepository.refreshProxyGroups(force = true) }
                 }
             }
         }
+        proxyGroupRepository.markDelayTestActive(false)
 
         return HealthCheckResult(
             testingTargets = testingTargets,
@@ -93,11 +97,14 @@ class ProxyHealthCheckUseCase(
     }
 
     /**
-     * Warm up proxy groups if needed when a source becomes active.
+     * 当源激活时，若需要则预热代理组。
+     * 使用较短的超时时间以避免阻塞后续的UI操作。
      */
     suspend fun warmUpIfNeeded(isActive: Boolean, currentGroups: List<ProxyGroupInfo>) {
         if (isActive && currentGroups.isEmpty()) {
-            proxyGroupRepository.refreshProxyGroups()
+            withTimeoutOrNull(1_500L) {
+                proxyGroupRepository.refreshProxyGroups()
+            }
         }
     }
 

@@ -312,6 +312,21 @@ internal class TrafficStatsPoller(
     suspend fun refreshTunnelMode() {
         _tunnelMode.value = runCatching { queryTunnelState().mode }.getOrNull()
     }
+
+    /**
+     * 从后端查询连接并更新本地快照。
+     * 在前台恢复时调用，用于从过时的 JNI 推送状态中恢复。
+     */
+    suspend fun refreshConnectionSnapshot() {
+        if (!router.running) return
+        runCatching {
+            val snapshot = queryConnections()
+            _connectionSnapshot.value = snapshot
+            // 从新查询重建liveConnections，以便后续推送回调能正确合并。
+            liveConnections.clear()
+            snapshot.connections.forEach { liveConnections[it.id] = it }
+        }.onFailure { Timber.d(it, "refreshConnectionSnapshot skipped") }
+    }
     private fun emitConnectionSnapshotFromLive() {
         val connections = liveConnections.values.toList()
         val current = _connectionSnapshot.value

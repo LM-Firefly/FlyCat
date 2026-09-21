@@ -67,6 +67,8 @@ interface ProxyGroupRepository {
     suspend fun healthCheckProxy(group: String, proxyName: String): Int
     fun warmUpProxyGroups()
     fun setProxyGroupSyncPriority(priority: ProxySyncPriority, source: String = "default")
+    /** 标记延迟测试是否正在进行——测试期间轮询刷新应跳过。 */
+    fun markDelayTestActive(active: Boolean)
 }
 
 /** Read-only contract for connection state and control. Implemented by [runtime:client]. */
