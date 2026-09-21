@@ -155,7 +155,7 @@ private fun ProfileSettingsDialogHost(
                     uuid = profile.uuid,
                     name = update.name,
                     source = update.source,
-                    interval = profile.interval,
+                    interval = update.interval,
                     ageSecretKey = update.ageSecretKey,
                 )
             }

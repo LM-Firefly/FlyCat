@@ -129,8 +129,13 @@ class ProfilesViewModel(
                     DownloadProgress(percent = 0, message = FlyTxt.ProfilesVM.Progress.Preparing)
 
                 val uuid = profileCrud.createProfile(
-                    type = type, name = name, source = source, ageSecretKey = ageSecretKey,
+                    type = type, name = name, source = source, ageSecretKey = ageSecretKey, interval = interval,
                     onProgress = { status -> _downloadProgress.value = status.toDownloadProgress() },
+                    onBeforeUpdate = { createdUuid ->
+                        if (type == Profile.Type.File && fileUri != null) {
+                            getApplication<Application>().copyProfileImport(fileUri, createdUuid)
+                        }
+                    },
                 )
 
                 if (uuid == null) {
@@ -138,11 +143,6 @@ class ProfilesViewModel(
                     _downloadProgress.value = null
                     return@launch
                 }
-
-                if (type == Profile.Type.File && fileUri != null) {
-                    getApplication<Application>().copyProfileImport(fileUri, uuid)
-                }
-
                 _downloadProgress.value =
                     DownloadProgress(percent = 100, message = FlyTxt.ProfilesVM.Progress.ImportComplete, isCompleted = true)
                 showMessage(FlyTxt.ProfilesVM.Message.ProfileAdded.format(name))

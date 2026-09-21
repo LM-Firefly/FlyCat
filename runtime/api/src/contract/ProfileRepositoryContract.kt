@@ -38,6 +38,7 @@ interface ProfileRepositoryContract {
         name: String,
         source: String = "",
         ageSecretKey: String = "",
+        interval: Long = 0L,
     ): UUID
     suspend fun updateProfile(uuid: UUID, callback: IFetchObserver? = null)
     suspend fun deleteProfile(uuid: UUID)
