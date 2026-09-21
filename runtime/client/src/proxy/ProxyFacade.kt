@@ -259,8 +259,11 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
                     ProxyServiceEvent.ProfileLoaded,
                     ProxyServiceEvent.ProfileChanged,
                     ProxyServiceEvent.OverrideChanged,
-                    ProxyServiceEvent.ServiceRecreated ->
+                    ProxyServiceEvent.ServiceRecreated -> {
+                        // 配置文件/覆写/服务重建后重置连接，强制下次 connect() 重新初始化，避免使用失效的 ServiceClient 连接导致代理操作挂起。
+                        ServiceClient.disconnect()
                         reconcileAndRefreshRuntimeState()
+                    }
                     is ProxyServiceEvent.RootRuntimeFailed -> {
                         Timber.w("Root runtime failed: ${event.error}")
                         handleRuntimeFailure(event.error)
@@ -283,6 +286,10 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     override fun warmUpProxyGroups() {
         if (previewWarmupJob?.isActive == true) return
         previewWarmupJob = launchPreviewWarmup()
+    }
+
+    override fun markDelayTestActive(active: Boolean) {
+        proxyGroupManager.markDelayTestActive(active)
     }
 
     suspend fun awaitProxyGroupWarmUp() {
@@ -567,6 +574,7 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
             traffic.queryTrafficTotal(notify = false)
             traffic.notifyTrafficUpdated()
             traffic.refreshTunnelMode()
+            traffic.refreshConnectionSnapshot()
         } else {
             traffic.reset()
         }

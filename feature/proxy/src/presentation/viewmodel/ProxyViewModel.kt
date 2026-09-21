@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import com.github.lmfirefly.flycat.locale.FlyTxt
 
 class ProxyViewModel(
@@ -58,6 +59,18 @@ class ProxyViewModel(
 
     private val _testingProxyNames = MutableStateFlow<Set<String>>(emptySet())
     val testingProxyNames: StateFlow<Set<String>> = _testingProxyNames.asStateFlow()
+
+    /** 防止并发分组测试（YumeBox: groupDelayTestInProgress boolean lock） */
+    @Volatile
+    private var groupDelayTestInProgress = false
+    /** 防止单节点重复测试（YumeBox: pendingProxyDelayTests Set） */
+    private val pendingProxyDelayTests = mutableSetOf<String>()
+    @Volatile
+    private var lastForceRefreshAtMs = 0L
+
+    private companion object {
+        const val FORCE_REFRESH_COOLDOWN_MS = 30_000L
+    }
 
     /** Shared selected group name for tablet dual-pane (left=groups, right=nodes). */
     private val _uiSelectedGroupName = MutableStateFlow<String?>(null)
@@ -115,40 +128,62 @@ class ProxyViewModel(
         }
     }
 
+    /**
+     * 当应用在代理页面激活时返回前台时调用。
+     * 使用短超时避免阻塞UI；强刷带冷却，避免多窗口/分屏下 ON_RESUME 连发导致全量 JNI 查询。
+     */
+    fun onForegroundResume() {
+        if (activeSyncSources.isEmpty()) return
+        val nowMs = android.os.SystemClock.elapsedRealtime()
+        if (nowMs - lastForceRefreshAtMs < FORCE_REFRESH_COOLDOWN_MS) return
+        lastForceRefreshAtMs = nowMs
+        viewModelScope.launch {
+            runCatching {
+                withTimeoutOrNull(800L) {
+                    proxyGroupRepository.refreshProxyGroups(force = true)
+                }
+            }.onFailure { error -> if (error is CancellationException) throw error }
+        }
+    }
+
     fun refreshGroup(groupName: String) {
         viewModelScope.launch {
-            runCatching { proxyGroupRepository.refreshProxyGroup(groupName) }
-                .onFailure { error -> if (error is CancellationException) throw error }
+            runCatching {
+                withTimeoutOrNull(500L) {
+                    proxyGroupRepository.refreshProxyGroup(groupName)
+                }
+            }.onFailure { error -> if (error is CancellationException) throw error }
         }
     }
 
     fun testDelay(groupName: String? = null) {
+        if (groupDelayTestInProgress) return
+        groupDelayTestInProgress = true
         viewModelScope.launch {
-            setLoading(true)
-            clearError()
-            val currentGroups = proxyGroups.value
-            val result = healthCheck.runHealthCheck(groupName, currentGroups)
-
-            if (result.testingTargets.isNotEmpty()) {
-                _testingGroupNames.update { it + result.testingTargets }
-            }
-
-            if (groupName != null) {
-                showMessage(FlyTxt.Proxy.Testing.Group.format(groupName))
-                showMessage(FlyTxt.Proxy.Testing.RequestSent)
-            } else {
-                showMessage(FlyTxt.Proxy.Testing.All)
-            }
-
-            setLoading(false)
-
-            if (result.testingTargets.isNotEmpty()) {
-                delay(result.settleDelayMs)
-                _testingGroupNames.update { it - result.testingTargets }
-            }
-
-            result.error?.let { error ->
-                showError(FlyTxt.Proxy.Testing.Failed.format(error.message))
+            try {
+                setLoading(true)
+                clearError()
+                val currentGroups = proxyGroups.value
+                val result = healthCheck.runHealthCheck(groupName, currentGroups)
+                if (result.testingTargets.isNotEmpty()) {
+                    _testingGroupNames.update { it + result.testingTargets }
+                }
+                if (groupName != null) {
+                    showMessage(FlyTxt.Proxy.Testing.Group.format(groupName))
+                    showMessage(FlyTxt.Proxy.Testing.RequestSent)
+                } else {
+                    showMessage(FlyTxt.Proxy.Testing.All)
+                }
+                setLoading(false)
+                if (result.testingTargets.isNotEmpty()) {
+                    delay(result.settleDelayMs)
+                    _testingGroupNames.update { it - result.testingTargets }
+                }
+                result.error?.let { error ->
+                    showError(FlyTxt.Proxy.Testing.Failed.format(error.message))
+                }
+            } finally {
+                groupDelayTestInProgress = false
             }
         }
     }
@@ -199,11 +234,16 @@ class ProxyViewModel(
     }
 
     fun testProxyDelay(groupName: String, proxyName: String) {
+        if (!pendingProxyDelayTests.add(proxyName)) return
         viewModelScope.launch {
             _testingProxyNames.update { it + proxyName }
-            runCatching { healthCheck.runProxyHealthCheck(groupName, proxyName) }
-            delay(500L)
-            _testingProxyNames.update { it - proxyName }
+            try {
+                runCatching { healthCheck.runProxyHealthCheck(groupName, proxyName) }
+                delay(500L)
+            } finally {
+                _testingProxyNames.update { it - proxyName }
+                pendingProxyDelayTests.remove(proxyName)
+            }
         }
     }
 

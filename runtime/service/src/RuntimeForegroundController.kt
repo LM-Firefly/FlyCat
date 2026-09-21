@@ -71,8 +71,8 @@ internal class RuntimeForegroundController(
                     StatusProvider.markRuntimeStopping(mode)
                     notificationJob?.cancel()
                     notificationJob = null
-                    // Remove foreground notification immediately on the main thread.
-                    // The IO coroutine below may be cancelled by scope cancellation (cancelAndJoinBlocking) before reaching stopForegroundService().
+                    // 立即在主线程移除前台通知。
+                    // 下方的IO协程可能在到达 stopForegroundService() 之前因作用域取消 (cancelAndJoinBlocking) 而被取消。
                     stopForegroundService()
                     scope.launch(Dispatchers.IO) {
                         if (isRuntimeInitialized) {
@@ -182,7 +182,7 @@ internal class RuntimeForegroundController(
                 screenOn = powerController.screenOn,
             )
         }
-        // The launcher marks Starting unconditionally before every start request; on a re-entrant command against an already-running session this is the only place that can flip the persisted phase back, otherwise it is stuck at Starting.
+        // 启动器在每个启动请求前无条件标记"启动中"；对于针对已运行会话的可重入命令，这是唯一能将持久化阶段翻转回去的位置，否则它将卡在"启动中"状态。
         if (isRuntimeInitialized && runtime.snapshot().running) {
             StatusProvider.markRuntimeRunning(mode)
         }
@@ -198,14 +198,14 @@ internal class RuntimeForegroundController(
         stopForegroundService()
         if (isRuntimeInitialized) {
             runtime.requestStop(reason)
-            // Always call destroy() to guarantee core cleanup (Clash.reset via teardownCore).
-            // When stopRequested is true the broadcast handler already launched an IO coroutine for runtime.stop(), but scope cancellation (cancelAndJoinBlocking in TunService) may interrupt it before teardownCore completes.
-            // We run destroy on a dedicated thread outside the scope so it is not affected by scope cancellation.
-            // destroy() is idempotent — the internal lock serializes concurrent calls.
+            // 始终调用 destroy() 以保证核心清理（通过 teardownCore 执行 Clash.reset）。
+            // 当 stopRequested 为 true 时，广播处理程序已经启动了一个 IO 协程来执行 runtime.stop()，但作用域取消（TunService 中的 cancelAndJoinBlocking）可能会在 teardownCore 完成前中断它。
+            // 我们在作用域外的专用线程上运行 destroy，因此它不受作用域取消的影响。
+            // destroy() 是幂等的——内部锁对并发调用进行串行化处理。
             Thread({ runBlocking { withTimeoutOrNull(3000L) { runtime.destroy() } } },
                 "runtime-destroy-guard").apply { isDaemon = true }.start()
         }
-        // Guarded: the launcher may already have marked the phase Starting for the replacement runtime; the phase store holds a single mode slot.
+        // 保护：启动器可能已经标记了替换运行时的阶段Starting；阶段存储仅持有单个模式槽位。
         if (StatusProvider.queryRuntimePhase(mode).isNotIdle) {
             StatusProvider.markRuntimeIdle(mode)
         }
@@ -239,7 +239,7 @@ internal class RuntimeForegroundController(
 
     private fun stopForegroundService() {
         ServiceCompat.stopForeground(service, ServiceCompat.STOP_FOREGROUND_REMOVE)
-        // Belt-and-suspenders: STOP_FOREGROUND_REMOVE may not reliably cancel ONGOING_EVENT notifications on all Android versions. Cancel explicitly.
+        // 双保险：STOP_FOREGROUND_REMOVE 可能无法在所有Android版本上可靠取消ONGOING_EVENT通知。请显式取消。
         runCatching {
             val nm = service.getSystemService(Context.NOTIFICATION_SERVICE)
                 as android.app.NotificationManager

@@ -27,6 +27,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSortPopup
 import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProxyViewModel
@@ -76,6 +78,7 @@ fun ProxyShellNodeDetail(mainInnerPadding: PaddingValues, onNavigateToProviders:
     var showSortPopup by rememberSaveable { mutableStateOf(false) }
     val nodeListState = rememberSaveable(selectedGroupName, saver = LazyListState.Saver) { LazyListState() }
     LaunchedEffect(proxyViewModel) { proxyViewModel.ensureCoreLoaded(true, source = "proxy_detail") }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { proxyViewModel.onForegroundResume() }
     DisposableEffect(proxyViewModel) { onDispose { proxyViewModel.ensureCoreLoaded(false, source = "proxy_detail") } }
     val requestDelayTest = remember(coroutineScope, nodeListState, selectedGroupName, proxyViewModel) {
         {

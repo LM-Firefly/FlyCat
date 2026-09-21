@@ -15,6 +15,8 @@ import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeSnapshot
 import com.github.lmfirefly.flycat.runtime.client.RuntimeBackendRouter
 import com.github.lmfirefly.flycat.runtime.client.remote.ServiceClient
 import com.github.lmfirefly.flycat.runtime.client.root.RootTunController
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +26,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -57,6 +61,7 @@ internal class ProxyGroupManager(
     private companion object {
         const val PROXY_DELAY_CACHE_TTL_MS = 5 * 60 * 1000L
         const val PROXY_SELECT_FULL_REFRESH_DELAY_MS = 400L
+        const val PROXY_GROUP_QUERY_TIMEOUT_MS = 8_000L
     }
     private var previewCacheEntry: PreviewCacheEntry? = null
     private var previewProfile: Profile? = null
@@ -65,13 +70,23 @@ internal class ProxyGroupManager(
         previewProfile = profile
     }
     private val refreshProxyGroupsMutex = Mutex()
-    private val proxyDelayCache = java.util.concurrent.ConcurrentHashMap<String, DelayCacheEntry>()
+    //** 防止并发JNI查询；与互斥锁不同，绝不会阻塞协程。 */
+    private val queryLock = AtomicBoolean(false)
+    private val proxyDelayCache = ConcurrentHashMap<String, DelayCacheEntry>()
     private var pendingGroupsRefreshJob: Job? = null
-    private val pendingGroupRefreshJobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
+    private val pendingGroupRefreshJobs = ConcurrentHashMap<String, Job>()
     private var lastProxyGroupsHash: Int = 0
     private var lastRawGroupsHash: Int = 0
     private var lastProxyGroupVersion = 0L
     private val _proxyGroups = MutableStateFlow<List<ProxyGroupInfo>>(emptyList())
+    /** 延迟测试进行中标记——测试期间轮询刷新应跳过，避免覆盖测试结果。 */
+    @Volatile
+    var isDelayTestActive: Boolean = false
+        private set
+
+    fun markDelayTestActive(active: Boolean) {
+        isDelayTestActive = active
+    }
     val proxyGroups: StateFlow<List<ProxyGroupInfo>> = _proxyGroups.asStateFlow()
     private val _resolvedPrimaryNode = MutableStateFlow<Proxy?>(null)
     val resolvedPrimaryNode: StateFlow<Proxy?> = _resolvedPrimaryNode.asStateFlow()
@@ -82,62 +97,111 @@ internal class ProxyGroupManager(
         connectCurrentBackend: suspend () -> Unit,
         force: Boolean = false,
     ) {
-        refreshProxyGroupsMutex.withLock {
-            // Version gate: skip expensive group queries if proxy group structure hasn't changed.
-            // Bypassed when force=true (health checks, selector changes, startup).
+        refreshProxyGroupsInner(appContext, snapshot, isRootSessionActive, connectCurrentBackend, force)
+    }
+    private suspend fun refreshProxyGroupsInner(
+        appContext: android.content.Context,
+        snapshot: RuntimeSnapshot,
+        isRootSessionActive: () -> Boolean,
+        connectCurrentBackend: suspend () -> Unit,
+        force: Boolean,
+    ) {
+            // 版本门控：若代理分组结构未变更，则跳过昂贵的分组查询。
+            // 当强制模式启用时（健康检查、选择器变更、启动时），此机制将被绕过。
             if (!force && snapshot.running && _proxyGroups.value.isNotEmpty()) {
                 val version = runCatching { Bridge.nativeQueryProxyGroupVersion() }.getOrDefault(0L)
                 if (version == lastProxyGroupVersion) return
                 lastProxyGroupVersion = version
             }
+            // 获取轻量级查询锁（非阻塞）以防止并发JNI调用。
+            // 重量级JNI查询在refreshProxyGroupsMutex外部运行，以确保被阻塞的Go运行时不会饿死由UI触发的刷新或后台定时调度。
+            if (!queryLock.compareAndSet(false, true)) {
+                Timber.d("refreshProxyGroupsInner: query already in flight, skipping")
+                return
+            }
             var missingLocalRuntime = false
             val groups =
-                withContext(Dispatchers.IO) {
-                    try {
-                            if (!snapshot.running) {
-                                return@withContext queryPreviewProxyGroups(appContext, connectCurrentBackend)
-                            }
-                            if (snapshot.owner == RuntimeOwner.RootTun && !isRootSessionActive()) {
-                                error("RootTun runtime not ready")
-                            }
-                            if (snapshot.owner == RuntimeOwner.RootTun) {
-                                RootTunController.queryAllProxyGroups(
-                                        context = appContext,
-                                        excludeNotSelectable = false,
-                                    )
-                                    .let(::toProxyGroupInfos)
-                            } else {
-                                connectCurrentBackend()
-                                ServiceClient.clash()
-                                    .queryAllProxyGroups(excludeNotSelectable = false)
-                                    .let(::toProxyGroupInfos)
+                try {
+                    withTimeoutOrNull(PROXY_GROUP_QUERY_TIMEOUT_MS) {
+                        withContext(Dispatchers.IO) {
+                            try {
+                                if (!snapshot.running) {
+                                    return@withContext queryPreviewProxyGroups(appContext, connectCurrentBackend)
+                                }
+                                if (snapshot.owner == RuntimeOwner.RootTun && !isRootSessionActive()) {
+                                    error("RootTun runtime not ready")
+                                }
+                                if (snapshot.owner == RuntimeOwner.RootTun) {
+                                    RootTunController.queryAllProxyGroups(
+                                            context = appContext,
+                                            excludeNotSelectable = false,
+                                        )
+                                        .let(::toProxyGroupInfos)
+                                } else {
+                                    connectCurrentBackend()
+                                    ServiceClient.clash()
+                                        .queryAllProxyGroups(excludeNotSelectable = false)
+                                        .let(::toProxyGroupInfos)
+                                }
+                            } catch (e: CancellationException) { throw e }
+                            catch (error: Exception) {
+                                Timber.e(error, "Failed to refresh proxy groups")
+                                missingLocalRuntime = snapshot.owner != RuntimeOwner.RootTun &&
+                                    snapshot.owner != RuntimeOwner.None &&
+                                    snapshot.owner != RuntimeOwner.RemoteController
+                                null
                             }
                         }
-                        catch (e: CancellationException) { throw e }
-                        catch (error: Exception) {
-                            Timber.e(error, "Failed to refresh proxy groups")
-                            missingLocalRuntime = snapshot.owner != RuntimeOwner.RootTun &&
-                                snapshot.owner != RuntimeOwner.None &&
-                                snapshot.owner != RuntimeOwner.RemoteController
-                            null
-                        }
+                    }
+                } finally {
+                    queryLock.set(false)
                 }
-            if (groups != null && (groups.isNotEmpty() || snapshot.running)) {
-                publishProxyGroups(groups, cacheForPreview = true)
-            } else if (!snapshot.running) {
-                val cached = previewCacheFallback(
-                    phase = snapshot.phase,
-                    profile = previewProfile,
-                    excludeNotSelectable = false,
-                    overrideSignature = "",
-                )
-                if (!cached.isNullOrEmpty()) {
-                    publishProxyGroups(cached, cacheForPreview = false)
+            // 状态更新 —— 仅在快速发布路径中持有互斥锁。
+            refreshProxyGroupsMutex.withLock {
+                if (groups != null && (groups.isNotEmpty() || snapshot.running)) {
+                    publishProxyGroups(groups, cacheForPreview = true)
+                } else if (!snapshot.running) {
+                    val cached = previewCacheFallback(
+                        phase = snapshot.phase,
+                        profile = previewProfile,
+                        excludeNotSelectable = false,
+                        overrideSignature = "",
+                    )
+                    if (!cached.isNullOrEmpty()) {
+                        publishProxyGroups(cached, cacheForPreview = false)
+                    }
                 }
-            } else if (missingLocalRuntime) {
-                _proxyGroups.value = emptyList()
             }
+            // 不再因 missingLocalRuntime 清空代理组缓存——保留旧数据优于显示空白
+    }
+    /**
+     * 用于UI触发刷新的非阻塞变体。
+     * 在后台同步持有锁时，使用短暂的超时来获取互斥锁，以避免阻塞UI线程。
+     */
+    suspend fun refreshProxyGroupsNonBlocking(
+        appContext: android.content.Context,
+        snapshot: RuntimeSnapshot,
+        isRootSessionActive: () -> Boolean,
+        connectCurrentBackend: suspend () -> Unit,
+    ) {
+        val acquired = withTimeoutOrNull(500L) {
+            refreshProxyGroupsInner(appContext, snapshot, isRootSessionActive, connectCurrentBackend, force = true)
         }
+        if (acquired == null) {
+            Timber.d("refreshProxyGroupsNonBlocking: timeout, skipping to avoid UI block")
+        }
+    }
+    /**
+     * 用于后台同步的尝试变体。queryLock (AtomicBoolean) 已在 refreshProxyGroupsInner 内部。
+     * 防止并发 JNI 调用，mutex 仅保护快速状态更新，无需外部 tryLock 包装。
+     */
+    suspend fun refreshProxyGroupsTryLock(
+        appContext: android.content.Context,
+        snapshot: RuntimeSnapshot,
+        isRootSessionActive: () -> Boolean,
+        connectCurrentBackend: suspend () -> Unit,
+    ) {
+        refreshProxyGroupsInner(appContext, snapshot, isRootSessionActive, connectCurrentBackend, force = false)
     }
     suspend fun refreshProxyGroup(
         appContext: android.content.Context,
@@ -148,15 +212,22 @@ internal class ProxyGroupManager(
         connectCurrentBackend: suspend () -> Unit,
     ) {
         if (!snapshot.running) {
-            if (_proxyGroups.value.isEmpty()) {
+            // 即使未运行，若组不在缓存中，也应尝试刷新。
+            // 这样可以防止从长时间后台恢复后，过时数据阻塞界面。
+            if (_proxyGroups.value.isEmpty() || _proxyGroups.value.none { it.name == name }) {
                 refreshProxyGroups(appContext, snapshot, isRootSessionActive, connectCurrentBackend)
             }
             return
         }
-        refreshProxyGroupsMutex.withLock {
-            val updatedGroup =
-                withContext(Dispatchers.IO) {
-                    try {
+        if (!queryLock.compareAndSet(false, true)) {
+            Timber.d("refreshProxyGroup: query already in flight, skipping group=%s", name)
+            return
+        }
+        val updatedGroup =
+            try {
+                withTimeoutOrNull(PROXY_GROUP_QUERY_TIMEOUT_MS) {
+                    withContext(Dispatchers.IO) {
+                        try {
                             if (snapshot.owner == RuntimeOwner.RootTun && !isRootSessionActive()) {
                                 error("RootTun runtime not ready")
                             }
@@ -168,15 +239,38 @@ internal class ProxyGroupManager(
                                 connectCurrentBackend()
                                 toProxyGroupInfo(ServiceClient.clash().queryProxyGroup(name, sort))
                             }
-                        }
-                        catch (e: CancellationException) { throw e }
+                        } catch (e: CancellationException) { throw e }
                         catch (error: Exception) {
                             Timber.e(error, "Failed to refresh proxy group: %s", name)
                             null
                         }
-                } ?: return
+                    }
+                }
+            } finally {
+                queryLock.set(false)
+            } ?: return
+        refreshProxyGroupsMutex.withLock {
             val updatedGroups = attachChainPaths(updateCachedProxyGroup(updatedGroup))
             publishProxyGroups(updatedGroups, cacheForPreview = true)
+        }
+    }
+    /**
+     * [refreshProxyGroup] 的非阻塞变体，用于 UI 触发的单组刷新。
+     * 如果互斥锁已被持有则跳过，防止 UI 线程阻塞。
+     */
+    suspend fun refreshProxyGroupNonBlocking(
+        appContext: android.content.Context,
+        name: String,
+        sort: ProxySort = ProxySort.Default,
+        snapshot: RuntimeSnapshot,
+        isRootSessionActive: () -> Boolean,
+        connectCurrentBackend: suspend () -> Unit,
+    ) {
+        val acquired = withTimeoutOrNull(300L) {
+            refreshProxyGroup(appContext, name, sort, snapshot, isRootSessionActive, connectCurrentBackend)
+        }
+        if (acquired == null) {
+            Timber.d("refreshProxyGroupNonBlocking: mutex busy, skipping group=%s", name)
         }
     }
     fun publishProxyGroups(groups: List<ProxyGroupInfo>, cacheForPreview: Boolean) {
@@ -469,9 +563,16 @@ internal class ProxyGroupManager(
             onLocal = { ServiceClient.clash().patchSelector(group, proxyName) },
         )
         if (ok) {
-            delay(200L)
-            refreshGroupDirect(group, ProxySort.Default)
-            onScheduleFullRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
+            // 乐观局部更新以使界面立即反映更改，即使延迟刷新被过时的互斥锁阻塞。
+            applyLocalForceSelection(group = group, proxyName = proxyName)
+        }
+        // 无论成功失败都调度刷新——配置文件切换后节点名可能已变，失败时也需要刷新以同步 UI 到实际后端状态。
+        scope.launch {
+            runCatching {
+                delay(if (ok) 200L else 0L)
+                refreshGroupDirect(group, ProxySort.Default)
+                onScheduleFullRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
+            }
         }
         return ok
     }
@@ -501,10 +602,7 @@ internal class ProxyGroupManager(
             onLocal = { ServiceClient.clash().healthCheck(group) },
         )
         Timber.d("Health check dispatched: group=%s", group)
-        scheduleRuntimeGroupRefresh(
-            scope, group, PollingTimerSpecs.ProxyHealthcheckRefresh.intervalMillis,
-        ) { refreshGroupDirect(it, ProxySort.Default) }
-        onScheduleFullRefresh(PollingTimerSpecs.ProxyHealthcheckRefresh.intervalMillis)
+        // 刷新由调用方（ProxyHealthCheckUseCase）统一调度，此处不再重复安排。
     }
 
     suspend fun healthCheckAll() {
@@ -515,9 +613,6 @@ internal class ProxyGroupManager(
                     .map { it.name }
                     .forEach { groupName ->
                         RootTunController.healthCheck(ctx, groupName)
-                        scheduleRuntimeGroupRefresh(
-                            scope, groupName, PollingTimerSpecs.ProxyHealthcheckRefresh.intervalMillis,
-                        ) { refreshGroupDirect(it, ProxySort.Default) }
                     }
             },
             onRemote = {
@@ -525,14 +620,11 @@ internal class ProxyGroupManager(
                     .map { it.name }
                     .forEach { groupName ->
                         ServiceClient.clash().healthCheck(groupName)
-                        scheduleRuntimeGroupRefresh(
-                            scope, groupName, PollingTimerSpecs.ProxyHealthcheckRefresh.intervalMillis,
-                        ) { refreshGroupDirect(it, ProxySort.Default) }
                     }
             },
             onLocal = { Clash.healthCheckAll() },
         )
-        onScheduleFullRefresh(PollingTimerSpecs.ProxyHealthcheckRefresh.intervalMillis)
+        // 刷新由调用方（ProxyHealthCheckUseCase）统一调度，此处不再重复安排。
     }
 
     suspend fun healthCheckProxy(group: String, proxyName: String): Int {
@@ -542,8 +634,14 @@ internal class ProxyGroupManager(
             onLocal = { ServiceClient.clash().healthCheckProxy(group, proxyName) },
         )
         Timber.d("Health check proxy done: group=%s proxy=%s delay=%s", group, proxyName, delay)
-        refreshGroupDirect(group, ProxySort.Default)
-        onScheduleFullRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
+        // 刷新操作采用“即发即忘”方式，以便调用方能立即返回。
+        // 若 refreshProxyGroupsMutex 正被一个卡住的后台同步任务持有，此操作也不会被阻塞。
+        scope.launch {
+            runCatching {
+                refreshGroupDirect(group, ProxySort.Default)
+                onScheduleFullRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
+            }
+        }
         return delay
     }
 
@@ -568,6 +666,6 @@ internal class ProxyGroupManager(
             val nextNow = if (desired.isNotEmpty()) desired else info.now.trim()
             info.copy(now = nextNow, fixed = desired)
         }
-        publishProxyGroups(updatedGroups, cacheForPreview = true)
+        publishProxyGroups(attachChainPaths(updatedGroups), cacheForPreview = true)
     }
 }
