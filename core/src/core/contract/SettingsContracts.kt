@@ -61,6 +61,9 @@ interface NetworkSettingsReader {
     val ebpfBypassCn: Preference<Boolean>
     val wifiAutomationOtherWifiAction: Preference<WifiAutomationFallbackAction>
     val wifiAutomationNoWifiAction: Preference<WifiAutomationFallbackAction>
+    // Empty string means "do not switch" when the corresponding fallback action is Start.
+    val wifiAutomationOtherWifiProfileUuid: Preference<String>
+    val wifiAutomationNoWifiProfileUuid: Preference<String>
 }
 
 /** Contract for app settings consumed by runtime and feature modules. */

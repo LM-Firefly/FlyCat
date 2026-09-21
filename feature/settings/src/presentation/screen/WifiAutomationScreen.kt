@@ -66,6 +66,7 @@ import androidx.core.location.LocationManagerCompat
 import com.github.lmfirefly.flycat.core.model.WifiAutomationAction
 import com.github.lmfirefly.flycat.core.model.WifiAutomationFallbackAction
 import com.github.lmfirefly.flycat.core.model.WifiAutomationRule
+import com.github.lmfirefly.flycat.core.model.profile.Profile
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.WifiAutomationViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.card.Card
@@ -233,6 +234,13 @@ fun WifiAutomationSettingsSection() {
             values = WifiAutomationFallbackAction.entries,
             onValueChange = viewModel::changeOtherWifiAction,
         )
+        if (state.otherWifiAction == WifiAutomationFallbackAction.Start && state.profiles.isNotEmpty()) {
+            WifiProfileSwitchSelector(
+                profiles = state.profiles,
+                profileUuid = state.otherWifiProfileUuid,
+                onProfileUuidChange = viewModel::changeOtherWifiProfileUuid,
+            )
+        }
         PreferenceEnumItem(
             title = FlyTxt.NetworkSettings.WifiAutomation.NoWifiTitle,
             currentValue = state.noWifiAction,
@@ -240,18 +248,26 @@ fun WifiAutomationSettingsSection() {
             values = WifiAutomationFallbackAction.entries,
             onValueChange = viewModel::changeNoWifiAction,
         )
+        if (state.noWifiAction == WifiAutomationFallbackAction.Start && state.profiles.isNotEmpty()) {
+            WifiProfileSwitchSelector(
+                profiles = state.profiles,
+                profileUuid = state.noWifiProfileUuid,
+                onProfileUuidChange = viewModel::changeNoWifiProfileUuid,
+            )
+        }
     }
 
     WifiScanSheet(
         show = scanSheetVisible,
         scannedNetworks = state.scannedNetworks,
+        profiles = state.profiles,
         isScanning = state.isScanning,
         scanCompleted = state.scanCompleted,
         scanUnavailable = state.scanUnavailable,
         onDismiss = { scanSheetVisible = false },
         onDismissFinished = viewModel::resetScan,
-        onConfirm = { ssid, action ->
-            viewModel.addManualSsid(ssid, action)
+        onConfirm = { ssid, action, profileUuid ->
+            viewModel.addManualSsid(ssid, action, profileUuid)
             scanSheetVisible = false
         },
     )
@@ -259,9 +275,10 @@ fun WifiAutomationSettingsSection() {
     WifiRuleEditSheet(
         show = editSheetVisible,
         rules = state.rules,
+        profiles = state.profiles,
         onDismiss = { editSheetVisible = false },
-        onConfirm = { ssid, action ->
-            viewModel.changeRuleAction(ssid, action)
+        onConfirm = { ssid, action, profileUuid ->
+            viewModel.changeRuleAction(ssid, action, profileUuid)
             editSheetVisible = false
         },
         onDelete = viewModel::removeRule,
@@ -349,21 +366,24 @@ fun WifiAutomationSettingsSection() {
 private fun WifiScanSheet(
     show: Boolean,
     scannedNetworks: List<WifiSsidNetwork>,
+    profiles: List<Profile>,
     isScanning: Boolean,
     scanCompleted: Boolean,
     scanUnavailable: Boolean,
     onDismiss: () -> Unit,
     onDismissFinished: () -> Unit,
-    onConfirm: (ssid: String, action: WifiAutomationAction) -> Unit,
+    onConfirm: (ssid: String, action: WifiAutomationAction, profileUuid: String?) -> Unit,
 ) {
     val spacing = AppTheme.spacing
     var selectedSsid by remember { mutableStateOf<String?>(null) }
     var action by remember { mutableStateOf(WifiAutomationAction.Start) }
+    var profileUuid by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(show) {
         if (show) {
             selectedSsid = null
             action = WifiAutomationAction.Start
+            profileUuid = null
         }
     }
 
@@ -374,7 +394,7 @@ private fun WifiScanSheet(
         endAction = {
             AppBottomSheetConfirmAction(
                 enabled = selectedSsid != null,
-                onClick = { selectedSsid?.let { onConfirm(it, action) } },
+                onClick = { selectedSsid?.let { onConfirm(it, action, profileUuid) } },
             )
         },
         onDismissRequest = onDismiss,
@@ -419,23 +439,34 @@ private fun WifiScanSheet(
                         enter = fadeIn() + expandVertically(),
                         exit = fadeOut() + shrinkVertically(),
                     ) {
-                        Card {
-                            WindowDropdownPreference(
-                                title = FlyTxt.NetworkSettings.WifiAutomation.ActionTitle,
-                                items = listOf(
-                                    FlyTxt.NetworkSettings.WifiAutomation.StartAction,
-                                    FlyTxt.NetworkSettings.WifiAutomation.StopAction,
-                                ),
-                                selectedIndex = if (action == WifiAutomationAction.Start) 0 else 1,
-                                onSelectedIndexChange = { index ->
-                                    action =
-                                        if (index == 0) {
-                                            WifiAutomationAction.Start
-                                        } else {
-                                            WifiAutomationAction.Stop
-                                        }
-                                },
-                            )
+                        Column(verticalArrangement = Arrangement.spacedBy(spacing.space12)) {
+                            Card {
+                                WindowDropdownPreference(
+                                    title = FlyTxt.NetworkSettings.WifiAutomation.ActionTitle,
+                                    items = listOf(
+                                        FlyTxt.NetworkSettings.WifiAutomation.StartAction,
+                                        FlyTxt.NetworkSettings.WifiAutomation.StopAction,
+                                    ),
+                                    selectedIndex = if (action == WifiAutomationAction.Start) 0 else 1,
+                                    onSelectedIndexChange = { index ->
+                                        action =
+                                            if (index == 0) {
+                                                WifiAutomationAction.Start
+                                            } else {
+                                                WifiAutomationAction.Stop
+                                            }
+                                    },
+                                )
+                            }
+                            if (action == WifiAutomationAction.Start) {
+                                Card {
+                                    WifiProfileSwitchSelector(
+                                        profiles = profiles,
+                                        profileUuid = profileUuid,
+                                        onProfileUuidChange = { profileUuid = it },
+                                    )
+                                }
+                            }
                         }
                     }
                     Card {
@@ -474,20 +505,25 @@ private fun WifiScanSheet(
 private fun WifiRuleEditSheet(
     show: Boolean,
     rules: List<WifiAutomationRule>,
+    profiles: List<Profile>,
     onDismiss: () -> Unit,
-    onConfirm: (ssid: String, action: WifiAutomationAction) -> Unit,
+    onConfirm: (ssid: String, action: WifiAutomationAction, profileUuid: String?) -> Unit,
     onDelete: (ssid: String) -> Unit,
 ) {
     val spacing = AppTheme.spacing
     var selectedSsid by remember { mutableStateOf<String?>(null) }
     var action by remember { mutableStateOf(WifiAutomationAction.Start) }
+    var profileUuid by remember { mutableStateOf<String?>(null) }
     val selectedRule = rules.firstOrNull { it.ssid == selectedSsid }
 
     LaunchedEffect(show) {
         if (show) selectedSsid = null
     }
     LaunchedEffect(selectedRule) {
-        selectedRule?.let { action = it.action }
+        selectedRule?.let {
+            action = it.action
+            profileUuid = it.profileUuid
+        }
     }
 
     AppActionBottomSheet(
@@ -497,7 +533,7 @@ private fun WifiRuleEditSheet(
         endAction = {
             AppBottomSheetConfirmAction(
                 enabled = selectedRule != null,
-                onClick = { selectedRule?.let { onConfirm(it.ssid, action) } },
+                onClick = { selectedRule?.let { onConfirm(it.ssid, action, profileUuid) } },
             )
         },
         onDismissRequest = onDismiss,
@@ -513,19 +549,30 @@ private fun WifiRuleEditSheet(
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically(),
             ) {
-                Card {
-                    WindowDropdownPreference(
-                        title = FlyTxt.NetworkSettings.WifiAutomation.ActionTitle,
-                        items = listOf(
-                            FlyTxt.NetworkSettings.WifiAutomation.StartAction,
-                            FlyTxt.NetworkSettings.WifiAutomation.StopAction,
-                        ),
-                        selectedIndex = if (action == WifiAutomationAction.Start) 0 else 1,
-                        onSelectedIndexChange = { index ->
-                            action =
-                                if (index == 0) WifiAutomationAction.Start else WifiAutomationAction.Stop
-                        },
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.space12)) {
+                    Card {
+                        WindowDropdownPreference(
+                            title = FlyTxt.NetworkSettings.WifiAutomation.ActionTitle,
+                            items = listOf(
+                                FlyTxt.NetworkSettings.WifiAutomation.StartAction,
+                                FlyTxt.NetworkSettings.WifiAutomation.StopAction,
+                            ),
+                            selectedIndex = if (action == WifiAutomationAction.Start) 0 else 1,
+                            onSelectedIndexChange = { index ->
+                                action =
+                                    if (index == 0) WifiAutomationAction.Start else WifiAutomationAction.Stop
+                            },
+                        )
+                    }
+                    if (action == WifiAutomationAction.Start) {
+                        Card {
+                            WifiProfileSwitchSelector(
+                                profiles = profiles,
+                                profileUuid = profileUuid,
+                                onProfileUuidChange = { profileUuid = it },
+                            )
+                        }
+                    }
                 }
             }
             if (rules.isEmpty()) {
@@ -590,6 +637,25 @@ private fun fallbackActionLabels() =
         FlyTxt.NetworkSettings.WifiAutomation.StartAction,
         FlyTxt.NetworkSettings.WifiAutomation.StopAction,
     )
+
+@Composable
+private fun WifiProfileSwitchSelector(
+    profiles: List<Profile>,
+    profileUuid: String?,
+    onProfileUuidChange: (String?) -> Unit,
+) {
+    val items = remember(profiles) {
+        listOf(FlyTxt.NetworkSettings.WifiAutomation.NoSwitchAction) + profiles.map { it.name }
+    }
+    val selectedIndex = profiles.indexOfFirst { it.uuid.toString() == profileUuid } + 1
+
+    WindowDropdownPreference(
+        title = FlyTxt.NetworkSettings.WifiAutomation.ProfileAction,
+        items = items,
+        selectedIndex = selectedIndex,
+        onSelectedIndexChange = { index -> onProfileUuidChange(profiles.getOrNull(index - 1)?.uuid?.toString()) },
+    )
+}
 
 private fun hasPermission(context: Context, permission: String): Boolean =
     ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
