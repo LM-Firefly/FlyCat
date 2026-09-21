@@ -59,4 +59,6 @@ data class ConnectionInfo(
     val providerChains: List<String> = emptyList(),
     val rule: String = "",
     val rulePayload: String = "",
+    val uploadDelta: Long = 0L,
+    val downloadDelta: Long = 0L,
 )

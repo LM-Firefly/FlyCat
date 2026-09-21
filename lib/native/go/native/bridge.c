@@ -5,7 +5,6 @@
 //  as published by Sam Hocevar. See http://www.wtfpl.net/ for more details.
 
 #include "bridge.h"
-#include "trace.h"
 
 static void noop_mark_socket(void *tun_interface, int fd) {
     (void)tun_interface;
@@ -145,13 +144,11 @@ void set_query_socket_owner_callback(char *(*callback)(void *tun_interface, int 
 }
 
 void mark_socket(void *interface, int fd) {
-    TRACE_METHOD();
 
     mark_socket_func(interface, fd);
 }
 
 char *query_socket_owner(void *interface, int protocol, char *source, char *target) {
-    TRACE_METHOD();
 
     char *result = query_socket_owner_func(interface, protocol, source, target);
 
@@ -162,7 +159,6 @@ char *query_socket_owner(void *interface, int protocol, char *source, char *targ
 }
 
 void complete(void *obj, char *error) {
-    TRACE_METHOD();
 
     complete_func(obj, error);
 
@@ -170,7 +166,6 @@ void complete(void *obj, char *error) {
 }
 
 void complete_with_string(void *obj, char *result) {
-    TRACE_METHOD();
 
     complete_with_string_func(obj, result);
 
@@ -178,7 +173,6 @@ void complete_with_string(void *obj, char *result) {
 }
 
 void fetch_complete(void *fetch_callback, char *exception) {
-    TRACE_METHOD();
 
     fetch_complete_func(fetch_callback, exception);
 
@@ -186,7 +180,6 @@ void fetch_complete(void *fetch_callback, char *exception) {
 }
 
 void fetch_report(void *fetch_callback, char *json_status) {
-    TRACE_METHOD();
 
     fetch_report_func(fetch_callback, json_status);
 
@@ -194,7 +187,6 @@ void fetch_report(void *fetch_callback, char *json_status) {
 }
 
 int logcat_received(void *logcat_interface, char *payload) {
-    TRACE_METHOD();
 
     int result = logcat_received_func(logcat_interface, payload);
 
@@ -204,7 +196,6 @@ int logcat_received(void *logcat_interface, char *payload) {
 }
 
 int connection_close_received(void *callback, char *payload) {
-    TRACE_METHOD();
 
     int result = connection_close_received_func(callback, payload);
 
@@ -214,7 +205,6 @@ int connection_close_received(void *callback, char *payload) {
 }
 
 int connection_join_received(void *callback, char *payload) {
-    TRACE_METHOD();
 
     int result = connection_join_received_func(callback, payload);
 
@@ -224,7 +214,6 @@ int connection_join_received(void *callback, char *payload) {
 }
 
 int traffic_update_received(void *callback, char *payload) {
-    TRACE_METHOD();
 
     int result = traffic_update_received_func(callback, payload);
 
@@ -234,7 +223,6 @@ int traffic_update_received(void *callback, char *payload) {
 }
 
 int traffic_update_received_packed(void *callback, long long upload_total, long long download_total, long long upload_speed, long long download_speed) {
-    TRACE_METHOD();
 
     return traffic_update_received_packed_func(
             callback,
@@ -245,7 +233,6 @@ int traffic_update_received_packed(void *callback, long long upload_total, long 
 }
 
 int open_content(char *url, char *error, int error_length) {
-    TRACE_METHOD();
 
     int result = open_content_func(url, error, error_length);
 
@@ -255,7 +242,6 @@ int open_content(char *url, char *error, int error_length) {
 }
 
 void release_object(void *obj) {
-    TRACE_METHOD();
 
     release_object_func(obj);
 }

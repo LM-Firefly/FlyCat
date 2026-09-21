@@ -12,7 +12,6 @@ import (
 	"os"
 	P "path"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -347,8 +346,6 @@ func FetchAndValid(
 		}
 		reportSubscriptionInfo(header, reportStatus)
 	}
-
-	defer runtime.GC()
 
 	rawCfg, err := UnmarshalAndPatch(path)
 	if err != nil {

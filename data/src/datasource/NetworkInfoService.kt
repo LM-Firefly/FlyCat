@@ -45,7 +45,10 @@ class NetworkInfoService : Closeable, NetworkInfoReader {
     private val json = Json { ignoreUnknownKeys = true }
     /** Minimum interval between external IP HTTP requests to avoid redundant fetches. */
     private val minRefreshIntervalMs = 30_000L
+    /** 缓存外部 IP 查询结果的 TTL — 避免每次回到前台时重新获取。 */
+    private val externalIpCacheTtlMs = 5 * 60_000L
     private var lastExternalIpFetchTime = 0L
+    private var cachedExternalIp: IpInfo? = null
     private val httpClient = createHttpClient(HttpClientProfile.FAST, json = json)
 
     private val _refreshTrigger =
@@ -67,14 +70,20 @@ class NetworkInfoService : Closeable, NetworkInfoReader {
 
     @Suppress("TooGenericExceptionCaught")
     suspend fun getExternalIp(): IpInfo? {
+        val now = System.currentTimeMillis()
+        if (cachedExternalIp != null && now - lastExternalIpFetchTime < externalIpCacheTtlMs) {
+            return cachedExternalIp
+        }
         try {
             val response = httpClient.get("https://api.ip.sb/geoip")
             val body = response.bodyAsText()
             val info = json.decodeFromString<IpInfo>(body)
+            cachedExternalIp = info
+            lastExternalIpFetchTime = now
             return info
         } catch (error: Exception) { // fault barrier: any network/decode failure degrades to null
             if (error is CancellationException) throw error
-            return null
+            return cachedExternalIp
         }
     }
 
