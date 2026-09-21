@@ -161,6 +161,7 @@ internal fun ProfileFormContent(
     urlTextFieldValue: TextFieldValue,
     fileNameTextFieldValue: TextFieldValue,
     ageSecretKeyTextFieldValue: TextFieldValue,
+    intervalTextFieldValue: TextFieldValue,
     error: String,
     hasCameraPermission: Boolean,
     showCameraPreview: Boolean,
@@ -169,6 +170,7 @@ internal fun ProfileFormContent(
     onNameChange: (TextFieldValue) -> Unit,
     onUrlChange: (TextFieldValue) -> Unit,
     onAgeSecretKeyChange: (TextFieldValue) -> Unit,
+    onIntervalChange: (TextFieldValue) -> Unit,
     onPickFile: () -> Unit,
     onSelectQrImage: () -> Unit,
     onQrScanned: (String) -> Unit,
@@ -205,10 +207,12 @@ internal fun ProfileFormContent(
                         urlTextFieldValue = urlTextFieldValue,
                         fileNameTextFieldValue = fileNameTextFieldValue,
                         ageSecretKeyTextFieldValue = ageSecretKeyTextFieldValue,
+                        intervalTextFieldValue = intervalTextFieldValue,
                         error = error,
                         onNameChange = onNameChange,
                         onUrlChange = onUrlChange,
                         onAgeSecretKeyChange = onAgeSecretKeyChange,
+                        onIntervalChange = onIntervalChange,
                         onPickFile = onPickFile,
                     )
             }
@@ -295,10 +299,12 @@ private fun ManualProfileContent(
     urlTextFieldValue: TextFieldValue,
     fileNameTextFieldValue: TextFieldValue,
     ageSecretKeyTextFieldValue: TextFieldValue,
+    intervalTextFieldValue: TextFieldValue,
     error: String,
     onNameChange: (TextFieldValue) -> Unit,
     onUrlChange: (TextFieldValue) -> Unit,
     onAgeSecretKeyChange: (TextFieldValue) -> Unit,
+    onIntervalChange: (TextFieldValue) -> Unit,
     onPickFile: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -328,6 +334,23 @@ private fun ManualProfileContent(
                 enabled = !profileLocked,
                 modifier = Modifier.fillMaxWidth(),
             )
+            if (!profileLocked) {
+                Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp4)) {
+                    TextField(
+                        value = intervalTextFieldValue,
+                        onValueChange = onIntervalChange,
+                        label = FlyTxt.ProfilesPage.Input.AutoUpdateInterval,
+                        useLabelAsPlaceholder = true,
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        text = FlyTxt.ProfilesPage.Input.AutoUpdateIntervalHint,
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.outline,
+                    )
+                }
+            }
         } else {
             TextField(
                 value = fileNameTextFieldValue,

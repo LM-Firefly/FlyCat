@@ -22,6 +22,13 @@
 package com.github.lmfirefly.flycat.runtime.service.profile
 
 import android.content.Context
+import androidx.work.Constraints
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkerParameters
+import androidx.work.WorkManager
 import com.github.lmfirefly.flycat.core.Clash
 import com.github.lmfirefly.flycat.core.importedDir
 import com.github.lmfirefly.flycat.core.model.FetchStatus
@@ -35,6 +42,8 @@ import com.github.lmfirefly.flycat.runtime.service.util.Log
 import com.github.lmfirefly.flycat.runtime.service.util.sendProfileChanged
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
@@ -182,9 +191,10 @@ object ProfileProcessor {
                                     subInfo?.expire ?: snapshot.imported.expire,
                                     snapshot.imported.createdAt,
                                     ageSecretKey = snapshot.imported.ageSecretKey,
+                                    updatedAt = System.currentTimeMillis(),
                                 )
                             ImportedDao.update(updated)
-
+                            AutoUpdate.reschedule(context)
                             context.sendProfileChanged(snapshot.imported.uuid)
                         }
                     }
@@ -263,5 +273,85 @@ object ProfileProcessor {
                 context.sendProfileChanged(uuid)
             }
         }
+    }
+
+    /**
+     * 基于 WorkManager 的订阅自动更新：全部订阅共用单个周期任务（周期 = 各订阅 interval 的最小值），每次运行按锚点批量更新到期订阅，任务数不随订阅数增长。
+     */
+    object AutoUpdate {
+        const val MIN_INTERVAL_SECONDS = 30 * 60L
+        /** 合批前瞻窗口：到期时间落在窗口内的订阅并入本批（最多提前一个窗口执行）。 */
+        const val BATCH_WINDOW_SECONDS = 15 * 60L
+        private const val TAG = "ProfileAutoUpdate"
+        private const val WORK_NAME = "profile_auto_update_all"
+        private const val WORK_TAG = "profile_update_all"
+        private const val LEGACY_WORK_TAG = "profile_update"
+        /** 在应用启动时同步调度；不重锚定周期，避免频繁启动推迟更新。 */
+        fun scheduleAll(context: Context) {
+            WorkManager.getInstance(context).cancelAllWorkByTag(LEGACY_WORK_TAG)
+            reschedule(context, reanchor = false)
+        }
+        /** 订阅集合/间隔变化或更新完成后调用；[reanchor] 为 true 时从当前时刻重新起算周期。 */
+        fun reschedule(context: Context, reanchor: Boolean = true) {
+            val profiles = ImportedDao.queryAll().filter { it.type == Profile.Type.Url && it.interval >= MIN_INTERVAL_SECONDS }
+            val workManager = WorkManager.getInstance(context)
+            if (profiles.isEmpty()) {
+                workManager.cancelUniqueWork(WORK_NAME)
+                Timber.tag(TAG).i("Cancelled auto-update (no eligible profiles)")
+                return
+            }
+            val periodSeconds = profiles.minOf { it.interval }
+            val request = PeriodicWorkRequestBuilder<ProfileAutoUpdateWorker>(
+                    repeatInterval = periodSeconds,
+                    repeatIntervalTimeUnit = TimeUnit.SECONDS,
+                ).setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).addTag(WORK_TAG).build()
+            val policy =
+                if (reanchor) ExistingPeriodicWorkPolicy.UPDATE else ExistingPeriodicWorkPolicy.KEEP
+            workManager.enqueueUniquePeriodicWork(WORK_NAME, policy, request)
+            Timber.tag(TAG).i("Scheduled auto-update for ${profiles.size} profiles every ${periodSeconds}s ($policy)")
+        }
+    }
+}
+
+/**
+ * 周期性批量更新到期订阅。由 [ProfileProcessor.AutoUpdate] 以单任务统一调度，每次运行更新所有距上次更新已达自身 `interval` 的 URL 订阅。
+ */
+class ProfileAutoUpdateWorker(
+    appContext: Context,
+    params: WorkerParameters,
+) : CoroutineWorker(appContext, params) {
+    override suspend fun doWork(): Result {
+        val nowMs = System.currentTimeMillis()
+        val windowMs = ProfileProcessor.AutoUpdate.BATCH_WINDOW_SECONDS * 1000
+        val batch = ImportedDao.queryAll()
+            .filter { it.type == Profile.Type.Url && it.interval >= ProfileProcessor.AutoUpdate.MIN_INTERVAL_SECONDS }
+            .map { it to anchorOf(it) + it.interval * 1000 }
+            .filter { (_, dueAt) -> dueAt <= nowMs + windowMs }
+            .sortedBy { (_, dueAt) -> dueAt }
+            .map { (imported, _) -> imported }
+        if (batch.isEmpty()) return Result.success()
+        // 激活订阅的更新会触发配置重载（瞬断），置队尾让其余下载先完成。
+        val activeUuid = ServiceStore().activeProfile
+        val (others, active) = batch.partition { it.uuid != activeUuid }
+        val queue = others + active
+        Timber.tag(TAG).i("Auto-update batch: ${queue.size} due, activeLast=${active.isNotEmpty()}")
+        var failures = 0
+        for (imported in queue) {
+            try {
+                Timber.tag(TAG).i("Auto-updating profile: ${imported.name} (${imported.uuid})")
+                ProfileProcessor.update(applicationContext, imported.uuid, null)
+                Timber.tag(TAG).i("Auto-update complete: ${imported.name}")
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                failures++
+                Timber.tag(TAG).w(error, "Auto-update failed for profile ${imported.uuid}")
+            }
+        }
+        return if (failures > 0) Result.retry() else Result.success()
+    }
+    // 历史数据 updatedAt=0 时以创建时间兜底，避免刚导入的订阅立即触发一次冗余更新。
+    private fun anchorOf(imported: Imported): Long = maxOf(imported.updatedAt, imported.createdAt)
+    companion object {
+        private const val TAG = "ProfileAutoUpdate"
     }
 }

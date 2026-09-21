@@ -41,6 +41,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.mmkv)
+    implementation(libs.androidx.work.runtime)
 
     implementation(libs.timber)
     implementation(libs.koin.core)

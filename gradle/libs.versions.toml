@@ -123,6 +123,7 @@ haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
 mmkv = { module = "com.tencent:mmkv", version.ref = "mmkv64" }
+androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntime" }
 rosemoe-language-textmate = { module = "io.github.rosemoe:language-textmate" }
 rosemoe-oniguruma = { module = "io.github.rosemoe:oniguruma-native" }
 libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu" }

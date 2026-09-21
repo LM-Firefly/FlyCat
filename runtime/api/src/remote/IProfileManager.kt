@@ -30,6 +30,7 @@ interface IProfileManager {
         name: String,
         source: String = "",
         ageSecretKey: String = "",
+        interval: Long = 0L,
     ): UUID
 
     suspend fun clone(uuid: UUID): UUID
