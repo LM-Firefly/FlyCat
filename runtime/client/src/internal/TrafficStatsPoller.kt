@@ -38,7 +38,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import timber.log.Timber
 
 internal class TrafficStatsPoller(
@@ -76,6 +78,8 @@ internal class TrafficStatsPoller(
     )
     val reliableConnectionJoinEvents: ReceiveChannel<ConnectionInfo> = _reliableConnectionJoinEvents
     private val liveConnections = ConcurrentHashMap<String, ConnectionInfo>()
+    private val connectionsDirty = java.util.concurrent.atomic.AtomicBoolean(false)
+    @Volatile private var lastSnapshotEmitMs = 0L
     private val pollingMutex = Mutex()
     private var pollingJob: Job? = null
     private var failureBackoffUntilMs: Long = 0L
@@ -87,13 +91,31 @@ internal class TrafficStatsPoller(
             runCatching {
                 val event = eventJson.decodeFromString<ConnectionClosePayload>(jsonPayload)
                 val cached = liveConnections.remove(event.id)
+                // 加入时的元数据保留在缓存命中路径上；close 不再携带完整元数据（高频率路径）。规则/链来自 close，因为匹配可能延迟完成。
+                // close 自身的瘦身份（包名/进程/uid）合并回元数据：join 时身份可能尚未解析，缺哪项补哪项。
                 val merged =
-                    cached?.copy(upload = event.upload, download = event.download)
-                        ?: ConnectionInfo(
-                            id = event.id,
-                            upload = event.upload,
-                            download = event.download,
-                        )
+                    cached?.copy(
+                        upload = event.upload,
+                        download = event.download,
+                        uploadDelta = event.uploadDelta,
+                        downloadDelta = event.downloadDelta,
+                        rule = event.rule,
+                        rulePayload = event.rulePayload,
+                        chains = event.chains,
+                        providerChains = event.providerChains,
+                        metadata = mergeIdentity(cached.metadata, event),
+                    ) ?: ConnectionInfo(
+                        id = event.id,
+                        upload = event.upload,
+                        download = event.download,
+                        uploadDelta = event.uploadDelta,
+                        downloadDelta = event.downloadDelta,
+                        metadata = slimIdentityMetadata(event),
+                        rule = event.rule,
+                        rulePayload = event.rulePayload,
+                        chains = event.chains,
+                        providerChains = event.providerChains,
+                    )
                 if (_reliableConnectionCloseEvents.trySend(merged).isFailure) {
                     logReliableQueueRejected("close", merged.id)
                 }
@@ -328,15 +350,42 @@ internal class TrafficStatsPoller(
         }.onFailure { Timber.d(it, "refreshConnectionSnapshot skipped") }
     }
     private fun emitConnectionSnapshotFromLive() {
-        val connections = liveConnections.values.toList()
-        val current = _connectionSnapshot.value
-        _connectionSnapshot.value = ConnectionSnapshot(
-            downloadTotal = current.downloadTotal,
-            uploadTotal = current.uploadTotal,
-            connections = connections,
-            memory = current.memory,
-        )
+        // 对完整列表复制进行节流 —— 高 join/close 频率会为每个事件分配 O(N) 的开销。
+        // 设置脏标记，让下一个 tick 或显式刷新时再发出快照。
+        connectionsDirty.set(true)
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastSnapshotEmitMs >= SNAPSHOT_EMIT_MIN_INTERVAL_MS) {
+            lastSnapshotEmitMs = now
+            connectionsDirty.set(false)
+            val connections = liveConnections.values.toList()
+            val current = _connectionSnapshot.value
+            _connectionSnapshot.value = ConnectionSnapshot(
+                downloadTotal = current.downloadTotal,
+                uploadTotal = current.uploadTotal,
+                connections = connections,
+                memory = current.memory,
+            )
+        }
     }
+    /** Close 瘦身份 → 归因 metadata（缓存未命中时用）。 */
+    private fun slimIdentityMetadata(event: ConnectionClosePayload): JsonObject {
+        val map = mutableMapOf<String, JsonElement>()
+        if (event.packageName.isNotBlank()) map["packageName"] = JsonPrimitive(event.packageName)
+        if (event.process.isNotBlank()) map["process"] = JsonPrimitive(event.process)
+        if (event.uid != null) map["uid"] = JsonPrimitive(event.uid)
+        return JsonObject(map)
+    }
+
+    /** 将 close 瘦身份合并进 join 元数据：close 侧有的键覆盖 join 侧，避免缓存命中关闭丢失归因身份。 */
+    private fun mergeIdentity(metadata: JsonObject, event: ConnectionClosePayload): JsonObject {
+        if (event.packageName.isBlank() && event.process.isBlank() && event.uid == null) return metadata
+        val map = metadata.toMutableMap()
+        if (event.packageName.isNotBlank()) map["packageName"] = JsonPrimitive(event.packageName)
+        if (event.process.isNotBlank()) map["process"] = JsonPrimitive(event.process)
+        if (event.uid != null) map["uid"] = JsonPrimitive(event.uid)
+        return JsonObject(map)
+    }
+
     private fun logReliableQueueRejected(eventType: String, id: String) {
         val nowMs = SystemClock.elapsedRealtime()
         synchronized(reliableQueueWarnLock) {
@@ -397,6 +446,15 @@ internal class TrafficStatsPoller(
         val id: String = "",
         val upload: Long = 0L,
         val download: Long = 0L,
+        val uploadDelta: Long = 0L,
+        val downloadDelta: Long = 0L,
+        val rule: String = "",
+        val rulePayload: String = "",
+        val chains: List<String> = emptyList(),
+        val providerChains: List<String> = emptyList(),
+        val packageName: String = "",
+        val process: String = "",
+        val uid: Int? = null,
     )
 
     private companion object {
@@ -404,6 +462,7 @@ internal class TrafficStatsPoller(
         private val eventJson = Json { ignoreUnknownKeys = true }
         private const val RELIABLE_EVENT_BUFFER_CAPACITY = 4_096
         private const val RELIABLE_QUEUE_WARN_INTERVAL_MS = 15_000L
+        private const val SNAPSHOT_EMIT_MIN_INTERVAL_MS = 500L
         /** If a push event was received within this window, skip redundant polling (LOCAL_TUN mode). */
         private const val PUSH_ACTIVE_THRESHOLD_MS = 6_000L
         private const val PUSH_ACTIVE_BACKOFF_THRESHOLD = 3

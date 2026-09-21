@@ -4,9 +4,11 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.SystemClock
 import androidx.core.content.FileProvider
 import com.github.lmfirefly.flycat.core.contract.UpdateSettings
 import com.github.lmfirefly.flycat.core.model.UpdateSource
+import com.github.lmfirefly.flycat.core.util.AppForegroundState
 import com.github.lmfirefly.flycat.core.util.HttpClientProfile
 import com.github.lmfirefly.flycat.core.util.createHttpClient
 import com.github.lmfirefly.flycat.locale.FlyTxt
@@ -27,6 +29,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -193,14 +196,24 @@ class GitHubUpdateManager(
         synchronized(this) {
             if (autoCheckJob?.isActive == true) return
             autoCheckJob = scope.launch(Dispatchers.IO) {
-                while (isActive) {
-                    runCatching {
-                        checkForUpdate(getSelectedSource())
-                    }.onFailure { throwable ->
-                        if (throwable is CancellationException) throw throwable
-                        Timber.w(throwable, "Update auto check failed")
+                var lastCheckAtMs: Long? = null
+                // 仅前台自动检查：检查结果只被界面消费，后台/灭屏的请求纯属浪费。
+                AppForegroundState.foreground.collect { foreground ->
+                    if (!foreground) return@collect
+                    lastCheckAtMs?.let { done ->
+                        val waitMs = intervalMs - (SystemClock.elapsedRealtime() - done)
+                        if (waitMs > 0) delay(waitMs)
                     }
-                    delay(intervalMs)
+                    while (AppForegroundState.foreground.value) {
+                        lastCheckAtMs = SystemClock.elapsedRealtime()
+                        runCatching {
+                            checkForUpdate(getSelectedSource())
+                        }.onFailure { throwable ->
+                            if (throwable is CancellationException) throw throwable
+                            Timber.w(throwable, "Update auto check failed")
+                        }
+                        delay(intervalMs)
+                    }
                 }
             }
         }
