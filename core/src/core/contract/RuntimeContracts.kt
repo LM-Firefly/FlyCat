@@ -56,6 +56,7 @@ interface ServiceBootstrapReader {
     fun consumePostUpdateColdStartPending(): Boolean
     fun markAutoStartStarted()
     fun clearAutoStart()
+    fun isAutoStartInFlight(): Boolean
 }
 
 /**

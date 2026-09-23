@@ -37,25 +37,12 @@ class DialerReceiver : BroadcastReceiver() {
     companion object {
         private const val NOTIFICATION_ID = 1102
         private const val CHANNEL_ID = "secret_code"
-        private const val SECRET_CODE = "*#*#0721#*#*"
-        private const val ACTION_NEW_OUTGOING_CALL = "android.intent.action.NEW_OUTGOING_CALL"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        when (intent.action) {
-            "android.provider.Telephony.SECRET_CODE" -> {
-                // Background activity starts are blocked since Android 10, so the secret code
-                // surfaces a notification whose tap opens the app instead of launching directly.
-                postOpenNotification(context)
-            }
-
-            ACTION_NEW_OUTGOING_CALL -> {
-                val phoneNumber = intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER)
-                if (SECRET_CODE == phoneNumber) {
-                    resultData = null
-                    postOpenNotification(context)
-                }
-            }
+        if (intent.action == "android.provider.Telephony.SECRET_CODE") {
+            // 自Android 10起，后台活动的启动已被阻止，因此该暗码会弹出一条通知，点击后即可打开应用，而不是直接启动。
+            postOpenNotification(context)
         }
     }
 

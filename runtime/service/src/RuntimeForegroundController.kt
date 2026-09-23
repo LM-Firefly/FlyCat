@@ -17,6 +17,7 @@ import com.github.lmfirefly.flycat.runtime.api.constants.Intents
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeSnapshot
 import com.github.lmfirefly.flycat.runtime.api.session.RuntimeSpec
 import com.github.lmfirefly.flycat.runtime.service.config.CoreRuntimeConfig
+import com.github.lmfirefly.flycat.runtime.service.config.ServiceStore
 import com.github.lmfirefly.flycat.runtime.service.notification.ServiceNotificationManager
 import com.github.lmfirefly.flycat.runtime.service.session.RuntimeHost
 import com.github.lmfirefly.flycat.runtime.service.session.SessionRuntime
@@ -55,13 +56,20 @@ internal class RuntimeForegroundController(
     private lateinit var runtime: SessionRuntime
     private val isRuntimeInitialized: Boolean
         get() = ::runtime.isInitialized
+    private val serviceStore by lazy { ServiceStore() }
 
     private val runtimeEventsReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val action = intent?.action ?: return
             val pkg = service.packageName
             when (action) {
-                Intents.actionProfileChanged(pkg),
+                // 仅激活订阅变更才重载：重载会瞬断网络，后台订阅触发的重载还会掐断批量更新中后续订阅的下载。
+                Intents.actionProfileChanged(pkg) -> {
+                    val changed = intent.getStringExtra(Intents.EXTRA_UUID)
+                    if (changed == null || changed == serviceStore.activeProfile?.toString()) {
+                        scheduleReload()
+                    }
+                }
                 Intents.actionOverrideChanged(pkg) -> scheduleReload()
                 Intents.actionClashRequestStop(pkg) -> {
                     if (stopRequested) return
@@ -96,8 +104,7 @@ internal class RuntimeForegroundController(
     fun onCreate() {
         powerController.start()
         runCatching {
-            startupLogStore.append("$logTag service: onCreate begin")
-
+            // startForegroundService 后系统限时要求 startForeground 兑现，任何文件 IO 不得排在它前面。
             notificationManager.createChannel()
             service.startForeground(
                 notificationConfig.notificationId,
