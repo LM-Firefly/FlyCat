@@ -2,6 +2,7 @@ package dev.flycat.loader;
 
 import android.content.pm.ApplicationInfo;
 import android.os.Build;
+import dalvik.system.PathClassLoader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -13,8 +14,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
-import dalvik.system.DexClassLoader;
 
 final class PayloadInstaller {
     private static volatile Installation installedPayload;
@@ -120,11 +119,11 @@ final class PayloadInstaller {
             }
             dexPath.append(file.getAbsolutePath());
         }
-        DexClassLoader payloadLoader = new DexClassLoader(
-                dexPath.toString(),
-                null,
-                nativeDir == null ? null : nativeDir.getAbsolutePath(),
-                parentLoader
+        // 必须是 PathClassLoader：ApplicationInfo 变更（主题/字体/overlay 等触发 updateApplicationInfo）时，框架会对其调用 ApplicationLoaders.addNative/addPath，其他类型会抛 IllegalStateException 导致进程崩溃。
+        PathClassLoader payloadLoader = new PathClassLoader(
+            dexPath.toString(),
+            nativeDir == null ? null : nativeDir.getAbsolutePath(),
+            parentLoader
         );
         Thread.currentThread().setContextClassLoader(payloadLoader);
         return payloadLoader;

@@ -67,6 +67,7 @@ class AutoRestartService : Service() {
         const val EXTRA_REASON = "auto_restart_reason"
         const val REASON_BOOT_COMPLETED = "boot_completed"
         const val REASON_PACKAGE_REPLACED = "package_replaced"
+        const val REASON_RUNTIME_RECOVERY = "runtime_recovery"
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -104,11 +105,14 @@ class AutoRestartService : Service() {
                     }
             } finally {
                 bootstrap.clearAutoStart()
-                ServiceCompat.stopForeground(
-                    this@AutoRestartService,
-                    ServiceCompat.STOP_FOREGROUND_REMOVE,
-                )
-                stopSelf()
+                // 仅最新一次启动请求才收尾；被 cancel 的旧请求不得拆掉新请求的前台态或误停服务。
+                if (autoStartJob === coroutineContext[Job]) {
+                    ServiceCompat.stopForeground(
+                        this@AutoRestartService,
+                        ServiceCompat.STOP_FOREGROUND_REMOVE,
+                    )
+                }
+                stopSelf(startId)
             }
         }
 
