@@ -61,6 +61,7 @@ import com.github.lmfirefly.flycat.runtime.api.constants.Intents
 import com.github.lmfirefly.flycat.runtime.api.contract.AppScreenState
 import com.github.lmfirefly.flycat.runtime.client.ProxyFacade
 import com.github.lmfirefly.flycat.runtime.client.util.ProxyAutoStartUtils
+import com.github.lmfirefly.flycat.runtime.service.android.RuntimeRecoveryWorker
 import com.github.lmfirefly.flycat.runtime.service.android.WifiAutomationService
 import com.github.lmfirefly.flycat.runtime.service.profile.ProfileProcessor
 import com.tencent.mmkv.MMKV
@@ -174,6 +175,7 @@ class App : Application() {
         }
         // 阶段3：启动更新检查协程
         safeRun("App", "Schedule update check") { startUpdateCheck(koin, applicationScope) }
+        safeRun("App", "Schedule runtime recovery") { observeRuntimeRecoveryScheduling(koin, applicationScope) }
         // 阶段4：延迟运行时任务（geo assets, traffic collector, auto-start）
         safeRun("App", "Schedule deferred startup tasks") { scheduleDeferredStartupTasks(koin) }
         // 阶段5：独立生命周期观察者（始终安全可启动）
@@ -237,14 +239,26 @@ class App : Application() {
         val appSettingsStorage: AppSettingsStore = koin.get()
         val updateManager: GitHubUpdateManager = koin.get()
         applicationScope.launch {
-            appSettingsStorage.autoCheckAppUpdate.state
-                .collect { enabled ->
-                    if (enabled) {
-                        updateManager.startAutoCheck(this)
-                    } else {
-                        updateManager.stopAutoCheck()
-                    }
+            appSettingsStorage.autoCheckAppUpdate.state.collect { enabled ->
+                if (enabled) {
+                    updateManager.startAutoCheck(this)
+                } else {
+                    updateManager.stopAutoCheck()
                 }
+            }
+        }
+    }
+    /** 仅在"自动重启"开启时调度周期性运行时恢复检查，关闭即取消，避免无谓的后台唤醒。*/
+    private fun observeRuntimeRecoveryScheduling(koin: Koin, applicationScope: CoroutineScope) {
+        val appSettingsStorage: AppSettingsStore = koin.get()
+        applicationScope.launch {
+            appSettingsStorage.automaticRestart.state.collect { enabled ->
+                if (enabled) {
+                    RuntimeRecoveryWorker.schedule(this@App)
+                } else {
+                    RuntimeRecoveryWorker.cancel(this@App)
+                }
+            }
         }
     }
     /**

@@ -128,6 +128,7 @@ class ServiceBootstrapReaderImpl(
     override fun consumePostUpdateColdStartPending(): Boolean = featureStore.consumePostUpdateColdStartPending()
     override fun markAutoStartStarted() = AutoStartExecutionGate.markStarted(serviceCache)
     override fun clearAutoStart() = AutoStartExecutionGate.clear(serviceCache)
+    override fun isAutoStartInFlight(): Boolean = AutoStartExecutionGate.isExecuting(serviceCache)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

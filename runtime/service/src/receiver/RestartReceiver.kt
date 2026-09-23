@@ -26,6 +26,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import com.github.lmfirefly.flycat.runtime.service.android.AutoRestartService
+import com.github.lmfirefly.flycat.runtime.service.android.RuntimeRecoveryWorker
 import timber.log.Timber
 
 class RestartReceiver : BroadcastReceiver() {
@@ -50,7 +51,11 @@ class RestartReceiver : BroadcastReceiver() {
                             context.startService(serviceIntent)
                         }
                     }
-                    .onFailure { error -> Timber.e(error, "Start auto-restart service failed") }
+                    .onFailure { error ->
+                        // Android 12+ 后台 FGS 启动限制/ROM 自启动限制会拒绝广播里直接拉起前台服务，降级为一次性恢复任务，由 WorkManager 退避重试直到条件允许。
+                        Timber.e(error, "Start auto-restart service failed, falling back to recovery work")
+                        RuntimeRecoveryWorker.runOnce(context)
+                    }
             }
         }
     }
