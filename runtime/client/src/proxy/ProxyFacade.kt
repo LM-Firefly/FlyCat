@@ -44,6 +44,7 @@ import com.github.lmfirefly.flycat.runtime.client.internal.ProxyGroupManager
 import com.github.lmfirefly.flycat.runtime.client.internal.ProxyServiceEvent
 import com.github.lmfirefly.flycat.runtime.client.internal.RootTunManager
 import com.github.lmfirefly.flycat.runtime.client.internal.TrafficStatsPoller
+import com.github.lmfirefly.flycat.runtime.client.proxy.RemoteSwitch
 import com.github.lmfirefly.flycat.runtime.client.remote.HttpClashManager
 import com.github.lmfirefly.flycat.runtime.client.remote.ServiceClient
 import java.util.concurrent.atomic.AtomicLong
@@ -52,7 +53,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -75,8 +75,6 @@ import timber.log.Timber
 class ProxyFacade(private val context: Context, private val networkSettingsStorage: NetworkSettingsReader, private val remoteControllerStore: RemoteControllerStoreReader,) : ProxyControlContract, ProxyGroupRepository, ConnectionRepository, RuntimeRuleRepository {
     private companion object {
         const val DEFAULT_SYNC_PRIORITY_SOURCE = "default"
-        const val CONTROLLER_SWITCH_STOP_TIMEOUT_MS = 4000L
-        const val CONTROLLER_SWITCH_STOP_POLL_MS = 100L
     }
 
     private val appContext: Context = context.appContextOrSelf
@@ -137,11 +135,39 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     private var previewWarmupJob: Job? = null
     private val operationMutex = Mutex()
     private val proxyGroupSyncMutex = Mutex()
-    private val controllerSwitchMutex = Mutex()
     private val syncPriorityRequests =
         MutableStateFlow<Map<String, ProxySyncPriority>>(emptyMap())
     private var activeProxyGroupSyncPriority = ProxySyncPriority.OFF
     private val generationCounter = AtomicLong(0L)
+    private val remoteSwitch = RemoteSwitch(
+        scope = scope,
+        store = remoteControllerStore,
+        screenOn = eventBus.screenOn,
+        operationMutex = operationMutex,
+        snapshot = { _runtimeSnapshot.value },
+        publishRemoteRunning = {
+            publishRuntimeSnapshot(
+                RuntimeSnapshot(
+                    owner = RuntimeOwner.RemoteController,
+                    phase = RuntimePhase.Running,
+                    targetMode = networkSettingsStorage.runMode.value.toRuntimeTargetMode(),
+                    generation = nextGeneration(),
+                    startedAt = System.currentTimeMillis(),
+                )
+            )
+        },
+        reconcile = suspend { reconcileRuntimeState() },
+        startLocal = suspend { owner: RuntimeOwner, mode: RunMode -> startProxy(mode) },
+        startTrafficPolling = { startTrafficPolling() },
+        stopTrafficPolling = { stopTrafficPolling() },
+        connectBackend = suspend { connectCurrentBackend() },
+        onAfterRunning = suspend { refreshAllSafely() },
+        detectActiveOwner = { detectActiveOwner() },
+        localModeForOwner = { owner: RuntimeOwner -> localModeForOwner(owner) },
+        configuredMode = { networkSettingsStorage.runMode.value },
+        stopOwner = suspend { owner: RuntimeOwner -> runtimeControl.stop(owner) },
+        reconcilePersistedRuntimeState = { RuntimeContractResolver.localRuntimeStatus.reconcilePersistedRuntimeState() },
+    )
 
     val screenOn: StateFlow<Boolean> get() = eventBus.screenOn
 
@@ -160,13 +186,9 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         safeRunSilent("ProxyFacade", "Cancel scope") { scope.cancel() }
     }
 
-    override fun isRemoteControllerActive(): Boolean =
-        remoteControllerStore.controllerEnabled.value &&
-            remoteControllerStore.activeBackend() != null
+    override fun isRemoteControllerActive(): Boolean = remoteControllerStore.isActive()
 
-    override fun applyRemoteControllerState() {
-        scope.launch { controllerSwitchMutex.withLock { applyRemoteControllerStateLocked() } }
-    }
+    override fun applyRemoteControllerState() = remoteSwitch.apply()
 
     /**
      * Test connectivity to a remote mihomo backend.
@@ -175,62 +197,10 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     override suspend fun testRemoteConnection(backend: RemoteBackend): Result<TunnelState> =
         safeRun("ProxyFacade", "Test remote connection") { HttpClashManager(backendProvider = { backend }).queryTunnelState() }
 
-    private suspend fun applyRemoteControllerStateLocked() {
-        if (isRemoteControllerActive()) {
-            val snapshot = _runtimeSnapshot.value
-            if (
-                snapshot.owner != RuntimeOwner.RemoteController ||
-                    snapshot.phase != RuntimePhase.Running
-            ) {
-                stopLocalRuntimeForControllerSwitch()
-                publishRuntimeSnapshot(
-                    RuntimeSnapshot(
-                        owner = RuntimeOwner.RemoteController,
-                        phase = RuntimePhase.Running,
-                        targetMode = networkSettingsStorage.runMode.value.toRuntimeTargetMode(),
-                        generation = nextGeneration(),
-                        startedAt = System.currentTimeMillis(),
-                    )
-                )
-            }
-            startTrafficPolling()
-            refreshAllSafely()
-        } else if (_runtimeSnapshot.value.owner == RuntimeOwner.RemoteController) {
-            reconcileRuntimeState()
-        }
-    }
-
     private fun observeRemoteController() {
         scope.launch {
             remoteControllerStore.controllerEnabled.state.collect { applyRemoteControllerState() }
         }
-    }
-
-    private suspend fun stopLocalRuntimeForControllerSwitch() {
-        safeRun("ProxyFacade", "Stop local runtime for controller switch") {
-            val owner = detectActiveOwner()
-            if (
-                owner == RuntimeOwner.LocalTun ||
-                    owner == RuntimeOwner.RootTun
-            ) {
-                Timber.i("Controller switch: stopping local runtime owner=$owner")
-                runtimeControl.stop(owner)
-                stopTrafficPolling()
-                awaitLocalRuntimeFullyStopped(owner)
-            }
-        }
-    }
-
-    private suspend fun awaitLocalRuntimeFullyStopped(owner: RuntimeOwner) {
-        val mode = localModeForOwner(owner)
-        if (mode != null) {
-            val deadline = System.currentTimeMillis() + CONTROLLER_SWITCH_STOP_TIMEOUT_MS
-            while (System.currentTimeMillis() < deadline) {
-                if (!RuntimeContractResolver.localRuntimeStatus.isRuntimeActive(mode.toRuntimeTargetMode())) break
-                delay(CONTROLLER_SWITCH_STOP_POLL_MS)
-            }
-        }
-        RuntimeContractResolver.localRuntimeStatus.reconcilePersistedRuntimeState()
     }
 
     private fun markRemoteControllerLost(error: Throwable) {
@@ -310,8 +280,10 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     }
 
     override suspend fun reconcileRuntimeState() {
-        if (isRemoteControllerActive()) {
+        if (remoteControllerStore.isWanted()) {
             applyRemoteControllerState()
+        }
+        if (isRemoteControllerActive()) {
             return
         }
         operationMutex.withLock {
@@ -382,6 +354,12 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
 
     override suspend fun startProxy(mode: RunMode) {
         Timber.i("Start proxy: mode=$mode")
+
+        if (isRemoteControllerActive()) {
+            Timber.i("Ignoring startProxy: remote controller mode active")
+            return
+        }
+
         ServiceClient.connect(appContext)
 
         val activeProfile = ServiceClient.profile().queryActive()
@@ -541,6 +519,40 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         )
     }
 
+    /** 用于UI触发操作的非阻塞刷新。 如果互斥锁被后台同步占用则跳过，以避免阻塞UI。 */
+    suspend fun refreshProxyGroupsNonBlocking() {
+        proxyGroupManager.setPreviewProfile(_currentProfile.value)
+        proxyGroupManager.refreshProxyGroupsNonBlocking(
+            appContext = appContext,
+            snapshot = _runtimeSnapshot.value,
+            isRootSessionActive = { rootTunManager.isRootSessionActive() },
+            connectCurrentBackend = { connectCurrentBackend() },
+        )
+    }
+
+    /** 用于 UI 触发操作的非阻塞单组刷新。 */
+    suspend fun refreshProxyGroupNonBlocking(name: String, sort: ProxySort = ProxySort.Default) {
+        proxyGroupManager.refreshProxyGroupNonBlocking(
+            appContext = appContext,
+            name = name,
+            sort = sort,
+            snapshot = _runtimeSnapshot.value,
+            isRootSessionActive = { rootTunManager.isRootSessionActive() },
+            connectCurrentBackend = { connectCurrentBackend() },
+        )
+    }
+
+    /** 用于后台同步的尝试锁定刷新。如果互斥锁已被占用则立即返回，防止后台同步阻塞UI操作。 */
+    suspend fun refreshProxyGroupsTryLock() {
+        proxyGroupManager.setPreviewProfile(_currentProfile.value)
+        proxyGroupManager.refreshProxyGroupsTryLock(
+            appContext = appContext,
+            snapshot = _runtimeSnapshot.value,
+            isRootSessionActive = { rootTunManager.isRootSessionActive() },
+            connectCurrentBackend = { connectCurrentBackend() },
+        )
+    }
+
     override suspend fun refreshCurrentProfile() {
         if (isRemoteControllerActive()) {
             _currentProfile.value = null
@@ -652,8 +664,10 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     }
 
     private fun initializeRuntimeSnapshot() {
-        if (isRemoteControllerActive()) {
+        if (remoteControllerStore.isWanted()) {
             applyRemoteControllerState()
+        }
+        if (isRemoteControllerActive()) {
             return
         }
         val configuredMode = networkSettingsStorage.runMode.value
@@ -835,8 +849,8 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
 
     private fun observeProxyGroupSyncPriority() {
         scope.launch {
-            combine(_runtimeSnapshot, syncPriorityRequests) { snapshot, requests ->
-                    resolveEffectiveProxyGroupSyncPriority(snapshot, requests)
+            combine(_runtimeSnapshot, syncPriorityRequests, AppForegroundState.foreground) { snapshot, requests, foreground ->
+                    resolveEffectiveProxyGroupSyncPriority(snapshot, requests, foreground)
                 }
                 .distinctUntilChanged()
                 .collect { priority -> restartProxyGroupSyncLoop(priority) }
@@ -846,8 +860,14 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     private fun resolveEffectiveProxyGroupSyncPriority(
         snapshot: RuntimeSnapshot,
         requests: Map<String, ProxySyncPriority>,
+        appForeground: Boolean,
     ): ProxySyncPriority {
         if (snapshot.phase != RuntimePhase.Running && snapshot.owner != RuntimeOwner.RemoteController) {
+            return ProxySyncPriority.OFF
+        }
+        // App 不在前台时暂停 UI 驱动的分组同步（Tab 选中态不能代替生命周期）。
+        // 回前台由 ON_RESUME 强刷补齐；后台保留请求值以便恢复。
+        if (!appForeground) {
             return ProxySyncPriority.OFF
         }
         return requests.values.maxByOrNull { it.ordinal } ?: ProxySyncPriority.OFF
@@ -897,7 +917,12 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         if (snapshot.phase != RuntimePhase.Running && snapshot.owner != RuntimeOwner.RemoteController) {
             return
         }
-        safeRun("ProxyFacade", "Sync runtime proxy groups") { refreshProxyGroups() }
+        // 延迟测试进行中时跳过轮询刷新，避免用旧快照覆盖测试结果。
+        if (proxyGroupManager.isDelayTestActive) {
+            Timber.d("Delay test active, skipping polling refresh")
+            return
+        }
+        safeRun("ProxyFacade", "Sync runtime proxy groups") { refreshProxyGroupsTryLock() }
             .onFailure { error ->
                 if (snapshot.owner == RuntimeOwner.RemoteController) {
                     markRemoteControllerLost(error)

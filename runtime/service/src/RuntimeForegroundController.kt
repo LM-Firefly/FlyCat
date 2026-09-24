@@ -10,6 +10,7 @@ import android.os.Build
 import androidx.core.app.ServiceCompat
 import com.github.lmfirefly.flycat.core.Clash
 import com.github.lmfirefly.flycat.core.appContextOrSelf
+import com.github.lmfirefly.flycat.core.contract.ServiceBootstrapHolder
 import com.github.lmfirefly.flycat.core.model.LogMessage
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
 import com.github.lmfirefly.flycat.core.util.TrafficPushHub
@@ -54,6 +55,8 @@ internal class RuntimeForegroundController(
     private var reloadJob: Job? = null
     private var reason: String? = null
     private var stopRequested = false
+    /** 置于 onCreate 检测到遥控器接管时。系统仍会向本实例派发 onStartCommand，此实例不得再从那里启动通知更新。 */
+    private var remoteStartRejected = false
     private lateinit var runtime: SessionRuntime
     private val isRuntimeInitialized: Boolean
         get() = ::runtime.isInitialized
@@ -112,6 +115,14 @@ internal class RuntimeForegroundController(
                 notificationManager.createInitialNotification(),
             )
             startupLogStore.append("$logTag service: startForeground done")
+
+            if (ServiceBootstrapHolder.reader.isRemoteControllerActive()) {
+                remoteStartRejected = true
+                StatusProvider.markRuntimeIdle(mode)
+                startupLogStore.append("$logTag service: skipped, remote controller active")
+                service.stopSelf()
+                return@runCatching
+            }
 
             StatusProvider.clearLegacyStateFiles()
             StatusProvider.markRuntimeStarting(mode)
@@ -183,6 +194,10 @@ internal class RuntimeForegroundController(
     }
 
     fun onStartCommand() {
+        if (remoteStartRejected) {
+            service.stopSelf()
+            return
+        }
         if (notificationJob?.isActive != true) {
             notificationJob = notificationManager.startTrafficUpdate(
                 scope = scope,

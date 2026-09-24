@@ -32,6 +32,7 @@ import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.github.lmfirefly.flycat.core.appContextOrSelf
+import com.github.lmfirefly.flycat.core.contract.ServiceBootstrapHolder
 import com.github.lmfirefly.flycat.core.model.profile.Imported
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
 import com.github.lmfirefly.flycat.core.util.PollingTimers
@@ -76,8 +77,16 @@ class RootTunService : BaseService() {
         createChannel()
     }
 
+    /** 置于 onCreate 检测到遥控器接管时；系统仍会派发 onStartCommand，本实例不得启动通知更新。 */
+    private var remoteStartRejected = false
+
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (remoteStartRejected && ServiceBootstrapHolder.reader.isRemoteControllerActive()) {
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
+        remoteStartRejected = false
         when (intent?.action) {
             ACTION_STOP -> {
                 launch { runCatching { RootTunServiceBridge.stop(appContextOrSelf) } }
@@ -98,9 +107,14 @@ class RootTunService : BaseService() {
                         )
                     ),
                 )
-                // The root process no longer writes the service_cache phase mirror (single-writer
-                // rule); seed it here so the phase is visible before the first poll lands.
+                // "根进程不再写入 service_cache 阶段镜像（单写入者规则）；在此处为其播种，以便该阶段在首次轮询到来前即可可见。"
                 syncStatus(cachedStatus)
+                if (ServiceBootstrapHolder.reader.isRemoteControllerActive()) {
+                    remoteStartRejected = true
+                    StatusProvider.markRuntimeIdle(RunMode.Tun)
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
                 if (!cachedStatus.state.isActiveOrStopping && !cachedStatus.state.isRecovering) {
                     stopSelf()
                     return START_NOT_STICKY

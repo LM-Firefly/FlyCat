@@ -72,8 +72,7 @@ object ServiceClient {
                                 appContext,
                                 remote = httpManager,
                                 isRemoteControllerActive = {
-                                    store.controllerEnabled.value &&
-                                        store.activeBackend() != null
+                                    store.isActive()
                                 },
                             )
                         profileManager = instantiateServiceObject(
@@ -115,6 +114,13 @@ object ServiceClient {
         profileManager ?: throw IllegalStateException("ServiceClient not connected")
 
     fun isConnected(): Boolean = initialized && clashManager != null && profileManager != null
+
+    /** 探测已配置的远程后端，无需执行完整的 [connect] 调用。可在 [connect] 之前安全调用；会创建临时的 [HttpClashManager] 用于可达性检查。 */
+    suspend fun probe(): Boolean {
+        val store = remoteStore ?: return false
+        val backend = store.activeBackend() ?: return false
+        return HttpClashManager(backendProvider = { backend }).probe()
+    }
 
     private inline fun <reified T> instantiateServiceObject(className: String, context: Context): T {
         val clazz = Class.forName(className)
