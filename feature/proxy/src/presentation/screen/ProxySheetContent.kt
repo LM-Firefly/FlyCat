@@ -30,7 +30,10 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -41,15 +44,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.DpSize
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
+import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.ProxyChainIndicator
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeGroupSheetContent
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSearchToolbar
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSheetContent
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSortPopup
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeTestPullToRefresh
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.rememberNodeSheetHeight
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.rememberProxyGroupSelectionState
 import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProxyViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
@@ -96,6 +105,7 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
     val groupListState = rememberLazyListState()
     val nodeListState =
         rememberSaveable(selectedGroupName, saver = LazyListState.Saver) { LazyListState() }
+    var nodeSearchQuery by rememberSaveable(selectedGroupName) { mutableStateOf("") }
 
     DisposableEffect(Unit) {
         proxyViewModel.ensureCoreLoaded(true, source = "proxy_sheet")
@@ -330,6 +340,8 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
                     onTestDelay = triggerSelectedGroupDelayTest,
                     sheetHeightFraction = NOTIFICATION_PROXY_SHEET_HEIGHT_FRACTION,
                     listState = nodeListState,
+                    searchQuery = nodeSearchQuery,
+                    onSearchQueryChange = { nodeSearchQuery = it },
                 )
             }
         }
@@ -344,8 +356,14 @@ private fun ProxySheetNodeContent(
     onTestDelay: () -> Unit,
     sheetHeightFraction: Float,
     listState: LazyListState,
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
 ) {
     val groupProxyNames = remember(group.proxies) { group.proxies.mapTo(linkedSetOf()) { it.name } }
+    val filteredGroup = remember(group, searchQuery) {
+        if (searchQuery.isBlank()) group
+        else group.copy(proxies = group.filterNodes(searchQuery))
+    }
     val isDelayTesting by
         remember(group.name, proxyViewModel) {
                 proxyViewModel.testingGroupNames
@@ -387,6 +405,8 @@ private fun ProxySheetNodeContent(
             proxyViewModel.testProxyDelay(group.name, proxyName)
         }
     }
+    val sheetHeight = rememberNodeSheetHeight(sheetHeightFraction)
+    val delayTestProgress by proxyViewModel.delayTestProgress.collectAsStateWithLifecycle()
     Column {
         if (group.chainPath.isNotEmpty()) {
             ProxyChainIndicator(
@@ -395,18 +415,43 @@ private fun ProxySheetNodeContent(
                     .fillMaxWidth(),
             )
         }
-        NodeSheetContent(
-            group = group,
-            displayMode = displayMode,
-            isDelayTesting = isDelayTesting,
-            testingProxyNames = testingProxyNames,
-            onSelectProxy = onSelectProxy,
-            onForceSelectProxy = onForceSelectProxy,
-            onTestDelay = onTestDelay,
-            onTestProxyDelay = onSingleNodeTestClick,
-            sheetHeightFraction = sheetHeightFraction,
-            listState = listState,
-            pinnedProxyName = group.fixed,
+        NodeSearchToolbar(
+            query = searchQuery,
+            onQueryChange = onSearchQueryChange,
+            // 底部 4dp + 列表 contentPadding 顶部 8dp 合计 12dp，与顶部留白对称。
+            modifier = Modifier.fillMaxWidth().padding(top = UiDp.dp12, bottom = UiDp.dp4),
         )
+        Box(modifier = Modifier.fillMaxWidth().height(sheetHeight).clipToBounds()) {
+            NodeTestPullToRefresh(
+                isRefreshing = isDelayTesting,
+                onRefresh = onTestDelay,
+                tested = delayTestProgress?.tested ?: 0,
+                total = delayTestProgress?.total ?: 0,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                NodeSheetContent(
+                    group = filteredGroup,
+                    displayMode = displayMode,
+                    isDelayTesting = isDelayTesting,
+                    testingProxyNames = testingProxyNames,
+                    onSelectProxy = onSelectProxy,
+                    onForceSelectProxy = onForceSelectProxy,
+                    onTestDelay = onTestDelay,
+                    onTestProxyDelay = onSingleNodeTestClick,
+                    listState = listState,
+                    pinnedProxyName = group.fixed,
+                )
+            }
+        }
+    }
+}
+
+private fun ProxyGroupInfo.filterNodes(query: String): List<Proxy> {
+    val normalizedQuery = query.trim()
+    if (normalizedQuery.isEmpty()) return proxies
+    return proxies.filter { proxy ->
+        proxy.name.contains(normalizedQuery, ignoreCase = true) ||
+            proxy.title.contains(normalizedQuery, ignoreCase = true) ||
+            proxy.subtitle.contains(normalizedQuery, ignoreCase = true)
     }
 }

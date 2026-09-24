@@ -23,14 +23,9 @@ package com.github.lmfirefly.flycat.feature.proxy.presentation.screen
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -44,7 +39,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -55,7 +49,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.lifecycle.Lifecycle
@@ -65,7 +58,9 @@ import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSearchToolbar
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSortPopup
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeTestPullToRefresh
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.nodeGridItems
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.nodeGroupItems
 import com.github.lmfirefly.flycat.feature.proxy.presentation.util.KeepLazyListTopAnchorOnReorder
@@ -94,15 +89,12 @@ import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private fun LazyListState.isScrolledFromTop(): Boolean =
     firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
@@ -153,6 +145,7 @@ fun ProxyPager(
     val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsStateWithLifecycle()
     val testingGroupNames by proxyViewModel.testingGroupNames.collectAsStateWithLifecycle()
     val testingProxyNames by proxyViewModel.testingProxyNames.collectAsStateWithLifecycle()
+    val delayTestProgress by proxyViewModel.delayTestProgress.collectAsStateWithLifecycle()
     val sortMode by proxyViewModel.sortMode.collectAsStateWithLifecycle()
     val displayMode by proxyViewModel.displayMode.collectAsStateWithLifecycle()
     val groupScrollBehavior = MiuixScrollBehavior(snapAnimationSpec = null)
@@ -171,12 +164,10 @@ fun ProxyPager(
         )
     val selectedGroupName = groupSelection.selectedGroupName
     val displayGroup = groupSelection.displayGroup
-    val fabGroup = displayGroup
-    val isFabTesting = fabGroup?.name?.let(testingGroupNames::contains) == true
     val coroutineScope = rememberCoroutineScope()
     val groupListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val nodeListState = rememberSaveable(selectedGroupName, saver = LazyListState.Saver) { LazyListState() }
-    var fabHidden by rememberSaveable { mutableStateOf(false) }
+    var nodeSearchQuery by rememberSaveable(selectedGroupName) { mutableStateOf("") }
     val requestSelectedGroupDelayTest = remember(coroutineScope, nodeListState, selectedGroupName, proxyViewModel) {
         {
             val groupName = selectedGroupName ?: return@remember
@@ -197,11 +188,11 @@ fun ProxyPager(
                     val proxyIndex =
                         group.proxies.indexOfFirst { proxy -> proxy.name == group.now }
                     if (proxyIndex < 0) return
-                    // +1 accounts for the __refresh_indicator__ header item at index 0.
-                    // In dual-column mode each row holds 2 proxies, so divide by 2.
+                    // 搜索栏固定在滚动列表外，列表无头部偏移。
+                    // 在双栏模式中，每行容纳 2 个代理，因此除以 2。
                     val listItemIndex =
-                        if (displayMode.isSingleColumn) proxyIndex + 1
-                        else proxyIndex / 2 + 1
+                        if (displayMode.isSingleColumn) proxyIndex
+                        else proxyIndex / 2
                     coroutineScope.launch {
                         nodeListState.animateLocateToItem(listItemIndex)
                     }
@@ -220,6 +211,7 @@ fun ProxyPager(
     }
 
     LaunchedEffect(isActive) { proxyViewModel.ensureCoreLoaded(isActive, source = "proxy_page") }
+    LaunchedEffect(isActive, inSplitShell) { if (!isActive && !inSplitShell) nodeSearchQuery = "" }
 
     // 应用在长时间后台运行后返回前台时强制刷新，因为WhileSubscribed(5000)会停止上游收集，且同步循环可能已被限流或阻塞在旧互斥锁后面。
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -231,17 +223,7 @@ fun ProxyPager(
     }
 
     Scaffold(
-        floatingActionButton = {
-            PagerFab(
-                visible = !inSplitShell &&
-                    selectedGroupName != null &&
-                    fabGroup != null &&
-                    !fabHidden &&
-                    !isFabTesting &&
-                    !pagerState.isScrollInProgress,
-                onClick = { if (fabGroup != null) requestSelectedGroupDelayTest() },
-            )
-        },
+        floatingActionButton = {},
         topBar = {
             PagerTopBar(
                 scrollBehavior = groupScrollBehavior,
@@ -346,25 +328,14 @@ fun ProxyPager(
                             onForceSelectProxy = { groupName, proxyName -> proxyViewModel.forceSelectProxy(groupName, proxyName) },
                             onTestDelay = requestSelectedGroupDelayTest,
                             onTestProxyDelay = { proxyName -> currentGroup?.name?.let { groupName -> proxyViewModel.testProxyDelay(groupName, proxyName) } },
-                            onScrollDirectionChanged = { hidden -> fabHidden = hidden },
+                            onScrollDirectionChanged = {},
+                            searchQuery = nodeSearchQuery,
+                            onSearchQueryChange = { nodeSearchQuery = it },
+                            testProgress = delayTestProgress,
                         )
                     }
                 }
             } // else (phone mode)
-        }
-    }
-}
-
-/** Stable FAB sub-composable for [ProxyPager] — only recomposes when [visible] or [onClick] change. */
-@Composable
-private fun PagerFab(visible: Boolean, onClick: () -> Unit) {
-    AnimatedVisibility(visible = visible, enter = scaleIn(), exit = scaleOut(), label = "proxy_test_fab_visibility") {
-        FloatingActionButton(modifier = Modifier.padding(end = UiDp.dp20, bottom = UiDp.dp85), onClick = onClick) {
-            Icon(
-                imageVector = FlyCat.Speed,
-                contentDescription = FlyTxt.Proxy.Action.Test,
-                tint = MiuixTheme.colorScheme.onPrimary,
-            )
         }
     }
 }
@@ -470,6 +441,16 @@ internal fun ProxyTopBar(
     )
 }
 
+private fun ProxyGroupInfo.filterNodes(query: String): List<Proxy> {
+    val normalizedQuery = query.trim()
+    if (normalizedQuery.isEmpty()) return proxies
+    return proxies.filter { proxy ->
+        proxy.name.contains(normalizedQuery, ignoreCase = true) ||
+            proxy.title.contains(normalizedQuery, ignoreCase = true) ||
+            proxy.subtitle.contains(normalizedQuery, ignoreCase = true)
+    }
+}
+
 @Composable
 internal fun NodeListPage(
     group: ProxyGroupInfo?,
@@ -487,6 +468,9 @@ internal fun NodeListPage(
     onTestDelay: () -> Unit,
     onTestProxyDelay: (proxyName: String) -> Unit,
     onScrollDirectionChanged: (Boolean) -> Unit,
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
+    testProgress: ProxyViewModel.DelayTestProgress? = null,
 ) {
     if (group == null) {
         CenteredText(
@@ -515,6 +499,8 @@ internal fun NodeListPage(
         }
     }
 
+    val visibleProxies = remember(group.proxies, searchQuery) { group.filterNodes(searchQuery) }
+
     KeepLazyListTopAnchorOnReorder(
         listState = listState,
         itemKeys = listItemKeys,
@@ -539,89 +525,66 @@ internal fun NodeListPage(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        ScreenLazyColumn(
-            modifier = Modifier.weight(1f),
-            lazyListState = listState,
-            scrollBehavior = scrollBehavior,
-            innerPadding = outerInnerPadding,
-            enableGlobalScroll = true,
-            onScrollDirectionChanged = onScrollDirectionChanged,
-            contentPadding =
-                PaddingValues(
-                    start = UiDp.dp12,
-                    end = UiDp.dp12,
-                    top = if (group.chainPath.isNotEmpty()) UiDp.dp6 else outerInnerPadding.calculateTopPadding() + UiDp.dp12,
-                bottom = mainInnerPadding.calculateBottomPadding() + spacing.space12,
-            ),
-        ) {
-            item(key = "__refresh_indicator__") {
-                AnimatedVisibility(
-                    visible = isTesting,
-                    enter =
-                        expandVertically(
-                            animationSpec =
-                                tween(durationMillis = AnimationSpecs.Proxy.RefreshIndicatorDuration),
-                            expandFrom = Alignment.Top,
-                        ) +
-                            fadeIn(
-                                animationSpec =
-                                    tween(
-                                        durationMillis =
-                                            AnimationSpecs.Proxy.RefreshIndicatorFadeDuration
-                                    )
-                            ),
-                    exit =
-                        shrinkVertically(
-                            animationSpec =
-                                tween(durationMillis = AnimationSpecs.Proxy.RefreshIndicatorDuration),
-                            shrinkTowards = Alignment.Top,
-                        ) +
-                            fadeOut(
-                                animationSpec =
-                                    tween(
-                                        durationMillis =
-                                            AnimationSpecs.Proxy.RefreshIndicatorFadeDuration
-                                    )
-                            ),
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = UiDp.dp12),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(UiDp.dp6),
-                    ) {
-                        InfiniteProgressIndicator(modifier = Modifier.size(UiDp.dp24))
-                        Text(
-                            text = FlyTxt.Proxy.Testing.InProgress,
-                            style = MiuixTheme.textStyles.subtitle,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    }
-                }
-            }
-            nodeGridItems(
-                proxies = group.proxies,
-                selectedProxyName = group.now,
-                pinnedProxyName = group.fixed,
-                displayMode = displayMode,
-                onProxyClick = { proxyName ->
-                    if (group.type == Proxy.Type.Selector) {
-                        onSelectProxy(group.name, proxyName)
-                    } else if (
-                        group.type == Proxy.Type.URLTest ||
-                        group.type == Proxy.Type.Fallback
-                    ) {
-                        val target = if (proxyName == group.fixed) "" else proxyName
-                        onForceSelectProxy(group.name, target)
-                    } else {
-                        onTestDelay()
-                    }
+        NodeSearchToolbar(
+            query = searchQuery,
+            onQueryChange = onSearchQueryChange,
+            modifier = Modifier.fillMaxWidth().padding(
+                start = UiDp.dp12,
+                end = UiDp.dp12,
+                top = if (group.chainPath.isNotEmpty()) {
+                    UiDp.dp10
+                } else {
+                    outerInnerPadding.calculateTopPadding() + UiDp.dp16
                 },
-                isDelayTesting = isTesting,
-                testingProxyNames = testingProxyNames,
-                resolveChildNodeName = resolveChildNodeName,
-                outerHorizontalPadding = UiDp.dp0,
-                itemVerticalPadding = UiDp.dp6,
-            )
+                bottom = UiDp.dp8,
+            ),
+        )
+        NodeTestPullToRefresh(
+            isRefreshing = isTesting,
+            onRefresh = onTestDelay,
+            tested = testProgress?.tested ?: 0,
+            total = testProgress?.total ?: 0,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+        ) {
+            ScreenLazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                lazyListState = listState,
+                scrollBehavior = scrollBehavior,
+                innerPadding = outerInnerPadding,
+                enableGlobalScroll = true,
+                onScrollDirectionChanged = onScrollDirectionChanged,
+                contentPadding =
+                    PaddingValues(
+                        start = UiDp.dp12,
+                        end = UiDp.dp12,
+                        bottom = mainInnerPadding.calculateBottomPadding() + spacing.space12,
+                    ),
+            ) {
+                nodeGridItems(
+                    proxies = visibleProxies,
+                    selectedProxyName = group.now,
+                    pinnedProxyName = group.fixed,
+                    displayMode = displayMode,
+                    onProxyClick = { proxyName ->
+                        if (group.type == Proxy.Type.Selector) {
+                            onSelectProxy(group.name, proxyName)
+                        } else if (
+                            group.type == Proxy.Type.URLTest ||
+                            group.type == Proxy.Type.Fallback
+                        ) {
+                            val target = if (proxyName == group.fixed) "" else proxyName
+                            onForceSelectProxy(group.name, target)
+                        } else {
+                            onTestDelay()
+                        }
+                    },
+                    isDelayTesting = isTesting,
+                    testingProxyNames = testingProxyNames,
+                    resolveChildNodeName = resolveChildNodeName,
+                    outerHorizontalPadding = UiDp.dp0,
+                    itemVerticalPadding = UiDp.dp6,
+                )
+            }
         }
     }
 }

@@ -45,6 +45,7 @@ cmake-build-*/
 /feature/meta/pkg/
 /feature/override/pkg/
 /feature/profiles/pkg/
+/feature/proxy/pkg/
 /feature/settings/pkg/
 /lib/native/rust/pkg/
 /pack/pkg/

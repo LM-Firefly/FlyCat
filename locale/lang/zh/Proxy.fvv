@@ -29,6 +29,10 @@ Proxy = {
         RequestSent = "測試請求已送出"
         Failed = "測試失敗：%s"
         InProgress = "正在測試節點"
+        Progress = "正在測試 %d/%d"
+        Pull = "下拉測試延遲"
+        Release = "釋放開始測試"
+        Complete = "測試完成"
     }
 
     Selection = {
