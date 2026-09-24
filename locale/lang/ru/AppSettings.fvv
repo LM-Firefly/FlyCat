@@ -17,8 +17,6 @@ AppSettings = {
         AutoStartSummary = "Автоматически запускать прокси при открытии приложения и при загрузке устройства"
         AutoUpdateOnStartTitle = "Обновлять при запуске"
         AutoUpdateOnStartSummary = "Автоматически обновлять текущий профиль при запуске приложения"
-        OneChinaTitle = "Придерживаться принципа одного Китая"
-        OneChinaSummary = "Соблюдать принцип одного Китая в приложении"
     }
 
     Interface = {

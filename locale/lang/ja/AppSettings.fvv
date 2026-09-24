@@ -17,8 +17,6 @@ AppSettings = {
         AutoStartSummary = "アプリ起動時および端末起動時にプロキシサービスを自動開始"
         AutoUpdateOnStartTitle = "開始時に更新"
         AutoUpdateOnStartSummary = "アプリ起動時に現在のプロファイルを自動更新"
-        OneChinaTitle = "一つの中国の原則を堅持"
-        OneChinaSummary = "アプリ内で一つの中国の原則を適用"
     }
 
     Interface = {

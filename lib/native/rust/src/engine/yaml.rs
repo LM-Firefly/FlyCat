@@ -1,13 +1,13 @@
 use std::borrow::Cow;
 
 use serde_json::Value as JsonValue;
-use serde_yaml::Value as YamlValue;
+use noyalib::{self, Value as YamlValue};
 
 /// Where a YAML → JSON conversion failed.
 #[derive(Debug)]
 pub enum YamlToJsonError {
-    Parse(serde_yaml::Error),
-    Merge(serde_yaml::Error),
+    Parse(noyalib::Error),
+    Merge(noyalib::Error),
     Convert(serde_json::Error),
 }
 
@@ -27,7 +27,7 @@ impl std::fmt::Display for YamlToJsonError {
 /// Documents the JSON model cannot take directly (non-string mapping keys) and documents using merge keys (`<<`, which only `serde_yaml::Value::apply_merge` can expand) fall back to the original path, so behavior is unchanged.
 pub fn yaml_to_json(content: &str) -> Result<JsonValue, YamlToJsonError> {
     let has_merge_keys = content.contains("<<:");
-    if !has_merge_keys && let Ok(value) = serde_yaml::from_str::<JsonValue>(content) {
+    if !has_merge_keys && let Ok(value) = noyalib::from_str::<JsonValue>(content) {
         return Ok(value);
     }
     yaml_to_json_via_yaml_value(content, has_merge_keys)
@@ -37,7 +37,7 @@ fn yaml_to_json_via_yaml_value(
     content: &str,
     has_merge_keys: bool,
 ) -> Result<JsonValue, YamlToJsonError> {
-    let mut value: YamlValue = serde_yaml::from_str(content).map_err(YamlToJsonError::Parse)?;
+    let mut value: YamlValue = noyalib::from_str(content).map_err(YamlToJsonError::Parse)?;
     if has_merge_keys {
         value.apply_merge().map_err(YamlToJsonError::Merge)?;
     }
@@ -56,7 +56,7 @@ pub fn parse_yaml_to_json_string(content: &str) -> Result<String, String> {
 
 pub fn stringify_json_to_yaml_string(content: &str) -> Result<String, String> {
     let json_value: JsonValue = serde_json::from_str(content).map_err(|err| err.to_string())?;
-    serde_yaml::to_string(&json_value).map_err(|err| err.to_string())
+    noyalib::to_string(&json_value).map_err(|err| err.to_string())
 }
 
 pub fn add_yaml_tags_to_proxies_short_id<'a>(

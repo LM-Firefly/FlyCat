@@ -23,13 +23,13 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Setup Java
-        uses: actions/setup-java@v5.7.0
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "25"
@@ -124,7 +124,7 @@ jobs:
           ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.14904198
-        run: kotlin scripts/native-build.main.kts --go --rust --loader --ebpf
+        run: kotlin scripts/native-build.main.kts --go --rust --loader
 
       - name: Verify native outputs
         shell: bash

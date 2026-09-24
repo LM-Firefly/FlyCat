@@ -57,7 +57,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.core.model.AppLanguage
 import com.github.lmfirefly.flycat.core.model.ThemeMode
 import com.github.lmfirefly.flycat.core.model.UpdateSource
-import com.github.lmfirefly.flycat.core.util.LocaleUtils
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.component.ThemeColorPickerItem
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.AppSettingsViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
@@ -119,9 +118,7 @@ fun AppSettingsScreen(navigator: Navigator) {
 @Composable
 private fun AppBehaviorSettingsSection(viewModel: AppSettingsViewModel) {
     val automaticRestart by viewModel.automaticRestart.state.collectAsStateWithLifecycle()
-    val autoUpdateCurrentProfileOnStart by
-        viewModel.autoUpdateCurrentProfileOnStart.state.collectAsStateWithLifecycle()
-    val isChineseLocale = remember { LocaleUtils.isChineseLocale() }
+    val autoUpdateCurrentProfileOnStart by viewModel.autoUpdateCurrentProfileOnStart.state.collectAsStateWithLifecycle()
 
     Title(FlyTxt.AppSettings.Section.Behavior)
     Card {
@@ -137,15 +134,6 @@ private fun AppBehaviorSettingsSection(viewModel: AppSettingsViewModel) {
             checked = autoUpdateCurrentProfileOnStart,
             onCheckedChange = viewModel::onAutoUpdateCurrentProfileOnStartChange,
         )
-        if (isChineseLocale) {
-            PreferenceSwitchItem(
-                title = FlyTxt.AppSettings.Behavior.OneChinaTitle,
-                summary = FlyTxt.AppSettings.Behavior.OneChinaSummary,
-                checked = true,
-                onCheckedChange = {},
-                enabled = false,
-            )
-        }
     }
 }
 
