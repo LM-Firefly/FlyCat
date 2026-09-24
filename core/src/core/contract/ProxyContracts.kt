@@ -23,12 +23,13 @@ package com.github.lmfirefly.flycat.core.contract
 
 import com.github.lmfirefly.flycat.core.model.ConnectionOverviewSnapshot
 import com.github.lmfirefly.flycat.core.model.ConnectionSnapshot
+import com.github.lmfirefly.flycat.core.model.PausedLocalRuntime
+import com.github.lmfirefly.flycat.core.model.RemoteBackend
+import com.github.lmfirefly.flycat.core.model.RuntimeRule
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySort
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode
-import com.github.lmfirefly.flycat.core.model.RemoteBackend
-import com.github.lmfirefly.flycat.core.model.RuntimeRule
 import com.github.lmfirefly.flycat.core.model.tunnel.TunnelState.Mode
 import kotlinx.coroutines.flow.StateFlow
 
@@ -43,9 +44,16 @@ interface ProxyDisplaySettingsReader {
 /** Contract for remote controller store consumed by runtime and feature modules. */
 interface RemoteControllerStoreReader {
     val controllerEnabled: Preference<Boolean>
+    val controllerAttached: Preference<Boolean>
+    val pausedLocalOwner: Preference<String>
+    val pausedLocalMode: Preference<String>
     val backends: Preference<List<RemoteBackend>>
     val activeBackendId: Preference<String>
     fun activeBackend(): RemoteBackend?
+    fun isWanted(): Boolean
+    fun isActive(): Boolean
+    fun rememberPausedLocal(ownerName: String, modeName: String)
+    fun takePausedLocal(): PausedLocalRuntime?
 }
 
 /** Priority level for proxy group synchronization scheduling. */
