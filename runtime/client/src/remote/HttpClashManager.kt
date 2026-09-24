@@ -60,6 +60,7 @@ import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.readLine
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -151,6 +152,21 @@ class HttpClashManager(
             val configs = json.decodeFromString<RawConfigs>(raw)
             TunnelState(configs.mode)
         }
+
+    /** 用于远程后端（`GET /configs`）的可达性探测。如果后端成功响应则返回 true；若出现任何非取消错误则返回 false。 */
+    @Suppress("TooGenericExceptionCaught")
+    suspend fun probe(): Boolean = withContext(Dispatchers.IO) {
+        if (backendProvider() == null) return@withContext false
+        try {
+            request(HttpMethod.Get, "configs")
+            true
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            Timber.d(error, "Remote controller probe failed")
+            false
+        }
+    }
 
     override suspend fun queryTrafficNow(): Long =
         withContext(Dispatchers.IO) {

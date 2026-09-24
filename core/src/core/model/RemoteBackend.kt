@@ -58,3 +58,9 @@ data class RemoteBackend(
         fun newId(): String = java.util.UUID.randomUUID().toString()
     }
 }
+
+/** 本地运行时暂停，以便应用能够连接到外部控制器。名称以字符串形式存储，因此该模型独立于运行时API类型。 */
+data class PausedLocalRuntime(
+    val ownerName: String,
+    val modeName: String,
+)

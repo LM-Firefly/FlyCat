@@ -144,12 +144,8 @@ val appFoundationModule = module {
     single<BulkStoreReset> { get<MMKVProvider>() }
     single<StoreSynchronizer> { get<MMKVProvider>() }
     // ── Context-dependent stores (need androidApplication) ────────────────────
-    single { RemoteControllerStore(get(named(MMKVProvider.ID_REMOTE_CONTROLLER))) }
-    single<RemoteControllerStoreReader> {
-        get<RemoteControllerStore>().also {
-            ServiceClient.configure(it)
-        }
-    }
+    single { RemoteControllerStore(get(named(MMKVProvider.ID_REMOTE_CONTROLLER))).also { ServiceClient.configure(it) } }
+    single<RemoteControllerStoreReader> { get<RemoteControllerStore>() }
     single { createTrafficStatisticsDao(androidApplication()) }
     single { LogStore(androidApplication(), get()) }
     single<LogStoreReader> { get<LogStore>() }
