@@ -23,6 +23,7 @@ import com.github.lmfirefly.flycat.runtime.service.session.RuntimeHost
 import com.github.lmfirefly.flycat.runtime.service.session.SessionRuntime
 import com.github.lmfirefly.flycat.runtime.service.session.telemetry.RuntimeStartupLogStore
 import com.github.lmfirefly.flycat.runtime.service.session.transport.RuntimeTransport
+import com.github.lmfirefly.flycat.runtime.service.shizuku.ShizukuManager
 import com.github.lmfirefly.flycat.runtime.service.util.Log
 import com.github.lmfirefly.flycat.runtime.service.util.sendClashStarted
 import com.github.lmfirefly.flycat.runtime.service.util.sendClashStopped
@@ -202,7 +203,9 @@ internal class RuntimeForegroundController(
         reloadJob = null
         notificationJob?.cancel()
         notificationJob = null
+        notificationManager.release()
         notificationManager.resetSpeedSmoothing()
+        ShizukuManager.unbindUserService()
         stopForegroundService()
         // 同步重置流量数据以在重新启动服务前清除陈旧值。由于下方异步的 runtime.destroy() 可能在替代会话抢先获取核心所有权时被跳过，因此我们不能仅依赖 teardownCore() 方法。
         TrafficPushHub.reset()

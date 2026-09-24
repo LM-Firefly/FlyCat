@@ -44,6 +44,8 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
     override val hideAppIcon by boolFlow(false)
     override val excludeFromRecents by boolFlow(false)
     override val showTrafficNotification by boolFlow(true)
+    // 前端服务经由同一个多进程 "settings" store 读取该开关。
+    override val superIslandEnabled by boolFlow(true)
     override val bottomBarAutoHide by boolFlow(true)
     override val topBarBlurEnabled by boolFlow(false)
     override val classicHomeEnabled by boolFlow(false)
