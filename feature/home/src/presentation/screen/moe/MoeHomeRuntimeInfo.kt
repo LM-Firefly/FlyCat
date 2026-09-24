@@ -97,9 +97,7 @@ internal fun MoeHomeInfoPanel(serverName: String?, serverPing: Int?, modifier: M
                 value = resolvedNodeName,
                 modifier = Modifier.weight(1f).padding(end = MoeUi.Info.trailingPadding),
                 leading = {
-                    flaggedNode?.countryCode?.let { countryCode ->
-                        CountryFlagCircle(countryCode = countryCode, size = AppTheme.spacing.space16)
-                    }
+                    CountryFlagCircle(countryCode = flaggedNode?.countryCode, size = AppTheme.spacing.space16)
                 },
             )
         } else { Spacer(modifier = Modifier.weight(1f).padding(end = MoeUi.Info.trailingPadding)) }

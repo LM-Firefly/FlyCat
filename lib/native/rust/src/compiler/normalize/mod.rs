@@ -7,7 +7,7 @@
 //! being cloned, which for a large subscription saves one full copy of the config.
 
 use serde_json::{Map as JsonMap, Value as JsonValue};
-use serde_yaml::{Mapping as YamlMapping, Value as YamlValue};
+use noyalib::{Mapping as YamlMapping, Value as YamlValue};
 
 use crate::compiler::schema::ordered_keys;
 use crate::model::SchemaId;
@@ -28,7 +28,7 @@ fn normalize_object_with_schema(value: JsonValue, schema: SchemaId) -> YamlValue
     for key in ordered_keys(schema) {
         if let Some(field_value) = object.remove(*key) {
             mapping.insert(
-                YamlValue::String((*key).to_string()),
+                (*key).to_string(),
                 normalize_field_value(schema, key, field_value),
             );
         }
@@ -36,7 +36,7 @@ fn normalize_object_with_schema(value: JsonValue, schema: SchemaId) -> YamlValue
 
     // serde_json's default Map is already key-ordered.
     for (key, field_value) in object {
-        mapping.insert(YamlValue::String(key), normalize_generic_value(field_value));
+        mapping.insert(key, normalize_generic_value(field_value));
     }
 
     YamlValue::Mapping(mapping)
@@ -99,7 +99,7 @@ fn normalize_object_map(value: JsonValue, item_schema: Option<SchemaId>) -> Yaml
             }
             _ => normalize_generic_value(field_value),
         };
-        mapping.insert(YamlValue::String(key), normalized);
+        mapping.insert(key, normalized);
     }
     YamlValue::Mapping(mapping)
 }
@@ -120,7 +120,7 @@ pub fn normalize_generic_value(value: JsonValue) -> YamlValue {
 fn normalize_generic_object(object: JsonMap<String, JsonValue>) -> YamlValue {
     let mut mapping = YamlMapping::new();
     for (key, field_value) in object {
-        mapping.insert(YamlValue::String(key), normalize_generic_value(field_value));
+        mapping.insert(key, normalize_generic_value(field_value));
     }
     YamlValue::Mapping(mapping)
 }

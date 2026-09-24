@@ -24,7 +24,9 @@ package com.github.lmfirefly.flycat.core.util
 import java.util.Locale
 
 object LocaleUtils {
-    private val normalizedRegionCodes = setOf("TW")
+    const val UNKNOWN_FLAG_CODE = "xx"
+    private const val FLAG_CDN_BASE_URL = "https://hatscripts.github.io/circle-flags/flags/"
+    private const val UNKNOWN_FLAG_PATH = "other/earth.svg"
 
     @Volatile private var override: Locale? = null
 
@@ -34,23 +36,21 @@ object LocaleUtils {
 
     fun currentLocale(): Locale = override ?: Locale.getDefault()
 
-    fun isChineseLocale(): Boolean = currentLocale().language == "zh"
-
-    fun normalizeRegionCode(countryCode: String?): String? {
-        if (countryCode == null || !isChineseLocale()) return countryCode
-        return if (countryCode.uppercase() in normalizedRegionCodes) "CN" else countryCode
-    }
+    fun unknownFlagUrl(baseUrl: String = FLAG_CDN_BASE_URL): String = "$baseUrl$UNKNOWN_FLAG_PATH"
 
     fun normalizeFlagUrl(
-        countryCode: String,
-        baseUrl: String = "https://hatscripts.github.io/circle-flags/flags/",
+        countryCode: String?,
+        baseUrl: String = FLAG_CDN_BASE_URL,
     ): String {
-        val code =
-            if (isChineseLocale() && countryCode.uppercase() in normalizedRegionCodes) {
-                "cn"
-            } else {
-                countryCode.lowercase()
-            }
+        val normalizedCode =
+            countryCode
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() && it.all(Char::isLetter) }
+                ?: return unknownFlagUrl(baseUrl)
+        if (normalizedCode.equals(UNKNOWN_FLAG_CODE, ignoreCase = true)) {
+            return unknownFlagUrl(baseUrl)
+        }
+        val code = normalizedCode.lowercase(Locale.ROOT)
         return "$baseUrl$code.svg"
     }
 }

@@ -17,8 +17,6 @@ AppSettings = {
         AutoStartSummary = "應用啟動和開機時自動啟動代理服務"
         AutoUpdateOnStartTitle = "啟動更新配置"
         AutoUpdateOnStartSummary = "啟動時自動更新目前訂閱設定檔"
-        OneChinaTitle = "堅持一個中國原則"
-        OneChinaSummary = "自動將台灣地區旗幟及區域碼顯示為中國"
     }
 
     Interface = {

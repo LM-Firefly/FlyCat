@@ -47,7 +47,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.core.model.IpMonitoringState
-import com.github.lmfirefly.flycat.core.util.LocaleUtils
 import com.github.lmfirefly.flycat.feature.home.presentation.viewmodel.HomeProxyControlState
 import com.github.lmfirefly.flycat.feature.home.presentation.viewmodel.HomeViewModel
 import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlagCircle
@@ -128,15 +127,13 @@ private fun IpInfoRow(
 @Composable
 private fun CountryBadge(countryCode: String?) {
     if (countryCode != null) {
-        val displayCountryCode = LocaleUtils.normalizeRegionCode(countryCode) ?: countryCode
-
         Row(
             horizontalArrangement = Arrangement.spacedBy(UiDp.dp8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CountryFlagCircle(countryCode = countryCode, size = UiDp.dp20)
             Text(
-                text = displayCountryCode,
+                text = countryCode,
                 style = MiuixTheme.textStyles.body1,
                 fontWeight = FontWeight.Bold,
                 color = MiuixTheme.colorScheme.primary,
