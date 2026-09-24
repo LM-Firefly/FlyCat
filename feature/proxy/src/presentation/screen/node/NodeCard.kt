@@ -389,7 +389,7 @@ internal fun ProxyDelayIndicator(
 }
 
 @Composable
-internal fun NodeLargeIcon(modifier: Modifier = Modifier, countryCode: String?, typeName: String) {
+internal fun NodeLargeIcon(modifier: Modifier = Modifier, countryCode: String?, showCountryFlag: Boolean, typeName: String) {
     val opacity = AppTheme.opacity
     val sizes = AppTheme.sizes
     val neutral = MiuixTheme.colorScheme.onSurface
@@ -401,7 +401,7 @@ internal fun NodeLargeIcon(modifier: Modifier = Modifier, countryCode: String?, 
                 .background(neutral.copy(alpha = opacity.ambientLight + opacity.ambientShadow)),
         contentAlignment = Alignment.Center,
     ) {
-        if (countryCode != null) {
+        if (showCountryFlag) {
             CountryFlagCircle(countryCode = countryCode, size = sizes.nodeLargeIconFlagSize)
         } else {
             Text(

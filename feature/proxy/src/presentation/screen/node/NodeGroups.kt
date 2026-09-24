@@ -234,12 +234,10 @@ private fun NodeGroupCompactCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
-                    if (countryCode != null) {
-                        CountryFlagCircle(
-                            countryCode = countryCode,
-                            size = 17.dp,
-                        )
-                    }
+                    CountryFlagCircle(
+                        countryCode = countryCode,
+                        size = 17.dp,
+                    )
                     Text(
                         text = nodeName,
                         style = MiuixTheme.textStyles.body2,
@@ -421,10 +419,7 @@ internal fun NodeGroupCard(
                         horizontalArrangement = Arrangement.spacedBy(UiDp.dp8),
                         modifier = Modifier.weight(1f),
                     ) {
-                        val cc = currentNode.countryCode
-                        if (cc != null) {
-                            CountryFlagCircle(countryCode = cc, size = UiDp.dp20)
-                        }
+                        CountryFlagCircle(countryCode = currentNode.countryCode, size = UiDp.dp20)
                         Text(
                             text = currentNodeName,
                             style = MiuixTheme.textStyles.body2,

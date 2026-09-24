@@ -17,8 +17,6 @@ AppSettings = {
         AutoStartSummary = "Automatically start proxy service on app launch and boot"
         AutoUpdateOnStartTitle = "Update on Start"
         AutoUpdateOnStartSummary = "Automatically update the current profile on app launch"
-        OneChinaTitle = "One-China Policy"
-        OneChinaSummary = "Enforce the One-China policy within the app"
     }
 
     Interface = {

@@ -15,11 +15,11 @@ path = "src/main.rs"
 age = { version = "0.12.1", features = ["armor"] }
 # Track Boa main until its Map/Set GC finalizer fix is published in a crates.io release.
 boa_engine = { git = "https://github.com/boa-dev/boa.git", branch = "main", features = ["jsvalue-enum"] }
-jni = "0.22"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-serde_yaml = "0.9"
-sha2 = "0.11"
+jni = "0.22.4"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+noyalib = { version = "0.0.44", features = ["compat-serde-yaml"] }
+sha2 = "0.11.0"
 
 [profile.release]
 # This compiler spends its time parsing and rewriting large YAML trees. Optimize for startup

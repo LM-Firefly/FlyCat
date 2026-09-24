@@ -17,16 +17,16 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Setup Java
-        uses: actions/setup-java@v5.7.0
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: "25"
+          java-version: "26"
 
       - name: Setup Kotlin
         uses: fwilhe2/setup-kotlin@main

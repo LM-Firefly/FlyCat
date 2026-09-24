@@ -42,10 +42,12 @@ import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 
 @Composable
-fun CountryFlagCircle(countryCode: String, modifier: Modifier = Modifier, size: Dp = UiDp.dp18) {
+fun CountryFlagCircle(countryCode: String?, modifier: Modifier = Modifier, size: Dp = UiDp.dp18) {
     val semanticColors = AppTheme.colors
     val flagUrl = remember(countryCode) { LocaleUtils.normalizeFlagUrl(countryCode) }
+    val flagLabel = remember(countryCode) { countryCode?.trim()?.ifEmpty { null } ?: LocaleUtils.UNKNOWN_FLAG_CODE }
     val context = LocalContext.current
+    val request = remember(context, flagUrl) { ImageRequest(context, flagUrl) }
 
     Box(
         modifier =
@@ -58,11 +60,11 @@ fun CountryFlagCircle(countryCode: String, modifier: Modifier = Modifier, size: 
         Image(
             painter =
                 rememberAsyncImagePainter(
-                    request = ImageRequest(context, flagUrl),
+                    request = request,
                     alignment = Alignment.Center,
                     contentScale = ContentScale.Crop,
                 ),
-            contentDescription = FlyTxt.Component.Flag.ContentDescription.format(countryCode),
+            contentDescription = FlyTxt.Component.Flag.ContentDescription.format(flagLabel),
             modifier = Modifier.matchParentSize(),
             contentScale = ContentScale.Crop,
         )
