@@ -29,6 +29,7 @@ import com.github.lmfirefly.flycat.core.contract.AppSettingsControllerContract
 import com.github.lmfirefly.flycat.core.contract.AppSettingsReader
 import com.github.lmfirefly.flycat.core.contract.FeatureStoreReader
 import com.github.lmfirefly.flycat.core.contract.Preference
+import com.github.lmfirefly.flycat.core.contract.PrivilegedAccessReader
 import com.github.lmfirefly.flycat.core.contract.UpdateSettings
 import com.github.lmfirefly.flycat.core.model.AppColorTheme
 import com.github.lmfirefly.flycat.core.model.AppLanguage
@@ -44,6 +45,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,6 +57,7 @@ class AppSettingsViewModel(
     private val controller: AppSettingsControllerContract,
     private val updateSettings: UpdateSettings,
     private val appLogSettings: AppLogSettings,
+    private val privilegedAccess: PrivilegedAccessReader,
 ) : ViewModel() {
     private val featureStore = featureStoreReader
 
@@ -70,6 +73,7 @@ class AppSettingsViewModel(
     val hideAppIcon: Preference<Boolean> = settings.hideAppIcon
     val excludeFromRecents: Preference<Boolean> = settings.excludeFromRecents
     val showTrafficNotification: Preference<Boolean> = settings.showTrafficNotification
+    val superIslandEnabled: Preference<Boolean> = settings.superIslandEnabled
     val bottomBarAutoHide: Preference<Boolean> = settings.bottomBarAutoHide
     val topBarBlurEnabled: Preference<Boolean> = settings.topBarBlurEnabled
     val classicHomeEnabled: Preference<Boolean> = settings.classicHomeEnabled
@@ -291,6 +295,65 @@ class AppSettingsViewModel(
     fun onExcludeFromRecentsChange(exclude: Boolean) = excludeFromRecents.set(exclude)
 
     fun onShowTrafficNotificationChange(show: Boolean) = showTrafficNotification.set(show)
+
+    fun onSuperIslandEnabledChange(enabled: Boolean) = superIslandEnabled.set(enabled)
+
+    /** Shizuku / 超级岛的实时授权状态，用于服务设置分组。 */
+    data class ShizukuAccessState(
+        val islandSupported: Boolean = false,
+        val running: Boolean = false,
+        val granted: Boolean = false,
+    ) {
+        val statusText: String
+            get() = when {
+                !running -> FlyTxt.AppSettings.ServiceSection.ShizukuStatusUnavailable
+                !granted -> FlyTxt.AppSettings.ServiceSection.ShizukuStatusPending
+                else -> FlyTxt.AppSettings.ServiceSection.ShizukuStatusGranted
+            }
+    }
+
+    private val _shizukuAccess = MutableStateFlow(ShizukuAccessState(islandSupported = privilegedAccess.isSuperIslandSupported))
+    val shizukuAccess: StateFlow<ShizukuAccessState> = _shizukuAccess.asStateFlow()
+
+    /** 每次页面出现与 ON_RESUME 时重新读取 Shizuku 实时状态。 */
+    fun refreshShizukuAccess() { _shizukuAccess.value = readShizukuAccess() }
+
+    private fun readShizukuAccess(): ShizukuAccessState {
+        val running = privilegedAccess.isShizukuRunning()
+        return ShizukuAccessState(
+            islandSupported = _shizukuAccess.value.islandSupported,
+            running = running,
+            granted = running && privilegedAccess.hasShizukuPermission(),
+        )
+    }
+
+    /** 依据实时状态打开 Shizuku、提示就绪或申请权限。 */
+    fun onShizukuAccessClick() {
+        val access = readShizukuAccess().also { _shizukuAccess.value = it }
+        when {
+            !access.running -> {
+                if (!privilegedAccess.openShizuku(application)) {
+                    application.toast(FlyTxt.AppSettings.ServiceSection.ShizukuNotRunning)
+                }
+            }
+            access.granted -> {
+                application.toast(FlyTxt.AppSettings.ServiceSection.ShizukuReady)
+            }
+            else ->
+                privilegedAccess.requestShizukuPermission { allowed ->
+                    viewModelScope.launch {
+                        refreshShizukuAccess()
+                        application.toast(
+                            if (allowed) {
+                                FlyTxt.AppSettings.ServiceSection.ShizukuReady
+                            } else {
+                                FlyTxt.AppSettings.ServiceSection.ShizukuPermissionRequired
+                            }
+                        )
+                    }
+                }
+        }
+    }
 
     fun onAutoCheckAppUpdateChange(enabled: Boolean) = autoCheckAppUpdate.set(enabled)
 

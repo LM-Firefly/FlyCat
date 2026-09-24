@@ -14,7 +14,7 @@ koin = "4.2.2"
 timber = "5.0.1"
 ktor = "3.5.2"
 miuix = "0.9.4-rc01"
-haze = "2.0.0-rc01"
+haze = "2.0.0-rc02"
 sketch4 = "4.6.0"
 mlkitBarcodeScanning = "17.3.0"
 reorderable = "3.1.0"
@@ -32,6 +32,7 @@ shapes = "1.2.1"
 snakeyamlEngine = "3.1.1"
 bcprov = "1.86"
 libsu = "6.0.0"
+shizuku = "13.1.5"
 composeDestinations = "2.3.0"
 room3 = "3.0.2"
 robolectric = "4.16.1"
@@ -128,6 +129,8 @@ rosemoe-language-textmate = { module = "io.github.rosemoe:language-textmate" }
 rosemoe-oniguruma = { module = "io.github.rosemoe:oniguruma-native" }
 libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu" }
 libsu-service = { module = "com.github.topjohnwu.libsu:service", version.ref = "libsu" }
+shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
+shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
 composedestinations-core = { module = "io.github.raamcosta.compose-destinations:core", version.ref = "composeDestinations" }
 composedestinations-ksp = { module = "io.github.raamcosta.compose-destinations:ksp", version.ref = "composeDestinations" }
 smali-dexlib2 = { module = "com.android.tools.smali:smali-dexlib2", version.ref = "smaliDexlib2" }

@@ -109,6 +109,14 @@ internal object RootTunServiceBridge {
             }
         }
 
+    suspend fun queryAllProxyGroups(
+        context: Context,
+        excludeNotSelectable: Boolean = false,
+    ): List<ProxyGroup> =
+        remoteCall(context) { service ->
+            rootTunDecode<List<ProxyGroup>>(service.queryAllProxyGroupsJson(excludeNotSelectable))
+        }
+
     suspend fun queryConnections(context: Context): ConnectionSnapshot =
         remoteCall(context) { service ->
             rootTunDecode<ConnectionSnapshot>(service.queryConnectionsJson())

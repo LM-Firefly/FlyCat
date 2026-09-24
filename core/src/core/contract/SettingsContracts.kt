@@ -82,6 +82,7 @@ interface AppSettingsReader {
     val homePreviewGuideShown: Preference<Boolean>
     val hideAppIcon: Preference<Boolean>
     val showTrafficNotification: Preference<Boolean>
+    val superIslandEnabled: Preference<Boolean>
     val bottomBarAutoHide: Preference<Boolean>
     val topBarBlurEnabled: Preference<Boolean>
     val classicHomeEnabled: Preference<Boolean>

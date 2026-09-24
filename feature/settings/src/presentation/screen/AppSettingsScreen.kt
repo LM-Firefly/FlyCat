@@ -393,6 +393,8 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val showTrafficNotification by viewModel.showTrafficNotification.state.collectAsStateWithLifecycle()
+    val superIslandEnabled by viewModel.superIslandEnabled.state.collectAsStateWithLifecycle()
+    val shizukuAccess by viewModel.shizukuAccess.collectAsStateWithLifecycle()
     val exitUiWhenBackground by viewModel.exitUiWhenBackground.state.collectAsStateWithLifecycle()
     val logLevel by viewModel.logLevel.state.collectAsStateWithLifecycle()
     var batteryOptimizationIgnored by remember {
@@ -423,6 +425,7 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 batteryOptimizationIgnored = isBatteryOptimizationIgnored(context)
+                viewModel.refreshShizukuAccess()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -451,6 +454,23 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
             checked = exitUiWhenBackground,
             onCheckedChange = viewModel::onExitUiWhenBackgroundChange,
         )
+        if (shizukuAccess.islandSupported) {
+            PreferenceSwitchItem(
+                title = FlyTxt.AppSettings.ServiceSection.SuperIslandTitle,
+                checked = superIslandEnabled,
+                onCheckedChange = viewModel::onSuperIslandEnabledChange,
+            )
+            PreferenceArrowItem(
+                title = FlyTxt.AppSettings.ServiceSection.ShizukuTitle,
+                endActions = {
+                    Text(
+                        text = shizukuAccess.statusText,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                },
+                onClick = viewModel::onShizukuAccessClick,
+            )
+        }
         PreferenceArrowItem(
             title = FlyTxt.AppSettings.ServiceSection.BatteryOptimizationTitle,
             summary = batteryOptimizationSummary,

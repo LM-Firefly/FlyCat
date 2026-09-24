@@ -100,3 +100,15 @@ interface BroadcastNotifier {
 fun interface AppShutdownHandler {
     fun onShutdown()
 }
+
+/**
+ * 为设置 UI 提供实时 Shizuku / HyperOS 超级岛访问权限。
+ * 由拥有 Shizuku 和超级岛代码的 [runtime:service] 实现。
+ */
+interface PrivilegedAccessReader {
+    val isSuperIslandSupported: Boolean
+    fun isShizukuRunning(): Boolean
+    fun hasShizukuPermission(): Boolean
+    fun requestShizukuPermission(callback: (Boolean) -> Unit)
+    fun openShizuku(context: android.content.Context): Boolean
+}

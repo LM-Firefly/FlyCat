@@ -26,6 +26,15 @@ plugins {
 
 android {
     namespace = "com.github.lmfirefly.flycat.feature.substore"
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    defaultConfig {
+        // Javet 原生库版本的唯一事实来源；版本校验与发布产物均由此派生。
+        buildConfigField("String", "JAVET_VERSION", "\"${libs.versions.javetNodeAndroid.get()}\"")
+    }
 }
 
 dependencies {

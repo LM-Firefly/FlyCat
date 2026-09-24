@@ -24,6 +24,7 @@ package com.github.lmfirefly.flycat.feature.substore.engine
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
+import com.github.lmfirefly.flycat.feature.substore.BuildConfig
 import org.tukaani.xz.XZInputStream
 import timber.log.Timber
 import java.io.File
@@ -222,6 +223,7 @@ object NativeLibraryManager {
                 throw RuntimeException("Library not found in APK: ${info.name}")
             }
             val actualFileName = libEntry.name.substringAfterLast("/")
+            recordLibraryVersionFromEntry(info.name, libEntry.name)
             val isXzCompressed = actualFileName.endsWith(".xz")
             val decompressedName = if (isXzCompressed) actualFileName.removeSuffix(".xz") else actualFileName
             val targetFileName = if (decompressedName.startsWith("libjavet-node-android")) {
@@ -298,6 +300,7 @@ object NativeLibraryManager {
             }
 
             val actualFileName = entry.name.substringAfterLast("/")
+            recordLibraryVersionFromEntry(info.name, entry.name)
             val isXzCompressed = actualFileName.endsWith(".xz")
             val decompressedName = if (isXzCompressed) actualFileName.removeSuffix(".xz") else actualFileName
             val canonicalFileName = if (decompressedName.startsWith("libjavet-node-android")) {
@@ -374,6 +377,13 @@ object NativeLibraryManager {
         }
         if (loadedJniLibraries.contains(name)) return true
 
+        // Javet 原生库只为一个精确版本注册 JNI 入口：版本不符不是异常而是进程 abort，因此在 System.load 之前按版本拒绝。
+        val installedVersion = recordedLibraryVersion(name)
+        if (name == JAVET_LIBRARY_NAME && installedVersion != null && installedVersion != JAVET_VERSION) {
+            Timber.e("Refusing to load native library $name: installed Javet $installedVersion, required $JAVET_VERSION")
+            return false
+        }
+
         val path = getLibraryPath(name) ?: return false
 
         return runCatching {
@@ -391,6 +401,10 @@ object NativeLibraryManager {
         if (!isInitialized) return "Library manager not initialized"
         val info = managedLibraries[name] ?: return "Library not registered: $name"
         val path = getLibraryPath(name)
+        val installedVersion = recordedLibraryVersion(name)
+        if (name == JAVET_LIBRARY_NAME && installedVersion != null && installedVersion != JAVET_VERSION) {
+            return "Library version mismatch: installed Javet $installedVersion, required $JAVET_VERSION ($path)"
+        }
 
         return when {
             path == null -> "Library not extracted: $name"
@@ -411,9 +425,32 @@ object NativeLibraryManager {
 
     // --- Download-based javet installation (for non-Extension builds) ---
 
+    /** 此 APK 中 Java 层编译时所使用的 Javet 版本。 */
+    val JAVET_VERSION: String = BuildConfig.JAVET_VERSION
+
     const val JAVET_LIBRARY_NAME = "libjavet-node-android"
     const val JAVET_LIBRARY_FILE_NAME = "libjavet.so"
     const val JAVET_ARCHIVE_FILE_NAME = "libjavet.so.xz"
+
+    /** 从 `libfoo.v.1.2.3.so` 形式的条目名中提取版本号。 */
+    private val VERSIONED_NAME_REGEX = Regex("\\.v\\.(\\d+\\.\\d+\\.\\d+)\\.so")
+
+    private fun recordLibraryVersionFromEntry(baseName: String, entryName: String) {
+        val version = VERSIONED_NAME_REGEX.find(entryName)?.groupValues?.get(1) ?: return
+        recordLibraryVersion(baseName, version)
+    }
+
+    private fun recordLibraryVersion(baseName: String, version: String) {
+        appContext
+            ?.getSharedPreferences("native_lib_config", Context.MODE_PRIVATE)
+            ?.edit()
+            ?.putString("lib_version_$baseName", version)
+            ?.apply()
+    }
+
+    private fun recordedLibraryVersion(baseName: String): String? = appContext
+        ?.getSharedPreferences("native_lib_config", Context.MODE_PRIVATE)
+        ?.getString("lib_version_$baseName", null)
 
     fun getDownloadTempFile(name: String): File? {
         if (!isInitialized) return null
@@ -440,8 +477,12 @@ object NativeLibraryManager {
         }
         downloadedArchive.delete()
         if (!installed) expandedFile.delete()
-        // Register path so loadJniLibrary can find it by name
-        if (installed) actualLibraryNames[name] = JAVET_LIBRARY_FILE_NAME
+        if (installed) {
+            // Register path so loadJniLibrary can find it by name
+            actualLibraryNames[name] = JAVET_LIBRARY_FILE_NAME
+            // Release 资产由同一 catalog 版本的 Javet 构建发布，故按构建版本记录。
+            recordLibraryVersion(name, JAVET_VERSION)
+        }
         return installed
     }
 

@@ -27,10 +27,12 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.github.lmfirefly.flycat.core.appContextOrSelf
+import com.github.lmfirefly.flycat.core.model.profile.Imported
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
 import com.github.lmfirefly.flycat.core.util.PollingTimers
 import com.github.lmfirefly.flycat.core.util.PollingTimerSpecs
@@ -45,8 +47,10 @@ import com.github.lmfirefly.flycat.runtime.service.BaseService
 import com.github.lmfirefly.flycat.runtime.service.R
 import com.github.lmfirefly.flycat.runtime.service.ServicePowerController
 import com.github.lmfirefly.flycat.runtime.service.StatusProvider
+import com.github.lmfirefly.flycat.runtime.service.config.ServiceStore
 import com.github.lmfirefly.flycat.runtime.service.notification.NotificationPresentation
 import com.github.lmfirefly.flycat.runtime.service.notification.NotificationPresentationFactory
+import com.github.lmfirefly.flycat.runtime.service.records.ImportedDao
 import com.github.lmfirefly.flycat.runtime.service.root.RootTunServiceBridge
 import com.github.lmfirefly.flycat.runtime.service.util.sendClashStarted
 import com.github.lmfirefly.flycat.runtime.service.util.sendClashStopped
@@ -59,6 +63,12 @@ class RootTunService : BaseService() {
     private val notificationManager by lazy { NotificationManagerCompat.from(this) }
     private val powerController by lazy { ServicePowerController(this) }
     private var notificationJob: Job? = null
+    // 缓存终端节点，避免每次轮询都多走一次 root 桥接查询。
+    private var currentNode: String? = null
+    private var currentNodeUpdatedAt = 0L
+    private var cachedProfile: Imported? = null
+    private var cachedProfileUuid: java.util.UUID? = null
+    private var cachedProfileAt = 0L
 
     override fun onCreate() {
         super.onCreate()
@@ -234,13 +244,44 @@ class RootTunService : BaseService() {
         val now =
             runCatching { RootTunServiceBridge.queryTrafficNow(appContextOrSelf) }.getOrDefault(0L)
         val total =
-            runCatching { RootTunServiceBridge.queryTrafficTotal(appContextOrSelf) }
-                .getOrDefault(0L)
+            runCatching { RootTunServiceBridge.queryTrafficTotal(appContextOrSelf) }.getOrDefault(0L)
         return NotificationPresentationFactory.createRunning(
             profileName = profileName,
+            profile = resolveProfile(),
+            currentNode = resolveNodeName(),
             trafficNow = now,
             trafficTotal = total,
         )
+    }
+
+    private fun resolveProfile(): Imported? {
+        val active = ServiceStore().activeProfile ?: return null
+        val now = SystemClock.elapsedRealtime()
+        if (active == cachedProfileUuid && now - cachedProfileAt < PROFILE_REFRESH_MS) {
+            return cachedProfile
+        }
+        cachedProfileUuid = active
+        cachedProfileAt = now
+        // 读取订阅会反序列化整个存储列表，故按 uuid + TTL 缓存。
+        cachedProfile = ImportedDao.queryByUUID(active)
+        return cachedProfile
+    }
+
+    private suspend fun resolveNodeName(): String? {
+        val now = SystemClock.elapsedRealtime()
+        if (now - currentNodeUpdatedAt < NODE_REFRESH_MS) {
+            return currentNode
+        }
+        currentNodeUpdatedAt = now
+        runCatching {
+            // 单次桥接调用取回全部组再本地解析，避免逐组跨进程往返。
+            val groups = RootTunServiceBridge.queryAllProxyGroups(appContextOrSelf)
+            currentNode = NotificationPresentationFactory.resolveNodeName(
+                queryGroups = { names -> groups.filter { it.name in names } },
+                queryGroupNames = { groups.map { it.name } },
+            )
+        }
+        return currentNode
     }
 
     private fun buildNotification(presentation: NotificationPresentation): Notification {
@@ -271,11 +312,7 @@ class RootTunService : BaseService() {
             .setContentTitle(presentation.title)
             .setContentText(presentation.content)
             .setSubText(presentation.subText)
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .bigText(presentation.expandedText)
-                    .setSummaryText(presentation.subText)
-            )
+            .setStyle(NotificationCompat.BigTextStyle().bigText(presentation.expandedText).setSummaryText(presentation.subText))
             .setSmallIcon(R.drawable.ic_logo_service)
             .setColor(getColor(R.color.color_flycat))
             .setContentIntent(contentIntent)
@@ -322,6 +359,10 @@ class RootTunService : BaseService() {
         private const val NOTIFICATION_ID = 1003
         private const val CHANNEL_ID = "flycat_root_tun_service"
         private const val CHANNEL_NAME = "FlyCat RootTun Service"
+        // 解析终端节点走 root 桥接查询，节点仅在用户切换时变化，故缓存放宽。
+        private const val NODE_REFRESH_MS = 10_000L
+        // 订阅用量信息变化不频繁，缓存避免每次刷新全量反序列化订阅列表。
+        private const val PROFILE_REFRESH_MS = 10_000L
         // Pre-rebrand channel id, deleted on channel creation to avoid an orphaned entry.
         private const val LEGACY_CHANNEL_ID = "clash_root_tun_service"
 

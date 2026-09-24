@@ -61,6 +61,20 @@
 # Keep all loader classes and their Kotlin runtime dependencies.
 -keep class dev.flycat.loader.** { *; }
 
+# ========================================
+# Shizuku UserService
+# ========================================
+# Instantiated by ComponentName(packageName, className); Shizuku API classes use reflection.
+# moe.shizuku.* holds the AIDL interfaces; renaming rewrites the binder descriptors (via
+# -adaptclassstrings) and Shizuku calls fail their interface checks.
+-keep class rikka.shizuku.** { *; }
+-keep class rikka.sui.** { *; }
+-keep class moe.shizuku.** { *; }
+-keep class com.github.lmfirefly.flycat.runtime.service.shizuku.** { *; }
+-dontwarn rikka.shizuku.**
+-dontwarn rikka.sui.**
+-dontwarn moe.shizuku.**
+
 # Keep Timber log calls so they are visible in logcat for release builds
 -keep class timber.log.Timber { *; }
 -keep class timber.log.Timber$Tree { *; }
