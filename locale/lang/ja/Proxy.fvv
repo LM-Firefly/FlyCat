@@ -29,6 +29,10 @@ Proxy = {
         RequestSent = "テスト要求を送信しました"
         Failed = "テストに失敗しました: %s"
         InProgress = "ノードをテスト中"
+        Progress = "テスト中 %d/%d"
+        Pull = "引っ張って遅延をテスト"
+        Release = "離してテスト開始"
+        Complete = "テスト完了"
     }
 
     Selection = {

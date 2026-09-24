@@ -58,6 +58,7 @@ fun ProxyShellNodeDetail(mainInnerPadding: PaddingValues, onNavigateToProviders:
     val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsStateWithLifecycle()
     val testingGroupNames by proxyViewModel.testingGroupNames.collectAsStateWithLifecycle()
     val testingProxyNames by proxyViewModel.testingProxyNames.collectAsStateWithLifecycle()
+    val delayTestProgress by proxyViewModel.delayTestProgress.collectAsStateWithLifecycle()
     val sortMode by proxyViewModel.sortMode.collectAsStateWithLifecycle()
     val uiSelectedGroupName by proxyViewModel.uiSelectedGroupName.collectAsStateWithLifecycle()
     val displayMode by proxyViewModel.displayMode.collectAsStateWithLifecycle()
@@ -74,15 +75,15 @@ fun ProxyShellNodeDetail(mainInnerPadding: PaddingValues, onNavigateToProviders:
     val displayGroup = groupSelection.displayGroup
     val currentGroup = groupSelection.selectedGroup ?: displayGroup ?: proxyGroups.firstOrNull()
     val currentGroupName = currentGroup?.name
-    var fabHidden by rememberSaveable { mutableStateOf(false) }
     var showSortPopup by rememberSaveable { mutableStateOf(false) }
+    var nodeSearchQuery by rememberSaveable(selectedGroupName) { mutableStateOf("") }
     val nodeListState = rememberSaveable(selectedGroupName, saver = LazyListState.Saver) { LazyListState() }
     LaunchedEffect(proxyViewModel) { proxyViewModel.ensureCoreLoaded(true, source = "proxy_detail") }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { proxyViewModel.onForegroundResume() }
     DisposableEffect(proxyViewModel) { onDispose { proxyViewModel.ensureCoreLoaded(false, source = "proxy_detail") } }
-    val requestDelayTest = remember(coroutineScope, nodeListState, selectedGroupName, proxyViewModel) {
+    val requestDelayTest = remember(coroutineScope, nodeListState, selectedGroupName, currentGroupName, proxyViewModel) {
         {
-            val groupName = selectedGroupName ?: return@remember
+            val groupName = selectedGroupName ?: currentGroupName ?: return@remember
             coroutineScope.launch {
                 if (nodeListState.firstVisibleItemIndex > 0 || nodeListState.firstVisibleItemScrollOffset > 0) {
                     nodeListState.animateScrollToItem(0)
@@ -99,9 +100,10 @@ fun ProxyShellNodeDetail(mainInnerPadding: PaddingValues, onNavigateToProviders:
                 fun() {
                     val proxyIndex = currentGroup.proxies.indexOfFirst { proxy -> proxy.name == currentGroup.now }
                     if (proxyIndex < 0) return
+                    // 搜索栏固定在滚动列表外，列表无头部偏移。
                     val listItemIndex =
-                        if (displayMode.isSingleColumn) proxyIndex + 1
-                        else proxyIndex / 2 + 1
+                        if (displayMode.isSingleColumn) proxyIndex
+                        else proxyIndex / 2
                     coroutineScope.launch {
                         nodeListState.animateLocateToItem(listItemIndex)
                     }
@@ -109,12 +111,7 @@ fun ProxyShellNodeDetail(mainInnerPadding: PaddingValues, onNavigateToProviders:
             }
         }
     Scaffold(
-        floatingActionButton = {
-            DetailFab(
-                visible = currentGroupName != null && !fabHidden && currentGroupName !in testingGroupNames,
-                onClick = { requestDelayTest() },
-            )
-        },
+        floatingActionButton = {},
         topBar = {
             DetailTopBar(
                 title = currentGroupName ?: FlyTxt.Proxy.Title,
@@ -154,7 +151,10 @@ fun ProxyShellNodeDetail(mainInnerPadding: PaddingValues, onNavigateToProviders:
                 onForceSelectProxy = { groupName, proxyName -> proxyViewModel.forceSelectProxy(groupName, proxyName) },
                 onTestDelay = requestDelayTest,
                 onTestProxyDelay = { proxyName -> currentGroup.name.let { groupName -> proxyViewModel.testProxyDelay(groupName, proxyName) } },
-                onScrollDirectionChanged = { hidden -> fabHidden = hidden },
+                onScrollDirectionChanged = {},
+                searchQuery = nodeSearchQuery,
+                onSearchQueryChange = { nodeSearchQuery = it },
+                testProgress = delayTestProgress,
             )
         }
     }

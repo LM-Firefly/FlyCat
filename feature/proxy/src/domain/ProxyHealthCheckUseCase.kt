@@ -25,7 +25,11 @@ import com.github.lmfirefly.flycat.core.contract.ProxyGroupRepository
 import com.github.lmfirefly.flycat.core.contract.ProxySyncPriority
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -40,6 +44,10 @@ class ProxyHealthCheckUseCase(
         const val HEALTH_CHECK_TIMEOUT_MS = 5_000L
         private const val POST_CHECK_DELAY_MS = 1_500L
         private const val UI_SETTLE_DELAY_MS = 2_200L
+        private const val NODE_TEST_TIMEOUT_MS = 6_000L
+        private const val NODE_TEST_CONCURRENCY = 32
+        private const val PROGRESS_REFRESH_INTERVAL_MS = 700L
+        private const val GROUP_REFRESH_TIMEOUT_MS = 600L
     }
 
     /**
@@ -74,6 +82,62 @@ class ProxyHealthCheckUseCase(
             settleDelayMs = UI_SETTLE_DELAY_MS,
             error = result.exceptionOrNull(),
         )
+    }
+
+    /**
+     * 逐节点测试指定策略组的延迟，每完成一个节点通过 [onProgress] 上报 (tested, total)。
+     * 测试期间周期性刷新该组以渐进呈现结果；单节点超时/失败计为已完成，返回值仅含基础设施错误。
+     */
+    suspend fun runGroupHealthCheck(groupName: String, proxyNames: List<String>, onProgress: (tested: Int, total: Int) -> Unit): Throwable? {
+        proxyGroupRepository.markDelayTestActive(true)
+        var error: Throwable? = null
+        try {
+            coroutineScope {
+                val progressRefresh = launch {
+                    while (true) {
+                        delay(PROGRESS_REFRESH_INTERVAL_MS)
+                        runCatching {
+                            withTimeoutOrNull(GROUP_REFRESH_TIMEOUT_MS) {
+                                proxyGroupRepository.refreshProxyGroup(groupName)
+                            }
+                        }.onFailure { failure -> if (failure is CancellationException) throw failure }
+                    }
+                }
+                try {
+                    if (proxyNames.isEmpty()) {
+                        runCatching {
+                            withTimeout(HEALTH_CHECK_TIMEOUT_MS) { proxyGroupRepository.healthCheck(groupName) }
+                        }.onFailure { failure -> if (failure is CancellationException) throw failure }
+                            .exceptionOrNull()
+                            ?.let { thrown -> error = thrown }
+                    } else {
+                        val semaphore = Semaphore(NODE_TEST_CONCURRENCY)
+                        var completed = 0
+                        proxyNames.forEach { proxyName ->
+                            launch {
+                                semaphore.withPermit {
+                                    runCatching {
+                                        withTimeoutOrNull(NODE_TEST_TIMEOUT_MS) {
+                                            proxyGroupRepository.healthCheckProxy(groupName, proxyName)
+                                        }
+                                    }.onFailure { failure -> if (failure is CancellationException) throw failure }
+                                    completed++
+                                    onProgress(completed, proxyNames.size)
+                                }
+                            }
+                        }
+                    }
+                } finally {
+                    progressRefresh.cancel()
+                }
+            }
+            withTimeoutOrNull(GROUP_REFRESH_TIMEOUT_MS) {
+                proxyGroupRepository.refreshProxyGroup(groupName)
+            }
+        } finally {
+            proxyGroupRepository.markDelayTestActive(false)
+        }
+        return error
     }
 
     /**

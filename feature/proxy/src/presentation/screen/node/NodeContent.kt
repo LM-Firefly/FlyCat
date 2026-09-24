@@ -22,23 +22,16 @@
 package com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node
 
 import android.annotation.SuppressLint
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -48,7 +41,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
@@ -67,7 +59,7 @@ import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.hazeBlur
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollHorizontal
@@ -206,12 +198,10 @@ fun NodeSheetContent(
     testingProxyNames: Set<String>,
     onTestDelay: () -> Unit,
     onTestProxyDelay: (String) -> Unit,
-    sheetHeightFraction: Float,
+    modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
     pinnedProxyName: String = "",
 ) {
-    val sheetHeight = rememberNodeSheetHeight(sheetHeightFraction)
-
     LaunchedEffect(isDelayTesting) {
         if (isDelayTesting && listState.isScrolledFromTop()) {
             listState.animateScrollToItem(0)
@@ -219,41 +209,12 @@ fun NodeSheetContent(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxWidth().height(sheetHeight).overScrollVertical(),
+        modifier = modifier.fillMaxSize().overScrollVertical(),
         state = listState,
         verticalArrangement = Arrangement.spacedBy(UiDp.dp12),
         contentPadding = NodeSheetContentPadding,
         overscrollEffect = null,
     ) {
-        item(key = "__refresh_indicator__") {
-            AnimatedVisibility(
-                visible = isDelayTesting,
-                enter =
-                    expandVertically(
-                        animationSpec = tween(durationMillis = 200),
-                        expandFrom = Alignment.Top,
-                    ) + fadeIn(animationSpec = tween(durationMillis = 150)),
-                exit =
-                    shrinkVertically(
-                        animationSpec = tween(durationMillis = 200),
-                        shrinkTowards = Alignment.Top,
-                    ) + fadeOut(animationSpec = tween(durationMillis = 150)),
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = UiDp.dp12),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(UiDp.dp6),
-                ) {
-                    InfiniteProgressIndicator(modifier = Modifier.size(UiDp.dp24))
-                    Text(
-                        text = FlyTxt.Proxy.Testing.InProgress,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-            }
-        }
-
         nodeGridItems(
             proxies = group.proxies,
             selectedProxyName = group.now,
@@ -277,4 +238,28 @@ fun NodeSheetContent(
             onSingleNodeTestClick = onTestProxyDelay,
         )
     }
+}
+
+/**
+ * 节点页统一的下拉测试容器：下拉触发当前策略组延迟测试，顶部指示动画在测试期间显示 "正在测试 x/xxx" 进度。
+ */
+@Composable
+internal fun NodeTestPullToRefresh(isRefreshing: Boolean, onRefresh: () -> Unit, tested: Int, total: Int, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val refreshTexts = listOf(
+        FlyTxt.Proxy.Testing.Pull,
+        FlyTxt.Proxy.Testing.Release,
+        if (total > 0) {
+            FlyTxt.Proxy.Testing.Progress.format(tested, total)
+        } else {
+            FlyTxt.Proxy.Testing.InProgress
+        },
+        FlyTxt.Proxy.Testing.Complete,
+    )
+    PullToRefresh(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        refreshTexts = refreshTexts,
+        modifier = modifier,
+        content = content,
+    )
 }

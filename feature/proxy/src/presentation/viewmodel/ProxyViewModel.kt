@@ -60,6 +60,12 @@ class ProxyViewModel(
     private val _testingProxyNames = MutableStateFlow<Set<String>>(emptySet())
     val testingProxyNames: StateFlow<Set<String>> = _testingProxyNames.asStateFlow()
 
+    /** 当前策略组延迟测试进度（已测节点数/总节点数），null 表示无逐节点进度。 */
+    private val _delayTestProgress = MutableStateFlow<DelayTestProgress?>(null)
+    val delayTestProgress: StateFlow<DelayTestProgress?> = _delayTestProgress.asStateFlow()
+
+    data class DelayTestProgress(val tested: Int, val total: Int)
+
     /** 防止并发分组测试（YumeBox: groupDelayTestInProgress boolean lock） */
     @Volatile
     private var groupDelayTestInProgress = false
@@ -160,29 +166,46 @@ class ProxyViewModel(
         if (groupDelayTestInProgress) return
         groupDelayTestInProgress = true
         viewModelScope.launch {
+            var markedTargets: Set<String> = emptySet()
             try {
                 setLoading(true)
                 clearError()
                 val currentGroups = proxyGroups.value
-                val result = healthCheck.runHealthCheck(groupName, currentGroups)
-                if (result.testingTargets.isNotEmpty()) {
-                    _testingGroupNames.update { it + result.testingTargets }
-                }
                 if (groupName != null) {
                     showMessage(FlyTxt.Proxy.Testing.Group.format(groupName))
                     showMessage(FlyTxt.Proxy.Testing.RequestSent)
+                    val targets = currentGroups.firstOrNull { group -> group.name == groupName }?.proxies.orEmpty().map { proxy -> proxy.name }
+                    markedTargets = setOf(groupName)
+                    _testingGroupNames.update { it + markedTargets }
+                    if (targets.isNotEmpty()) {
+                        _delayTestProgress.value = DelayTestProgress(tested = 0, total = targets.size)
+                    }
+                    setLoading(false)
+                    val error =
+                        healthCheck.runGroupHealthCheck(groupName, targets) { tested, total ->
+                            _delayTestProgress.value = DelayTestProgress(tested = tested, total = total)
+                        }
+                    error?.let { thrown ->
+                        showError(FlyTxt.Proxy.Testing.Failed.format(thrown.message))
+                    }
                 } else {
                     showMessage(FlyTxt.Proxy.Testing.All)
-                }
-                setLoading(false)
-                if (result.testingTargets.isNotEmpty()) {
-                    delay(result.settleDelayMs)
-                    _testingGroupNames.update { it - result.testingTargets }
-                }
-                result.error?.let { error ->
-                    showError(FlyTxt.Proxy.Testing.Failed.format(error.message))
+                    markedTargets = currentGroups.mapTo(linkedSetOf()) { it.name }
+                    _testingGroupNames.update { it + markedTargets }
+                    setLoading(false)
+                    val result = healthCheck.runHealthCheck(groupName, currentGroups)
+                    if (result.testingTargets.isNotEmpty()) {
+                        delay(result.settleDelayMs)
+                    }
+                    result.error?.let { thrown ->
+                        showError(FlyTxt.Proxy.Testing.Failed.format(thrown.message))
+                    }
                 }
             } finally {
+                if (markedTargets.isNotEmpty()) {
+                    _testingGroupNames.update { it - markedTargets }
+                }
+                _delayTestProgress.value = null
                 groupDelayTestInProgress = false
             }
         }
