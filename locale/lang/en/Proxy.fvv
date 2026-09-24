@@ -29,6 +29,10 @@ Proxy = {
         RequestSent = "Test request sent"
         Failed = "Test failed: %s"
         InProgress = "Testing the node"
+        Progress = "Testing %d/%d"
+        Pull = "Pull to test delay"
+        Release = "Release to start testing"
+        Complete = "Testing complete"
     }
 
     Selection = {
