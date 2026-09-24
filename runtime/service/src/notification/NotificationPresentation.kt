@@ -21,42 +21,67 @@
 
 package com.github.lmfirefly.flycat.runtime.service.notification
 
+import com.github.lmfirefly.flycat.core.model.profile.Imported
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup
 import com.github.lmfirefly.flycat.core.model.traffic.TrafficData
 import com.github.lmfirefly.flycat.core.util.format.formatBytes
 import com.github.lmfirefly.flycat.core.util.format.formatSpeed
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import java.time.Instant
+import java.time.ZoneId
 
-internal data class NotificationPresentation(
-    val title: String,
-    val content: String,
-    val expandedText: String,
-    val subText: String? = null,
-)
+/** 持续通知所渲染的内容。 */
+internal sealed class NotificationPresentation {
+    abstract val title: String
+    abstract val content: String
+    abstract val expandedText: String
+    abstract val subText: String?
+    //** 流量数据；同时为超级岛载荷提供数据。 */
+    data class Running(
+        override val title: String,
+        override val content: String,
+        override val expandedText: String,
+        override val subText: String,
+        val usageLine: String,
+        val compactTraffic: String,
+        val currentNode: String?,
+    ) : NotificationPresentation()
+    /** 无流量数据（流量通知已禁用）。 */
+    data class Status(
+        override val title: String,
+        override val content: String,
+        override val expandedText: String,
+        override val subText: String? = null,
+    ) : NotificationPresentation()
+}
 
 internal object NotificationPresentationFactory {
     fun createRunning(
         profileName: String,
+        profile: Imported?,
+        currentNode: String?,
         trafficNow: Long,
         trafficTotal: Long,
-    ): NotificationPresentation {
+    ): NotificationPresentation.Running {
         val speedLine = buildSpeedLine(trafficNow)
         val totalLine = buildTotalLine(trafficTotal)
-        return NotificationPresentation(
+        return NotificationPresentation.Running(
             title = profileName,
             content = speedLine,
             expandedText = "$speedLine\n$totalLine",
             subText = totalLine,
+            usageLine = buildUsageLine(profile),
+            compactTraffic = buildCompactTrafficLine(trafficNow),
+            currentNode = currentNode,
         )
     }
 
-    fun createStatus(profileName: String, status: String): NotificationPresentation =
-        NotificationPresentation(
+    fun createStatus(profileName: String, status: String): NotificationPresentation.Status =
+        NotificationPresentation.Status(
             title = profileName,
             content = status,
             expandedText = status,
-            subText = null,
         )
 
     private fun buildSpeedLine(trafficNow: Long): String {
@@ -69,72 +94,54 @@ internal object NotificationPresentationFactory {
         return FlyTxt.Service.Notification.TotalTraffic.format(formatBytes(data.upload + data.download))
     }
 
-    fun resolveNodeName(
-        queryGroup: (String) -> ProxyGroup?,
-        queryGroupNames: () -> List<String>,
-    ): String? {
-        val startGroup =
-            queryGroup("Proxy")?.takeIf(::isSelectableGroup)
-                ?: queryGroupNames()
-                    .asSequence()
-                    .mapNotNull(queryGroup)
-                    .firstOrNull(::isSelectableGroup)
-                ?: return null
-        val seed = startGroup.now.ifBlank { startGroup.proxies.firstOrNull()?.name.orEmpty() }
-        return resolveSelection(seed, queryGroup, mutableSetOf())
+    /**
+     * 仅包含数值，不含标签，以便超级岛可以渲染为：`1.2 GB / 100 GB | 2026-08-31`。配置文件不携带订阅信息时返回空串，避免与标题重复显示文件名。
+     */
+    private fun buildUsageLine(profile: Imported?): String {
+        val used = profile?.let { (it.upload + it.download).coerceAtLeast(0L) } ?: 0L
+        val total = profile?.total ?: 0L
+        val usage = when {
+            total > 0L -> "${formatBytes(used)} / ${formatBytes(total)}"
+            used > 0L -> formatBytes(used)
+            else -> ""
+        }
+        val expire = profile?.expire?.takeIf { it > 0L }?.let { expireDate(it) }
+        return listOfNotNull(usage.takeIf { it.isNotEmpty() }, expire).joinToString(" | ")
     }
 
-    suspend fun resolveNodeNameSuspend(
-        queryGroup: suspend (String) -> ProxyGroup?,
-        queryGroupNames: suspend () -> List<String>,
+    private fun expireDate(expireAt: Long): String = Instant.ofEpochMilli(expireAt).atZone(ZoneId.systemDefault()).toLocalDate().toString()
+
+    private fun buildCompactTrafficLine(trafficNow: Long): String {
+        val (upNow, downNow) = TrafficData.from(trafficNow)
+        return formatSpeed((upNow + downNow).coerceAtLeast(0L))
+    }
+
+    /** 按名称批量解析代理组：扫描一次批量取回，链路逐跳查询共用同一回调。 */
+    fun resolveNodeName(
+        queryGroups: (List<String>) -> List<ProxyGroup>,
+        queryGroupNames: () -> List<String>,
     ): String? {
-        val directGroup = queryGroup("Proxy")
+        fun findGroup(name: String): ProxyGroup? = queryGroups(listOf(name)).firstOrNull()
         val startGroup =
-            if (directGroup != null && isSelectableGroup(directGroup)) {
-                directGroup
-            } else {
-                var matched: ProxyGroup? = null
-                for (name in queryGroupNames()) {
-                    val group = queryGroup(name)
-                    if (group != null && isSelectableGroup(group)) {
-                        matched = group
-                        break
-                    }
-                }
-                matched
-            } ?: return null
+            findGroup("Proxy")?.takeIf(::isSelectableGroup)
+                ?: queryGroups(queryGroupNames()).firstOrNull(::isSelectableGroup)
+                ?: return null
         val seed = startGroup.now.ifBlank { startGroup.proxies.firstOrNull()?.name.orEmpty() }
-        return resolveSelectionSuspend(seed, queryGroup, mutableSetOf())
+        return resolveSelection(seed, ::findGroup, mutableSetOf())
     }
 
     private fun resolveSelection(
         selection: String,
-        queryGroup: (String) -> ProxyGroup?,
+        findGroup: (String) -> ProxyGroup?,
         visited: MutableSet<String>,
     ): String? {
         val normalized = selection.trim()
         if (normalized.isEmpty()) return null
         if (!visited.add(normalized)) return normalized
-        val group = queryGroup(normalized)
+        val group = findGroup(normalized)
         if (group != null && isSelectableGroup(group)) {
             val next = group.now.ifBlank { group.proxies.firstOrNull()?.name.orEmpty() }
-            return resolveSelection(next, queryGroup, visited) ?: normalized
-        }
-        return normalized
-    }
-
-    private suspend fun resolveSelectionSuspend(
-        selection: String,
-        queryGroup: suspend (String) -> ProxyGroup?,
-        visited: MutableSet<String>,
-    ): String? {
-        val normalized = selection.trim()
-        if (normalized.isEmpty()) return null
-        if (!visited.add(normalized)) return normalized
-        val group = queryGroup(normalized)
-        if (group != null && isSelectableGroup(group)) {
-            val next = group.now.ifBlank { group.proxies.firstOrNull()?.name.orEmpty() }
-            return resolveSelectionSuspend(next, queryGroup, visited) ?: normalized
+            return resolveSelection(next, findGroup, visited) ?: normalized
         }
         return normalized
     }

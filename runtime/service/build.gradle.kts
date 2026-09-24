@@ -51,4 +51,6 @@ dependencies {
     implementation(libs.libsu.core)
     implementation(libs.xz)
     implementation(libs.libsu.service)
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
 }

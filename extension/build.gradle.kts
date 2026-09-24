@@ -156,13 +156,13 @@ tasks.register<Sync>("collectJavetNative") {
     group = "distribution"
     description = "Extracts Javet native libraries for arm64-v8a and x86_64"
     from(provider { configurations.getByName("releaseRuntimeClasspath").files.map(::zipTree) }) {
-        include("jni/arm64-v8a/libjavet-node-android.v.*.so")
+        include("jni/arm64-v8a/libjavet-node-android.v.${libs.versions.javetNodeAndroid.get()}.so")
         rename { "libjavet-arm64-v8a.so" }
         eachFile { relativePath = RelativePath(true, name) }
         includeEmptyDirs = false
     }
     from(provider { configurations.getByName("releaseRuntimeClasspath").files.map(::zipTree) }) {
-        include("jni/x86_64/libjavet-node-android.v.*.so")
+        include("jni/x86_64/libjavet-node-android.v.${libs.versions.javetNodeAndroid.get()}.so")
         rename { "libjavet-x86_64.so" }
         eachFile { relativePath = RelativePath(true, name) }
         includeEmptyDirs = false

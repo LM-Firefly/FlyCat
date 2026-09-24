@@ -10,6 +10,10 @@ public final class LoaderApplication extends Application {
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
+        if (!RuntimeBootstrap.hasBoundApplication()) {
+            // 非应用进程（例如 Shizuku UserService）：无需安装有效负载。
+            return;
+        }
         PayloadInstaller.Installation installation = PayloadInstaller.install(
                 base.getApplicationInfo(),
                 base.getClassLoader(),
@@ -25,6 +29,9 @@ public final class LoaderApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        if (original == null) {
+            return;
+        }
         ApplicationBridge.replace(this, original);
         original.onCreate();
     }
@@ -32,24 +39,32 @@ public final class LoaderApplication extends Application {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        original.onConfigurationChanged(newConfig);
+        if (original != null) {
+            original.onConfigurationChanged(newConfig);
+        }
     }
 
     @Override
     public void onLowMemory() {
         super.onLowMemory();
-        original.onLowMemory();
+        if (original != null) {
+            original.onLowMemory();
+        }
     }
 
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
-        original.onTrimMemory(level);
+        if (original != null) {
+            original.onTrimMemory(level);
+        }
     }
 
     @Override
     public void onTerminate() {
-        original.onTerminate();
         super.onTerminate();
+        if (original != null) {
+            original.onTerminate();
+        }
     }
 }
