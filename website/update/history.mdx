@@ -9,6 +9,44 @@ icon: "clock"
 <Card title="GitHub Releases" icon="download" horizontal href="https://github.com/LM-Firefly/FlyCat/releases">
 </Card>
 
+<Update label="2026-09-25" tags={["功能更新","性能优化","问题修复"]} description="未发布 · 代理稳定性、功耗优化与超级岛通知">
+  ## 代理体验与稳定性
+
+  - 修复代理页长时间后台返回假死、配置文件切换后节点数据过期：查询加超时防死锁、前台恢复强刷、事件前重置连接
+  - 下拉刷新触发延迟测试，逐节点测速进度展示（并发限流、完成即上报）
+  - 节点搜索栏固定于列表外，修复定位偏移
+
+  ## 功耗优化
+
+  - JNI 查询移出互斥锁，防并发查询死锁
+  - 灭屏完全挂起 UI 轮询，App 后台停止分组同步；自动更新检查仅前台执行
+  - Go 运行时 GC 调优（GOGC=100 + GOMEMLIMIT 512MiB），连接事件瘦身，会话切换清理陈旧流量
+
+  ## 运行时可靠性
+
+  - 新增 RuntimeRecoveryWorker 周期自愈；前台服务启动竞态修复（startForeground 前移、最新请求收尾）
+  - PayloadInstaller 改用 PathClassLoader，修复主题/字体变更触发的进程崩溃
+  - 移除 PROCESS_OUTGOING_CALLS 权限，暗码仅保留 SECRET_CODE 路径；恢复失败降级 WorkManager 重试
+
+  ## HyperOS 超级岛
+
+  - 新增超级岛通知（当前节点、实时流量、订阅用量）与 Shizuku 授权支持
+  - XMSF bypass 改会话式持有引用计数，修复首帧展开与遥控器接管竞态
+
+  ## TUN / eBPF
+
+  - eBPF TUN 模式修复：始终注入 eBPF listener、UID 访问控制策略、动态获取运行模式
+  - 新增 Mips TUN 协议栈；Root TUN 启动重试改为快慢两阶段
+
+  ## 配置与自动化
+
+  - 新增配置自动更新间隔（最小 30 分钟）；修复添加本地配置文件崩溃
+  - 新增 Wi-Fi 自动化配置文件切换
+  - 覆写保存逻辑简化，空链路改为通知 runtime 清除
+
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases)
+</Update>
+
 <Update label="2026-09-09" tags={["里程碑","功能更新"]} description="v0.5.6 · FlyCat 独立维护初始化">
   ## FlyCat 正式作为独立项目维护
 
