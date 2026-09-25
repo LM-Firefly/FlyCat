@@ -28,97 +28,113 @@ import com.github.lmfirefly.flycat.core.model.proxy.ProxySort
 import com.github.lmfirefly.flycat.runtime.api.session.RuntimeSpec
 import com.github.lmfirefly.flycat.runtime.service.session.spec.CompiledConfigPipeline
 import java.security.MessageDigest
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
- * Resolves the proxy-group list shown in the UI.
- *
- * When a session is running the live core itself is the single source of truth for group **order +
- * membership + live state**: the mihomo fork preserves the `proxy-groups:` declaration order
- * (`config/config.go`), and native `QueryProxyGroupNames` walks the GLOBAL provider in that exact
- * declaration order. Since the rust override path now loads the rawConfig correctly, the running
- * core already yields the correct order with real-time `now` / `proxies`, so a canonical recompile
- * is redundant while running.
- *
- * [canonicalGroups] (compiled rawConfig, `proxy-groups:` declaration order) is kept only as the
- * preview source and as the fallback for the transient window before the core has loaded.
+ * 解析UI中显示的代理组列表。
+ * 当会话正在运行时，运行中的核心本身是代理组**顺序 + 成员资格 + 实时状态**的唯一权威来源：mihomo分叉保留`proxy-groups:`声明的顺序 （`config/config.go`），原生的`QueryProxyGroupNames`严格按照该声明顺序遍历GLOBAL提供商。
+ * 由于rust覆盖路径现在已正确加载rawConfig，运行中的核心已能给出正确的顺序并附带实时的`now` / `proxies`，因此在运行期间进行规范化重新编译是多余的。
+ * [canonicalGroups]（已编译的rawConfig，`proxy-groups:`声明顺序）仅作为预览来源保留，并作为核心加载完成前的瞬态窗口的回退方案。
  */
 class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConfigPipeline) {
+    private companion object {
+        /** 空编译结果的负缓存时长：防止坏配置/启动瞬态下每次刷新都重跑全量编译。 */
+        const val NEGATIVE_CACHE_TTL_MS = 5_000L
+    }
+    /** 编译是阻塞 JNI 且不可中断，单飞互斥避免并发编译堆积饿死 CPU。 */
+    private val compileMutex = Mutex()
     private val expectedNameCacheLock = Any()
     private var expectedNameCache: ExpectedGroupCache? = null
-
+    private var expectedNameNegative: ExpectedGroupNegative? = null
     private val canonicalCacheLock = Any()
     private var canonicalCache: CanonicalGroupCache? = null
-
+    private var canonicalNegative: CanonicalGroupNegative? = null
     /**
-     * Authoritative ordered group list straight from the compiled rawConfig (`proxy-groups:`).
-     * Always rebuilt from a fresh compile via [CompiledConfigPipeline.previewGroups] so it can
-     * never read a stale on-disk runtime.yaml; cached by the [CanonicalGroupKey] so the recompile
-     * only happens when the config/override set actually changes (fingerprint flip), not on every
-     * refresh.
-     *
-     * An empty result is NOT cached: a transient empty compile during the start window must not
-     * poison the cache for the rest of the session.
+     * 权威的有序代理组列表，直接来自编译后的 rawConfig（`proxy-groups:`）。
+     * 始终通过 [CompiledConfigPipeline.previewGroups] 从新编译中重建，因此它永远不会读取磁盘上过期的 runtime.yaml；由 [CanonicalGroupKey] 缓存，因此重新编译仅在配置/覆盖集实际发生变化（指纹翻转）时才会触发，而不是每次刷新都触发。
+     * 空结果不会被正向缓存：启动窗口期间的瞬时空编译不得污染会话其余部分的缓存。相反，它被保存在短命的负缓存中，这样重复刷新就不会堆积无法编译的重复项。
      */
-    suspend fun canonicalGroups(
-        spec: RuntimeSpec,
-        excludeNotSelectable: Boolean,
-    ): List<ProxyGroup> {
-        val cacheKey =
-            CanonicalGroupKey(
-                profileUuid = spec.profileUuid,
-                effectiveFingerprint = spec.effectiveFingerprint,
-                excludeNotSelectable = excludeNotSelectable,
-                ageSecretKeyFingerprint = sha256Short(spec.ageSecretKey),
-            )
+    suspend fun canonicalGroups(spec: RuntimeSpec, excludeNotSelectable: Boolean): List<ProxyGroup> {
+        val cacheKey = CanonicalGroupKey(
+            profileUuid = spec.profileUuid,
+            effectiveFingerprint = spec.effectiveFingerprint,
+            excludeNotSelectable = excludeNotSelectable,
+            ageSecretKeyFingerprint = sha256Short(spec.ageSecretKey),
+        )
         synchronized(canonicalCacheLock) {
             canonicalCache
                 ?.takeIf { it.key == cacheKey }
                 ?.let {
                     return it.groups
                 }
+            canonicalNegative
+                ?.takeIf { it.key == cacheKey && it.isFresh() }
+                ?.let {
+                    return emptyList()
+                }
         }
-
-        val groups =
-            runCatching { compiledConfigPipeline.previewGroups(spec, excludeNotSelectable) }
-                .getOrDefault(emptyList())
-                .filter { it.name.isNotBlank() }
-
-        if (groups.isNotEmpty()) {
+        return compileMutex.withLock {
+            // 双检：排队等锁期间可能已被并发调用者填充。
             synchronized(canonicalCacheLock) {
-                canonicalCache = CanonicalGroupCache(cacheKey, groups)
+                canonicalCache?.takeIf { it.key == cacheKey }?.let { return@withLock it.groups }
+                canonicalNegative
+                    ?.takeIf { it.key == cacheKey && it.isFresh() }
+                    ?.let { return@withLock emptyList() }
             }
+            val groups = runCatching { compiledConfigPipeline.previewGroups(spec, excludeNotSelectable) }.getOrDefault(emptyList()).filter { it.name.isNotBlank() }
+            synchronized(canonicalCacheLock) {
+                if (groups.isNotEmpty()) {
+                    canonicalCache = CanonicalGroupCache(cacheKey, groups)
+                    canonicalNegative = null
+                } else {
+                    canonicalNegative = CanonicalGroupNegative(cacheKey, System.currentTimeMillis())
+                }
+            }
+            groups
         }
-        return groups
     }
-
     suspend fun expectedGroupNames(spec: RuntimeSpec, excludeNotSelectable: Boolean): List<String> {
-        val cacheKey =
-            ExpectedGroupKey(
-                profileUuid = spec.profileUuid,
-                effectiveFingerprint = spec.effectiveFingerprint,
-                excludeNotSelectable = excludeNotSelectable,
-                ageSecretKeyFingerprint = sha256Short(spec.ageSecretKey),
-            )
+        val cacheKey = ExpectedGroupKey(
+            profileUuid = spec.profileUuid,
+            effectiveFingerprint = spec.effectiveFingerprint,
+            excludeNotSelectable = excludeNotSelectable,
+            ageSecretKeyFingerprint = sha256Short(spec.ageSecretKey),
+        )
         synchronized(expectedNameCacheLock) {
             expectedNameCache
                 ?.takeIf { it.key == cacheKey }
                 ?.let {
                     return it.names
                 }
+            expectedNameNegative
+                ?.takeIf { it.key == cacheKey && it.isFresh() }
+                ?.let {
+                    return emptyList()
+                }
         }
-
-        // Every profile (encrypted and non-encrypted) goes through the native in-memory compile, so
-        // expected names never depend on an on-disk runtime.yaml.
-        val names = compiledConfigPipeline.previewGroupNames(spec, excludeNotSelectable)
-
-        // Never cache an empty result: a transient empty compile during the start window must not
-        // pin the whole session to an empty expected-name set.
-        if (names.isNotEmpty()) {
+        return compileMutex.withLock {
+            // 双检：排队等锁期间可能已被并发调用者填充。
             synchronized(expectedNameCacheLock) {
-                expectedNameCache = ExpectedGroupCache(cacheKey, names)
+                expectedNameCache?.takeIf { it.key == cacheKey }?.let { return@withLock it.names }
+                expectedNameNegative
+                    ?.takeIf { it.key == cacheKey && it.isFresh() }
+                    ?.let { return@withLock emptyList() }
             }
+            // 所有配置文件（加密和非加密的）都会经过原生内存编译，因此预期的名称从不依赖于磁盘上的 runtime.yaml。
+            val names = compiledConfigPipeline.previewGroupNames(spec, excludeNotSelectable)
+            // 永远不要将空结果缓存为有效结果：启动窗口期间的瞬时空编译不得将整个会话锁定为空的预期名称集。
+            synchronized(expectedNameCacheLock) {
+                if (names.isNotEmpty()) {
+                    expectedNameCache = ExpectedGroupCache(cacheKey, names)
+                    expectedNameNegative = null
+                } else {
+                    expectedNameNegative =
+                        ExpectedGroupNegative(cacheKey, System.currentTimeMillis())
+                }
+            }
+            names
         }
-        return names
     }
 
     fun runtimeGroupNames(excludeNotSelectable: Boolean): List<String> =
@@ -242,6 +258,13 @@ class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConf
         val names: List<String>,
     )
 
+    private data class ExpectedGroupNegative(
+        val key: ExpectedGroupKey,
+        val at: Long,
+    ) {
+        fun isFresh(): Boolean = System.currentTimeMillis() - at <= NEGATIVE_CACHE_TTL_MS
+    }
+
     private data class CanonicalGroupKey(
         val profileUuid: String,
         val effectiveFingerprint: String,
@@ -253,4 +276,11 @@ class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConf
         val key: CanonicalGroupKey,
         val groups: List<ProxyGroup>,
     )
+
+    private data class CanonicalGroupNegative(
+        val key: CanonicalGroupKey,
+        val at: Long,
+    ) {
+        fun isFresh(): Boolean = System.currentTimeMillis() - at <= NEGATIVE_CACHE_TTL_MS
+    }
 }

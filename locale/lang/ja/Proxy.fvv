@@ -39,6 +39,7 @@ Proxy = {
         Switched = "切り替え先: %s"
         Failed = "切り替えに失敗しました"
         Error = "切り替えに失敗しました: %s"
+        RequireRunning = "ノードを切り替えるにはコアを起動してください"
     }
 
     SortMode = {

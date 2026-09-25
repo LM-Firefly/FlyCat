@@ -39,6 +39,7 @@ Proxy = {
         Switched = "已切換到：%s"
         Failed = "切換失敗"
         Error = "切換失敗：%s"
+        RequireRunning = "啟動內核後可切換節點"
     }
 
     SortMode = {
