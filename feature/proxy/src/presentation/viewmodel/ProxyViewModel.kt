@@ -236,6 +236,15 @@ class ProxyViewModel(
     fun forceSelectProxy(groupName: String, proxyName: String) {
         viewModelScope.launch {
             runCatching {
+                if (proxyName.isNotBlank() && isNodeLivenessUnknown(groupName, proxyName)) {
+                    // Go 侧 URLTest/Fallback 的存活判定会忽略未测速/测速失败节点的强制选择，先测活再固定
+                    _testingProxyNames.update { it + proxyName }
+                    try {
+                        runCatching { healthCheck.runProxyHealthCheck(groupName, proxyName) }.onFailure { error -> if (error is CancellationException) throw error }
+                    } finally {
+                        _testingProxyNames.update { it - proxyName }
+                    }
+                }
                 val success = proxyGroupRepository.forceSelectProxy(groupName, proxyName)
                 if (success) {
                     val target = proxyName.ifBlank { FlyTxt.Proxy.Mode.Direct }
@@ -247,6 +256,12 @@ class ProxyViewModel(
                 showError(FlyTxt.Proxy.Selection.Error.format(error.message))
             }
         }
+    }
+
+    /** 节点当前无有效延迟（未测速或测速失败）时需要先测活，否则 Go 侧存活判定会忽略强制选择。 */
+    private fun isNodeLivenessUnknown(groupName: String, proxyName: String): Boolean {
+        val proxy = proxyGroups.value.firstOrNull { group -> group.name == groupName }?.proxies?.firstOrNull { proxy -> proxy.name == proxyName }?: return false
+        return proxy.delay !in 1..5000
     }
 
     fun testProxyDelay(proxyName: String) {

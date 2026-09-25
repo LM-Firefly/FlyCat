@@ -1,6 +1,5 @@
 package com.github.lmfirefly.flycat.feature.dashboard.presentation.screen
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -15,20 +14,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.core.model.traffic.AppTrafficUsage
 import com.github.lmfirefly.flycat.core.model.traffic.StatisticsTimeRange
@@ -46,10 +41,9 @@ import com.github.lmfirefly.flycat.presentation.component.misc.Title
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
 import com.github.lmfirefly.flycat.presentation.component.navigation.TabRowWithContour
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
+import com.github.lmfirefly.flycat.presentation.component.rememberAppIconBitmap
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.util.toast
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
@@ -66,6 +60,8 @@ import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowListPopup
+
+private const val APP_ICON_BADGE_BITMAP_SIZE = 84
 
 @Composable
 fun TrafficStatisticsContent(onBack: () -> Unit) {
@@ -246,7 +242,6 @@ fun TrafficStatisticsContent(onBack: () -> Unit) {
                         ),
                     ) {
                         AppTrafficRow(
-                            context = context,
                             usage = usage,
                             total = activeSummary.total,
                         )
@@ -314,7 +309,6 @@ private fun TrafficMetricLine(
 
 @Composable
 private fun AppTrafficRow(
-    context: Context,
     usage: AppTrafficUsage,
     total: Long,
 ) {
@@ -333,7 +327,6 @@ private fun AppTrafficRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AppIconBadge(
-                context = context,
                 appKey = usage.appKey,
                 packageName = usage.packageName,
                 appName = usage.appName,
@@ -379,7 +372,6 @@ private fun AppTrafficRow(
 
 @Composable
 private fun AppIconBadge(
-    context: Context,
     appKey: String,
     packageName: String?,
     appName: String,
@@ -407,22 +399,7 @@ private fun AppIconBadge(
         return
     }
 
-    val iconBitmap by produceState<ImageBitmap?>(
-        initialValue = null,
-        key1 = packageName,
-    ) {
-        value = withContext(Dispatchers.IO) {
-            packageName?.takeIf { it.isNotBlank() }?.let { target ->
-                runCatching {
-                    context.packageManager.getApplicationIcon(target)
-                        .toBitmap(width = 84, height = 84)
-                        .asImageBitmap()
-                }.getOrNull()
-            }
-        }
-    }
-
-    val bitmap = iconBitmap
+    val bitmap = rememberAppIconBitmap(packageName = packageName, bitmapSize = APP_ICON_BADGE_BITMAP_SIZE)
     if (bitmap != null) {
         Image(
             bitmap = bitmap,

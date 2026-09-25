@@ -47,14 +47,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
@@ -64,7 +61,6 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.AccessControlViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
@@ -75,6 +71,7 @@ import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandal
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.component.navigation.rememberScrollAwareFabController
+import com.github.lmfirefly.flycat.presentation.component.rememberAppIconBitmap
 import com.github.lmfirefly.flycat.presentation.component.state.SearchBarPadding
 import com.github.lmfirefly.flycat.presentation.component.state.SearchPager
 import com.github.lmfirefly.flycat.presentation.component.state.SearchStatus
@@ -84,8 +81,6 @@ import com.github.lmfirefly.flycat.presentation.icon.flycat.Settings2
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme.spacing
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Checkbox
@@ -627,22 +622,7 @@ private fun AppIcon(
     bitmapSize: Int,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val iconBitmap by
-        produceState<ImageBitmap?>(initialValue = null, key1 = packageName, key2 = bitmapSize) {
-            value =
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                            context.packageManager
-                                .getApplicationIcon(packageName)
-                                .toBitmap(width = bitmapSize, height = bitmapSize)
-                                .asImageBitmap()
-                        }
-                        .getOrNull()
-                }
-        }
-
-    val bitmap = iconBitmap ?: return
+    val bitmap = rememberAppIconBitmap(packageName = packageName, bitmapSize = bitmapSize) ?: return
     Image(
         bitmap = bitmap,
         contentDescription = contentDescription,
