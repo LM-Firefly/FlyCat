@@ -559,6 +559,8 @@ internal class ProxyGroupManager(
     suspend fun selectProxy(group: String, proxyName: String): Boolean {
         Timber.d("Select proxy: group=$group proxy=$proxyName")
         val ok = router!!.dispatch(
+            requireRunning = true,
+            defaultIfNotRunning = { false },
             onRoot = { RootTunController.patchSelector(it, group, proxyName) },
             onLocal = { ServiceClient.clash().patchSelector(group, proxyName) },
         )
@@ -580,6 +582,8 @@ internal class ProxyGroupManager(
     suspend fun forceSelectProxy(group: String, proxyName: String): Boolean {
         Timber.d("Force select proxy: group=$group proxy=$proxyName")
         val ok = router!!.dispatch(
+            requireRunning = true,
+            defaultIfNotRunning = { false },
             onRoot = { RootTunController.patchForceSelector(it, group, proxyName) },
             onLocal = { ServiceClient.clash().patchForceSelector(group, proxyName) },
         )

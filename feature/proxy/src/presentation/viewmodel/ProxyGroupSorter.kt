@@ -25,12 +25,14 @@ import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 
 internal class ProxyGroupSorter {
     private data class SortedGroupCacheEntry(
@@ -53,7 +55,10 @@ internal class ProxyGroupSorter {
         sortMode: StateFlow<ProxySortMode>,
     ): StateFlow<List<ProxyGroupInfo>> =
         combine(proxyGroups, sortMode, groupOriginalOrder) { groups, mode, originalOrderCache ->
-                buildSortedProxyGroups(groups, mode, originalOrderCache)
+                // 排序是 O(组数×节点数) 纯计算，下移默认调度器避免在 Main 上随每次发布重排。
+                withContext(Dispatchers.Default) {
+                    buildSortedProxyGroups(groups, mode, originalOrderCache)
+                }
             }
             .stateIn(
                 scope = scope,
