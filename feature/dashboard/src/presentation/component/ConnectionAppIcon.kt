@@ -21,31 +21,23 @@
 
 package com.github.lmfirefly.flycat.feature.dashboard.presentation.component
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.takeOrElse
-import androidx.core.graphics.drawable.toBitmap
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.ConnectionViewModel
+import com.github.lmfirefly.flycat.presentation.component.rememberAppIconBitmap
 import com.github.lmfirefly.flycat.presentation.theme.AppColors
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Text
@@ -62,25 +54,10 @@ internal fun ConnectionLeadingIcon(
     bitmapSize: Int = CONNECTION_APP_ICON_BITMAP_SIZE,
 ) {
     val sizes = AppTheme.sizes
-    val context = LocalContext.current
     val viewModel = koinViewModel<ConnectionViewModel>()
     val identity = remember(metadata, viewModel) { viewModel.resolveIdentity(metadata) }
     val resolvedSize = size.takeOrElse { sizes.connectionLeadingIconSize }
-    val iconKey =
-        remember(identity, bitmapSize) {
-            "${identity.appKey}|${identity.packageName.orEmpty()}|$bitmapSize"
-        }
-    val iconBitmap by
-        produceState<ImageBitmap?>(initialValue = null, key1 = iconKey) {
-            value =
-                withContext(Dispatchers.IO) {
-                    ConnectionAppIconResolver.resolveIcon(
-                        context = context,
-                        packageName = identity.packageName,
-                        bitmapSize = bitmapSize,
-                    )
-                }
-        }
+    val iconBitmap = rememberAppIconBitmap(packageName = identity.packageName, bitmapSize = bitmapSize)
 
     val bitmap = iconBitmap
     if (bitmap != null) {
@@ -125,20 +102,6 @@ private fun ProtocolFallbackIcon(
             style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp),
             color = protocolColor,
         )
-    }
-}
-
-private object ConnectionAppIconResolver {
-    fun resolveIcon(context: Context, packageName: String?, bitmapSize: Int): ImageBitmap? {
-        val resolvedPackageName =
-            packageName?.trim().orEmpty().takeIf { it.isNotEmpty() } ?: return null
-        return runCatching {
-                context.packageManager
-                    .getApplicationIcon(resolvedPackageName)
-                    .toBitmap(width = bitmapSize, height = bitmapSize)
-                    .asImageBitmap()
-            }
-            .getOrNull()
     }
 }
 

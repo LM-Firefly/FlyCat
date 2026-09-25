@@ -587,6 +587,8 @@ internal class ProxyGroupManager(
             applyLocalForceSelection(group = group, proxyName = proxyName)
             scope.launch {
                 runCatching {
+                    // 与 selectProxy 相同的宽限期，避免刷新过快覆盖乐观选择导致 UI 回跳
+                    delay(200L)
                     refreshGroupDirect(group, ProxySort.Default)
                     onScheduleFullRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
                 }

@@ -126,6 +126,10 @@ func fillCloseIdentity(event *ConnectionCloseEvent, meta any) {
 		if m.Uid != 0 {
 			event.UID = int64(m.Uid)
 		}
+		// Android 下 Process 已被 FindPackageName 覆写为包名，回填 PackageName 供 pkg: 归因桶使用。
+		if m.Process != "" {
+			event.PackageName = m.Process
+		}
 	case map[string]any:
 		if v, ok := m["packageName"].(string); ok {
 			event.PackageName = v
