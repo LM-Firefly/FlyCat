@@ -286,6 +286,8 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         if (isRemoteControllerActive()) {
             return
         }
+        // 刷新是慢速 I/O（含至 8s 的编译查询），锁内只做状态切换，避免拖住 start/stop 与 RemoteSwitch。
+        var deferredRefresh: (suspend () -> Unit)? = null
         operationMutex.withLock {
             val configuredMode = networkSettingsStorage.runMode.value
             RuntimeContractResolver.localRuntimeStatus.reconcilePersistedRuntimeState()
@@ -303,8 +305,8 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
                 } else {
                     rootTunManager.stopRootTunBootstrap()
                 }
-                refreshPreviewStateSafely()
-                return
+                deferredRefresh = ::refreshPreviewStateSafely
+                return@withLock
             }
 
             if (owner != RuntimeOwner.RootTun) {
@@ -326,15 +328,16 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
 
             if (_runtimeSnapshot.value.phase.running) {
                 startTrafficPolling()
-                refreshAllSafely()
+                deferredRefresh = ::refreshAllSafely
             } else {
                 stopTrafficPolling()
-                refreshPreviewStateSafely()
+                deferredRefresh = ::refreshPreviewStateSafely
             }
             if (owner == RuntimeOwner.RootTun) {
                 scheduleRootTunBootstrap()
             }
         }
+        deferredRefresh?.invoke()
     }
 
     private suspend fun reconcileAndRefreshRuntimeState() {

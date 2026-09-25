@@ -39,6 +39,7 @@ Proxy = {
         Switched = "Switched to: %s"
         Failed = "Switch failed"
         Error = "Switch failed: %s"
+        RequireRunning = "Start the core before switching nodes"
     }
 
     SortMode = {

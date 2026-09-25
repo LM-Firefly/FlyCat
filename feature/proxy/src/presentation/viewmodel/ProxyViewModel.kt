@@ -23,6 +23,7 @@ package com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.github.lmfirefly.flycat.core.contract.AppSettingsReader
+import com.github.lmfirefly.flycat.core.contract.ConnectionRepository
 import com.github.lmfirefly.flycat.core.contract.ProxyDisplaySettingsReader
 import com.github.lmfirefly.flycat.core.contract.ProxyGroupRepository
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
@@ -47,6 +48,7 @@ import com.github.lmfirefly.flycat.locale.FlyTxt
 
 class ProxyViewModel(
     private val proxyGroupRepository: ProxyGroupRepository,
+    private val connectionRepository: ConnectionRepository,
     private val proxyDisplaySettingsStore: ProxyDisplaySettingsReader,
     appSettings: AppSettingsReader,
     private val healthCheck: ProxyHealthCheckUseCase,
@@ -107,6 +109,8 @@ class ProxyViewModel(
 
     init {
         proxyGroupRepository.warmUpProxyGroups()
+        // 保活 isRunning 的 WhileSubscribed 上游，保证点击时读到的是当前运行状态。
+        viewModelScope.launch { connectionRepository.isRunning.collect { } }
         viewModelScope.launch {
             proxyGroups
                 .distinctUntilChangedBy { groups -> groups.map(ProxyGroupInfo::name) }
@@ -220,6 +224,11 @@ class ProxyViewModel(
     }
 
     fun selectProxy(groupName: String, proxyName: String) {
+        // 预览态没有可切换的内核，patchSelector 必然失败；明确提示而不是让点击看似无响应。
+        if (!connectionRepository.isRunning.value) {
+            showMessage(FlyTxt.Proxy.Selection.RequireRunning)
+            return
+        }
         viewModelScope.launch {
             runCatching {
                     val success = proxyGroupRepository.selectProxy(groupName, proxyName)
@@ -234,6 +243,10 @@ class ProxyViewModel(
     }
 
     fun forceSelectProxy(groupName: String, proxyName: String) {
+        if (!connectionRepository.isRunning.value) {
+            showMessage(FlyTxt.Proxy.Selection.RequireRunning)
+            return
+        }
         viewModelScope.launch {
             runCatching {
                 if (proxyName.isNotBlank() && isNodeLivenessUnknown(groupName, proxyName)) {
