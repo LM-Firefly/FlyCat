@@ -96,50 +96,50 @@ class ClashGateway(
 
     override suspend fun queryTunnelState(): TunnelState =
         dispatchSuspend(
-            localCall = { Clash.queryTunnelState() },
+            localCall = { withContext(Dispatchers.IO) { Clash.queryTunnelState() } },
             rootCall = { withContext(Dispatchers.IO) { RootTunController.queryTunnelState(appContext) } },
             remoteCall = { remote.queryTunnelState() },
         )
 
     override suspend fun queryTrafficNow(): Long =
         dispatchSuspend(
-            localCall = { if (!sessionHelpers.serviceRunning) 0L else Clash.queryTrafficNow() },
+            localCall = { if (!sessionHelpers.serviceRunning) 0L else withContext(Dispatchers.IO) { Clash.queryTrafficNow() } },
             rootCall = { withContext(Dispatchers.IO) { RootTunController.queryTrafficNow(appContext) } },
             remoteCall = { remote.queryTrafficNow() },
         )
 
     override suspend fun queryTrafficTotal(): Long =
         dispatchSuspend(
-            localCall = { if (!sessionHelpers.serviceRunning) 0L else Clash.queryTrafficTotal() },
+            localCall = { if (!sessionHelpers.serviceRunning) 0L else withContext(Dispatchers.IO) { Clash.queryTrafficTotal() } },
             rootCall = { withContext(Dispatchers.IO) { RootTunController.queryTrafficTotal(appContext) } },
             remoteCall = { remote.queryTrafficTotal() },
         )
 
     override suspend fun queryConnections(): ConnectionSnapshot =
         dispatchSuspend(
-            localCall = { Clash.queryConnections() },
+            localCall = { withContext(Dispatchers.IO) { Clash.queryConnections() } },
             rootCall = { withContext(Dispatchers.IO) { RootTunController.queryConnections(appContext) } },
             remoteCall = { remote.queryConnections() },
         )
 
     override suspend fun queryConnectionsOverview(): ConnectionOverviewSnapshot =
         dispatchSuspend(
-            localCall = { Clash.queryConnectionsOverview() },
+            localCall = { withContext(Dispatchers.IO) { Clash.queryConnectionsOverview() } },
             rootCall = { withContext(Dispatchers.IO) { RootTunController.queryConnectionsOverview(appContext) } },
             remoteCall = { remote.queryConnectionsOverview() },
         )
 
     override suspend fun queryRules(): List<RuntimeRule> =
         dispatchSuspend(
-            localCall = { Clash.queryRules() },
-            rootCall = { Clash.queryRules() },
+            localCall = { withContext(Dispatchers.IO) { Clash.queryRules() } },
+            rootCall = { withContext(Dispatchers.IO) { Clash.queryRules() } },
             remoteCall = { remote.queryRules() },
         )
 
     override suspend fun setRuleDisabled(index: Int, disabled: Boolean): Boolean =
         dispatchSuspend(
-            localCall = { Clash.setRuleDisabled(index, disabled) },
-            rootCall = { Clash.setRuleDisabled(index, disabled) },
+            localCall = { withContext(Dispatchers.IO) { Clash.setRuleDisabled(index, disabled) } },
+            rootCall = { withContext(Dispatchers.IO) { Clash.setRuleDisabled(index, disabled) } },
             remoteCall = { remote.setRuleDisabled(index, disabled) },
         )
 
@@ -191,7 +191,7 @@ class ClashGateway(
 
     override suspend fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup =
         dispatchSuspend(
-            localCall = { Clash.queryGroup(name, proxySort) },
+            localCall = { withContext(Dispatchers.IO) { Clash.queryGroup(name, proxySort) } },
             rootCall = { withContext(Dispatchers.IO) { RootTunController.queryProxyGroup(appContext, name, proxySort) } },
             remoteCall = { remote.queryProxyGroup(name, proxySort) },
         )
@@ -200,7 +200,7 @@ class ClashGateway(
         if (useRemote()) return remote.queryProviders()
         val providers =
             queryWithRuntimeSuspend(
-                localCall = { ProviderList(Clash.queryProviders()).toList() },
+                localCall = { withContext(Dispatchers.IO) { ProviderList(Clash.queryProviders()).toList() } },
                 rootCall = { withContext(Dispatchers.IO) { RootTunController.queryProviders(appContext) } },
                 fallbackOnRootFailure = false,
             )
@@ -208,36 +208,36 @@ class ClashGateway(
     }
 
     override suspend fun patchTunnelMode(mode: TunnelState.Mode): Boolean =
-        dispatch(
-            localCall = { Clash.patchTunnelMode(mode) },
-            rootCall = { Clash.patchTunnelMode(mode) },
+        dispatchSuspend(
+            localCall = { withContext(Dispatchers.IO) { Clash.patchTunnelMode(mode) } },
+            rootCall = { withContext(Dispatchers.IO) { Clash.patchTunnelMode(mode) } },
             remoteCall = { remote.patchTunnelMode(mode) },
         )
 
     override suspend fun patchSelector(group: String, name: String): Boolean =
         dispatchSuspend(
-            localCall = { Clash.patchSelector(group, name) },
+            localCall = { withContext(Dispatchers.IO) { Clash.patchSelector(group, name) } },
             rootCall = { withContext(Dispatchers.IO) { RootTunController.patchSelector(appContext, group, name) } },
             remoteCall = { remote.patchSelector(group, name) },
         )
 
     override suspend fun patchForceSelector(group: String, name: String): Boolean =
         dispatchSuspend(
-            localCall = { Clash.patchForceSelector(group, name) },
+            localCall = { withContext(Dispatchers.IO) { Clash.patchForceSelector(group, name) } },
             rootCall = { withContext(Dispatchers.IO) { RootTunController.patchForceSelector(appContext, group, name) } },
             remoteCall = { remote.patchForceSelector(group, name) },
         )
 
     override suspend fun closeConnection(id: String): Boolean =
         dispatchSuspend(
-            localCall = { Clash.closeConnection(id) },
+            localCall = { withContext(Dispatchers.IO) { Clash.closeConnection(id) } },
             rootCall = { withContext(Dispatchers.IO) { RootTunController.closeConnection(appContext, id) } },
             remoteCall = { remote.closeConnection(id) },
         )
 
     override suspend fun closeAllConnections() =
         dispatchSuspend(
-            localCall = { Clash.closeAllConnections() },
+            localCall = { withContext(Dispatchers.IO) { Clash.closeAllConnections() } },
             rootCall = { withContext(Dispatchers.IO) { RootTunController.closeAllConnections(appContext) } },
             remoteCall = { remote.closeAllConnections() },
         )
@@ -246,7 +246,7 @@ class ClashGateway(
         dispatchSuspend(
             localCall = {
                 Timber.d("ClashManager healthCheck: group=%s", group)
-                Clash.healthCheck(group).await()
+                withContext(Dispatchers.IO) { Clash.healthCheck(group).await() }
             },
             rootCall = { RootTunController.healthCheck(appContext, group) },
             remoteCall = { remote.healthCheck(group) },
@@ -256,7 +256,7 @@ class ClashGateway(
         dispatchSuspend(
             localCall = {
                 Timber.d("ClashManager healthCheckProxy: group=%s proxy=%s", group, proxyName)
-                val json = Clash.healthCheckProxy(proxyName).await()
+                val json = withContext(Dispatchers.IO) { Clash.healthCheckProxy(proxyName).await() }
                 val jsonElement = kotlinx.serialization.json.Json.parseToJsonElement(json)
                 jsonElement.jsonObject["delay"]?.jsonPrimitive?.int ?: -1
             },
@@ -270,7 +270,7 @@ class ClashGateway(
 
     override suspend fun updateProvider(type: Provider.Type, name: String) =
         dispatchSuspend(
-            localCall = { Clash.updateProvider(type, name).await() },
+            localCall = { withContext(Dispatchers.IO) { Clash.updateProvider(type, name).await() } },
             rootCall = { RootTunController.updateProvider(appContext, type, name) },
             remoteCall = { remote.updateProvider(type, name) },
         )
@@ -278,8 +278,10 @@ class ClashGateway(
     override suspend fun requestStop() =
         dispatchSuspend(
             localCall = {
-                sessionHelpers.stopLocalServices(appContext.packageName)
-                Unit
+                withContext(Dispatchers.IO) {
+                    sessionHelpers.stopLocalServices(appContext.packageName)
+                    Unit
+                }
             },
             rootCall = { RootTunController.requestStop(appContext) },
             remoteCall = { remote.requestStop() },
@@ -388,22 +390,7 @@ class ClashGateway(
         return status.state.isActiveOrStopping || status.runtimeReady
     }
 
-    /**
-     * Non-suspend dispatch: remote controller wins when active, otherwise route between the root
-     * runtime and the local service via [queryWithRuntime]. Mirrors the per-method
-     * `if (useRemote()) ... else queryWithRuntime(...)` shape so the public overrides stay terse.
-     */
-    private inline fun <T> dispatch(
-        localCall: () -> T,
-        rootCall: () -> T,
-        remoteCall: () -> T,
-        fallbackOnRootFailure: Boolean = false,
-    ): T {
-        if (useRemote()) return remoteCall()
-        return queryWithRuntime(localCall, rootCall, fallbackOnRootFailure)
-    }
-
-    /** Suspend counterpart of [dispatch]; see [queryWithRuntimeSuspend]. */
+    /** 当远程控制器激活时优先使用，否则通过 [queryWithRuntimeSuspend] 在根运行时和本地服务之间路由。 */
     private suspend inline fun <T> dispatchSuspend(
         crossinline localCall: suspend () -> T,
         crossinline rootCall: suspend () -> T,
@@ -412,22 +399,6 @@ class ClashGateway(
     ): T {
         if (useRemote()) return remoteCall()
         return queryWithRuntimeSuspend({ localCall() }, { rootCall() }, fallbackOnRootFailure)
-    }
-
-    private inline fun <T> queryWithRuntime(
-        localCall: () -> T,
-        rootCall: () -> T,
-        fallbackOnRootFailure: Boolean = true,
-    ): T {
-        if (!useRootRuntime()) {
-            return localCall()
-        }
-        return try {
-            rootCall()
-        } catch (error: Throwable) {
-            handleRootRuntimeFailure(error)
-            if (fallbackOnRootFailure) localCall() else throw error
-        }
     }
 
     private suspend inline fun <T> queryWithRuntimeSuspend(
