@@ -21,7 +21,9 @@
 
 package com.github.lmfirefly.flycat.presentation.component.navigation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
@@ -44,7 +46,6 @@ val LocalTopBarHazeStyle = compositionLocalOf<HazeBlurStyle?> { null }
 
 private fun Modifier.topBarHazeEffect(state: HazeState?, style: HazeBlurStyle?): Modifier {
     if (state == null || style == null) return this
-
     return hazeBlur(
         input = HazeInput.Sources(state),
         style = style.then {
@@ -65,12 +66,32 @@ fun TopBar(
     actionIconPadding: Dp = UiDp.dp24,
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
+    titleContent: (@Composable () -> Unit)? = null,
     bottomContent: @Composable () -> Unit = {},
 ) {
     val hazeState = LocalTopBarHazeState.current
     val hazeStyle = LocalTopBarHazeStyle.current
     val hazeEnabled = hazeState != null && hazeStyle != null
-
+    if (titleContent != null) {
+        // 自绘标题（如面包屑）是导航控件，必须常驻可点：走 SmallTopAppBar（无折叠行程），标题挂 bottomContent 常驻显示，滚动时不会收缩隐藏。
+        SmallTopBar(
+            title = " ",
+            scrollBehavior = scrollBehavior,
+            modifier = modifier,
+            titlePadding = titlePadding,
+            navigationIconPadding = navigationIconPadding,
+            actionIconPadding = actionIconPadding,
+            navigationIcon = navigationIcon,
+            actions = actions,
+            bottomContent = {
+                Box(Modifier.padding(bottom = TopAppBarDefaults.LargeTitleBottomPadding)) {
+                    titleContent()
+                }
+                bottomContent()
+            },
+        )
+        return
+    }
     TopAppBar(
         title = title,
         modifier = modifier.topBarHazeEffect(hazeState, hazeStyle),
@@ -100,7 +121,6 @@ fun SmallTopBar(
     val hazeState = LocalTopBarHazeState.current
     val hazeStyle = LocalTopBarHazeStyle.current
     val hazeEnabled = hazeState != null && hazeStyle != null
-
     SmallTopAppBar(
         title = title,
         modifier = modifier.topBarHazeEffect(hazeState, hazeStyle),
