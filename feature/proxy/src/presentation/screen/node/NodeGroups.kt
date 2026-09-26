@@ -36,10 +36,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,7 +69,10 @@ import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Speed
 import com.github.lmfirefly.flycat.presentation.icon.flycat.chevron
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.RowRevealAll
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import com.github.lmfirefly.flycat.presentation.theme.rememberRowShown
+import com.github.lmfirefly.flycat.presentation.theme.rowReveal
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -92,19 +96,20 @@ internal fun LazyListScope.nodeGroupItems(
     onGroupDelayTestClick: ((ProxyGroupInfo) -> Unit)? = null,
     onGroupBoundsChanged: ((String, Rect) -> Unit)? = null,
     itemVerticalPadding: Dp = UiDp.dp6,
+    revealCount: State<Int> = RowRevealAll,
 ) {
     if (displayMode.isSingleColumn) {
-        items(
+        itemsIndexed(
             items = groups,
-            key = { group -> "${group.type}:${group.name}" },
-            contentType = { "NodeGroupCard" },
-        ) { group ->
+            key = { _, group -> "${group.type}:${group.name}" },
+            contentType = { _, _ -> "NodeGroupCard" },
+        ) { index, group ->
             NodeGroupCard(
                 group = group,
                 isDelayTesting = testingGroupNames.contains(group.name),
                 onClick = { onGroupClick(group) },
                 onTestClick = onGroupDelayTestClick,
-                modifier = Modifier.fillMaxWidth().padding(vertical = itemVerticalPadding),
+                modifier = Modifier.rowReveal(rememberRowShown(index, revealCount)).fillMaxWidth().padding(vertical = itemVerticalPadding),
             )
         }
     } else {
@@ -122,6 +127,7 @@ internal fun LazyListScope.nodeGroupItems(
             val right = groups.getOrNull(rowIndex * 2 + 1)
             Row(
                 modifier = Modifier
+                    .rowReveal(rememberRowShown(rowIndex, revealCount))
                     .fillMaxWidth()
                     .padding(vertical = itemVerticalPadding),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),

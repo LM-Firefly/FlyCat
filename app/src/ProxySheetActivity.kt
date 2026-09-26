@@ -40,7 +40,8 @@ class ProxySheetActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setFinishOnTouchOutside(true)
+        // 统一走 dismissSheet 清理链（含弹窗收尾），外点直接 finish 会绕过清理并打断关闭动画。
+        setFinishOnTouchOutside(false)
         if (android.os.Build.VERSION.SDK_INT >= 34) {
             overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, 0, 0)
         } else {

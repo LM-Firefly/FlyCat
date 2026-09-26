@@ -53,7 +53,9 @@ import com.github.lmfirefly.flycat.core.model.proxy.normalizeProxySheetHeightFra
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.navigation.LocalTopBarHazeState
 import com.github.lmfirefly.flycat.presentation.component.navigation.LocalTopBarHazeStyle
+import com.github.lmfirefly.flycat.presentation.theme.SheetLeadMillis
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import com.github.lmfirefly.flycat.presentation.theme.rememberRowReveal
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
@@ -164,6 +166,7 @@ internal fun NodeGroupSheetContent(
     listState: LazyListState = rememberLazyListState(),
 ) {
     val sheetHeight = rememberNodeSheetHeight(sheetHeightFraction)
+    val revealCount = rememberRowReveal(itemCount = groups.size, listState = listState, leadMillis = SheetLeadMillis)
 
     LaunchedEffect(testingGroupNames) {
         if (testingGroupNames.isNotEmpty() && listState.isScrolledFromTop()) {
@@ -184,6 +187,7 @@ internal fun NodeGroupSheetContent(
             onGroupClick = onGroupClick,
             testingGroupNames = testingGroupNames,
             itemVerticalPadding = UiDp.dp0,
+            revealCount = revealCount,
         )
     }
 }
@@ -202,6 +206,7 @@ fun NodeSheetContent(
     listState: LazyListState = rememberLazyListState(),
     pinnedProxyName: String = "",
 ) {
+    val revealCount = rememberRowReveal(itemCount = group.proxies.size, replayKey = group.name, listState = listState, leadMillis = SheetLeadMillis)
     LaunchedEffect(isDelayTesting) {
         if (isDelayTesting && listState.isScrolledFromTop()) {
             listState.animateScrollToItem(0)
@@ -236,6 +241,7 @@ fun NodeSheetContent(
             isDelayTesting = isDelayTesting,
             testingProxyNames = testingProxyNames,
             onSingleNodeTestClick = onTestProxyDelay,
+            revealCount = revealCount,
         )
     }
 }
