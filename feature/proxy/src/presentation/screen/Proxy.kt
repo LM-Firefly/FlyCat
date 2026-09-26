@@ -29,6 +29,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,8 +51,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -82,6 +86,7 @@ import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.LocalSpacing
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import com.github.lmfirefly.flycat.presentation.theme.rememberRowReveal
 import dev.chrisbanes.haze.hazeSource
 import kotlin.math.abs
 import kotlinx.coroutines.launch
@@ -93,8 +98,13 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.SinkFeedback
+import top.yukonga.miuix.kmp.utils.pressable
 
 private fun LazyListState.isScrolledFromTop(): Boolean =
     firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
@@ -236,6 +246,16 @@ fun ProxyPager(
                 sortMode = sortMode,
                 onDisplayModeSelected = proxyViewModel::setDisplayMode,
                 onSortSelected = proxyViewModel::setSortMode,
+                selectedGroupName = if (inSplitShell) null else selectedGroupName,
+                onBackToGroups = groupSelection.clearSelection,
+                onTitleScrollTop = {
+                    val listState = if (selectedGroupName == null) groupListState else nodeListState
+                    coroutineScope.launch {
+                        if (listState.isScrolledFromTop()) {
+                            listState.animateScrollToItem(0)
+                        }
+                    }
+                },
             )
         },
     ) {
@@ -340,6 +360,45 @@ fun ProxyPager(
     }
 }
 
+/** 代理页大标题面包屑：根段“代理”可点，[segmentLabel] 非空时显示“代理 > 组名”分段。 */
+@Composable
+internal fun ProxyTitleBreadcrumb(rootLabel: String, onRootClick: () -> Unit, segmentLabel: String? = null, onSegmentClick: (() -> Unit)? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = TopAppBarDefaults.TitlePadding),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ProxyCrumbText(label = rootLabel, onClick = onRootClick)
+        if (segmentLabel != null) {
+            Text(
+                text = " > ",
+                style = MiuixTheme.textStyles.title1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                maxLines = 1,
+            )
+            ProxyCrumbText(
+                label = segmentLabel,
+                onClick = onSegmentClick,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProxyCrumbText(label: String, onClick: (() -> Unit)?, modifier: Modifier = Modifier) {
+    val interactionSource = remember { MutableInteractionSource() }
+    Text(
+        text = label,
+        style = MiuixTheme.textStyles.title1,
+        color = MiuixTheme.colorScheme.onSurface,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier
+            .pressable(interactionSource = interactionSource, indication = SinkFeedback())
+            .clickable(interactionSource = interactionSource, indication = null, enabled = onClick != null) { onClick?.invoke() },
+    )
+}
+
 /** Stable TopBar sub-composable for [ProxyPager] — only recomposes when sort/display params change. */
 @Composable
 private fun PagerTopBar(
@@ -353,9 +412,19 @@ private fun PagerTopBar(
     sortMode: ProxySortMode,
     onDisplayModeSelected: (ProxyDisplayMode) -> Unit,
     onSortSelected: (ProxySortMode) -> Unit,
+    selectedGroupName: String?,
+    onBackToGroups: () -> Unit,
+    onTitleScrollTop: () -> Unit,
 ) {
     ProxyTopBar(
-        title = FlyTxt.Proxy.Title,
+        title = if (selectedGroupName == null) {
+            FlyTxt.Component.BottomBar.Proxy
+        } else {
+            "${FlyTxt.Component.BottomBar.Proxy} > $selectedGroupName"
+        },
+        groupName = selectedGroupName,
+        onTitleRootClick = { if (selectedGroupName == null) onTitleScrollTop() else onBackToGroups() },
+        onTitleGroupClick = onTitleScrollTop,
         scrollBehavior = scrollBehavior,
         showBack = false,
         onBack = {},
@@ -374,6 +443,9 @@ private fun PagerTopBar(
 @Composable
 internal fun ProxyTopBar(
     title: String,
+    groupName: String? = null,
+    onTitleRootClick: (() -> Unit)? = null,
+    onTitleGroupClick: (() -> Unit)? = null,
     scrollBehavior: ScrollBehavior,
     showBack: Boolean,
     onBack: () -> Unit,
@@ -388,9 +460,22 @@ internal fun ProxyTopBar(
     onSortSelected: (ProxySortMode) -> Unit,
 ) {
     val spacing = AppTheme.spacing
+    val titleContent: (@Composable () -> Unit)? = if (onTitleRootClick == null) {
+        null
+    } else {
+        {
+            ProxyTitleBreadcrumb(
+                rootLabel = FlyTxt.Component.BottomBar.Proxy,
+                onRootClick = onTitleRootClick,
+                segmentLabel = groupName,
+                onSegmentClick = onTitleGroupClick,
+            )
+        }
+    }
 
     TopBar(
         title = title,
+        titleContent = titleContent,
         scrollBehavior = scrollBehavior,
         navigationIconPadding = UiDp.dp24,
         actionIconPadding = UiDp.dp24,
@@ -500,6 +585,7 @@ internal fun NodeListPage(
     }
 
     val visibleProxies = remember(group.proxies, searchQuery) { group.filterNodes(searchQuery) }
+    val revealCount = rememberRowReveal(itemCount = visibleProxies.size, replayKey = group.name, listState = listState)
 
     KeepLazyListTopAnchorOnReorder(
         listState = listState,
@@ -583,6 +669,7 @@ internal fun NodeListPage(
                     resolveChildNodeName = resolveChildNodeName,
                     outerHorizontalPadding = UiDp.dp0,
                     itemVerticalPadding = UiDp.dp6,
+                    revealCount = revealCount,
                 )
             }
         }
@@ -603,6 +690,7 @@ private fun ProxyContent(
     onGroupBoundsChanged: ((String, Rect) -> Unit)? = null,
 ) {
     val spacing = LocalSpacing.current
+    val revealCount = rememberRowReveal(itemCount = proxyGroups.size, listState = listState)
     ScreenLazyColumn(
         scrollBehavior = scrollBehavior,
         lazyListState = listState,
@@ -626,6 +714,7 @@ private fun ProxyContent(
             onGroupDelayTestClick = onGroupDelayTestClick,
             onGroupBoundsChanged = onGroupBoundsChanged,
             itemVerticalPadding = UiDp.dp6,
+            revealCount = revealCount,
         )
     }
 }

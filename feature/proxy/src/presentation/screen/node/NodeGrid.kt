@@ -32,14 +32,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
+import com.github.lmfirefly.flycat.presentation.theme.RowRevealAll
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import com.github.lmfirefly.flycat.presentation.theme.rememberRowShown
+import com.github.lmfirefly.flycat.presentation.theme.rowReveal
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -55,11 +60,12 @@ internal fun LazyListScope.nodeGridItems(
     resolveChildNodeName: ((Proxy) -> String?)? = null,
     outerHorizontalPadding: Dp = UiDp.dp0,
     itemVerticalPadding: Dp = UiDp.dp0,
+    revealCount: State<Int> = RowRevealAll,
 ) {
     val showDetail = displayMode.showDetail
     val isSingleColumn = displayMode.isSingleColumn
     if (isSingleColumn) {
-        items(items = proxies, key = { it.name }, contentType = { "NodeCard1" }) { proxy ->
+        itemsIndexed(items = proxies, key = { _, proxy -> proxy.name }, contentType = { _, _ -> "NodeCard1" }) { index, proxy ->
             NodeCard(
                 proxy = proxy,
                 isSelected = proxy.name == selectedProxyName,
@@ -74,6 +80,7 @@ internal fun LazyListScope.nodeGridItems(
                 resolvedChildNodeName = resolveChildNodeName?.invoke(proxy),
                 modifier =
                     Modifier.animateItem()
+                        .rowReveal(rememberRowShown(index, revealCount))
                         .padding(
                             horizontal = outerHorizontalPadding,
                             vertical = itemVerticalPadding,
@@ -98,6 +105,7 @@ internal fun LazyListScope.nodeGridItems(
         val right = proxies.getOrNull(i + 1)
         Row(
             modifier = Modifier
+                .rowReveal(rememberRowShown(rowIndex, revealCount))
                 .fillMaxWidth()
                 .padding(horizontal = outerHorizontalPadding, vertical = itemVerticalPadding),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
