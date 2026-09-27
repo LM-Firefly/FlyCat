@@ -76,8 +76,7 @@ import com.github.lmfirefly.flycat.presentation.icon.flycat.Copy
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Sparkles
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
-import com.github.lmfirefly.flycat.presentation.util.PROFILE_IMPORT_TYPE_QR
-import com.github.lmfirefly.flycat.presentation.util.PROFILE_IMPORT_TYPE_URL
+import com.github.lmfirefly.flycat.presentation.util.ProfileImportType
 import com.github.lmfirefly.flycat.presentation.util.toast
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownItem
@@ -155,7 +154,7 @@ internal fun DownloadProgressContent(
 
 @Composable
 internal fun ProfileFormContent(
-    selectedTypeIndex: Int,
+    selectedImportType: ProfileImportType,
     profileLocked: Boolean,
     nameTextFieldValue: TextFieldValue,
     urlTextFieldValue: TextFieldValue,
@@ -166,7 +165,7 @@ internal fun ProfileFormContent(
     hasCameraPermission: Boolean,
     showCameraPreview: Boolean,
     onContainerMeasured: (androidx.compose.ui.unit.IntSize) -> Unit,
-    onTypeSelected: (Int) -> Unit,
+    onTypeSelected: (ProfileImportType) -> Unit,
     onNameChange: (TextFieldValue) -> Unit,
     onUrlChange: (TextFieldValue) -> Unit,
     onAgeSecretKeyChange: (TextFieldValue) -> Unit,
@@ -180,28 +179,28 @@ internal fun ProfileFormContent(
         verticalArrangement = Arrangement.spacedBy(UiDp.dp16),
     ) {
         ProfileTypeSelectorCard(
-            selectedTypeIndex = selectedTypeIndex,
+            selectedImportType = selectedImportType,
             profileLocked = profileLocked,
             onTypeSelected = onTypeSelected,
         )
 
         Crossfade(
-            targetState = selectedTypeIndex,
+            targetState = selectedImportType,
             animationSpec = tween(AnimationSpecs.DURATION_CROSSFADE),
             label = "ProfileTypeContent",
-        ) { typeIndex ->
-            when (typeIndex) {
-                PROFILE_IMPORT_TYPE_QR ->
+        ) { importType ->
+            when (importType) {
+                ProfileImportType.Qr ->
                     QrScannerContent(
                         hasCameraPermission = hasCameraPermission,
                         showCameraPreview = showCameraPreview,
                         onSelectQrImage = onSelectQrImage,
                         onQrScanned = onQrScanned,
                     )
-
-                else ->
+                ProfileImportType.Url,
+                ProfileImportType.LocalFile ->
                     ManualProfileContent(
-                        typeIndex = typeIndex,
+                        importType = importType,
                         profileLocked = profileLocked,
                         nameTextFieldValue = nameTextFieldValue,
                         urlTextFieldValue = urlTextFieldValue,
@@ -221,34 +220,21 @@ internal fun ProfileFormContent(
 }
 
 @Composable
-private fun ProfileTypeSelectorCard(
-    selectedTypeIndex: Int,
-    profileLocked: Boolean,
-    onTypeSelected: (Int) -> Unit,
-) {
+private fun ProfileTypeSelectorCard(selectedImportType: ProfileImportType, profileLocked: Boolean, onTypeSelected: (ProfileImportType) -> Unit) {
     top.yukonga.miuix.kmp.basic.Card {
         Box(
-            modifier =
-                Modifier.alpha(if (profileLocked) 0.5f else 1f)
-                    .clickable(
-                        enabled = profileLocked,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() },
-                        onClick = {},
-                    )
+            modifier = Modifier.alpha(if (profileLocked) 0.5f else 1f).clickable(
+                enabled = profileLocked,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+                onClick = {},
+            )
         ) {
             WindowSpinnerPreference(
                 title = FlyTxt.ProfilesPage.Type.Title,
-                items =
-                    remember {
-                        listOf(
-                            DropdownItem(FlyTxt.ProfilesPage.Type.Subscription),
-                            DropdownItem(FlyTxt.ProfilesPage.Type.LocalFile),
-                            DropdownItem(FlyTxt.ProfilesPage.Type.QrScan),
-                        )
-                    },
-                selectedIndex = selectedTypeIndex,
-                onSelectedIndexChange = onTypeSelected,
+                items = ProfileImportType.entries.map { type -> DropdownItem(type.spinnerTitle()) },
+                selectedIndex = selectedImportType.ordinal,
+                onSelectedIndexChange = { index -> onTypeSelected(ProfileImportType.fromSpinnerIndex(index)) },
             )
         }
     }
@@ -293,7 +279,7 @@ private fun QrScannerContent(
 
 @Composable
 private fun ManualProfileContent(
-    typeIndex: Int,
+    importType: ProfileImportType,
     profileLocked: Boolean,
     nameTextFieldValue: TextFieldValue,
     urlTextFieldValue: TextFieldValue,
@@ -323,7 +309,7 @@ private fun ManualProfileContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        if (typeIndex == PROFILE_IMPORT_TYPE_URL) {
+        if (importType == ProfileImportType.Url) {
             TextField(
                 value = urlTextFieldValue,
                 onValueChange = onUrlChange,
@@ -495,4 +481,10 @@ private fun ManualProfileContent(
             )
         }
     }
+}
+
+private fun ProfileImportType.spinnerTitle(): String = when (this) {
+    ProfileImportType.Url -> FlyTxt.ProfilesPage.Type.Subscription
+    ProfileImportType.LocalFile -> FlyTxt.ProfilesPage.Type.LocalFile
+    ProfileImportType.Qr -> FlyTxt.ProfilesPage.Type.QrScan
 }

@@ -28,12 +28,22 @@ import android.provider.OpenableColumns
 import com.github.lmfirefly.flycat.core.model.profile.Profile
 import java.io.File
 
-const val PROFILE_IMPORT_TYPE_URL = 0
-const val PROFILE_IMPORT_TYPE_FILE = 1
-const val PROFILE_IMPORT_TYPE_QR = 2
+enum class ProfileImportType {
+    Url,
+    LocalFile,
+    Qr,
+    ;
+    companion object {
+        fun fromSpinnerIndex(index: Int): ProfileImportType = entries.getOrNull(index) ?: Url
+        fun fromProfile(profileType: Profile.Type): ProfileImportType = when (profileType) {
+            Profile.Type.Url -> ProfileImportType.Url
+            Profile.Type.File -> ProfileImportType.LocalFile
+            Profile.Type.External -> ProfileImportType.LocalFile
+        }
+    }
+}
 
-private val subscriptionUrlPattern =
-    Regex(pattern = "^https?://\\S+$", options = setOf(RegexOption.IGNORE_CASE))
+private val subscriptionUrlPattern = Regex(pattern = "^https?://\\S+$", options = setOf(RegexOption.IGNORE_CASE))
 
 fun isSubscriptionUrl(value: String): Boolean = subscriptionUrlPattern.matches(value.trim())
 
@@ -48,36 +58,23 @@ fun readClipboardSubscriptionUrl(context: Context): String? {
         ?.takeIf { it.isNotBlank() && isSubscriptionUrl(it) }
 }
 
-fun isYamlConfigFileName(fileName: String): Boolean =
-    when (fileName.substringAfterLast(".", "").lowercase()) {
-        "yaml",
-        "yml" -> true
-        else -> false
-    }
+fun isYamlConfigFileName(fileName: String): Boolean = when (fileName.substringAfterLast(".", "").lowercase()) {
+    "yaml",
+    "yml" -> true
+    else -> false
+}
 
-fun profileNameFromConfigFileName(fileName: String, fallback: String): String =
-    fileName.substringBeforeLast(".").ifBlank {
+fun profileNameFromConfigFileName(fileName: String, fallback: String): String = fileName.substringBeforeLast(".").ifBlank {
+    fallback
+}
+
+fun readDisplayName(context: Context, uri: Uri, fallback: String): String = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+    if (nameIndex < 0 || !cursor.moveToFirst()) {
         fallback
+    } else {
+        cursor.getString(nameIndex)
     }
+} ?: fallback
 
-fun readDisplayName(context: Context, uri: Uri, fallback: String): String =
-    context.contentResolver
-        .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-        ?.use { cursor ->
-            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (nameIndex < 0 || !cursor.moveToFirst()) {
-                fallback
-            } else {
-                cursor.getString(nameIndex)
-            }
-        } ?: fallback
-
-fun importTypeIndexFor(profileType: Profile.Type): Int =
-    when (profileType) {
-        Profile.Type.Url -> PROFILE_IMPORT_TYPE_URL
-        Profile.Type.File,
-        Profile.Type.External -> PROFILE_IMPORT_TYPE_FILE
-    }
-
-fun sourceFileName(source: String): String =
-    source.takeIf(String::isNotEmpty)?.let { File(it).name }.orEmpty()
+fun sourceFileName(source: String): String = source.takeIf(String::isNotEmpty)?.let { File(it).name }.orEmpty()

@@ -72,10 +72,7 @@ import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetC
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetConfirmAction
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
-import com.github.lmfirefly.flycat.presentation.util.PROFILE_IMPORT_TYPE_FILE
-import com.github.lmfirefly.flycat.presentation.util.PROFILE_IMPORT_TYPE_QR
-import com.github.lmfirefly.flycat.presentation.util.PROFILE_IMPORT_TYPE_URL
-import com.github.lmfirefly.flycat.presentation.util.importTypeIndexFor
+import com.github.lmfirefly.flycat.presentation.util.ProfileImportType
 import com.github.lmfirefly.flycat.presentation.util.isYamlConfigFileName
 import com.github.lmfirefly.flycat.presentation.util.profileNameFromConfigFileName
 import com.github.lmfirefly.flycat.presentation.util.readClipboardSubscriptionUrl
@@ -112,7 +109,7 @@ internal fun AddProfileSheet(
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
-    var selectedTypeIndex by remember { mutableIntStateOf(0) }
+    var selectedImportType by remember { mutableStateOf(ProfileImportType.Url) }
     var name by remember { mutableStateOf("") }
     var nameTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
     var url by remember { mutableStateOf("") }
@@ -127,7 +124,6 @@ internal fun AddProfileSheet(
     var intervalTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
     var error by remember { mutableStateOf("") }
     var isDownloading by remember { mutableStateOf(false) }
-
     val downloadProgress by profilesViewModel.downloadProgress.collectAsStateWithLifecycle()
     val uiState by profilesViewModel.uiState.collectAsStateWithLifecycle()
     var hasShownCompleteAnimation by remember { mutableStateOf(false) }
@@ -169,14 +165,13 @@ internal fun AddProfileSheet(
     }
 
     val clearCurrentTypeState = {
-        when (selectedTypeIndex) {
-            PROFILE_IMPORT_TYPE_URL -> applyUrlText("")
-            PROFILE_IMPORT_TYPE_FILE -> {
+        when (selectedImportType) {
+            ProfileImportType.Url -> applyUrlText("")
+            ProfileImportType.LocalFile -> {
                 filePath = ""
                 applyFileNameText("")
             }
-
-            PROFILE_IMPORT_TYPE_QR -> {}
+            ProfileImportType.Qr -> {}
         }
         error = ""
     }
@@ -188,31 +183,29 @@ internal fun AddProfileSheet(
         )
     }
 
-    val cameraPermissionLauncher =
-        rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {
-            isGranted ->
-            hasCameraPermission = isGranted
-            if (!isGranted) {
-                context.toast(FlyTxt.ProfilesPage.QrScanner.NeedCamera, Toast.LENGTH_LONG)
-                selectedTypeIndex = PROFILE_IMPORT_TYPE_URL
-            }
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {
+        isGranted ->
+        hasCameraPermission = isGranted
+        if (!isGranted) {
+            context.toast(FlyTxt.ProfilesPage.QrScanner.NeedCamera, Toast.LENGTH_LONG)
+            selectedImportType = ProfileImportType.Url
         }
+    }
 
-    LaunchedEffect(selectedTypeIndex) {
-        if (selectedTypeIndex == PROFILE_IMPORT_TYPE_QR && !hasCameraPermission) {
+    LaunchedEffect(selectedImportType) {
+        if (selectedImportType == ProfileImportType.Qr && !hasCameraPermission) {
             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
-    val showCameraPreview by
-        remember(show.value, selectedTypeIndex, isDownloading, hasCameraPermission) {
-            derivedStateOf {
-                show.value &&
-                    selectedTypeIndex == PROFILE_IMPORT_TYPE_QR &&
-                    !isDownloading &&
-                    hasCameraPermission
-            }
+    val showCameraPreview by remember(show.value, selectedImportType, isDownloading, hasCameraPermission) {
+        derivedStateOf {
+            show.value &&
+                selectedImportType == ProfileImportType.Qr &&
+                !isDownloading &&
+                hasCameraPermission
         }
+    }
 
     DisposableEffect(show.value, profileToEdit, importUrl) {
         if (show.value) {
@@ -228,18 +221,18 @@ internal fun AddProfileSheet(
                 interval = if (profileToEdit.interval > 0) profileToEdit.interval.toString() else ""
                 intervalTextFieldValue = textFieldValueAtEnd(interval)
                 if (profileToEdit.type == Profile.Type.Url) {
-                    selectedTypeIndex = PROFILE_IMPORT_TYPE_URL
+                    selectedImportType = ProfileImportType.Url
                     applyUrlText(profileToEdit.source)
                 } else {
-                    selectedTypeIndex = importTypeIndexFor(profileToEdit.type)
+                    selectedImportType = ProfileImportType.fromProfile(profileToEdit.type)
                     filePath = profileToEdit.source
                     applyFileNameText(sourceFileName(profileToEdit.source))
                 }
             } else if (!importUrl.isNullOrBlank()) {
-                selectedTypeIndex = PROFILE_IMPORT_TYPE_URL
+                selectedImportType = ProfileImportType.Url
                 applyUrlText(importUrl)
             } else {
-                selectedTypeIndex = PROFILE_IMPORT_TYPE_URL
+                selectedImportType = ProfileImportType.Url
                 readClipboardSubscriptionUrl(context)?.let(applyUrlText)
             }
         }
@@ -312,7 +305,7 @@ internal fun AddProfileSheet(
                         val result = readQrFromImage(context, it)
                         if (result != null) {
                             applyUrlText(result)
-                            selectedTypeIndex = PROFILE_IMPORT_TYPE_URL
+                            selectedImportType = ProfileImportType.Url
                             context.toast(FlyTxt.ProfilesPage.QrScanner.RecognizeSuccess)
                         } else {
                             context.toast(FlyTxt.ProfilesPage.QrScanner.RecognizeFailed)
@@ -334,37 +327,34 @@ internal fun AddProfileSheet(
     }
 
     fun submitProfile() {
-        if (selectedTypeIndex == PROFILE_IMPORT_TYPE_QR || isDownloading) {
+        if (selectedImportType == ProfileImportType.Qr || isDownloading) {
             return
         }
-        if (selectedTypeIndex == PROFILE_IMPORT_TYPE_URL && urlTextFieldValue.text.isBlank()) {
+        if (selectedImportType == ProfileImportType.Url && urlTextFieldValue.text.isBlank()) {
             error = FlyTxt.ProfilesPage.Validation.EnterUrl
             return
         }
-        if (selectedTypeIndex == PROFILE_IMPORT_TYPE_FILE && filePath.isBlank()) {
+        if (selectedImportType == ProfileImportType.LocalFile && filePath.isBlank()) {
             error = FlyTxt.ProfilesPage.Validation.SelectFile
             return
         }
-
         keyboardController?.hide()
         profilesViewModel.clearError()
         hasShownCompleteAnimation = false
         isDownloading = true
-
-        if (selectedTypeIndex == PROFILE_IMPORT_TYPE_URL) {
+        val trimmedAgeSecretKey = ageSecretKeyTextFieldValue.text.trim()
+        val ageKeyUpdate = if (trimmedAgeSecretKey != initialAgeSecretKey) trimmedAgeSecretKey else null
+        if (selectedImportType == ProfileImportType.Url) {
+            val newInterval = intervalTextFieldValue.text.toLongOrNull() ?: 0L
             if (profileToEdit != null) {
-                val trimmedAgeSecretKey = ageSecretKeyTextFieldValue.text.trim()
-                val newInterval = intervalTextFieldValue.text.toLongOrNull() ?: 0L
                 onUpdateProfile(
                     profileToEdit.uuid,
                     nameTextFieldValue.text,
                     urlTextFieldValue.text,
                     newInterval,
-                    if (trimmedAgeSecretKey != initialAgeSecretKey) trimmedAgeSecretKey else null,
+                    ageKeyUpdate,
                 )
             } else {
-                val trimmedAgeSecretKey = ageSecretKeyTextFieldValue.text.trim()
-                val newInterval = intervalTextFieldValue.text.toLongOrNull() ?: 0L
                 onAddProfile(
                     nameTextFieldValue.text.ifBlank { FlyTxt.ProfilesPage.Input.NewProfile },
                     urlTextFieldValue.text,
@@ -376,16 +366,14 @@ internal fun AddProfileSheet(
             }
         } else {
             if (profileToEdit != null) {
-                val trimmedAgeSecretKey = ageSecretKeyTextFieldValue.text.trim()
                 onUpdateProfile(
                     profileToEdit.uuid,
                     name,
                     profileToEdit.source,
                     profileToEdit.interval,
-                    if (trimmedAgeSecretKey != initialAgeSecretKey) trimmedAgeSecretKey else null,
+                    ageKeyUpdate,
                 )
             } else {
-                val trimmedAgeSecretKey = ageSecretKeyTextFieldValue.text.trim()
                 onAddProfile(
                     nameTextFieldValue.text.ifBlank { FlyTxt.ProfilesPage.Input.NewProfile },
                     filePath,
@@ -400,19 +388,18 @@ internal fun AddProfileSheet(
 
     AppActionBottomSheet(
         show = show.value,
-        title =
-            if (profileToEdit != null) {
-                FlyTxt.ProfilesPage.Sheet.EditTitle
-            } else {
-                FlyTxt.ProfilesPage.Sheet.AddTitle
-            },
+        title = if (profileToEdit != null) {
+            FlyTxt.ProfilesPage.Sheet.EditTitle
+        } else {
+            FlyTxt.ProfilesPage.Sheet.AddTitle
+        },
         startAction = {
             if (!isDownloading) {
                 AppBottomSheetCloseAction(contentDescription = FlyTxt.Component.Action.Cancel, onClick = dismissSheet)
             }
         },
         endAction = {
-            if (!isDownloading && selectedTypeIndex != PROFILE_IMPORT_TYPE_QR) {
+            if (!isDownloading && selectedImportType != ProfileImportType.Qr) {
                 AppBottomSheetConfirmAction(
                     contentDescription = "Confirm",
                     onClick = { submitProfile() },
@@ -469,7 +456,7 @@ internal fun AddProfileSheet(
                     )
                 } else {
                     ProfileFormContent(
-                        selectedTypeIndex = selectedTypeIndex,
+                        selectedImportType = selectedImportType,
                         profileLocked = profileToEdit != null,
                         nameTextFieldValue = nameTextFieldValue,
                         urlTextFieldValue = urlTextFieldValue,
@@ -483,7 +470,7 @@ internal fun AddProfileSheet(
                             stableSheetHeightPx = max(stableSheetHeightPx, it.height)
                         },
                         onTypeSelected = {
-                            selectedTypeIndex = it
+                            selectedImportType = it
                             clearCurrentTypeState()
                         },
                         onNameChange = { updatedTextFieldValue ->
@@ -510,7 +497,7 @@ internal fun AddProfileSheet(
                         onSelectQrImage = { qrImageLauncher.launch("image/*") },
                         onQrScanned = { scannedUrl ->
                             applyUrlText(scannedUrl)
-                            selectedTypeIndex = PROFILE_IMPORT_TYPE_URL
+                            selectedImportType = ProfileImportType.Url
                         },
                     )
                 }

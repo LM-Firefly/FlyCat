@@ -11,7 +11,6 @@
 
 package com.github.lmfirefly.flycat.presentation.navigation
 
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -21,17 +20,11 @@ import androidx.compose.ui.Modifier
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.decompose.extensions.compose.stack.Children
 import com.arkivanov.decompose.extensions.compose.stack.animation.StackAnimation
-import com.arkivanov.decompose.extensions.compose.stack.animation.fade
-import com.arkivanov.decompose.extensions.compose.stack.animation.plus
-import com.arkivanov.decompose.extensions.compose.stack.animation.scale
-import com.arkivanov.decompose.extensions.compose.stack.animation.slide
-import com.arkivanov.decompose.extensions.compose.stack.animation.stackAnimation
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.github.lmfirefly.flycat.presentation.component.navigation.LocalNavigator
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
-import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 
 @Composable
 fun SecondaryDetailHost(navigator: Navigator, placeholderContent: (@Composable () -> Unit)? = null) {
@@ -47,9 +40,7 @@ fun SecondaryDetailHost(navigator: Navigator, placeholderContent: (@Composable (
         }
     }
     val stack by childStack.subscribeAsState()
-    val animation: StackAnimation<Any, DetailRouteChild> = remember {
-        stackAnimation(fade(tween(AnimationSpecs.DURATION_NAV_FADE)) + slide(tween(AnimationSpecs.DURATION_NAV_SLIDE)) + scale(tween(AnimationSpecs.DURATION_NAV_SCALE)))
-    }
+    val animation: StackAnimation<Any, DetailRouteChild> = remember { flyStackAnimation() }
     Children(
         stack = stack,
         modifier = Modifier.fillMaxSize(),

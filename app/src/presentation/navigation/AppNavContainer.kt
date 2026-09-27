@@ -116,6 +116,7 @@ fun RouteContent(route: Route, navigator: Navigator, mainPage: Int = 0) {
 }
 
 // ── Decompose animation (matches FlyCat: fade 300 + slide 400 + scale 500) ──
+internal fun <C : Any, T : Any> flyStackAnimation(): StackAnimation<C, T> = stackAnimation(fade(tween(AnimationSpecs.DURATION_NAV_FADE)) + slide(tween(AnimationSpecs.DURATION_NAV_SLIDE)) + scale(tween(AnimationSpecs.DURATION_NAV_SCALE)))
 
 @OptIn(ExperimentalDecomposeApi::class)
 private fun <T : Any> yumeAnimation(
@@ -125,7 +126,7 @@ private fun <T : Any> yumeAnimation(
     predictiveBackAnimation(
         backHandler = backHandler,
         onBack = onBack,
-        fallbackAnimation = stackAnimation(fade(tween(AnimationSpecs.DURATION_NAV_FADE)) + slide(tween(AnimationSpecs.DURATION_NAV_SLIDE)) + scale(tween(AnimationSpecs.DURATION_NAV_SCALE))),
+        fallbackAnimation = flyStackAnimation(),
         selector = { event, _, _ -> androidPredictiveBackAnimatableV1(event) },
     )
 
@@ -236,7 +237,7 @@ fun AppNavContainer(component: AppNavigationComponent) {
         if (predictiveBackEnabled) {
             yumeAnimation(component.componentContext.backHandler, commitBack)
         } else {
-            stackAnimation(fade(tween(AnimationSpecs.DURATION_NAV_FADE)) + slide(tween(AnimationSpecs.DURATION_NAV_SLIDE)) + scale(tween(AnimationSpecs.DURATION_NAV_SCALE)))
+            flyStackAnimation()
         }
     }
     Children(
