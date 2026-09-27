@@ -78,17 +78,33 @@ fun CustomRoutingScreen(navigator: Navigator, onOpenYamlEditor: (title: String, 
     var isSaving by remember { mutableStateOf(false) }
     val scrollBehavior = MiuixScrollBehavior()
 
-    LaunchedEffect(presetSelection) {
+    fun applyPresetSelection(selection: OverridePresetTemplateSelection) {
         selectedUrlTestRegions.clear()
-        selectedUrlTestRegions.addAll(sortPresetRegions(presetSelection.urlTestRegions))
+        selectedUrlTestRegions.addAll(sortPresetRegions(selection.urlTestRegions))
         selectedFallbackRegions.clear()
-        selectedFallbackRegions.addAll(sortPresetRegions(presetSelection.fallbackRegions))
+        selectedFallbackRegions.addAll(sortPresetRegions(selection.fallbackRegions))
         enabledItems.clear()
-        enabledItems.addAll(sortPresetItems(presetSelection.enabledItems))
-        enableUrlTestGroup = presetSelection.enableUrlTestGroup
-        enableFallbackGroup = presetSelection.enableFallbackGroup
+        enabledItems.addAll(sortPresetItems(selection.enabledItems))
+        enableUrlTestGroup = selection.enableUrlTestGroup
+        enableFallbackGroup = selection.enableFallbackGroup
         isDirty = false
     }
+
+    fun editedPresetSelection() = OverridePresetTemplateSelection(
+        urlTestRegions = selectedUrlTestRegions.toSet(),
+        fallbackRegions = selectedFallbackRegions.toSet(),
+        enabledItems = enabledItems.toSet(),
+        enableUrlTestGroup = enableUrlTestGroup,
+        enableFallbackGroup = enableFallbackGroup,
+    )
+
+    fun openEditor(content: String) {
+        onOpenYamlEditor(FlyTxt.MetaFeature.CustomRouting.EditYaml, content) { edited ->
+            viewModel.saveCustomRoutingYaml(edited).getOrElse { throw it }
+        }
+    }
+
+    LaunchedEffect(presetSelection) { applyPresetSelection(presetSelection) }
 
     fun saveAndExit() {
         if (isSaving) return
@@ -96,19 +112,18 @@ fun CustomRoutingScreen(navigator: Navigator, onOpenYamlEditor: (title: String, 
             navigator.navigateUp()
             return
         }
+        // 手动 YAML 编辑优先于预设编辑——应丢弃后者，而不是将其覆盖。
+        if (!templateRoundTripSafe) {
+            applyPresetSelection(presetSelection)
+            context.toast(FlyTxt.MetaFeature.CustomRouting.ManualYamlPresetDiscarded)
+            navigator.navigateUp()
+            return
+        }
 
-        val updatedSelection =
-            OverridePresetTemplateSelection(
-                urlTestRegions = selectedUrlTestRegions.toSet(),
-                fallbackRegions = selectedFallbackRegions.toSet(),
-                enabledItems = enabledItems.toSet(),
-                enableUrlTestGroup = enableUrlTestGroup,
-                enableFallbackGroup = enableFallbackGroup,
-            )
         scope.launch {
             isSaving = true
             viewModel
-                .savePresetSelection(updatedSelection)
+                .savePresetSelection(editedPresetSelection())
                 .onSuccess {
                     isDirty = false
                     navigator.navigateUp()
@@ -131,11 +146,26 @@ fun CustomRoutingScreen(navigator: Navigator, onOpenYamlEditor: (title: String, 
                     IconButton(
                         enabled = !isSaving,
                         onClick = {
-                            onOpenYamlEditor(
-                                FlyTxt.MetaFeature.CustomRouting.EditYaml,
-                                customRoutingContent,
-                            ) { content ->
-                                viewModel.saveCustomRoutingYaml(content).getOrElse { throw it }
+                            when {
+                                !isDirty -> openEditor(customRoutingContent)
+                                !templateRoundTripSafe -> {
+                                    applyPresetSelection(presetSelection)
+                                    context.toast(FlyTxt.MetaFeature.CustomRouting.ManualYamlPresetDiscarded)
+                                    openEditor(customRoutingContent)
+                                }
+                                else -> {
+                                    scope.launch {
+                                        isSaving = true
+                                        viewModel.savePresetSelection(editedPresetSelection()).onSuccess {
+                                            isDirty = false
+                                            openEditor(viewModel.customRoutingContent.value)
+                                        }
+                                        .onFailure { error ->
+                                            context.toast(error.message ?: FlyTxt.MetaFeature.CustomRouting.SaveFailed)
+                                        }
+                                        isSaving = false
+                                    }
+                                }
                             }
                         },
                     ) {
@@ -181,7 +211,7 @@ fun CustomRoutingScreen(navigator: Navigator, onOpenYamlEditor: (title: String, 
                     title = FlyTxt.MetaFeature.CustomRouting.UrlTestRegionGroupTitle,
                     items = orderedPresetRegions(),
                     iconUrl = OverridePresetRegion::icon,
-                    itemTitle = OverridePresetRegion::displayName,
+                    itemTitle = { it.localizedTitle() },
                     isChecked = { region -> region in selectedUrlTestRegions },
                     onCheckedChange = { region, checked ->
                         toggleSelection(selectedUrlTestRegions, region, checked)
@@ -195,7 +225,7 @@ fun CustomRoutingScreen(navigator: Navigator, onOpenYamlEditor: (title: String, 
                     title = FlyTxt.MetaFeature.CustomRouting.FallbackRegionGroupTitle,
                     items = orderedPresetRegions(),
                     iconUrl = OverridePresetRegion::icon,
-                    itemTitle = OverridePresetRegion::displayName,
+                    itemTitle = { it.localizedTitle() },
                     isChecked = { region -> region in selectedFallbackRegions },
                     onCheckedChange = { region, checked ->
                         toggleSelection(selectedFallbackRegions, region, checked)
@@ -209,7 +239,7 @@ fun CustomRoutingScreen(navigator: Navigator, onOpenYamlEditor: (title: String, 
                     title = FlyTxt.Override.Draft.BasicRouting,
                     items = orderedBasePresetItems(),
                     iconUrl = OverridePresetItem::icon,
-                    itemTitle = OverridePresetItem::title,
+                    itemTitle = { it.localizedTitle() },
                     isChecked = { item -> item in enabledItems },
                     onCheckedChange = { item, checked ->
                         toggleSelection(enabledItems, item, checked)
@@ -223,7 +253,7 @@ fun CustomRoutingScreen(navigator: Navigator, onOpenYamlEditor: (title: String, 
                     title = FlyTxt.Override.Draft.ServiceRouting,
                     items = orderedServicePresetItems(),
                     iconUrl = OverridePresetItem::icon,
-                    itemTitle = OverridePresetItem::title,
+                    itemTitle = { it.localizedTitle() },
                     isChecked = { item -> item in enabledItems },
                     onCheckedChange = { item, checked ->
                         toggleSelection(enabledItems, item, checked)
@@ -243,4 +273,22 @@ private fun <T> toggleSelection(items: MutableList<T>, item: T, checked: Boolean
     } else {
         items.remove(item)
     }
+}
+
+private fun OverridePresetRegion.localizedTitle(): String = when (this) {
+    OverridePresetRegion.HK -> FlyTxt.MetaFeature.CustomRouting.RegionHongKong
+    OverridePresetRegion.TW -> FlyTxt.MetaFeature.CustomRouting.RegionTaiwan
+    OverridePresetRegion.JP -> FlyTxt.MetaFeature.CustomRouting.RegionJapan
+    OverridePresetRegion.SG -> FlyTxt.MetaFeature.CustomRouting.RegionSingapore
+    OverridePresetRegion.US -> FlyTxt.MetaFeature.CustomRouting.RegionUnitedStates
+    OverridePresetRegion.Other -> FlyTxt.MetaFeature.CustomRouting.RegionOther
+}
+
+private fun OverridePresetItem.localizedTitle(): String = when (this) {
+    OverridePresetItem.Proxy -> FlyTxt.MetaFeature.CustomRouting.ItemProxy
+    OverridePresetItem.Ads -> FlyTxt.MetaFeature.CustomRouting.ItemAds
+    OverridePresetItem.Cn -> FlyTxt.MetaFeature.CustomRouting.ItemChina
+    OverridePresetItem.GeolocationNotCn -> FlyTxt.MetaFeature.CustomRouting.ItemGlobal
+    OverridePresetItem.Match -> FlyTxt.MetaFeature.CustomRouting.ItemMatch
+    else -> title
 }

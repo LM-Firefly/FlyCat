@@ -24,6 +24,18 @@ MetaFeature = {
         FallbackRegionGroupTitle = "Fallback Region Groups"
         SaveFailed = "Save failed"
         EditButton = "Edit"
+        ManualYamlPresetDiscarded = "Preset changes discarded to preserve manual YAML edits"
+        RegionHongKong = "Hong Kong Auto"
+        RegionTaiwan = "Taiwan Auto"
+        RegionJapan = "Japan Auto"
+        RegionSingapore = "Singapore Auto"
+        RegionUnitedStates = "United States Auto"
+        RegionOther = "Other Regions Auto"
+        ItemProxy = "Proxy Rules"
+        ItemAds = "Ad Blocking"
+        ItemChina = "Mainland China Direct"
+        ItemGlobal = "Non-China Geo Rules"
+        ItemMatch = "Fallback MATCH"
     }
 
     RuntimeRules = {

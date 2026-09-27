@@ -42,7 +42,7 @@ val featureDashboardDomainModule = module {
 val featureDashboardViewModelModule = module {
     viewModel { ConnectionViewModel(get<ConnectionRepository>(), get(), get()) }
     viewModel { TrafficStatisticsViewModel(get()) }
-    viewModel { CustomRoutingViewModel(get(), get()) }
+    viewModel { CustomRoutingViewModel(get(), get(), get()) }
     viewModel { RulesViewModel(get()) }
     single<CustomRoutingInitializer> { CustomRoutingBootstrapper(get<OverrideConfigRepository>()) }
 }

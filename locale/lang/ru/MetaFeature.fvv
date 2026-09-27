@@ -24,6 +24,18 @@ MetaFeature = {
         FallbackRegionGroupTitle = "Региональные группы Fallback"
         SaveFailed = "Не удалось сохранить"
         EditButton = "Изменить"
+        ManualYamlPresetDiscarded = "Изменения пресета отброшены, чтобы сохранить ручные правки YAML"
+        RegionHongKong = "Автовыбор Гонконга"
+        RegionTaiwan = "Автовыбор Тайваня"
+        RegionJapan = "Автовыбор Японии"
+        RegionSingapore = "Автовыбор Сингапура"
+        RegionUnitedStates = "Автовыбор США"
+        RegionOther = "Автовыбор других регионов"
+        ItemProxy = "Правила прокси"
+        ItemAds = "Блокировка рекламы"
+        ItemChina = "Материковый Китай напрямую"
+        ItemGlobal = "Геоправила вне Китая"
+        ItemMatch = "Финальный MATCH"
     }
 
     RuntimeRules = {

@@ -23,6 +23,7 @@ package com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.lmfirefly.flycat.core.contract.CustomRoutingInitializer
 import com.github.lmfirefly.flycat.core.contract.OverrideApplier
 import com.github.lmfirefly.flycat.core.contract.OverrideConfigRepository
 import com.github.lmfirefly.flycat.core.model.override.OverrideInternalConstants
@@ -41,6 +42,7 @@ import timber.log.Timber
 class CustomRoutingViewModel(
     private val overrideConfigRepository: OverrideConfigRepository,
     private val activeProfileOverrideApplier: OverrideApplier,
+    private val customRoutingInitializer: CustomRoutingInitializer,
 ) : ViewModel() {
     private val presetSelectionState = MutableStateFlow(defaultOverridePresetTemplateSelection())
     val presetSelection: StateFlow<OverridePresetTemplateSelection> =
@@ -49,7 +51,7 @@ class CustomRoutingViewModel(
     private val customRoutingContentState = MutableStateFlow("")
     val customRoutingContent: StateFlow<String> = customRoutingContentState.asStateFlow()
 
-    private val templateRoundTripSafeState = MutableStateFlow(true)
+    private val templateRoundTripSafeState = MutableStateFlow(false)
     val templateRoundTripSafe: StateFlow<Boolean> = templateRoundTripSafeState.asStateFlow()
 
     init {
@@ -64,6 +66,7 @@ class CustomRoutingViewModel(
     suspend fun savePresetSelection(
         updatedPresetSelection: OverridePresetTemplateSelection
     ): Result<Unit> = runCatching {
+        check(templateRoundTripSafeState.value) { "Preset changes cannot overwrite manually edited custom routing YAML" }
         val generatedYaml = buildPresetTemplateYaml(updatedPresetSelection)
         overrideConfigRepository.saveCustomRoutingContent(generatedYaml)
         applyContentState(generatedYaml)
@@ -88,7 +91,7 @@ class CustomRoutingViewModel(
     }
 
     private suspend fun reloadStateFromStoredContent() {
-        applyContentState(overrideConfigRepository.loadCustomRoutingContent())
+        applyContentState(customRoutingInitializer.ensureDefaultContent())
     }
 
     private fun applyContentState(content: String?) {

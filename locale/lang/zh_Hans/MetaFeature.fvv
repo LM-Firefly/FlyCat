@@ -24,6 +24,18 @@ MetaFeature = {
         FallbackRegionGroupTitle = "Fallback 地区组"
         SaveFailed = "保存失败"
         EditButton = "编辑"
+        ManualYamlPresetDiscarded = "已丢弃预设改动，保留手动编辑的 YAML"
+        RegionHongKong = "香港自动组"
+        RegionTaiwan = "台湾自动组"
+        RegionJapan = "日本自动组"
+        RegionSingapore = "新加坡自动组"
+        RegionUnitedStates = "美国自动组"
+        RegionOther = "冷门地区自动组"
+        ItemProxy = "代理规则集"
+        ItemAds = "广告拦截"
+        ItemChina = "中国大陆直连"
+        ItemGlobal = "境外地理规则"
+        ItemMatch = "兜底 MATCH"
     }
 
     RuntimeRules = {
