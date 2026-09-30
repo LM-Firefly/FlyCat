@@ -22,6 +22,7 @@
 package com.github.lmfirefly.flycat.feature.proxy.presentation.screen
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -29,8 +30,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,12 +42,14 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.DpSize
@@ -66,6 +71,7 @@ import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetA
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetIconAction
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.ListChevronsUpDown
+import com.github.lmfirefly.flycat.presentation.icon.flycat.Search
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Speed
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
@@ -116,6 +122,7 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
     val groupListState = rememberLazyListState()
     val nodeListState = rememberSaveable(selectedGroupName, saver = LazyListState.Saver) { LazyListState() }
     var nodeSearchQuery by rememberSaveable(selectedGroupName) { mutableStateOf("") }
+    var nodeSearchVisible by rememberSaveable(selectedGroupName) { mutableStateOf(false) }
     DisposableEffect(Unit) {
         proxyViewModel.ensureCoreLoaded(true, source = "proxy_sheet")
         onDispose { proxyViewModel.ensureCoreLoaded(false, source = "proxy_sheet") }
@@ -152,19 +159,33 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
         title = selectedGroup?.name ?: FlyTxt.Proxy.Title,
         backgroundColor = MiuixTheme.colorScheme.surface,
         startAction = {
-            AppBottomSheetIconAction(
-                action = AppBottomSheetAction(
-                    icon = FlyCat.Speed,
-                    contentDescription = FlyTxt.Proxy.Action.Test,
-                    onClick = {
-                        if (selectedGroup == null) {
-                            triggerTopDelayTest()
-                        } else {
-                            triggerSelectedGroupDelayTest()
-                        }
-                    },
+            Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp4)) {
+                AppBottomSheetIconAction(
+                    action = AppBottomSheetAction(
+                        icon = FlyCat.Speed,
+                        contentDescription = FlyTxt.Proxy.Action.Test,
+                        onClick = {
+                            if (selectedGroup == null) {
+                                triggerTopDelayTest()
+                            } else {
+                                triggerSelectedGroupDelayTest()
+                            }
+                        },
+                    )
                 )
-            )
+                if (selectedGroup != null) {
+                    AppBottomSheetIconAction(
+                        action = AppBottomSheetAction(
+                            icon = FlyCat.Search,
+                            contentDescription = FlyTxt.Component.Editor.Action.Search,
+                            onClick = {
+                                nodeSearchVisible = !nodeSearchVisible
+                                if (!nodeSearchVisible) nodeSearchQuery = ""
+                            },
+                        )
+                    )
+                }
+            }
         },
         endAction = {
             AnimatedContent(
@@ -263,6 +284,8 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
                     listState = nodeListState,
                     searchQuery = nodeSearchQuery,
                     onSearchQueryChange = { nodeSearchQuery = it },
+                    searchVisible = nodeSearchVisible,
+                    onSearchVisibleChange = { nodeSearchVisible = it },
                 )
             }
         }
@@ -279,6 +302,8 @@ private fun ProxySheetNodeContent(
     listState: LazyListState,
     searchQuery: String = "",
     onSearchQueryChange: (String) -> Unit = {},
+    searchVisible: Boolean = false,
+    onSearchVisibleChange: (Boolean) -> Unit = {},
 ) {
     val groupProxyNames = remember(group.proxies) { group.proxies.mapTo(linkedSetOf()) { it.name } }
     val filteredGroup = remember(group, searchQuery) {
@@ -320,12 +345,19 @@ private fun ProxySheetNodeContent(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        NodeSearchToolbar(
-            query = searchQuery,
-            onQueryChange = onSearchQueryChange,
-            // 底部 4dp + 列表 contentPadding 顶部 8dp 合计 12dp，与顶部留白对称。
-            modifier = Modifier.fillMaxWidth().padding(top = UiDp.dp12, bottom = UiDp.dp4),
-        )
+        if (searchVisible) {
+            LaunchedEffect(listState) {
+                snapshotFlow { listState.isScrollInProgress }
+                    .collect { scrolling -> if (scrolling) onSearchVisibleChange(false) }
+            }
+        }
+        AnimatedVisibility(visible = searchVisible) {
+            NodeSearchToolbar(
+                query = searchQuery,
+                onQueryChange = onSearchQueryChange,
+                modifier = Modifier.fillMaxWidth().padding(top = UiDp.dp12, bottom = UiDp.dp4),
+            )
+        }
         Box(modifier = Modifier.fillMaxWidth().height(sheetHeight).clipToBounds()) {
             NodeTestPullToRefresh(
                 isRefreshing = isDelayTesting,
