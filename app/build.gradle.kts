@@ -122,7 +122,7 @@ val appVersionName = ciBuildHash
 // Published APK file names are produced directly by Gradle. CI supplies the tail and
 // optional channel segment once per workflow run; local builds omit both.
 val apkOutputPrefix = providers.gradleProperty("apk.output.prefix").orNull
-    ?.trim()?.takeIf { it.isNotEmpty() } ?: gropify.project.name
+    ?.trim()?.takeIf { it.isNotEmpty() } ?: providers.gradleProperty("project.name").get()
 val apkOutputTail = providers.gradleProperty("apk.output.tail").orNull
     ?.trim()?.takeIf { it.isNotEmpty() }
 val apkChannelSegment = providers.gradleProperty("apk.output.channel").orNull

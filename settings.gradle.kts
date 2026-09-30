@@ -54,12 +54,11 @@ pluginManagement {
     }
 }
 
-// 设置插件的类路径（gropify引入Jackson 3）在根项目的构建脚本块外部解析，因此此处单独强制执行易受攻击版本的最低版本要求。
-// 请保持与gradle/libs.versions.toml（jackson3、netty、guava）中的版本同步。
+// 设置插件的类路径在根项目的构建脚本块外部解析，因此此处单独强制执行易受攻击版本的最低版本要求。
+// 请保持与gradle/libs.versions.toml（netty、guava）中的版本同步。
 buildscript {
     configurations["classpath"].resolutionStrategy.eachDependency {
         when {
-            requested.group.startsWith("tools.jackson") -> useVersion("3.1.5")
             requested.group == "io.netty" -> useVersion("4.2.17.Final")
             requested.group == "com.google.guava" -> useVersion("32.0.0-android")
         }
@@ -96,7 +95,6 @@ dependencyResolutionManagement {
 }
 
 plugins {
-    id("com.highcapable.gropify") version "1.0.2"
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
