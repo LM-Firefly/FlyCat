@@ -98,6 +98,7 @@ class ProxyViewModel(
         )
 
     val displayMode: StateFlow<ProxyDisplayMode> = proxyDisplaySettingsStore.displayMode.state
+        .map { it.normalized() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProxyDisplayMode.DOUBLE_DETAILED)
 
     val proxyGroups: StateFlow<List<ProxyGroupInfo>> =

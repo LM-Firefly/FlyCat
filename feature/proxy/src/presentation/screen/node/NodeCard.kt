@@ -43,6 +43,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -59,6 +60,7 @@ import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.feature.proxy.presentation.util.extractNodeTags
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlagCircle
+import com.github.lmfirefly.flycat.presentation.component.misc.EmojiAwareText
 import com.github.lmfirefly.flycat.presentation.component.state.LoadingDotsWave
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.BadgeDollarSign
@@ -226,7 +228,6 @@ internal fun NodeCard(
     isThisProxyTesting: Boolean = false,
     onSingleNodeTestClick: ((String) -> Unit)? = null,
     isSingleColumn: Boolean = true,
-    showDetail: Boolean = true,
     showCountryFlag: Boolean = true,
     resolvedChildNodeName: String? = null,
 ) {
@@ -251,73 +252,58 @@ internal fun NodeCard(
             raw.takeIf { it.isNotEmpty() && it != proxy.name.trim() }
         }
         val textColor = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
-        if (showDetail) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // CenterStart：短文本在整行内靠左，避免 weight/marquee 造成居中
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                    EmojiAwareText(
                         text = proxy.name,
                         style = MiuixTheme.textStyles.body2,
                         color = textColor,
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = if (isSingleColumn) {
-                            Modifier.basicMarquee()
-                        } else {
-                            Modifier.weight(1f).basicMarquee()
-                        },
+                        modifier = Modifier.basicMarquee(),
                     )
                 }
-                Spacer(modifier = Modifier.height(6.dp))
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(5.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        NodeTagChip(label = displayName(proxy.type))
-                        tags.keywords.forEach { keyword -> NodeTagChip(label = keyword) }
-                        tags.multiplier?.let { multiplier ->
-                            if (multiplier > 0f) NodeMultiplierChip(multiplier = multiplier)
-                        }
-                        if (childNodeName != null) {
-                            Text(
+                    NodeTagChip(label = displayName(proxy.type))
+                    tags.keywords.forEach { keyword -> NodeTagChip(label = keyword) }
+                    tags.multiplier?.let { multiplier ->
+                        if (multiplier > 0f) NodeMultiplierChip(multiplier = multiplier)
+                    }
+                    if (childNodeName != null) {
+                        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                            EmojiAwareText(
                                 text = childNodeName,
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 maxLines = 1,
                                 softWrap = false,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f).basicMarquee(),
+                                modifier = Modifier.basicMarquee(),
                             )
                         }
                     }
-                    ProxyDelayIndicator(
-                        delayLabel = delayLabel,
-                        isDelayTesting = isDelayTesting || isThisProxyTesting,
-                        onDelayTestClick = onNodeTestClick,
-                    )
                 }
-            }
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = proxy.name,
-                    style = MiuixTheme.textStyles.body2,
-                    color = textColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f).basicMarquee(),
+                ProxyDelayIndicator(
+                    delayLabel = delayLabel,
+                    isDelayTesting = isDelayTesting || isThisProxyTesting,
+                    onDelayTestClick = onNodeTestClick,
                 )
             }
         }

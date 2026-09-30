@@ -23,14 +23,20 @@ package com.github.lmfirefly.flycat.feature.proxy.presentation.screen
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +48,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -53,7 +60,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -72,6 +83,7 @@ import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProxyVie
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.misc.CenteredText
+import com.github.lmfirefly.flycat.presentation.component.misc.EmojiAwareText
 import com.github.lmfirefly.flycat.presentation.component.navigation.LocalDetailNavigator
 import com.github.lmfirefly.flycat.presentation.component.navigation.LocalPagerState
 import com.github.lmfirefly.flycat.presentation.component.navigation.LocalTopBarHazeState
@@ -384,19 +396,68 @@ internal fun ProxyTitleBreadcrumb(rootLabel: String, onRootClick: () -> Unit, se
     }
 }
 
+/**
+ * 面包屑可点段。
+ * Press 时序是按压动效能被看见的前提：clickable 会把 Press/Release 折叠到同一拍，collectIsPressedAsState 观察不到 pressed=true，animate*AsState 就永远不会离开静止值。
+ * 这里用 pressable(delay=null) 在 down 瞬间 emit Press，短按也有完整的按压帧。
+ * 缩放走 SinkFeedback 节点内 Animatable（不依赖 recomposition）；降透明/底色按下 snap、松手弹簧回弹。
+ */
 @Composable
 private fun ProxyCrumbText(label: String, onClick: (() -> Unit)?, modifier: Modifier = Modifier) {
-    val interactionSource = remember { MutableInteractionSource() }
-    Text(
-        text = label,
-        style = MiuixTheme.textStyles.title1,
-        color = MiuixTheme.colorScheme.onSurface,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
+    val pressSource = remember { MutableInteractionSource() }
+    val clickSource = remember { MutableInteractionSource() }
+    val sinkFeedback = remember { SinkFeedback(sinkAmount = 0.88f, animationSpec = AnimationSpecs.ButtonPressSpring) }
+    val pressed by pressSource.collectIsPressedAsState()
+    val pressTransition = updateTransition(targetState = pressed, label = "crumb_press")
+    val textAlpha by pressTransition.animateFloat(
+        transitionSpec = {
+            if (targetState) snap()
+            else AnimationSpecs.ButtonPressSpring
+        },
+        label = "crumb_press_alpha",
+    ) { if (it) 0.4f else 1f }
+    val pressBg by pressTransition.animateColor(
+        transitionSpec = {
+            if (targetState) snap()
+            else tween(AnimationSpecs.DURATION_FAST)
+        },
+        label = "crumb_press_bg",
+    ) {
+        if (it) {
+            MiuixTheme.colorScheme.onSurface.copy(alpha = 0.10f)
+        } else {
+            Color.Transparent
+        }
+    }
+    Box(
         modifier = modifier
-            .pressable(interactionSource = interactionSource, indication = SinkFeedback())
-            .clickable(interactionSource = interactionSource, indication = null, enabled = onClick != null) { onClick?.invoke() },
-    )
+            .clip(RoundedCornerShape(UiDp.dp8))
+            .background(pressBg)
+            .pressable(
+                interactionSource = pressSource,
+                indication = sinkFeedback,
+                enabled = onClick != null,
+                delay = null,
+            )
+            .clickable(
+                interactionSource = clickSource,
+                indication = null,
+                enabled = onClick != null,
+                role = Role.Button,
+            ) { onClick?.invoke() },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        EmojiAwareText(
+            text = label,
+            style = MiuixTheme.textStyles.title1,
+            color = MiuixTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .graphicsLayer { this.alpha = textAlpha }
+                .padding(horizontal = UiDp.dp8, vertical = UiDp.dp4),
+        )
+    }
 }
 
 /** Stable TopBar sub-composable for [ProxyPager] — only recomposes when sort/display params change. */

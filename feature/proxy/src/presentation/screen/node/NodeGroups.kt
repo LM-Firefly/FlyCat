@@ -21,6 +21,7 @@
 
 package com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -35,6 +36,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -57,6 +59,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.panpf.sketch.AsyncImage as SketchAsyncImage
+import com.github.panpf.sketch.rememberAsyncImagePainter
 import com.github.panpf.sketch.request.ImageRequest
 import com.github.panpf.sketch.state.IntColorDrawableStateImage
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
@@ -64,6 +67,7 @@ import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlagCircle
+import com.github.lmfirefly.flycat.presentation.component.misc.EmojiAwareText
 import com.github.lmfirefly.flycat.presentation.component.state.LoadingDotsWave
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Speed
@@ -136,7 +140,6 @@ internal fun LazyListScope.nodeGroupItems(
                     NodeGroupCompactCard(
                         group = left,
                         isDelayTesting = testingGroupNames.contains(left.name),
-                        showDetail = displayMode.showDetail,
                         onClick = { onGroupClick(left) },
                         onDelayTestClick = onGroupDelayTestClick?.let { cb -> { cb(left) } },
                         modifier = Modifier.weight(1f),
@@ -148,7 +151,6 @@ internal fun LazyListScope.nodeGroupItems(
                     NodeGroupCompactCard(
                         group = right,
                         isDelayTesting = testingGroupNames.contains(right.name),
-                        showDetail = displayMode.showDetail,
                         onClick = { onGroupClick(right) },
                         onDelayTestClick = onGroupDelayTestClick?.let { cb -> { cb(right) } },
                         modifier = Modifier.weight(1f),
@@ -165,7 +167,6 @@ internal fun LazyListScope.nodeGroupItems(
 private fun NodeGroupCompactCard(
     group: ProxyGroupInfo,
     isDelayTesting: Boolean,
-    showDetail: Boolean,
     onClick: () -> Unit,
     onDelayTestClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -212,39 +213,35 @@ private fun NodeGroupCompactCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            if (iconUri != null) {
-                NodeGroupIcon(
-                    iconUri = iconUri,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clip(RoundedCornerShape(6.dp)),
+            // 紧凑卡片不展示策略组图标：失败/白图会占 20dp，成为名称前空白。
+            // CenterStart：内容宽文本在整行内强制靠左，避免被当成居中
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                EmojiAwareText(
+                    text = group.name,
+                    style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.SemiBold),
+                    color = MiuixTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            Text(
-                text = group.name,
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
         }
-        if (showDetail) {
+        // 详细行：旗帜 + 当前节点 + 延迟（UI 仅有详细布局，无简洁分支）
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                ) {
-                    CountryFlagCircle(
-                        countryCode = countryCode,
-                        size = 17.dp,
-                    )
-                    Text(
+                CountryFlagCircle(
+                    countryCode = countryCode,
+                    size = 17.dp,
+                )
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                    EmojiAwareText(
                         text = nodeName,
                         style = MiuixTheme.textStyles.body2,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -253,12 +250,12 @@ private fun NodeGroupCompactCard(
                         modifier = Modifier.basicMarquee(),
                     )
                 }
-                ProxyDelayIndicator(
-                    delayLabel = delayLabel,
-                    isDelayTesting = isDelayTesting,
-                    onDelayTestClick = onDelayTestClick,
-                )
             }
+            ProxyDelayIndicator(
+                delayLabel = delayLabel,
+                isDelayTesting = isDelayTesting,
+                onDelayTestClick = onDelayTestClick,
+            )
         }
     }
 }
@@ -321,13 +318,6 @@ internal fun NodeGroupCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(UiDp.dp16),
         ) {
-            if (iconUri != null) {
-                NodeGroupIcon(
-                    iconUri = iconUri,
-                    modifier = Modifier.size(UiDp.dp44).clip(RoundedCornerShape(UiDp.dp14)),
-                )
-            }
-
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(UiDp.dp10),
@@ -342,14 +332,15 @@ internal fun NodeGroupCard(
                         horizontalArrangement = Arrangement.spacedBy(UiDp.dp8),
                         modifier = Modifier.weight(1f),
                     ) {
-                        Text(
-                            text = group.name,
-                            style = MiuixTheme.textStyles.body1,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
-                        )
+                        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                            EmojiAwareText(
+                                text = group.name,
+                                style = MiuixTheme.textStyles.body1,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
 
                         val primary = MiuixTheme.colorScheme.primary
                         Text(
@@ -426,14 +417,16 @@ internal fun NodeGroupCard(
                         modifier = Modifier.weight(1f),
                     ) {
                         CountryFlagCircle(countryCode = currentNode.countryCode, size = UiDp.dp20)
-                        Text(
-                            text = currentNodeName,
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.basicMarquee(),
-                        )
+                        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                            EmojiAwareText(
+                                text = currentNodeName,
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.basicMarquee(),
+                            )
+                        }
                     }
 
                     Box(
@@ -496,10 +489,15 @@ private fun NodeGroupIcon(iconUri: String, modifier: Modifier = Modifier) {
                 crossfade(true)
             }
         }
-    SketchAsyncImage(
-        request = request,
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
-        modifier = modifier,
-    )
+    val painter = rememberAsyncImagePainter(request = request)
+    // AsyncImageState：仅成功时占位，失败/加载中不占 20dp，避免名称前空白。
+    val visible = painter.state.result != null
+    if (visible) {
+        SketchAsyncImage(
+            request = request,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier,
+        )
+    }
 }

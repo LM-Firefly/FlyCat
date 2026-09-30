@@ -37,8 +37,15 @@ enum class ProxyDisplayMode {
     val isSingleColumn: Boolean
         get() = this == SINGLE_DETAILED || this == SINGLE_SIMPLE
 
-    val showDetail: Boolean
-        get() = this == SINGLE_DETAILED || this == DOUBLE_DETAILED
+    /**
+     * 旧版「简洁」模式折叠到对应「详细」。
+     * UI 仅暴露单列/双列详细；保留 SIMPLE 枚举名以便旧偏好/旧备份反序列化。
+     */
+    fun normalized(): ProxyDisplayMode = when (this) {
+        SINGLE_SIMPLE -> SINGLE_DETAILED
+        DOUBLE_SIMPLE -> DOUBLE_DETAILED
+        else -> this
+    }
 }
 
 enum class ProxySortMode {

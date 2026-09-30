@@ -67,14 +67,7 @@ internal fun NodeSortPopup(
     onDisplayModeSelected: (ProxyDisplayMode) -> Unit,
     onSortSelected: (ProxySortMode) -> Unit,
 ) {
-    val selectedDisplayIndex = when (displayMode) {
-        ProxyDisplayMode.SINGLE_DETAILED,
-        ProxyDisplayMode.SINGLE_SIMPLE,
-        -> 0
-        ProxyDisplayMode.DOUBLE_DETAILED,
-        ProxyDisplayMode.DOUBLE_SIMPLE,
-        -> 1
-    }
+    val selectedDisplayIndex = if (displayMode.isSingleColumn) 0 else 1
     val selectedSortIndex = NodeSortModes.indexOf(sortMode).coerceAtLeast(0)
     WindowListPopup(
         show = show,

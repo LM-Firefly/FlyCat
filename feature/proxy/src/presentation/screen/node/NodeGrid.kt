@@ -62,7 +62,6 @@ internal fun LazyListScope.nodeGridItems(
     itemVerticalPadding: Dp = UiDp.dp0,
     revealCount: State<Int> = RowRevealAll,
 ) {
-    val showDetail = displayMode.showDetail
     val isSingleColumn = displayMode.isSingleColumn
     if (isSingleColumn) {
         itemsIndexed(items = proxies, key = { _, proxy -> proxy.name }, contentType = { _, _ -> "NodeCard1" }) { index, proxy ->
@@ -75,7 +74,6 @@ internal fun LazyListScope.nodeGridItems(
                 isThisProxyTesting = proxy.name in testingProxyNames,
                 onSingleNodeTestClick = onSingleNodeTestClick?.let { { it(proxy.name) } },
                 isSingleColumn = true,
-                showDetail = showDetail,
                 showCountryFlag = true,
                 resolvedChildNodeName = resolveChildNodeName?.invoke(proxy),
                 modifier =
@@ -120,7 +118,6 @@ internal fun LazyListScope.nodeGridItems(
                     isThisProxyTesting = left.name in testingProxyNames,
                     onSingleNodeTestClick = onSingleNodeTestClick?.let { { it(left.name) } },
                     isSingleColumn = false,
-                    showDetail = showDetail,
                     showCountryFlag = true,
                     resolvedChildNodeName = resolveChildNodeName?.invoke(left),
                     modifier = Modifier
@@ -140,7 +137,6 @@ internal fun LazyListScope.nodeGridItems(
                     isThisProxyTesting = right.name in testingProxyNames,
                     onSingleNodeTestClick = onSingleNodeTestClick?.let { { it(right.name) } },
                     isSingleColumn = false,
-                    showDetail = showDetail,
                     showCountryFlag = true,
                     resolvedChildNodeName = resolveChildNodeName?.invoke(right),
                     modifier = Modifier

@@ -453,7 +453,7 @@ class BackupRepository(
 
     private fun applyProxyDisplaySettings(value: ProxyDisplaySettingsBackup) {
         proxyDisplaySettings.sortMode.set(value.sortMode)
-        proxyDisplaySettings.displayMode.set(value.displayMode)
+        proxyDisplaySettings.displayMode.set(value.displayMode.normalized())
         proxyDisplaySettings.proxyMode.set(value.proxyMode)
         proxyDisplaySettings.sheetHeightFraction.set(value.sheetHeightFraction)
     }

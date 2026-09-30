@@ -43,9 +43,11 @@ import com.github.lmfirefly.flycat.presentation.theme.UiDp
 
 @Composable
 fun CountryFlagCircle(countryCode: String?, modifier: Modifier = Modifier, size: Dp = UiDp.dp18) {
+    // 无国家码时不渲染空占位圆，避免名称前出现空白块。
+    if (countryCode.isNullOrBlank()) return
     val semanticColors = AppTheme.colors
     val flagUrl = remember(countryCode) { LocaleUtils.normalizeFlagUrl(countryCode) }
-    val flagLabel = remember(countryCode) { countryCode?.trim()?.ifEmpty { null } ?: LocaleUtils.UNKNOWN_FLAG_CODE }
+    val flagLabel = remember(countryCode) { countryCode.trim().ifEmpty { null } ?: LocaleUtils.UNKNOWN_FLAG_CODE }
     val context = LocalContext.current
     val request = remember(context, flagUrl) { ImageRequest(context, flagUrl) }
 

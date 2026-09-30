@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.github.lmfirefly.flycat.presentation.component.card.Card
+import com.github.lmfirefly.flycat.presentation.component.misc.EmojiAwareText
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -31,9 +32,8 @@ fun ProxyChainIndicator(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             chain.forEachIndexed { index, nodeName ->
-                Text(
+                EmojiAwareText(
                     text = nodeName,
-                    modifier = Modifier.alignByBaseline(),
                     style = MiuixTheme.textStyles.body2,
                     color = if (index == chain.lastIndex) {
                         MiuixTheme.colorScheme.primary
@@ -45,7 +45,6 @@ fun ProxyChainIndicator(
                 if (index < chain.lastIndex) {
                     Text(
                         text = "->",
-                        modifier = Modifier.alignByBaseline(),
                         style = MiuixTheme.textStyles.body2,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         softWrap = false,
