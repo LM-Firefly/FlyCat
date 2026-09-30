@@ -28,6 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import dev.chrisbanes.haze.HazeInput
@@ -73,7 +76,6 @@ fun TopBar(
     val hazeStyle = LocalTopBarHazeStyle.current
     val hazeEnabled = hazeState != null && hazeStyle != null
     if (titleContent != null) {
-        // 自绘标题（如面包屑）是导航控件，必须常驻可点：走 SmallTopAppBar（无折叠行程），标题挂 bottomContent 常驻显示，滚动时不会收缩隐藏。
         SmallTopBar(
             title = " ",
             scrollBehavior = scrollBehavior,
@@ -84,7 +86,27 @@ fun TopBar(
             navigationIcon = navigationIcon,
             actions = actions,
             bottomContent = {
-                Box(Modifier.padding(bottom = TopAppBarDefaults.LargeTitleBottomPadding)) {
+                // contentOffset 在 SmallTopBar 钉高时仍随列表滚动更新。
+                val shrink = (kotlin.math.abs(scrollBehavior.state.contentOffset) / 160f).coerceIn(0f, 1f)
+                val scale = 1f - 0.28f * shrink
+                Box(
+                    Modifier
+                        // 布局高度与绘制缩放同步收窄，下方代理链路/列表才能跟着上移；只做 graphicsLayer 的话占位不变，列表可见区域不会变多。
+                        .layout { measurable, constraints ->
+                            val placeable = measurable.measure(constraints)
+                            val height = (placeable.height * scale).toInt().coerceAtLeast(0)
+                            layout(placeable.width, height) {
+                                placeable.place(0, 0)
+                            }
+                        }
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+//                            alpha = 1f - 0.20f * shrink
+                            transformOrigin = TransformOrigin(0f, 0f)
+                        }
+                        .padding(bottom = TopAppBarDefaults.LargeTitleBottomPadding),
+                ) {
                     titleContent()
                 }
                 bottomContent()

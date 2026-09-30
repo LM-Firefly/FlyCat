@@ -77,6 +77,7 @@ fun ProxyShellNodeDetail(mainInnerPadding: PaddingValues, onNavigateToProviders:
     val currentGroupName = currentGroup?.name
     var showSortPopup by rememberSaveable { mutableStateOf(false) }
     var nodeSearchQuery by rememberSaveable(selectedGroupName) { mutableStateOf("") }
+    var nodeSearchVisible by rememberSaveable(selectedGroupName) { mutableStateOf(false) }
     val nodeListState = rememberSaveable(selectedGroupName, saver = LazyListState.Saver) { LazyListState() }
     LaunchedEffect(proxyViewModel) { proxyViewModel.ensureCoreLoaded(true, source = "proxy_detail") }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { proxyViewModel.onForegroundResume() }
@@ -92,24 +93,23 @@ fun ProxyShellNodeDetail(mainInnerPadding: PaddingValues, onNavigateToProviders:
             }
         }
     }
-    val locateCurrentProxy =
-        remember(coroutineScope, currentGroup, nodeListState, selectedGroupName, displayMode) {
-            if (selectedGroupName == null || currentGroup == null) {
-                null
-            } else {
-                fun() {
-                    val proxyIndex = currentGroup.proxies.indexOfFirst { proxy -> proxy.name == currentGroup.now }
-                    if (proxyIndex < 0) return
-                    // 搜索栏固定在滚动列表外，列表无头部偏移。
-                    val listItemIndex =
-                        if (displayMode.isSingleColumn) proxyIndex
-                        else proxyIndex / 2
-                    coroutineScope.launch {
-                        nodeListState.animateLocateToItem(listItemIndex)
-                    }
+    val locateCurrentProxy = remember(coroutineScope, currentGroup, nodeListState, selectedGroupName, displayMode) {
+        if (selectedGroupName == null || currentGroup == null) {
+            null
+        } else {
+            fun() {
+                val proxyIndex = currentGroup.proxies.indexOfFirst { proxy -> proxy.name == currentGroup.now }
+                if (proxyIndex < 0) return
+                // 搜索栏固定在滚动列表外，列表无头部偏移。
+                val listItemIndex =
+                    if (displayMode.isSingleColumn) proxyIndex
+                    else proxyIndex / 2
+                coroutineScope.launch {
+                    nodeListState.animateLocateToItem(listItemIndex)
                 }
             }
         }
+    }
     Scaffold(
         floatingActionButton = {},
         topBar = {
@@ -126,6 +126,11 @@ fun ProxyShellNodeDetail(mainInnerPadding: PaddingValues, onNavigateToProviders:
                 onDisplayModeSelected = proxyViewModel::setDisplayMode,
                 onSortSelected = proxyViewModel::setSortMode,
                 onTestAllDelay = { currentGroupName?.let { proxyViewModel.testDelay(it) } },
+                searchVisible = nodeSearchVisible,
+                onSearchToggle = {
+                    nodeSearchVisible = !nodeSearchVisible
+                    if (!nodeSearchVisible) nodeSearchQuery = ""
+                },
                 onTitleScrollTop = {
                     coroutineScope.launch {
                         if (nodeListState.firstVisibleItemIndex > 0 || nodeListState.firstVisibleItemScrollOffset > 0) {
@@ -161,6 +166,8 @@ fun ProxyShellNodeDetail(mainInnerPadding: PaddingValues, onNavigateToProviders:
                 onScrollDirectionChanged = {},
                 searchQuery = nodeSearchQuery,
                 onSearchQueryChange = { nodeSearchQuery = it },
+                searchVisible = nodeSearchVisible,
+                onSearchVisibleChange = { nodeSearchVisible = it },
                 testProgress = delayTestProgress,
             )
         }
@@ -197,6 +204,8 @@ private fun DetailTopBar(
     onSortSelected: (com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode) -> Unit,
     onTestAllDelay: () -> Unit,
     onTitleScrollTop: () -> Unit = {},
+    searchVisible: Boolean = false,
+    onSearchToggle: (() -> Unit)? = null,
 ) {
     // 双栏右栏标题即组名，单段可点滚到节点列表顶。
     ProxyTopBar(
@@ -215,5 +224,7 @@ private fun DetailTopBar(
         sortMode = sortMode,
         onDisplayModeSelected = onDisplayModeSelected,
         onSortSelected = onSortSelected,
+        searchVisible = searchVisible,
+        onSearchToggle = onSearchToggle,
     )
 }

@@ -34,6 +34,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -56,8 +58,11 @@ internal fun NodeSearchToolbar(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val density = LocalDensity.current
+    val focusRequester = remember { FocusRequester() }
     var inputFocused by remember { mutableStateOf(false) }
     val imeVisible = WindowInsets.ime.getBottom(density) > 0
+    // 由顶栏放大镜唤出时自动聚焦，减少一次点击。
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     LaunchedEffect(imeVisible) {
         if (!imeVisible && inputFocused) {
@@ -106,6 +111,7 @@ internal fun NodeSearchToolbar(
         },
         modifier = modifier
             .fillMaxWidth()
+            .focusRequester(focusRequester)
             .onFocusChanged { focusState ->
                 inputFocused = focusState.isFocused
             },

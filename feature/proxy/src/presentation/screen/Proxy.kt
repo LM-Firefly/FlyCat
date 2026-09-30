@@ -23,6 +23,7 @@ package com.github.lmfirefly.flycat.feature.proxy.presentation.screen
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.snap
@@ -58,6 +59,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -92,6 +94,7 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.isSplitShel
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.ListChevronsUpDown
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Eye
+import com.github.lmfirefly.flycat.presentation.icon.flycat.Search
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Folders
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Speed
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
@@ -163,7 +166,6 @@ fun ProxyPager(
     isActive: Boolean,
 ) {
     val proxyViewModel = koinViewModel<ProxyViewModel>()
-
     val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsStateWithLifecycle()
     val testingGroupNames by proxyViewModel.testingGroupNames.collectAsStateWithLifecycle()
     val testingProxyNames by proxyViewModel.testingProxyNames.collectAsStateWithLifecycle()
@@ -176,20 +178,20 @@ fun ProxyPager(
     var showSortPopup by rememberSaveable { mutableStateOf(false) }
     val inSplitShell = LocalDetailNavigator.current.isSplitShell
     val uiSelectedGroupName by proxyViewModel.uiSelectedGroupName.collectAsStateWithLifecycle()
-    val groupSelection =
-        rememberProxyGroupSelectionState(
-            proxyGroups = proxyGroups,
-            onRefreshGroup = proxyViewModel::refreshGroup,
-            retainLastKnownGroup = !inSplitShell,
-            controlledSelectedGroupName = if (inSplitShell) uiSelectedGroupName else null,
-            onControlledSelectedGroupNameChange = if (inSplitShell) proxyViewModel::selectUiGroup else null,
-        )
+    val groupSelection = rememberProxyGroupSelectionState(
+        proxyGroups = proxyGroups,
+        onRefreshGroup = proxyViewModel::refreshGroup,
+        retainLastKnownGroup = !inSplitShell,
+        controlledSelectedGroupName = if (inSplitShell) uiSelectedGroupName else null,
+        onControlledSelectedGroupNameChange = if (inSplitShell) proxyViewModel::selectUiGroup else null,
+    )
     val selectedGroupName = groupSelection.selectedGroupName
     val displayGroup = groupSelection.displayGroup
     val coroutineScope = rememberCoroutineScope()
     val groupListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val nodeListState = rememberSaveable(selectedGroupName, saver = LazyListState.Saver) { LazyListState() }
     var nodeSearchQuery by rememberSaveable(selectedGroupName) { mutableStateOf("") }
+    var nodeSearchVisible by rememberSaveable(selectedGroupName) { mutableStateOf(false) }
     val requestSelectedGroupDelayTest = remember(coroutineScope, nodeListState, selectedGroupName, proxyViewModel) {
         {
             val groupName = selectedGroupName ?: return@remember
@@ -222,7 +224,10 @@ fun ProxyPager(
             }
         }
     }
-
+    BackHandler(enabled = nodeSearchVisible) {
+        nodeSearchVisible = false
+        nodeSearchQuery = ""
+    }
     BackHandler(enabled = selectedGroupName != null && !inSplitShell) { groupSelection.clearSelection() }
     // Tablet: auto-select the first group so the right pane is never empty.
     LaunchedEffect(inSplitShell, proxyGroups, selectedGroupName) {
@@ -260,6 +265,16 @@ fun ProxyPager(
                 onSortSelected = proxyViewModel::setSortMode,
                 selectedGroupName = if (inSplitShell) null else selectedGroupName,
                 onBackToGroups = groupSelection.clearSelection,
+                searchVisible = nodeSearchVisible,
+                // 搜索只挂在节点列表页：组列表/双栏左栏不放搜索入口。
+                onSearchToggle = if (inSplitShell || selectedGroupName == null) {
+                    null
+                } else {
+                    {
+                        nodeSearchVisible = !nodeSearchVisible
+                        if (!nodeSearchVisible) nodeSearchQuery = ""
+                    }
+                },
                 onTitleScrollTop = {
                     // 双栏左栏只挂 groupListState（nodeListState 未上屏）；单栏在组列表/节点列表间切换。
                     val listState = if (inSplitShell || selectedGroupName == null) groupListState else nodeListState
@@ -364,6 +379,8 @@ fun ProxyPager(
                             onScrollDirectionChanged = {},
                             searchQuery = nodeSearchQuery,
                             onSearchQueryChange = { nodeSearchQuery = it },
+                            searchVisible = nodeSearchVisible,
+                            onSearchVisibleChange = { nodeSearchVisible = it },
                             testProgress = delayTestProgress,
                         )
                     }
@@ -477,6 +494,8 @@ private fun PagerTopBar(
     selectedGroupName: String?,
     onBackToGroups: () -> Unit,
     onTitleScrollTop: () -> Unit,
+    searchVisible: Boolean = false,
+    onSearchToggle: (() -> Unit)? = null,
 ) {
     ProxyTopBar(
         title = if (selectedGroupName == null) {
@@ -499,6 +518,8 @@ private fun PagerTopBar(
         sortMode = sortMode,
         onDisplayModeSelected = onDisplayModeSelected,
         onSortSelected = onSortSelected,
+        searchVisible = searchVisible,
+        onSearchToggle = onSearchToggle,
     )
 }
 
@@ -522,6 +543,8 @@ internal fun ProxyTopBar(
     sortMode: ProxySortMode,
     onDisplayModeSelected: (ProxyDisplayMode) -> Unit,
     onSortSelected: (ProxySortMode) -> Unit,
+    searchVisible: Boolean = false,
+    onSearchToggle: (() -> Unit)? = null,
 ) {
     val spacing = AppTheme.spacing
     val titleContent: (@Composable () -> Unit)? = if (onTitleRootClick == null) {
@@ -560,6 +583,14 @@ internal fun ProxyTopBar(
         },
         actions = {
             Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp4)) {
+                if (onSearchToggle != null) {
+                    IconButton(onClick = onSearchToggle) {
+                        Icon(
+                            imageVector = FlyCat.Search,
+                            contentDescription = FlyTxt.Component.Editor.Action.Search,
+                        )
+                    }
+                }
                 if (onLocateCurrentProxy != null) {
                     IconButton(
                         modifier = Modifier.padding(end = spacing.space12),
@@ -619,6 +650,8 @@ internal fun NodeListPage(
     onScrollDirectionChanged: (Boolean) -> Unit,
     searchQuery: String = "",
     onSearchQueryChange: (String) -> Unit = {},
+    searchVisible: Boolean = false,
+    onSearchVisibleChange: (Boolean) -> Unit = {},
     testProgress: ProxyViewModel.DelayTestProgress? = null,
 ) {
     if (group == null) {
@@ -650,6 +683,13 @@ internal fun NodeListPage(
 
     val visibleProxies = remember(group.proxies, searchQuery) { group.filterNodes(searchQuery) }
     val revealCount = rememberRowReveal(itemCount = visibleProxies.size, replayKey = group.name, listState = listState)
+    // 滚动列表即收起搜索框：搜索是低频操作，避免常驻占位。
+    if (searchVisible) {
+        LaunchedEffect(listState) {
+            snapshotFlow { listState.isScrollInProgress }
+                .collect { scrolling -> if (scrolling) onSearchVisibleChange(false) }
+        }
+    }
 
     KeepLazyListTopAnchorOnReorder(
         listState = listState,
@@ -675,20 +715,19 @@ internal fun NodeListPage(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        NodeSearchToolbar(
-            query = searchQuery,
-            onQueryChange = onSearchQueryChange,
-            modifier = Modifier.fillMaxWidth().padding(
-                start = UiDp.dp12,
-                end = UiDp.dp12,
-                top = if (group.chainPath.isNotEmpty()) {
-                    UiDp.dp10
-                } else {
-                    outerInnerPadding.calculateTopPadding() + UiDp.dp16
-                },
-                bottom = UiDp.dp8,
-            ),
-        )
+        AnimatedVisibility(visible = searchVisible) {
+            NodeSearchToolbar(
+                query = searchQuery,
+                onQueryChange = onSearchQueryChange,
+                modifier = Modifier.fillMaxWidth().padding(
+                    start = UiDp.dp12,
+                    end = UiDp.dp12,
+                    // Column 已扣除 topBar 高度，这里不要再加 outerInnerPadding.top。
+                    top = if (group.chainPath.isNotEmpty()) UiDp.dp10 else UiDp.dp12,
+                    bottom = UiDp.dp8,
+                ),
+            )
+        }
         NodeTestPullToRefresh(
             isRefreshing = isTesting,
             onRefresh = onTestDelay,
@@ -764,9 +803,7 @@ private fun ProxyContent(
             PaddingValues(
                 start = UiDp.dp12,
                 end = UiDp.dp12,
-                // dp14 (not dp20) because nodeGroupItems adds dp6 above the first card; dp14 + dp6
-                // = dp20, keeping the top card flush with the Profiles page cards.
-                top = innerPadding.calculateTopPadding() + UiDp.dp14,
+                top = innerPadding.calculateTopPadding() + UiDp.dp2,
                 bottom = mainInnerPadding.calculateBottomPadding() + spacing.space12,
             ),
     ) {
