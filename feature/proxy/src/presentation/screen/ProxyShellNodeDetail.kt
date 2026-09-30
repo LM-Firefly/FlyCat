@@ -126,6 +126,13 @@ fun ProxyShellNodeDetail(mainInnerPadding: PaddingValues, onNavigateToProviders:
                 onDisplayModeSelected = proxyViewModel::setDisplayMode,
                 onSortSelected = proxyViewModel::setSortMode,
                 onTestAllDelay = { currentGroupName?.let { proxyViewModel.testDelay(it) } },
+                onTitleScrollTop = {
+                    coroutineScope.launch {
+                        if (nodeListState.firstVisibleItemIndex > 0 || nodeListState.firstVisibleItemScrollOffset > 0) {
+                            nodeListState.animateScrollToItem(0)
+                        }
+                    }
+                },
             )
         },
     ) { scaffoldPadding ->
@@ -189,9 +196,13 @@ private fun DetailTopBar(
     onDisplayModeSelected: (com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode) -> Unit,
     onSortSelected: (com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode) -> Unit,
     onTestAllDelay: () -> Unit,
+    onTitleScrollTop: () -> Unit = {},
 ) {
+    // 双栏右栏标题即组名，单段可点滚到节点列表顶。
     ProxyTopBar(
         title = title,
+        titleRootLabel = title,
+        onTitleRootClick = onTitleScrollTop,
         scrollBehavior = scrollBehavior,
         showBack = false,
         onBack = {},
