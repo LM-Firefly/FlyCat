@@ -59,7 +59,7 @@ pluginManagement {
 buildscript {
     configurations["classpath"].resolutionStrategy.eachDependency {
         when {
-            requested.group.startsWith("tools.jackson") -> useVersion("3.1.5")
+            requested.group.startsWith("tools.jackson") -> useVersion("3.1.6")
             requested.group == "io.netty" -> useVersion("4.2.17.Final")
             requested.group == "com.google.guava" -> useVersion("32.0.0-android")
         }

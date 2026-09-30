@@ -261,7 +261,8 @@ fun ProxyPager(
                 selectedGroupName = if (inSplitShell) null else selectedGroupName,
                 onBackToGroups = groupSelection.clearSelection,
                 onTitleScrollTop = {
-                    val listState = if (selectedGroupName == null) groupListState else nodeListState
+                    // 双栏左栏只挂 groupListState（nodeListState 未上屏）；单栏在组列表/节点列表间切换。
+                    val listState = if (inSplitShell || selectedGroupName == null) groupListState else nodeListState
                     coroutineScope.launch {
                         if (listState.isScrolledFromTop()) {
                             listState.animateScrollToItem(0)
@@ -505,6 +506,8 @@ private fun PagerTopBar(
 internal fun ProxyTopBar(
     title: String,
     groupName: String? = null,
+    /** 面包屑根段文案；双栏右栏用组名作单段可点标题时传入。 */
+    titleRootLabel: String = FlyTxt.Component.BottomBar.Proxy,
     onTitleRootClick: (() -> Unit)? = null,
     onTitleGroupClick: (() -> Unit)? = null,
     scrollBehavior: ScrollBehavior,
@@ -526,7 +529,7 @@ internal fun ProxyTopBar(
     } else {
         {
             ProxyTitleBreadcrumb(
-                rootLabel = FlyTxt.Component.BottomBar.Proxy,
+                rootLabel = titleRootLabel,
                 onRootClick = onTitleRootClick,
                 segmentLabel = groupName,
                 onSegmentClick = onTitleGroupClick,
