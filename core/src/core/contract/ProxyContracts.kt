@@ -79,6 +79,9 @@ interface ProxyGroupRepository {
     fun markDelayTestActive(active: Boolean)
 }
 
+/** 节点切换在超时 + 控制链恢复重试之后仍被原生层阻塞。与普通的 `false`（内核拒绝，如节点不存在）区分，供 UI 提示「切换超时」而不是笼统的「切换失败」。 */
+class ProxySelectTimeoutException : Exception("proxy select blocked after recovery retries")
+
 /** Read-only contract for connection state and control. Implemented by [runtime:client]. */
 interface ConnectionRepository {
     val connectionSnapshot: StateFlow<ConnectionSnapshot>

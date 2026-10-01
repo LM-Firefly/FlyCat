@@ -2,6 +2,7 @@ package com.github.lmfirefly.flycat.runtime.client.internal
 
 import com.github.lmfirefly.flycat.core.Clash
 import com.github.lmfirefly.flycat.core.bridge.Bridge
+import com.github.lmfirefly.flycat.core.contract.ProxySelectTimeoutException
 import com.github.lmfirefly.flycat.core.model.profile.Profile
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup
@@ -62,6 +63,10 @@ internal class ProxyGroupManager(
         const val PROXY_DELAY_CACHE_TTL_MS = 5 * 60 * 1000L
         const val PROXY_SELECT_FULL_REFRESH_DELAY_MS = 400L
         const val PROXY_GROUP_QUERY_TIMEOUT_MS = 8_000L
+        /** 单次 patchSelector 超时。release 非阻塞 + closeConnByGroup 异步 + OnLeave 限流之后，选择路径只剩「改 Selector 内存状态 + cachefile 落盘 + 起后台关连接」，正常毫秒级返回；3s 只兜 cachefile 磁盘抖动 / 残留的原生阻塞。 */
+        const val SELECT_TIMEOUT_MS = 3_000L
+        /** 含恢复重试在内的总尝试次数：第 1 次阻塞 → 恢复控制链 → 再试 1 次。 */
+        const val SELECT_MAX_ATTEMPTS = 2
     }
     private var previewCacheEntry: PreviewCacheEntry? = null
     private var previewProfile: Profile? = null
@@ -558,12 +563,14 @@ internal class ProxyGroupManager(
 
     suspend fun selectProxy(group: String, proxyName: String): Boolean {
         Timber.d("Select proxy: group=$group proxy=$proxyName")
-        val ok = router!!.dispatch(
-            requireRunning = true,
-            defaultIfNotRunning = { false },
-            onRoot = { RootTunController.patchSelector(it, group, proxyName) },
-            onLocal = { ServiceClient.clash().patchSelector(group, proxyName) },
-        )
+        val ok = dispatchSelectWithRecovery("selectProxy") {
+            router!!.dispatch(
+                requireRunning = true,
+                defaultIfNotRunning = { false },
+                onRoot = { RootTunController.patchSelector(it, group, proxyName) },
+                onLocal = { ServiceClient.clash().patchSelector(group, proxyName) },
+            )
+        }
         if (ok) {
             // 乐观局部更新以使界面立即反映更改，即使延迟刷新被过时的互斥锁阻塞。
             applyLocalForceSelection(group = group, proxyName = proxyName)
@@ -581,12 +588,14 @@ internal class ProxyGroupManager(
 
     suspend fun forceSelectProxy(group: String, proxyName: String): Boolean {
         Timber.d("Force select proxy: group=$group proxy=$proxyName")
-        val ok = router!!.dispatch(
-            requireRunning = true,
-            defaultIfNotRunning = { false },
-            onRoot = { RootTunController.patchForceSelector(it, group, proxyName) },
-            onLocal = { ServiceClient.clash().patchForceSelector(group, proxyName) },
-        )
+        val ok = dispatchSelectWithRecovery("forceSelectProxy") {
+            router!!.dispatch(
+                requireRunning = true,
+                defaultIfNotRunning = { false },
+                onRoot = { RootTunController.patchForceSelector(it, group, proxyName) },
+                onLocal = { ServiceClient.clash().patchForceSelector(group, proxyName) },
+            )
+        }
         if (ok) {
             applyLocalForceSelection(group = group, proxyName = proxyName)
             scope.launch {
@@ -599,6 +608,51 @@ internal class ProxyGroupManager(
             }
         }
         return ok
+    }
+
+    /**
+     * 带超时与控制链恢复的选择调用。
+     * 返回值是内核的真实结果：`true` 切换成功；`false` 表示内核拒绝（如节点不存在），不重试。
+     * 本次尝试超时或抛错时，先恢复控制链再试；全部尝试仍被阻塞则抛 [ProxySelectTimeoutException]，供 UI 区分「切换超时」与「切换失败」。
+     *
+     * 关于「100% 可达」：已经进入原生层的 CGO 调用无法从 Kotlin 取消，超时只是停止等待。
+     * 但 release 非阻塞 + closeConnByGroup 异步 + OnLeave 限流之后，patchSelector 本身不再被回调风暴拖住，新发起的调用会在另一个 IO 线程独立完成，因此「超时 → 恢复 → 重试」在实践中可做到几乎必达。
+     * 真正把原生层打死只剩进程级死锁，那需要重启内核进程，不宜由单次切节点触发。
+     */
+    private suspend fun dispatchSelectWithRecovery(label: String, block: suspend () -> Boolean): Boolean {
+        repeat(SELECT_MAX_ATTEMPTS) { attempt ->
+            val result = try {
+                withTimeoutOrNull(SELECT_TIMEOUT_MS) { block() }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                Timber.e(e, "%s attempt %d threw", label, attempt + 1)
+                null
+            }
+            when (result) {
+                true -> return true
+                false -> return false
+                null -> {
+                    Timber.w("%s attempt %d blocked or failed, recovering JNI control chain", label, attempt + 1)
+                    recoverControlChain()
+                }
+            }
+        }
+        Timber.e("%s blocked on all %d attempts", label, SELECT_MAX_ATTEMPTS)
+        throw ProxySelectTimeoutException()
+    }
+
+    /**
+     * 重置 UI↔core 控制链的软件层状态，让下一次 patchSelector 走全新 gateway。
+     * 原生库与 Go 运行时保持不动（webdashboard 证明 core 健康）；只丢弃 Kotlin 侧可能持有陈旧句柄的 gateway 包装。
+     * release 非阻塞 + closeConnByGroup 异步 + OnLeave 限流保证了新调用不会再被事件风暴拖住。
+     */
+    private suspend fun recoverControlChain() {
+        val ctx = appContext ?: return
+        runCatching {
+            ServiceClient.disconnect()
+            ServiceClient.connect(ctx)
+        }.onFailure { error -> Timber.e(error, "Control chain recovery failed") }
     }
 
     suspend fun healthCheck(group: String) {

@@ -26,6 +26,7 @@ import com.github.lmfirefly.flycat.core.contract.AppSettingsReader
 import com.github.lmfirefly.flycat.core.contract.ConnectionRepository
 import com.github.lmfirefly.flycat.core.contract.ProxyDisplaySettingsReader
 import com.github.lmfirefly.flycat.core.contract.ProxyGroupRepository
+import com.github.lmfirefly.flycat.core.contract.ProxySelectTimeoutException
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode
@@ -239,7 +240,13 @@ class ProxyViewModel(
                         showError(FlyTxt.Proxy.Selection.Failed)
                     }
                 }
-                .onFailure { error -> showError(FlyTxt.Proxy.Selection.Error.format(error.message)) }
+                .onFailure { error ->
+                    if (error is ProxySelectTimeoutException) {
+                        showError(FlyTxt.Proxy.Selection.Timeout)
+                    } else {
+                        showError(FlyTxt.Proxy.Selection.Error.format(error.message))
+                    }
+                }
         }
     }
 
@@ -267,7 +274,11 @@ class ProxyViewModel(
                     showError(FlyTxt.Proxy.Selection.Failed)
                 }
             }.onFailure { error ->
-                showError(FlyTxt.Proxy.Selection.Error.format(error.message))
+                if (error is ProxySelectTimeoutException) {
+                    showError(FlyTxt.Proxy.Selection.Timeout)
+                } else {
+                    showError(FlyTxt.Proxy.Selection.Error.format(error.message))
+                }
             }
         }
     }

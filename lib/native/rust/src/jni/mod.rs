@@ -1622,13 +1622,44 @@ pub extern "C" fn rust_release_object_callback(obj: *mut c_void) {
     if obj.is_null() {
         return;
     }
-    // Route through the callback thread to serialize with pending dispatches.
-    // Go guarantees no more callbacks for this ref after release, so the release will be processed after all enqueued callbacks that use it.
-    if let Some(sender) = callback_sender() {
-        let _ = sender.send(CallbackDispatchMessage::ReleaseObject { obj: obj as usize });
-    } else {
-        // Callback thread never started — no pending messages — safe to release directly.
+    // 通过回调线程路由以序列化与待处理派发的顺序。
+    // Go 保证在 release 之后不再有该 ref 的回调，因此 release 将在所有使用它的已入队回调之后处理。
+    // 绝不能在 Go 调用线程上阻塞 send：高网速下 join/close 事件会把 sync_channel 打满，阻塞 send 会卡住调用 release 的 Go 协程（订阅切换 / OnLeave 错误路径），表现为对应 JNI 导出函数长时间不返回。
+    // try_send 失败时丢到独立线程做阻塞 send——Release 仍排在该 ref 已入队的旧回调之后（避免 UAF 的关键），仅可能与更晚入队的无关消息交错。
+    let Some(sender) = callback_sender() else {
+        // 回调线程从未启动——没有待处理消息——可直接释放。
         rust_release_object_direct(obj);
+        return;
+    };
+    match sender.try_send(CallbackDispatchMessage::ReleaseObject { obj: obj as usize }) {
+        Ok(()) => {}
+        Err(TrySendError::Disconnected(_)) => {
+            rust_release_object_direct(obj);
+        }
+        Err(TrySendError::Full(message)) => {
+            let spawned = thread::Builder::new()
+                .name("flycat-jni-release".to_string())
+                .spawn(move || {
+                    match callback_sender() {
+                        Some(sender) => {
+                            let _ = sender.send(message);
+                        }
+                        None => {
+                            if let CallbackDispatchMessage::ReleaseObject { obj } = message {
+                                rust_release_object_direct(obj as *mut c_void);
+                            }
+                        }
+                    }
+                });
+            if spawned.is_err() {
+                // 线程创建失败（资源耗尽）：作为最后手段，将采用内联阻塞发送，而不是泄露 GlobalRef。此路径在实践中不应被触发。
+                if let Some(sender) = callback_sender() {
+                    let _ = sender.send(CallbackDispatchMessage::ReleaseObject { obj: obj as usize });
+                } else {
+                    rust_release_object_direct(obj);
+                }
+            }
+        }
     }
 }
 

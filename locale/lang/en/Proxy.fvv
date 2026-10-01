@@ -39,6 +39,7 @@ Proxy = {
         Switched = "Switched to: %s"
         Failed = "Switch failed"
         Error = "Switch failed: %s"
+        Timeout = "Switch timed out, please try again"
         RequireRunning = "Start the core before switching nodes"
     }
 
