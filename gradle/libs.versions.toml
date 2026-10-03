@@ -41,7 +41,7 @@ androidxTestCore = "1.7.0"
 smaliDexlib2 = "3.0.10"
 
 # Plugin & build-only versions
-androidGradlePlugin = "9.5.0-alpha02"
+androidGradlePlugin = "9.5.0-alpha07"
 kotlin = "2.4.20"
 jetbrainsCompose = "1.11.1"
 ksp = "2.3.12"
