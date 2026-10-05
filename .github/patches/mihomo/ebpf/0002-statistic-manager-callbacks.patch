@@ -9,10 +9,10 @@ Add InitialUpload/InitialDownload fields to TrackerInfo so consumers
 can compute per-connection traffic deltas without maintaining external
 baselines (B1 design: delta at source).
 diff --git a/tunnel/statistic/manager.go b/tunnel/statistic/manager.go
-index 69ea5928..86292f05 100644
+index 8ba7b319..491bc406 100644
 --- a/tunnel/statistic/manager.go
 +++ b/tunnel/statistic/manager.go
-@@ -26,26 +26,38 @@ func init() {
+@@ -27,28 +27,40 @@ func init() {
  }
  
  type Manager struct {
@@ -25,7 +25,9 @@ index 69ea5928..86292f05 100644
 -	uploadTotal   atomic.Int64
 -	downloadTotal atomic.Int64
 -	pid           int32
--	memory        uint64
+-	memory        atomic.Uint64
+-	memoryMu      sync.Mutex
+-	memoryUpdated time.Time
 +	connections         xsync.Map[string, Tracker]
 +	smartTarget         xsync.Map[string, *xsync.Map[string, bool]]
 +	uploadTemp          atomic.Int64
@@ -35,7 +37,9 @@ index 69ea5928..86292f05 100644
 +	uploadTotal         atomic.Int64
 +	downloadTotal       atomic.Int64
 +	pid                 int32
-+	memory              uint64
++	memory              atomic.Uint64
++	memoryMu            sync.Mutex
++	memoryUpdated       time.Time
 +	trafficDirty        atomic.Bool
 +	lastPushedUpSpeed   int64
 +	lastPushedDownSpeed int64
@@ -61,7 +65,7 @@ index 69ea5928..86292f05 100644
  }
  
  func (m *Manager) Get(id string) (c Tracker) {
-@@ -64,11 +76,13 @@ func (m *Manager) Range(f func(c Tracker) bool) {
+@@ -67,11 +79,13 @@ func (m *Manager) Range(f func(c Tracker) bool) {
  func (m *Manager) PushUploaded(size int64) {
  	m.uploadTemp.Add(size)
  	m.uploadTotal.Add(size)
@@ -75,7 +79,7 @@ index 69ea5928..86292f05 100644
  }
  
  func (m *Manager) Now() (up int64, down int64) {
-@@ -113,14 +127,40 @@ func (m *Manager) ResetStatistic() {
+@@ -124,14 +138,40 @@ func (m *Manager) ResetStatistic() {
  	m.downloadTemp.Store(0)
  	m.downloadBlip.Store(0)
  	m.downloadTotal.Store(0)
@@ -119,31 +123,63 @@ index 69ea5928..86292f05 100644
  }
  
 diff --git a/tunnel/statistic/tracker.go b/tunnel/statistic/tracker.go
-index 728bc112..73ac049d 100644
+index f42d8162..ed0b41bb 100644
 --- a/tunnel/statistic/tracker.go
 +++ b/tunnel/statistic/tracker.go
 @@ -49,6 +49,8 @@ type TrackerInfo struct {
  	RulePayload     string       `json:"rulePayload"`
  	MaxUploadRate   atomic.Int64 `json:"maxUploadRate"`
  	MaxDownloadRate atomic.Int64 `json:"maxDownloadRate"`
-+	InitialUpload   int64 `json:"-"` // upload counter snapshot at connection creation
-+	InitialDownload int64 `json:"-"` // download counter snapshot at connection creation
- }
++	InitialUpload   int64        `json:"-"` // upload counter snapshot at connection creation
++	InitialDownload int64        `json:"-"` // download counter snapshot at connection creation
  
- // stallWindow bounds how quickly a payload-less connection must close to
-@@ -209,6 +211,8 @@ func NewTCPTracker(conn C.Conn, manager *Manager, metadata *C.Metadata, rule C.R
- 			Rule:          "",
- 			UploadTotal:   atomic.NewInt64(uploadTotal),
- 			DownloadTotal: atomic.NewInt64(downloadTotal),
+ 	// When payload last moved each way, in Unix nanoseconds; zero if it never
+ 	// has. Kept out of the API: they exist for AwaitingReply.
+@@ -246,14 +248,16 @@ func NewTCPTracker(conn C.Conn, manager *Manager, metadata *C.Metadata, rule C.R
+ 		Conn:    conn,
+ 		manager: manager,
+ 		TrackerInfo: &TrackerInfo{
+-			UUID:          trackerUUID,
+-			Start:         time.Now(),
+-			Metadata:      metadata,
+-			Chain:         conn.Chains(),
+-			ProviderChain: conn.ProviderChains(),
+-			Rule:          "",
+-			UploadTotal:   atomic.NewInt64(uploadTotal),
+-			DownloadTotal: atomic.NewInt64(downloadTotal),
++			UUID:            trackerUUID,
++			Start:           time.Now(),
++			Metadata:        metadata,
++			Chain:           conn.Chains(),
++			ProviderChain:   conn.ProviderChains(),
++			Rule:            "",
++			UploadTotal:     atomic.NewInt64(uploadTotal),
++			DownloadTotal:   atomic.NewInt64(downloadTotal),
 +			InitialUpload:   uploadTotal,
 +			InitialDownload: downloadTotal,
  		},
  		pushToManager:        pushToManager,
  		initialUpload:        uploadTotal,
-@@ -319,6 +323,8 @@ func NewUDPTracker(conn C.PacketConn, manager *Manager, metadata *C.Metadata, ru
- 			Rule:          "",
- 			UploadTotal:   atomic.NewInt64(uploadTotal),
- 			DownloadTotal: atomic.NewInt64(downloadTotal),
+@@ -361,14 +365,16 @@ func NewUDPTracker(conn C.PacketConn, manager *Manager, metadata *C.Metadata, ru
+ 		PacketConn: conn,
+ 		manager:    manager,
+ 		TrackerInfo: &TrackerInfo{
+-			UUID:          trackerUUID,
+-			Start:         time.Now(),
+-			Metadata:      metadata,
+-			Chain:         conn.Chains(),
+-			ProviderChain: conn.ProviderChains(),
+-			Rule:          "",
+-			UploadTotal:   atomic.NewInt64(uploadTotal),
+-			DownloadTotal: atomic.NewInt64(downloadTotal),
++			UUID:            trackerUUID,
++			Start:           time.Now(),
++			Metadata:        metadata,
++			Chain:           conn.Chains(),
++			ProviderChain:   conn.ProviderChains(),
++			Rule:            "",
++			UploadTotal:     atomic.NewInt64(uploadTotal),
++			DownloadTotal:   atomic.NewInt64(downloadTotal),
 +			InitialUpload:   uploadTotal,
 +			InitialDownload: downloadTotal,
  		},
