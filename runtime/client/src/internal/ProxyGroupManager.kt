@@ -2,6 +2,7 @@ package com.github.lmfirefly.flycat.runtime.client.internal
 
 import com.github.lmfirefly.flycat.core.Clash
 import com.github.lmfirefly.flycat.core.bridge.Bridge
+import com.github.lmfirefly.flycat.core.contract.ProxySelectTimeoutException
 import com.github.lmfirefly.flycat.core.model.profile.Profile
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup
@@ -22,6 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -62,6 +64,10 @@ internal class ProxyGroupManager(
         const val PROXY_DELAY_CACHE_TTL_MS = 5 * 60 * 1000L
         const val PROXY_SELECT_FULL_REFRESH_DELAY_MS = 400L
         const val PROXY_GROUP_QUERY_TIMEOUT_MS = 8_000L
+        /** 单次 patchSelector 超时。release 非阻塞 + closeConnByGroup 异步 + OnLeave 限流之后，选择路径只剩「改 Selector 内存状态 + cachefile 落盘 + 起后台关连接」，正常毫秒级返回；3s 只兜 cachefile 磁盘抖动 / 残留的原生阻塞。 */
+        const val SELECT_TIMEOUT_MS = 3_000L
+        /** 含恢复重试在内的总尝试次数：第 1 次阻塞 → 恢复控制链 → 再试 1 次。 */
+        const val SELECT_MAX_ATTEMPTS = 2
     }
     private var previewCacheEntry: PreviewCacheEntry? = null
     private var previewProfile: Profile? = null
@@ -120,59 +126,59 @@ internal class ProxyGroupManager(
                 return
             }
             var missingLocalRuntime = false
-            val groups =
-                try {
-                    withTimeoutOrNull(PROXY_GROUP_QUERY_TIMEOUT_MS) {
-                        withContext(Dispatchers.IO) {
-                            try {
-                                if (!snapshot.running) {
-                                    return@withContext queryPreviewProxyGroups(appContext, connectCurrentBackend)
-                                }
-                                if (snapshot.owner == RuntimeOwner.RootTun && !isRootSessionActive()) {
-                                    error("RootTun runtime not ready")
-                                }
-                                if (snapshot.owner == RuntimeOwner.RootTun) {
-                                    RootTunController.queryAllProxyGroups(
-                                            context = appContext,
-                                            excludeNotSelectable = false,
-                                        )
-                                        .let(::toProxyGroupInfos)
-                                } else {
-                                    connectCurrentBackend()
-                                    ServiceClient.clash()
-                                        .queryAllProxyGroups(excludeNotSelectable = false)
-                                        .let(::toProxyGroupInfos)
-                                }
-                            } catch (e: CancellationException) { throw e }
-                            catch (error: Exception) {
-                                Timber.e(error, "Failed to refresh proxy groups")
-                                missingLocalRuntime = snapshot.owner != RuntimeOwner.RootTun &&
-                                    snapshot.owner != RuntimeOwner.None &&
-                                    snapshot.owner != RuntimeOwner.RemoteController
-                                null
+            val groups = try {
+                withAbandonableTimeout(PROXY_GROUP_QUERY_TIMEOUT_MS, "refreshProxyGroupsInner") {
+                    withContext(Dispatchers.IO) {
+                        try {
+                            if (!snapshot.running) {
+                                return@withContext queryPreviewProxyGroups(appContext, connectCurrentBackend)
                             }
+                            if (snapshot.owner == RuntimeOwner.RootTun && !isRootSessionActive()) {
+                                error("RootTun runtime not ready")
+                            }
+                            if (snapshot.owner == RuntimeOwner.RootTun) {
+                                RootTunController.queryAllProxyGroups(
+                                        context = appContext,
+                                        excludeNotSelectable = false,
+                                    )
+                                    .let(::toProxyGroupInfos)
+                            } else {
+                                connectCurrentBackend()
+                                ServiceClient.clash()
+                                    .queryAllProxyGroups(excludeNotSelectable = false)
+                                    .let(::toProxyGroupInfos)
+                            }
+                        } catch (e: CancellationException) { throw e }
+                        catch (error: Exception) {
+                            Timber.e(error, "Failed to refresh proxy groups")
+                            missingLocalRuntime = snapshot.owner != RuntimeOwner.RootTun &&
+                                snapshot.owner != RuntimeOwner.None &&
+                                snapshot.owner != RuntimeOwner.RemoteController
+                            null
                         }
                     }
-                } finally {
-                    queryLock.set(false)
                 }
-            // 状态更新 —— 仅在快速发布路径中持有互斥锁。
-            refreshProxyGroupsMutex.withLock {
-                if (groups != null && (groups.isNotEmpty() || snapshot.running)) {
-                    publishProxyGroups(groups, cacheForPreview = true)
-                } else if (!snapshot.running) {
-                    val cached = previewCacheFallback(
-                        phase = snapshot.phase,
-                        profile = previewProfile,
-                        excludeNotSelectable = false,
-                        overrideSignature = "",
-                    )
-                    if (!cached.isNullOrEmpty()) {
-                        publishProxyGroups(cached, cacheForPreview = false)
-                    }
+            } finally {
+                // 必须在外层 finally 释放：withAbandonableTimeout 超时会遗弃内层 job，若把释放放在 job 内，阻塞的 JNI 不返回则 queryLock 永久卡死（日志表现为 "query already in flight, skipping" 循环）。
+                queryLock.set(false)
+            }
+        // 状态更新 —— 仅在快速发布路径中持有互斥锁。
+        refreshProxyGroupsMutex.withLock {
+            if (groups != null && (groups.isNotEmpty() || snapshot.running)) {
+                publishProxyGroups(groups, cacheForPreview = true)
+            } else if (!snapshot.running) {
+                val cached = previewCacheFallback(
+                    phase = snapshot.phase,
+                    profile = previewProfile,
+                    excludeNotSelectable = false,
+                    overrideSignature = "",
+                )
+                if (!cached.isNullOrEmpty()) {
+                    publishProxyGroups(cached, cacheForPreview = false)
                 }
             }
-            // 不再因 missingLocalRuntime 清空代理组缓存——保留旧数据优于显示空白
+        }
+        // 不再因 missingLocalRuntime 清空代理组缓存——保留旧数据优于显示空白
     }
     /**
      * 用于UI触发刷新的非阻塞变体。
@@ -225,7 +231,7 @@ internal class ProxyGroupManager(
         }
         val updatedGroup =
             try {
-                withTimeoutOrNull(PROXY_GROUP_QUERY_TIMEOUT_MS) {
+                withAbandonableTimeout(PROXY_GROUP_QUERY_TIMEOUT_MS, "refreshProxyGroup") {
                     withContext(Dispatchers.IO) {
                         try {
                             if (snapshot.owner == RuntimeOwner.RootTun && !isRootSessionActive()) {
@@ -247,6 +253,7 @@ internal class ProxyGroupManager(
                     }
                 }
             } finally {
+                // 同 refreshProxyGroupsInner：必须在外层释放，避免阻塞 JNI 导致锁永久持有。
                 queryLock.set(false)
             } ?: return
         refreshProxyGroupsMutex.withLock {
@@ -304,11 +311,9 @@ internal class ProxyGroupManager(
             _resolvedPrimaryNode.value = null
             return
         }
-        val mainGroup =
-            groups.find { it.name.equals("Proxy", ignoreCase = true) } ?: groups.firstOrNull()
+        val mainGroup = groups.find { it.name.equals("Proxy", ignoreCase = true) } ?: groups.firstOrNull()
         val targetNode = mainGroup?.now?.trim().orEmpty()
-        _resolvedPrimaryNode.value =
-            targetNode.takeIf(String::isNotEmpty)?.let { resolveProxyNode(it, groups) }
+        _resolvedPrimaryNode.value = targetNode.takeIf(String::isNotEmpty)?.let { resolveProxyNode(it, groups) }
     }
     fun clearGroups() {
         _proxyGroups.value = emptyList()
@@ -348,10 +353,9 @@ internal class ProxyGroupManager(
         connectCurrentBackend: suspend () -> Unit,
     ): List<ProxyGroupInfo> {
         connectCurrentBackend()
-        val groups =
-            ServiceClient.clash()
-                .queryProfileProxyGroups(excludeNotSelectable = false)
-                .let(::toProxyGroupInfos)
+        val groups = ServiceClient.clash()
+            .queryProfileProxyGroups(excludeNotSelectable = false)
+            .let(::toProxyGroupInfos)
         return groups
     }
     private fun enrichProxyGroupDelays(groups: List<ProxyGroupInfo>): List<ProxyGroupInfo> {
@@ -558,12 +562,14 @@ internal class ProxyGroupManager(
 
     suspend fun selectProxy(group: String, proxyName: String): Boolean {
         Timber.d("Select proxy: group=$group proxy=$proxyName")
-        val ok = router!!.dispatch(
-            requireRunning = true,
-            defaultIfNotRunning = { false },
-            onRoot = { RootTunController.patchSelector(it, group, proxyName) },
-            onLocal = { ServiceClient.clash().patchSelector(group, proxyName) },
-        )
+        val ok = dispatchSelectWithRecovery("selectProxy") {
+            router!!.dispatch(
+                requireRunning = true,
+                defaultIfNotRunning = { false },
+                onRoot = { RootTunController.patchSelector(it, group, proxyName) },
+                onLocal = { ServiceClient.clash().patchSelector(group, proxyName) },
+            )
+        }
         if (ok) {
             // 乐观局部更新以使界面立即反映更改，即使延迟刷新被过时的互斥锁阻塞。
             applyLocalForceSelection(group = group, proxyName = proxyName)
@@ -581,12 +587,14 @@ internal class ProxyGroupManager(
 
     suspend fun forceSelectProxy(group: String, proxyName: String): Boolean {
         Timber.d("Force select proxy: group=$group proxy=$proxyName")
-        val ok = router!!.dispatch(
-            requireRunning = true,
-            defaultIfNotRunning = { false },
-            onRoot = { RootTunController.patchForceSelector(it, group, proxyName) },
-            onLocal = { ServiceClient.clash().patchForceSelector(group, proxyName) },
-        )
+        val ok = dispatchSelectWithRecovery("forceSelectProxy") {
+            router!!.dispatch(
+                requireRunning = true,
+                defaultIfNotRunning = { false },
+                onRoot = { RootTunController.patchForceSelector(it, group, proxyName) },
+                onLocal = { ServiceClient.clash().patchForceSelector(group, proxyName) },
+            )
+        }
         if (ok) {
             applyLocalForceSelection(group = group, proxyName = proxyName)
             scope.launch {
@@ -599,6 +607,66 @@ internal class ProxyGroupManager(
             }
         }
         return ok
+    }
+
+    /**
+     * 带超时与控制链恢复的选择调用。
+     * 返回值是内核的真实结果：`true` 切换成功；`false` 表示内核拒绝（如节点不存在），不重试。
+     * 本次尝试超时或抛错时，先恢复控制链再试；全部尝试仍被阻塞则抛 [ProxySelectTimeoutException]，供 UI 区分「切换超时」与「切换失败」。
+     *
+     * 关于「100% 可达」：已经进入原生层的 CGO 调用无法从 Kotlin 取消。超时只是遗弃该调用（见 [withAbandonableTimeout]），新发起的调用会在另一个 IO 线程独立完成，因此「超时 → 恢复 → 重试」在实践中可做到几乎必达。真正把原生层打死只剩进程级死锁，那需要重启内核进程，不宜由单次切节点触发。
+     */
+    private suspend fun dispatchSelectWithRecovery(label: String, block: suspend () -> Boolean): Boolean {
+        repeat(SELECT_MAX_ATTEMPTS) { attempt ->
+            val result = withAbandonableTimeout(SELECT_TIMEOUT_MS, label, block)
+            when (result) {
+                true -> return true
+                false -> return false
+                null -> {
+                    Timber.w("%s attempt %d blocked or failed, recovering JNI control chain", label, attempt + 1)
+                    recoverControlChain()
+                }
+            }
+        }
+        Timber.e("%s blocked on all %d attempts", label, SELECT_MAX_ATTEMPTS)
+        throw ProxySelectTimeoutException()
+    }
+
+    /**
+     * 对阻塞型 JNI/CGO 调用真正有效的超时。
+     * `withTimeoutOrNull { block() }` 对阻塞 JNI 是无效的：超时只能取消协程，取消不了已经进入原生层的阻塞调用，block() 挂住不返回则超时永不触发，调用方既收不到结果也收不到异常（表现为「点了没反应、没有 toast」，以及 queryLock 永不释放）。
+     * 这里把 block 丢进独立 [async]，用 `await()` 接超时：`await()` 可被取消，超时立即返回 `null` 并遗弃该 job（底层阻塞调用会继续跑完，但结果被丢弃；占用一个 IO 线程直到返回）。
+     * @return 内核返回值；超时或抛错返回 `null`。
+     */
+    private suspend fun <T> withAbandonableTimeout(timeoutMs: Long, label: String, block: suspend () -> T): T? {
+        val job = scope.async(Dispatchers.IO) { block() }
+        return try {
+            withTimeoutOrNull(timeoutMs) { job.await() }
+        } catch (e: CancellationException) {
+            job.cancel()
+            throw e
+        } catch (e: Throwable) {
+            Timber.e(e, "%s abandonable call threw", label)
+            null
+        }.also { result ->
+            if (result == null) {
+                Timber.w("%s abandonable call timed out after %dms, abandoning job (native call may still be running)", label, timeoutMs)
+                job.cancel()
+            }
+        }
+    }
+
+    /**
+     * 重置 UI↔core 控制链的软件层状态，让下一次 patchSelector 走全新 gateway。
+     * 原生库与 Go 运行时保持不动（webdashboard 证明 core 健康）；只丢弃 Kotlin 侧可能持有陈旧句柄的 gateway 包装。
+     * release 非阻塞 + closeConnByGroup 异步 + OnLeave 限流保证了新调用不会再被事件风暴拖住。
+     */
+    private suspend fun recoverControlChain() {
+        val ctx = appContext ?: return
+        runCatching {
+            ServiceClient.disconnect()
+            ServiceClient.connect(ctx)
+        }.onFailure { error -> Timber.e(error, "Control chain recovery failed") }
     }
 
     suspend fun healthCheck(group: String) {

@@ -2,6 +2,7 @@
 package tunnel
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -155,13 +156,95 @@ func fillCloseIdentity(event *ConnectionCloseEvent, meta any) {
 	}
 }
 
-// SetConnectionLeaveListener registers a callback invoked when a connection is closed.
+// closeEventThrottler 在快速连接关闭事件跨越 JNI 之前将其合并。
+// 大规模关闭（选择器切换、配置重载）加上高变动流量可能连续触发数百个 OnLeave 回调。每一个都会成为一次 JNI 回调；Rust 端的队列是有界的（1024），会被填满，此后 join/close 回退到在 Go goroutine 上进行同步 JNI 调用。
+// 加上在 patchSelector 线程上同步执行 closeConnByGroup（现已移至后台 goroutine），这使得节点选择看起来像是挂死了。
+type closeEventThrottler struct {
+	mu       sync.Mutex
+	pending  map[string]*ConnectionCloseEvent
+	order    []string
+	timer    *time.Timer
+	listener func(*ConnectionCloseEvent)
+}
+
+const (
+	closeEventFlushInterval = 100 * time.Millisecond
+	// 当合并批次足够大时，及早刷新，因为继续等待已无意义。
+	closeEventFlushBatch = 128
+)
+
+var leaveThrottler closeEventThrottler
+
+func (t *closeEventThrottler) offer(event *ConnectionCloseEvent) {
+	t.mu.Lock()
+	if t.pending == nil {
+		t.pending = make(map[string]*ConnectionCloseEvent, closeEventFlushBatch)
+	}
+	if _, exists := t.pending[event.ID]; !exists {
+		t.order = append(t.order, event.ID)
+	}
+	t.pending[event.ID] = event
+	shouldFlushNow := len(t.order) >= closeEventFlushBatch
+	if shouldFlushNow {
+		if t.timer != nil {
+			t.timer.Stop()
+			t.timer = nil
+		}
+	} else if t.timer == nil {
+		t.timer = time.AfterFunc(closeEventFlushInterval, t.flush)
+	}
+	t.mu.Unlock()
+	if shouldFlushNow {
+		t.flush()
+	}
+}
+
+func (t *closeEventThrottler) flush() {
+	t.mu.Lock()
+	t.timer = nil
+	pending := t.pending
+	order := t.order
+	listener := t.listener
+	t.pending = nil
+	t.order = nil
+	t.mu.Unlock()
+	if listener == nil {
+		return
+	}
+	for _, id := range order {
+		if event, ok := pending[id]; ok {
+			listener(event)
+		}
+	}
+}
+
+func (t *closeEventThrottler) setListener(listener func(*ConnectionCloseEvent)) {
+	t.mu.Lock()
+	t.listener = listener
+	t.mu.Unlock()
+}
+
+// drain 立即冲刷任何缓冲事件（监听器拆卸/取消订阅）。
+func (t *closeEventThrottler) drain() {
+	t.mu.Lock()
+	if t.timer != nil {
+		t.timer.Stop()
+		t.timer = nil
+	}
+	t.mu.Unlock()
+	t.flush()
+}
+
+// SetConnectionLeaveListener 注册一个在连接关闭时被调用的回调。
+// 事件在跨越 JNI 边界之前会被合并（参见 closeEventThrottler）。
 func SetConnectionLeaveListener(listener func(*ConnectionCloseEvent)) {
 	if listener == nil {
+		leaveThrottler.drain()
+		leaveThrottler.setListener(nil)
 		statistic.DefaultManager.OnLeave = nil
 		return
 	}
-
+	leaveThrottler.setListener(listener)
 	statistic.DefaultManager.OnLeave = func(info *statistic.TrackerInfo) {
 		event := &ConnectionCloseEvent{
 			ID:             info.UUID.String(),
@@ -175,12 +258,14 @@ func SetConnectionLeaveListener(listener func(*ConnectionCloseEvent)) {
 			ProviderChains: info.ProviderChain,
 		}
 		fillCloseIdentity(event, info.Metadata)
-		listener(event)
+		leaveThrottler.offer(event)
 	}
 }
 
-// ClearConnectionLeaveListener unregisters the connection-close callback.
+// ClearConnectionLeaveListener 会注销连接关闭回调。
 func ClearConnectionLeaveListener() {
+	leaveThrottler.drain()
+	leaveThrottler.setListener(nil)
 	statistic.DefaultManager.OnLeave = nil
 }
 

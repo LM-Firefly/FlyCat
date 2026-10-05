@@ -208,7 +208,8 @@ func PatchSelector(selector, name string) bool {
 
 	log.Infoln("Patch selector %s -> %s", selector, name)
 
-	closeConnByGroup(selector)
+	// 异步关连接。closeConnByGroup 是 O(N) 遍历，高并发时即便 OnLeave 已限流合并，批量冲刷仍可能占住调用线程；关连接与选择结果无关，放后台才不拖住 nativePatchSelector。
+	go closeConnByGroup(selector)
 
 	return true
 }
@@ -233,7 +234,8 @@ func PatchForceSelector(selector, name string) bool {
 	s.ForceSet(name)
 	cachefile.Cache().SetSelected(selector, name)
 	log.Infoln("Force patch selector %s -> %s", selector, name)
-	closeConnByGroup(selector)
+	// 同 PatchSelector：关连接放后台，避免批量关连接拖住调用线程。
+	go closeConnByGroup(selector)
 	return true
 }
 
