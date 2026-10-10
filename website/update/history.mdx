@@ -9,6 +9,29 @@ icon: "clock"
 <Card title="GitHub Releases" icon="download" horizontal href="https://github.com/LM-Firefly/FlyCat/releases">
 </Card>
 
+<Update label="2026-10-09" tags={["功能更新","问题修复","变更"]} description="v0.5.8 · 节点搜索、切节点防卡死与 emoji 对齐">
+  ## 代理页体验
+
+  - 顶栏放大镜唤出节点搜索框：输入即筛、滚动自动收起；配套与其它顶栏图标同规格的线条放大镜
+  - emoji 混排对齐修复：面包屑、代理链路、节点卡片 emoji 与正文墨迹中心共线，不再下沿越界
+  - 面包屑按压反馈补全：按下瞬时缩放与降透明、松手弹簧回弹，短按也清晰可见
+  - 双栏/平板：左栏「代理」点击滚回策略组列表顶，右栏组名标题点击滚回节点列表顶
+
+  ## 切节点防卡死
+
+  - 长时间/高网速后点击节点无响应、无提示的根因修复：原生 `release_object` 改非阻塞入队，关连接移到后台，连接关闭事件跨 JNI 前合并限流
+  - 可遗弃超时让阻塞 JNI 调用的超时真正生效，超时后重建控制链并重试，仍阻塞则明确提示「切换超时」
+  - 刷新查询锁改外层释放，消除「query already in flight」永久跳过刷新
+
+  ## 其它
+
+  - 自定义路由：手动 YAML 编辑优先于预设改动，区域与条目文案本地化
+  - 移除简洁显示模式，统一为详细布局，旧偏好与备份自动归一化
+  - 移除 gropify 构建插件及其 Jackson 3 传递依赖，根治相关 Dependabot 告警
+
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.8)
+</Update>
+
 <Update label="2026-09-27" tags={["功能更新","性能优化","问题修复"]} description="v0.5.7 · 代理稳定性、功耗优化与超级岛通知">
   ## 代理体验与稳定性
 

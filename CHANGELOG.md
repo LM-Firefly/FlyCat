@@ -4,6 +4,26 @@
 
 ## [Unreleased]
 
+## [0.5.8] - 2026-10-09
+
+### 新增
+
+- **顶栏节点搜索**：顶栏放大镜唤出搜索框，输入即筛、滚动自动收起；配套与 Eye/Speed 同规格线条图标（`feat(proxy)`）
+
+### 修复
+
+- **切节点假死**：长时间/高网速后点击无响应且无提示——`release_object` 改非阻塞入队、关连接移到后台 goroutine、OnLeave 跨 JNI 前合并限流；`withAbandonableTimeout` 使阻塞 JNI 超时真正生效（`withTimeoutOrNull` 打不断原生调用），超时后重建 gateway 重试，仍阻塞则提示「切换超时」；刷新查询锁改外层释放，消除 `query already in flight` 永久跳过（`fix(proxy)`）
+- **emoji 混排对齐**：面包屑、代理链路、节点卡片 emoji 与正文墨迹中心共线，修正下沿越界与上下超出不对称；面包屑按压反馈补全（按下 snap、松手弹簧回弹，短按也可见）（`fix(proxy)`）
+- **双栏标题滚顶**：双栏左栏「代理」滚回策略组列表顶、右栏组名标题可点滚回节点列表顶（`fix(proxy)`）
+- **自定义路由**：手动 YAML 编辑优先于预设改动，区域与条目文案本地化（`fix(custom-routing)`）
+- **国旗空占位**：无国家码时不再渲染名称前的空白圆（`fix(proxy)`）
+
+### 变更
+
+- **显示模式统一**：移除简洁显示模式，仅保留详细布局；`ProxyDisplayMode.normalized()` 将旧 SIMPLE 枚举折叠至 DETAILED，旧偏好与备份自动归一化（`fix(proxy)`）
+- **构建依赖精简**：移除 gropify 插件及其 Jackson 3 传递依赖，根治相关 Dependabot 告警；升级 mipstack、sing-tun 并同步 eBPF patch（`fix(proxy)`）
+- **配置导入**：`ProfileImportType` 枚举替代导入类型常量，清理冗余文件（`refactor(profiles)`）
+
 ## [0.5.7] - 2026-09-27
 
 ### 新增
