@@ -29,8 +29,8 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import com.github.lmfirefly.flycat.core.model.AppLanguage
 import com.github.lmfirefly.flycat.core.util.LocaleUtils
+import com.github.lmfirefly.flycat.locale.FlyLocaleManager
 import java.util.Locale
-import tf.gal.shirosu.fyl.fytxt.FYTxtConfig
 
 object AppLanguageManager {
     @Volatile private var activeLanguage: AppLanguage = AppLanguage.System
@@ -55,14 +55,25 @@ object AppLanguageManager {
 
         Locale.setDefault(locale)
         LocaleUtils.setCurrentLocale(locale)
-        when (language) {
-            AppLanguage.System -> FYTxtConfig.updateTags(lock = false)
-            AppLanguage.Zh -> FYTxtConfig.updateTags(listOf("ZH_HANS"), lock = true)
-            AppLanguage.ZhHant -> FYTxtConfig.updateTags(listOf("ZH_HANT"), lock = true)
-            AppLanguage.En -> FYTxtConfig.updateTags(listOf("EN"), lock = true)
-            AppLanguage.Ja -> FYTxtConfig.updateTags(listOf("JA"), lock = true)
-            AppLanguage.Ru -> FYTxtConfig.updateTags(listOf("RU"), lock = true)
+        val flyTag = when (language) {
+            AppLanguage.System ->
+                if (locale.language.equals("zh", ignoreCase = true) &&
+                    (locale.script.equals("Hant", ignoreCase = true) ||
+                        locale.country.equals("TW", ignoreCase = true) ||
+                        locale.country.equals("HK", ignoreCase = true) ||
+                        locale.country.equals("MO", ignoreCase = true))
+                ) {
+                    "zh-tw"
+                } else {
+                    locale.toLanguageTag().lowercase()
+                }
+            AppLanguage.Zh -> "zh-cn"
+            AppLanguage.ZhHant -> "zh-tw"
+            AppLanguage.En -> "en"
+            AppLanguage.Ja -> "ja"
+            AppLanguage.Ru -> "ru"
         }
+        FlyLocaleManager.updateLocale(flyTag)
     }
 
     fun wrap(base: Context): Context {

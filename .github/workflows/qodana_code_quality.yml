@@ -20,30 +20,38 @@ jobs:
       pull-requests: write
       checks: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      # MLang (locale/build/generated/.../fytxt.kt) is produced by a standalone Kotlin script,
-      # NOT by Gradle, and is git-ignored. Without it every module's MLang.* references fail to
-      # resolve and Qodana's Gradle import/analysis breaks. (The native .so libs are NOT needed —
-      # they are loaded at runtime, not during Kotlin analysis.)
+      # :locale 模块现在是直接提交的 Kotlin 代码（FlyTxt + Lyricist），因此 Qodana 的 Gradle 导入/分析解析引用时无需代码生成。（原生 .so 库并非必需——它们在运行时加载，而不是在 Kotlin 分析期间。）
       - name: Setup Java
         uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "26"
+      - name: Setup Kotlin
+        uses: fwilhe2/setup-kotlin@main
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+      - name: Generate locale sources
+        shell: bash
+        run: |
+          set -eu
+          chmod +x gradlew
+          ./gradlew --no-daemon :locale:kspDebugKotlin
+          test -s locale/build/generated/ksp/debug/kotlin/cafe/adriel/lyricist/Strings.kt
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@v2026.2
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
-          # When pr-mode is set to true, Qodana analyzes only the files that have been changed
+          # 当 pr-mode 设置为 true 时，Qodana 仅分析已更改的文件。
           pr-mode: false
           use-caches: true
           post-pr-comment: true
           use-annotations: true
-          # Upload Qodana results (SARIF, other artifacts, logs) as an artifact to the job
+          # 将 Qodana 结果（SARIF、其他工件、日志）作为工件上传到任务
           upload-result: false
-          # quick-fixes available in Ultimate and Ultimate Plus plans
+          # Ultimate 和 Ultimate Plus 计划中提供的快速修复
           push-fixes: 'none'

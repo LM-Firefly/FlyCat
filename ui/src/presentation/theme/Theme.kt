@@ -27,7 +27,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import com.github.lmfirefly.flycat.core.model.ThemeMode
-import tf.gal.shirosu.fyl.fytxt.compose.FYTxtProvider
+import com.github.lmfirefly.flycat.locale.ProvideFlyStrings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal val LocalPlatformSystemUiEffect = compositionLocalOf<@Composable () -> Unit> { {} }
@@ -43,7 +43,7 @@ fun FlyTheme(
     opacity: Opacity = Opacity(),
     appColors: AppColors = AppColors(),
     content: @Composable () -> Unit,
-) = FYTxtProvider {
+) = ProvideFlyStrings {
     LocalPlatformSystemUiEffect.current()
     val effectiveThemeMode = themeMode ?: ThemeMode.Auto
     val isDark =

@@ -10,4 +10,4 @@
 - [sketch](https://github.com/panpf/sketch)
 - [Lucide](https://github.com/lucide-icons/lucide)
 - [Circle Flags](https://github.com/HatScripts/circle-flags)
-- [PureJoy-FYL](https://github.com/OOM-WG/PureJoy-FYL)
+- [Lyricist](https://github.com/adrielcafe/lyricist)

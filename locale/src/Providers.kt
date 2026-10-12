@@ -1,0 +1,248 @@
+@file:Suppress("ClassName", "PropertyName", "RedundantVisibilityModifier")
+
+package com.github.lmfirefly.flycat.locale
+
+internal val ZhHansFlyStrings_Providers: FlyStrings_Providers = FlyStrings_Providers(
+    Title = "外部资源",
+    Action = FlyStrings_Providers_Action(
+        UpdateAll = "更新全部",
+        Update = "更新",
+        Upload = "上传",
+        View = "查看",
+        Operation = "操作",
+        OpenInFiles = "打开 FlyCat 文件入口",
+    ),
+    Empty = FlyStrings_Providers_Empty(
+        NotRunning = "代理未启动",
+        NotRunningHint = "请先启动代理服务以查看外部资源",
+        NoProviders = "暂无外部资源",
+        NoProvidersHint = "当前配置未包含外部资源",
+    ),
+    Type = FlyStrings_Providers_Type(
+        ProxyProviders = "代理提供者 (%d)",
+        RuleProviders = "规则提供者 (%d)",
+    ),
+    Info = FlyStrings_Providers_Info(
+        ExpireDays = "到期：%s (剩余%d天)",
+        Expired = "到期：%s (已过期)",
+        RemainingTraffic = "剩余流量: %s",
+        UsedTraffic = "流量：%s / %s",
+    ),
+    VehicleType = FlyStrings_Providers_VehicleType(
+        Http = "HTTP",
+        File = "文件",
+        Inline = "内联",
+        Compatible = "兼容",
+    ),
+    Message = FlyStrings_Providers_Message(
+        FetchFailed = "获取外部资源失败: %s",
+        UpdateSuccess = "%s 更新成功",
+        UpdateFailed = "更新失败: %s",
+        AllUpdated = "全部更新完成",
+        UploadSuccess = "%s 上传成功",
+        UploadFailed = "上传失败: %s",
+        OpenFileFailed = "打开文件失败: %s",
+        ConvertMrsFailed = "MRS 规则集解码失败，可能为 classical 类型或文件已损坏",
+        CannotReadFile = "无法读取文件：%s",
+        FileExceedsLimit = "文件超过 %dMB 限制",
+    ),
+    InfoTitle = "目录说明",
+    InfoSummary = "GeoX 和内核运行时公共文件位于：%s（应用私有目录，Android/data 中不可见）。规则和代理提供者会写入当前配置的私有目录（imported/<配置UUID>/providers），可在系统文件管理器的 FlyCat 入口中访问。",
+    ProviderPath = "资源路径：%s",
+)
+
+internal val ZhFlyStrings_Providers: FlyStrings_Providers = FlyStrings_Providers(
+    Title = "外部資源",
+    Action = FlyStrings_Providers_Action(
+        UpdateAll = "更新全部",
+        Update = "更新",
+        Upload = "上傳",
+        View = "檢視",
+        Operation = "操作",
+        OpenInFiles = "開啟 FlyCat 檔案入口",
+    ),
+    Empty = FlyStrings_Providers_Empty(
+        NotRunning = "代理未啟動",
+        NotRunningHint = "請先啟動代理服務以檢視外部資源",
+        NoProviders = "暫無外部資源",
+        NoProvidersHint = "目前設定檔未包含外部資源",
+    ),
+    Type = FlyStrings_Providers_Type(
+        ProxyProviders = "代理提供者 (%d)",
+        RuleProviders = "規則提供者 (%d)",
+    ),
+    Info = FlyStrings_Providers_Info(
+        ExpireDays = "到期：%s (剩餘%d天)",
+        Expired = "到期：%s (已過期)",
+        RemainingTraffic = "剩餘流量: %s",
+        UsedTraffic = "流量：%s / %s",
+    ),
+    VehicleType = FlyStrings_Providers_VehicleType(
+        Http = "HTTP",
+        File = "檔案",
+        Inline = "內嵌",
+        Compatible = "相容",
+    ),
+    Message = FlyStrings_Providers_Message(
+        FetchFailed = "取得外部資源失敗: %s",
+        UpdateSuccess = "%s 更新成功",
+        UpdateFailed = "更新失敗: %s",
+        AllUpdated = "全部更新完成",
+        UploadSuccess = "%s 上傳成功",
+        UploadFailed = "上傳失敗: %s",
+        OpenFileFailed = "開啟檔案失敗: %s",
+        ConvertMrsFailed = "MRS 規則集解碼失敗，可能為 classical 類型或檔案已損壞",
+        CannotReadFile = "無法讀取檔案：%s",
+        FileExceedsLimit = "檔案超過 %dMB 限制",
+    ),
+    InfoTitle = "目錄說明",
+    InfoSummary = "GeoX 和核心執行時公共檔案位於：%s（應用私有目錄，Android/data 中不可見）。規則和代理提供者會寫入目前設定檔的私有目錄（imported/<設定檔UUID>/providers），可在系統檔案管理器的 FlyCat 入口中存取。",
+    ProviderPath = "資源路徑：%s",
+)
+
+internal val EnFlyStrings_Providers: FlyStrings_Providers = FlyStrings_Providers(
+    Title = "External Resources",
+    Action = FlyStrings_Providers_Action(
+        UpdateAll = "Update All",
+        Update = "Update",
+        Upload = "Upload",
+        View = "View",
+        Operation = "Operation",
+        OpenInFiles = "Open FlyCat Files Entry",
+    ),
+    Empty = FlyStrings_Providers_Empty(
+        NotRunning = "Proxy not running",
+        NotRunningHint = "Please start proxy service to view external resources",
+        NoProviders = "No external resources",
+        NoProvidersHint = "Current profile doesn't contain external resources",
+    ),
+    Type = FlyStrings_Providers_Type(
+        ProxyProviders = "Proxy Providers (%d)",
+        RuleProviders = "Rule Providers (%d)",
+    ),
+    Info = FlyStrings_Providers_Info(
+        ExpireDays = "Expires: %s (%d days left)",
+        Expired = "Expires: %s (expired)",
+        RemainingTraffic = "Remaining: %s",
+        UsedTraffic = "Traffic: %s / %s",
+    ),
+    VehicleType = FlyStrings_Providers_VehicleType(
+        Http = "HTTP",
+        File = "File",
+        Inline = "Inline",
+        Compatible = "Compatible",
+    ),
+    Message = FlyStrings_Providers_Message(
+        FetchFailed = "Failed to fetch resources: %s",
+        UpdateSuccess = "%s updated successfully",
+        UpdateFailed = "Update failed: %s",
+        AllUpdated = "All updated",
+        UploadSuccess = "%s uploaded successfully",
+        UploadFailed = "Upload failed: %s",
+        OpenFileFailed = "Open file failed: %s",
+        ConvertMrsFailed = "MRS rule-set decode failed, may be classical type or file corrupted",
+        CannotReadFile = "Cannot read file: %s",
+        FileExceedsLimit = "File exceeds %dMB limit",
+    ),
+    InfoTitle = "Directory Notes",
+    InfoSummary = "Geo assets and shared runtime files live in: %s (app-private storage, not visible under Android/data). Rule and proxy providers are written into the active profile's private directory (imported/<profile-uuid>/providers), which is accessible from the FlyCat entry in the system file manager.",
+    ProviderPath = "Resource path: %s",
+)
+
+internal val JaFlyStrings_Providers: FlyStrings_Providers = FlyStrings_Providers(
+    Title = "外部リソース",
+    Action = FlyStrings_Providers_Action(
+        UpdateAll = "すべて更新",
+        Update = "更新",
+        Upload = "アップロード",
+        View = "表示",
+        Operation = "操作",
+        OpenInFiles = "FlyCat ファイルエントリを開く",
+    ),
+    Empty = FlyStrings_Providers_Empty(
+        NotRunning = "プロキシが起動していません",
+        NotRunningHint = "外部リソースを表示するにはプロキシを開始してください",
+        NoProviders = "外部リソースがありません",
+        NoProvidersHint = "現在のプロファイルに外部リソースがありません",
+    ),
+    Type = FlyStrings_Providers_Type(
+        ProxyProviders = "プロキシプロバイダー (%d)",
+        RuleProviders = "ルールプロバイダー (%d)",
+    ),
+    Info = FlyStrings_Providers_Info(
+        ExpireDays = "期限: %s (残り %d 日)",
+        Expired = "期限: %s (期限切れ)",
+        RemainingTraffic = "残り: %s",
+        UsedTraffic = "通信量: %s / %s",
+    ),
+    VehicleType = FlyStrings_Providers_VehicleType(
+        Http = "HTTP",
+        File = "ファイル",
+        Inline = "インライン",
+        Compatible = "互換",
+    ),
+    Message = FlyStrings_Providers_Message(
+        FetchFailed = "リソースの取得に失敗しました: %s",
+        UpdateSuccess = "%s を更新しました",
+        UpdateFailed = "更新に失敗しました: %s",
+        AllUpdated = "すべて更新しました",
+        UploadSuccess = "%s をアップロードしました",
+        UploadFailed = "アップロードに失敗しました: %s",
+        OpenFileFailed = "ファイルを開けませんでした: %s",
+        ConvertMrsFailed = "MRS ルールセットのデコードに失敗しました。クラシックタイプまたはファイル破損の可能性があります",
+        CannotReadFile = "ファイルを読み込めません: %s",
+        FileExceedsLimit = "ファイルが %dMB の制限を超えています",
+    ),
+    InfoTitle = "ディレクトリに関する注意",
+    InfoSummary = "Geo アセットと共有ランタイムファイルは %s にあります（アプリ専用ストレージで Android/data 以下からは表示されません）。ルールおよびプロキシプロバイダーはアクティブなプロファイルの専用ディレクトリ（imported/<profile-uuid>/providers）に書き込まれ、システムファイルマネージャーの FlyCat エントリからアクセスできます。",
+    ProviderPath = "リソースパス: %s",
+)
+
+internal val RuFlyStrings_Providers: FlyStrings_Providers = FlyStrings_Providers(
+    Title = "Внешние ресурсы",
+    Action = FlyStrings_Providers_Action(
+        UpdateAll = "Обновить все",
+        Update = "Обновить",
+        Upload = "Загрузить",
+        View = "Просмотр",
+        Operation = "Действие",
+        OpenInFiles = "Открыть файлы FlyCat",
+    ),
+    Empty = FlyStrings_Providers_Empty(
+        NotRunning = "Прокси не запущен",
+        NotRunningHint = "Запустите прокси, чтобы просмотреть внешние ресурсы",
+        NoProviders = "Нет внешних ресурсов",
+        NoProvidersHint = "В текущем профиле нет внешних ресурсов",
+    ),
+    Type = FlyStrings_Providers_Type(
+        ProxyProviders = "Провайдеры прокси (%d)",
+        RuleProviders = "Провайдеры правил (%d)",
+    ),
+    Info = FlyStrings_Providers_Info(
+        ExpireDays = "Истекает: %s (осталось %d дн.)",
+        Expired = "Истекает: %s (истекло)",
+        RemainingTraffic = "Осталось: %s",
+        UsedTraffic = "Трафик: %s / %s",
+    ),
+    VehicleType = FlyStrings_Providers_VehicleType(
+        Http = "HTTP",
+        File = "Файл",
+        Inline = "Встроенный",
+        Compatible = "Совместимый",
+    ),
+    Message = FlyStrings_Providers_Message(
+        FetchFailed = "Не удалось получить ресурсы: %s",
+        UpdateSuccess = "%s успешно обновлён",
+        UpdateFailed = "Обновление не удалось: %s",
+        AllUpdated = "Все обновлены",
+        UploadSuccess = "%s успешно загружен",
+        UploadFailed = "Загрузка не удалась: %s",
+        OpenFileFailed = "Не удалось открыть файл: %s",
+        ConvertMrsFailed = "Декодирование набора правил MRS не удалось; возможен классический тип или повреждённый файл",
+        CannotReadFile = "Не удалось прочитать файл: %s",
+        FileExceedsLimit = "Файл превышает лимит в %d МБ",
+    ),
+    InfoTitle = "Примечания о каталогах",
+    InfoSummary = "Geo-ресурсы и общие файлы среды выполнения находятся в: %s (приватное хранилище приложения, не видно в Android/data). Провайдеры правил и прокси записываются в приватный каталог активного профиля (imported/<profile-uuid>/providers), доступный через запись FlyCat в системном файловом менеджере.",
+    ProviderPath = "Путь к ресурсу: %s",
+)

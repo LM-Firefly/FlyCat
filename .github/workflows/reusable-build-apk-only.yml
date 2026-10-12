@@ -88,19 +88,19 @@ jobs:
         id: cache-ndk
         uses: actions/cache@v6
         with:
-          path: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.14904198
-          key: ${{ runner.os }}-ndk-30.0.14904198-v2
+          path: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.16248370
+          key: ${{ runner.os }}-ndk-30.0.16248370-v2
           restore-keys: |
-            ${{ runner.os }}-ndk-30.0.14904198-v2-
+            ${{ runner.os }}-ndk-30.0.16248370-v2-
 
       - name: Install NDK
         if: steps.cache-ndk.outputs.cache-hit != 'true'
-        run: sdkmanager "ndk;30.0.14904198"
+        run: sdkmanager "ndk;30.0.16248370"
 
       - name: Configure local.properties
         run: |
           echo "sdk.dir=${ANDROID_SDK_ROOT}" > local.properties
-          echo "ndk.dir=${ANDROID_SDK_ROOT}/ndk/30.0.14904198" >> local.properties
+          echo "ndk.dir=${ANDROID_SDK_ROOT}/ndk/30.0.16248370" >> local.properties
 
       - name: Download native artifact
         uses: actions/download-artifact@v8

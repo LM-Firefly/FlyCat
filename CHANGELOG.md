@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### 变更
+
+- **本地化实现重构**：移除 `ren.shiror.fyl.fytxt` 代码生成插件，多语言改为直接提交的 Kotlin + Lyricist（KSP）实现，翻译源迁移至 `locale/src`（`refactor(locale)`）
+
 ## [0.5.8] - 2026-10-09
 
 ### 新增
