@@ -27,6 +27,8 @@ import androidx.compose.runtime.setValue
 import com.github.lmfirefly.flycat.feature.editor.presentation.diagnostic.JsonDiagnosticsProvider
 import com.github.lmfirefly.flycat.feature.editor.presentation.format.CodeFormatter
 import com.github.lmfirefly.flycat.presentation.editor.LanguageScope
+import io.github.rosemoe.sora.lang.diagnostic.DiagnosticProvider
+import io.github.rosemoe.sora.lang.diagnostic.DiagnosticsContainer
 import io.github.rosemoe.sora.widget.CodeEditor
 
 class CodeEditorState(
@@ -41,6 +43,10 @@ class CodeEditorState(
 
     private var canUndoState: Boolean by mutableStateOf(false)
     private var canRedoState: Boolean by mutableStateOf(false)
+    private var diagnosticsContainer: DiagnosticsContainer? = null
+    private val diagnosticsProvider = DiagnosticProvider { container ->
+        diagnosticsContainer?.let { container.addDiagnostics(it.regions) }
+    }
 
     var content: String by mutableStateOf(initialContent)
         private set
@@ -113,21 +119,26 @@ class CodeEditorState(
     fun validate(): Boolean = CodeFormatter.validate(content, language)
 
     fun updateDiagnostics() {
-        val editor = editor ?: return
-
-        when (language) {
-            LanguageScope.Json -> {
-                editor.diagnostics = JsonDiagnosticsProvider.analyze(content)
-            }
-            LanguageScope.Yaml,
-            LanguageScope.JavaScript,
-            LanguageScope.Text -> {
-                editor.diagnostics = null
-            }
-        }
+        applyDiagnostics(editor)
     }
 
     fun clearDiagnostics() {
-        editor?.diagnostics = null
+        diagnosticsContainer = null
+        editor?.invalidateDiagnostics()
+    }
+
+    internal fun bindDiagnostics(target: CodeEditor) {
+        target.registerDiagnosticProvider(diagnosticsProvider)
+        applyDiagnostics(target)
+    }
+
+    private fun applyDiagnostics(target: CodeEditor?) {
+        diagnosticsContainer = when (language) {
+            LanguageScope.Json -> JsonDiagnosticsProvider.analyze(content)
+            LanguageScope.Yaml,
+            LanguageScope.JavaScript,
+            LanguageScope.Text -> null
+        }
+        target?.invalidateDiagnostics()
     }
 }

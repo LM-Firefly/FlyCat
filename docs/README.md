@@ -53,7 +53,7 @@ If you encounter a bug, or have ideas and suggestions for improvements, please s
 
 If you want to make FlyCat better, please refer to [CONTRIBUTING](../CONTRIBUTING.md).
 
-If you want to translate FlyCat into more languages, or improve the existing translations, fork this project and create or update the corresponding translation file in the `locale/lang` directory.
+If you want to translate FlyCat into more languages, or improve the existing translations, fork this project and update the corresponding Kotlin translation sources in the `locale/src` directory.
 
 ### Notices
 
@@ -71,17 +71,17 @@ See [ThirdParty](ThirdParty.md) for the third-party libraries used in this proje
 
 FlyCat does not use Git submodules. A clean checkout needs the mihomo source and generated assets before Gradle can build the app.
 
-1. Install **OpenJDK 24**, **Android SDK 37**, **NDK 30.0.14904198**, **CMake 3.22.1**, **Kotlin CLI**, **Go 1.26**, **Rust nightly**, Git, and `patch`.
+1. Install **OpenJDK 26**, **Android SDK 37**, **NDK 30.0.16248370**, **CMake 3.22.1**, **Kotlin CLI**, **Go 1.26**, **Rust nightly**, Git, and `patch`.
 
    ```bash
-   sdkmanager "platforms;android-37" "ndk;30.0.14904198" "cmake;3.22.1"
+   sdkmanager "platforms;android-37" "ndk;30.0.16248370" "cmake;3.22.1"
    ```
 
 2. Create `local.properties` in the project root:
 
    ```properties
    sdk.dir=/path/to/android-sdk
-   # ndk.dir=/path/to/android-sdk/ndk/30.0.14904198
+   # ndk.dir=/path/to/android-sdk/ndk/30.0.16248370
    ```
 
 3. Fetch the mihomo source. Available channels are `alpha`, `meta`, and `smart`.
@@ -103,10 +103,9 @@ FlyCat does not use Git submodules. A clean checkout needs the mihomo source and
    cargo install cargo-ndk
    ```
 
-5. Generate locale sources, native libraries, and bundled Geo assets:
+5. Generate native libraries and bundled Geo assets:
 
    ```bash
-   kotlin scripts/generate-locale.main.kts .
    kotlin scripts/native-build.main.kts --all
    ```
 

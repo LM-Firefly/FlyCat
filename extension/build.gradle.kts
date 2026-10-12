@@ -22,6 +22,8 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.android.build.gradle.tasks.PackageAndroidArtifact
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.time.format.DateTimeFormatter
 import java.time.ZonedDateTime
 import java.time.ZoneId
@@ -29,6 +31,8 @@ import java.util.Properties
 import org.gradle.api.file.RelativePath
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.Sync
+import org.tukaani.xz.LZMA2Options
+import org.tukaani.xz.XZOutputStream
 
 plugins {
     id("com.android.application")
@@ -170,7 +174,7 @@ tasks.register<Sync>("collectJavetNative") {
     into(rootProject.layout.buildDirectory.dir("generated/libjavet"))
 }
 
-tasks.register<Exec>("compressJavetNative") {
+tasks.register("compressJavetNative") {
     group = "distribution"
     description = "Compresses Javet native libraries as XZ release assets"
     dependsOn("collectJavetNative")
@@ -181,7 +185,17 @@ tasks.register<Exec>("compressJavetNative") {
         inputs.file(f)
         outputs.file(File(dir, "libjavet-${abi}.so.xz"))
     }
-    commandLine("bash", "-c",
-        abis.joinToString(" && ") { abi -> "xz -9 -k -f ${File(dir, "libjavet-${abi}.so").absolutePath}" }
-    )
+    doLast {
+        abis.forEach { abi ->
+            val src = File(dir, "libjavet-${abi}.so")
+            val dst = File(dir, "libjavet-${abi}.so.xz")
+            FileInputStream(src).use { input ->
+                FileOutputStream(dst).use { output ->
+                    XZOutputStream(output, LZMA2Options(9)).use { xz ->
+                        input.copyTo(xz, bufferSize = 1 shl 16)
+                    }
+                }
+            }
+        }
+    }
 }

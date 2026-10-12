@@ -73,6 +73,7 @@ dependencyResolutionManagement {
         mavenCentral()
         google()
         gradlePluginPortal()
+        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
         maven("https://jitpack.io")
         maven("https://raw.githubusercontent.com/MetaCubeX/maven-backup/main/releases")
         maven("https://maven.aliyun.com/nexus/content/repositories/releases/") {

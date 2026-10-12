@@ -159,7 +159,7 @@ private fun createCodeEditor(
             onTextChange?.invoke(state.content)
         }
 
-        state.updateDiagnostics()
+        state.bindDiagnostics(this)
 
         Timber.d("CodeEditor created: language=${state.language}, readOnly=${state.readOnly}")
     }

@@ -52,6 +52,7 @@ plugins {
   alias(libs.plugins.room) apply false
   alias(libs.plugins.aboutlibraries) apply false
   alias(libs.plugins.spotless) apply false
+  alias(libs.plugins.version.catalog.update)
 }
 
 // AGP-created tool configurations (unified-test-platform-*, androidLintTool) and test classpaths resolve independently of the buildscript classpath above, so the same vulnerable-version floors must be enforced on project configurations as well.

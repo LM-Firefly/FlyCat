@@ -53,7 +53,7 @@ FlyCat 目前仅支持 **Android 8.0（API 26）及以上系统**。
 
 如果您希望让 FlyCat 变得更好，请参阅 [CONTRIBUTING](../CONTRIBUTING.md)。
 
-如果希望将 FlyCat 翻译为更多语言，或改进现有翻译，请 Fork 本项目，并在 `locale/lang` 目录下创建或更新对应的翻译文件。
+如果希望将 FlyCat 翻译为更多语言，或改进现有翻译，请 Fork 本项目，并在 `locale/src` 目录下更新对应的 Kotlin 翻译源文件。
 
 ### 特别声明
 
@@ -71,17 +71,17 @@ FlyCat 目前仅支持 **Android 8.0（API 26）及以上系统**。
 
 FlyCat 不使用 Git submodule。从干净检出开始构建前，需要先准备 Mihomo 源码和生成资源。
 
-1. 安装 **OpenJDK 24**、**Android SDK 37**、**NDK 30.0.14904198**、**CMake 3.22.1**、**Kotlin CLI**、**Go 1.26**、**Rust nightly**、Git 和 `patch`。
+1. 安装 **OpenJDK 26**、**Android SDK 37**、**NDK 30.0.16248370**、**CMake 3.22.1**、**Kotlin CLI**、**Go 1.26**、**Rust nightly**、Git 和 `patch`。
 
    ```bash
-   sdkmanager "platforms;android-37" "ndk;30.0.14904198" "cmake;3.22.1"
+   sdkmanager "platforms;android-37" "ndk;30.0.16248370" "cmake;3.22.1"
    ```
 
 2. 在项目根目录创建 `local.properties`：
 
    ```properties
    sdk.dir=/path/to/android-sdk
-   # ndk.dir=/path/to/android-sdk/ndk/30.0.14904198
+   # ndk.dir=/path/to/android-sdk/ndk/30.0.16248370
    ```
 
 3. 拉取 Mihomo 源码，可选择 `alpha`、`meta` 或 `smart`。
@@ -103,10 +103,9 @@ FlyCat 不使用 Git submodule。从干净检出开始构建前，需要先准�
    cargo install cargo-ndk
    ```
 
-5. 生成本地化源码、原生库和内置 Geo 资源：
+5. 生成原生库和内置 Geo 资源：
 
    ```bash
-   kotlin scripts/generate-locale.main.kts .
    kotlin scripts/native-build.main.kts --all
    ```
 
