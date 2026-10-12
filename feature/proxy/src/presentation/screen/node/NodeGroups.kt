@@ -50,7 +50,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -58,10 +57,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.panpf.sketch.AsyncImage as SketchAsyncImage
 import com.github.panpf.sketch.rememberAsyncImagePainter
 import com.github.panpf.sketch.request.ImageRequest
-import com.github.panpf.sketch.state.IntColorDrawableStateImage
+import com.github.panpf.sketch.request.ImageResult
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
@@ -213,7 +211,12 @@ private fun NodeGroupCompactCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            // 紧凑卡片不展示策略组图标：失败/白图会占 20dp，成为名称前空白。
+            if (iconUri != null) {
+                NodeGroupIcon(
+                    iconUri = iconUri,
+                    modifier = Modifier.size(20.dp).clip(RoundedCornerShape(6.dp)),
+                )
+            }
             // CenterStart：内容宽文本在整行内强制靠左，避免被当成居中
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                 EmojiAwareText(
@@ -318,6 +321,12 @@ internal fun NodeGroupCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(UiDp.dp16),
         ) {
+            if (iconUri != null) {
+                NodeGroupIcon(
+                    iconUri = iconUri,
+                    modifier = Modifier.size(UiDp.dp44).clip(RoundedCornerShape(UiDp.dp14)),
+                )
+            }
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(UiDp.dp10),
@@ -480,21 +489,18 @@ private fun normalizeNodeGroupIconUri(raw: String): String {
 @Composable
 private fun NodeGroupIcon(iconUri: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val placeholderColorInt = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.10f).toArgb()
-    val request =
-        remember(context, iconUri, placeholderColorInt) {
-            ImageRequest(context, iconUri) {
-                placeholder(IntColorDrawableStateImage(placeholderColorInt))
-                error(IntColorDrawableStateImage(placeholderColorInt))
-                crossfade(true)
-            }
+    val request = remember(context, iconUri) {
+        // 显式尺寸：让加载独立于绘制，避免未绘制时 size 永不赋值导致请求挂起（死锁）
+        ImageRequest(context, iconUri) {
+            size(144, 144)
+            crossfade(true)
         }
+    }
     val painter = rememberAsyncImagePainter(request = request)
-    // AsyncImageState：仅成功时占位，失败/加载中不占 20dp，避免名称前空白。
-    val visible = painter.state.result != null
-    if (visible) {
-        SketchAsyncImage(
-            request = request,
+    // 仅加载成功才渲染；失败/加载中整块折叠，避免名称前的占位空白
+    if (painter.state.result is ImageResult.Success) {
+        Image(
+            painter = painter,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = modifier,
