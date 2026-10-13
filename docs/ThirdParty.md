@@ -9,5 +9,5 @@
 - [sora-editor](https://github.com/Rosemoe/sora-editor)
 - [sketch](https://github.com/panpf/sketch)
 - [Lucide](https://github.com/lucide-icons/lucide)
-- [Circle Flags](https://github.com/HatScripts/circle-flags)
+- [Noto Emoji region-flags](https://github.com/googlefonts/noto-emoji/tree/main/third_party/region-flags)
 - [Lyricist](https://github.com/adrielcafe/lyricist)

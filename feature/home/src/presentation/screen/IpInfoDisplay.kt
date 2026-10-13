@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.core.model.IpMonitoringState
 import com.github.lmfirefly.flycat.feature.home.presentation.viewmodel.HomeProxyControlState
 import com.github.lmfirefly.flycat.feature.home.presentation.viewmodel.HomeViewModel
-import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlagCircle
+import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlag
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import top.yukonga.miuix.kmp.basic.Text
@@ -131,7 +131,7 @@ private fun CountryBadge(countryCode: String?) {
             horizontalArrangement = Arrangement.spacedBy(UiDp.dp8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            CountryFlagCircle(countryCode = countryCode, size = UiDp.dp20)
+            CountryFlag(countryCode = countryCode, width = UiDp.dp20)
             Text(
                 text = countryCode,
                 style = MiuixTheme.textStyles.body1,

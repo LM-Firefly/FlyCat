@@ -59,7 +59,7 @@ import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.feature.proxy.presentation.util.extractNodeTags
 import com.github.lmfirefly.flycat.locale.FlyTxt
-import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlagCircle
+import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlag
 import com.github.lmfirefly.flycat.presentation.component.misc.EmojiAwareText
 import com.github.lmfirefly.flycat.presentation.component.state.LoadingDotsWave
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
@@ -388,7 +388,7 @@ internal fun NodeLargeIcon(modifier: Modifier = Modifier, countryCode: String?, 
         contentAlignment = Alignment.Center,
     ) {
         if (showCountryFlag) {
-            CountryFlagCircle(countryCode = countryCode, size = sizes.nodeLargeIconFlagSize)
+            CountryFlag(countryCode = countryCode, width = sizes.nodeLargeIconFlagSize)
         } else {
             Text(
                 text = typeName.take(2),
