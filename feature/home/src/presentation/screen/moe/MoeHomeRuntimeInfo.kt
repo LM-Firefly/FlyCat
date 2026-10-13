@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
@@ -31,7 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.core.util.format.formatBytesForDisplay
 import com.github.lmfirefly.flycat.locale.FlyTxt
-import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlagCircle
+import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlag
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.util.extractFlaggedName
 import top.yukonga.miuix.kmp.basic.Text
@@ -97,7 +98,7 @@ internal fun MoeHomeInfoPanel(serverName: String?, serverPing: Int?, modifier: M
                 value = resolvedNodeName,
                 modifier = Modifier.weight(1f).padding(end = MoeUi.Info.trailingPadding),
                 leading = {
-                    CountryFlagCircle(countryCode = flaggedNode?.countryCode, size = AppTheme.spacing.space16)
+                    CountryFlag(countryCode = flaggedNode?.countryCode, width = AppTheme.spacing.space16)
                 },
             )
         } else { Spacer(modifier = Modifier.weight(1f).padding(end = MoeUi.Info.trailingPadding)) }

@@ -25,8 +25,10 @@ import java.util.Locale
 
 object LocaleUtils {
     const val UNKNOWN_FLAG_CODE = "xx"
-    private const val FLAG_CDN_BASE_URL = "https://hatscripts.github.io/circle-flags/flags/"
-    private const val UNKNOWN_FLAG_PATH = "other/earth.svg"
+    // noto-emoji region-flags：真实比例的矩形国旗，纯十六进制颜色，文件名用大写 ISO 代码。
+    private const val FLAG_CDN_BASE_URL = "https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@main/third_party/region-flags/svg/"
+    // 无对应国家码时回退到联合国旗作为国际/未知占位。
+    private const val UNKNOWN_FLAG_PATH = "UN.svg"
 
     @Volatile private var override: Locale? = null
 
@@ -50,7 +52,7 @@ object LocaleUtils {
         if (normalizedCode.equals(UNKNOWN_FLAG_CODE, ignoreCase = true)) {
             return unknownFlagUrl(baseUrl)
         }
-        val code = normalizedCode.lowercase(Locale.ROOT)
+        val code = normalizedCode.uppercase(Locale.ROOT)
         return "$baseUrl$code.svg"
     }
 }

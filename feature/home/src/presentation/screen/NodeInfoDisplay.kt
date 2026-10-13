@@ -37,7 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.feature.home.presentation.viewmodel.HomeProxyControlState
 import com.github.lmfirefly.flycat.feature.home.presentation.viewmodel.HomeViewModel
-import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlagCircle
+import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlag
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.util.extractFlaggedName
 import com.github.lmfirefly.flycat.locale.FlyTxt
@@ -72,7 +72,7 @@ fun NodeInfoDisplay(serverName: String?, serverPing: Int?, modifier: Modifier = 
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().height(infoTextHeight),
                 ) {
-                    CountryFlagCircle(countryCode = flagged?.countryCode, size = spacing.space18)
+                    CountryFlag(countryCode = flagged?.countryCode, width = spacing.space18)
                     Spacer(modifier = Modifier.width(spacing.space8))
                     Text(
                         text = flagged?.displayName ?: serverName.orEmpty(),

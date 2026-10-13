@@ -64,8 +64,10 @@ import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.locale.FlyTxt
-import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlagCircle
+import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlag
 import com.github.lmfirefly.flycat.presentation.component.misc.EmojiAwareText
+import com.github.lmfirefly.flycat.presentation.component.misc.IconCornerRadiusFraction
+import com.github.lmfirefly.flycat.presentation.component.misc.IconDefaultAspectRatio
 import com.github.lmfirefly.flycat.presentation.component.state.LoadingDotsWave
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Speed
@@ -214,7 +216,7 @@ private fun NodeGroupCompactCard(
             if (iconUri != null) {
                 NodeGroupIcon(
                     iconUri = iconUri,
-                    modifier = Modifier.size(20.dp).clip(RoundedCornerShape(6.dp)),
+                    width = 20.dp,
                 )
             }
             // CenterStart：内容宽文本在整行内强制靠左，避免被当成居中
@@ -239,9 +241,9 @@ private fun NodeGroupCompactCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
-                CountryFlagCircle(
+                CountryFlag(
                     countryCode = countryCode,
-                    size = 17.dp,
+                    width = 17.dp,
                 )
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                     EmojiAwareText(
@@ -324,7 +326,7 @@ internal fun NodeGroupCard(
             if (iconUri != null) {
                 NodeGroupIcon(
                     iconUri = iconUri,
-                    modifier = Modifier.size(UiDp.dp44).clip(RoundedCornerShape(UiDp.dp14)),
+                    width = UiDp.dp44,
                 )
             }
             Column(
@@ -425,7 +427,7 @@ internal fun NodeGroupCard(
                         horizontalArrangement = Arrangement.spacedBy(UiDp.dp8),
                         modifier = Modifier.weight(1f),
                     ) {
-                        CountryFlagCircle(countryCode = currentNode.countryCode, size = UiDp.dp20)
+                        CountryFlag(countryCode = currentNode.countryCode, width = UiDp.dp20)
                         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                             EmojiAwareText(
                                 text = currentNodeName,
@@ -487,7 +489,7 @@ private fun normalizeNodeGroupIconUri(raw: String): String {
 }
 
 @Composable
-private fun NodeGroupIcon(iconUri: String, modifier: Modifier = Modifier) {
+private fun NodeGroupIcon(iconUri: String, width: Dp, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val request = remember(context, iconUri) {
         // 显式尺寸：让加载独立于绘制，避免未绘制时 size 永不赋值导致请求挂起（死锁）
@@ -499,11 +501,16 @@ private fun NodeGroupIcon(iconUri: String, modifier: Modifier = Modifier) {
     val painter = rememberAsyncImagePainter(request = request)
     // 仅加载成功才渲染；失败/加载中整块折叠，避免名称前的占位空白
     if (painter.state.result is ImageResult.Success) {
+        val intrinsic = painter.intrinsicSize
+        // 固定宽度、高度遵循源图标原始比例自适应，取不到原比例时回退默认比例
+        val aspectRatio = if (intrinsic.width > 0f && intrinsic.height > 0f) intrinsic.width / intrinsic.height else IconDefaultAspectRatio
+        // 与 CountryFlag 相同的比例圆角，统一图标观感
+        val cornerShape = remember(width) { RoundedCornerShape(width * IconCornerRadiusFraction) }
         Image(
             painter = painter,
             contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = modifier,
+            contentScale = ContentScale.Fit,
+            modifier = modifier.width(width).height(width / aspectRatio).clip(cornerShape),
         )
     }
 }
