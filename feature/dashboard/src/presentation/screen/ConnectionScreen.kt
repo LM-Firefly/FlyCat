@@ -28,10 +28,14 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -45,6 +49,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -75,6 +81,7 @@ import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.icon.extended.Sort
@@ -82,16 +89,14 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private val SortModes =
-    listOf(ConnectionSort.Time, ConnectionSort.Upload, ConnectionSort.Download, ConnectionSort.Host)
+private val SortModes = listOf(ConnectionSort.Time, ConnectionSort.Upload, ConnectionSort.Download, ConnectionSort.Host)
 
-private fun ConnectionSort.getDisplayName(): String =
-    when (this) {
-        ConnectionSort.Time -> FlyTxt.Connection.Sort.Time
-        ConnectionSort.Upload -> FlyTxt.Connection.Sort.Upload
-        ConnectionSort.Download -> FlyTxt.Connection.Sort.Download
-        ConnectionSort.Host -> FlyTxt.Connection.Sort.Host
-    }
+private fun ConnectionSort.getDisplayName(): String = when (this) {
+    ConnectionSort.Time -> FlyTxt.Connection.Sort.Time
+    ConnectionSort.Upload -> FlyTxt.Connection.Sort.Upload
+    ConnectionSort.Download -> FlyTxt.Connection.Sort.Download
+    ConnectionSort.Host -> FlyTxt.Connection.Sort.Host
+}
 
 @Composable
 fun ConnectionScreen(navigator: Navigator) {
@@ -100,53 +105,41 @@ fun ConnectionScreen(navigator: Navigator) {
     val filteredConnections by viewModel.filteredConnections.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val spacing = AppTheme.spacing
-
     val scrollBehavior = MiuixScrollBehavior()
     var showSearchBar by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf(state.searchQuery) }
     var showSortPopup by remember { mutableStateOf(false) }
-
-    var selectedConnection by remember {
-        mutableStateOf<com.github.lmfirefly.flycat.core.model.ConnectionInfo?>(null)
-    }
+    var selectedConnection by remember { mutableStateOf<com.github.lmfirefly.flycat.core.model.ConnectionInfo?>(null) }
     var showDetailSheet by remember { mutableStateOf(false) }
-
     val tabs = listOf(FlyTxt.Connection.Tab.Active, FlyTxt.Connection.Tab.Closed)
-    var selectedTabIndex by
-        rememberSaveable(state.selectedTab) {
-            mutableIntStateOf(
-                when (state.selectedTab) {
-                    ConnectionTab.ACTIVE -> 0
-                    ConnectionTab.CLOSED -> 1
-                }
-            )
-        }
-    val selectedSortIndex =
-        remember(state.sortBy) { SortModes.indexOf(state.sortBy).coerceAtLeast(0) }
-    val emptyStateText =
-        when {
-            state.isLoading -> FlyTxt.Connection.Loading
-            state.searchQuery.isNotEmpty() -> FlyTxt.Connection.NoResults
-            else -> FlyTxt.Connection.Empty
-        }
-
+    var selectedTabIndex by rememberSaveable(state.selectedTab) {
+        mutableIntStateOf(
+            when (state.selectedTab) {
+                ConnectionTab.ACTIVE -> 0
+                ConnectionTab.CLOSED -> 1
+            }
+        )
+    }
+    val selectedSortIndex = remember(state.sortBy) { SortModes.indexOf(state.sortBy).coerceAtLeast(0) }
+    val emptyStateText = when {
+        state.isLoading -> FlyTxt.Connection.Loading
+        state.searchQuery.isNotEmpty() -> FlyTxt.Connection.NoResults
+        else -> FlyTxt.Connection.Empty
+    }
     LaunchedEffect(selectedTabIndex) {
         val tab = if (selectedTabIndex == 0) ConnectionTab.ACTIVE else ConnectionTab.CLOSED
         viewModel.setTab(tab)
     }
-
     LaunchedEffect(searchText) {
         if (searchText != state.searchQuery) {
             viewModel.setSearchQuery(searchText)
         }
     }
-
     LaunchedEffect(state.searchQuery) {
         if (searchText != state.searchQuery) {
             searchText = state.searchQuery
         }
     }
-
     LaunchedEffect(showDetailSheet, selectedConnection) {
         if (showDetailSheet && selectedConnection == null) {
             showDetailSheet = false
@@ -164,7 +157,6 @@ fun ConnectionScreen(navigator: Navigator) {
     DisposableEffect(Unit) {
         viewModel.resetHistory()
         viewModel.startPolling()
-
         onDispose {
             viewModel.stopPolling()
         }
@@ -197,7 +189,6 @@ fun ConnectionScreen(navigator: Navigator) {
             viewModel.resumePolling()
         }
     }
-
     Scaffold(
         topBar = {
             TopBar(
@@ -267,99 +258,107 @@ fun ConnectionScreen(navigator: Navigator) {
         }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
-        ScreenLazyColumn(
-            scrollBehavior = scrollBehavior,
-            innerPadding = innerPadding,
-            contentPadding =
-                PaddingValues(
+        // Tab 与搜索框固定在列表外，避免随列表滚动而移出屏幕。
+        // TopBar 大标题折叠时 heightOffset（≤0）只做视觉位移，innerPadding.top 仍是展开高度，故在测量阶段把顶部间距一并收缩；但收缩量不能超过折叠增量，否则表头会钻到 mini topbar 下方被裁（下限 = 状态栏 + CollapsedHeight）。
+        val density = LocalDensity.current
+        val minTopPx = with(density) { (WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + TopAppBarDefaults.CollapsedHeight).toPx() }
+        Column(
+            modifier = Modifier.layout { measurable, constraints ->
+                val topPx = (innerPadding.calculateTopPadding().toPx() + scrollBehavior.state.heightOffset).coerceAtLeast(minTopPx).toInt()
+                val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = (constraints.maxHeight - topPx).coerceAtLeast(0)))
+                layout(constraints.maxWidth, placeable.height + topPx) { placeable.place(0, topPx) }
+            },
+        ) {
+            TabRowWithContour(
+                modifier = Modifier.padding(
+                    top = spacing.space20,
                     start = spacing.screenHorizontal,
                     end = spacing.screenHorizontal,
-                    top = innerPadding.calculateTopPadding(),
-                    bottom = mainLikePadding.calculateBottomPadding() + spacing.space12,
                 ),
-        ) {
-            item {
-                TabRowWithContour(
-                    modifier = Modifier.padding(top = spacing.space20),
-                    tabs = tabs,
-                    selectedTabIndex = selectedTabIndex,
-                    onTabSelected = { selectedTabIndex = it },
-                )
-            }
-
-            item {
-                AnimatedVisibility(
-                    visible = showSearchBar,
-                    enter =
-                        expandVertically(
-                            animationSpec = tween(AnimationSpecs.DURATION_CROSSFADE, easing = AnimationSpecs.StandardEasing),
-                            expandFrom = Alignment.Top,
-                        ) + fadeIn(animationSpec = tween(AnimationSpecs.DURATION_CROSSFADE, easing = AnimationSpecs.StandardEasing)),
-                    exit =
-                        shrinkVertically(
-                            animationSpec = tween(AnimationSpecs.DURATION_CROSSFADE, easing = AnimationSpecs.StandardEasing),
-                            shrinkTowards = Alignment.Top,
-                        ) + fadeOut(animationSpec = tween(AnimationSpecs.DURATION_CROSSFADE, easing = AnimationSpecs.StandardEasing)),
+                tabs = tabs,
+                selectedTabIndex = selectedTabIndex,
+                onTabSelected = { selectedTabIndex = it },
+            )
+            AnimatedVisibility(
+                visible = showSearchBar,
+                enter = expandVertically(
+                    animationSpec = tween(AnimationSpecs.DURATION_CROSSFADE, easing = AnimationSpecs.StandardEasing),
+                    expandFrom = Alignment.Top,
+                ) + fadeIn(animationSpec = tween(AnimationSpecs.DURATION_CROSSFADE, easing = AnimationSpecs.StandardEasing)),
+                exit = shrinkVertically(
+                    animationSpec = tween(AnimationSpecs.DURATION_CROSSFADE, easing = AnimationSpecs.StandardEasing),
+                    shrinkTowards = Alignment.Top,
+                ) + fadeOut(animationSpec = tween(AnimationSpecs.DURATION_CROSSFADE, easing = AnimationSpecs.StandardEasing)),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = spacing.screenHorizontal, vertical = spacing.space8),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = spacing.space8),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        TextField(
-                            value = searchText,
-                            onValueChange = { searchText = it },
-                            modifier = Modifier.weight(1f),
-                            label = FlyTxt.Connection.SearchHint,
-                            singleLine = true,
-                        )
-                    }
-                }
-            }
-
-            if (filteredConnections.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(spacing.space32),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = emptyStateText,
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    }
-                }
-            } else {
-                items(
-                    items = filteredConnections,
-                    key = { it.connectionInfo.id },
-                    contentType = { "connection" },
-                ) { connection ->
-                    ConnectionCard(
-                        item = connection,
-                        showCloseAction = state.selectedTab == ConnectionTab.ACTIVE,
-                        onClick = {
-                            val isSameConnection = selectedConnection?.id == connection.connectionInfo.id
-                            if (!isSameConnection || !showDetailSheet) {
-                                selectedConnection = connection.connectionInfo
-                                showDetailSheet = true
-                            }
-                        },
-                        onClose = {
-                            scope.launch {
-                                val closed = viewModel.closeConnection(connection.connectionInfo.id)
-                                if (closed && selectedConnection?.id == connection.connectionInfo.id) {
-                                    showDetailSheet = false
-                                    selectedConnection = null
-                                }
-                            }
-                        },
-                        modifier = Modifier.padding(vertical = spacing.space6),
+                    TextField(
+                        value = searchText,
+                        onValueChange = { searchText = it },
+                        modifier = Modifier.weight(1f),
+                        label = FlyTxt.Connection.SearchHint,
+                        singleLine = true,
                     )
                 }
             }
+            ScreenLazyColumn(
+                scrollBehavior = scrollBehavior,
+                innerPadding = innerPadding,
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(
+                    start = spacing.screenHorizontal,
+                    end = spacing.screenHorizontal,
+                    bottom = mainLikePadding.calculateBottomPadding() + spacing.space12,
+                ),
+            ) {
+                if (filteredConnections.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(spacing.space32),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = emptyStateText,
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                        }
+                    }
+                } else {
+                    items(
+                        items = filteredConnections,
+                        key = { it.connectionInfo.id },
+                        contentType = { "connection" },
+                    ) { connection ->
+                        ConnectionCard(
+                            item = connection,
+                            showCloseAction = state.selectedTab == ConnectionTab.ACTIVE,
+                            onClick = {
+                                val isSameConnection = selectedConnection?.id == connection.connectionInfo.id
+                                if (!isSameConnection || !showDetailSheet) {
+                                    selectedConnection = connection.connectionInfo
+                                    showDetailSheet = true
+                                }
+                            },
+                            onClose = {
+                                scope.launch {
+                                    val closed = viewModel.closeConnection(connection.connectionInfo.id)
+                                    if (closed && selectedConnection?.id == connection.connectionInfo.id) {
+                                        showDetailSheet = false
+                                        selectedConnection = null
+                                    }
+                                }
+                            },
+                            modifier = Modifier.padding(vertical = spacing.space6),
+                        )
+                    }
+                }
+            }
         }
-
         ConnectionDetailSheet(
             show = showDetailSheet,
             connectionInfo = selectedConnection,
