@@ -1,4 +1,4 @@
-/*
+﻿/*
  * This file is part of FlyCat.
  *
  * FlyCat is free software: you can redistribute it and/or modify
@@ -21,7 +21,6 @@
 
 package com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -50,24 +49,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.panpf.sketch.rememberAsyncImagePainter
-import com.github.panpf.sketch.request.ImageRequest
-import com.github.panpf.sketch.request.ImageResult
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlag
 import com.github.lmfirefly.flycat.presentation.component.misc.EmojiAwareText
-import com.github.lmfirefly.flycat.presentation.component.misc.IconCornerRadiusFraction
-import com.github.lmfirefly.flycat.presentation.component.misc.IconDefaultAspectRatio
+import com.github.lmfirefly.flycat.presentation.component.misc.GroupIcon
+import com.github.lmfirefly.flycat.presentation.component.misc.normalizeGroupIconUri
 import com.github.lmfirefly.flycat.presentation.component.state.LoadingDotsWave
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Speed
@@ -188,7 +182,7 @@ private fun NodeGroupCompactCard(
             .ifBlank { FlyTxt.Proxy.Mode.Direct }
     }
     val iconUri = remember(group.icon) {
-        group.icon?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeNodeGroupIconUri)
+        group.icon?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeGroupIconUri)
     }
     val delayLabel = nodeLatencyLabel(currentProxy?.delay)
     val countryCode = remember(currentNode.countryCode) {
@@ -214,7 +208,7 @@ private fun NodeGroupCompactCard(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (iconUri != null) {
-                NodeGroupIcon(
+                GroupIcon(
                     iconUri = iconUri,
                     width = 20.dp,
                 )
@@ -292,7 +286,7 @@ internal fun NodeGroupCard(
         }
     val iconUri =
         remember(group.icon) {
-            group.icon?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeNodeGroupIconUri)
+            group.icon?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeGroupIconUri)
         }
     val currentDelay = remember(currentProxy) { currentProxy?.delay }
     val badge = remember(group.type) { groupBadge(group.type) }
@@ -324,7 +318,7 @@ internal fun NodeGroupCard(
             horizontalArrangement = Arrangement.spacedBy(UiDp.dp16),
         ) {
             if (iconUri != null) {
-                NodeGroupIcon(
+                GroupIcon(
                     iconUri = iconUri,
                     width = UiDp.dp44,
                 )
@@ -473,44 +467,5 @@ internal fun NodeGroupCard(
                 }
             }
         }
-    }
-}
-
-private val REGEX_URI_SCHEME = Regex("^[a-zA-Z][a-zA-Z\\d+.-]*:.*$")
-private val REGEX_DOMAIN_LIKE = Regex("^[^/\\s]+\\.[^/\\s]+(?:/.*)?$")
-
-private fun normalizeNodeGroupIconUri(raw: String): String {
-    val normalized = raw.trim()
-    if (normalized.startsWith("//")) return "https:$normalized"
-    if (normalized.startsWith("www.", ignoreCase = true)) return "https://$normalized"
-    if (normalized.matches(REGEX_URI_SCHEME)) return normalized
-    if (normalized.matches(REGEX_DOMAIN_LIKE)) return "https://$normalized"
-    return normalized
-}
-
-@Composable
-private fun NodeGroupIcon(iconUri: String, width: Dp, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val request = remember(context, iconUri) {
-        // 显式尺寸：让加载独立于绘制，避免未绘制时 size 永不赋值导致请求挂起（死锁）
-        ImageRequest(context, iconUri) {
-            size(144, 144)
-            crossfade(true)
-        }
-    }
-    val painter = rememberAsyncImagePainter(request = request)
-    // 仅加载成功才渲染；失败/加载中整块折叠，避免名称前的占位空白
-    if (painter.state.result is ImageResult.Success) {
-        val intrinsic = painter.intrinsicSize
-        // 固定宽度、高度遵循源图标原始比例自适应，取不到原比例时回退默认比例
-        val aspectRatio = if (intrinsic.width > 0f && intrinsic.height > 0f) intrinsic.width / intrinsic.height else IconDefaultAspectRatio
-        // 与 CountryFlag 相同的比例圆角，统一图标观感
-        val cornerShape = remember(width) { RoundedCornerShape(width * IconCornerRadiusFraction) }
-        Image(
-            painter = painter,
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = modifier.width(width).height(width / aspectRatio).clip(cornerShape),
-        )
     }
 }

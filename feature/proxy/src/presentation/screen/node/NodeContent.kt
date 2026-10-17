@@ -205,6 +205,7 @@ fun NodeSheetContent(
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
     pinnedProxyName: String = "",
+    groupIconLookup: ((String) -> String?)? = null,
 ) {
     val revealCount = rememberRowReveal(itemCount = group.proxies.size, replayKey = group.name, listState = listState, leadMillis = SheetLeadMillis)
     LaunchedEffect(isDelayTesting) {
@@ -225,6 +226,7 @@ fun NodeSheetContent(
             selectedProxyName = group.now,
             pinnedProxyName = pinnedProxyName,
             displayMode = displayMode,
+            groupIconLookup = groupIconLookup,
             onProxyClick = { proxyName ->
                 if (group.type == Proxy.Type.Selector) {
                     onSelectProxy(proxyName)
