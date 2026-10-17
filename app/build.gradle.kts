@@ -359,7 +359,7 @@ android {
 
 if (releaseSigningProperties != null) {
     val loaderRuntime = configurations.detachedConfiguration(
-        dependencies.create("org.lsposed.hiddenapibypass:hiddenapibypass:6.1"),
+        dependencies.create("org.lsposed.hiddenapibypass:hiddenapibypass:6.2"),
     )
     androidComponents {
         onVariants(selector().withBuildType("release")) { variant ->
