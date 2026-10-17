@@ -61,12 +61,15 @@ import com.github.lmfirefly.flycat.feature.proxy.presentation.util.extractNodeTa
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlag
 import com.github.lmfirefly.flycat.presentation.component.misc.EmojiAwareText
+import com.github.lmfirefly.flycat.presentation.component.misc.GroupIcon
+import com.github.lmfirefly.flycat.presentation.component.misc.normalizeGroupIconUri
 import com.github.lmfirefly.flycat.presentation.component.state.LoadingDotsWave
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.BadgeDollarSign
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Cloud
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Tags
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.util.extractFlaggedName
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -230,6 +233,7 @@ internal fun NodeCard(
     isSingleColumn: Boolean = true,
     showCountryFlag: Boolean = true,
     resolvedChildNodeName: String? = null,
+    groupIconUri: String? = null,
 ) {
     val sizes = AppTheme.sizes
     val onCardClick =
@@ -256,11 +260,21 @@ internal fun NodeCard(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
+                val groupIcon = groupIconUri?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeGroupIconUri)
+                // 名称自带 flag-emoji 时与国旗图标重复：渲染图标则改用剥离后的名称
+                val flaggedName = remember(proxy.name) { extractFlaggedName(proxy.name) }
+                val showFlagIcon = groupIcon == null && showCountryFlag
+                if (groupIcon != null) {
+                    GroupIcon(iconUri = groupIcon, width = 18.dp)
+                } else if (showFlagIcon) {
+                    CountryFlag(countryCode = flaggedName.countryCode, width = 18.dp)
+                }
                 // CenterStart：短文本在整行内靠左，避免 weight/marquee 造成居中
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                     EmojiAwareText(
-                        text = proxy.name,
+                        text = if (showFlagIcon) flaggedName.displayName else proxy.name,
                         style = MiuixTheme.textStyles.body2,
                         color = textColor,
                         maxLines = 1,
@@ -287,9 +301,13 @@ internal fun NodeCard(
                         if (multiplier > 0f) NodeMultiplierChip(multiplier = multiplier)
                     }
                     if (childNodeName != null) {
+                        // 终末节点名自带 flag-emoji 时与国旗图标重复：渲染国旗则用剥离后的名称
+                        val childFlagged = remember(childNodeName) { extractFlaggedName(childNodeName) }
+                        val showChildFlag = showCountryFlag && childFlagged.countryCode != null
+                        if (showChildFlag) { CountryFlag(countryCode = childFlagged.countryCode, width = 14.dp) }
                         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                             EmojiAwareText(
-                                text = childNodeName,
+                                text = if (showChildFlag) childFlagged.displayName else childNodeName,
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 maxLines = 1,
