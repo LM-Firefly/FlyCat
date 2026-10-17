@@ -58,6 +58,7 @@ internal fun LazyListScope.nodeGridItems(
     testingProxyNames: Set<String> = emptySet(),
     onSingleNodeTestClick: ((String) -> Unit)? = null,
     resolveChildNodeName: ((Proxy) -> String?)? = null,
+    groupIconLookup: ((String) -> String?)? = null,
     outerHorizontalPadding: Dp = UiDp.dp0,
     itemVerticalPadding: Dp = UiDp.dp0,
     revealCount: State<Int> = RowRevealAll,
@@ -76,6 +77,7 @@ internal fun LazyListScope.nodeGridItems(
                 isSingleColumn = true,
                 showCountryFlag = true,
                 resolvedChildNodeName = resolveChildNodeName?.invoke(proxy),
+                groupIconUri = if (proxy.isGroup) groupIconLookup?.invoke(proxy.name) else null,
                 modifier =
                     Modifier.animateItem()
                         .rowReveal(rememberRowShown(index, revealCount))
@@ -120,6 +122,7 @@ internal fun LazyListScope.nodeGridItems(
                     isSingleColumn = false,
                     showCountryFlag = true,
                     resolvedChildNodeName = resolveChildNodeName?.invoke(left),
+                    groupIconUri = if (left.isGroup) groupIconLookup?.invoke(left.name) else null,
                     modifier = Modifier
                         .weight(1f)
                         .animateItem(),
@@ -139,6 +142,7 @@ internal fun LazyListScope.nodeGridItems(
                     isSingleColumn = false,
                     showCountryFlag = true,
                     resolvedChildNodeName = resolveChildNodeName?.invoke(right),
+                    groupIconUri = if (right.isGroup) groupIconLookup?.invoke(right.name) else null,
                     modifier = Modifier
                         .weight(1f)
                         .animateItem(),

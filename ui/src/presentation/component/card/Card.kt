@@ -24,7 +24,7 @@ package com.github.lmfirefly.flycat.presentation.component.card
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.theme.horizontalPadding
 import top.yukonga.miuix.kmp.basic.Card
@@ -34,7 +34,7 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 @Composable
 fun Card(
     modifier: Modifier = Modifier,
-    cornerRadius: Int = 24,
+    cornerRadius: Dp = UiDp.dp24,
     insideMargin: PaddingValues = PaddingValues(UiDp.dp0),
     applyHorizontalPadding: Boolean = true,
     colors: CardColors = CardDefaults.defaultColors(),
@@ -47,7 +47,7 @@ fun Card(
             } else {
                 modifier
             },
-        cornerRadius = cornerRadius.dp,
+        cornerRadius = cornerRadius,
         insideMargin = insideMargin,
         colors = colors,
     ) {

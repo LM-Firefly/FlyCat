@@ -86,6 +86,8 @@ import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.misc.CenteredText
 import com.github.lmfirefly.flycat.presentation.component.misc.EmojiAwareText
+import com.github.lmfirefly.flycat.presentation.component.misc.GroupIcon
+import com.github.lmfirefly.flycat.presentation.component.misc.normalizeGroupIconUri
 import com.github.lmfirefly.flycat.presentation.component.navigation.LocalDetailNavigator
 import com.github.lmfirefly.flycat.presentation.component.navigation.LocalPagerState
 import com.github.lmfirefly.flycat.presentation.component.navigation.LocalTopBarHazeState
@@ -264,6 +266,7 @@ fun ProxyPager(
                 onDisplayModeSelected = proxyViewModel::setDisplayMode,
                 onSortSelected = proxyViewModel::setSortMode,
                 selectedGroupName = if (inSplitShell) null else selectedGroupName,
+                selectedGroupIcon = if (inSplitShell) null else displayGroup?.icon,
                 onBackToGroups = groupSelection.clearSelection,
                 searchVisible = nodeSearchVisible,
                 // 搜索只挂在节点列表页：组列表/双栏左栏不放搜索入口。
@@ -392,7 +395,7 @@ fun ProxyPager(
 
 /** 代理页大标题面包屑：根段“代理”可点，[segmentLabel] 非空时显示“代理 > 组名”分段。 */
 @Composable
-internal fun ProxyTitleBreadcrumb(rootLabel: String, onRootClick: () -> Unit, segmentLabel: String? = null, onSegmentClick: (() -> Unit)? = null) {
+internal fun ProxyTitleBreadcrumb(rootLabel: String, onRootClick: () -> Unit, segmentLabel: String? = null, segmentIcon: String? = null, onSegmentClick: (() -> Unit)? = null) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = TopAppBarDefaults.TitlePadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -405,6 +408,8 @@ internal fun ProxyTitleBreadcrumb(rootLabel: String, onRootClick: () -> Unit, se
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 maxLines = 1,
             )
+            val segmentIconUri = segmentIcon?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeGroupIconUri)
+            if (segmentIconUri != null) { GroupIcon(iconUri = segmentIconUri, width = UiDp.dp32) }
             ProxyCrumbText(
                 label = segmentLabel,
                 onClick = onSegmentClick,
@@ -492,6 +497,7 @@ private fun PagerTopBar(
     onDisplayModeSelected: (ProxyDisplayMode) -> Unit,
     onSortSelected: (ProxySortMode) -> Unit,
     selectedGroupName: String?,
+    selectedGroupIcon: String? = null,
     onBackToGroups: () -> Unit,
     onTitleScrollTop: () -> Unit,
     searchVisible: Boolean = false,
@@ -504,6 +510,7 @@ private fun PagerTopBar(
             "${FlyTxt.Component.BottomBar.Proxy} > $selectedGroupName"
         },
         groupName = selectedGroupName,
+        groupIcon = selectedGroupIcon,
         onTitleRootClick = { if (selectedGroupName == null) onTitleScrollTop() else onBackToGroups() },
         onTitleGroupClick = onTitleScrollTop,
         scrollBehavior = scrollBehavior,
@@ -527,6 +534,7 @@ private fun PagerTopBar(
 internal fun ProxyTopBar(
     title: String,
     groupName: String? = null,
+    groupIcon: String? = null,
     /** 面包屑根段文案；双栏右栏用组名作单段可点标题时传入。 */
     titleRootLabel: String = FlyTxt.Component.BottomBar.Proxy,
     onTitleRootClick: (() -> Unit)? = null,
@@ -555,6 +563,7 @@ internal fun ProxyTopBar(
                 rootLabel = titleRootLabel,
                 onRootClick = onTitleRootClick,
                 segmentLabel = groupName,
+                segmentIcon = groupIcon,
                 onSegmentClick = onTitleGroupClick,
             )
         }
@@ -713,6 +722,7 @@ internal fun NodeListPage(
             ProxyChainIndicator(
                 chain = group.chainPath,
                 modifier = Modifier.fillMaxWidth(),
+                groupIconLookup = { name -> groupMap[name]?.icon },
             )
         }
         AnimatedVisibility(visible = searchVisible) {
@@ -754,6 +764,7 @@ internal fun NodeListPage(
                     selectedProxyName = group.now,
                     pinnedProxyName = group.fixed,
                     displayMode = displayMode,
+                    groupIconLookup = { name -> groupMap[name]?.icon },
                     onProxyClick = { proxyName ->
                         if (group.type == Proxy.Type.Selector) {
                             onSelectProxy(group.name, proxyName)

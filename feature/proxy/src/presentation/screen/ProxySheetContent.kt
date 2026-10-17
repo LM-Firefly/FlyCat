@@ -282,6 +282,7 @@ fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = ko
                     onTestDelay = triggerSelectedGroupDelayTest,
                     sheetHeightFraction = NOTIFICATION_PROXY_SHEET_HEIGHT_FRACTION,
                     listState = nodeListState,
+                    groupIconLookup = { name -> proxyGroups.firstOrNull { it.name == name }?.icon },
                     searchQuery = nodeSearchQuery,
                     onSearchQueryChange = { nodeSearchQuery = it },
                     searchVisible = nodeSearchVisible,
@@ -300,6 +301,7 @@ private fun ProxySheetNodeContent(
     onTestDelay: () -> Unit,
     sheetHeightFraction: Float,
     listState: LazyListState,
+    groupIconLookup: ((String) -> String?)? = null,
     searchQuery: String = "",
     onSearchQueryChange: (String) -> Unit = {},
     searchVisible: Boolean = false,
@@ -343,6 +345,7 @@ private fun ProxySheetNodeContent(
             ProxyChainIndicator(
                 chain = group.chainPath,
                 modifier = Modifier.fillMaxWidth(),
+                groupIconLookup = groupIconLookup,
             )
         }
         if (searchVisible) {
@@ -377,6 +380,7 @@ private fun ProxySheetNodeContent(
                     onTestProxyDelay = onSingleNodeTestClick,
                     listState = listState,
                     pinnedProxyName = group.fixed,
+                    groupIconLookup = groupIconLookup,
                 )
             }
         }
