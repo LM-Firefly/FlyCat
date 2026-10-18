@@ -1,14 +1,18 @@
 package com.github.lmfirefly.flycat.feature.dashboard.presentation.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -17,10 +21,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -35,7 +41,6 @@ import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.chart.TimeSlotBarChart
 import com.github.lmfirefly.flycat.presentation.component.chart.TrafficDonutChart
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
-import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
 import com.github.lmfirefly.flycat.presentation.component.misc.Title
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
@@ -55,9 +60,10 @@ import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
+import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Sort
-import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowListPopup
 
@@ -102,149 +108,117 @@ fun TrafficStatisticsContent(onBack: () -> Unit) {
         },
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
-        ScreenLazyColumn(
-            scrollBehavior = scrollBehavior,
-            innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
+        // TopBar 大标题折叠时 heightOffset（≤0）只做视觉位移，innerPadding.top 仍是展开高度，故在测量阶段收缩顶部间距；收缩量不能超过折叠增量，否则表头会钻到 mini topbar 下方被裁（下限 = 状态栏 + CollapsedHeight）。
+        val density = LocalDensity.current
+        val minTopPx = with(density) { (WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + TopAppBarDefaults.CollapsedHeight).toPx() }
+        Column(
+            modifier = Modifier.layout { measurable, constraints ->
+                val topPx = (innerPadding.calculateTopPadding().toPx() + scrollBehavior.state.heightOffset).coerceAtLeast(minTopPx).toInt()
+                val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = (constraints.maxHeight - topPx).coerceAtLeast(0)))
+                layout(constraints.maxWidth, placeable.height + topPx) { placeable.place(0, topPx) }
+            },
         ) {
-            item {
-                TabRowWithContour(
-                    tabs = tabLabels,
-                    selectedTabIndex = selectedTabIndex,
-                    onTabSelected = { index ->
-                        timeRanges.getOrNull(index)?.let(viewModel::setTimeRange)
-                    },
-                    modifier = Modifier.padding(horizontal = spacing.space16),
-                )
-            }
-
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = spacing.space16),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = spacing.space18, vertical = spacing.space18),
-                        verticalArrangement = Arrangement.spacedBy(spacing.space16),
-                    ) {
-                        val semanticColors = AppTheme.colors
-                        TimeSlotBarChart(
-                            items = uiState.barChartItems,
-                            labels = uiState.barChartLabels,
-                            downloadColor = semanticColors.traffic.download,
-                            uploadColor = semanticColors.traffic.upload,
-                            averageLineColor = MiuixTheme.colorScheme.primary,
+            TabRowWithContour(
+                tabs = tabLabels,
+                selectedTabIndex = selectedTabIndex,
+                onTabSelected = { index -> timeRanges.getOrNull(index)?.let(viewModel::setTimeRange) },
+                modifier = Modifier.padding(horizontal = spacing.space16),
+            )
+            ScreenLazyColumn(
+                scrollBehavior = scrollBehavior,
+                innerPadding = innerPadding,
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(bottom = mainLikePadding.calculateBottomPadding() + spacing.space12),
+            ) {
+                item {
+                    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.space16)) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = spacing.space18, vertical = spacing.space18),
+                            verticalArrangement = Arrangement.spacedBy(spacing.space16),
+                        ) {
+                            val semanticColors = AppTheme.colors
+                            TimeSlotBarChart(
+                                items = uiState.barChartItems,
+                                labels = uiState.barChartLabels,
+                                downloadColor = semanticColors.traffic.download,
+                                uploadColor = semanticColors.traffic.upload,
+                                averageLineColor = MiuixTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+                item {
+                    Title(FlyTxt.TrafficStatistics.Section.Traffic)
+                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.space16), verticalArrangement = Arrangement.spacedBy(spacing.space10)) {
+                        TrafficMetricCard(
+                            downloadValue = formatBytes(activeSummary.totalDownload),
+                            uploadValue = formatBytes(activeSummary.totalUpload),
                         )
                     }
                 }
-            }
-
-            item {
-                Title(FlyTxt.TrafficStatistics.Section.Traffic)
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = spacing.space16),
-                    verticalArrangement = Arrangement.spacedBy(spacing.space10),
-                ) {
-
-
-                    TrafficMetricCard(
-                        downloadValue = formatBytes(activeSummary.totalDownload),
-                        uploadValue = formatBytes(activeSummary.totalUpload),
-                    )
-                }
-            }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Title(FlyTxt.TrafficStatistics.Section.PerAppTraffic)
-                    Box(modifier = Modifier.padding(end = spacing.space16)) {
-                        var sortExpanded by remember { mutableStateOf(false) }
-                        val currentMode = uiState.appSortMode
-                        val currentAscending = uiState.appSortAscending
-                        val sortOptions = remember {
-                            listOf(
-                                AppSortMode.NAME to FlyTxt.TrafficStatistics.Sort.ByName,
-                                AppSortMode.UPLOAD to FlyTxt.TrafficStatistics.Sort.ByUpload,
-                                AppSortMode.DOWNLOAD to FlyTxt.TrafficStatistics.Sort.ByDownload,
-                                AppSortMode.TOTAL to FlyTxt.TrafficStatistics.Sort.ByTotal,
-                            )
-                        }
-                        IconButton(onClick = { sortExpanded = true }) {
-                            Icon(
-                                imageVector = MiuixIcons.Sort,
-                                contentDescription = null,
-                                tint = MiuixTheme.colorScheme.onSurface,
-                            )
-                        }
-                        WindowListPopup(
-                            show = sortExpanded,
-                            popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
-                            onDismissRequest = { sortExpanded = false },
-                        ) {
-                            ListPopupColumn {
-                                sortOptions.forEachIndexed { index, (mode, label) ->
-                                    val arrow = if (currentMode == mode) {
-                                        if (currentAscending) " ↑" else " ↓"
-                                    } else ""
-                                    DropdownImpl(
-                                        text = label + arrow,
-                                        optionSize = sortOptions.size,
-                                        isSelected = currentMode == mode,
-                                        onSelectedIndexChange = {
-                                            viewModel.setAppSortMode(mode)
-                                            sortExpanded = false
-                                        },
-                                        index = index,
-                                    )
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Title(FlyTxt.TrafficStatistics.Section.PerAppTraffic)
+                        Box(modifier = Modifier.padding(end = spacing.space16)) {
+                            var sortExpanded by remember { mutableStateOf(false) }
+                            val currentMode = uiState.appSortMode
+                            val currentAscending = uiState.appSortAscending
+                            val sortOptions = remember {
+                                listOf(
+                                    AppSortMode.NAME to FlyTxt.TrafficStatistics.Sort.ByName,
+                                    AppSortMode.UPLOAD to FlyTxt.TrafficStatistics.Sort.ByUpload,
+                                    AppSortMode.DOWNLOAD to FlyTxt.TrafficStatistics.Sort.ByDownload,
+                                    AppSortMode.TOTAL to FlyTxt.TrafficStatistics.Sort.ByTotal,
+                                )
+                            }
+                            IconButton(onClick = { sortExpanded = true }) {
+                                Icon(
+                                    imageVector = MiuixIcons.Sort,
+                                    contentDescription = null,
+                                    tint = MiuixTheme.colorScheme.onSurface,
+                                )
+                            }
+                            WindowListPopup(
+                                show = sortExpanded,
+                                popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
+                                onDismissRequest = { sortExpanded = false },
+                            ) {
+                                ListPopupColumn {
+                                    sortOptions.forEachIndexed { index, (mode, label) ->
+                                        val arrow = if (currentMode == mode) { if (currentAscending) " ↑" else " ↓" } else ""
+                                        DropdownImpl(
+                                            text = label + arrow,
+                                            optionSize = sortOptions.size,
+                                            isSelected = currentMode == mode,
+                                            onSelectedIndexChange = {
+                                                viewModel.setAppSortMode(mode)
+                                                sortExpanded = false
+                                            },
+                                            index = index,
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-
-            if (uiState.topApps.isEmpty()) {
-                item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = spacing.space16),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = spacing.space14, vertical = spacing.space18),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = FlyTxt.TrafficStatistics.Section.EmptyApps,
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
+                if (uiState.topApps.isEmpty()) {
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.space16)) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.space14, vertical = spacing.space18), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = FlyTxt.TrafficStatistics.Section.EmptyApps,
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                )
+                            }
                         }
                     }
-                }
-            } else {
-                items(
-                    items = uiState.topApps,
-                    key = AppTrafficUsage::appKey,
-                ) { usage ->
-                    Box(
-                        modifier = Modifier.padding(
-                            horizontal = spacing.space16,
-                            vertical = componentSizes.listItemVerticalMinimal,
-                        ),
-                    ) {
-                        AppTrafficRow(
-                            usage = usage,
-                            total = activeSummary.total,
-                        )
+                } else {
+                    items(items = uiState.topApps, key = AppTrafficUsage::appKey) { usage ->
+                        Box(modifier = Modifier.padding(horizontal = spacing.space16, vertical = componentSizes.listItemVerticalMinimal)) {
+                            AppTrafficRow(usage = usage, total = activeSummary.total)
+                        }
                     }
                 }
             }
