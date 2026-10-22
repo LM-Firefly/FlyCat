@@ -35,6 +35,7 @@ import com.github.lmfirefly.flycat.core.model.AppColorTheme
 import com.github.lmfirefly.flycat.core.model.AppLanguage
 import com.github.lmfirefly.flycat.core.model.ThemeMode
 import com.github.lmfirefly.flycat.core.model.UpdateSource
+import com.github.lmfirefly.flycat.core.util.XiaomiAutoStart
 import com.github.lmfirefly.flycat.core.util.path.moeWallpaperFile
 import com.github.lmfirefly.flycat.feature.settings.presentation.util.MoeWallpaperImporter
 import com.github.lmfirefly.flycat.locale.FlyTxt
@@ -286,7 +287,14 @@ class AppSettingsViewModel(
 
     fun onPredictiveBackMaxProgressChange(progress: Float) = predictiveBackMaxProgress.set(progress.coerceIn(1f, 100f))
 
-    fun onAutomaticRestartChange(enabled: Boolean) = automaticRestart.set(enabled)
+    /** 一个开关控制开机自启。在MIUI/HyperOS上，ROM还会在开机分发前额外通过一个私有的自启开关进行拦截，因此启用该功能时如果该私有开关仍处于关闭状态，会引导用户前往该设置页面。 */
+    fun onAutomaticRestartChange(enabled: Boolean) {
+        automaticRestart.set(enabled)
+        if (!enabled || !XiaomiAutoStart.isSupported()) return
+        if (XiaomiAutoStart.readState(application) == XiaomiAutoStart.State.ENABLED) return
+        application.toast(FlyTxt.AppSettings.Behavior.SystemAutoStartGrantToast)
+        XiaomiAutoStart.openSettings(application)
+    }
 
     fun onAutoUpdateCurrentProfileOnStartChange(enabled: Boolean) = autoUpdateCurrentProfileOnStart.set(enabled)
 

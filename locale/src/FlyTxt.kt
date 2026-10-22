@@ -355,6 +355,11 @@ public object FlyTxt {
             @androidx.compose.runtime.Composable
             public fun AutoUpdateOnStartSummary(vararg args: Any?): String =
                 if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.Behavior.AutoUpdateOnStartSummary else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.Behavior.AutoUpdateOnStartSummary, *args)
+            public val SystemAutoStartGrantToast: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.Behavior.SystemAutoStartGrantToast
+            @androidx.compose.runtime.Composable
+            public fun SystemAutoStartGrantToast(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.Behavior.SystemAutoStartGrantToast else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.Behavior.SystemAutoStartGrantToast, *args)
         }
         public object Interface {
             public val ThemeModeTitle: String

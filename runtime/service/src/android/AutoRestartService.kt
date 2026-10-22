@@ -35,6 +35,7 @@ import androidx.core.app.ServiceCompat
 import com.github.lmfirefly.flycat.core.contract.ServiceBootstrapHolder
 import com.github.lmfirefly.flycat.core.model.profile.Profile
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
+import com.github.lmfirefly.flycat.core.util.XiaomiAutoStart
 import com.github.lmfirefly.flycat.core.util.coroutine.AutoStartSessionGate
 import com.github.lmfirefly.flycat.core.util.coroutine.StartupTaskCoordinator
 import com.github.lmfirefly.flycat.runtime.api.contract.AutoStartUpdatePolicy
@@ -150,7 +151,15 @@ class AutoRestartService : Service() {
     }
 
     private suspend fun checkAndAutoStart(reason: String) {
-        if (!bootstrap.automaticRestart) return
+        /** 这行是广播已送达应用的首个证据：开机后若完全没有该日志，说明进程从未被拉起（MIUI/HyperOS 上通常是自启动权限未授予，广播被 ROM 直接丢弃）。 */
+        Timber.tag(TAG).i("check reason=$reason mode=${bootstrap.runMode}")
+        if (XiaomiAutoStart.isSupported()) {
+            Timber.tag(TAG).i("system autostart=${XiaomiAutoStart.readState(this)}")
+        }
+        if (!bootstrap.automaticRestart) {
+            Timber.tag(TAG).i("Skip auto start: automatic restart is disabled")
+            return
+        }
         if (bootstrap.isRemoteControllerActive()) {
             Timber.tag(TAG).i("Skip auto start: remote controller mode active")
             return
