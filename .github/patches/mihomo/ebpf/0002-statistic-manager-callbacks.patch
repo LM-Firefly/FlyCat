@@ -1,18 +1,20 @@
 From: FlyCat local customization
-Subject: [PATCH] tunnel/statistic: add event-driven traffic push & idle-aware ticker (ebpf)
+Subject: [PATCH] tunnel/statistic: add event-driven traffic push callbacks (ebpf)
 
-Add trafficDirty flag, OnJoin/OnLeave/OnTrafficUpdate callbacks, and
-idle-adaptive ticker to Manager for real-time traffic statistics push
-to the Android layer, with power-aware fallback to 5s polling when idle.
+Add OnJoin/OnLeave/OnTrafficUpdate callbacks to Manager for real-time
+traffic statistics push to the Android layer. Traffic updates ride the
+existing wake/dormancy ticker: a push fires when traffic flowed or the
+rate changed (including the drop to zero right before the ticker goes
+dormant), so idle periods stay silent and power-lean.
 
 Add InitialUpload/InitialDownload fields to TrackerInfo so consumers
 can compute per-connection traffic deltas without maintaining external
 baselines (B1 design: delta at source).
 diff --git a/tunnel/statistic/manager.go b/tunnel/statistic/manager.go
-index 8ba7b319..491bc406 100644
+index 7ac67ce51..fa2609aa2 100644
 --- a/tunnel/statistic/manager.go
 +++ b/tunnel/statistic/manager.go
-@@ -27,28 +27,40 @@ func init() {
+@@ -29,30 +29,41 @@ func init() {
  }
  
  type Manager struct {
@@ -28,6 +30,8 @@ index 8ba7b319..491bc406 100644
 -	memory        atomic.Uint64
 -	memoryMu      sync.Mutex
 -	memoryUpdated time.Time
+-	trafficActive atomic.Bool
+-	trafficWake   chan struct{}
 +	connections         xsync.Map[string, Tracker]
 +	smartTarget         xsync.Map[string, *xsync.Map[string, bool]]
 +	uploadTemp          atomic.Int64
@@ -40,9 +44,10 @@ index 8ba7b319..491bc406 100644
 +	memory              atomic.Uint64
 +	memoryMu            sync.Mutex
 +	memoryUpdated       time.Time
-+	trafficDirty        atomic.Bool
-+	lastPushedUpSpeed   int64
-+	lastPushedDownSpeed int64
++	trafficActive       atomic.Bool
++	trafficWake         chan struct{}
++	lastPushedUpSpeed   atomic.Int64
++	lastPushedDownSpeed atomic.Int64
 +	OnJoin              func(*TrackerInfo)
 +	OnLeave             func(*TrackerInfo)
 +	OnTrafficUpdate     func(uploadTotal, downloadTotal, uploadSpeed, downloadSpeed int64)
@@ -65,65 +70,32 @@ index 8ba7b319..491bc406 100644
  }
  
  func (m *Manager) Get(id string) (c Tracker) {
-@@ -67,11 +79,13 @@ func (m *Manager) Range(f func(c Tracker) bool) {
- func (m *Manager) PushUploaded(size int64) {
- 	m.uploadTemp.Add(size)
- 	m.uploadTotal.Add(size)
-+	m.trafficDirty.Store(true)
- }
- 
- func (m *Manager) PushDownloaded(size int64) {
- 	m.downloadTemp.Add(size)
- 	m.downloadTotal.Add(size)
-+	m.trafficDirty.Store(true)
- }
- 
- func (m *Manager) Now() (up int64, down int64) {
-@@ -124,14 +138,40 @@ func (m *Manager) ResetStatistic() {
+@@ -134,6 +145,8 @@ func (m *Manager) ResetStatistic() {
  	m.downloadTemp.Store(0)
  	m.downloadBlip.Store(0)
  	m.downloadTotal.Store(0)
-+	m.trafficDirty.Store(false)
-+	m.lastPushedUpSpeed = 0
-+	m.lastPushedDownSpeed = 0
++	m.lastPushedUpSpeed.Store(0)
++	m.lastPushedDownSpeed.Store(0)
  }
  
- func (m *Manager) handle() {
- 	ticker := time.NewTicker(time.Second)
-+	idleCount := 0
- 
- 	for range ticker.C {
--		m.uploadBlip.Store(m.uploadTemp.Swap(0))
--		m.downloadBlip.Store(m.downloadTemp.Swap(0))
-+		uploadRate := m.uploadTemp.Swap(0)
-+		downloadRate := m.downloadTemp.Swap(0)
-+		m.uploadBlip.Store(uploadRate)
-+		m.downloadBlip.Store(downloadRate)
-+		if m.OnTrafficUpdate != nil {
-+			if m.trafficDirty.CompareAndSwap(true, false) ||
-+				uploadRate != m.lastPushedUpSpeed ||
-+				downloadRate != m.lastPushedDownSpeed {
-+				m.OnTrafficUpdate(m.uploadTotal.Load(), m.downloadTotal.Load(), uploadRate, downloadRate)
-+				m.lastPushedUpSpeed = uploadRate
-+				m.lastPushedDownSpeed = downloadRate
-+				idleCount = 0
-+			} else {
-+				idleCount++
-+				if idleCount == 10 {
-+					ticker.Reset(5 * time.Second)
+ func (m *Manager) wakeTraffic() {
+@@ -163,6 +176,14 @@ func (m *Manager) handle(ctx context.Context, interval time.Duration) {
+ 			up, down := m.uploadTemp.Swap(0), m.downloadTemp.Swap(0)
+ 			m.uploadBlip.Store(up)
+ 			m.downloadBlip.Store(down)
++			if m.OnTrafficUpdate != nil {
++				if up != 0 || down != 0 ||
++					up != m.lastPushedUpSpeed.Load() || down != m.lastPushedDownSpeed.Load() {
++					m.OnTrafficUpdate(m.uploadTotal.Load(), m.downloadTotal.Load(), up, down)
++					m.lastPushedUpSpeed.Store(up)
++					m.lastPushedDownSpeed.Store(down)
 +				}
 +			}
-+
-+			if m.trafficDirty.Load() && idleCount > 0 {
-+				ticker.Reset(time.Second)
-+				idleCount = 0
-+			}
-+		}
- 	}
- }
- 
+ 			if up != 0 || down != 0 {
+ 				timer.Reset(interval)
+ 				continue
 diff --git a/tunnel/statistic/tracker.go b/tunnel/statistic/tracker.go
-index f42d8162..ed0b41bb 100644
+index f42d81628..ed0b41bbd 100644
 --- a/tunnel/statistic/tracker.go
 +++ b/tunnel/statistic/tracker.go
 @@ -49,6 +49,8 @@ type TrackerInfo struct {
