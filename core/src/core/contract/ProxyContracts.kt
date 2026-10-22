@@ -66,6 +66,8 @@ enum class ProxySyncPriority {
 /** Read-only contract for proxy group state and control actions. Implemented by [runtime:client]. */
 interface ProxyGroupRepository {
     val proxyGroups: StateFlow<List<ProxyGroupInfo>>
+    /** 按代理名订阅实时延迟值；null 表示尚无测量数据。测速结果即时写入，不等组快照刷新。 */
+    fun proxyDelayFlow(name: String): StateFlow<Int?>
     suspend fun selectProxy(group: String, proxyName: String): Boolean
     suspend fun forceSelectProxy(group: String, proxyName: String): Boolean
     suspend fun refreshProxyGroups(force: Boolean = false)

@@ -63,6 +63,7 @@ import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSe
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSheetContent
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSortPopup
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeTestPullToRefresh
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.ProvideProxyDelayFlows
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.rememberNodeSheetHeight
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.rememberProxyGroupSelectionState
 import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProxyViewModel
@@ -106,6 +107,13 @@ private fun LazyListState.isScrolledFromTop(): Boolean = firstVisibleItemIndex >
 
 @Composable
 fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = koinViewModel()) {
+    ProvideProxyDelayFlows(proxyViewModel) {
+        ProxySheetContentInner(onDismiss, proxyViewModel)
+    }
+}
+
+@Composable
+private fun ProxySheetContentInner(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel) {
     val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsStateWithLifecycle()
     val sortMode by proxyViewModel.sortMode.collectAsStateWithLifecycle()
     val displayMode by proxyViewModel.displayMode.collectAsStateWithLifecycle()
