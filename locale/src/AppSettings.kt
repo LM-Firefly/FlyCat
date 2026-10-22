@@ -18,6 +18,7 @@ internal val ZhHansFlyStrings_AppSettings: FlyStrings_AppSettings = FlyStrings_A
         AutoStartSummary = "应用启动和开机时自动启动代理服务",
         AutoUpdateOnStartTitle = "启动更新配置",
         AutoUpdateOnStartSummary = "启动时自动更新当前订阅配置",
+        SystemAutoStartGrantToast = "授予自启动权限",
     ),
     Interface = FlyStrings_AppSettings_Interface(
         ThemeModeTitle = "主题模式",
@@ -135,6 +136,7 @@ internal val ZhFlyStrings_AppSettings: FlyStrings_AppSettings = FlyStrings_AppSe
         AutoStartSummary = "應用啟動和開機時自動啟動代理服務",
         AutoUpdateOnStartTitle = "啟動更新配置",
         AutoUpdateOnStartSummary = "啟動時自動更新目前訂閱設定檔",
+        SystemAutoStartGrantToast = "授予自啟動權限",
     ),
     Interface = FlyStrings_AppSettings_Interface(
         ThemeModeTitle = "主題模式",
@@ -252,6 +254,7 @@ internal val EnFlyStrings_AppSettings: FlyStrings_AppSettings = FlyStrings_AppSe
         AutoStartSummary = "Automatically start proxy service on app launch and boot",
         AutoUpdateOnStartTitle = "Update on Start",
         AutoUpdateOnStartSummary = "Automatically update the current profile on app launch",
+        SystemAutoStartGrantToast = "Grant autostart permission",
     ),
     Interface = FlyStrings_AppSettings_Interface(
         ThemeModeTitle = "Theme Mode",
@@ -369,6 +372,7 @@ internal val JaFlyStrings_AppSettings: FlyStrings_AppSettings = FlyStrings_AppSe
         AutoStartSummary = "アプリ起動時および端末起動時にプロキシサービスを自動開始",
         AutoUpdateOnStartTitle = "開始時に更新",
         AutoUpdateOnStartSummary = "アプリ起動時に現在のプロファイルを自動更新",
+        SystemAutoStartGrantToast = "自起動権限を許可",
     ),
     Interface = FlyStrings_AppSettings_Interface(
         ThemeModeTitle = "テーマモード",
@@ -486,6 +490,7 @@ internal val RuFlyStrings_AppSettings: FlyStrings_AppSettings = FlyStrings_AppSe
         AutoStartSummary = "Автоматически запускать прокси при открытии приложения и при загрузке устройства",
         AutoUpdateOnStartTitle = "Обновлять при запуске",
         AutoUpdateOnStartSummary = "Автоматически обновлять текущий профиль при запуске приложения",
+        SystemAutoStartGrantToast = "Разрешить автозапуск",
     ),
     Interface = FlyStrings_AppSettings_Interface(
         ThemeModeTitle = "Режим темы",
