@@ -129,6 +129,7 @@ public data class FlyStrings_AppSettings_Behavior(
     public val AutoStartSummary: String,
     public val AutoUpdateOnStartTitle: String,
     public val AutoUpdateOnStartSummary: String,
+    public val SystemAutoStartGrantToast: String,
 )
 
 public data class FlyStrings_AppSettings_Interface(
