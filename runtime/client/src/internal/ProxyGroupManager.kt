@@ -79,6 +79,7 @@ internal class ProxyGroupManager(
     //** 防止并发JNI查询；与互斥锁不同，绝不会阻塞协程。 */
     private val queryLock = AtomicBoolean(false)
     private val proxyDelayCache = ConcurrentHashMap<String, DelayCacheEntry>()
+    private val delayStore = ProxyDelayStore()
     private var pendingGroupsRefreshJob: Job? = null
     private val pendingGroupRefreshJobs = ConcurrentHashMap<String, Job>()
     private var lastProxyGroupsHash: Int = 0
@@ -94,6 +95,9 @@ internal class ProxyGroupManager(
         isDelayTestActive = active
     }
     val proxyGroups: StateFlow<List<ProxyGroupInfo>> = _proxyGroups.asStateFlow()
+
+    /** 按代理名订阅实时延迟值；供 UI 直接更新延迟徽标，免去逐结果替换整列表。 */
+    fun proxyDelayFlow(name: String): StateFlow<Int?> = delayStore.delayFlow(name)
     private val _resolvedPrimaryNode = MutableStateFlow<Proxy?>(null)
     val resolvedPrimaryNode: StateFlow<Proxy?> = _resolvedPrimaryNode.asStateFlow()
     suspend fun refreshProxyGroups(
@@ -126,8 +130,8 @@ internal class ProxyGroupManager(
                 return
             }
             var missingLocalRuntime = false
-            val groups = try {
-                withAbandonableTimeout(PROXY_GROUP_QUERY_TIMEOUT_MS, "refreshProxyGroupsInner") {
+            try {
+                val groups = withAbandonableTimeout(PROXY_GROUP_QUERY_TIMEOUT_MS, "refreshProxyGroupsInner") {
                     withContext(Dispatchers.IO) {
                         try {
                             if (!snapshot.running) {
@@ -158,26 +162,26 @@ internal class ProxyGroupManager(
                         }
                     }
                 }
+                /** 查询与发布在 queryLock 内原子完成：若发布落在锁外，慢查询的旧快照可能在新快照之后才发布，覆盖延迟测试结果或选择器变更等较新状态。 */
+                refreshProxyGroupsMutex.withLock {
+                    if (groups != null && (groups.isNotEmpty() || snapshot.running)) {
+                        publishProxyGroups(groups, cacheForPreview = true)
+                    } else if (!snapshot.running) {
+                        val cached = previewCacheFallback(
+                            phase = snapshot.phase,
+                            profile = previewProfile,
+                            excludeNotSelectable = false,
+                            overrideSignature = "",
+                        )
+                        if (!cached.isNullOrEmpty()) {
+                            publishProxyGroups(cached, cacheForPreview = false)
+                        }
+                    }
+                }
             } finally {
-                // 必须在外层 finally 释放：withAbandonableTimeout 超时会遗弃内层 job，若把释放放在 job 内，阻塞的 JNI 不返回则 queryLock 永久卡死（日志表现为 "query already in flight, skipping" 循环）。
+                /** 必须在外层 finally 释放：withAbandonableTimeout 超时会遗弃内层 job，若把释放放在 job 内，阻塞的 JNI 不返回则 queryLock 永久卡死（日志表现为 "query already in flight, skipping" 循环）。 */
                 queryLock.set(false)
             }
-        // 状态更新 —— 仅在快速发布路径中持有互斥锁。
-        refreshProxyGroupsMutex.withLock {
-            if (groups != null && (groups.isNotEmpty() || snapshot.running)) {
-                publishProxyGroups(groups, cacheForPreview = true)
-            } else if (!snapshot.running) {
-                val cached = previewCacheFallback(
-                    phase = snapshot.phase,
-                    profile = previewProfile,
-                    excludeNotSelectable = false,
-                    overrideSignature = "",
-                )
-                if (!cached.isNullOrEmpty()) {
-                    publishProxyGroups(cached, cacheForPreview = false)
-                }
-            }
-        }
         // 不再因 missingLocalRuntime 清空代理组缓存——保留旧数据优于显示空白
     }
     /**
@@ -229,36 +233,36 @@ internal class ProxyGroupManager(
             Timber.d("refreshProxyGroup: query already in flight, skipping group=%s", name)
             return
         }
-        val updatedGroup =
-            try {
-                withAbandonableTimeout(PROXY_GROUP_QUERY_TIMEOUT_MS, "refreshProxyGroup") {
-                    withContext(Dispatchers.IO) {
-                        try {
-                            if (snapshot.owner == RuntimeOwner.RootTun && !isRootSessionActive()) {
-                                error("RootTun runtime not ready")
-                            }
-                            if (snapshot.owner == RuntimeOwner.RootTun) {
-                                toProxyGroupInfo(
-                                    RootTunController.queryProxyGroup(appContext, name, sort)
-                                )
-                            } else {
-                                connectCurrentBackend()
-                                toProxyGroupInfo(ServiceClient.clash().queryProxyGroup(name, sort))
-                            }
-                        } catch (e: CancellationException) { throw e }
-                        catch (error: Exception) {
-                            Timber.e(error, "Failed to refresh proxy group: %s", name)
-                            null
+        try {
+            val updatedGroup = withAbandonableTimeout(PROXY_GROUP_QUERY_TIMEOUT_MS, "refreshProxyGroup") {
+                withContext(Dispatchers.IO) {
+                    try {
+                        if (snapshot.owner == RuntimeOwner.RootTun && !isRootSessionActive()) {
+                            error("RootTun runtime not ready")
                         }
+                        if (snapshot.owner == RuntimeOwner.RootTun) {
+                            toProxyGroupInfo(
+                                RootTunController.queryProxyGroup(appContext, name, sort)
+                            )
+                        } else {
+                            connectCurrentBackend()
+                            toProxyGroupInfo(ServiceClient.clash().queryProxyGroup(name, sort))
+                        }
+                    } catch (e: CancellationException) { throw e }
+                    catch (error: Exception) {
+                        Timber.e(error, "Failed to refresh proxy group: %s", name)
+                        null
                     }
                 }
-            } finally {
-                // 同 refreshProxyGroupsInner：必须在外层释放，避免阻塞 JNI 导致锁永久持有。
-                queryLock.set(false)
             } ?: return
-        refreshProxyGroupsMutex.withLock {
-            val updatedGroups = attachChainPaths(updateCachedProxyGroup(updatedGroup))
-            publishProxyGroups(updatedGroups, cacheForPreview = true)
+            /** 同 refreshProxyGroupsInner：查询与发布原子化，防止旧快照晚到覆盖新快照。 */
+            refreshProxyGroupsMutex.withLock {
+                val updatedGroups = attachChainPaths(updateCachedProxyGroup(updatedGroup))
+                publishProxyGroups(updatedGroups, cacheForPreview = true)
+            }
+        } finally {
+            /** 同 refreshProxyGroupsInner：必须在外层释放，避免阻塞 JNI 导致锁永久持有。 */
+            queryLock.set(false)
         }
     }
     /**
@@ -294,6 +298,7 @@ internal class ProxyGroupManager(
             _proxyGroups.value = normalizedGroups
             lastProxyGroupsHash = hash
         }
+        delayStore.publish(normalizedGroups)
         if (cacheForPreview && normalizedGroups.isNotEmpty()) {
             previewProfile?.let { profile ->
                 previewCacheStore(
@@ -708,12 +713,17 @@ internal class ProxyGroupManager(
             onLocal = { ServiceClient.clash().healthCheckProxy(group, proxyName) },
         )
         Timber.d("Health check proxy done: group=%s proxy=%s delay=%s", group, proxyName, delay)
-        // 刷新操作采用“即发即忘”方式，以便调用方能立即返回。
-        // 若 refreshProxyGroupsMutex 正被一个卡住的后台同步任务持有，此操作也不会被阻塞。
-        scope.launch {
-            runCatching {
-                refreshGroupDirect(group, ProxySort.Default)
-                onScheduleFullRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
+        /** 测得的延迟即时写入 per-node 流，UI 直接更新徽标，无需等待组快照。 */
+        delayStore.applyMeasured(proxyName, delay)
+        /** 批量测速期间跳过逐节点即发即忘刷新：数百节点时的刷新风暴会造成数百次全列表发布，而调用方（ProxyHealthCheckUseCase）已有周期性渐进刷新与收尾强制刷新统一对账。 */
+        if (!isDelayTestActive) {
+            /** 刷新操作采用“即发即忘”方式，以便调用方能立即返回。 */
+            /** 若 refreshProxyGroupsMutex 正被一个卡住的后台同步任务持有，此操作也不会被阻塞。 */
+            scope.launch {
+                runCatching {
+                    refreshGroupDirect(group, ProxySort.Default)
+                    onScheduleFullRefresh(PROXY_SELECT_FULL_REFRESH_DELAY_MS)
+                }
             }
         }
         return delay

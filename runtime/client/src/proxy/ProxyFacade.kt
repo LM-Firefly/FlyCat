@@ -117,6 +117,7 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         )
 
     override val proxyGroups: StateFlow<List<ProxyGroupInfo>> = proxyGroupManager.proxyGroups
+    override fun proxyDelayFlow(name: String): StateFlow<Int?> = proxyGroupManager.proxyDelayFlow(name)
     override val resolvedPrimaryNode: StateFlow<Proxy?> = proxyGroupManager.resolvedPrimaryNode
     val rootTunStatus: StateFlow<RootTunStatus> = rootTunManager.rootTunStatus
 
@@ -825,6 +826,11 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         if (snapshot.phase != RuntimePhase.Running && snapshot.owner != RuntimeOwner.RemoteController) {
             return
         }
+        /** 延迟测试进行中时跳过全量刷新，避免旧快照覆盖测试结果（与轮询守卫一致）；测试收尾会强制刷新补齐。 */
+        if (proxyGroupManager.isDelayTestActive) {
+            Timber.d("Delay test active, skipping refresh all")
+            return
+        }
         safeRun("ProxyFacade", "Refresh all runtime data") {
             withTimeoutOrNull(10_000L) { refreshAll() } ?: Timber.w("refreshAll timed out after 10s")
         }.onFailure { error ->
@@ -835,6 +841,11 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     }
 
     private suspend fun refreshPreviewStateSafely() {
+        /** 延迟测试进行中时跳过预览刷新，避免旧快照覆盖测试结果；测试收尾会强制刷新补齐。 */
+        if (proxyGroupManager.isDelayTestActive) {
+            Timber.d("Delay test active, skipping preview refresh")
+            return
+        }
         safeRunSilent("ProxyFacade", "Refresh preview data") {
                 refreshCurrentProfile()
                 refreshProxyGroups(force = true)

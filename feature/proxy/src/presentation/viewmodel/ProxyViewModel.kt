@@ -107,6 +107,9 @@ class ProxyViewModel(
             .map { groups -> groups.filterNot(ProxyGroupInfo::hidden) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /** 供 UI 订阅单节点实时延迟，避免每次测速结果都替换整个组列表。 */
+    fun proxyDelayFlow(name: String): StateFlow<Int?> = proxyGroupRepository.proxyDelayFlow(name)
+
     private val activeSyncSources = mutableSetOf<String>()
 
     init {

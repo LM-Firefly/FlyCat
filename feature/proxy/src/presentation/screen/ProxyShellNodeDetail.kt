@@ -31,6 +31,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSortPopup
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.ProvideProxyDelayFlows
 import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProxyViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.misc.CenteredText
@@ -55,6 +56,18 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun ProxyShellNodeDetail(mainInnerPadding: PaddingValues, onNavigateToProviders: (() -> Unit)? = null, onOpenPanel: (() -> Unit)? = null) {
     val proxyViewModel = koinViewModel<ProxyViewModel>()
+    ProvideProxyDelayFlows(proxyViewModel) {
+        ProxyShellNodeDetailContent(mainInnerPadding, onNavigateToProviders, onOpenPanel, proxyViewModel)
+    }
+}
+
+@Composable
+private fun ProxyShellNodeDetailContent(
+    mainInnerPadding: PaddingValues,
+    onNavigateToProviders: (() -> Unit)?,
+    onOpenPanel: (() -> Unit)?,
+    proxyViewModel: ProxyViewModel,
+) {
     val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsStateWithLifecycle()
     val testingGroupNames by proxyViewModel.testingGroupNames.collectAsStateWithLifecycle()
     val testingProxyNames by proxyViewModel.testingProxyNames.collectAsStateWithLifecycle()
