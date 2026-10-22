@@ -184,7 +184,7 @@ private fun NodeGroupCompactCard(
     val iconUri = remember(group.icon) {
         group.icon?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeGroupIconUri)
     }
-    val delayLabel = nodeLatencyLabel(currentProxy?.delay)
+    val delayLabel = nodeLatencyLabel(liveProxyDelay(currentProxy?.name, currentProxy?.delay))
     val countryCode = remember(currentNode.countryCode) {
         normalizedCountryCodeOrNull(currentNode.countryCode)
     }
@@ -288,7 +288,7 @@ internal fun NodeGroupCard(
         remember(group.icon) {
             group.icon?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeGroupIconUri)
         }
-    val currentDelay = remember(currentProxy) { currentProxy?.delay }
+    val currentDelay = liveProxyDelay(currentProxy?.name, currentProxy?.delay)
     val badge = remember(group.type) { groupBadge(group.type) }
     val delayLabel = nodeLatencyLabel(currentDelay)
 

@@ -78,6 +78,7 @@ import com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSearchToolbar
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSortPopup
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeTestPullToRefresh
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.ProvideProxyDelayFlows
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.nodeGridItems
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.nodeGroupItems
 import com.github.lmfirefly.flycat.feature.proxy.presentation.util.KeepLazyListTopAnchorOnReorder
@@ -168,6 +169,18 @@ fun ProxyPager(
     isActive: Boolean,
 ) {
     val proxyViewModel = koinViewModel<ProxyViewModel>()
+    ProvideProxyDelayFlows(proxyViewModel) {
+        ProxyPagerContent(mainInnerPadding, onNavigateToProviders, isActive, proxyViewModel)
+    }
+}
+
+@Composable
+private fun ProxyPagerContent(
+    mainInnerPadding: PaddingValues,
+    onNavigateToProviders: (() -> Unit)?,
+    isActive: Boolean,
+    proxyViewModel: ProxyViewModel,
+) {
     val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsStateWithLifecycle()
     val testingGroupNames by proxyViewModel.testingGroupNames.collectAsStateWithLifecycle()
     val testingProxyNames by proxyViewModel.testingProxyNames.collectAsStateWithLifecycle()

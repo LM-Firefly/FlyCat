@@ -250,7 +250,7 @@ internal fun NodeCard(
         paddingVertical = sizes.nodeCardPaddingVertical,
     ) {
         val tags = remember(proxy.name) { extractNodeTags(proxy.name) }
-        val delayLabel = nodeLatencyLabel(proxy.delay, withUnit = isSingleColumn)
+        val delayLabel = nodeLatencyLabel(liveProxyDelay(proxy.name, proxy.delay), withUnit = isSingleColumn)
         val childNodeName = remember(resolvedChildNodeName, proxy.name) {
             val raw = resolvedChildNodeName?.trim().orEmpty()
             raw.takeIf { it.isNotEmpty() && it != proxy.name.trim() }
