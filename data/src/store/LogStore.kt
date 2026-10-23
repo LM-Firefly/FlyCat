@@ -83,10 +83,6 @@ class LogStore(
         failure?.let { throw it }
     }
 
-    override fun setLogPreviewVisible(owner: String, visible: Boolean) {
-        AppLogBridge.setLogPreviewVisible(owner, visible)
-    }
-
     override fun isRecording(): Boolean = logRecordGateway.isRecording
 
     override fun isCurrentRecordingFile(fileName: String): Boolean =
@@ -202,13 +198,6 @@ class LogStore(
                             writer.appendLine("--- end ${file.name} ---")
                             writer.appendLine()
                         }
-                    }
-                    writer.appendLine("=== Mihomo Logs (respect core log level) ===")
-                    val mihomoLogs = AppLogBuffer.getMihomoSnapshot()
-                    if (mihomoLogs.isEmpty()) {
-                        writer.appendLine("(empty)")
-                    } else {
-                        mihomoLogs.forEach { writer.appendLine(it) }
                     }
                 }
             } ?: return@withContext false

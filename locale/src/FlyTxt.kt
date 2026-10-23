@@ -2511,6 +2511,68 @@ public object FlyTxt {
             public fun NoLogContent(vararg args: Any?): String =
                 if (args.isEmpty()) FlyLocaleManager.activeStrings.Log.Detail.NoLogContent else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.Log.Detail.NoLogContent, *args)
         }
+        public object Level {
+            public val All: String
+                get() = FlyLocaleManager.activeStrings.Log.Level.All
+            public val Debug: String
+                get() = FlyLocaleManager.activeStrings.Log.Level.Debug
+            public val Info: String
+                get() = FlyLocaleManager.activeStrings.Log.Level.Info
+            public val Warning: String
+                get() = FlyLocaleManager.activeStrings.Log.Level.Warning
+            public val Error: String
+                get() = FlyLocaleManager.activeStrings.Log.Level.Error
+            public val Filter: String
+                get() = FlyLocaleManager.activeStrings.Log.Level.Filter
+        }
+        public object Mihomo {
+            public val Title: String
+                get() = FlyLocaleManager.activeStrings.Log.Mihomo.Title
+            public val SearchHint: String
+                get() = FlyLocaleManager.activeStrings.Log.Mihomo.SearchHint
+            public val Export: String
+                get() = FlyLocaleManager.activeStrings.Log.Mihomo.Export
+            public val Copied: String
+                get() = FlyLocaleManager.activeStrings.Log.Mihomo.Copied
+            public val Connecting: String
+                get() = FlyLocaleManager.activeStrings.Log.Mihomo.Connecting
+            public val ConnectingHint: String
+                get() = FlyLocaleManager.activeStrings.Log.Mihomo.ConnectingHint
+            public val Retrying: String
+                get() = FlyLocaleManager.activeStrings.Log.Mihomo.Retrying
+            public val RetryingHint: String
+                get() = FlyLocaleManager.activeStrings.Log.Mihomo.RetryingHint
+            public val NoLogs: String
+                get() = FlyLocaleManager.activeStrings.Log.Mihomo.NoLogs
+            public val LiveHint: String
+                get() = FlyLocaleManager.activeStrings.Log.Mihomo.LiveHint
+            public val NoMatch: String
+                get() = FlyLocaleManager.activeStrings.Log.Mihomo.NoMatch
+            public val NoResults: String
+                get() = FlyLocaleManager.activeStrings.Log.Mihomo.NoResults
+        }
+        public object Hub {
+            public val MihomoTitle: String
+                get() = FlyLocaleManager.activeStrings.Log.Hub.MihomoTitle
+            public val MihomoSummary: String
+                get() = FlyLocaleManager.activeStrings.Log.Hub.MihomoSummary
+            public val AppTitle: String
+                get() = FlyLocaleManager.activeStrings.Log.Hub.AppTitle
+            public val AppSummary: String
+                get() = FlyLocaleManager.activeStrings.Log.Hub.AppSummary
+        }
+        public object App {
+            public val Title: String
+                get() = FlyLocaleManager.activeStrings.Log.App.Title
+            public val SectionApp: String
+                get() = FlyLocaleManager.activeStrings.Log.App.SectionApp
+            public val SectionCrash: String
+                get() = FlyLocaleManager.activeStrings.Log.App.SectionCrash
+            public val LevelTitle: String
+                get() = FlyLocaleManager.activeStrings.Log.App.LevelTitle
+            public val LevelSummary: String
+                get() = FlyLocaleManager.activeStrings.Log.App.LevelSummary
+        }
     }
     public object MetaFeature {
         public val Title: String

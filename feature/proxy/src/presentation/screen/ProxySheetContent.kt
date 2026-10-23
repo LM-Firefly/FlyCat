@@ -59,7 +59,6 @@ import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.ProxyChainIndicator
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeGroupSheetContent
-import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSearchToolbar
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSheetContent
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSortPopup
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeTestPullToRefresh
@@ -68,6 +67,7 @@ import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.rememb
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.rememberProxyGroupSelectionState
 import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProxyViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.SearchInputToolbar
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetAction
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetIconAction
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
@@ -363,7 +363,7 @@ private fun ProxySheetNodeContent(
             }
         }
         AnimatedVisibility(visible = searchVisible) {
-            NodeSearchToolbar(
+            SearchInputToolbar(
                 query = searchQuery,
                 onQueryChange = onSearchQueryChange,
                 modifier = Modifier.fillMaxWidth().padding(top = UiDp.dp12, bottom = UiDp.dp4),

@@ -23,6 +23,7 @@ package com.github.lmfirefly.flycat.feature.log.di
 
 import com.github.lmfirefly.flycat.feature.log.domain.IncrementalLogReader
 import com.github.lmfirefly.flycat.feature.log.presentation.viewmodel.LogViewModel
+import com.github.lmfirefly.flycat.feature.log.presentation.viewmodel.MihomoLogViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -30,6 +31,9 @@ val featureLogDomainModule = module {
     single { IncrementalLogReader(get()) }
 }
 
-val featureLogViewModelModule = module { viewModel { LogViewModel(get(), get()) } }
+val featureLogViewModelModule = module {
+    viewModel { LogViewModel(get(), get(), get(), get()) }
+    viewModel { MihomoLogViewModel(get()) }
+}
 
 val featureLogModules = listOf(featureLogDomainModule, featureLogViewModelModule)

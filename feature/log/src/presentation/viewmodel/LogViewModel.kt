@@ -23,7 +23,10 @@ package com.github.lmfirefly.flycat.feature.log.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.lmfirefly.flycat.core.contract.AppLogSettings
+import com.github.lmfirefly.flycat.core.contract.AppSettingsReader
 import com.github.lmfirefly.flycat.core.contract.LogStoreReader
+import com.github.lmfirefly.flycat.core.contract.Preference
 import com.github.lmfirefly.flycat.core.model.LogEntry
 import com.github.lmfirefly.flycat.core.model.LogFileInfo
 import com.github.lmfirefly.flycat.feature.log.domain.IncrementalLogReader
@@ -41,14 +44,19 @@ import kotlinx.coroutines.withContext
 class LogViewModel(
     private val repository: LogStoreReader,
     private val incrementalReader: IncrementalLogReader,
+    private val appSettings: AppSettingsReader,
+    private val appLogSettings: AppLogSettings,
 ) : ViewModel() {
-    companion object {
-        private const val LOG_SCREEN_OWNER = "log_screen"
-        private const val LOG_DETAIL_OWNER_PREFIX = "log_detail:"
-    }
-
     val logDir: java.io.File get() = repository.logDir
     val isRecording: StateFlow<Boolean> = repository.isRecordingState
+
+    // 应用日志捕获级别。各「日志级别」入口（「设置 → 日志」设置项、App 日志页右上角快切）共享同一个后备 [Preference]，通过响应式方式保持同步。
+    val logLevel: Preference<Int> = appSettings.logLevel
+
+    fun onLogLevelChange(level: Int) {
+        logLevel.set(level)
+        appLogSettings.minLogLevel = level
+    }
 
     private val _logFiles = MutableStateFlow<List<LogFileInfo>>(emptyList())
     val logFiles: StateFlow<List<LogFileInfo>> = _logFiles.asStateFlow()
@@ -128,13 +136,5 @@ class LogViewModel(
 
     suspend fun exportRecentLogsToUri(targetUri: android.net.Uri): Boolean = withContext(Dispatchers.IO) {
         repository.exportRecentLogsToUri(targetUri)
-    }
-
-    fun setLogScreenVisible(visible: Boolean) {
-        repository.setLogPreviewVisible(LOG_SCREEN_OWNER, visible)
-    }
-
-    fun setLogDetailVisible(fileName: String, visible: Boolean) {
-        repository.setLogPreviewVisible("$LOG_DETAIL_OWNER_PREFIX$fileName", visible)
     }
 }

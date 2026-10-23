@@ -19,7 +19,7 @@
  *
  */
 
-package com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node
+package com.github.lmfirefly.flycat.presentation.component
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.WindowInsets
@@ -49,12 +49,12 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Search
 import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 
+/**
+ * 通用搜索输入条（miuix InputField 胶囊样式）。
+ * 「代理 → 策略组节点选择子页」与「mihomo 日志」共用本组件：由顶栏放大镜唤出时自动聚焦， IME 收起自动失焦，查询非空时显示清除按钮。
+ */
 @Composable
-internal fun NodeSearchToolbar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
+fun SearchInputToolbar(query: String, onQueryChange: (String) -> Unit, modifier: Modifier = Modifier) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val density = LocalDensity.current
@@ -63,13 +63,11 @@ internal fun NodeSearchToolbar(
     val imeVisible = WindowInsets.ime.getBottom(density) > 0
     // 由顶栏放大镜唤出时自动聚焦，减少一次点击。
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
-
     LaunchedEffect(imeVisible) {
         if (!imeVisible && inputFocused) {
             focusManager.clearFocus(force = true)
         }
     }
-
     InputField(
         query = query,
         onQueryChange = onQueryChange,

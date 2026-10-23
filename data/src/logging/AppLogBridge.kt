@@ -15,16 +15,9 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.ArrayDeque
 import java.util.LinkedHashMap
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
 
 object AppLogBridge {
-    private val demandLock = Any()
-    private val previewOwners = linkedSetOf<String>()
-    private var recordingDemand: Boolean = false
-
     @Volatile
     var runtimeLogWriter: ((String) -> Unit)? = null
 
@@ -34,40 +27,8 @@ object AppLogBridge {
     @Volatile
     var runtimeLogRecordingEnabled: Boolean = false
 
-    private val _mihomoSubscriptionDemand = MutableStateFlow(false)
-    val mihomoSubscriptionDemand: StateFlow<Boolean> = _mihomoSubscriptionDemand.asStateFlow()
-
-    /**
-     * Sink for mihomo native logs (level, tag, message).
-     * Set at app startup so mihomo logs are captured in AppLogBuffer even when LogRecordService is not running.
-     */
-    @Volatile
-    var mihomoLogSink: ((Int, String?, String) -> Unit)? = null
-
     fun updateRuntimeLogRecordingDemand(enabled: Boolean) {
-        synchronized(demandLock) {
-            runtimeLogRecordingEnabled = enabled
-            recordingDemand = enabled
-            publishDemandLocked()
-        }
-    }
-
-    fun setLogPreviewVisible(owner: String, visible: Boolean) {
-        synchronized(demandLock) {
-            if (visible) {
-                previewOwners.add(owner)
-            } else {
-                previewOwners.remove(owner)
-            }
-            publishDemandLocked()
-        }
-    }
-
-    private fun publishDemandLocked() {
-        val demand = recordingDemand || previewOwners.isNotEmpty()
-        if (_mihomoSubscriptionDemand.value != demand) {
-            _mihomoSubscriptionDemand.value = demand
-        }
+        runtimeLogRecordingEnabled = enabled
     }
 }
 
@@ -75,7 +36,6 @@ object AppLogBuffer : AppLogSettings {
     private const val MAX_SIZE = 1000
     private val combinedBuffer = ArrayDeque<String>(MAX_SIZE)
     private val appBuffer = ArrayDeque<String>(MAX_SIZE)
-    private val mihomoBuffer = ArrayDeque<String>(MAX_SIZE)
     private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
     private var lastTimestampMs: Long = -1L
     private var cachedTimestamp: String = ""
@@ -85,7 +45,6 @@ object AppLogBuffer : AppLogSettings {
 
     internal fun shouldCaptureLog(priority: Int, tag: String?, message: String): Boolean {
         if (message.isBlank()) return false
-        if (tag == "mihomo") return true
         if (priority < minLogLevel) return false
         return true
     }
@@ -93,11 +52,6 @@ object AppLogBuffer : AppLogSettings {
     fun add(priority: Int, tag: String?, message: String) {
         if (!shouldCaptureLog(priority, tag, message)) return
         appendFormatted(priority, tag, message)
-    }
-
-    /** Insert a log line bypassing [minLogLevel] (e.g. mihomo native logs filtered by their own level). */
-    fun forceAdd(priority: Int, tag: String?, message: String) {
-        add(priority, tag, message)
     }
 
     private fun appendFormatted(priority: Int, tag: String?, message: String) {
@@ -125,9 +79,8 @@ object AppLogBuffer : AppLogSettings {
         try {
             if (combinedBuffer.size >= MAX_SIZE) { combinedBuffer.removeFirst() }
             combinedBuffer.addLast(logLine)
-            val target = if (tag == "mihomo") mihomoBuffer else appBuffer
-            if (target.size >= MAX_SIZE) { target.removeFirst() }
-            target.addLast(logLine)
+            if (appBuffer.size >= MAX_SIZE) { appBuffer.removeFirst() }
+            appBuffer.addLast(logLine)
         } finally {
             rwLock.writeLock().unlock()
         }
@@ -149,15 +102,6 @@ object AppLogBuffer : AppLogSettings {
         rwLock.readLock().lock()
         try {
             return appBuffer.toList()
-        } finally {
-            rwLock.readLock().unlock()
-        }
-    }
-
-    fun getMihomoSnapshot(): List<String> {
-        rwLock.readLock().lock()
-        try {
-            return mihomoBuffer.toList()
         } finally {
             rwLock.readLock().unlock()
         }
