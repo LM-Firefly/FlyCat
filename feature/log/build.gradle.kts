@@ -31,6 +31,7 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":locale"))
     implementation(project(":ui"))
+    implementation(project(":runtime:api"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)

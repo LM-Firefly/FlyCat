@@ -116,7 +116,6 @@ interface LogStoreReader {
     suspend fun exportLogFile(fileName: String, targetUri: Any): Boolean
     suspend fun exportMergedLog(fileName: String): String?
     suspend fun exportRecentLogsToUri(targetUri: Any): Boolean
-    fun setLogPreviewVisible(owner: String, visible: Boolean) {}
     suspend fun readTempLogEntries(maxEntries: Int = 2000): List<LogEntry>
     suspend fun writeLogEntries(targetUri: Any, entries: List<LogEntry>): Boolean
     suspend fun deleteLogFile(fileName: String): Boolean

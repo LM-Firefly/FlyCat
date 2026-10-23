@@ -75,7 +75,6 @@ import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode
-import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSearchToolbar
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSortPopup
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeTestPullToRefresh
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.ProvideProxyDelayFlows
@@ -84,6 +83,7 @@ import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.nodeGr
 import com.github.lmfirefly.flycat.feature.proxy.presentation.util.KeepLazyListTopAnchorOnReorder
 import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProxyViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.SearchInputToolbar
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.misc.CenteredText
 import com.github.lmfirefly.flycat.presentation.component.misc.EmojiAwareText
@@ -739,7 +739,7 @@ internal fun NodeListPage(
             )
         }
         AnimatedVisibility(visible = searchVisible) {
-            NodeSearchToolbar(
+            SearchInputToolbar(
                 query = searchQuery,
                 onQueryChange = onSearchQueryChange,
                 modifier = Modifier.fillMaxWidth().padding(

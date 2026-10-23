@@ -799,6 +799,45 @@ public data class FlyStrings_Log_Detail(
     public val NoLogContent: String,
 )
 
+public data class FlyStrings_Log_Level(
+    public val All: String,
+    public val Debug: String,
+    public val Info: String,
+    public val Warning: String,
+    public val Error: String,
+    public val Filter: String,
+)
+
+public data class FlyStrings_Log_Mihomo(
+    public val Title: String,
+    public val SearchHint: String,
+    public val Export: String,
+    public val Copied: String,
+    public val Connecting: String,
+    public val ConnectingHint: String,
+    public val Retrying: String,
+    public val RetryingHint: String,
+    public val NoLogs: String,
+    public val LiveHint: String,
+    public val NoMatch: String,
+    public val NoResults: String,
+)
+
+public data class FlyStrings_Log_Hub(
+    public val MihomoTitle: String,
+    public val MihomoSummary: String,
+    public val AppTitle: String,
+    public val AppSummary: String,
+)
+
+public data class FlyStrings_Log_App(
+    public val Title: String,
+    public val SectionApp: String,
+    public val SectionCrash: String,
+    public val LevelTitle: String,
+    public val LevelSummary: String,
+)
+
 public data class FlyStrings_Log(
     public val Title: String,
     public val Action: FlyStrings_Log_Action,
@@ -806,6 +845,10 @@ public data class FlyStrings_Log(
     public val Message: FlyStrings_Log_Message,
     public val Status: FlyStrings_Log_Status,
     public val Detail: FlyStrings_Log_Detail,
+    public val Level: FlyStrings_Log_Level,
+    public val Mihomo: FlyStrings_Log_Mihomo,
+    public val Hub: FlyStrings_Log_Hub,
+    public val App: FlyStrings_Log_App,
 )
 
 // ==================== MetaFeature ====================

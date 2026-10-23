@@ -262,8 +262,9 @@ class RootTunRootService : RootService() {
     override fun onCreate() {
         super.onCreate()
         Global.init(this)
-        MMKV.disableProcessModeChecker()
+        // MMKV 必须在使用前初始化，ContentProvider 在 Application.onCreate 之前执行
         MMKV.initialize(this)
+        MMKV.disableProcessModeChecker()
         stateStore = RootTunStateStore(this)
         startupLogStore = RuntimeStartupLogStore(this, RuntimeStartupLogStore.Scope.ROOT_TUN)
         runtimeSpecFactory = SessionRuntimeSpecFactory(this)

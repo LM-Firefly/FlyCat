@@ -71,7 +71,8 @@ object PollingTimerSpecs {
     val RuntimeTrafficPolling = PollingTimerSpec("runtime_traffic_polling", 1_000L, 0L)
     val RuntimeProxyGroupSyncFast = PollingTimerSpec("runtime_proxy_group_sync_fast", 1_000L, 0L)
     val RuntimeProxyGroupSyncSlow = PollingTimerSpec("runtime_proxy_group_sync_slow", 4_000L, 0L)
-    val RuntimeRootLogPolling = PollingTimerSpec("runtime_root_log_polling", 2_000L, 0L)
+    // root 日志轮询仅在 mihomo 预览可见时运行（setLogObserver 持有），后台/灭屏经 throttleByScene 降频/挂起，故 1s 间隔只在用户前台观看预览时生效，功耗可控。
+    val RuntimeRootLogPolling = PollingTimerSpec("runtime_root_log_polling", 1_000L, 0L)
     val RootTunStatusNotification = PollingTimerSpec("root_tun_status_notification", 2_000L, 0L)
     val SessionConnectionTracking = PollingTimerSpec("session_connection_tracking", 1_000L, 0L)
     val RemoteControllerProbe = PollingTimerSpec("remote_controller_probe", 5_000L, 5_000L)

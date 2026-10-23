@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
@@ -248,7 +249,7 @@ private fun VersionBadge(versionInfo: String?) {
         color = MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtle),
         shape = RoundedCornerShape(50),
         modifier =
-            Modifier.height(componentSizes.versionBadgeHeight).padding(end = spacing.space12),
+            Modifier.defaultMinSize(minHeight = componentSizes.versionBadgeHeight).padding(end = spacing.space12),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

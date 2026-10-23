@@ -30,6 +30,7 @@ import com.github.lmfirefly.flycat.core.model.traffic.Traffic
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
 import com.github.lmfirefly.flycat.core.model.tunnel.TunnelState
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeSnapshot
+import com.github.lmfirefly.flycat.runtime.api.remote.ILogObserver
 import com.github.lmfirefly.flycat.runtime.api.root.RootAccessStatus
 import kotlinx.coroutines.flow.StateFlow
 
@@ -56,4 +57,10 @@ interface ProxyControlContract : ProxyGroupRepository, ConnectionRepository {
     suspend fun patchTunnelMode(mode: TunnelState.Mode): Boolean
     suspend fun testRemoteConnection(backend: RemoteBackend): Result<TunnelState>
     suspend fun refreshCurrentProfile()
+
+    /**
+     * 模式感知的实时 mihomo 日志订阅（local=JNI推送，root=轮询，remote=HTTP流）。
+     * 传入 null 取消订阅。最多同时存在一个活跃的观察者。
+     */
+    fun setLogObserver(observer: ILogObserver?)
 }

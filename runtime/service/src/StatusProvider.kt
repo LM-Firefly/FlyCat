@@ -89,8 +89,8 @@ class StatusProvider : ContentProvider() {
             val app = context?.applicationContext as? android.app.Application ?: return@runCatching
             Global.init(app)
             // MMKV 必须在使用前初始化，ContentProvider 在 Application.onCreate 之前执行
-            MMKV.disableProcessModeChecker()
             MMKV.initialize(app)
+            MMKV.disableProcessModeChecker()
             clearTunStarting()
             syncCachedRuntimeState()
             RuntimeServiceContractRegistry.register(
