@@ -83,8 +83,6 @@ int (*connection_close_received_func)(void *callback, const char *payload) = noo
 
 int (*connection_join_received_func)(void *callback, const char *payload) = noop_received;
 
-int (*traffic_update_received_func)(void *callback, const char *payload) = noop_received;
-
 int (*traffic_update_received_packed_func)(void *callback, long long upload_total, long long download_total, long long upload_speed, long long download_speed) = noop_received_packed;
 
 int (*open_content_func)(const char *url, char *error, int error_length) = noop_open_content;
@@ -125,10 +123,6 @@ void set_connection_close_received_callback(int (*callback)(void *callback, cons
 
 void set_connection_join_received_callback(int (*callback)(void *callback, const char *payload)) {
     connection_join_received_func = callback ? callback : noop_received;
-}
-
-void set_traffic_update_received_callback(int (*callback)(void *callback, const char *payload)) {
-    traffic_update_received_func = callback ? callback : noop_received;
 }
 
 void set_traffic_update_received_packed_callback(int (*callback)(void *callback, long long upload_total, long long download_total, long long upload_speed, long long download_speed)) {
@@ -207,15 +201,6 @@ int connection_close_received(void *callback, char *payload) {
 int connection_join_received(void *callback, char *payload) {
 
     int result = connection_join_received_func(callback, payload);
-
-    free(payload);
-
-    return result;
-}
-
-int traffic_update_received(void *callback, char *payload) {
-
-    int result = traffic_update_received_func(callback, payload);
 
     free(payload);
 

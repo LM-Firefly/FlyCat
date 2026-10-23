@@ -6,6 +6,8 @@ import "C"
 
 import (
 	"encoding/json"
+	"strconv"
+	"strings"
 	"sync"
 	"unsafe"
 
@@ -147,7 +149,8 @@ func queryGroup(name C.c_string, sortMode C.c_string) *C.char {
 		return nil
 	}
 
-	return marshalJSON(response)
+	// 复用批量载荷的分隔符布局（单组），Kotlin 侧共用同一解码器。
+	return encodeProxyGroupsDelimiter([]*tunnel.ProxyGroup{response})
 }
 
 //export queryGroupsBatch
@@ -165,7 +168,56 @@ func queryGroupsBatch(namesJSON *C.char, sortMode C.c_string) *C.char {
 		mode = tunnel.Delay
 	}
 
-	return marshalJSON(tunnel.QueryProxyGroupsBatch(nameList, mode, app.SubtitlePattern()))
+	return encodeProxyGroupsDelimiter(tunnel.QueryProxyGroupsBatch(nameList, mode, app.SubtitlePattern()))
+}
+
+// encodeProxyGroupsDelimiter 将代理组编码为紧凑的分隔符载荷（组 \x03、代理 \x02、字段 \x01），而不是 JSON。
+// 这是应用中最大的载荷（所有组 × 所有节点），因此放弃 json.Marshal 的反射/转义而采用手动布局是值得的。
+// 单组查询（queryGroup）同样复用本布局。
+func encodeProxyGroupsDelimiter(groups []*tunnel.ProxyGroup) *C.char {
+	var sb []byte
+	for gi, g := range groups {
+		if gi > 0 {
+			sb = append(sb, 0x03)
+		}
+		sb = append(sb, g.Name...)
+		sb = append(sb, 0x01)
+		sb = append(sb, g.Type...)
+		sb = append(sb, 0x01)
+		sb = append(sb, g.Now...)
+		sb = append(sb, 0x01)
+		sb = append(sb, g.Icon...)
+		sb = append(sb, 0x01)
+		if g.Hidden {
+			sb = append(sb, '1')
+		} else {
+			sb = append(sb, '0')
+		}
+		sb = append(sb, 0x01)
+		sb = append(sb, g.Fixed...)
+		sb = append(sb, 0x01)
+		for pi, p := range g.Proxies {
+			if pi > 0 {
+				sb = append(sb, 0x02)
+			}
+			sb = append(sb, p.Name...)
+			sb = append(sb, 0x01)
+			sb = append(sb, p.Title...)
+			sb = append(sb, 0x01)
+			sb = append(sb, p.Subtitle...)
+			sb = append(sb, 0x01)
+			sb = append(sb, p.Type...)
+			sb = append(sb, 0x01)
+			sb = strconv.AppendInt(sb, int64(p.Delay), 10)
+			sb = append(sb, 0x01)
+			if p.IsGroup {
+				sb = append(sb, '1')
+			} else {
+				sb = append(sb, '0')
+			}
+		}
+	}
+	return cStringFromBytes(sb)
 }
 
 //export healthCheck
@@ -191,7 +243,26 @@ func subscribeConnectionClose(remote unsafe.Pointer) {
 
 	tunnel.SetConnectionLeaveListener(func(event *tunnel.ConnectionCloseEvent) {
 		tunnel.IncrConnectionGeneration()
-		if C.connection_close_received(remote, marshalJSON(event)) != 0 {
+		// 快速分隔符负载（12个以\x01分隔的字段；chains/providerChains之间以\x02连接）避免了在该高频路径上每个事件都进行json.Marshal的反射/转义开销。
+		uidStr := ""
+		if event.UID != 0 {
+			uidStr = strconv.FormatInt(event.UID, 10)
+		}
+		payload := strings.Join([]string{
+			event.ID,
+			strconv.FormatInt(event.Upload, 10),
+			strconv.FormatInt(event.Download, 10),
+			strconv.FormatInt(event.UploadDelta, 10),
+			strconv.FormatInt(event.DownloadDelta, 10),
+			event.Rule,
+			event.RulePayload,
+			strings.Join(event.Chains, "\x02"),
+			strings.Join(event.ProviderChains, "\x02"),
+			event.PackageName,
+			event.ProcessName,
+			uidStr,
+		}, "\x01")
+		if C.connection_close_received(remote, cStringFromBytes([]byte(payload))) != 0 {
 			released, matched := clearSubscriberIfCurrent(&connectionCloseSubscriber, remote)
 			if matched {
 				tunnel.ClearConnectionLeaveListener()
@@ -281,12 +352,8 @@ func unsubscribeTrafficUpdate() {
 func healthCheckProxy(completable unsafe.Pointer, proxyName C.c_string) {
 	go func(name string) {
 		delay := tunnel.HealthCheckProxy(name)
-
-		response := &struct {
-			Delay int `json:"delay"`
-		}{delay}
-
-		C.complete_with_string(completable, marshalJSON(response))
+		// Bare int payload (was {"delay":N} JSON) avoids a per-call json.Marshal on the batch-delay-test hot path (N nodes × one round-trip each).
+		C.complete_with_string(completable, C.CString(strconv.Itoa(delay)))
 	}(C.GoString(proxyName))
 }
 

@@ -72,6 +72,8 @@ interface ProxyGroupRepository {
     suspend fun forceSelectProxy(group: String, proxyName: String): Boolean
     suspend fun refreshProxyGroups(force: Boolean = false)
     suspend fun refreshProxyGroup(name: String, sort: ProxySort = ProxySort.Default)
+    /** 测速期间的内存内增量刷新：用实测延迟重算 enrich（嵌套组/排序）并发布，不触达 JNI/binder。 */
+    suspend fun reEnrichFromCache()
     suspend fun healthCheck(group: String)
     suspend fun healthCheckAll()
     suspend fun healthCheckProxy(group: String, proxyName: String): Int

@@ -42,7 +42,7 @@ val featureSettingsDomainModule = module {
 }
 
 val featureSettingsViewModelModule = module {
-    viewModel { AppSettingsViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
+    viewModel { AppSettingsViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { NetworkSettingsViewModel(androidApplication(), get(), get(), get()) }
     viewModel { PrivilegedServiceViewModel(androidApplication(), get()) }
     viewModel { WifiAutomationViewModel(androidApplication(), get(), get(), get(), get()) }

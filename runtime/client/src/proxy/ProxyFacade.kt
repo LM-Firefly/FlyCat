@@ -528,6 +528,10 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         )
     }
 
+    override suspend fun reEnrichFromCache() {
+        proxyGroupManager.reEnrichFromCache()
+    }
+
     /** 用于UI触发操作的非阻塞刷新。 如果互斥锁被后台同步占用则跳过，以避免阻塞UI。 */
     suspend fun refreshProxyGroupsNonBlocking() {
         proxyGroupManager.setPreviewProfile(_currentProfile.value)

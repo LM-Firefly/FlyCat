@@ -52,11 +52,10 @@ internal class SessionRuntimeTelemetry(
     private val onLogReadyChanged: (Boolean) -> Unit,
 ) {
     private var logJob: Job? = null
-    private var telemetryJob: Job? = null
+    private var logSubscribe: (() -> ReceiveChannel<LogMessage>)? = null
+    private var logUnsubscribe: (() -> Unit)? = null
     private val logSeq = AtomicLong(0L)
     private val recentLogs = ArrayDeque<Pair<Long, String>>()
-    @Volatile
-    private var localLogObserver: ((LogMessage) -> Unit)? = null
     @Volatile
     private var hasActiveConsumer = false
     @Volatile
@@ -65,10 +64,6 @@ internal class SessionRuntimeTelemetry(
     // 流量数据统一从 TrafficPushHub 读取，不再独立轮询
     val trafficNow: StateFlow<Traffic> = TrafficPushHub.trafficNow
     val trafficTotal: StateFlow<Traffic> = TrafficPushHub.trafficTotal
-
-    fun setLogObserver(observer: ((LogMessage) -> Unit)?) {
-        localLogObserver = observer
-    }
 
     fun queryRecentLogsJson(sinceSeq: Long): RuntimeLogChunk {
         hasActiveConsumer = true
@@ -81,8 +76,28 @@ internal class SessionRuntimeTelemetry(
 
     fun isLogStreaming(): Boolean = logJob?.isActive == true
 
+    /**
+     * 通过存储核心的订阅/取消订阅钩子来准备日志流。
+     * 实际的订阅是按需通过 [setLogConsumerActive] 建立的（仅在应用的 mihomo 日志预览打开时）
+     * 这样根进程就不会在其整个生命周期内持有逐行的 JNI 订阅（Go 序列化 → JNI → Kotlin 反序列化）。
+     */
     fun startLogStream(subscribe: () -> ReceiveChannel<LogMessage>, unsubscribe: () -> Unit) {
-        stopLogStream()
+        logSubscribe = subscribe
+        logUnsubscribe = unsubscribe
+    }
+
+    /** 驱动核心日志订阅：激活时附加，非激活时立即解除。 */
+    fun setLogConsumerActive(active: Boolean) {
+        if (active) {
+            if (logJob?.isActive != true) attachStream()
+        } else {
+            detachStream()
+        }
+    }
+
+    private fun attachStream() {
+        val subscribe = logSubscribe ?: return
+        val unsubscribe = logUnsubscribe ?: return
         host.onLogReady(false)
         logJob =
             scope.launch(Dispatchers.IO) {
@@ -92,7 +107,6 @@ internal class SessionRuntimeTelemetry(
                 try {
                     while (isActive) {
                         val item = receiver.receive()
-                        localLogObserver?.invoke(item)
                         host.onLogItem(item)
                         if (hasActiveConsumer) {
                             if (SystemClock.elapsedRealtime() - lastConsumerActiveTimestamp > 30_000L) {
@@ -118,16 +132,17 @@ internal class SessionRuntimeTelemetry(
             }
     }
 
-    fun stopLogStream() {
+    private fun detachStream() {
         logJob?.cancel()
         logJob = null
-        synchronized(recentLogs) { recentLogs.clear() }
         host.onLogReady(false)
     }
 
-    fun stopTelemetry() {
-        telemetryJob?.cancel()
-        telemetryJob = null
+    fun stopLogStream() {
+        detachStream()
+        logSubscribe = null
+        logUnsubscribe = null
+        synchronized(recentLogs) { recentLogs.clear() }
     }
 
     private companion object {

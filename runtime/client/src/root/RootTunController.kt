@@ -28,6 +28,7 @@ import com.github.lmfirefly.flycat.core.model.ConnectionOverviewSnapshot
 import com.github.lmfirefly.flycat.core.model.ConnectionSnapshot
 import com.github.lmfirefly.flycat.core.model.Provider
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup
+import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupPayload
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySort
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
 import com.github.lmfirefly.flycat.core.model.tunnel.TunnelState
@@ -305,18 +306,15 @@ object RootTunController {
     suspend fun queryAllProxyGroups(
         context: Context,
         excludeNotSelectable: Boolean,
-    ): List<ProxyGroup> =
-        remoteCall(context) { service ->
-            rootTunDecode<List<ProxyGroup>>(service.queryAllProxyGroupsJson(excludeNotSelectable))
-        }
+    ): List<ProxyGroup> = remoteCall(context) { service ->
+        ProxyGroupPayload.decodeGroups(service.queryAllProxyGroupsJson(excludeNotSelectable))
+    }
 
-    suspend fun queryProxyGroup(context: Context, name: String, sort: ProxySort): ProxyGroup =
-        remoteCall(context) { service ->
-            val raw =
-                service.queryProxyGroupJson(name, sort.name)
-                    ?: error("proxy group not found: $name")
-            rootTunDecode<ProxyGroup>(raw)
-        }
+    suspend fun queryProxyGroup(context: Context, name: String, sort: ProxySort): ProxyGroup = remoteCall(context) { service ->
+        val raw = service.queryProxyGroupJson(name, sort.name)
+            ?: error("proxy group not found: $name")
+        ProxyGroupPayload.decodeGroup(raw)
+    }
 
     suspend fun queryProviders(context: Context): List<Provider> =
         remoteCall(context) { service ->
@@ -334,6 +332,11 @@ object RootTunController {
 
     suspend fun closeAllConnections(context: Context) {
         remoteCall(context) { service -> service.closeAllConnections() }
+    }
+
+    //** 向根运行时标明是否有应用日志消费者（mihomo 预览）连接；据此按需启用核心日志订阅。 */
+    suspend fun setLogConsumerActive(context: Context, active: Boolean) {
+        remoteCall(context) { service -> service.setLogConsumerActive(active) }
     }
 
     suspend fun healthCheck(context: Context, group: String) {
