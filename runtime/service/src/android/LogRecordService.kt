@@ -77,19 +77,30 @@ class LogRecordService : Service() {
         private var instance: LogRecordService? = null
 
         fun start(context: Context) {
+            if (isRecording) return
+            val timestamp = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss").format(LocalDateTime.now())
+            val fileName = "$LOG_PREFIX$timestamp$LOG_SUFFIX"
             val intent =
                 Intent(context, LogRecordService::class.java).apply { action = ACTION_START }
+            // 先派发、后同步置位：startService 异步（onStartCommand 稍后才执行），而 LogStore 会立即读
+            // isRecording 作为 UI 按钮状态与写入开关（runtimeLogRecordingEnabled）的依据；若等服务侧才置位，
+            // 两者都会读到旧值（按钮状态倒置、录制文件恒 0B）。派发失败则抛出且不置位，状态保持一致。
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
                 context.startService(intent)
             }
+            currentLogFileName = fileName
+            isRecording = true
         }
 
         fun stop(context: Context) {
             val intent =
                 Intent(context, LogRecordService::class.java).apply { action = ACTION_STOP }
             context.startService(intent)
+            // 同 start()：同步置位，供 LogStore 立即读到「已停止」。
+            isRecording = false
+            currentLogFileName = null
         }
 
         fun getLogDir(context: Context): File {
@@ -148,13 +159,15 @@ class LogRecordService : Service() {
     }
 
     private fun startRecording() {
-        if (isRecording) return
+        // isRecording 已由 companion 的 start() 同步置位，这里以 writer 是否存在判重。
+        if (logWriter != null) return
 
         runCatching {
                 val logDir = getLogDir(applicationContext)
                 val timestamp =
                     DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss").format(LocalDateTime.now())
-                val fileName = "$LOG_PREFIX$timestamp$LOG_SUFFIX"
+                // 文件名优先沿用 companion start() 预生成的 currentLogFileName（UI 侧已据此显示「记录中」）。
+                val fileName = currentLogFileName ?: "$LOG_PREFIX$timestamp$LOG_SUFFIX"
                 logFile = File(logDir, fileName)
                 logWriter = BufferedWriter(FileWriter(logFile, true))
 

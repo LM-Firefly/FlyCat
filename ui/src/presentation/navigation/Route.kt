@@ -77,6 +77,12 @@ sealed interface Route {
     data object Log : Route
 
     @Serializable
+    data object MihomoLog : Route
+
+    @Serializable
+    data object AppLog : Route
+
+    @Serializable
     data object Rules : Route
 
     @Serializable

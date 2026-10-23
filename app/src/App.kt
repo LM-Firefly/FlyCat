@@ -28,7 +28,6 @@ import android.os.Build
 import android.os.Bundle
 import com.github.lmfirefly.flycat.BuildConfig
 import com.github.lmfirefly.flycat.common.util.AppLanguageManager
-import com.github.lmfirefly.flycat.core.Clash
 import com.github.lmfirefly.flycat.core.FirstRunInitializer
 import com.github.lmfirefly.flycat.core.Global
 import com.github.lmfirefly.flycat.core.bridge.Bridge
@@ -38,7 +37,6 @@ import com.github.lmfirefly.flycat.core.contract.CustomRoutingInitializer
 import com.github.lmfirefly.flycat.core.contract.NetworkSettingsReader
 import com.github.lmfirefly.flycat.core.contract.RuntimeLogWriter
 import com.github.lmfirefly.flycat.core.contract.ServiceBootstrapHolder
-import com.github.lmfirefly.flycat.core.model.LogMessage
 import com.github.lmfirefly.flycat.core.util.AppForegroundState
 import com.github.lmfirefly.flycat.core.util.NativeLibraryLoader
 import com.github.lmfirefly.flycat.core.util.coroutine.AutoStartSessionGate
@@ -50,7 +48,6 @@ import com.github.lmfirefly.flycat.core.util.path.SubStorePaths
 import com.github.lmfirefly.flycat.core.util.path.runtimeHomeDir
 import com.github.lmfirefly.flycat.data.collector.AppTrafficStatisticsCollector
 import com.github.lmfirefly.flycat.data.logging.AppLogBridge
-import com.github.lmfirefly.flycat.data.logging.AppLogBuffer
 import com.github.lmfirefly.flycat.data.logging.AppLogTree
 import com.github.lmfirefly.flycat.data.logging.CrashHandler
 import com.github.lmfirefly.flycat.data.store.AppSettingsStore
@@ -71,10 +68,8 @@ import com.tencent.mmkv.MMKV
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -143,46 +138,8 @@ class App : Application() {
                 safeRun("App", "Bridge preload") { Bridge.preload() }
             }
         }
-        // "按需 mihomo 日志→AppLogBuffer 订阅。
-        // 仅在日志预览可见或运行时日志记录激活时启用。"
+        // mihomo 日志订阅由 MihomoLogViewModel 在预览可见时直接持有（Clash.subscribeLogcat），不再经此中转。
         val applicationScope = koin.get<CoroutineScope>(named(APPLICATION_SCOPE_NAME))
-        applicationScope.launch {
-            var streamJob: Job? = null
-            AppLogBridge.mihomoSubscriptionDemand.collect { needed ->
-                if (!needed) {
-                    streamJob?.cancelAndJoin()
-                    streamJob = null
-                    Clash.unsubscribeLogcat()
-                    return@collect
-                }
-                if (streamJob?.isActive == true) {
-                    return@collect
-                }
-                streamJob =
-                    launch(Dispatchers.IO) {
-                        safeRunSilent("App", "Mihomo on-demand log subscription") {
-                            val channel = Clash.subscribeLogcat()
-                            try {
-                                for (msg in channel) {
-                                    val priority =
-                                        when (msg.level) {
-                                            LogMessage.Level.Error -> android.util.Log.ERROR
-                                            LogMessage.Level.Warning -> android.util.Log.WARN
-                                            LogMessage.Level.Info -> android.util.Log.INFO
-                                            LogMessage.Level.Debug -> android.util.Log.DEBUG
-                                            LogMessage.Level.Silent -> android.util.Log.VERBOSE
-                                            LogMessage.Level.Unknown -> android.util.Log.DEBUG
-                                        }
-                                    AppLogBridge.mihomoLogSink?.invoke(priority, "mihomo", msg.message)
-                                }
-                            } finally {
-                                channel.cancel()
-                                Clash.unsubscribeLogcat()
-                            }
-                        }
-                    }
-            }
-        }
         // 阶段2b：从不完整的文件操作（原子重命名残留物）中恢复
         startupScope.launch {
             withContext(Dispatchers.IO) {
@@ -197,17 +154,17 @@ class App : Application() {
         // 阶段5：独立生命周期观察者（始终安全可启动）
         applicationScope.launch { observeAndBroadcastForegroundState() }
     }
-    /**
-     * 第 1 阶段：初始化日志记录、崩溃处理器、全局上下文、MMKV 和 Koin 依赖注入。
-     * 成功时返回 Koin 实例；严重失败时抛出异常。
-     */
+    /** 第 1 阶段：初始化日志记录、崩溃处理器、全局上下文、MMKV 和 Koin 依赖注入。成功时返回 Koin 实例；严重失败时抛出异常。 */
     private fun initCoreInfrastructure(): Koin {
-        if (Timber.forest().isEmpty()) Timber.plant(AppLogTree())
+        // AppLogTree 必须始终植入（App 日志缓冲与崩溃日志附带的「最近日志」都取自它）： debug 构建在 onCreate 已植入裸 DebugTree，旧 isEmpty 守卫会在此跳过 AppLogTree，
+        // 导致 AppLog 完全不采集（录制文件恒 0B、预览/导出恒空）。
+        if (Timber.forest().none { it is AppLogTree }) {
+            Timber.plant(AppLogTree())
+            // AppLogTree 继承 DebugTree（同样输出 logcat）；移除裸 DebugTree 避免 debug 构建日志重复。
+            Timber.forest().filter { it is Timber.DebugTree && it !is AppLogTree }.forEach(Timber::uproot)
+        }
         CrashHandler.init(this)
         AppLogBridge.runtimeLogWriter = null
-        AppLogBridge.mihomoLogSink = { priority, tag, message ->
-            AppLogBuffer.forceAdd(priority, tag, message)
-        }
         Global.init(this)
         com.github.lmfirefly.flycat.core.BuildConfigHolder.init(
             versionName = BuildConfig.VERSION_NAME,

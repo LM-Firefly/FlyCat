@@ -22,6 +22,7 @@
 package com.github.lmfirefly.flycat.feature.log.presentation.screen
 
 import android.os.FileObserver
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -32,6 +33,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -62,6 +64,7 @@ import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.misc.CenteredText
+import com.github.lmfirefly.flycat.presentation.component.misc.Title
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
@@ -77,25 +80,44 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.pressable
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 
+internal val AppLogLevelOptions = listOf("VERBOSE", "DEBUG", "INFO", "WARN", "ERROR", "ASSERT")
+internal val AppLogLevelValues = listOf(Log.VERBOSE, Log.DEBUG, Log.INFO, Log.WARN, Log.ERROR, Log.ASSERT)
+
 @Composable
-fun LogScreen(navigator: Navigator) {
+fun AppLogScreen(navigator: Navigator) {
     val viewModel = koinViewModel<LogViewModel>()
     val scrollBehavior = MiuixScrollBehavior()
 
     val isRecording by viewModel.isRecording.collectAsStateWithLifecycle()
     val logFiles by viewModel.logFiles.collectAsStateWithLifecycle()
+    val logLevel by viewModel.logLevel.state.collectAsStateWithLifecycle()
+    var showLevelPopup by remember { mutableStateOf(false) }
+
+    // 应用日志与崩溃日志分开管理，使两者都能在此页面上有条理地展示。
+    val appFiles = remember(logFiles) {
+        logFiles.filter { !it.name.startsWith("crash_") && !it.name.startsWith("native_exit_") }
+    }
+    val crashFiles = remember(logFiles) {
+        logFiles.filter { it.name.startsWith("crash_") || it.name.startsWith("native_exit_") }
+    }
 
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -130,14 +152,9 @@ fun LogScreen(navigator: Navigator) {
     var logScreenResumed by remember { mutableStateOf(false) }
     LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
         logScreenResumed = true
-        viewModel.setLogScreenVisible(true)
     }
     LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_PAUSE) {
         logScreenResumed = false
-        viewModel.setLogScreenVisible(false)
-    }
-    DisposableEffect(Unit) {
-        onDispose { viewModel.setLogScreenVisible(false) }
     }
     LaunchedEffect(logScreenResumed) {
         if (!logScreenResumed) return@LaunchedEffect
@@ -150,9 +167,40 @@ fun LogScreen(navigator: Navigator) {
     Scaffold(
         topBar = {
             TopBar(
-                title = FlyTxt.Log.Title,
+                title = FlyTxt.Log.App.Title,
                 scrollBehavior = scrollBehavior,
                 navigationIcon = { NavigationBackIcon(navigator = navigator, extraStartPadding = 0.dp) },
+                actions = {
+                    Box {
+                        IconButton(onClick = { showLevelPopup = true }) {
+                            Icon(
+                                imageVector = MiuixIcons.Filter,
+                                contentDescription = FlyTxt.Log.App.LevelTitle,
+                                tint = MiuixTheme.colorScheme.onSurface,
+                            )
+                        }
+                        OverlayListPopup(
+                            show = showLevelPopup,
+                            alignment = PopupPositionProvider.Align.BottomEnd,
+                            onDismissRequest = { showLevelPopup = false },
+                        ) {
+                            ListPopupColumn {
+                                AppLogLevelOptions.forEachIndexed { index, label ->
+                                    DropdownImpl(
+                                        text = label,
+                                        optionSize = AppLogLevelOptions.size,
+                                        isSelected = logLevel == AppLogLevelValues[index],
+                                        onSelectedIndexChange = {
+                                            viewModel.onLogLevelChange(AppLogLevelValues[index])
+                                            showLevelPopup = false
+                                        },
+                                        index = index,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
             )
         },
         floatingActionButton = {
@@ -212,14 +260,29 @@ fun LogScreen(navigator: Navigator) {
                 innerPadding = innerPadding,
                 topPadding = 20.dp,
             ) {
-                items(logFiles.size, key = { idx -> logFiles[idx].name }) { index ->
-                    LogFileItem(
-                        fileInfo = logFiles[index],
-                        index = index,
-                        onClick = {
-                            navigator.push(Route.LogDetail(fileName = logFiles[index].name))
-                        },
-                    )
+                if (appFiles.isNotEmpty()) {
+                    item { Title(FlyTxt.Log.App.SectionApp) }
+                    items(appFiles.size, key = { idx -> "app_${appFiles[idx].name}" }) { index ->
+                        LogFileItem(
+                            fileInfo = appFiles[index],
+                            index = index,
+                            onClick = {
+                                navigator.push(Route.LogDetail(fileName = appFiles[index].name))
+                            },
+                        )
+                    }
+                }
+                if (crashFiles.isNotEmpty()) {
+                    item { Title(FlyTxt.Log.App.SectionCrash) }
+                    items(crashFiles.size, key = { idx -> "crash_${crashFiles[idx].name}" }) { index ->
+                        LogFileItem(
+                            fileInfo = crashFiles[index],
+                            index = index,
+                            onClick = {
+                                navigator.push(Route.LogDetail(fileName = crashFiles[index].name))
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -272,14 +335,9 @@ fun LogDetailScreen(
     var detailResumed by remember { mutableStateOf(false) }
     LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
         detailResumed = true
-        viewModel.setLogDetailVisible(fileName, true)
     }
     LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_PAUSE) {
         detailResumed = false
-        viewModel.setLogDetailVisible(fileName, false)
-    }
-    DisposableEffect(fileName) {
-        onDispose { viewModel.setLogDetailVisible(fileName, false) }
     }
     LaunchedEffect(isCurrentFileRecording, fileName, detailResumed) {
         if (!isCurrentFileRecording || !detailResumed) return@LaunchedEffect

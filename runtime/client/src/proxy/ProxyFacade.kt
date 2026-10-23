@@ -37,6 +37,7 @@ import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeStateMapper
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeTargetMode
 import com.github.lmfirefly.flycat.runtime.api.contract.VpnPermissionRequired
 import com.github.lmfirefly.flycat.runtime.api.contract.toRuntimeTargetMode
+import com.github.lmfirefly.flycat.runtime.api.remote.ILogObserver
 import com.github.lmfirefly.flycat.runtime.api.root.RootAccessStatus
 import com.github.lmfirefly.flycat.runtime.api.root.RootTunStatus
 import com.github.lmfirefly.flycat.runtime.client.internal.ProxyEventBus
@@ -190,6 +191,10 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     override fun isRemoteControllerActive(): Boolean = remoteControllerStore.isActive()
 
     override fun applyRemoteControllerState() = remoteSwitch.apply()
+
+    override fun setLogObserver(observer: ILogObserver?) {
+        runCatching { ServiceClient.clash().setLogObserver(observer) }
+    }
 
     /**
      * Test connectivity to a remote mihomo backend.

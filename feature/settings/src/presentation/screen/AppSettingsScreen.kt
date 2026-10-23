@@ -26,7 +26,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -397,7 +396,6 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel, navigator
     val shizukuAccess by viewModel.shizukuAccess.collectAsStateWithLifecycle()
     val privilegeAccess by viewModel.privilegeAccess.collectAsStateWithLifecycle()
     val exitUiWhenBackground by viewModel.exitUiWhenBackground.state.collectAsStateWithLifecycle()
-    val logLevel by viewModel.logLevel.state.collectAsStateWithLifecycle()
     var batteryOptimizationIgnored by remember {
         mutableStateOf(isBatteryOptimizationIgnored(context))
     }
@@ -441,14 +439,6 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel, navigator
             summary = FlyTxt.AppSettings.ServiceSection.TrafficNotificationSummary,
             checked = showTrafficNotification,
             onCheckedChange = viewModel::onShowTrafficNotificationChange,
-        )
-        PreferenceEnumItem(
-            title = FlyTxt.AppSettings.ServiceSection.LogLevelTitle,
-            summary = FlyTxt.AppSettings.ServiceSection.LogLevelSummary,
-            currentValue = logLevel,
-            items = listOf("VERBOSE", "DEBUG", "INFO", "WARN", "ERROR", "ASSERT"),
-            values = listOf(Log.VERBOSE, Log.DEBUG, Log.INFO, Log.WARN, Log.ERROR, Log.ASSERT),
-            onValueChange = viewModel::onLogLevelChange,
         )
         PreferenceSwitchItem(
             title = FlyTxt.AppSettings.ServiceSection.ExitUiWhenBackgroundTitle,

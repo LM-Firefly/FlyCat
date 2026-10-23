@@ -5,7 +5,6 @@ package main
 import "C"
 
 import (
-	"strings"
 	"sync"
 	"time"
 	"unsafe"
@@ -39,9 +38,13 @@ func subscribeLogcat(remote unsafe.Pointer) {
 				if !ok {
 					return
 				}
-				if msg.LogLevel < log.Level() && !strings.HasPrefix(msg.Payload, "[APP]") {
-					continue
-				}
+				// Emit the full log stream (every level) regardless of the kernel's
+				// configured log-level. The mihomo log bus broadcasts unconditionally;
+				// the level gate used to be applied here which made the in-app preview
+				// unable to show Debug/Info when the core level was higher. Level
+				// filtering is now a client-side concern (real-time filter in the UI),
+				// so the profile's log-level / override no longer constrains what the
+				// user can see in the live log preview.
 				rMsg := &message{
 					Level:   msg.LogLevel.String(),
 					Message: msg.Payload,

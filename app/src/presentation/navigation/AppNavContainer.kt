@@ -59,8 +59,10 @@ import com.github.lmfirefly.flycat.feature.dashboard.presentation.screen.Connect
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.screen.CustomRoutingRoute
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.screen.RulesScreen
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.screen.TrafficStatisticsContent
+import com.github.lmfirefly.flycat.feature.log.presentation.screen.AppLogScreen
 import com.github.lmfirefly.flycat.feature.log.presentation.screen.LogDetailScreen
-import com.github.lmfirefly.flycat.feature.log.presentation.screen.LogScreen
+import com.github.lmfirefly.flycat.feature.log.presentation.screen.LogHubScreen
+import com.github.lmfirefly.flycat.feature.log.presentation.screen.MihomoLogScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.AccessControlScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.AppSettingsScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.EbpfServiceOptionsScreen
@@ -101,7 +103,9 @@ fun RouteContent(route: Route, navigator: Navigator, mainPage: Int = 0) {
         Route.MetaFeature -> MetaFeatureScreen(navigator)
         Route.Connection -> ConnectionScreen(navigator)
         Route.TrafficStatistics -> TrafficStatisticsContent(onBack = { navigator.pop() })
-        Route.Log -> LogScreen(navigator)
+        Route.Log -> LogHubScreen(navigator)
+        Route.MihomoLog -> MihomoLogScreen(navigator)
+        Route.AppLog -> AppLogScreen(navigator)
         Route.Rules -> RulesScreen(navigator)
         Route.About -> AboutScreen(navigator, appIconResId = R.drawable.flycat)
         Route.OpenSourceLicenses -> OpenSourceLicensesScreen(navigator, librariesResId = R.raw.aboutlibraries)
