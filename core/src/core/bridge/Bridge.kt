@@ -231,11 +231,6 @@ interface ConnectionJoinInterface {
 }
 
 @Keep
-interface TrafficUpdateInterface {
-    fun received(jsonPayload: String)
-}
-
-@Keep
 interface TrafficUpdatePackedInterface {
     fun received(uploadTotal: Long, downloadTotal: Long, uploadSpeed: Long, downloadSpeed: Long)
 }

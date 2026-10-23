@@ -89,7 +89,7 @@ internal class TrafficStatsPoller(
     private val connectionCloseCallback = object : ConnectionCloseInterface {
         override fun received(jsonPayload: String) {
             runCatching {
-                val event = eventJson.decodeFromString<ConnectionClosePayload>(jsonPayload)
+                val event = parseConnectionClose(jsonPayload)
                 val cached = liveConnections.remove(event.id)
                 // 加入时的元数据保留在缓存命中路径上；close 不再携带完整元数据（高频率路径）。规则/链来自 close，因为匹配可能延迟完成。
                 // close 自身的瘦身份（包名/进程/uid）合并回元数据：join 时身份可能尚未解析，缺哪项补哪项。
@@ -456,6 +456,33 @@ internal class TrafficStatsPoller(
         val process: String = "",
         val uid: Int? = null,
     )
+
+    /**
+     * 解析连接关闭的负载数据。原生端会发出一种快速的分隔符格式（12 个字段用 \u0001 分隔，链/提供商链用 \u0002 连接），
+     * 以避免在此高频路径上对每个事件进行 JSON 解码；对于较旧的原生构建，仍保留 JSON 作为回退方案。
+     */
+    private fun parseConnectionClose(payload: String): ConnectionClosePayload {
+        if (payload.indexOf('\u0001') >= 0) {
+            val f = payload.split('\u0001', limit = 12)
+            if (f.size == 12) {
+                return ConnectionClosePayload(
+                    id = f[0],
+                    upload = f[1].toLongOrNull() ?: 0L,
+                    download = f[2].toLongOrNull() ?: 0L,
+                    uploadDelta = f[3].toLongOrNull() ?: 0L,
+                    downloadDelta = f[4].toLongOrNull() ?: 0L,
+                    rule = f[5],
+                    rulePayload = f[6],
+                    chains = if (f[7].isEmpty()) emptyList() else f[7].split('\u0002'),
+                    providerChains = if (f[8].isEmpty()) emptyList() else f[8].split('\u0002'),
+                    packageName = f[9],
+                    process = f[10],
+                    uid = f[11].toIntOrNull(),
+                )
+            }
+        }
+        return eventJson.decodeFromString<ConnectionClosePayload>(payload)
+    }
 
     private companion object {
         private const val TAG = "TrafficStatsPoller"

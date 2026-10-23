@@ -5,6 +5,7 @@ package main
 import "C"
 
 import (
+	"strconv"
 	"sync"
 	"time"
 	"unsafe"
@@ -50,7 +51,15 @@ func subscribeLogcat(remote unsafe.Pointer) {
 					Message: msg.Payload,
 					Time:    time.Now().UnixNano() / 1000 / 1000,
 				}
-				if C.logcat_received(remote, marshalJSON(rMsg)) != 0 {
+				// Fast delimiter payload (level \x01 time \x01 message) avoids the per-message
+				// json.Marshal reflection/escaping cost; Kotlin parses it back without a JSON decode.
+				buf := make([]byte, 0, len(rMsg.Level)+len(rMsg.Message)+24)
+				buf = append(buf, rMsg.Level...)
+				buf = append(buf, 0x01)
+				buf = strconv.AppendInt(buf, rMsg.Time, 10)
+				buf = append(buf, 0x01)
+				buf = append(buf, rMsg.Message...)
+				if C.logcat_received(remote, cStringFromBytes(buf)) != 0 {
 					released, matched := clearLogcatSubscriberIfCurrent(remote, stopCh)
 					if matched && released != nil {
 						C.release_object(released)
