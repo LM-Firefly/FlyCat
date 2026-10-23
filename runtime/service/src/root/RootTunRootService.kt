@@ -24,6 +24,7 @@ package com.github.lmfirefly.flycat.runtime.service.root
 import android.content.Intent
 import android.os.IBinder
 import com.github.lmfirefly.flycat.core.Global
+import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupPayload
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimePhase
 import com.github.lmfirefly.flycat.runtime.api.root.RootTunJson
@@ -183,13 +184,10 @@ class RootTunRootService : RootService() {
                     runtime.queryConnectionsOverview(),
                 )
 
-            override fun queryAllProxyGroupsJson(excludeNotSelectable: Boolean): String =
-                binderTimed {
-                    RootTunJson.Default.encodeToString(
-                        ListSerializer(com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup.serializer()),
-                        runtime.queryAllProxyGroups(excludeNotSelectable),
-                    )
-                } ?: "[]"
+            override fun queryAllProxyGroupsJson(excludeNotSelectable: Boolean): String = binderTimed {
+                // 以与原生端一致的分隔符布局重编码（结果经过滤/映射，非字节透传），免去几百 KB 的 kotlinx JSON 重序列化；对端 ProxyGroupPayload.decodeGroups 自带 JSON 回退。
+                ProxyGroupPayload.encode(runtime.queryAllProxyGroups(excludeNotSelectable))
+            } ?: "[]"
 
             override fun queryProxyGroupNamesJson(excludeNotSelectable: Boolean): String =
                 binderTimed {
@@ -199,14 +197,12 @@ class RootTunRootService : RootService() {
                     )
                 } ?: "[]"
 
-            override fun queryProxyGroupJson(name: String, sort: String): String =
-                RootTunJson.Default.encodeToString(
-                    com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup.serializer(),
-                    runtime.queryProxyGroup(
-                        name,
-                        com.github.lmfirefly.flycat.core.model.proxy.ProxySort.valueOf(sort),
-                    ),
-                )
+            override fun queryProxyGroupJson(name: String, sort: String): String = ProxyGroupPayload.encode(
+                runtime.queryProxyGroup(
+                    name,
+                    com.github.lmfirefly.flycat.core.model.proxy.ProxySort.valueOf(sort),
+                ),
+            )
 
             override fun queryProvidersJson(): String =
                 RootTunJson.Default.encodeToString(
@@ -225,7 +221,7 @@ class RootTunRootService : RootService() {
 
             override fun healthCheck(group: String): String? = binderTimed { runtime.healthCheck(group) }
 
-            override fun healthCheckProxy(group: String, proxyName: String): String = binderTimed { runtime.healthCheckProxy(group, proxyName) } ?: "{\"delay\":-1}"
+            override fun healthCheckProxy(group: String, proxyName: String): String = binderTimed { runtime.healthCheckProxy(group, proxyName) } ?: "-1"
 
             override fun updateProvider(type: String, name: String): String? = binderTimed { runtime.updateProvider(type, name) }
 
@@ -245,6 +241,10 @@ class RootTunRootService : RootService() {
                 RootTunLogChunk.serializer(),
                 RootTunLogChunk(nextSeq = sinceSeq, items = emptyList()),
             )
+
+            override fun setLogConsumerActive(active: Boolean) {
+                runtime.setLogConsumerActive(active)
+            }
 
             override fun appendStartupLog(text: String) {
                 startupLogStore.append(text)

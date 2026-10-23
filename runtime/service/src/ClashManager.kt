@@ -24,19 +24,9 @@ package com.github.lmfirefly.flycat.runtime.service
 import android.content.Context
 import android.content.Intent
 import com.github.lmfirefly.flycat.core.Clash
-import com.github.lmfirefly.flycat.core.model.LogMessage
 import com.github.lmfirefly.flycat.runtime.api.constants.Intents
-import com.github.lmfirefly.flycat.runtime.api.remote.ILogObserver
 import com.github.lmfirefly.flycat.runtime.service.android.TunService
-import com.github.lmfirefly.flycat.runtime.service.util.Log
 import com.github.lmfirefly.flycat.runtime.service.util.sendBroadcastSelf
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * Stops all local proxy services (TUN and HTTP) and resets the Clash core.
@@ -51,47 +41,5 @@ fun Context.requestClashStop() {
         Clash.stopHttp()
         Clash.stopTun()
         Clash.reset()
-    }
-}
-
-/**
- * Manages a logcat subscription from the Clash core. Attach an [ILogObserver] to receive
- * log messages; detach to cancel the subscription and release resources.
- * Extracted from the former `ClashManager.setLogObserver()`.
- */
-class ClashLogcatSubscription(private val scope: CoroutineScope) {
-    private var logReceiver: ReceiveChannel<LogMessage>? = null
-    fun attach(observer: ILogObserver?) {
-        synchronized(this) {
-            logReceiver?.apply {
-                cancel()
-            }
-            logReceiver = null
-            Clash.unsubscribeLogcat()
-
-            if (observer != null) {
-                logReceiver =
-                    Clash.subscribeLogcat().also { receiver ->
-                        scope.launch {
-                            try {
-                                while (isActive) {
-                                    observer.newItem(receiver.receive())
-                                }
-                            } catch (_: CancellationException) {} catch (error: Exception) {
-                                Log.w("UI crashed", error)
-                            } finally {
-                                withContext(NonCancellable) {
-                                    receiver.cancel()
-                                    Clash.unsubscribeLogcat()
-                                }
-                            }
-                        }
-                    }
-            }
-        }
-    }
-
-    fun detach() {
-        attach(null)
     }
 }

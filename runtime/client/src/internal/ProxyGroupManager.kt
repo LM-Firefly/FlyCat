@@ -311,6 +311,24 @@ internal class ProxyGroupManager(
         }
         onProxyGroupsPublished(normalizedGroups)
     }
+
+    /**
+     * 测速期间的内存内增量刷新：用 applyMeasured 实测值（已同步进 proxyDelayCache）重算 enrich （嵌套组走选中叶子）并重新发布，不触达 JNI/binder。
+     * 绕过 publishProxyGroups 的 rawHash 守卫 （raw 未变但延迟已变）；组查询由调用方在测速收尾统一执行（对账 now/成员/排序）。
+     */
+    suspend fun reEnrichFromCache() {
+        val current = _proxyGroups.value
+        if (current.isEmpty()) return
+        withContext(Dispatchers.Default) {
+            val normalized = enrichProxyGroupDelays(current, seedFromGroups = false)
+            val hash = hashProxyGroups(normalized)
+            if (hash != lastProxyGroupsHash) {
+                _proxyGroups.value = normalized
+                lastProxyGroupsHash = hash
+            }
+            delayStore.publish(normalized)
+        }
+    }
     fun updateResolvedPrimaryNode(snapshot: RuntimeSnapshot, groups: List<ProxyGroupInfo>) {
         if (snapshot.phase != RuntimePhase.Running || groups.isEmpty()) {
             _resolvedPrimaryNode.value = null
@@ -363,19 +381,22 @@ internal class ProxyGroupManager(
             .let(::toProxyGroupInfos)
         return groups
     }
-    private fun enrichProxyGroupDelays(groups: List<ProxyGroupInfo>): List<ProxyGroupInfo> {
+    private fun enrichProxyGroupDelays(groups: List<ProxyGroupInfo>, seedFromGroups: Boolean = true): List<ProxyGroupInfo> {
         if (groups.isEmpty()) {
             proxyDelayCache.clear()
             return groups
         }
         val now = System.currentTimeMillis()
-        groups.asSequence()
-            .flatMap { group -> group.proxies.asSequence() }
-            .forEach { proxy ->
-                if (proxy.delay != 0) {
-                    proxyDelayCache[proxy.name] = DelayCacheEntry(delay = proxy.delay, updatedAt = now)
+        /** 增量路径（reEnrichFromCache）跳过回种：输入是上次 enrich 的产物，回种会用旧值覆盖 applyMeasured 刚写入的新实测值。 */
+        if (seedFromGroups) {
+            groups.asSequence()
+                .flatMap { group -> group.proxies.asSequence() }
+                .forEach { proxy ->
+                    if (proxy.delay != 0) {
+                        proxyDelayCache[proxy.name] = DelayCacheEntry(delay = proxy.delay, updatedAt = now)
+                    }
                 }
-            }
+        }
         val validDelayMap = proxyDelayCache.entries
             .filter { (_, entry) -> now - entry.updatedAt <= PROXY_DELAY_CACHE_TTL_MS }
             .associate { (name, entry) -> name to entry.delay }
@@ -709,13 +730,15 @@ internal class ProxyGroupManager(
     suspend fun healthCheckProxy(group: String, proxyName: String): Int {
         Timber.d("Health check proxy request: group=%s proxy=%s", group, proxyName)
         val delay = router!!.dispatch(
-            onRoot = { RootTunController.healthCheckProxy(it, group, proxyName).toIntOrNull() ?: 0 },
+            onRoot = { RootTunController.healthCheckProxy(it, group, proxyName).toIntOrNull() ?: -1 },
             onLocal = { ServiceClient.clash().healthCheckProxy(group, proxyName) },
         )
         Timber.d("Health check proxy done: group=%s proxy=%s delay=%s", group, proxyName, delay)
         /** 测得的延迟即时写入 per-node 流，UI 直接更新徽标，无需等待组快照。 */
         delayStore.applyMeasured(proxyName, delay)
-        /** 批量测速期间跳过逐节点即发即忘刷新：数百节点时的刷新风暴会造成数百次全列表发布，而调用方（ProxyHealthCheckUseCase）已有周期性渐进刷新与收尾强制刷新统一对账。 */
+        /** 实测值同步进 enrich 延迟缓存（0 不写，与 ProxyDelayStore 语义一致；负值=超时是真实状态），供测速期间 reEnrichFromCache 增量重算嵌套组/排序。 */
+        if (delay != 0) { proxyDelayCache[proxyName] = DelayCacheEntry(delay = delay, updatedAt = System.currentTimeMillis()) }
+        /** 批量测速期间跳过逐节点即发即忘刷新：数百节点时的刷新风暴会造成数百次全列表发布，而调用方（ProxyHealthCheckUseCase）已有周期性内存增量刷新（reEnrichFromCache）与收尾真查询统一对账。 */
         if (!isDelayTestActive) {
             /** 刷新操作采用“即发即忘”方式，以便调用方能立即返回。 */
             /** 若 refreshProxyGroupsMutex 正被一个卡住的后台同步任务持有，此操作也不会被阻塞。 */

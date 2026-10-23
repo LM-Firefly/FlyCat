@@ -26,6 +26,7 @@ import com.github.lmfirefly.flycat.core.appContextOrSelf
 import com.github.lmfirefly.flycat.core.model.ConnectionOverviewSnapshot
 import com.github.lmfirefly.flycat.core.model.ConnectionSnapshot
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup
+import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupPayload
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySort
 import com.github.lmfirefly.flycat.runtime.api.root.RootTunOperationResult
 import com.github.lmfirefly.flycat.runtime.api.root.RootTunStartRequest
@@ -102,20 +103,18 @@ internal object RootTunServiceBridge {
         context: Context,
         name: String,
         sort: ProxySort = ProxySort.Default,
-    ): ProxyGroup? =
-        remoteCall(context) { service ->
-            service.queryProxyGroupJson(name, sort.name)?.let {
-                rootTunDecode<ProxyGroup>(it)
-            }
+    ): ProxyGroup? = remoteCall(context) { service ->
+        service.queryProxyGroupJson(name, sort.name)?.let {
+            ProxyGroupPayload.decodeGroup(it)
         }
+    }
 
     suspend fun queryAllProxyGroups(
         context: Context,
         excludeNotSelectable: Boolean = false,
-    ): List<ProxyGroup> =
-        remoteCall(context) { service ->
-            rootTunDecode<List<ProxyGroup>>(service.queryAllProxyGroupsJson(excludeNotSelectable))
-        }
+    ): List<ProxyGroup> = remoteCall(context) { service ->
+        ProxyGroupPayload.decodeGroups(service.queryAllProxyGroupsJson(excludeNotSelectable))
+    }
 
     suspend fun queryConnections(context: Context): ConnectionSnapshot =
         remoteCall(context) { service ->

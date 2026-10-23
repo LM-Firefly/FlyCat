@@ -86,7 +86,8 @@ class ProxyHealthCheckUseCase(
 
     /**
      * 逐节点测试指定策略组的延迟，每完成一个节点通过 [onProgress] 上报 (tested, total)。
-     * 测试期间周期性刷新该组以渐进呈现结果；单节点超时/失败计为已完成，返回值仅含基础设施错误。
+     * 测试期间周期性做内存内增量刷新（[ProxyGroupRepository.reEnrichFromCache]，不触达 JNI/binder）
+     * 以渐进呈现结果，收尾一次真实查询对账；单节点超时/失败计为已完成，返回值仅含基础设施错误。
      */
     suspend fun runGroupHealthCheck(groupName: String, proxyNames: List<String>, onProgress: (tested: Int, total: Int) -> Unit): Throwable? {
         proxyGroupRepository.markDelayTestActive(true)
@@ -96,10 +97,9 @@ class ProxyHealthCheckUseCase(
                 val progressRefresh = launch {
                     while (true) {
                         delay(PROGRESS_REFRESH_INTERVAL_MS)
+                        /** 内存内增量：节点徽标已由 applyMeasured 实时呈现，这里只需重算嵌套组/排序的 enrich 快照——不再每 700ms 发一次单组 JNI/binder 查询。 */
                         runCatching {
-                            withTimeoutOrNull(GROUP_REFRESH_TIMEOUT_MS) {
-                                proxyGroupRepository.refreshProxyGroup(groupName)
-                            }
+                            proxyGroupRepository.reEnrichFromCache()
                         }.onFailure { failure -> if (failure is CancellationException) throw failure }
                     }
                 }

@@ -41,7 +41,6 @@ import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeOwner
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimePhase
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeSnapshot
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeTargetMode
-import com.github.lmfirefly.flycat.runtime.api.root.rootTunEncode
 import com.github.lmfirefly.flycat.runtime.api.session.RuntimeSpec
 import com.github.lmfirefly.flycat.runtime.service.ServiceNetworkObserver
 import com.github.lmfirefly.flycat.runtime.service.ServicePowerController
@@ -360,11 +359,13 @@ class SessionRuntime(
             currentSnapshot.phase,
             currentSnapshot.owner,
         )
-        return runCatching {
-                Clash.healthCheckProxy(proxyName).await().also { refreshRuntimeProxyGroup(group) }
-            }
-            .getOrElse {
-                """{"delay":-1,"error":${rootTunEncode(it.message ?: "health check proxy failed")}}"""
+        // 组快照/queryCache 刷新由调用方统一调度：app 侧即发即忘刷新与测速收尾真查询均经 queryProxyGroup 顺带 upsert queryCache，
+        // 批量测速期间的周期刷新是 app 侧内存内增量（reEnrichFromCache，不经此处）——故这里不再逐节点触发单组查询（数百节点 = 数百次冗余查询）。
+        return runCatching { Clash.healthCheckProxy(proxyName).await() }
+            .getOrElse { error ->
+                // 失败信息仅记日志：调用方只消费裸 int 延迟（-1=失败）。
+                Timber.e(error, "SessionRuntime healthCheckProxy failed: group=%s proxy=%s", group, proxyName)
+                "-1"
             }
     }
 
@@ -382,12 +383,10 @@ class SessionRuntime(
             .getOrElse { it.message ?: "update provider failed" }
     }
 
-    fun setLogObserver(observer: ((LogMessage) -> Unit)?) {
-        telemetry.setLogObserver(observer)
-    }
-
     fun queryRecentLogsJson(sinceSeq: Long): RuntimeLogChunk =
         telemetry.queryRecentLogsJson(sinceSeq)
+
+    fun setLogConsumerActive(active: Boolean) = telemetry.setLogConsumerActive(active)
 
     private suspend fun startInternal(spec: RuntimeSpec) {
         val startedAt = System.currentTimeMillis()
@@ -503,7 +502,6 @@ class SessionRuntime(
             )
         }
         stopLogStream()
-        stopConnectionTracking()
         stopObservers()
         runCatching { transport.stop() }
         teardownTransportAndCore()
@@ -751,10 +749,6 @@ class SessionRuntime(
 
     private fun stopLogStream() {
         telemetry.stopLogStream()
-    }
-
-    private fun stopConnectionTracking() {
-        telemetry.stopTelemetry()
     }
 
     private fun publishSnapshot(snapshot: RuntimeSnapshot) {

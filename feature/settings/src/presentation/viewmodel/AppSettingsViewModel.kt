@@ -24,7 +24,6 @@ package com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.lmfirefly.flycat.core.contract.AppLogSettings
 import com.github.lmfirefly.flycat.core.contract.AppSettingsControllerContract
 import com.github.lmfirefly.flycat.core.contract.AppSettingsReader
 import com.github.lmfirefly.flycat.core.contract.FeatureStoreReader
@@ -57,7 +56,6 @@ class AppSettingsViewModel(
     featureStoreReader: FeatureStoreReader,
     private val controller: AppSettingsControllerContract,
     private val updateSettings: UpdateSettings,
-    private val appLogSettings: AppLogSettings,
     private val privilegedAccess: PrivilegedAccessReader,
 ) : ViewModel() {
     private val featureStore = featureStoreReader
@@ -91,7 +89,6 @@ class AppSettingsViewModel(
     val pageScale: Preference<Float> = settings.pageScale
     val predictiveBackEnabled: Preference<Boolean> = settings.predictiveBackEnabled
     val predictiveBackMaxProgress: Preference<Float> = settings.predictiveBackMaxProgress
-    val logLevel: Preference<Int> = settings.logLevel
     val autoCheckAppUpdate: Preference<Boolean> = settings.autoCheckAppUpdate
     val exitUiWhenBackground: Preference<Boolean> = featureStore.exitUiWhenBackground
 
@@ -371,10 +368,6 @@ class AppSettingsViewModel(
 
     fun applyCustomUserAgent(userAgent: String) = controller.applyCustomUserAgent(userAgent)
 
-    fun onLogLevelChange(level: Int) {
-        logLevel.set(level)
-        appLogSettings.minLogLevel = level
-    }
     fun setInitialSetupCompleted(completed: Boolean) = initialSetupCompleted.set(completed)
 
     fun setPrivacyPolicyAccepted(accepted: Boolean) = privacyPolicyAccepted.set(accepted)

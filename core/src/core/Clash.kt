@@ -39,6 +39,7 @@ import com.github.lmfirefly.flycat.core.model.Provider
 import com.github.lmfirefly.flycat.core.model.RuntimeRule
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup
+import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupPayload
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySort
 import com.github.lmfirefly.flycat.core.model.traffic.Traffic
 import com.github.lmfirefly.flycat.core.model.tunnel.TunConfig
@@ -46,6 +47,7 @@ import com.github.lmfirefly.flycat.core.model.tunnel.TunnelState
 import com.github.lmfirefly.flycat.core.util.YamlCodec
 import com.github.lmfirefly.flycat.core.util.network.parseInetSocketAddress
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.serialization.SerializationException
@@ -58,6 +60,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.net.InetSocketAddress
+import java.util.Date
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ClashEngine (merged from ClashEngine.kt)
@@ -322,17 +325,16 @@ object Clash : ClashEngine {
         }.getOrElse { emptyList() }
     }
 
-    override fun queryGroup(name: String, sort: ProxySort): ProxyGroup =
-        Bridge.nativeQueryGroup(name, sort.name)?.let {
-            ClashJson.decodeFromString(ProxyGroup.serializer(), it)
-        } ?: ProxyGroup(name = name, type = Proxy.Type.Unknown, proxies = emptyList(), now = "")
+    override fun queryGroup(name: String, sort: ProxySort): ProxyGroup = Bridge.nativeQueryGroup(name, sort.name)?.let {
+        ProxyGroupPayload.decodeGroup(it)
+    } ?: ProxyGroup(name = name, type = Proxy.Type.Unknown, proxies = emptyList(), now = "")
 
     override fun queryGroupsBatch(names: List<String>, sort: ProxySort): List<ProxyGroup> {
         if (names.isEmpty()) return emptyList()
         val namesJson = ClashJson.encodeToString(names)
         val response = Bridge.nativeQueryGroupsBatch(namesJson, sort.name) ?: return emptyList()
         return runCatching {
-            ClashJson.decodeFromString(ListSerializer(ProxyGroup.serializer()), response)
+            ProxyGroupPayload.decodeGroups(response)
         }.getOrElse { emptyList() }
     }
 
@@ -404,11 +406,11 @@ object Clash : ClashEngine {
     }
 
     override fun subscribeLogcat(): ReceiveChannel<LogMessage> {
-        return Channel<LogMessage>(32).apply {
+        return Channel<LogMessage>(512, BufferOverflow.DROP_OLDEST).apply {
             Bridge.nativeSubscribeLogcat(
                 object : LogcatInterface {
                     override fun received(jsonPayload: String) {
-                        trySend(Json.decodeFromString(LogMessage.serializer(), jsonPayload))
+                        trySend(parseLogMessage(jsonPayload))
                     }
                 }
             )
@@ -417,6 +419,35 @@ object Clash : ClashEngine {
 
     override fun unsubscribeLogcat() {
         Bridge.nativeUnsubscribeLogcat()
+    }
+
+     // 解析 logcat 负载。原生侧会以快速分隔符格式发出 "level\u0001timeMillis\u0001message"（参见 Go 中的 subscribeLogcat），
+     // 以避免逐条消息的 JSON 解码；JSON 保留为较旧原生构建的回退方案。
+    private fun parseLogMessage(payload: String): LogMessage {
+        val sep1 = payload.indexOf('\u0001')
+        if (sep1 > 0) {
+            val sep2 = payload.indexOf('\u0001', sep1 + 1)
+            if (sep2 > sep1) {
+                val time = payload.substring(sep1 + 1, sep2).toLongOrNull()
+                if (time != null) {
+                    return LogMessage(
+                        level = logLevelOf(payload.substring(0, sep1)),
+                        message = payload.substring(sep2 + 1),
+                        time = Date(time),
+                    )
+                }
+            }
+        }
+        return Json.decodeFromString(LogMessage.serializer(), payload)
+    }
+
+    private fun logLevelOf(name: String): LogMessage.Level = when (name) {
+        "debug" -> LogMessage.Level.Debug
+        "info" -> LogMessage.Level.Info
+        "warning" -> LogMessage.Level.Warning
+        "error" -> LogMessage.Level.Error
+        "silent" -> LogMessage.Level.Silent
+        else -> LogMessage.Level.Unknown
     }
 
     override fun setCustomUserAgent(userAgent: String) {

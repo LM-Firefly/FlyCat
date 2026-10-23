@@ -114,7 +114,6 @@ type TrafficPackedReceivedCallback = unsafe extern "C" fn(*mut c_void, i64, i64,
 type SetLogcatReceivedCallbackFn = unsafe extern "C" fn(StringReceivedCallback);
 type SetConnectionCloseReceivedCallbackFn = unsafe extern "C" fn(StringReceivedCallback);
 type SetConnectionJoinReceivedCallbackFn = unsafe extern "C" fn(StringReceivedCallback);
-type SetTrafficUpdateReceivedCallbackFn = unsafe extern "C" fn(StringReceivedCallback);
 type SetTrafficUpdateReceivedPackedCallbackFn = unsafe extern "C" fn(TrafficPackedReceivedCallback);
 type MarkSocketCallback = unsafe extern "C" fn(*mut c_void, c_int);
 type QuerySocketOwnerCallback = unsafe extern "C" fn(*mut c_void, c_int, *const c_char, *const c_char) -> *mut c_char;
@@ -181,7 +180,6 @@ struct MihomoQuerySymbols {
     set_logcat_received_callback: SetLogcatReceivedCallbackFn,
     set_connection_close_received_callback: SetConnectionCloseReceivedCallbackFn,
     set_connection_join_received_callback: SetConnectionJoinReceivedCallbackFn,
-    set_traffic_update_received_callback: SetTrafficUpdateReceivedCallbackFn,
     set_traffic_update_received_packed_callback: SetTrafficUpdateReceivedPackedCallbackFn,
     set_mark_socket_callback: SetMarkSocketCallbackFn,
     set_query_socket_owner_callback: SetQuerySocketOwnerCallbackFn,
@@ -313,7 +311,6 @@ fn resolve_mihomo_query_symbols() -> Result<&'static MihomoQuerySymbols, String>
             let set_logcat_received_callback_name = CString::new("set_logcat_received_callback").map_err(|_| "invalid symbol name".to_string())?;
             let set_connection_close_received_callback_name = CString::new("set_connection_close_received_callback").map_err(|_| "invalid symbol name".to_string())?;
             let set_connection_join_received_callback_name = CString::new("set_connection_join_received_callback").map_err(|_| "invalid symbol name".to_string())?;
-            let set_traffic_update_received_callback_name = CString::new("set_traffic_update_received_callback").map_err(|_| "invalid symbol name".to_string())?;
             let set_traffic_update_received_packed_callback_name = CString::new("set_traffic_update_received_packed_callback").map_err(|_| "invalid symbol name".to_string())?;
             let set_mark_socket_callback_name = CString::new("set_mark_socket_callback").map_err(|_| "invalid symbol name".to_string())?;
             let set_query_socket_owner_callback_name = CString::new("set_query_socket_owner_callback").map_err(|_| "invalid symbol name".to_string())?;
@@ -565,10 +562,6 @@ fn resolve_mihomo_query_symbols() -> Result<&'static MihomoQuerySymbols, String>
             if set_connection_join_received_callback_ptr.is_null() {
                 return Err("resolve set_connection_join_received_callback failed".to_string());
             }
-            let set_traffic_update_received_callback_ptr = unsafe { dlsym(handle, set_traffic_update_received_callback_name.as_ptr()) };
-            if set_traffic_update_received_callback_ptr.is_null() {
-                return Err("resolve set_traffic_update_received_callback failed".to_string());
-            }
             let set_traffic_update_received_packed_callback_ptr = unsafe { dlsym(handle, set_traffic_update_received_packed_callback_name.as_ptr()) };
             if set_traffic_update_received_packed_callback_ptr.is_null() {
                 return Err("resolve set_traffic_update_received_packed_callback failed".to_string());
@@ -645,7 +638,6 @@ fn resolve_mihomo_query_symbols() -> Result<&'static MihomoQuerySymbols, String>
             let set_logcat_received_callback: SetLogcatReceivedCallbackFn = unsafe { mem::transmute(set_logcat_received_callback_ptr) };
             let set_connection_close_received_callback: SetConnectionCloseReceivedCallbackFn = unsafe { mem::transmute(set_connection_close_received_callback_ptr) };
             let set_connection_join_received_callback: SetConnectionJoinReceivedCallbackFn = unsafe { mem::transmute(set_connection_join_received_callback_ptr) };
-            let set_traffic_update_received_callback: SetTrafficUpdateReceivedCallbackFn = unsafe { mem::transmute(set_traffic_update_received_callback_ptr) };
             let set_traffic_update_received_packed_callback: SetTrafficUpdateReceivedPackedCallbackFn = unsafe { mem::transmute(set_traffic_update_received_packed_callback_ptr) };
             let set_mark_socket_callback: SetMarkSocketCallbackFn = unsafe { mem::transmute(set_mark_socket_callback_ptr) };
             let set_query_socket_owner_callback: SetQuerySocketOwnerCallbackFn = unsafe { mem::transmute(set_query_socket_owner_callback_ptr) };
@@ -710,7 +702,6 @@ fn resolve_mihomo_query_symbols() -> Result<&'static MihomoQuerySymbols, String>
                 set_logcat_received_callback,
                 set_connection_close_received_callback,
                 set_connection_join_received_callback,
-                set_traffic_update_received_callback,
                 set_traffic_update_received_packed_callback,
                 set_mark_socket_callback,
                 set_query_socket_owner_callback,
@@ -1730,19 +1721,6 @@ pub extern "C" fn rust_connection_join_received_callback(callback: *mut c_void, 
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn rust_traffic_update_received_callback(callback: *mut c_void, payload: *const c_char) -> c_int {
-    let payload_text = ptr_to_string(payload);
-    if dispatch_via_callback_thread(CallbackDispatchMessage::DroppableStringReceived {
-        callback: callback as usize,
-        payload: payload_text,
-    }) {
-        0
-    } else {
-        rust_string_received_direct(callback, payload)
-    }
-}
-
-#[unsafe(no_mangle)]
 pub extern "C" fn rust_traffic_update_received_packed_callback(
     callback: *mut c_void,
     upload_total: i64,
@@ -1797,7 +1775,6 @@ fn register_rust_bridge_callbacks(symbols: &MihomoQuerySymbols) {
         (symbols.set_logcat_received_callback)(rust_logcat_received_callback);
         (symbols.set_connection_close_received_callback)(rust_connection_close_received_callback);
         (symbols.set_connection_join_received_callback)(rust_connection_join_received_callback);
-        (symbols.set_traffic_update_received_callback)(rust_traffic_update_received_callback);
         (symbols.set_traffic_update_received_packed_callback)(rust_traffic_update_received_packed_callback);
         (symbols.set_mark_socket_callback)(rust_mark_socket_callback);
         (symbols.set_query_socket_owner_callback)(rust_query_socket_owner_callback);

@@ -256,14 +256,11 @@ class ClashGateway(
         dispatchSuspend(
             localCall = {
                 Timber.d("ClashManager healthCheckProxy: group=%s proxy=%s", group, proxyName)
-                val json = withContext(Dispatchers.IO) { Clash.healthCheckProxy(proxyName).await() }
-                val jsonElement = kotlinx.serialization.json.Json.parseToJsonElement(json)
-                jsonElement.jsonObject["delay"]?.jsonPrimitive?.int ?: -1
+                val raw = withContext(Dispatchers.IO) { Clash.healthCheckProxy(proxyName).await() }
+                raw.toIntOrNull() ?: -1
             },
             rootCall = {
-                val payload = RootTunController.healthCheckProxy(appContext, group, proxyName)
-                val json = kotlinx.serialization.json.Json.parseToJsonElement(payload)
-                json.jsonObject["delay"]?.jsonPrimitive?.int ?: -1
+                RootTunController.healthCheckProxy(appContext, group, proxyName).toIntOrNull() ?: -1
             },
             remoteCall = { remote.healthCheckProxy(group, proxyName) },
         )
@@ -298,8 +295,10 @@ class ClashGateway(
             rootLogJob?.cancel()
             if (observer == null) {
                 rootLogSeq = 0L
+                scope.launch { runCatching { RootTunController.setLogConsumerActive(appContext, false) } }
                 return
             }
+            scope.launch { runCatching { RootTunController.setLogConsumerActive(appContext, true) } }
             rootLogJob = scope.launch {
                 PollingTimers.ticks(PollingTimerSpecs.RuntimeRootLogPolling)
                     .throttleByScene(

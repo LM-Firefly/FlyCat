@@ -34,7 +34,6 @@ object AppLogBridge {
 
 object AppLogBuffer : AppLogSettings {
     private const val MAX_SIZE = 1000
-    private val combinedBuffer = ArrayDeque<String>(MAX_SIZE)
     private val appBuffer = ArrayDeque<String>(MAX_SIZE)
     private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
     private var lastTimestampMs: Long = -1L
@@ -77,8 +76,6 @@ object AppLogBuffer : AppLogSettings {
         val logLine = "[$time] [$level] ${tag?.let { "$it: " } ?: ""}$message"
         rwLock.writeLock().lock()
         try {
-            if (combinedBuffer.size >= MAX_SIZE) { combinedBuffer.removeFirst() }
-            combinedBuffer.addLast(logLine)
             if (appBuffer.size >= MAX_SIZE) { appBuffer.removeFirst() }
             appBuffer.addLast(logLine)
         } finally {
@@ -86,15 +83,6 @@ object AppLogBuffer : AppLogSettings {
         }
         if (AppLogBridge.runtimeLogRecordingEnabled) {
             AppLogBridge.runtimeLogWriter?.invoke(logLine)
-        }
-    }
-
-    fun getSnapshot(): List<String> {
-        rwLock.readLock().lock()
-        try {
-            return combinedBuffer.toList()
-        } finally {
-            rwLock.readLock().unlock()
         }
     }
 
@@ -154,7 +142,7 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
                 }
                 ex.printStackTrace(writer)
                 try {
-                    val recentLogs = AppLogBuffer.getSnapshot()
+                    val recentLogs = AppLogBuffer.getAppSnapshot()
                     if (recentLogs.isNotEmpty()) {
                         writer.println("\n--- Recent App Logs ---")
                         recentLogs.forEach { writer.println(it) }
