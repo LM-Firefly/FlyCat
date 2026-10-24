@@ -22,7 +22,7 @@ class ProjectConfig:
     def __init__(self, project_root: Path):
         self.project_root = project_root
         self.properties: dict[str, str] = {}
-        for name in ("kernel.properties", "local.properties", "gradle.properties"):
+        for name in ("kernel.properties", "local.properties", "gradle.properties", "product.properties"):
             self._load_properties(project_root / name)
 
     def _load_properties(self, path: Path) -> None:

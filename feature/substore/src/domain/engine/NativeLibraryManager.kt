@@ -24,7 +24,7 @@ package com.github.lmfirefly.flycat.feature.substore.engine
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
-import com.github.lmfirefly.flycat.feature.substore.BuildConfig
+import com.github.lmfirefly.flycat.feature.substore.BuildInfo
 import org.tukaani.xz.XZInputStream
 import timber.log.Timber
 import java.io.File
@@ -426,7 +426,7 @@ object NativeLibraryManager {
     // --- Download-based javet installation (for non-Extension builds) ---
 
     /** 此 APK 中 Java 层编译时所使用的 Javet 版本。 */
-    val JAVET_VERSION: String = BuildConfig.JAVET_VERSION
+    val JAVET_VERSION: String = BuildInfo.JAVET_VERSION
 
     const val JAVET_LIBRARY_NAME = "libjavet-node-android"
     const val JAVET_LIBRARY_FILE_NAME = "libjavet.so"

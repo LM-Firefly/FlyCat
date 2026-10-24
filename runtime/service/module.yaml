@@ -1,0 +1,30 @@
+product:
+  type: kmp/lib
+  platforms: [android]
+apply:
+  - //android.module-template.yaml
+settings:
+  android:
+    namespace: com.github.lmfirefly.flycat.runtime.service
+dependencies:
+  - //resource-symbols: compile-only
+  - //core
+  - //locale
+  - //runtime/api
+  - $libs.androidx.core.ktx
+  - $libs.kotlinx.coroutines.android
+  - $libs.kotlinx.serialization.json
+  - $libs.mmkv
+  - $libs.androidx.work.runtime
+  - $libs.timber
+  - $libs.koin.core
+  - $libs.koin.android
+  - $libs.ktor.client.core
+  - $libs.ktor.client.okhttp
+  - $libs.libsu.core
+  - $libs.xz
+  - $libs.libsu.service
+  - $libs.shizuku.api
+  - $libs.shizuku.provider
+  - $libs.privkit.core
+  - $libs.hiddenapibypass

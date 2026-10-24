@@ -26,7 +26,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
-import com.github.lmfirefly.flycat.BuildConfig
+import com.github.lmfirefly.flycat.BuildInfo
 import com.github.lmfirefly.flycat.common.util.AppLanguageManager
 import com.github.lmfirefly.flycat.core.FirstRunInitializer
 import com.github.lmfirefly.flycat.core.Global
@@ -107,7 +107,7 @@ class App : Application() {
         super.onCreate()
 
         instance = this
-        if (BuildConfig.DEBUG && Timber.forest().isEmpty()) {
+        if (BuildInfo.DEBUG && Timber.forest().isEmpty()) {
             Timber.plant(Timber.DebugTree())
         }
         AppScreenState.init(this)
@@ -170,10 +170,10 @@ class App : Application() {
         MMKV.initialize(this)
         MMKV.disableProcessModeChecker()
         com.github.lmfirefly.flycat.core.BuildConfigHolder.init(
-            versionName = BuildConfig.VERSION_NAME,
-            applicationId = BuildConfig.APPLICATION_ID,
-            uiBuildId = BuildConfig.UI_BUILD_ID,
-            kernelGitVersion = BuildConfig.KERNEL_GIT_VERSION,
+            versionName = BuildInfo.VERSION_NAME,
+            applicationId = BuildInfo.APPLICATION_ID,
+            uiBuildId = BuildInfo.UI_BUILD_ID,
+            kernelGitVersion = BuildInfo.KERNEL_GIT_VERSION,
         )
         Components.register(
             mainActivityClassName = MainActivity::class.java.name,
@@ -204,7 +204,7 @@ class App : Application() {
         appLogSettings.minLogLevel = appSettingsStorage.logLevel.value
         AppLanguageManager.apply(appSettingsStorage.appLanguage.value)
         val featureStore: FeatureStore = koin.get()
-        featureStore.syncAppVersion(BuildConfig.VERSION_CODE)
+        featureStore.syncAppVersion(BuildInfo.VERSION_CODE)
     }
     /**
      * 阶段三：观察自动检查更新偏好，并相应地启动/停止。

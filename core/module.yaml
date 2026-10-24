@@ -1,0 +1,22 @@
+product:
+  type: kmp/lib
+  platforms: [android]
+apply:
+  - //android.module-template.yaml
+settings:
+  android:
+    namespace: com.github.lmfirefly.flycat.core
+dependencies:
+  - //locale
+  - $libs.androidx.lifecycle.viewmodel
+  - $libs.kotlinx.coroutines.core
+  - $libs.kotlinx.coroutines.android
+  - $libs.kotlinx.serialization.json
+  - $libs.snakeyaml.engine
+  - $libs.androidx.annotation.jvm
+  - $libs.timber
+  - $libs.xz
+  - $libs.ktor.client.core
+  - $libs.ktor.client.okhttp
+  - $libs.ktor.client.content.negotiation
+  - $libs.ktor.serialization.kotlinx.json

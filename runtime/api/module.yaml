@@ -1,0 +1,13 @@
+product:
+  type: kmp/lib
+  platforms: [android]
+apply:
+  - //android.module-template.yaml
+settings:
+  android:
+    namespace: com.github.lmfirefly.flycat.runtime.api
+dependencies:
+  - //core
+  - $libs.kotlinx.coroutines.core
+  - $libs.kotlinx.serialization.json
+  - $libs.mmkv

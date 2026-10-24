@@ -8,6 +8,8 @@
 **/out/
 **/release
 **/target/
+/libs.versions.toml
+/output_apk/
 
 # Build artifacts
 *.aab

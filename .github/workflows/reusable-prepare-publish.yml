@@ -64,7 +64,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.raw_apk_artifact_name }}
-          path: ${{ inputs.module }}/build/outputs/apk/release
+          path: output_apk/release
 
       - name: Read version info
         id: version
@@ -74,7 +74,7 @@ jobs:
           BUILD_BRANCH: ${{ inputs.build_branch }}
         run: |
           set -eu
-          base_version_name="$(grep '^project.version.name=' gradle.properties | cut -d= -f2-)"
+          base_version_name="$(grep '^project.version.name=' product.properties | cut -d= -f2-)"
           branch_segment="$(printf '%s' "${BUILD_BRANCH}" \
             | tr '[:upper:]' '[:lower:]' \
             | sed -e 's/[^a-z0-9]/-/g' -e 's/--*/-/g' -e 's/^-//' -e 's/-$//')"
@@ -144,7 +144,7 @@ jobs:
             fi
             new_name="${{ inputs.artifact_prefix }}-${abi}-${build_id}.apk"
             cp -f "$file" "publish/${new_name}"
-          done < <(find "${{ inputs.module }}/build/outputs/apk/release" -maxdepth 1 -type f -name '*.apk' | sort)
+          done < <(find "output_apk/release" -maxdepth 1 -type f -name '*.apk' | sort)
 
           if [ ! -d publish ] || [ -z "$(ls -A publish)" ]; then
             echo "No APK generated" >&2

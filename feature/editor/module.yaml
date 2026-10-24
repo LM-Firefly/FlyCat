@@ -1,0 +1,24 @@
+product:
+  type: kmp/lib
+  platforms: [android]
+apply:
+  - //compose.module-template.yaml
+settings:
+  android:
+    namespace: com.github.lmfirefly.flycat.feature.editor
+dependencies:
+  - //core
+  - //locale
+  - //ui
+  # Sora Editor
+  - bom: $libs.editor.bom
+  - $libs.rosemoe.editor
+  - $libs.rosemoe.language.textmate
+  - $libs.androidx.activity.compose
+  - $libs.androidx.lifecycle.viewmodel.ktx
+  - $libs.androidx.lifecycle.runtime.compose
+  - $libs.kotlinx.coroutines.android
+  - $libs.timber
+  - $libs.miuix.ui
+  - $libs.miuix.preference
+  - $libs.miuix.icons

@@ -64,8 +64,10 @@ import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.ui.platform.openUrl
 import com.mikepenz.aboutlibraries.entity.Library
-import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
+import com.mikepenz.aboutlibraries.ui.compose.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.util.strippedLicenseContent
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -73,14 +75,22 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun OpenSourceLicensesScreen(navigator: Navigator, librariesResId: Int) {
+fun OpenSourceLicensesScreen(navigator: Navigator) {
     val context = LocalContext.current
     val spacing = AppTheme.spacing
     val scrollBehavior = MiuixScrollBehavior()
 
     BackHandler { navigator.pop() }
 
-    val libraries by produceLibraries(librariesResId)
+    // 依赖许可元数据由打包流水线收集并嵌入 （build-logic/Licenses.kt）；已不再使用 AboutLibraries Gradle 插件。
+    val libraries by produceLibraries {
+        withContext(Dispatchers.IO) {
+            val stream = requireNotNull(Library::class.java.classLoader?.getResourceAsStream("aboutlibraries.json")) {
+                "Missing dependency license metadata"
+            }
+            stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        }
+    }
     val libraryItems = remember(libraries) { libraries?.libraries.orEmpty() }
 
     Scaffold(
