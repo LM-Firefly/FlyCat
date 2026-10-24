@@ -3088,6 +3088,31 @@ public object FlyTxt {
             @androidx.compose.runtime.Composable
             public fun CustomTitle(vararg args: Any?): String =
                 if (args.isEmpty()) FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomTitle, *args)
+            public val CustomMethodTitle: String
+                get() = FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomMethodTitle
+            @androidx.compose.runtime.Composable
+            public fun CustomMethodTitle(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomMethodTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomMethodTitle, *args)
+            public val CustomUrlMethod: String
+                get() = FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomUrlMethod
+            @androidx.compose.runtime.Composable
+            public fun CustomUrlMethod(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomUrlMethod else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomUrlMethod, *args)
+            public val CustomFileMethod: String
+                get() = FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomFileMethod
+            @androidx.compose.runtime.Composable
+            public fun CustomFileMethod(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomFileMethod else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomFileMethod, *args)
+            public val CustomUrlLabel: String
+                get() = FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomUrlLabel
+            @androidx.compose.runtime.Composable
+            public fun CustomUrlLabel(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomUrlLabel else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomUrlLabel, *args)
+            public val CustomChooseFile: String
+                get() = FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomChooseFile
+            @androidx.compose.runtime.Composable
+            public fun CustomChooseFile(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomChooseFile else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.NetworkSettings.Kernel.CustomChooseFile, *args)
             public val BundledAlpha: String
                 get() = FlyLocaleManager.activeStrings.NetworkSettings.Kernel.BundledAlpha
             @androidx.compose.runtime.Composable

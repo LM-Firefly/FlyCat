@@ -22,6 +22,7 @@
 package com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.lmfirefly.flycat.core.contract.NetworkSettingsControllerContract
@@ -547,6 +548,30 @@ class NetworkSettingsViewModel(
                 }
             } catch (e: Exception) {
                 _errors.tryEmit("Failed to select kernel: ${e.message}")
+            }
+        }
+    }
+
+    fun installCustomPlugin(uri: Uri, onDone: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            _kernelBusy.value = true
+            try {
+                val kernel = withContext(Dispatchers.IO) {
+                    val input = getApplication<Application>().contentResolver.openInputStream(uri)
+                        ?: error("Unable to read kernel plugin")
+                    input.use { KernelManager.installPlugin(getApplication(), it) }
+                }
+                withContext(Dispatchers.IO) { KernelManager.activate(getApplication(), kernel.id) }
+                _activeKernelId.value = kernel.id
+                refreshInstalledKernelCommits()
+                refreshEbpfAvailability()
+                _restartRequired.value = true
+                onDone(true)
+            } catch (e: Exception) {
+                _errors.tryEmit("Failed to install plugin: ${e.message}")
+                onDone(false)
+            } finally {
+                _kernelBusy.value = false
             }
         }
     }
