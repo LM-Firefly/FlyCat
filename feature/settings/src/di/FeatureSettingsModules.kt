@@ -28,6 +28,7 @@ import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.Acces
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.AppSettingsViewModel
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.MetaFeatureViewModel
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.NetworkSettingsViewModel
+import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.PrivilegedServiceViewModel
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.RemoteControllerViewModel
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.WifiAutomationViewModel
 import org.koin.android.ext.koin.androidApplication
@@ -43,6 +44,7 @@ val featureSettingsDomainModule = module {
 val featureSettingsViewModelModule = module {
     viewModel { AppSettingsViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { NetworkSettingsViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { PrivilegedServiceViewModel(androidApplication(), get()) }
     viewModel { WifiAutomationViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { RemoteControllerViewModel(androidApplication(), get(), get()) }
     viewModel { AccessControlViewModel(androidApplication(), get(), get(), get(), get(), get()) }

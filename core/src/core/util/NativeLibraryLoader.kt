@@ -37,7 +37,8 @@ import timber.log.Timber
 
 /**
  * 加载两个核心原生库（liboverride.so、libmihomo.so）。
- * 发布版 APK 打包器（dev.yume.packer / PackApkTask）会将每个库压缩为 XZ 格式的 assets/loader/lib/<abi>/<name>.so.xz 载荷。
+ * 发布版构建（BuildSoPayloadTask）会将非引导库原地替换为 XZ 压缩内容（lib/<abi>/<name>.so，文件名不变），
+ * 运行时按 XZ 魔数探测并解载到应用私有存储（installCompressedNativeLibs），通过绝对路径加载。
  * 这些二进制文件必须解压到应用私有存储，并通过绝对路径加载。
  *
  * 为何需要解压：SELinux 会拒绝 APK zip 内部文件的 mmap(PROT_EXEC) 请求（DexKit #24, NDK #979）。
@@ -50,7 +51,6 @@ import timber.log.Timber
  */
 object NativeLibraryLoader {
     private const val ROOT_DIR = "nativelibs"
-    private const val PACKER_METADATA = "loader/payload.bin"
 
     // Dependency order: liboverride first, then libmihomo.
     private val CORE_LIBS = listOf("liboverride.so", "libmihomo.so")
@@ -60,11 +60,6 @@ object NativeLibraryLoader {
 
     @SuppressLint("UnsafeDynamicallyLoadedCode")
     fun loadCoreLibraries(context: Context) {
-        if (hasPackerPayload(context)) {
-            loadFromClassLoader()
-            Timber.i("Loaded core native libraries from the payload class loader")
-            return
-        }
         // 检查KernelManager是否有活动已下载内核
         val downloadedKernel = tryLoadDownloadedKernel(context)
         if (downloadedKernel) {
@@ -115,18 +110,78 @@ object NativeLibraryLoader {
         return true
     }
 
-    private fun hasPackerPayload(context: Context): Boolean =
-        try {
-            context.assets.open(PACKER_METADATA).use { }
-            true
-        } catch (_: FileNotFoundException) {
-            false
-        }
-
     private fun loadFromClassLoader() {
         CORE_LIBS.forEach { name ->
             System.loadLibrary(name.removePrefix("lib").removeSuffix(".so"))
         }
+    }
+
+    /** 解载全部 XZ 原生载荷到私有目录，并注入 classloader 的 native library 搜索路径，使第三方库内部的 System.loadLibrary 按名查找（MMKV/Javet 等）命中解载副本。 */
+    fun installCompressedNativeLibs(context: Context) {
+        runCatching {
+            val libDir = ensureExtractedAll(context)
+            injectNativeLibrarySearchPath(context.classLoader, libDir)
+            Timber.i("Installed compressed native library payloads into %s", libDir)
+        }.onFailure { error -> Timber.w(error, "Unable to install compressed native libraries") }
+    }
+
+    private fun ensureExtractedAll(context: Context): File {
+        val root = File(context.filesDir, ROOT_DIR)
+        val libDir = File(root, installId(context))
+        withExtractionLock(root) {
+            libDir.mkdirs()
+            // 发现：安装解压区的 *.so 中内容为 XZ 魔数者即载荷（同名替换方案，文件名保持 <name>.so）。
+            val blobs = File(context.applicationInfo.nativeLibraryDir).listFiles()
+                ?.filter { it.isFile && it.name.endsWith(".so") && isXzStream(it) }
+                .orEmpty()
+            blobs.forEach { blob ->
+                val target = File(libDir, blob.name)
+                if (target.length() <= 0L) {
+                    blob.inputStream().use { raw ->
+                        XZInputStream(raw.buffered()).use { xz ->
+                            FileOutputStream(target).use { out -> xz.copyTo(out); out.fd.sync() }
+                        }
+                    }
+                }
+            }
+            pruneStaleVersions(root, libDir)
+        }
+        return libDir
+    }
+
+    private fun isXzStream(file: File): Boolean = runCatching {
+        file.inputStream().use { input ->
+            val magic = ByteArray(6)
+            val read = input.read(magic)
+            read == 6 && magic.contentEquals(byteArrayOf(0xFD.toByte(), 0x37, 0x7A, 0x58, 0x5A, 0x00))
+        }
+    }.getOrDefault(false)
+
+    /** 反射把解载目录插到 nativeLibraryDirectories 首位并重建 pathElements（HiddenApiBypass 已豁免）。 */
+    private fun injectNativeLibrarySearchPath(classLoader: ClassLoader, dir: File) {
+        val baseClass = Class.forName("dalvik.system.BaseDexClassLoader")
+        val pathListField = baseClass.getDeclaredField("pathList").apply { isAccessible = true }
+        val pathList = pathListField.get(classLoader)
+        val dirsField = pathList.javaClass.getDeclaredField("nativeLibraryDirectories").apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        val current = dirsField.get(pathList) as List<File>
+        // 新建可变副本回写：部分版本返回不可变列表，原地 add 会抛异常。
+        val dirs = ArrayList(current.filterNot { it.path == dir.path })
+        dirs.add(0, dir)
+        dirsField.set(pathList, dirs)
+        // makePathElements 签名随版本变化：旧版 (List<File>)，Android 8+ 为 (List<File>, List<IOException>)。
+        val make = pathList.javaClass.declaredMethods.firstOrNull { method ->
+            method.name == "makePathElements" && method.parameterTypes.all { List::class.java.isAssignableFrom(it) }
+        }?.apply { isAccessible = true }
+            ?: error("DexPathList.makePathElements not found")
+        val elements = if (make.parameterTypes.size == 1) {
+            make.invoke(null, dirs)
+        } else {
+            make.invoke(null, dirs, ArrayList<IOException>())
+        }
+        val elementsField = pathList.javaClass.getDeclaredField("nativeLibraryPathElements").apply { isAccessible = true }
+        elementsField.set(pathList, elements)
+        Timber.i("FlyCatNativeLib", "pathList injected: $dirs")
     }
 
     private fun hasCompressedBundle(context: Context): Boolean {

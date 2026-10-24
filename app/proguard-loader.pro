@@ -10,7 +10,13 @@
 -keep class rikka.shizuku.** { *; }
 -keep class rikka.sui.** { *; }
 -keep class moe.shizuku.** { *; }
--keep class com.github.lmfirefly.flycat.runtime.service.shizuku.** { *; }
+-keep class com.github.lmfirefly.flycat.runtime.service.privilege.** { *; }
 -dontwarn rikka.shizuku.**
 -dontwarn rikka.sui.**
 -dontwarn moe.shizuku.**
+
+# priv-kit: the Privileged Server / UserService mains are launched by class name from the native
+# starter, and the binder handshake matches protocol descriptors by string. Renaming breaks the
+# cross-process interface checks (same constraint as the old -adaptclassstrings note).
+-keep class priv.kit.** { *; }
+-dontwarn priv.kit.**

@@ -510,58 +510,6 @@ class RustBuilder(private val config: ProjectConfig) {
     }
 }
 
-class LoaderRustBuilder(private val config: ProjectConfig) {
-    private val sourceDir = File("pack/native")
-    private val outputDir = File("build/native/loader")
-    private val appJniRoot = File("jniLibs")
-    private val outputLibraryName = "libloader.so"
-    fun buildAll() {
-        require(File(sourceDir, "Cargo.toml").isFile) {
-            "[Loader] Source directory not ready: missing ${File(sourceDir, "Cargo.toml").absolutePath}"
-        }
-        val abis = config.getCsv("abi.app.list", "armeabi-v7a,arm64-v8a,x86,x86_64")
-        println("[Loader] Building native payload extractor (Rust/xz2) for ABIs: ${abis.joinToString()}")
-        abis.forEach(::buildForAbi)
-    }
-    private fun buildForAbi(abi: String) {
-        println("[building] Building for $abi (Loader Rust/xz2)...")
-        val command = listOf(
-            "cargo", "ndk",
-            "-t", abi,
-            "-o", outputDir.absolutePath,
-            "build", "--release", "--lib",
-        )
-        val result = executeCommand(
-            command = command,
-            workingDir = sourceDir,
-            environment = mapOf(
-                "RUSTUP_TOOLCHAIN" to "nightly",
-                "RUSTFLAGS" to listOf(
-                    "-Cpanic=unwind",
-                    "-C", "link-arg=-Wl,--gc-sections",
-                    "-C", "link-arg=-Wl,--icf=all",
-                    "-C", "link-arg=-Wl,-soname,libloader.so",
-                ).joinToString(" "),
-            ),
-            stdoutPrefix = "[building][$abi]",
-            stderrPrefix = "[building][$abi]",
-            stderrIsError = false,
-        )
-        if (!result.success) {
-            val reason = result.error.ifBlank { result.output }.trim()
-            error("[building] Failed to build $abi (Loader Rust): $reason")
-        }
-        val sourceLib = File(outputDir, "$abi/$outputLibraryName")
-        require(sourceLib.isFile) {
-            "[building] Output library not found: ${sourceLib.absolutePath}"
-        }
-        val destination = File(appJniRoot, "$abi/$outputLibraryName")
-        destination.parentFile.mkdirs()
-        sourceLib.copyTo(destination, overwrite = true)
-        println("[Loader] Copied to ${destination.absolutePath}")
-    }
-}
-
 class ResourceDownloader(private val config: ProjectConfig) {
     private val outputDir = File("build/generated/assets/geo")
     fun downloadGeoFiles() {
@@ -625,7 +573,6 @@ fun printUsage() {
         Options:
           --go       Build Go native libraries
           --rust     Build Rust config compiler
-          --loader   Build the Rust/xz2 native payload extractor
           --geo      Download Geo databases and BundleMRS.7z into generated assets
           --clean    Clean build outputs
           --all      Build everything (default)
@@ -644,7 +591,7 @@ fun cleanBuildOutputs() {
     abis.forEach { abi ->
         File("jniLibs/$abi/libmihomo.so").delete()
         File("jniLibs/$abi/liboverride.so").delete()
-        File("jniLibs/$abi/libloader.so").delete()
+        File("jniLibs/$abi/libloader.so").delete() // legacy :pack loader artifact purge
         File("jniLibs/$abi/core-version.properties").delete()
     }
     File("build/generated/core-version.properties").delete()
@@ -679,9 +626,8 @@ fun main(args: Array<String>) {
     val config = ProjectConfig()
     val buildGo = args.isEmpty() || args.contains("--all") || args.contains("--go")
     val buildRust = args.isEmpty() || args.contains("--all") || args.contains("--rust")
-    val buildLoader = args.isEmpty() || args.contains("--all") || args.contains("--loader")
     val downloadGeo = args.isEmpty() || args.contains("--all") || args.contains("--geo")
-    val needsNdk = buildGo || buildLoader
+    val needsNdk = buildGo
     val ndkTools by lazy { NdkTools(config) }
     if (needsNdk) {
         println("NDK: ${ndkTools.ndkDir.absolutePath}")
@@ -694,9 +640,6 @@ fun main(args: Array<String>) {
     }
     if (buildRust) {
         RustBuilder(config).buildAll()
-    }
-    if (buildLoader) {
-        LoaderRustBuilder(config).buildAll()
     }
     if (downloadGeo) {
         ResourceDownloader(config).downloadGeoFiles()

@@ -19,37 +19,35 @@
  *
  */
 
-package com.github.lmfirefly.flycat.runtime.service.shizuku
+package com.github.lmfirefly.flycat.runtime.service.privilege
 
-import android.os.IBinder
 import android.util.Log
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-/** Shizuku UserService 用于在超级岛更新期间进行短暂的 XMSF 防火墙绕过。 */
+/** Shizuku UserService：以 shell 身份执行设备端命令，用于外部拉起 priv-kit 服务端。 */
 class PrivilegedServiceImpl : IPrivilegedService.Stub() {
     companion object {
         private const val TAG = "FlyCatPrivilegedService"
-        private const val TIMEOUT_SECONDS = 3L
+        private const val EXEC_TIMEOUT_SECONDS = 8L
     }
-    override fun setPackageNetworkingEnabled(uid: Int, enabled: Boolean): Boolean {
-        val connectivity = runCatching { Class.forName("android.os.ServiceManager").getMethod("getService", String::class.java).invoke(null, "connectivity") as? IBinder }.getOrNull()
-        if (connectivity == null) {
-            Log.e(TAG, "Connectivity service is not available")
-            return false
-        }
-        // "该更新在自己的线程上运行，因此挂起的事务不会永远阻塞调用者的 binder 调用。"
+    override fun exec(commandLine: String): Boolean {
+        if (commandLine.isBlank()) return false
+        // 线程 + 超时防护，避免挂起的命令阻塞调用方的 binder 事务。
         val latch = CountDownLatch(1)
         var result = false
         Thread {
             try {
-                result = OemDenyFirewall.setPackageDenied(connectivity, uid, denied = !enabled)
+                val process = ProcessBuilder("sh", "-c", commandLine).start()
+                result = process.waitFor(EXEC_TIMEOUT_SECONDS, TimeUnit.SECONDS) && process.exitValue() == 0
+            } catch (error: Throwable) {
+                Log.e(TAG, "Command execution failed", error)
             } finally {
                 latch.countDown()
             }
         }.start()
-        if (!latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-            Log.w(TAG, "Firewall update timed out")
+        if (!latch.await(EXEC_TIMEOUT_SECONDS + 2, TimeUnit.SECONDS)) {
+            Log.w(TAG, "Command execution timed out")
             return false
         }
         return result

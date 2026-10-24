@@ -136,5 +136,9 @@
             </intent-filter>
         </provider>
 
+        <receiver
+                android:name="com.github.lmfirefly.flycat.runtime.service.receiver.PairingCodeReceiver"
+                android:exported="false"/>
+
     </application>
 </manifest>

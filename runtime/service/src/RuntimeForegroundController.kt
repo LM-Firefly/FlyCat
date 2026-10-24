@@ -20,11 +20,11 @@ import com.github.lmfirefly.flycat.runtime.api.session.RuntimeSpec
 import com.github.lmfirefly.flycat.runtime.service.config.CoreRuntimeConfig
 import com.github.lmfirefly.flycat.runtime.service.config.ServiceStore
 import com.github.lmfirefly.flycat.runtime.service.notification.ServiceNotificationManager
+import com.github.lmfirefly.flycat.runtime.service.privilege.ShizukuManager
 import com.github.lmfirefly.flycat.runtime.service.session.RuntimeHost
 import com.github.lmfirefly.flycat.runtime.service.session.SessionRuntime
 import com.github.lmfirefly.flycat.runtime.service.session.telemetry.RuntimeStartupLogStore
 import com.github.lmfirefly.flycat.runtime.service.session.transport.RuntimeTransport
-import com.github.lmfirefly.flycat.runtime.service.shizuku.ShizukuManager
 import com.github.lmfirefly.flycat.runtime.service.util.Log
 import com.github.lmfirefly.flycat.runtime.service.util.sendClashStarted
 import com.github.lmfirefly.flycat.runtime.service.util.sendClashStopped

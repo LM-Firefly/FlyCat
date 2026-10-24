@@ -109,7 +109,7 @@ FlyCat does not use Git submodules. A clean checkout needs the mihomo source and
    kotlin scripts/native-build.main.kts --all
    ```
 
-   Run the native script with `--help` to build Go, Rust, C++, or Geo assets separately.
+   Run the native script with `--help` to build Go, Rust, or Geo assets separately.
 
 6. Optionally sign release builds. Place the keystore at `release.keystore` in the project root, then create `signing.properties`:
 

@@ -54,12 +54,9 @@
     public static void checkNotNullParameter(...);
 }
 
-# Keep Intrinsics class itself — needed by LoaderApplication which runs before the payload classloader is set up (R8 would otherwise remove it after -assumenosideeffects strips all call sites).
+# Keep Intrinsics class itself — R8 would otherwise remove it after
+# -assumenosideeffects strips most of its call sites.
 -keep class kotlin.jvm.internal.Intrinsics { *; }
-
-# Loader classes run before the main classloader is set up.
-# Keep all loader classes and their Kotlin runtime dependencies.
--keep class dev.flycat.loader.** { *; }
 
 # ========================================
 # Shizuku UserService
@@ -74,6 +71,15 @@
 -dontwarn rikka.shizuku.**
 -dontwarn rikka.sui.**
 -dontwarn moe.shizuku.**
+
+# ========================================
+# priv-kit privileged runtime
+# ========================================
+# The Privileged Server / UserService mains are launched by class name from the native starter,
+# and the binder handshake matches protocol descriptors by string. Renaming breaks the
+# cross-process interface checks (same constraint as the old -adaptclassstrings note).
+-keep class priv.kit.** { *; }
+-dontwarn priv.kit.**
 
 # Keep Timber log calls so they are visible in logcat for release builds
 -keep class timber.log.Timber { *; }

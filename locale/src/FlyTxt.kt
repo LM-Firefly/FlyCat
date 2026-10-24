@@ -676,6 +676,256 @@ public object FlyTxt {
             @androidx.compose.runtime.Composable
             public fun ShizukuStatusGranted(vararg args: Any?): String =
                 if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.ShizukuStatusGranted else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.ShizukuStatusGranted, *args)
+            public val PrivilegeTitle: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTitle
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeTitle(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTitle, *args)
+            public val PrivilegeStatusConnected: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStatusConnected
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeStatusConnected(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStatusConnected else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStatusConnected, *args)
+            public val PrivilegeStatusDisconnected: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStatusDisconnected
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeStatusDisconnected(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStatusDisconnected else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStatusDisconnected, *args)
+            public val PrivilegeReady: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeReady
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeReady(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeReady else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeReady, *args)
+            public val PrivilegeStartFailed: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStartFailed
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeStartFailed(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStartFailed else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStartFailed, *args)
+            public val PrivilegePairFailed: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairFailed
+            @androidx.compose.runtime.Composable
+            public fun PrivilegePairFailed(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairFailed else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairFailed, *args)
+            public val PrivilegePairInstructions: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairInstructions
+            @androidx.compose.runtime.Composable
+            public fun PrivilegePairInstructions(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairInstructions else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairInstructions, *args)
+            public val PrivilegePairCodeHint: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairCodeHint
+            @androidx.compose.runtime.Composable
+            public fun PrivilegePairCodeHint(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairCodeHint else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairCodeHint, *args)
+            public val PrivilegeSourceRootText: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeSourceRootText
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeSourceRootText(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeSourceRootText else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeSourceRootText, *args)
+            public val PrivilegeSourceShellText: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeSourceShellText
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeSourceShellText(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeSourceShellText else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeSourceShellText, *args)
+            public val PrivilegeStop: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStop
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeStop(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStop else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStop, *args)
+            public val PrivilegeStartButton: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStartButton
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeStartButton(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStartButton else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStartButton, *args)
+            public val PrivilegePairButton: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairButton
+            @androidx.compose.runtime.Composable
+            public fun PrivilegePairButton(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairButton else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairButton, *args)
+            public val PrivilegeTabManual: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTabManual
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeTabManual(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTabManual else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTabManual, *args)
+            public val PrivilegeTabExternal: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTabExternal
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeTabExternal(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTabExternal else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTabExternal, *args)
+            public val PrivilegeRootSummary: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeRootSummary
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeRootSummary(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeRootSummary else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeRootSummary, *args)
+            public val PrivilegeManualSummary: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeManualSummary
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeManualSummary(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeManualSummary else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeManualSummary, *args)
+            public val PrivilegeManualCopy: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeManualCopy
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeManualCopy(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeManualCopy else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeManualCopy, *args)
+            public val PrivilegeManualCopied: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeManualCopied
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeManualCopied(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeManualCopied else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeManualCopied, *args)
+            public val PrivilegeExternalSummary: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeExternalSummary
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeExternalSummary(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeExternalSummary else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeExternalSummary, *args)
+            public val PrivilegeExternalStartButton: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeExternalStartButton
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeExternalStartButton(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeExternalStartButton else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeExternalStartButton, *args)
+            public val PrivilegeWirelessTitle: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeWirelessTitle
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeWirelessTitle(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeWirelessTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeWirelessTitle, *args)
+            public val PrivilegeWirelessOn: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeWirelessOn
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeWirelessOn(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeWirelessOn else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeWirelessOn, *args)
+            public val PrivilegeWirelessOff: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeWirelessOff
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeWirelessOff(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeWirelessOff else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeWirelessOff, *args)
+            public val PrivilegeKeepAliveTitle: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeKeepAliveTitle
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeKeepAliveTitle(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeKeepAliveTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeKeepAliveTitle, *args)
+            public val PrivilegeKeepAliveSummary: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeKeepAliveSummary
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeKeepAliveSummary(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeKeepAliveSummary else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeKeepAliveSummary, *args)
+            public val PrivilegeKeepAliveButton: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeKeepAliveButton
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeKeepAliveButton(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeKeepAliveButton else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeKeepAliveButton, *args)
+            public val PrivilegeFingerprintTitle: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeFingerprintTitle
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeFingerprintTitle(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeFingerprintTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeFingerprintTitle, *args)
+            public val PrivilegeTutorial: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTutorial
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeTutorial(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTutorial else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTutorial, *args)
+            public val PrivilegeTcpTitle: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpTitle
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeTcpTitle(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpTitle, *args)
+            public val PrivilegeTcpNotConfigured: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpNotConfigured
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeTcpNotConfigured(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpNotConfigured else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpNotConfigured, *args)
+            public val PrivilegeTcpPortText: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpPortText
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeTcpPortText(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpPortText else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpPortText, *args)
+            public val PrivilegeTcpControl: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpControl
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeTcpControl(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpControl else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpControl, *args)
+            public val PrivilegeTcpChanged: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpChanged
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeTcpChanged(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpChanged else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeTcpChanged, *args)
+            public val PrivilegeStartNotPaired: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStartNotPaired
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeStartNotPaired(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStartNotPaired else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeStartNotPaired, *args)
+            public val PrivilegePairDialogTitle: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairDialogTitle
+            @androidx.compose.runtime.Composable
+            public fun PrivilegePairDialogTitle(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairDialogTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairDialogTitle, *args)
+            public val PrivilegePairSearching: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairSearching
+            @androidx.compose.runtime.Composable
+            public fun PrivilegePairSearching(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairSearching else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairSearching, *args)
+            public val PrivilegePairPortHint: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairPortHint
+            @androidx.compose.runtime.Composable
+            public fun PrivilegePairPortHint(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairPortHint else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairPortHint, *args)
+            public val PrivilegePairPortFound: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairPortFound
+            @androidx.compose.runtime.Composable
+            public fun PrivilegePairPortFound(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairPortFound else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairPortFound, *args)
+            public val PrivilegePairDiscoverFailed: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairDiscoverFailed
+            @androidx.compose.runtime.Composable
+            public fun PrivilegePairDiscoverFailed(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairDiscoverFailed else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairDiscoverFailed, *args)
+            public val PrivilegePairFoundPrompt: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairFoundPrompt
+            @androidx.compose.runtime.Composable
+            public fun PrivilegePairFoundPrompt(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairFoundPrompt else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairFoundPrompt, *args)
+            public val PrivilegePairInputAction: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairInputAction
+            @androidx.compose.runtime.Composable
+            public fun PrivilegePairInputAction(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairInputAction else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairInputAction, *args)
+            public val PrivilegePairDialogInstructions: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairDialogInstructions
+            @androidx.compose.runtime.Composable
+            public fun PrivilegePairDialogInstructions(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairDialogInstructions else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairDialogInstructions, *args)
+            public val PrivilegePairTutorial: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairTutorial
+            @androidx.compose.runtime.Composable
+            public fun PrivilegePairTutorial(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairTutorial else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegePairTutorial, *args)
+            public val PrivilegeLogTitle: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogTitle
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeLogTitle(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogTitle, *args)
+            public val PrivilegeLogCopy: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogCopy
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeLogCopy(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogCopy else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogCopy, *args)
+            public val PrivilegeLogClose: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogClose
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeLogClose(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogClose else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogClose, *args)
+            public val PrivilegeLogStartSource: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogStartSource
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeLogStartSource(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogStartSource else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogStartSource, *args)
+            public val PrivilegeLogStarting: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogStarting
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeLogStarting(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogStarting else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogStarting, *args)
+            public val PrivilegeLogPairing: String
+                get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogPairing
+            @androidx.compose.runtime.Composable
+            public fun PrivilegeLogPairing(vararg args: Any?): String =
+                if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogPairing else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.PrivilegeLogPairing, *args)
             public val BatteryOptimizationTitle: String
                 get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.BatteryOptimizationTitle
             @androidx.compose.runtime.Composable
