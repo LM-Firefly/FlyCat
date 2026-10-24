@@ -66,10 +66,3 @@ class RustBuilder(_RustCrateBuilder):
 
     def __init__(self, config: ProjectConfig):
         super().__init__(config, name="Rust", source_relative="lib/native/rust", output_relative="build/native/rust", soname="liboverride.so")
-
-
-class LoaderRustBuilder(_RustCrateBuilder):
-    """Builds the Rust native payload extractor (libloader.so)."""
-
-    def __init__(self, config: ProjectConfig):
-        super().__init__(config, name="Loader", source_relative="pack/native", output_relative="build/native/loader", soname="libloader.so")

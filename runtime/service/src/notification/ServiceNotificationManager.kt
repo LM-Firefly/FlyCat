@@ -37,8 +37,8 @@ import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.runtime.api.constants.Components
 import com.github.lmfirefly.flycat.runtime.service.R
 import com.github.lmfirefly.flycat.runtime.service.config.ServiceStore
+import com.github.lmfirefly.flycat.runtime.service.privilege.PrivilegedBypass
 import com.github.lmfirefly.flycat.runtime.service.records.ImportedDao
-import com.github.lmfirefly.flycat.runtime.service.shizuku.ShizukuManager
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -175,14 +175,14 @@ class ServiceNotificationManager(
 
     private suspend fun acquireBypass(): Boolean {
         if (bypassAcquired) return true
-        if (!ShizukuManager.acquireXmsfBypass(service)) return false
+        if (!PrivilegedBypass.acquireXmsfBypass(service)) return false
         bypassAcquired = true
         return true
     }
 
     private suspend fun releaseBypass(): Boolean {
         if (!bypassAcquired) return true
-        if (!ShizukuManager.releaseXmsfBypass(service)) return false
+        if (!PrivilegedBypass.releaseXmsfBypass(service)) return false
         bypassAcquired = false
         return true
     }

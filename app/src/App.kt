@@ -23,6 +23,8 @@ package com.github.lmfirefly.flycat
 
 import android.app.Activity
 import android.app.Application
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import com.github.lmfirefly.flycat.BuildConfig
 import com.github.lmfirefly.flycat.common.util.AppLanguageManager
@@ -38,6 +40,7 @@ import com.github.lmfirefly.flycat.core.contract.RuntimeLogWriter
 import com.github.lmfirefly.flycat.core.contract.ServiceBootstrapHolder
 import com.github.lmfirefly.flycat.core.model.LogMessage
 import com.github.lmfirefly.flycat.core.util.AppForegroundState
+import com.github.lmfirefly.flycat.core.util.NativeLibraryLoader
 import com.github.lmfirefly.flycat.core.util.coroutine.AutoStartSessionGate
 import com.github.lmfirefly.flycat.core.util.coroutine.StartupTaskCoordinator
 import com.github.lmfirefly.flycat.core.util.coroutine.safeRun
@@ -80,6 +83,7 @@ import org.koin.core.Koin
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
+import org.lsposed.hiddenapibypass.HiddenApiBypass
 import org.tukaani.xz.XZInputStream
 import timber.log.Timber
 
@@ -90,6 +94,18 @@ class App : Application() {
         lateinit var instance: App
             private set
         private const val GEO_EXTRACT_MAX_FAILURES = 3
+    }
+
+    override fun attachBaseContext(base: Context?) {
+        super.attachBaseContext(base)
+        /** priv-kit 接入要求：全局豁免 hidden API。
+         * 配对协议反射平台 conscrypt 的隐藏方法 (Conscrypt.exportKeyingMaterial)，被 hidden API enforcement 屏蔽时表现为 NoSuchMethodError。
+         * release 的 pack 加载器也会豁免，此处幂等兼容 debug 构建。 */
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            runCatching { HiddenApiBypass.addHiddenApiExemptions("L") }
+        }
+        // 只压 so 方案：解载 XZ 原生载荷并注入 classloader 搜索路径（必须在 HiddenApiBypass 之后）。
+        NativeLibraryLoader.installCompressedNativeLibs(this)
     }
 
     override fun onCreate() {

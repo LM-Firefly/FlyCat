@@ -306,7 +306,7 @@ class AppSettingsViewModel(
 
     fun onSuperIslandEnabledChange(enabled: Boolean) = superIslandEnabled.set(enabled)
 
-    /** Shizuku / 超级岛的实时授权状态，用于服务设置分组。 */
+    /** Shizuku 授权器的实时授权状态，用于服务设置分组。 */
     data class ShizukuAccessState(
         val islandSupported: Boolean = false,
         val running: Boolean = false,
@@ -320,11 +320,35 @@ class AppSettingsViewModel(
             }
     }
 
+    /** priv-kit 特权服务的实时连接状态。 */
+    data class PrivilegeAccessState(
+        val islandSupported: Boolean = false,
+        val running: Boolean = false,
+    ) {
+        val statusText: String
+            get() = if (running) {
+                FlyTxt.AppSettings.ServiceSection.PrivilegeStatusConnected
+            } else {
+                FlyTxt.AppSettings.ServiceSection.PrivilegeStatusDisconnected
+            }
+    }
+
     private val _shizukuAccess = MutableStateFlow(ShizukuAccessState(islandSupported = privilegedAccess.isSuperIslandSupported))
     val shizukuAccess: StateFlow<ShizukuAccessState> = _shizukuAccess.asStateFlow()
 
+    private val _privilegeAccess = MutableStateFlow(PrivilegeAccessState(islandSupported = privilegedAccess.isSuperIslandSupported))
+    val privilegeAccess: StateFlow<PrivilegeAccessState> = _privilegeAccess.asStateFlow()
+
     /** 每次页面出现与 ON_RESUME 时重新读取 Shizuku 实时状态。 */
     fun refreshShizukuAccess() { _shizukuAccess.value = readShizukuAccess() }
+
+    /** 每次页面出现与 ON_RESUME 时重新读取特权服务实时状态。 */
+    fun refreshPrivilegeAccess() { _privilegeAccess.value = readPrivilegeAccess() }
+
+    private fun readPrivilegeAccess(): PrivilegeAccessState = PrivilegeAccessState(
+        islandSupported = _privilegeAccess.value.islandSupported,
+        running = privilegedAccess.isPrivilegeRunning(),
+    )
 
     private fun readShizukuAccess(): ShizukuAccessState {
         val running = privilegedAccess.isShizukuRunning()
@@ -333,34 +357,6 @@ class AppSettingsViewModel(
             running = running,
             granted = running && privilegedAccess.hasShizukuPermission(),
         )
-    }
-
-    /** 依据实时状态打开 Shizuku、提示就绪或申请权限。 */
-    fun onShizukuAccessClick() {
-        val access = readShizukuAccess().also { _shizukuAccess.value = it }
-        when {
-            !access.running -> {
-                if (!privilegedAccess.openShizuku(application)) {
-                    application.toast(FlyTxt.AppSettings.ServiceSection.ShizukuNotRunning)
-                }
-            }
-            access.granted -> {
-                application.toast(FlyTxt.AppSettings.ServiceSection.ShizukuReady)
-            }
-            else ->
-                privilegedAccess.requestShizukuPermission { allowed ->
-                    viewModelScope.launch {
-                        refreshShizukuAccess()
-                        application.toast(
-                            if (allowed) {
-                                FlyTxt.AppSettings.ServiceSection.ShizukuReady
-                            } else {
-                                FlyTxt.AppSettings.ServiceSection.ShizukuPermissionRequired
-                            }
-                        )
-                    }
-                }
-        }
     }
 
     fun onAutoCheckAppUpdateChange(enabled: Boolean) = autoCheckAppUpdate.set(enabled)

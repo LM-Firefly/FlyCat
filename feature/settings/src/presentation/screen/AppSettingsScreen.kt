@@ -109,7 +109,7 @@ fun AppSettingsScreen(navigator: Navigator) {
             item { AppInterfaceSettingsSection(viewModel = viewModel) }
             item { AppNavigationSettingsSection(viewModel) }
             item { AppPrivacySettingsSection(viewModel) }
-            item { AppServiceSettingsSection(viewModel) }
+            item { AppServiceSettingsSection(viewModel, navigator) }
             item { AppNetworkSettingsSection(viewModel) }
         }
     }
@@ -389,12 +389,13 @@ private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
 }
 
 @Composable
-private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
+private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel, navigator: Navigator) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val showTrafficNotification by viewModel.showTrafficNotification.state.collectAsStateWithLifecycle()
     val superIslandEnabled by viewModel.superIslandEnabled.state.collectAsStateWithLifecycle()
     val shizukuAccess by viewModel.shizukuAccess.collectAsStateWithLifecycle()
+    val privilegeAccess by viewModel.privilegeAccess.collectAsStateWithLifecycle()
     val exitUiWhenBackground by viewModel.exitUiWhenBackground.state.collectAsStateWithLifecycle()
     val logLevel by viewModel.logLevel.state.collectAsStateWithLifecycle()
     var batteryOptimizationIgnored by remember {
@@ -426,6 +427,7 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
             if (event == Lifecycle.Event.ON_RESUME) {
                 batteryOptimizationIgnored = isBatteryOptimizationIgnored(context)
                 viewModel.refreshShizukuAccess()
+                viewModel.refreshPrivilegeAccess()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -454,21 +456,22 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel) {
             checked = exitUiWhenBackground,
             onCheckedChange = viewModel::onExitUiWhenBackgroundChange,
         )
+        PreferenceArrowItem(
+            title = FlyTxt.AppSettings.ServiceSection.PrivilegeTitle,
+            endActions = {
+                Text(
+                    text = privilegeAccess.statusText,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                )
+            },
+            onClick = { navigator.push(Route.PrivilegedService) },
+        )
+        // 超级岛是 HyperOS 灵动岛特性，仅在支持的设备上提供开关。
         if (shizukuAccess.islandSupported) {
             PreferenceSwitchItem(
                 title = FlyTxt.AppSettings.ServiceSection.SuperIslandTitle,
                 checked = superIslandEnabled,
                 onCheckedChange = viewModel::onSuperIslandEnabledChange,
-            )
-            PreferenceArrowItem(
-                title = FlyTxt.AppSettings.ServiceSection.ShizukuTitle,
-                endActions = {
-                    Text(
-                        text = shizukuAccess.statusText,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    )
-                },
-                onClick = viewModel::onShizukuAccessClick,
             )
         }
         PreferenceArrowItem(
@@ -616,12 +619,12 @@ private fun MoeQuotePreferenceItem(
     )
 }
 
-private fun isBatteryOptimizationIgnored(context: android.content.Context): Boolean {
+internal fun isBatteryOptimizationIgnored(context: android.content.Context): Boolean {
     val powerManager = context.getSystemService(PowerManager::class.java) ?: return false
     return powerManager.isIgnoringBatteryOptimizations(context.packageName)
 }
 
-private fun batteryOptimizationIntents(
+internal fun batteryOptimizationIntents(
     context: android.content.Context,
     alreadyIgnored: Boolean,
 ): List<Intent> = buildList {

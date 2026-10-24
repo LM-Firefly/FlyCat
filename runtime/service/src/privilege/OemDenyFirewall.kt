@@ -19,21 +19,24 @@
  *
  */
 
-package com.github.lmfirefly.flycat.runtime.service.shizuku
+package com.github.lmfirefly.flycat.runtime.service.privilege
 
 import android.os.IBinder
 import android.util.Log
+import org.lsposed.hiddenapibypass.HiddenApiBypass
 
-/**
- * 通过隐藏的连接性 API 添加或删除指定 uid 的 OEM 拒绝防火墙规则；调用方传入在其自身进程中获取的连接性 binder。
- * `dev.flycat.loader.ShizukuUserService` (:pack) 保留自己的副本：它必须位于 loader DEX 中。
- */
+/** 通过隐藏的连接性 API 添加或删除指定 uid 的 OEM 拒绝防火墙规则；调用方传入连接性服务 binder （priv-kit PrivilegeBinderWrapper——事务以特权身份转发执行）。 */
 internal object OemDenyFirewall {
     private const val TAG = "FlyCatFirewall"
     /** `FirewallChain.OEM_DENY`，HyperOS 用于其自有拒绝列表的链。 */
     private const val CHAIN_OEM_DENY = 9
     private const val RULE_ALLOW = 0
     private const val RULE_DENY = 2
+    init {
+        // 隐藏 API 反射发生在应用进程，先做豁免（release 的加载器启动时已豁免，此处幂等兜底 debug 构建）。
+        runCatching { HiddenApiBypass.addHiddenApiExemptions("L") }
+            .onFailure { error -> Log.w(TAG, "Unable to exempt hidden APIs", error) }
+    }
     fun setPackageDenied(connectivity: IBinder, uid: Int, denied: Boolean): Boolean = runCatching {
         val manager = Class.forName("android.net.IConnectivityManager\$Stub").getMethod("asInterface", IBinder::class.java).invoke(null, connectivity)?: error("connectivity service binder is not available")
         manager.javaClass.getMethod("setFirewallChainEnabled", Int::class.javaPrimitiveType, Boolean::class.javaPrimitiveType).invoke(manager, CHAIN_OEM_DENY, true)

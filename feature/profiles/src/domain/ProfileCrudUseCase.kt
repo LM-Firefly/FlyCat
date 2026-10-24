@@ -69,17 +69,17 @@ class ProfileCrudUseCase(
                     profilesRepository.deleteProfile(uuid)
                 }
             }
-            null
+            throw error
         }
     }
 
-    /** Clone an existing profile. Returns the new UUID or null on failure. */
-    suspend fun cloneProfile(uuid: UUID): UUID? = try {
+    /** Clone an existing profile. Returns the new UUID. */
+    suspend fun cloneProfile(uuid: UUID): UUID = try {
         profilesRepository.cloneProfile(uuid)
     } catch (error: Exception) {
         if (error is kotlinx.coroutines.CancellationException) throw error
         Timber.e(error, "Failed to clone profile")
-        null
+        throw error
     }
 
     /** Delete a profile by UUID. Returns true on success. */
