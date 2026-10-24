@@ -21,12 +21,20 @@
 
 package com.github.lmfirefly.flycat.feature.settings.presentation.screen
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
@@ -60,6 +69,9 @@ import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.RootT
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.TunServiceOptionsUiState
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.card.Card
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetCloseAction
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetConfirmAction
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppFormDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppTextFieldDialog
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
@@ -80,10 +92,12 @@ import com.github.lmfirefly.flycat.presentation.navigation.Route
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.basic.TextFieldDefaults
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
@@ -313,87 +327,21 @@ private fun NetworkKernelSection(viewModel: NetworkSettingsViewModel) {
         )
     }
 
-    if (showCustomDialog) {
-        var customUrl by remember { mutableStateOf("") }
-        var showFormatHint by remember { mutableStateOf(false) }
-        AppFormDialog(
-            show = showCustomDialog,
-            title = FlyTxt.NetworkSettings.Kernel.CustomTitle,
-            onDismissRequest = { showCustomDialog = false },
-            onConfirm = {
-                if (customUrl.isNotBlank()) {
-                    viewModel.installCustomPluginUrl(customUrl.trim()) { success ->
-                        if (success) showCustomDialog = false
-                    }
-                }
-            },
-        ) {
-            top.yukonga.miuix.kmp.basic.TextField(
-                value = customUrl,
-                onValueChange = { customUrl = it },
-                label = "https://example.com/kernel-plugin.zip",
-                useLabelAsPlaceholder = true,
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                trailingIcon = {
-                    top.yukonga.miuix.kmp.basic.IconButton(
-                        onClick = { showFormatHint = true },
-                        modifier = Modifier.size(36.dp),
-                    ) {
-                        top.yukonga.miuix.kmp.basic.Icon(
-                            imageVector = MiuixIcons.Info,
-                            contentDescription = null,
-                            tint = colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                },
-            )
-        }
-        if (showFormatHint) {
-            val annotatedText = androidx.compose.ui.text.buildAnnotatedString {
-                val body = FlyTxt.NetworkSettings.Kernel.PluginFormatBody
-                val url = "https://github.com/LM-Firefly/Kernel-Builder"
-                val start = body.indexOf(url)
-                if (start >= 0) {
-                    append(body.substring(0, start))
-                    val linkStart = length
-                    append(url)
-                    val linkEnd = length
-                    addLink(
-                        androidx.compose.ui.text.LinkAnnotation.Url(url = url),
-                        start = linkStart,
-                        end = linkEnd,
-                    )
-                    addStyle(
-                        style = androidx.compose.ui.text.SpanStyle(
-                            color = colorScheme.primary,
-                            textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
-                        ),
-                        start = linkStart,
-                        end = linkEnd,
-                    )
-                    append(body.substring(start + url.length))
-                } else {
-                    append(body)
-                }
+    CustomKernelSheet(
+        show = showCustomDialog,
+        busy = kernelBusy,
+        onInstallUrl = { url ->
+            viewModel.installCustomPluginUrl(url) { success ->
+                if (success) showCustomDialog = false
             }
-            AppFormDialog(
-                show = true,
-                title = FlyTxt.NetworkSettings.Kernel.PluginFormatTitle,
-                onDismissRequest = { showFormatHint = false },
-                onConfirm = { showFormatHint = false },
-            ) {
-                androidx.compose.foundation.text.BasicText(
-                    text = annotatedText,
-                    style = androidx.compose.ui.text.TextStyle(
-                        color = colorScheme.onSurface
-                    ),
-                    modifier = Modifier.padding(vertical = 4.dp),
-                )
+        },
+        onInstallFile = { uri ->
+            viewModel.installCustomPlugin(uri) { success ->
+                if (success) showCustomDialog = false
             }
-        }
-    }
+        },
+        onDismiss = { showCustomDialog = false },
+    )
 
     if (restartRequired) {
         val context = androidx.compose.ui.platform.LocalContext.current
@@ -803,3 +751,149 @@ private fun RootTunTextEditDialog(
 }
 
 private enum class RootTunEditDialogState { IfName, Mtu, FakeIpRange, FakeIpRange6 }
+
+/** 自定义内核导入面板：内核链接 / 本地插件文件双模式导入。 */
+@Composable
+private fun CustomKernelSheet(
+    show: Boolean,
+    busy: Boolean,
+    onInstallUrl: (String) -> Unit,
+    onInstallFile: (Uri) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var mode by remember(show) { mutableStateOf(0) }
+    var url by remember(show) { mutableStateOf("") }
+    var showFormatHint by remember(show) { mutableStateOf(false) }
+    val pluginMimeTypes = remember { arrayOf("application/zip", "application/octet-stream") }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        onInstallFile(uri)
+    }
+    AppActionBottomSheet(
+        show = show,
+        title = FlyTxt.NetworkSettings.Kernel.CustomTitle,
+        onDismissRequest = onDismiss,
+        startAction = { AppBottomSheetCloseAction(onClick = onDismiss) },
+        endAction = {
+            AppBottomSheetConfirmAction(
+                enabled = !busy && (mode == 1 || url.trim().startsWith("https://")),
+                onClick = {
+                    if (mode == 0) {
+                        onInstallUrl(url.trim())
+                    } else {
+                        launcher.launch(pluginMimeTypes)
+                    }
+                },
+            )
+        },
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Card(cornerRadius = TextFieldDefaults.CornerRadius) {
+                WindowDropdownPreference(
+                    title = FlyTxt.NetworkSettings.Kernel.CustomMethodTitle,
+                    items = listOf(
+                        FlyTxt.NetworkSettings.Kernel.CustomUrlMethod,
+                        FlyTxt.NetworkSettings.Kernel.CustomFileMethod,
+                    ),
+                    selectedIndex = mode,
+                    onSelectedIndexChange = { mode = it },
+                )
+            }
+            AnimatedContent(
+                targetState = mode,
+                transitionSpec = {
+                    fadeIn(tween(160)) togetherWith fadeOut(tween(100)) using
+                        SizeTransform(clip = false)
+                },
+                label = "custom_kernel_method",
+            ) { selectedMode ->
+                if (selectedMode == 0) {
+                    TextField(
+                        value = url,
+                        onValueChange = { url = it },
+                        label = FlyTxt.NetworkSettings.Kernel.CustomUrlLabel,
+                        useLabelAsPlaceholder = true,
+                        enabled = !busy,
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = {
+                            top.yukonga.miuix.kmp.basic.IconButton(
+                                onClick = { showFormatHint = true },
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Info,
+                                    contentDescription = null,
+                                    tint = colorScheme.onSurfaceVariantSummary,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                        },
+                    )
+                } else {
+                    Card(cornerRadius = TextFieldDefaults.CornerRadius) {
+                        PreferenceArrowItem(
+                            title = FlyTxt.NetworkSettings.Kernel.CustomChooseFile,
+                            onClick = {
+                                if (!busy) {
+                                    launcher.launch(pluginMimeTypes)
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+            AnimatedVisibility(visible = busy) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    InfiniteProgressIndicator(modifier = Modifier.size(24.dp))
+                }
+            }
+        }
+    }
+    if (showFormatHint) {
+        val annotatedText = androidx.compose.ui.text.buildAnnotatedString {
+            val body = FlyTxt.NetworkSettings.Kernel.PluginFormatBody
+            val link = "https://github.com/LM-Firefly/Kernel-Builder"
+            val start = body.indexOf(link)
+            if (start >= 0) {
+                append(body.substring(0, start))
+                val linkStart = length
+                append(link)
+                val linkEnd = length
+                addLink(
+                    androidx.compose.ui.text.LinkAnnotation.Url(url = link),
+                    start = linkStart,
+                    end = linkEnd,
+                )
+                addStyle(
+                    style = androidx.compose.ui.text.SpanStyle(
+                        color = colorScheme.primary,
+                        textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                    ),
+                    start = linkStart,
+                    end = linkEnd,
+                )
+                append(body.substring(start + link.length))
+            } else {
+                append(body)
+            }
+        }
+        AppFormDialog(
+            show = true,
+            title = FlyTxt.NetworkSettings.Kernel.PluginFormatTitle,
+            onDismissRequest = { showFormatHint = false },
+            onConfirm = { showFormatHint = false },
+        ) {
+            androidx.compose.foundation.text.BasicText(
+                text = annotatedText,
+                style = androidx.compose.ui.text.TextStyle(
+                    color = colorScheme.onSurface
+                ),
+                modifier = Modifier.padding(vertical = 4.dp),
+            )
+        }
+    }
+}
