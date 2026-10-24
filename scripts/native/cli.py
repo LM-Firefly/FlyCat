@@ -10,7 +10,7 @@ from .command import command_exists
 from .config import NdkTools, ProjectConfig, SystemDetector
 from .geo import ResourceDownloader
 from .go_core import GoCoreBuilder
-from .rust_builder import LoaderRustBuilder, RustBuilder
+from .rust_builder import RustBuilder
 
 
 MESSAGE = r"""
@@ -30,7 +30,6 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--go", action="store_true", help="Build the mihomo shared core (c-shared JNI library)")
     result.add_argument("--coreexe", action="store_true", help="Compatibility alias of --go")
     result.add_argument("--rust", action="store_true", help="Build Rust config-compiler override library")
-    result.add_argument("--loader", action="store_true", help="Build the Rust native payload extractor")
     result.add_argument("--geo", action="store_true", help="Download Geo databases and BundleMRS.7z")
     result.add_argument("--clean", action="store_true", help="Clean build outputs")
     result.add_argument("--all", action="store_true", help="Build everything")
@@ -44,6 +43,7 @@ def clean_build_outputs(root: Path) -> None:
     for name in ("geoip.metadb.xz", "geosite.dat.xz", "ASN.mmdb.xz"):
         (root / "app/assets" / name).unlink(missing_ok=True)
     for abi in ("armeabi-v7a", "arm64-v8a", "x86", "x86_64"):
+        # libloader.so: legacy :pack loader artifact purge
         for name in ("libmihomo.so", "liboverride.so", "libloader.so", "core-version.properties"):
             (root / "jniLibs" / abi / name).unlink(missing_ok=True)
     (root / "build/generated/core-version.properties").unlink(missing_ok=True)
@@ -61,12 +61,11 @@ def main(argv: list[str] | None = None) -> int:
     print("=== FlyCat Native Build Tool ===")
     print(f"OS: {SystemDetector.os_name()}, Host: {SystemDetector.host_tag()}")
     config = ProjectConfig(root)
-    explicit = any((args.go, args.coreexe, args.rust, args.loader, args.geo, args.all))
+    explicit = any((args.go, args.coreexe, args.rust, args.geo, args.all))
     build_go = not explicit or args.all or args.go or args.coreexe
     build_rust = not explicit or args.all or args.rust
-    build_loader = not explicit or args.all or args.loader
     download_geo = not explicit or args.all or args.geo
-    needs_ndk = build_go or build_loader
+    needs_ndk = build_go
     ndk_tools = NdkTools(config) if needs_ndk else None
     if ndk_tools:
         print(f"NDK: {ndk_tools.ndk_dir}")
@@ -78,8 +77,6 @@ def main(argv: list[str] | None = None) -> int:
         GoCoreBuilder(config, ndk_tools).build_all()
     if build_rust:
         RustBuilder(config).build_all()
-    if build_loader:
-        LoaderRustBuilder(config).build_all()
     if download_geo:
         ResourceDownloader(config).download_geo_files()
     print("=== Build Complete ===")

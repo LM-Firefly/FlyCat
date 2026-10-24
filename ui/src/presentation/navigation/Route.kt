@@ -59,6 +59,9 @@ sealed interface Route {
     data object EbpfServiceOptions : Route
 
     @Serializable
+    data object PrivilegedService : Route
+
+    @Serializable
     data object AccessControl : Route
 
     @Serializable

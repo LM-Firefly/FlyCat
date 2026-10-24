@@ -124,7 +124,7 @@ jobs:
           ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.16248370
-        run: kotlin scripts/native-build.main.kts --go --rust --loader
+        run: kotlin scripts/native-build.main.kts --go --rust
 
       - name: Verify native outputs
         shell: bash
@@ -132,7 +132,6 @@ jobs:
           set -eu
           test -f "jniLibs/${{ inputs.abi }}/libmihomo.so"
           test -f "jniLibs/${{ inputs.abi }}/liboverride.so"
-          test -f "jniLibs/${{ inputs.abi }}/libloader.so"
 
       - name: Upload ABI artifact
         uses: actions/upload-artifact@v7
@@ -141,7 +140,6 @@ jobs:
           path: |
             jniLibs/${{ inputs.abi }}/libmihomo.so
             jniLibs/${{ inputs.abi }}/liboverride.so
-            jniLibs/${{ inputs.abi }}/libloader.so
           if-no-files-found: error
 
       - name: Upload core version stamp

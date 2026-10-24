@@ -109,7 +109,7 @@ FlyCat 不使用 Git submodule。从干净检出开始构建前，需要先准�
    kotlin scripts/native-build.main.kts --all
    ```
 
-   使用 `--help` 可以单独构建 Go、Rust、C++ 或 Geo 资源。
+   使用 `--help` 可以单独构建 Go、Rust 或 Geo 资源。
 
 6. 可选：为 Release 构建签名。将密钥库放置为项目根目录下的 `release.keystore`，然后创建 `signing.properties`：
 

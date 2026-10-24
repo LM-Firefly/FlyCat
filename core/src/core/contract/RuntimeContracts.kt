@@ -102,13 +102,50 @@ fun interface AppShutdownHandler {
 }
 
 /**
- * 为设置 UI 提供实时 Shizuku / HyperOS 超级岛访问权限。
- * 由拥有 Shizuku 和超级岛代码的 [runtime:service] 实现。
+ * 为设置 UI 提供实时特权访问状态（priv-kit 特权服务 + Shizuku 外部启动通道）与 HyperOS 超级岛支持。
+ * 由拥有特权通道和超级岛代码的 [runtime:service] 实现。
  */
 interface PrivilegedAccessReader {
     val isSuperIslandSupported: Boolean
+    /** Shizuku 授权器状态（供「外部」启动方式引导授权与打开 Shizuku）。 */
     fun isShizukuRunning(): Boolean
     fun hasShizukuPermission(): Boolean
     fun requestShizukuPermission(callback: (Boolean) -> Unit)
     fun openShizuku(context: android.content.Context): Boolean
+    /** priv-kit 自有特权服务通道（Root / 无线 ADB / 静态端口 / 外部 Shizuku 启动）。 */
+    val privilegeRunningFlow: kotlinx.coroutines.flow.StateFlow<Boolean>
+    fun isPrivilegeRunning(): Boolean
+    fun startPrivilege(
+        context: android.content.Context,
+        source: PrivilegeStartSource,
+        logListener: PrivilegeLogListener?,
+        callback: (Boolean) -> Unit,
+    )
+    fun pairPrivilege(pairingCode: String, pairingPort: Int, callback: (Boolean) -> Unit)
+    fun discoverPairingPort(callback: (Int?) -> Unit)
+    fun startPairingSession(context: android.content.Context)
+    fun stopPairingSession(context: android.content.Context)
+    fun stopPrivilege()
+    fun privilegeServerUid(): Int?
+    fun privilegeManualCommand(): String?
+    fun privilegeIdentityFingerprint(): String?
+    fun privilegeTcpPort(): Int?
+    fun configurePrivilegeTcp(enabled: Boolean, callback: (Boolean) -> Unit)
+}
+
+/** 特权服务启动日志输出（source 为来源标识，如 runtime/diag/adb/tcp）。 */
+fun interface PrivilegeLogListener {
+    fun onLog(source: String, message: String)
+}
+
+/** 特权服务启动来源。 */
+enum class PrivilegeStartSource {
+    /** Root 身份直接启动。 */
+    ROOT,
+    /** 无线调试（ADB）启动。 */
+    ADB,
+    /** 无线调试静态端口（TCP/IP）启动。 */
+    TCP,
+    /** 借助 Shizuku 的 shell 身份执行启动命令（外部授权器）。 */
+    SHIZUKU,
 }

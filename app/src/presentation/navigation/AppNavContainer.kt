@@ -67,6 +67,7 @@ import com.github.lmfirefly.flycat.feature.settings.presentation.screen.EbpfServ
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.MetaFeatureScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.MoeWallpaperCropScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.NetworkSettingsScreen
+import com.github.lmfirefly.flycat.feature.settings.presentation.screen.PrivilegedServiceScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.TunServiceOptionsScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.VpnServiceOptionsScreen
 import com.github.lmfirefly.flycat.presentation.component.layout.KeyValueEditorScreen
@@ -95,6 +96,7 @@ fun RouteContent(route: Route, navigator: Navigator, mainPage: Int = 0) {
         Route.VpnServiceOptions -> VpnServiceOptionsScreen(navigator)
         Route.TunServiceOptions -> TunServiceOptionsScreen(navigator)
         Route.EbpfServiceOptions -> EbpfServiceOptionsScreen(navigator)
+        Route.PrivilegedService -> PrivilegedServiceScreen(navigator)
         Route.AccessControl -> AccessControlScreen(navigator)
         Route.MetaFeature -> MetaFeatureScreen(navigator)
         Route.Connection -> ConnectionScreen(navigator)
