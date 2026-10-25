@@ -57,8 +57,6 @@ val releaseSigningProperties = signingPropertiesFile.takeIf(File::isFile)?.let {
 val extensionAbiList = providers.gradleProperty("abi.extension.list").get().split(',').map { it.trim() }.filter { it.isNotEmpty() }
 val withExtensionTaskRequested = gradle.startParameter.taskNames.any { taskName -> taskName.equals("assembleReleaseWithExtension", ignoreCase = true) || taskName.endsWith(":assembleReleaseWithExtension", ignoreCase = true) }
 val withExtension = project.hasProperty("withExtension") || withExtensionTaskRequested
-// GeoFiles are always bundled; decoupled from withExtension.
-val geoBundle = true
 val splitAbiList = if (withExtension) extensionAbiList else if (buildAllAbis) appAbiList else listOf("arm64-v8a")
 val packagingAbiList = if (withExtension) extensionAbiList else appAbiList
 // MMKV 产物线分包：每轮构建固定只携带本线 ABI，universal 随线拆分为 universal32/universal64 （4 ABI 总 universal 已弃用）。选线规则见根构建脚本的 mmkv.line 解析。
@@ -104,15 +102,11 @@ val appVersionName = ciBuildHash
     ?.let { hash -> listOfNotNull(baseVersionName, ciBuildBranch, hash).joinToString(".") }
     ?: baseVersionName
 
-// Published APK file names are produced directly by Gradle. CI supplies the tail and
-// optional channel segment once per workflow run; local builds omit both.
+// 发布的 APK 文件名由 Gradle 直接生成。CI 在每次工作流运行时提供一次可选的渠道标识段；本地构建则省略该段。
 val apkOutputPrefix = providers.gradleProperty("apk.output.prefix").orNull
     ?.trim()?.takeIf { it.isNotEmpty() } ?: providers.gradleProperty("project.name").get()
-val apkOutputTail = providers.gradleProperty("apk.output.tail").orNull
-    ?.trim()?.takeIf { it.isNotEmpty() }
 val apkChannelSegment = providers.gradleProperty("apk.output.channel").orNull
     ?.trim()?.takeIf { it.isNotEmpty() }
-val apkGeoSegment = "builtin"
 
 // Mihomo kernel version resolution (configuration-cache compatible).
 data class MihomoBuildInfo(
@@ -222,9 +216,7 @@ android {
             assets.directories.apply {
                 clear()
                 add("assets")
-                if (geoBundle) {
-                    add(geoFilesAssetsDir.get().asFile.invariantSeparatorsPath)
-                }
+                add(geoFilesAssetsDir.get().asFile.invariantSeparatorsPath)
             }
             aidl.directories.apply {
                 clear()
@@ -345,13 +337,9 @@ android {
                 val abiName = output.filters.find {
                     it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI
                 }?.identifier ?: "universal${if (mmkvLine64) 64 else 32}"
-                val geoSegment = buildString {
-                    append(apkGeoSegment)
-                    if (withExtension) append("_Extension")
-                }
                 val outputName = buildList {
                     add(apkOutputPrefix)
-                    add(geoSegment)
+                    if (withExtension) add("Extension")
                     add(abiName)
                     apkChannelSegment?.let(::add)
                     add("release")
@@ -388,7 +376,6 @@ android {
                 versionName.set(appVersionName)
                 moduleName.set("app")
                 variantName.set(variant.name)
-                geoLabel.set("builtin")
                 mmkvVersion.set(rootProject.extra["mmkvVersion"] as String)
                 buildToolsDir.set(layout.dir(provider { resolveBuildToolsDir(project) }))
                 if (signing != null) {

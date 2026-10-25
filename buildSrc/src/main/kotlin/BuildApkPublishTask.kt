@@ -68,9 +68,6 @@ abstract class BuildApkPublishTask : DefaultTask() {
     abstract val moduleName: Property<String>
     @get:Input
     abstract val variantName: Property<String>
-    /** geo 资产标签（app 内置 geo 为 "builtin"，extension 为 "none"）。 */
-    @get:Input
-    abstract val geoLabel: Property<String>
     /** 发布产物对应的 MMKV 版本（extension 无 MMKV，为 "none"）。 */
     @get:Input
     abstract val mmkvVersion: Property<String>
@@ -120,7 +117,6 @@ abstract class BuildApkPublishTask : DefaultTask() {
                 appendLine("{")
                 appendLine("""  "module": ${jsonString(moduleName.get())},""")
                 appendLine("""  "variant": ${jsonString(variantName.get())},""")
-                appendLine("""  "geo": ${jsonString(geoLabel.get())},""")
                 appendLine("""  "abi": ${jsonString(abi)},""")
                 appendLine("""  "mmkv": ${jsonString(mmkvVersion.get())},""")
                 appendLine("""  "signed": $signed,""")

@@ -9,7 +9,7 @@ import timber.log.Timber
 class ExtensionStatusService(private val context: Context) {
     companion object {
         private const val EXTENSION_PACKAGE_NAME = "com.github.lmfirefly.flycat.extension"
-        private const val JAVET_LIB_NAME = "libjavet-node-android"
+        private val JAVET_LIB_NAME = NativeLibraryManager.JAVET_LIBRARY_NAME
     }
     suspend fun isExtensionAvailable(): Boolean = withContext(Dispatchers.IO) {
         if (isExtensionPackageInstalled()) {

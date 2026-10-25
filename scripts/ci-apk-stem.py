@@ -10,7 +10,6 @@ import argparse
 def main() -> int:
     parser = argparse.ArgumentParser(description="Compute a FlyCat publish APK file stem")
     parser.add_argument("prefix")
-    parser.add_argument("geo", choices=("builtin", "external"))
     parser.add_argument("abi", choices=("arm64-v8a",))
     parser.add_argument("channel_segment")
     parser.add_argument("tail")

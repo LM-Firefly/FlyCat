@@ -175,7 +175,6 @@ android {
                 versionName.set(providers.gradleProperty("project.version.name").get())
                 moduleName.set("extension")
                 variantName.set(variant.name)
-                geoLabel.set("none")
                 mmkvVersion.set("none")
                 buildToolsDir.set(layout.dir(provider { resolveBuildToolsDir(project) }))
                 if (signing != null) {

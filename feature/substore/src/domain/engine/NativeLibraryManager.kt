@@ -29,6 +29,7 @@ import org.tukaani.xz.XZInputStream
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
+import java.io.PushbackInputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
@@ -170,9 +171,10 @@ object NativeLibraryManager {
         targetDir.mkdirs()
         val targetFile = File(targetDir, info.name)
 
-        if (targetFile.exists() && targetFile.canRead()) {
-            if (info.type == LibraryType.PROCESS_EXEC && !targetFile.canExecute()) {
-                targetFile.setExecutable(true, false)
+        // 已安装副本的落盘名可能与注册基名不同（规范名、带版本号的打包原名、旧版下载物），按候选解析后再决定是否重提，避免“文件明明在却识别不到”。
+        resolveLibraryFile(info.name)?.let { existing ->
+            if (info.type == LibraryType.PROCESS_EXEC && !existing.canExecute()) {
+                existing.setExecutable(true, false)
             }
             return true
         }
@@ -226,11 +228,7 @@ object NativeLibraryManager {
             recordLibraryVersionFromEntry(info.name, libEntry.name)
             val isXzCompressed = actualFileName.endsWith(".xz")
             val decompressedName = if (isXzCompressed) actualFileName.removeSuffix(".xz") else actualFileName
-            val targetFileName = if (decompressedName.startsWith("libjavet-node-android")) {
-                "libjavet-node-android.so"
-            } else {
-                decompressedName
-            }
+            val targetFileName = canonicalLibraryFileName(decompressedName)
             val actualTargetFile = File(targetFile.parentFile, targetFileName)
             val canonicalParent = targetFile.parentFile!!.canonicalPath
             if (!actualTargetFile.canonicalPath.startsWith("$canonicalParent/")) {
@@ -240,15 +238,7 @@ object NativeLibraryManager {
                 actualLibraryNames[info.name] = targetFileName
             }
 
-            zip.getInputStream(libEntry).use { input ->
-                if (isXzCompressed) {
-                    org.tukaani.xz.XZInputStream(input).use { xzInput ->
-                        FileOutputStream(actualTargetFile).use { output -> xzInput.copyTo(output) }
-                    }
-                } else {
-                    FileOutputStream(actualTargetFile).use { output -> input.copyTo(output) }
-                }
-            }
+            copyZipEntryDecompressing(zip, libEntry, actualTargetFile)
 
             actualTargetFile.setWritable(false, false)
             actualTargetFile.setReadable(true, false)
@@ -296,18 +286,15 @@ object NativeLibraryManager {
                     .filter { it.contains(info.name) }
                     .joinToString(", ")
                 Timber.w("Library ${info.name} not found in extension APK, candidates: $candidates")
-                return false
+                // 内置构建把库打进主 APK：扩展包在场但不含该库时回退主 APK，避免误判为不可用。
+                return extractFromMainApk(info, targetFile)
             }
 
             val actualFileName = entry.name.substringAfterLast("/")
             recordLibraryVersionFromEntry(info.name, entry.name)
             val isXzCompressed = actualFileName.endsWith(".xz")
             val decompressedName = if (isXzCompressed) actualFileName.removeSuffix(".xz") else actualFileName
-            val canonicalFileName = if (decompressedName.startsWith("libjavet-node-android")) {
-                "libjavet-node-android.so"
-            } else {
-                decompressedName
-            }
+            val canonicalFileName = canonicalLibraryFileName(decompressedName)
             val actualTargetFile = File(targetFile.parentFile, canonicalFileName)
             val canonicalParent = targetFile.parentFile!!.canonicalPath
             if (!actualTargetFile.canonicalPath.startsWith("$canonicalParent/")) {
@@ -315,15 +302,7 @@ object NativeLibraryManager {
             }
             actualLibraryNames[info.name] = canonicalFileName
 
-            zip.getInputStream(entry).use { input ->
-                if (isXzCompressed) {
-                    org.tukaani.xz.XZInputStream(input).use { xzInput ->
-                        FileOutputStream(actualTargetFile).use { output -> xzInput.copyTo(output) }
-                    }
-                } else {
-                    FileOutputStream(actualTargetFile).use { output -> input.copyTo(output) }
-                }
-            }
+            copyZipEntryDecompressing(zip, entry, actualTargetFile)
 
             actualTargetFile.setWritable(false, false)
             actualTargetFile.setReadable(true, false)
@@ -351,10 +330,31 @@ object NativeLibraryManager {
 
     fun getLibraryPath(name: String): String? {
         if (!isInitialized) return null
+        return resolveLibraryFile(name)?.absolutePath
+    }
 
-        val actualName = actualLibraryNames[name] ?: name
-        val libraryFile = File(libsBaseDir, actualName)
-        return if (libraryFile.exists()) libraryFile.absolutePath else null
+    /**
+     * 按候选解析库的实际落盘文件并缓存映射。注册名是不带版本号的基名，而落盘名有多种形态：
+     * 提取/下载的规范名 `libjavet-node-android.so`、打包原名 `libjavet-node-android.v.<版本>.so`、旧版下载物 `libjavet.so`。
+     * 映射仅存内存，跨进程重启必须靠这里按名兜底。
+     */
+    private fun resolveLibraryFile(name: String): File? {
+        val dir = libsBaseDir ?: return null
+        actualLibraryNames[name]?.let { mapped ->
+            File(dir, mapped).takeIf { it.isFile && it.canRead() }?.let { return it }
+        }
+        val candidates = buildList {
+            add(name)
+            add("$name.so")
+            add("$name.v.$JAVET_VERSION.so")
+            if (name == JAVET_LIBRARY_NAME) add(LEGACY_JAVET_LIBRARY_FILE_NAME)
+        }.distinct()
+        val found = candidates.firstNotNullOfOrNull { candidate ->
+            File(dir, candidate).takeIf { it.isFile && it.canRead() }
+        } ?: return null
+        actualLibraryNames[name] = found.name
+        recordLibraryVersionFromEntry(name, found.name)
+        return found
     }
 
     fun isLibraryAvailable(name: String): Boolean {
@@ -419,6 +419,35 @@ object NativeLibraryManager {
         }
     }
 
+    /** 打包管线对非引导 .so 做「原地 XZ 压缩」（文件名不变），是否解压按内容魔数判断而非 .xz 后缀。 */
+    private val XZ_MAGIC = byteArrayOf(0xFD.toByte(), 0x37, 0x7A, 0x58, 0x5A, 0x00)
+
+    private fun copyZipEntryDecompressing(zip: ZipFile, entry: ZipEntry, target: File) {
+        zip.getInputStream(entry).use { raw ->
+            val input = PushbackInputStream(raw.buffered(), XZ_MAGIC.size)
+            val header = ByteArray(XZ_MAGIC.size)
+            var count = 0
+            while (count < header.size) {
+                val read = input.read(header, count, header.size - count)
+                if (read < 0) break
+                count += read
+            }
+            input.unread(header, 0, count)
+            if (count == XZ_MAGIC.size && header.contentEquals(XZ_MAGIC)) {
+                XZInputStream(input).use { xzInput ->
+                    FileOutputStream(target).use { output -> xzInput.copyTo(output) }
+                }
+            } else {
+                FileOutputStream(target).use { output -> input.copyTo(output) }
+            }
+        }
+    }
+
+    /** `libfoo.v.1.2.3.so` → `libfoo.so`：加载按不带版本号的基名查找，提取物统一为规范名。 */
+    private val VERSIONED_SUFFIX_REGEX = Regex("\\.v\\.\\d+\\.\\d+\\.\\d+(?=\\.so$)")
+
+    private fun canonicalLibraryFileName(fileName: String): String = VERSIONED_SUFFIX_REGEX.replace(fileName, "")
+
     private fun getSupportedAbi(): String {
         return Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"
     }
@@ -429,7 +458,10 @@ object NativeLibraryManager {
     val JAVET_VERSION: String = BuildConfig.JAVET_VERSION
 
     const val JAVET_LIBRARY_NAME = "libjavet-node-android"
-    const val JAVET_LIBRARY_FILE_NAME = "libjavet.so"
+    /** 落盘规范名（提取与下载统一），与注册基名 + ".so" 对齐。 */
+    const val JAVET_LIBRARY_FILE_NAME = "libjavet-node-android.so"
+    /** 旧版下载安装物使用的文件名，仅作解析兼容保留。 */
+    const val LEGACY_JAVET_LIBRARY_FILE_NAME = "libjavet.so"
     const val JAVET_ARCHIVE_FILE_NAME = "libjavet.so.xz"
 
     /** 从 `libfoo.v.1.2.3.so` 形式的条目名中提取版本号。 */

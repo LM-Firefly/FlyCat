@@ -127,21 +127,14 @@ jobs:
 
           while IFS= read -r file; do
             base="$(basename "$file")"
-            abi=""
-            case "$base" in
-              *arm64-v8a*) abi="arm64-v8a" ;;
-              *armeabi-v7a*) abi="armeabi-v7a" ;;
-              *universal32*) abi="universal32" ;;
-              *universal64*) abi="universal64" ;;
-              *x86_64*) abi="x86_64" ;;
-              *x86*) abi="x86" ;;
-              *) echo "::error::Unknown ABI segment in $base" >&2; exit 1 ;;
-            esac
-
-            if [[ "$base" =~ -([0-9]{12}-[0-9a-fA-F]{5,8})\.apk$ ]]; then
-              build_id="${BASH_REMATCH[1]}"
+            # 原始产物命名契约（app/extension 命名块；geo 标记段已移除）：
+            # <前缀>[-Extension]-<abi>[-<channel>]-release-<yyyyMMddHHmm>-<hash>.apk
+            # 按连字符段一次性严格提取 abi 与 build_id，形态不符即视为命名回归并报错（不再用子串通配猜 ABI）。
+            if [[ "$base" =~ ^.+-(arm64-v8a|armeabi-v7a|x86_64|x86|universal32|universal64)(-[A-Za-z0-9.]+)?-release-([0-9]{12}-[0-9a-fA-F]{5,8})\.apk$ ]]; then
+              abi="${BASH_REMATCH[1]}"
+              build_id="${BASH_REMATCH[3]}"
             else
-              echo "::error::Could not extract build_id from $base" >&2
+              echo "::error::Unexpected APK name shape (want <prefix>[-Extension]-<abi>[-<channel>]-release-<buildId>.apk): $base" >&2
               exit 1
             fi
             new_name="${{ inputs.artifact_prefix }}-${abi}-${build_id}.apk"
@@ -189,7 +182,9 @@ jobs:
           release_notes = release_notes_path.read_text(encoding="utf-8").strip() if release_notes_path.exists() else ""
 
           packages = []
-          # 文件名形态：<前缀>-<abi>-<yyyyMMddHHmm>-<hash>.apk；旧式 "-<abi>.apk" 尾缀匹配永不命中此形态（曾导致 meta 内 abi 全部误标为 universal），改按完整尾缀正则提取。
+          # 发布文件名形态：<前缀>-<abi>-<yyyyMMddHHmm>-<hash>.apk（由上方 bash 按原始形态
+          # <前缀>[-Extension]-<abi>[-<channel>]-release-<buildId>.apk 重命名而来；geo 标记段已移除）。
+          # 旧式 "-<abi>.apk" 尾缀匹配永不命中此形态（曾导致 meta 内 abi 全部误标为 universal），改按完整尾缀正则提取。
           # 产物线契约只有 universal32/universal64 两分支（4 ABI 总 universal 已弃用），匹配不到即视为命名回归。
           abi_pattern = re.compile(
               r"-(arm64-v8a|armeabi-v7a|x86_64|x86|universal32|universal64)-[0-9]{12}-[0-9a-fA-F]{5,8}\.apk$"

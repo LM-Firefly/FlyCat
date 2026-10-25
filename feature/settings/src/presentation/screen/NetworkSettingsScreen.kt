@@ -791,7 +791,7 @@ private fun CustomKernelSheet(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Card(cornerRadius = TextFieldDefaults.CornerRadius) {
+            Card(cornerRadius = TextFieldDefaults.CornerRadius, applyHorizontalPadding = false, modifier = Modifier.fillMaxWidth()) {
                 WindowDropdownPreference(
                     title = FlyTxt.NetworkSettings.Kernel.CustomMethodTitle,
                     items = listOf(
@@ -834,7 +834,7 @@ private fun CustomKernelSheet(
                         },
                     )
                 } else {
-                    Card(cornerRadius = TextFieldDefaults.CornerRadius) {
+                    Card(cornerRadius = TextFieldDefaults.CornerRadius, applyHorizontalPadding = false, modifier = Modifier.fillMaxWidth()) {
                         PreferenceArrowItem(
                             title = FlyTxt.NetworkSettings.Kernel.CustomChooseFile,
                             onClick = {

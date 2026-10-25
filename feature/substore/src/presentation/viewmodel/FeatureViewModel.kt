@@ -189,7 +189,7 @@ class FeatureViewModel(
             _autoCloseMode.value = autoCloseModeFromOrdinal(subStoreAutoCloseModeOrdinal.value)
             _isSubStoreInitialized.value = SubStorePaths.isResourcesReady()
             NativeLibraryManager.initialize(application)
-            val available = NativeLibraryManager.isLibraryAvailable(NativeLibraryManager.JAVET_LIBRARY_NAME)
+            val available = NativeLibraryManager.isLibraryAvailable(NativeLibraryManager.JAVET_LIBRARY_NAME) || NativeLibraryManager.extractAllLibraries()[NativeLibraryManager.JAVET_LIBRARY_NAME] == true
             _isJavetLoaded.value = if (available) {
                 NativeLibraryManager.loadJniLibrary(NativeLibraryManager.JAVET_LIBRARY_NAME)
             } else false
@@ -203,7 +203,7 @@ class FeatureViewModel(
     fun refreshExtensionStatus() {
         viewModelScope.launch(Dispatchers.IO) {
             NativeLibraryManager.initialize(application)
-            val available = NativeLibraryManager.isLibraryAvailable(NativeLibraryManager.JAVET_LIBRARY_NAME)
+            val available = NativeLibraryManager.isLibraryAvailable(NativeLibraryManager.JAVET_LIBRARY_NAME) || NativeLibraryManager.extractAllLibraries()[NativeLibraryManager.JAVET_LIBRARY_NAME] == true
             _isJavetLoaded.value = if (available) {
                 NativeLibraryManager.loadJniLibrary(NativeLibraryManager.JAVET_LIBRARY_NAME)
             } else false

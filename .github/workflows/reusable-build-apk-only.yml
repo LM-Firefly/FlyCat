@@ -150,7 +150,7 @@ jobs:
           if [ "${{ inputs.with_extension }}" = "true" ]; then
             EXTRA_ARGS="-PwithExtension=true"
           fi
-          # 每条 MMKV 产物线一次完整构建：armeabi-v7a/x86/universal 归 mmkv32 线，arm64-v8a/x86_64 归 mmkv64 线。
+          # 每条 MMKV 产物线一次完整构建：armeabi-v7a/x86/universal32 归 mmkv32 线，arm64-v8a/x86_64/universal64 归 mmkv64 线。
           # publishReleaseApks 自检通过后把本线产物连同 .apk.json 身份边车原子发布到 output_apk/release/。
           for mmkv_line in 32 64; do
             ./gradlew --no-daemon \
