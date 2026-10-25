@@ -400,6 +400,8 @@ class GitHubUpdateManager(
             "armeabi-v7a" in lower -> "armeabi-v7a"
             REGEX_X86_64.containsMatchIn(lower) -> "x86_64"
             REGEX_X86.containsMatchIn(lower) -> "x86"
+            "universal32" in lower -> "universal32"
+            "universal64" in lower -> "universal64"
             "universal" in lower -> "universal"
             else -> "universal"
         }
@@ -513,8 +515,14 @@ class GitHubUpdateManager(
         if (exactMatch != null) return exactMatch
         val universal = available
             .asSequence()
-            .filter { it.isUniversal || it.abi.equals("universal", ignoreCase = true) }
-            .sortedByDescending { packageScore(it.fileName) }
+            .filter { it.isUniversal || it.abi.startsWith("universal", ignoreCase = true) }
+            .filter { supportedAbis.isEmpty() || universalCoverageAbis(it.abi).any { abi -> abi in supportedAbis } }
+            .sortedWith(
+                compareByDescending<UpdateManifestPackage> { pkg ->
+                    val primary = supportedAbis.firstOrNull()
+                    primary == null || primary in universalCoverageAbis(pkg.abi)
+                }.thenByDescending { packageScore(it.fileName) },
+            )
             .firstOrNull()
         if (universal != null) return universal
         return available.maxByOrNull { packageScore(it.fileName) }
@@ -640,8 +648,15 @@ class GitHubUpdateManager(
         val BUILD_ID_REGEX = Regex("([0-9]{12}-[0-9a-fA-F]{5,8})\\.apk$")
         val REGEX_X86_64 = Regex("(^|[^a-z])x86_64([^a-z]|$)")
         val REGEX_X86 = Regex("(^|[^a-z])x86([^a-z]|$)")
-        val RELEASE_ABI_MARKERS = listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86", "universal")
+        val RELEASE_ABI_MARKERS = listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86", "universal32", "universal64", "universal")
     }
+}
+
+//** universal 产物覆盖的 ABI：universal32/universal64 为分线合包，其余（含旧产物）覆盖全部 ABI。 */
+internal fun universalCoverageAbis(abiTag: String): Set<String> = when (abiTag.lowercase()) {
+    "universal32" -> setOf("armeabi-v7a", "x86")
+    "universal64" -> setOf("arm64-v8a", "x86_64")
+    else -> setOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
 }
 
 private data class PackageProfile(

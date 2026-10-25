@@ -60,6 +60,7 @@ import com.github.lmfirefly.flycat.feature.about.GitHubUpdateViewModel
 import com.github.lmfirefly.flycat.feature.about.UpdateCandidate
 import com.github.lmfirefly.flycat.feature.about.UpdateDownloadProgress
 import com.github.lmfirefly.flycat.feature.about.UpdateManifestPackage
+import com.github.lmfirefly.flycat.feature.about.universalCoverageAbis
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.DialogButtonRow
@@ -314,9 +315,9 @@ private fun UpdateCandidate.selectablePackages(): List<UpdateManifestPackage> {
             !it.fileName.contains("standalone", ignoreCase = true)
     }
     if (available.isEmpty()) return emptyList()
-    val primaryAbi = Build.SUPPORTED_ABIS?.firstOrNull().orEmpty()
-    val exactMatches = if (primaryAbi.isNotBlank()) { available.filter { it.abi.equals(primaryAbi, ignoreCase = true) } } else { emptyList() }
-    val universalMatches = available.filter { it.isUniversal || it.abi.equals("universal", ignoreCase = true) }
+    val supportedAbis = Build.SUPPORTED_ABIS?.toList().orEmpty()
+    val exactMatches = supportedAbis.flatMap { abi -> available.filter { it.abi.equals(abi, ignoreCase = true) } }
+    val universalMatches = available.filter { it.isUniversal || it.abi.startsWith("universal", ignoreCase = true) }.filter { supportedAbis.isEmpty() || universalCoverageAbis(it.abi).any { abi -> abi in supportedAbis } }
     val compatible = (exactMatches + universalMatches).distinctBy { it.fileName.ifBlank { it.downloadUrl } }
     return if (compatible.isNotEmpty()) compatible else available.distinctBy { it.fileName.ifBlank { it.downloadUrl } }
 }

@@ -61,6 +61,12 @@ val withExtension = project.hasProperty("withExtension") || withExtensionTaskReq
 val geoBundle = true
 val splitAbiList = if (withExtension) extensionAbiList else if (buildAllAbis) appAbiList else listOf("arm64-v8a")
 val packagingAbiList = if (withExtension) extensionAbiList else appAbiList
+// MMKV 产物线分包：每轮构建固定只携带本线 ABI，universal 随线拆分为 universal32/universal64 （4 ABI 总 universal 已弃用）。选线规则见根构建脚本的 mmkv.line 解析。
+val mmkv64Abis = setOf("arm64-v8a", "x86_64")
+val mmkvLine64 = rootProject.extra["mmkvLine"] == "64"
+val lineAbis = if (mmkvLine64) mmkv64Abis else setOf("armeabi-v7a", "x86")
+val lineSplitAbis = packagingAbiList.filter { it in lineAbis }
+val lineNativeAbis = appAbiList.filter { it in lineAbis }
 val projectApplicationId = providers.gradleProperty("project.applicationId").orElse(providers.gradleProperty("project.namespace.base")).get()
 val updateRepository = providers.gradleProperty("update.repository").orNull
     ?.trim()?.ifEmpty { null } ?: "LM-Firefly/FlyCat"
@@ -187,6 +193,13 @@ android {
         buildConfigField("String", "CORE_BRANCH", "\"${escapeBuildConfigString(mihomoBuildInfo.branch)}\"")
         buildConfigField("String", "CORE_COMMIT", "\"${escapeBuildConfigString(mihomoBuildInfo.commit)}\"")
         buildConfigField("String", "CORE_VERSION", "\"${escapeBuildConfigString(mihomoBuildInfo.displayVersion)}\"")
+        // 合包（universal32/64）的内容由 ndk.abiFilters 收窄到本线 ABI；split 由自身过滤器收窄。
+        // 注意 AGP 禁止 abiFilters 与 splits 过滤器在“无合包输出”（isUniversalApk=false）时并存 （报 Conflicting configuration），故仅在产合包时设置；纯 split 构建无需 abiFilters。
+        if (buildAllAbis || withExtension) {
+            ndk {
+                abiFilters.addAll(lineNativeAbis)
+            }
+        }
     }
 
     compileOptions {
@@ -281,11 +294,14 @@ android {
     splits {
         abi {
             //noinspection WrongGradleMethod
-            isEnable = gradle.startParameter.taskNames.none { it.contains("bundle", ignoreCase = true) }
+            // 本线 split 集合可能为空（如 withExtension × mmkv32 线）：此时关闭 splits，唯一产物即本线合包（universal32），由命名块按产物线命名。
+            isEnable = gradle.startParameter.taskNames.none { it.contains("bundle", ignoreCase = true) } && lineSplitAbis.isNotEmpty()
             reset()
-            // AGP Split.include only accepts vararg; copying this tiny ABI list is negligible.
-            @Suppress("SpreadOperator")
-            include(*packagingAbiList.toTypedArray())
+            if (lineSplitAbis.isNotEmpty()) {
+                // AGP Split.include 仅接受可变参数；复制这个极小的 ABI 列表可以忽略不计。
+                @Suppress("SpreadOperator")
+                include(*lineSplitAbis.toTypedArray())
+            }
             isUniversalApk = buildAllAbis || withExtension
         }
     }
@@ -324,10 +340,11 @@ android {
     //noinspection WrongGradleMethod
     androidComponents {
         onVariants { variant ->
+            val outputNamesByAbi = mutableMapOf<String, String>()
             variant.outputs.forEach { output ->
                 val abiName = output.filters.find {
                     it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI
-                }?.identifier ?: "universal"
+                }?.identifier ?: "universal${if (mmkvLine64) 64 else 32}"
                 val geoSegment = buildString {
                     append(apkGeoSegment)
                     if (withExtension) append("_Extension")
@@ -344,6 +361,43 @@ android {
                 (output as com.android.build.api.variant.impl.VariantOutputImpl).outputFileName.set(
                     outputName
                 )
+                outputNamesByAbi[abiName] = outputName
+            }
+            // 产物契约（自 kotlin-toolchain 打包管线回移）：自检 + .apk.json 身份 sidecar + 原子发布到 output_apk/<buildType>/。
+            // 每条 MMKV 产物线只发布属于自己的 ABI：arm64-v8a/x86_64 与 universal64 归 mmkv64 线， armeabi-v7a/x86 与 universal32 归 mmkv32 线（分线构建下本线之外的产物根本不会被产出）。
+            val capitalized = variant.name.replaceFirstChar(Char::uppercaseChar)
+            val signing = resolveSigningIdentity(project)
+            tasks.register<BuildApkPublishTask>("publish${capitalized}Apks") {
+                group = "distribution"
+                description = "Verifies ${variant.name} APKs and publishes them with .apk.json sidecars to output_apk/${variant.name} for the active MMKV line"
+                apkDir.set(variant.artifacts.get(SingleArtifact.APK))
+                outputNames.putAll(outputNamesByAbi)
+                publishAbis.set(
+                    outputNamesByAbi.keys.filter { key ->
+                        when (key) {
+                            "universal32" -> !mmkvLine64
+                            "universal64" -> mmkvLine64
+                            else -> (key in mmkv64Abis) == mmkvLine64
+                        }
+                    }.toSet(),
+                )
+                universalAbis.set(appAbiList)
+                requiredNativePatterns.set(listOf("libmihomo.so", "liboverride.so", "libmmkv.so"))
+                applicationId.set(projectApplicationId)
+                versionCode.set(appVersionCode.toString())
+                versionName.set(appVersionName)
+                moduleName.set("app")
+                variantName.set(variant.name)
+                geoLabel.set("builtin")
+                mmkvVersion.set(rootProject.extra["mmkvVersion"] as String)
+                buildToolsDir.set(layout.dir(provider { resolveBuildToolsDir(project) }))
+                if (signing != null) {
+                    signingStore.set(signing.store)
+                    signingAlias.set(signing.alias)
+                    signingStorePassword.set(signing.storePassword)
+                    signingKeyPassword.set(signing.keyPassword)
+                }
+                publishDir.set(rootProject.layout.projectDirectory.dir("output_apk/${variant.name}"))
             }
         }
     }

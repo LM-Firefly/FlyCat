@@ -55,7 +55,7 @@ plugins {
   alias(libs.plugins.version.catalog.update)
 }
 
-// AGP-created tool configurations (unified-test-platform-*, androidLintTool) and test classpaths resolve independently of the buildscript classpath above, so the same vulnerable-version floors must be enforced on project configurations as well.
+// AGP创建的工具配置（unified-test-platform-*、androidLintTool）和测试classpath独立于上述buildscript classpath进行解析，因此同样需要在项目配置上强制执行相同的易受攻击版本下限。
 allprojects {
     configurations.configureEach {
         resolutionStrategy.eachDependency {
@@ -79,12 +79,20 @@ val androidJvm = providers.gradleProperty("android.jvm").orElse(providers.gradle
 val androidJvmVersion = androidJvm.toInt()
 val androidNdkVersion = providers.gradleProperty("android.ndkVersion").orNull.orEmpty()
 
-// MMKV version selection: 64-bit for arm64/x86_64, 32-bit otherwise.
+// MMKV 版本按产物线选择：arm64-v8a/x86_64 走 mmkv64 线（2.4.3，仅 64 位原生库）， armeabi-v7a/x86 走 mmkv32 线（1.3.14，唯一覆盖 32 位的线）。两线 JNI 注册签名不兼容，不可混包。
+// 每轮构建固定归属一条产物线（universal 随线拆分为 universal32/universal64，4 ABI 总 universal 已弃用）：
+// -Pmmkv.line=32|64 显式选线（CI 每线一次完整构建）；未指定时按 android.injected.build.abi（IDE 按 ABI 部署）推断，缺省 64（主流产物线；32 位产物需显式 -Pmmkv.line=32 或 IDE 部署 32 位 ABI）。
+val mmkv64Abis = setOf("arm64-v8a", "x86_64")
 val mmkv64Version = libs.versions.mmkv64.get()
 val mmkv32Version = libs.versions.mmkv32.get()
+val explicitMmkvLine = providers.gradleProperty("mmkv.line").orNull?.trim()?.takeIf { it.isNotEmpty() }
+require(explicitMmkvLine == null || explicitMmkvLine in setOf("32", "64")) { "mmkv.line must be '32' or '64' but was '$explicitMmkvLine'" }
 val injectedAbi = findProperty("android.injected.build.abi") as? String
-val resolvedMmkvVersion = if (injectedAbi in listOf("arm64-v8a", "x86_64")) mmkv64Version else mmkv32Version
+val resolvedMmkvLine = explicitMmkvLine ?: if (injectedAbi != null && injectedAbi !in mmkv64Abis) "32" else "64"
+val resolvedMmkvVersion = if (resolvedMmkvLine == "64") mmkv64Version else mmkv32Version
 extra["mmkvVersion"] = resolvedMmkvVersion
+extra["mmkvLine"] = resolvedMmkvLine
+extra["mmkv64Abis"] = mmkv64Abis
 
 subprojects {
     apply(plugin = "jvm-toolchains")

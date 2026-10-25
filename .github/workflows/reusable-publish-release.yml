@@ -123,4 +123,6 @@ jobs:
           overwrite_files: true
           fail_on_unmatched_files: true
           make_latest: ${{ inputs.channel == 'stable' }}
-          files: publish/*.apk
+          files: |
+            publish/*.apk
+            publish/*.apk.json

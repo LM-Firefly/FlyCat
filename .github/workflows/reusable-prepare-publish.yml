@@ -127,13 +127,15 @@ jobs:
 
           while IFS= read -r file; do
             base="$(basename "$file")"
-            abi="universal"
+            abi=""
             case "$base" in
               *arm64-v8a*) abi="arm64-v8a" ;;
               *armeabi-v7a*) abi="armeabi-v7a" ;;
+              *universal32*) abi="universal32" ;;
+              *universal64*) abi="universal64" ;;
               *x86_64*) abi="x86_64" ;;
               *x86*) abi="x86" ;;
-              *) abi="universal" ;;
+              *) echo "::error::Unknown ABI segment in $base" >&2; exit 1 ;;
             esac
 
             if [[ "$base" =~ -([0-9]{12}-[0-9a-fA-F]{5,8})\.apk$ ]]; then
@@ -144,6 +146,9 @@ jobs:
             fi
             new_name="${{ inputs.artifact_prefix }}-${abi}-${build_id}.apk"
             cp -f "$file" "publish/${new_name}"
+            if [ -f "${file}.json" ]; then
+              cp -f "${file}.json" "publish/${new_name}.json"
+            fi
           done < <(find "${{ inputs.module }}/build/outputs/apk/release" -maxdepth 1 -type f -name '*.apk' | sort)
 
           if [ ! -d publish ] || [ -z "$(ls -A publish)" ]; then
@@ -165,6 +170,7 @@ jobs:
           import hashlib
           import json
           import os
+          import re
           from pathlib import Path
 
           publish_dir = Path("publish")
@@ -183,17 +189,17 @@ jobs:
           release_notes = release_notes_path.read_text(encoding="utf-8").strip() if release_notes_path.exists() else ""
 
           packages = []
+          # 文件名形态：<前缀>-<abi>-<yyyyMMddHHmm>-<hash>.apk；旧式 "-<abi>.apk" 尾缀匹配永不命中此形态（曾导致 meta 内 abi 全部误标为 universal），改按完整尾缀正则提取。
+          # 产物线契约只有 universal32/universal64 两分支（4 ABI 总 universal 已弃用），匹配不到即视为命名回归。
+          abi_pattern = re.compile(
+              r"-(arm64-v8a|armeabi-v7a|x86_64|x86|universal32|universal64)-[0-9]{12}-[0-9a-fA-F]{5,8}\.apk$"
+          )
           for apk in sorted(publish_dir.glob("*.apk")):
               name = apk.name
-              abi = "universal"
-              if "-arm64-v8a.apk" in name:
-                  abi = "arm64-v8a"
-              elif "-armeabi-v7a.apk" in name:
-                  abi = "armeabi-v7a"
-              elif "-x86_64.apk" in name:
-                  abi = "x86_64"
-              elif "-x86.apk" in name:
-                  abi = "x86"
+              match = abi_pattern.search(name)
+              if not match:
+                  raise SystemExit(f"Unknown ABI segment in {name}")
+              abi = match.group(1)
 
               h = hashlib.sha256()
               with apk.open("rb") as f:
@@ -206,7 +212,7 @@ jobs:
                   "downloadUrl": f"https://github.com/{repo}/releases/download/{release_tag}/{name}",
                   "size": apk.stat().st_size,
                   "sha256": h.hexdigest(),
-                  "isUniversal": abi == "universal",
+                  "isUniversal": abi.startswith("universal"),
               })
 
           meta = {
@@ -236,5 +242,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.publish_artifact_name }}
-          path: publish/*.apk
+          path: |
+            publish/*.apk
+            publish/*.apk.json
           if-no-files-found: error

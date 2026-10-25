@@ -28,7 +28,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v6
         with:
-          distribution: temurin
+          distribution: zulu
           java-version: "26"
       - name: Setup Kotlin
         uses: fwilhe2/setup-kotlin@main

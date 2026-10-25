@@ -142,15 +142,49 @@ android {
     }
     androidComponents {
         onVariants { variant ->
+            val outputNamesByAbi = mutableMapOf<String, String>()
             variant.outputs.forEach { output ->
                 val abiName = output.filters.find {
                     it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI
-                }?.identifier ?: "universal"
+                }?.identifier ?: error("Extension output must carry an ABI split filter")
                 val buildTypeName = variant.buildType ?: "release"
                 output.versionName.set(providers.gradleProperty("project.version.name").get())
+                val outputName = "extension-${abiName}-${buildTypeName}-${updateUiBuildId}.apk"
                 (output as com.android.build.api.variant.impl.VariantOutputImpl).outputFileName.set(
-                    "extension-${abiName}-${buildTypeName}-${updateUiBuildId}.apk"
+                    outputName
                 )
+                outputNamesByAbi[abiName] = outputName
+            }
+            // 产物契约（自 kotlin-toolchain 打包管线回移）：自检 + .apk.json 身份边车 + 原子发布到 output_apk/<buildType>/。
+            // extension 只产 64 位 ABI，由 mmkv64 线的那一轮发布（mmkv32 线一轮为空属正常）。
+            val capitalized = variant.name.replaceFirstChar(Char::uppercaseChar)
+            val mmkv64Abis = rootProject.extra["mmkv64Abis"] as Set<String>
+            val mmkvLine64 = rootProject.extra["mmkvLine"] == "64"
+            val extensionAbis = providers.gradleProperty("abi.extension.list").getOrElse("arm64-v8a,x86_64").split(',').map { it.trim() }.filter { it.isNotEmpty() }
+            val signing = resolveSigningIdentity(project)
+            tasks.register<BuildApkPublishTask>("publish${capitalized}Apks") {
+                group = "distribution"
+                description = "Verifies ${variant.name} APKs and publishes them with .apk.json sidecars to output_apk/${variant.name} for the active MMKV line"
+                apkDir.set(variant.artifacts.get(com.android.build.api.artifact.SingleArtifact.APK))
+                outputNames.putAll(outputNamesByAbi)
+                publishAbis.set(outputNamesByAbi.keys.filter { (it in mmkv64Abis) == mmkvLine64 }.toSet())
+                universalAbis.set(extensionAbis)
+                requiredNativePatterns.set(listOf("libjavet*.so"))
+                applicationId.set("$projectApplicationId.extension")
+                versionCode.set(updateUiBuildId.takeWhile { it.isDigit() }.take(8).toInt().toString())
+                versionName.set(providers.gradleProperty("project.version.name").get())
+                moduleName.set("extension")
+                variantName.set(variant.name)
+                geoLabel.set("none")
+                mmkvVersion.set("none")
+                buildToolsDir.set(layout.dir(provider { resolveBuildToolsDir(project) }))
+                if (signing != null) {
+                    signingStore.set(signing.store)
+                    signingAlias.set(signing.alias)
+                    signingStorePassword.set(signing.storePassword)
+                    signingKeyPassword.set(signing.keyPassword)
+                }
+                publishDir.set(rootProject.layout.projectDirectory.dir("output_apk/${variant.name}"))
             }
         }
     }
