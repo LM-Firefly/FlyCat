@@ -4,13 +4,36 @@
 
 ## [Unreleased]
 
+## [0.5.9] - 2026-10-25
+
+### 新增
+
+- **日志中心双入口**：拆分 mihomo 日志 / App 日志入口，新增 mihomo 实时日志预览（级别筛选、搜索、导出，可见时才订阅，模式感知 local/root/remote）；App 日志分区展示应用日志与崩溃日志，右上角快切日志级别；Go 端取消内核日志级别过滤，改客户端实时筛选（`feat(log)`）
+- **特权服务**：接入 priv-kit 特权服务，Root/无线ADB/静态端口/手动/Shizuku 四通道启动 Privileged Server，XMSF 防火墙绕过改走 priv-kit；新增设置页（状态卡+四 Tab+配对弹窗+启动日志，通知栏内嵌输码配对），Shizuku 降级为外部启动通道（`feat(privilege)`）
+- **策略组图标与国旗拼接显示**：策略组图标与节点国旗在面包屑、代理链路、节点卡片全局拼接展示（`feat(proxy)`）
+- **自定义内核导入**：导入改底部面板，内核链接/本地插件文件双模式，支持本地插件文件安装激活（`feat(settings)`）
+- **MIUI/HyperOS 开机自启适配**：小米设备开启「自动启动」时若私有自启动权限（AppOps 10008）未授予，弹 toast 并跳转系统自启动管理页（`feat(settings)`）
+
 ### 修复
 
-- **策略组图标不显示**：0.5.8 布局统一误删了策略组卡片的图标渲染调用；恢复单栏/双栏卡片图标，渲染守卫改为仅加载成功才显示（原 `result != null` 对失败态也为真），并为图片请求设显式尺寸——避免「仅成功才绘制」与「尺寸依赖绘制」互相死锁导致图标永不加载；失败/加载中整块折叠不留空白（`fix(proxy)`）
+- **策略组图标不显示**：0.5.8 布局统一误删了策略组卡片的图标渲染调用；恢复单栏/双栏卡片图标（Close #208），渲染守卫改为仅加载成功才显示（原 `result != null` 对失败态也为真），并为图片请求设显式尺寸——避免「仅成功才绘制」与「尺寸依赖绘制」互相死锁导致图标永不加载；失败/加载中整块折叠不留空白（`fix(proxy)`）
+- **国旗图标比例**：改用 Noto Emoji region-flags 真实比例矩形图标（`fix(ui)`）
+- **连接页/流量统计页表头**：表头固定出列表，随 TopBar 折叠收缩（`fix(dashboard)`）
+- **eBPF 统计回调补丁**：重定基至 liuran001 02581ff38，适配内核统计层休眠唤醒机制（trafficWake），OnJoin/OnLeave/OnTrafficUpdate 消费端契约不变（`fix(patches)`）
+- **Javet 库解析**：按候选名兜底解析落盘库，XZ 解压改按魔数判断，扩展包缺库时回退主 APK（`fix(build)`）
+
+### 性能优化
+
+- **延迟测试刷新**：延迟结果改 per-node 流发布，测速结果只更新受影响徽标不再整列表替换（消除 NodeCard 重组卡顿）；查询与发布移入同一锁内原子化，消除慢查询旧快照覆盖测速结果；批量测速期改 700ms 渐进刷新+收尾对账（`perf(proxy)`）
+- **高频载荷序列化**：Go↔Kotlin 与 root binder 的高频小对象（日志行、连接关闭事件、代理组、单点延迟）改分隔符/裸 int 编码，免去数百 KB JSON 双侧重序列化（保留 JSON 兜底，旧原生优雅降级）；root 模式日志改按需订阅（预览打开才持有逐行订阅）；测速热路径去冗余，700ms 周期刷新改内存增量重算（`perf(runtime)`）
 
 ### 变更
 
 - **本地化实现重构**：移除 `ren.shiror.fyl.fytxt` 代码生成插件，多语言改为直接提交的 Kotlin + Lyricist（KSP）实现，翻译源迁移至 `locale/src`（`refactor(locale)`）
+- **打包管线**：MMKV 按 ABI 分线（arm64-v8a/x86_64 对 mmkv64 2.4.3、armeabi-v7a/x86 对 mmkv32 1.3.14），universal 拆分 universal32/universal64 双分支、4 ABI 总包弃用；发布前产物自检（zip CRC/必备原生库/aapt2 badging/zipalign/apksigner）并写 `.apk.json` 身份 sidecar；更新匹配按位宽过滤合包（`build`）
+- **so 原地压缩打包**：非引导 so strip 后原地 XZ 压缩，删除 :pack 模块与 Rust 载荷提取器，运行时按 XZ 魔数解载并注入 classloader 搜索路径（`feat(privilege)`）
+- **APK 命名**：删除 geo 段（builtin/Extension→Extension），CI 改按完整连字符段严格提取 abi/build_id（`fix(build)`）
+- **内核与依赖**：mihomo 与 native go 模块同步更新；Cargo.lock 依赖更新（boa、serde_json、syn 等）；CI 升级 checkout@v7 与 NDK 30.0.16248370（`chore`）
 
 ## [0.5.8] - 2026-10-09
 

@@ -9,6 +9,42 @@ icon: "clock"
 <Card title="GitHub Releases" icon="download" horizontal href="https://github.com/LM-Firefly/FlyCat/releases">
 </Card>
 
+<Update label="2026-10-25" tags={["功能更新","性能优化","问题修复","变更"]} description="v0.5.9 · 日志中心、特权服务与打包管线升级">
+  ## 日志中心
+
+  - 拆分 mihomo 日志 / App 日志双入口，新增 mihomo 实时日志预览：级别筛选、搜索、导出，可见时才订阅
+  - App 日志分区展示应用日志与崩溃日志，右上角快切日志级别；Go 端取消内核日志级别过滤，改客户端实时筛选
+
+  ## 特权服务
+
+  - 接入 priv-kit 特权服务：Root/无线ADB/静态端口/手动/Shizuku 四通道启动，XMSF 防火墙绕过改走 priv-kit
+  - 新增特权服务设置页（状态卡+四 Tab+配对弹窗+启动日志），配对支持通知栏内嵌输码；Shizuku 降级为外部启动通道
+
+  ## 代理页与界面
+
+  - 策略组图标不显示修复（Close #208）：恢复单栏/双栏卡片图标渲染，渲染守卫仅加载成功才显示，图片请求设显式尺寸，根治图标永不加载死锁
+  - 策略组图标与节点国旗全局拼接显示（面包屑/链路/卡片）；国旗改用 Noto Emoji region-flags 真实比例矩形图标
+  - 连接页/流量统计页表头固定出列表，随 TopBar 折叠收缩
+
+  ## 性能优化
+
+  - 延迟结果改 per-node 流发布：测速只更新受影响徽标不再替换整列表，查询与发布原子化消除旧快照覆盖
+  - 高频载荷（日志行、连接事件、代理组、单点延迟）改分隔符/裸 int 编码，免去数百 KB JSON 双侧重序列化；root 模式日志改按需订阅；测速热路径去冗余
+
+  ## 设置与内核
+
+  - 自定义内核导入改底部面板，内核链接/本地插件文件双模式安装
+  - MIUI/HyperOS 开机自启适配：开启自动启动时引导授予小米私有自启动权限（AppOps 10008）
+  - eBPF 统计回调补丁重定基至 liuran001 02581ff38，消费端契约不变
+
+  ## 变更
+
+  - 本地化实现重构：移除 fytxt 代码生成插件，多语言改为直接提交的 Kotlin + Lyricist（KSP）实现，翻译源迁移至 `locale/src`
+  - 打包管线：MMKV 按 ABI 分线，universal32/universal64 双分支取代 4 ABI 总包，发布前产物自检并写 .apk.json 身份 sidecar；非引导 so 原地 XZ 压缩，删除 :pack 模块；APK 命名删除 geo 段
+
+  [下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.9)
+</Update>
+
 <Update label="2026-10-09" tags={["功能更新","问题修复","变更"]} description="v0.5.8 · 节点搜索、切节点防卡死与 emoji 对齐">
   ## 代理页体验
 
