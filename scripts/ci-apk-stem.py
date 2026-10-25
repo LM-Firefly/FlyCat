@@ -1,4 +1,3 @@
-@ -1,28 +0,0 @@
 #!/usr/bin/env python3
 """Compute the publish APK file stem used by CI."""
 
@@ -16,7 +15,7 @@ def main() -> int:
     args = parser.parse_args()
     if not args.tail:
         parser.error("TAIL must not be empty")
-    stem = f"{args.prefix}-{args.geo}"
+    stem = args.prefix
     if args.channel_segment:
         stem += f"-{args.channel_segment}"
     print(f"{stem}-{args.tail}")

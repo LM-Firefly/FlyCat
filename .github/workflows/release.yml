@@ -35,7 +35,7 @@ jobs:
           set -eu
           release_tag="${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}"
           expected_version="${release_tag#v}"
-          actual_version="$(grep '^project.version.name=' gradle.properties | cut -d= -f2-)"
+          actual_version="$(grep '^project.version.name=' product.properties | cut -d= -f2-)"
           if [ "${actual_version}" != "${expected_version}" ]; then
             echo "::error::release tag ${release_tag} expects project.version.name=${expected_version}, got ${actual_version}"
             exit 1

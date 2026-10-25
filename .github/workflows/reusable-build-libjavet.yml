@@ -34,16 +34,16 @@ jobs:
           distribution: zulu
           java-version: "26"
 
-      - name: Setup Kotlin
-        uses: fwilhe2/setup-kotlin@main
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+      - name: Cache Kotlin Toolchain
+        uses: actions/cache@v6
         with:
-          packages: ""
+          path: |
+            ~/.cache/JetBrains/Kotlin
+            .kotlin/flycat/maven
+            .kotlin/flycat/gradle-*
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('kotlin', '*module-template.yaml', '**/module.yaml', 'gradle/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-
 
       - name: Configure local.properties
         run: |
@@ -51,8 +51,7 @@ jobs:
 
       - name: Build libjavet.so.xz
         run: |
-          chmod +x gradlew
-          ./gradlew --no-daemon :extension:compressJavetNative
+          sh kotlin run -m packaging -- --module=extension --build-type=release --javet-assets
 
       - name: Verify output
         run: |

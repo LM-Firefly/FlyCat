@@ -1,0 +1,25 @@
+modules:
+  - app
+  - build-logic
+  - core
+  - data
+  - extension
+  - feature/about
+  - feature/dashboard
+  - feature/editor
+  - feature/home
+  - feature/log
+  - feature/override
+  - feature/profiles
+  - feature/proxy
+  - feature/settings
+  - feature/substore
+  - locale
+  - packaging
+  - resource-symbols
+  - runtime/api
+  - runtime/client
+  - runtime/service
+  - ui
+plugins:
+  - ./build-logic

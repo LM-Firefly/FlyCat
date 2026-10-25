@@ -126,7 +126,9 @@ miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons", version.ref = "miu
 miuix-preference = { module = "top.yukonga.miuix.kmp:miuix-preference", version.ref = "miuix" }
 miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui", version.ref = "miuix" }
 mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkitBarcodeScanning" }
-mmkv = { module = "com.tencent:mmkv", version.ref = "mmkv64" }
+# MMKV 按 ABI 分线：打包管线为 64 位产物（arm64-v8a/x86_64）瞬时写入根目录 libs.versions.toml（覆盖 gradle/ 下本文件）把下一行切到 mmkv64（2.4.3，仅 64 位原生库）；
+# 32 位产物与 universal 走 mmkv32（1.3.14，唯一覆盖四 ABI 的线）。两线 JNI 注册签名不兼容，不可混用。
+mmkv = { module = "com.tencent:mmkv", version.ref = "mmkv32" }
 privkit-core = { module = "io.github.priv-kit:priv-core", version.ref = "privKit" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }

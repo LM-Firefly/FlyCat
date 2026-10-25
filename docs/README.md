@@ -69,7 +69,7 @@ See [ThirdParty](ThirdParty.md) for the third-party libraries used in this proje
 
 ## Build
 
-FlyCat does not use Git submodules. A clean checkout needs the mihomo source and generated assets before Gradle can build the app.
+FlyCat does not use Git submodules. A clean checkout needs the mihomo source and generated assets before the build can produce the app.
 
 1. Install **OpenJDK 26**, **Android SDK 37**, **NDK 30.0.16248370**, **CMake 3.22.1**, **Kotlin CLI**, **Go 1.26**, **Rust nightly**, Git, and `patch`.
 
@@ -122,14 +122,16 @@ FlyCat does not use Git submodules. A clean checkout needs the mihomo source and
 7. Build the APK:
 
    ```bash
-   # arm64-v8a debug APK (local default)
-   ./gradlew :app:assembleDebug
+   # Per-ABI debug APKs (local default)
+   sh kotlin run -m packaging -- --module=app --build-type=debug
 
-   # Release APKs for every configured ABI plus a universal APK
-   ./gradlew -Pbuild.allAbis=true :app:assembleRelease
+   # Release APKs for every configured ABI plus universal32/universal64 split APKs
+   sh kotlin run -m packaging -- --build-type=release -Pbuild.allAbis=true
 
-   # Release APK with extension (arm64-v8a and x86_64, includes Javet libs)
-   ./gradlew assembleReleaseWithExtension
+   # Release APK with extension (arm64-v8a and x86_64 + universal32/universal64, includes Javet libs)
+   # and the extension sidecar APK
+   sh kotlin run -m packaging -- --build-type=release --with-extension
+   sh kotlin run -m packaging -- --module=extension --build-type=release
    ```
 
-   APKs are written to `app/build/outputs/apk/<build-type>/`. Geo assets (geoip.metadb, geosite.dat, ASN.mmdb, BundleMRS.7z) are always bundled. On Windows, use `gradlew.bat`.
+   APKs are written to `output_apk/<build-type>/`. Geo assets (geoip.metadb, geosite.dat, ASN.mmdb, BundleMRS.7z) are always bundled. On Windows, use `kotlin.bat` instead of `sh kotlin`.

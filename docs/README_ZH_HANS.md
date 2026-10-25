@@ -122,14 +122,15 @@ FlyCat 不使用 Git submodule。从干净检出开始构建前，需要先准�
 7. 构建 APK：
 
    ```bash
-   # 本地默认：arm64-v8a Debug APK
-   ./gradlew :app:assembleDebug
+   # 本地默认：生成各 ABI 的 Debug APK
+   sh kotlin run -m packaging -- --module=app --build-type=debug
 
-   # 为所有已配置 ABI 构建 Release APK，并额外生成通用 APK
-   ./gradlew -Pbuild.allAbis=true :app:assembleRelease
+   # 为所有已配置 ABI 构建 Release APK，并额外生成 universal32/universal64 分线合包
+   sh kotlin run -m packaging -- --build-type=release -Pbuild.allAbis=true
 
-   # Release APK（含扩展，arm64-v8a 和 x86_64，包含 Javet 库）
-   ./gradlew assembleReleaseWithExtension
+   # Release APK（含扩展，arm64-v8a 和 x86_64 + universal32/universal64，包含 Javet 库）及扩展副 APK
+   sh kotlin run -m packaging -- --build-type=release --with-extension
+   sh kotlin run -m packaging -- --module=extension --build-type=release
    ```
 
-   APK 输出到 `app/build/outputs/apk/<build-type>/`。Geo 资源（geoip.metadb、geosite.dat、ASN.mmdb、BundleMRS.7z）始终内置。Windows 请使用 `gradlew.bat`。
+   APK 输出到 `output_apk/<build-type>/`。Geo 资源（geoip.metadb、geosite.dat、ASN.mmdb、BundleMRS.7z）始终内置。Windows 请使用 `kotlin.bat` 代替 `sh kotlin`。

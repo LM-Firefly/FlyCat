@@ -30,7 +30,7 @@ on:
         type: string
         default: ''
       build_number:
-        description: "Deprecated compatibility input; versionCode is derived from git commit count in this workflow."
+        description: "Deprecated compatibility input; versionCode is derived from the build timestamp (yyyyMMdd)."
         required: false
         type: string
         default: ""
@@ -67,22 +67,23 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      # Kotlin 工具链针对 JDK 26（android.jvm）进行编译。在此处提供 JDK 可避免其内置的自动下载路径。
       - name: Setup Java
         uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: "26"
 
-      - name: Setup Kotlin
-        uses: fwilhe2/setup-kotlin@main
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+      - name: Cache Kotlin Toolchain
+        uses: actions/cache@v6
         with:
-          packages: "build-tools;37.0.0"
+          path: |
+            ~/.cache/JetBrains/Kotlin
+            .kotlin/flycat/maven
+            .kotlin/flycat/gradle-*
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('kotlin', '*module-template.yaml', '**/module.yaml', 'gradle/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-
 
       - name: Cache NDK
         id: cache-ndk
@@ -92,6 +93,11 @@ jobs:
           key: ${{ runner.os }}-ndk-30.0.16248370-v2
           restore-keys: |
             ${{ runner.os }}-ndk-30.0.16248370-v2-
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools platforms;android-37.0 build-tools;37.0.0"
 
       - name: Install NDK
         if: steps.cache-ndk.outputs.cache-hit != 'true'
@@ -137,7 +143,6 @@ jobs:
           BUILD_BRANCH: ${{ inputs.build_branch }}
         run: |
           set -eu
-          chmod +x gradlew
           if [ -n "${{ inputs.ui_build_id }}" ]; then
             ui_build_id="${{ inputs.ui_build_id }}"
           else
@@ -145,27 +150,25 @@ jobs:
             commit_short="$(git rev-parse --short=6 HEAD)"
             ui_build_id="${build_stamp}-${commit_short}"
           fi
-          build_number="$(git rev-list --count HEAD)"
           EXTRA_ARGS=""
           if [ "${{ inputs.with_extension }}" = "true" ]; then
-            EXTRA_ARGS="-PwithExtension=true"
+            EXTRA_ARGS="--with-extension"
           fi
-          # 每条 MMKV 产物线一次完整构建：armeabi-v7a/x86/universal32 归 mmkv32 线，arm64-v8a/x86_64/universal64 归 mmkv64 线。
-          # publishReleaseApks 自检通过后把本线产物连同 .apk.json 身份边车原子发布到 output_apk/release/。
-          for mmkv_line in 32 64; do
-            ./gradlew --no-daemon \
-              -Pupdate.channel="${{ inputs.channel }}" \
-              -Pupdate.tag="${{ inputs.release_tag }}" \
-              -Pupdate.metaAssetName="${{ inputs.meta_asset_name }}" \
-              -Pupdate.uiBuildId="${ui_build_id}" \
-              -Pbuild.number="${build_number}" \
-              -Pbuild.hash="${BUILD_HASH:0:8}" \
-              -Pbuild.branch="${BUILD_BRANCH}" \
-              -Pmmkv.line="${mmkv_line}" \
-              $EXTRA_ARGS \
-              :${{ inputs.module }}:assembleRelease \
-              :${{ inputs.module }}:publishReleaseApks
-          done
+          # 工具链打包管线在内部按 mmkv32/mmkv64 两线各构建一次并按线发布：armeabi-v7a/x86/universal32
+          # 归 mmkv32 线，arm64-v8a/x86_64/universal64 归 mmkv64 线（universal32/universal64 分线合包，
+          # 每产物 dex 与原生库严格同线配对），单条命令即产出全部产物线，无需外层循环。
+          # 自检通过后产物连同 .apk.json 身份边车原子发布到 output_apk/release/。
+          sh kotlin run -m packaging -- \
+            --module="${{ inputs.module }}" \
+            --build-type=release \
+            -Pupdate.channel="${{ inputs.channel }}" \
+            -Pupdate.tag="${{ inputs.release_tag }}" \
+            -Pupdate.metaAssetName="${{ inputs.meta_asset_name }}" \
+            -Pupdate.uiBuildId="${ui_build_id}" \
+            -Pbuild.number="${BUILD_NUMBER}" \
+            -Pbuild.hash="${BUILD_HASH:0:8}" \
+            -Pbuild.branch="${BUILD_BRANCH}" \
+            $EXTRA_ARGS
 
       - name: Upload raw APK artifact
         uses: actions/upload-artifact@v7

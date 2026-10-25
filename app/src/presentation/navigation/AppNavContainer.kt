@@ -108,7 +108,7 @@ fun RouteContent(route: Route, navigator: Navigator, mainPage: Int = 0) {
         Route.AppLog -> AppLogScreen(navigator)
         Route.Rules -> RulesScreen(navigator)
         Route.About -> AboutScreen(navigator, appIconResId = R.drawable.flycat)
-        Route.OpenSourceLicenses -> OpenSourceLicensesScreen(navigator, librariesResId = R.raw.aboutlibraries)
+        Route.OpenSourceLicenses -> OpenSourceLicensesScreen(navigator)
         Route.Override -> OverrideScreen(navigator)
         Route.OverrideConfigPreview -> OverrideConfigPreviewRoute(navigator)
         Route.Providers -> ProvidersScreen(navigator)

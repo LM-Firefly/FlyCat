@@ -1,0 +1,31 @@
+product:
+  type: kmp/lib
+  platforms: [android]
+apply:
+  - //compose.module-template.yaml
+settings:
+  android:
+    namespace: com.github.lmfirefly.flycat.feature.home
+dependencies:
+  - //core
+  - //locale
+  - //ui
+  - //runtime/api
+  - $libs.androidx.compose.animation
+  - $libs.androidx.activity.compose
+  - $libs.androidx.lifecycle.viewmodel.ktx
+  - $libs.androidx.lifecycle.runtime.compose
+  - $libs.kotlinx.coroutines.android
+  - $libs.kotlinx.serialization.json
+  - $libs.koin.core
+  - $libs.koin.android
+  - $libs.koin.androidx.compose
+  - $libs.timber
+  - $libs.sketch.compose
+  - $libs.sketch.http
+  - $libs.miuix.ui
+  - $libs.miuix.preference
+  - $libs.miuix.icons
+  - $libs.miuix.blur.android
+  - $libs.haze
+  - $libs.haze.blur

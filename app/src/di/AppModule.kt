@@ -21,7 +21,7 @@
 
 package com.github.lmfirefly.flycat.di
 
-import com.github.lmfirefly.flycat.BuildConfig
+import com.github.lmfirefly.flycat.BuildInfo
 import com.github.lmfirefly.flycat.data.di.dataBackupModule
 import com.github.lmfirefly.flycat.data.di.dataStoreModule
 import com.github.lmfirefly.flycat.feature.about.UpdateBuildConfig
@@ -41,11 +41,11 @@ import org.koin.dsl.module
 val appUpdateModule = module {
     single {
         UpdateBuildConfig(
-            versionName = BuildConfig.VERSION_NAME,
-            updateSource = BuildConfig.UPDATE_SOURCE,
-            uiBuildId = BuildConfig.UI_BUILD_ID,
-            updateRepository = BuildConfig.UPDATE_REPOSITORY,
-            updateMirrorTemplates = BuildConfig.UPDATE_MIRROR_TEMPLATES,
+            versionName = BuildInfo.VERSION_NAME,
+            updateSource = BuildInfo.UPDATE_SOURCE,
+            uiBuildId = BuildInfo.UI_BUILD_ID,
+            updateRepository = BuildInfo.UPDATE_REPOSITORY,
+            updateMirrorTemplates = BuildInfo.UPDATE_MIRROR_TEMPLATES,
         )
     }
 }

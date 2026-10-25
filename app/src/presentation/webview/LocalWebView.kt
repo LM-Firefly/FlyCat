@@ -50,7 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.github.lmfirefly.flycat.BuildConfig
+import com.github.lmfirefly.flycat.BuildInfo
 import com.github.lmfirefly.flycat.WebViewActivity
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import timber.log.Timber
@@ -65,7 +65,7 @@ private object NoOpWebChromeClient : WebChromeClient()
 fun LocalWebView(
     initialUrl: String,
     modifier: Modifier = Modifier,
-    enableDebug: Boolean = BuildConfig.DEBUG,
+    enableDebug: Boolean = BuildInfo.DEBUG,
     onPageFinished: (String) -> Unit = {},
     onPageError: (String, String) -> Unit = { _, _ -> },
 ) {

@@ -8,6 +8,8 @@
 **/out/
 **/release
 **/target/
+/libs.versions.toml
+/output_apk/
 
 # Build artifacts
 *.aab
@@ -103,7 +105,6 @@ Thumbs.db
 /docs/override-merge-plan/
 /google-services.json
 /lib/mihomo/mihomo/
-/output_apk/
 /rule.md
 /scripts/rewrite-git-email.sh
 # Python bytecode

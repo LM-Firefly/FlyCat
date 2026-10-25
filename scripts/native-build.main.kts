@@ -34,6 +34,7 @@ class ProjectConfig {
     private val kernelFile = File("kernel.properties")
     private val localFile = File("local.properties")
     private val gradleFile = File("gradle.properties")
+    private val productFile = File("product.properties")
     init {
         if (kernelFile.exists()) {
             kernelFile.inputStream().use { properties.load(it) }
@@ -43,6 +44,9 @@ class ProjectConfig {
         }
         if (gradleFile.exists()) {
             gradleFile.inputStream().use { properties.load(it) }
+        }
+        if (productFile.exists()) {
+            productFile.inputStream().use { properties.load(it) }
         }
     }
     fun getString(key: String, default: String = ""): String {

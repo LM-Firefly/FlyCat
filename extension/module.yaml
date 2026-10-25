@@ -1,0 +1,14 @@
+product: android/app
+apply:
+  - //android.module-template.yaml
+settings:
+  android:
+    applicationId: com.github.lmfirefly.flycat.extension
+    namespace: com.github.lmfirefly.flycat.extension
+    versionCode: 1
+    versionName: "build-input"
+    resourcePackaging:
+      excludes:
+        - META-INF/**
+dependencies:
+  - $libs.javet.node.android

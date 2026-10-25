@@ -1,0 +1,12 @@
+tasks:
+  buildInfo:
+    action: !dev.flycat.build.generateBuildInfo
+      requestFile: ${project.rootDir}/.kotlin/flycat/request.properties
+      catalogFile: ${project.rootDir}/gradle/libs.versions.toml
+      resourceSymbols: ${project.rootDir}/.kotlin/flycat/resource-symbols.json
+      namespace: ${module.settings.android.namespace}
+      sourceDir: ${taskOutputDir}
+generated:
+  sources:
+    - language: kotlin
+      directory: ${tasks.buildInfo.action.sourceDir}
