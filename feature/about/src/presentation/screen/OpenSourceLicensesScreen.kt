@@ -22,6 +22,7 @@
 package com.github.lmfirefly.flycat.feature.about.presentation.screen
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,10 +47,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,12 +64,15 @@ import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingV
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
+import com.github.lmfirefly.flycat.presentation.icon.FlyCat
+import com.github.lmfirefly.flycat.presentation.icon.flycat.chevron
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.ui.platform.openUrl
 import com.mikepenz.aboutlibraries.entity.Library
 import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.util.strippedLicenseContent
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -81,7 +88,7 @@ fun OpenSourceLicensesScreen(navigator: Navigator, librariesResId: Int) {
     BackHandler { navigator.pop() }
 
     val libraries by produceLibraries(librariesResId)
-    val libraryItems = remember(libraries) { libraries?.libraries.orEmpty() }
+    val libraryItems = remember(libraries) { libraries?.libraries.orEmpty().groupBy { it.name }.map { (name, group) -> LibraryGroup(name = name, entries = group.sortedBy { it.uniqueId }) } }
 
     Scaffold(
         topBar = { TopBar(title = FlyTxt.OpenSourceLicenses.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(navigator = navigator) }) }
@@ -94,18 +101,11 @@ fun OpenSourceLicensesScreen(navigator: Navigator, librariesResId: Int) {
             if (libraryItems.isNotEmpty()) {
                 items(
                     items = libraryItems,
-                    key = { library ->
-                        "${library.uniqueId}:${library.artifactId}:${library.name}"
-                    },
-                ) { library ->
-                    LibraryItem(
-                        library = library,
-                        onClick = {
-                            val url = library.projectUrl
-                            if (!url.isNullOrBlank()) {
-                                openUrl(context, url)
-                            }
-                        },
+                    key = { group -> "name:${group.name}" },
+                ) { group ->
+                    LibraryGroupItem(
+                        group = group,
+                        onOpenUrl = { url -> openUrl(context, url) },
                     )
                 }
                 item { Spacer(modifier = Modifier.height(spacing.space24)) }
@@ -116,9 +116,12 @@ fun OpenSourceLicensesScreen(navigator: Navigator, librariesResId: Int) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun LibraryItem(library: Library, onClick: () -> Unit) {
+private fun LibraryGroupItem(group: LibraryGroup, onOpenUrl: (String) -> Unit) {
     val spacing = AppTheme.spacing
-    val hasUrl = !library.projectUrl.isNullOrBlank()
+    val library = group.representative
+    val url = library.projectUrl
+    val expandable = group.entries.size > 1
+    var expanded by rememberSaveable(group.name) { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.padding(bottom = spacing.space12),
@@ -129,10 +132,10 @@ private fun LibraryItem(library: Library, onClick: () -> Unit) {
                 Modifier
                     .fillMaxWidth()
                     .then(
-                        if (hasUrl) {
-                            Modifier.clickable(onClick = onClick)
-                        } else {
-                            Modifier
+                        when {
+                            expandable -> Modifier.clickable { expanded = !expanded }
+                            url != null -> Modifier.clickable { onOpenUrl(url) }
+                            else -> Modifier
                         }
                     )
                     .padding(spacing.space16),
@@ -144,19 +147,27 @@ private fun LibraryItem(library: Library, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = library.name,
+                    text = group.name,
                     style = MiuixTheme.textStyles.body1,
                     color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                library.artifactVersion?.let { version ->
+                group.version?.let { version ->
                     Text(
                         text = version,
                         style = MiuixTheme.textStyles.body2,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         modifier = Modifier.padding(start = spacing.space12),
+                    )
+                }
+                if (expandable) {
+                    Icon(
+                        FlyCat.chevron,
+                        contentDescription = null,
+                        modifier = Modifier.padding(start = spacing.space8).size(18.dp).rotate(if (expanded) 90f else 0f),
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                 }
             }
@@ -175,6 +186,47 @@ private fun LibraryItem(library: Library, onClick: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(spacing.space6),
                 ) {
                     library.licenses.forEach { license -> LicenseChip(licenseName = license.name) }
+                }
+            }
+
+            if (expandable) {
+                AnimatedVisibility(visible = expanded) {
+                    Column(verticalArrangement = Arrangement.spacedBy(spacing.space8)) {
+                        group.entries.forEach { entry ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = entry.uniqueId,
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                entry.artifactVersion?.let { version ->
+                                    Text(
+                                        text = version,
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                        modifier = Modifier.padding(start = spacing.space12),
+                                    )
+                                }
+                            }
+                        }
+                        if (url != null) {
+                            Text(
+                                text = url,
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.clickable { onOpenUrl(url) },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -203,3 +255,12 @@ private fun LicenseChip(licenseName: String) {
 
 private val Library.projectUrl: String?
     get() = website?.takeIf { it.isNotBlank() } ?: scm?.url?.takeIf { it.isNotBlank() }
+
+ /** 同名多 artifact 的项目（如 Essenty 的 back-handler / lifecycle / state-keeper 等）在 AboutLibraries 中各自成条。按 name 归组：头部只展示一次，点击展开可查看组内全部 uniqueId。 */
+private data class LibraryGroup(val name: String, val entries: List<Library>) {
+    val representative: Library
+        get() = entries.firstOrNull { !it.projectUrl.isNullOrBlank() } ?: entries.first()
+    /** 组内版本一致时展示该版本；不一致则留空，展开行各自标注版本。 */
+    val version: String?
+        get() = entries.mapNotNull { it.artifactVersion }.distinct().singleOrNull()
+}
