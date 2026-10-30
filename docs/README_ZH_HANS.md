@@ -71,7 +71,7 @@ FlyCat 目前仅支持 **Android 8.0（API 26）及以上系统**。
 
 FlyCat 不使用 Git submodule。从干净检出开始构建前，需要先准备 Mihomo 源码和生成资源。
 
-1. 安装 **OpenJDK 26**、**Android SDK 37**、**NDK 30.0.16248370**、**CMake 3.22.1**、**Kotlin CLI**、**Go 1.26**、**Rust nightly**、Git 和 `patch`。
+1. 安装 **OpenJDK 26**、**Android SDK 37**、**NDK 30.0.16248370**、**CMake 3.22.1**、**Kotlin CLI**、**Go 1.27**、**Rust nightly**、Git 和 `patch`。
 
    ```bash
    sdkmanager "platforms;android-37" "ndk;30.0.16248370" "cmake;3.22.1"
