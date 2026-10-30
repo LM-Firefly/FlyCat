@@ -41,7 +41,7 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-download-base-url: 'https://github.com/MetaCubeX/go/releases/download/build'
-          go-version: '1.26'
+          go-version: '1.27'
 
       - name: Setup Rust
         # nightly + rust-src: the rust build uses -Zbuild-std and

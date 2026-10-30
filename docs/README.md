@@ -71,7 +71,7 @@ See [ThirdParty](ThirdParty.md) for the third-party libraries used in this proje
 
 FlyCat does not use Git submodules. A clean checkout needs the mihomo source and generated assets before Gradle can build the app.
 
-1. Install **OpenJDK 26**, **Android SDK 37**, **NDK 30.0.16248370**, **CMake 3.22.1**, **Kotlin CLI**, **Go 1.26**, **Rust nightly**, Git, and `patch`.
+1. Install **OpenJDK 26**, **Android SDK 37**, **NDK 30.0.16248370**, **CMake 3.22.1**, **Kotlin CLI**, **Go 1.27**, **Rust nightly**, Git, and `patch`.
 
    ```bash
    sdkmanager "platforms;android-37" "ndk;30.0.16248370" "cmake;3.22.1"
