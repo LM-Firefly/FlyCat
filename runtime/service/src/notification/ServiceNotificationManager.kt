@@ -31,6 +31,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.github.lmfirefly.flycat.core.Clash
 import com.github.lmfirefly.flycat.core.contract.ServiceBootstrapHolder
+import com.github.lmfirefly.flycat.core.model.NotificationDisplaySettings
+import com.github.lmfirefly.flycat.core.model.NotificationLineContent
 import com.github.lmfirefly.flycat.core.model.profile.Imported
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySort
 import com.github.lmfirefly.flycat.locale.FlyTxt
@@ -103,30 +105,29 @@ class ServiceNotificationManager(
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun startTrafficUpdate(scope: CoroutineScope, trafficNow: StateFlow<Long>, trafficTotal: StateFlow<Long>, screenOn: StateFlow<Boolean>): Job =
-        scope.launch(Dispatchers.Default) {
-            try {
-                screenOn.transformLatest { isOn ->
-                    if (isOn) {
-                        combine(trafficNow, trafficTotal) { now, total -> NotificationRenderState(now = now, total = total) }
-                            .distinctUntilChanged()
-                            .collect { state ->
-                                // 节流通知以避免过多的IPC开销。
-                                // 我们采用手动时间检查，以确保首次和末次更新不会因采样而被遗漏。
-                                val nowTime = System.currentTimeMillis()
-                                if (nowTime - lastNotifyTime >= minNotifyIntervalMs() || state.now == 0L) {
-                                    emit(state)
-                                }
+    fun startTrafficUpdate(scope: CoroutineScope, trafficNow: StateFlow<Long>, trafficTotal: StateFlow<Long>, screenOn: StateFlow<Boolean>): Job = scope.launch(Dispatchers.Default) {
+        try {
+            screenOn.transformLatest { isOn ->
+                if (isOn) {
+                    combine(trafficNow, trafficTotal) { now, total -> NotificationRenderState(now = now, total = total) }
+                        .distinctUntilChanged()
+                        .collect { state ->
+                            // 节流通知以避免过多的IPC开销。
+                            // 我们采用手动时间检查，以确保首次和末次更新不会因采样而被遗漏。
+                            val nowTime = System.currentTimeMillis()
+                            if (nowTime - lastNotifyTime >= minNotifyIntervalMs() || state.now == 0L) {
+                                emit(state)
                             }
-                    }
-                }.collect { state ->
-                    refreshRunningNotification(smoothTrafficNow(state.now), state.total)
+                        }
                 }
-            } finally {
-                // 取消也必须恢复防火墙。被取消的 withLock 会立即返回，故置于 NonCancellable 中。
-                withContext(NonCancellable) { releaseBypass() }
+            }.collect { state ->
+                refreshRunningNotification(smoothTrafficNow(state.now), state.total)
             }
+        } finally {
+            // 取消也必须恢复防火墙。被取消的 withLock 会立即返回，故置于 NonCancellable 中。
+            withContext(NonCancellable) { releaseBypass() }
         }
+    }
 
     private sealed interface NoticeFrame {
         data class Plain(val presentation: NotificationPresentation) : NoticeFrame
@@ -204,9 +205,7 @@ class ServiceNotificationManager(
     private fun buildRunningPresentation(trafficNow: Long, trafficTotal: Long): NotificationPresentation {
         // 读取订阅会反序列化整个存储列表，因此只解析一次。
         val profile = resolveProfile()
-        val profileName =
-            profile?.name?.takeIf { it.isNotBlank() }
-                ?: FlyTxt.Service.Notification.UnknownProfile
+        val profileName = profile?.name?.takeIf { it.isNotBlank() } ?: FlyTxt.Service.Notification.UnknownProfile
         if (!shouldShowTrafficNotification()) {
             return NotificationPresentationFactory.createStatus(
                 profileName = profileName,
@@ -219,24 +218,24 @@ class ServiceNotificationManager(
             currentNode = resolveCurrentNode(),
             trafficNow = trafficNow,
             trafficTotal = trafficTotal,
+            displaySettings = loadDisplaySettings(),
         )
     }
 
     private fun buildNotification(presentation: NotificationPresentation): Notification {
-        val contentIntent =
-            PendingIntent.getActivity(
-                service,
-                0,
-                Intent().apply {
-                    component = Components.PROXY_SHEET_ACTIVITY
-                    addFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK or
-                            Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                            Intent.FLAG_ACTIVITY_NO_ANIMATION
-                    )
-                },
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
+        val contentIntent = PendingIntent.getActivity(
+            service,
+            0,
+            Intent().apply {
+                component = Components.PROXY_SHEET_ACTIVITY
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_NO_ANIMATION
+                )
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
 
         return NotificationCompat.Builder(service, config.channelId)
             .setContentTitle(presentation.title)
@@ -289,6 +288,20 @@ class ServiceNotificationManager(
         return serviceStore.showTrafficNotification
     }
 
+    /** 通知两行内容配置；键名与 [AppSettingsStore] 的 MMKVPreference 属性名一致。 */
+    private fun loadDisplaySettings(): NotificationDisplaySettings {
+        val settings = settingsStore
+        fun line(key: String, default: NotificationLineContent): NotificationLineContent = settings.decodeString(key, null)?.let { name ->
+            NotificationLineContent.entries.firstOrNull { it.name == name }
+        } ?: default
+        return NotificationDisplaySettings(
+            firstLine = line("notificationFirstLine", NotificationLineContent.ProfileName),
+            secondLine = line("notificationSecondLine", NotificationLineContent.LiveTraffic),
+            firstLineText = settings.decodeString("notificationFirstLineText", "").orEmpty(),
+            secondLineText = settings.decodeString("notificationSecondLineText", "").orEmpty(),
+        )
+    }
+
     private fun isSuperIslandEnabled(): Boolean = settingsStore.decodeBool("superIslandEnabled", true)
 
     private fun isIslandEnabled(): Boolean = !ServiceBootstrapHolder.reader.isRemoteControllerActive() && isSuperIslandEnabled() && HyperIsland.isSupported()
@@ -335,19 +348,17 @@ class ServiceNotificationManager(
         // 订阅用量信息变化不频繁，缓存避免每次刷新全量反序列化订阅列表。
         private const val PROFILE_REFRESH_MS = 10_000L
         private val legacyChannelIds = listOf("clash_vpn_service", "clash_http_service")
-        val vpnConfig =
-            Config(
-                notificationId = 1001,
-                channelId = "flycat_vpn_service",
-                channelName = "FlyCat VPN Service",
-            )
+        val vpnConfig = Config(
+            notificationId = 1001,
+            channelId = "flycat_vpn_service",
+            channelName = "FlyCat VPN Service",
+        )
 
-        val httpConfig =
-            Config(
-                notificationId = 1002,
-                channelId = "flycat_http_service",
-                channelName = "FlyCat HTTP Service",
-            )
+        val httpConfig = Config(
+            notificationId = 1002,
+            channelId = "flycat_http_service",
+            channelName = "FlyCat HTTP Service",
+        )
     }
 
         private data class NotificationRenderState(

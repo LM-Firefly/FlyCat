@@ -47,16 +47,15 @@ class ServicePowerController(private val context: Context) {
 
     private var started = false
 
-    private val receiver =
-        object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                when (intent.action) {
-                    Intents.actionAppForeground(context.packageName) ->
-                        _appForeground.value = intent.getBooleanExtra(Intents.EXTRA_APP_FOREGROUND, false)
-                    else -> updateState()
-                }
+    private val receiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                Intents.actionAppForeground(context.packageName) ->
+                    _appForeground.value = intent.getBooleanExtra(Intents.EXTRA_APP_FOREGROUND, false)
+                else -> updateState()
             }
         }
+    }
 
     fun start() {
         if (started) return
@@ -78,23 +77,21 @@ class ServicePowerController(private val context: Context) {
 
     private fun isScreenOn(): Boolean = powerManager?.isInteractive != false
 
-    private fun isDeviceIdle(): Boolean =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            powerManager?.isDeviceIdleMode == true
-        } else {
-            false
-        }
+    private fun isDeviceIdle(): Boolean = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        powerManager?.isDeviceIdleMode == true
+    } else {
+        false
+    }
 
     private fun register() {
-        val filter =
-            IntentFilter().apply {
-                addAction(Intent.ACTION_SCREEN_ON)
-                addAction(Intent.ACTION_SCREEN_OFF)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    addAction(PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED)
-                }
-                addAction(Intents.actionAppForeground(context.packageName))
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_SCREEN_OFF)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                addAction(PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED)
             }
+            addAction(Intents.actionAppForeground(context.packageName))
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.registerReceiver(
                 context,

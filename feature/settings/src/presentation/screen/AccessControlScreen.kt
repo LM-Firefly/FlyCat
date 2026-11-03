@@ -26,22 +26,19 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -51,20 +48,30 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.lmfirefly.flycat.core.model.AccessControlImportStrategy
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.AccessControlViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.EdgeLightDefaults
+import com.github.lmfirefly.flycat.presentation.component.GlassMenuDivider
+import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
+import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
+import com.github.lmfirefly.flycat.presentation.component.GlassPopupSubmenuItem
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
+import com.github.lmfirefly.flycat.presentation.component.GlassSubmenuPageHeader
+import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopActionAnchorIcon
+import com.github.lmfirefly.flycat.presentation.component.GlassTopActionPill
 import com.github.lmfirefly.flycat.presentation.component.card.Card
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
+import com.github.lmfirefly.flycat.presentation.component.edgeLight
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
@@ -72,20 +79,20 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationB
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.component.navigation.rememberScrollAwareFabController
 import com.github.lmfirefly.flycat.presentation.component.rememberAppIconBitmap
-import com.github.lmfirefly.flycat.presentation.component.state.SearchBarPadding
-import com.github.lmfirefly.flycat.presentation.component.state.SearchPager
+import com.github.lmfirefly.flycat.presentation.component.rememberGlassSubmenuState
 import com.github.lmfirefly.flycat.presentation.component.state.SearchStatus
 import com.github.lmfirefly.flycat.presentation.component.state.TopAppBarAnim
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
-import com.github.lmfirefly.flycat.presentation.icon.flycat.Settings2
+import com.github.lmfirefly.flycat.presentation.icon.flycat.Bolt
+import com.github.lmfirefly.flycat.presentation.icon.flycat.ListChevronsUpDown
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme.spacing
+import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
+import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
@@ -93,25 +100,28 @@ import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.glass.GlassPopupAnchor
+import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Search
+import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import top.yukonga.miuix.kmp.icon.extended.Sort
-import top.yukonga.miuix.kmp.overlay.OverlayCascadingListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun AccessControlScreen(navigator: Navigator) {
-    val density = LocalDensity.current
     val scrollBehavior = MiuixScrollBehavior()
     val spacing = spacing
     val mainLikePadding = rememberStandalonePageMainPadding()
     val viewModel = koinViewModel<AccessControlViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val importStrategy by viewModel.importStrategy.state.collectAsStateWithLifecycle()
     val filteredApps by viewModel.filteredApps.collectAsStateWithLifecycle()
     val settingsFabController = rememberScrollAwareFabController()
-
     var showSortMenu by remember { mutableStateOf(false) }
     var showOpsMenu by remember { mutableStateOf(false) }
+    val sortAnchor = rememberGlassPopupAnchor()
+    val opsAnchor = rememberGlassPopupAnchor()
     val mainListState = rememberLazyListState()
     var searchStatus by remember {
         mutableStateOf(
@@ -121,31 +131,26 @@ fun AccessControlScreen(navigator: Navigator) {
             )
         )
     }
-    val dynamicTopPadding by remember {
-        derivedStateOf { spacing.space12 * (1f - scrollBehavior.state.collapsedFraction) }
-    }
+    val dynamicTopPadding by remember { derivedStateOf { spacing.space12 * (1f - scrollBehavior.state.collapsedFraction) } }
     val listStartPadding = spacing.screenHorizontal
     val listEndPadding = spacing.screenHorizontal
-    val currentSearchStatus =
-        remember(searchStatus, filteredApps) {
-            searchStatus.copy(
-                resultStatus =
-                    when {
-                        searchStatus.searchText.isBlank() -> SearchStatus.ResultStatus.DEFAULT
-                        filteredApps.isEmpty() -> SearchStatus.ResultStatus.EMPTY
-                        else -> SearchStatus.ResultStatus.SHOW
-                    }
-            )
-        }
-    val permissionLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission(),
-            onResult = { isGranted ->
-                if (isGranted) {
-                    viewModel.onPermissionResult()
-                }
-            },
+    val currentSearchStatus = remember(searchStatus, filteredApps) {
+        searchStatus.copy(
+            resultStatus = when {
+                searchStatus.searchText.isBlank() -> SearchStatus.ResultStatus.DEFAULT
+                filteredApps.isEmpty() -> SearchStatus.ResultStatus.EMPTY
+                else -> SearchStatus.ResultStatus.SHOW
+            }
         )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                viewModel.onPermissionResult()
+            }
+        },
+    )
 
     LaunchedEffect(uiState.needsMiuiPermission) {
         if (uiState.needsMiuiPermission) {
@@ -165,14 +170,11 @@ fun AccessControlScreen(navigator: Navigator) {
         }
     }
 
-    // Jump the main list back to the top whenever the order changes (sort mode or selected-first),
-    // otherwise the previous scroll offset is kept against a freshly reordered list.
-    LaunchedEffect(uiState.sortMode, uiState.selectedFirst) {
-        mainListState.scrollToItem(0)
-    }
+    // 每当排序变化（排序模式或选中项优先）时，将主列表跳转回顶部；否则，保持之前的滚动偏移量，即使列表已重新排序。
+    LaunchedEffect(uiState.sortMode, uiState.selectedFirst) { mainListState.scrollToItem(0) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
+        GlassScaffold(
             topBar = {
                 currentSearchStatus.TopAppBarAnim {
                     TopBar(
@@ -181,92 +183,61 @@ fun AccessControlScreen(navigator: Navigator) {
                         navigationIconPadding = 0.dp,
                         navigationIcon = { NavigationBackIcon(navigator = navigator) },
                         actions = {
-                            Box {
-                                IconButton(
-                                    modifier = Modifier.padding(end = spacing.space12),
-                                    onClick = { showSortMenu = true },
-                                ) {
-                                    Icon(
-                                        imageVector = MiuixIcons.Sort,
+                            GlassTopActionPill(
+                                actions = listOf(
+                                    GlassTopAction(
+                                        icon = FlyCat.ListChevronsUpDown,
                                         contentDescription = FlyTxt.AccessControl.Settings.SortMode,
-                                        tint = MiuixTheme.colorScheme.onSurface,
-                                    )
-                                }
-                                AccessControlSortMenu(
-                                    show = showSortMenu,
-                                    sortMode = uiState.sortMode,
-                                    onDismiss = { showSortMenu = false },
-                                    onSortModeChange = viewModel::onSortModeChange,
-                                )
-                            }
-                            Box {
-                                IconButton(onClick = { showOpsMenu = true }) {
-                                    Icon(
-                                        imageVector = FlyCat.Settings2,
+                                        onClick = { showSortMenu = true },
+                                        anchor = sortAnchor,
+                                        popup = {
+                                            AccessControlSortMenu(
+                                                show = showSortMenu,
+                                                anchor = sortAnchor,
+                                                sortMode = uiState.sortMode,
+                                                onDismiss = { showSortMenu = false },
+                                                onSortModeChange = viewModel::onSortModeChange,
+                                            )
+                                        },
+                                    ),
+                                    GlassTopAction(
+                                        icon = FlyCat.Bolt,
                                         contentDescription = FlyTxt.AccessControl.Settings.Title,
-                                        tint = MiuixTheme.colorScheme.onSurface,
-                                    )
-                                }
-                                AccessControlOperationsMenu(
-                                    show = showOpsMenu,
-                                    uiState = uiState,
-                                    onDismiss = { showOpsMenu = false },
-                                    onShowSystemAppsChange = viewModel::onShowSystemAppsChange,
-                                    onSelectedFirstChange = viewModel::onSelectedFirstChange,
-                                    onSelectAll = viewModel::selectAll,
-                                    onDeselectAll = viewModel::deselectAll,
-                                    onInvertSelection = viewModel::invertSelection,
-                                    onSelectChinaApps = viewModel::selectChinaAppsInCurrentList,
-                                    onSelectNonChinaApps = viewModel::selectNonChinaAppsInCurrentList,
-                                    onImportPackages = viewModel::importPackages,
-                                    onExportPackages = viewModel::exportPackages,
-                                )
-                            }
+                                        onClick = { showOpsMenu = true },
+                                        anchor = opsAnchor,
+                                        popup = {
+                                            AccessControlOperationsMenu(
+                                                show = showOpsMenu,
+                                                anchor = opsAnchor,
+                                                uiState = uiState,
+                                                onDismiss = { showOpsMenu = false },
+                                                onShowSystemAppsChange = viewModel::onShowSystemAppsChange,
+                                                onSelectedFirstChange = viewModel::onSelectedFirstChange,
+                                                onSelectAll = viewModel::selectAll,
+                                                onDeselectAll = viewModel::deselectAll,
+                                                onInvertSelection = viewModel::invertSelection,
+                                                onSelectChinaApps = viewModel::selectChinaAppsInCurrentList,
+                                                onSelectNonChinaApps = viewModel::selectNonChinaAppsInCurrentList,
+                                                onImportPackages = viewModel::importPackages,
+                                                onExportPackages = viewModel::exportPackages,
+                                                importStrategy = importStrategy,
+                                                onImportStrategyChange = viewModel::onImportStrategyChange,
+                                            )
+                                        },
+                                    ),
+                                ),
+                                backdrop = LocalTopBarBackdrop.current,
+                            )
                         },
                         bottomContent = {
-                            Box(
-                                modifier =
-                                    Modifier.alpha(
-                                            if (currentSearchStatus.isCollapsed()) 1f else 0f
-                                        )
-                                        .onGloballyPositioned { coordinates ->
-                                            with(density) {
-                                                val collapsedBarOffset =
-                                                    coordinates.positionInWindow().y.toDp()
-                                                if (
-                                                    currentSearchStatus.offsetY !=
-                                                        collapsedBarOffset
-                                                ) {
-                                                    searchStatus =
-                                                        currentSearchStatus.copy(
-                                                            offsetY = collapsedBarOffset
-                                                        )
-                                                }
-                                            }
-                                        }
-                                        .then(
-                                            if (currentSearchStatus.isCollapsed()) {
-                                                Modifier.pointerInput(currentSearchStatus.current) {
-                                                    detectTapGestures {
-                                                        searchStatus =
-                                                            currentSearchStatus.copy(
-                                                                current =
-                                                                    SearchStatus.Status.EXPANDING
-                                                            )
-                                                    }
-                                                }
-                                            } else {
-                                                Modifier
-                                            }
-                                        )
-                            ) {
-                                AccessControlCollapsedSearchBar(
-                                    label = currentSearchStatus.label,
-                                    topPadding = dynamicTopPadding,
-                                    startPadding = listStartPadding,
-                                    endPadding = listEndPadding,
-                                )
-                            }
+                            AccessControlSearchBar(
+                                query = searchStatus.searchText,
+                                onQueryChange = { searchStatus = searchStatus.copy(searchText = it) },
+                                label = currentSearchStatus.label,
+                                topPadding = dynamicTopPadding,
+                                startPadding = listStartPadding,
+                                endPadding = listEndPadding,
+                            )
                         },
                     )
                 }
@@ -277,104 +248,48 @@ fun AccessControlScreen(navigator: Navigator) {
 
             if (uiState.isLoading) {
                 Column(
-                    modifier =
-                        Modifier.fillMaxSize()
-                            .padding(
-                                top = combinedInnerPadding.calculateTopPadding(),
-                                start = listStartPadding,
-                                end = listEndPadding,
-                                bottom = listBottomPadding,
-                            ),
+                    modifier = Modifier.fillMaxSize().padding(
+                        top = combinedInnerPadding.calculateTopPadding(),
+                        start = listStartPadding,
+                        end = listEndPadding,
+                        bottom = listBottomPadding,
+                    ),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     InfiniteProgressIndicator(color = MiuixTheme.colorScheme.onSurface)
                 }
             } else if (currentSearchStatus.shouldCollapse()) {
-                // Render the list during COLLAPSING too (not just at the COLLAPSED end state) so it is
-                // already settled underneath the fading search overlay — otherwise it pops in on the
-                // final frame and looks like a refresh flash.
-                ScreenLazyColumn(
-                    scrollBehavior = scrollBehavior,
-                    innerPadding = combinedInnerPadding,
-                    lazyListState = mainListState,
-                    contentPadding =
-                        PaddingValues(
+                if (searchStatus.searchText.isNotBlank() && filteredApps.isEmpty()) {
+                    SearchEmptyState(text = FlyTxt.AccessControl.Search.Empty, modifier = Modifier.padding(bottom = listBottomPadding))
+                } else {
+                    ScreenLazyColumn(
+                        scrollBehavior = scrollBehavior,
+                        innerPadding = combinedInnerPadding,
+                        lazyListState = mainListState,
+                        contentPadding = PaddingValues(
                             top = combinedInnerPadding.calculateTopPadding() + spacing.space6,
                             bottom = listBottomPadding,
                             start = listStartPadding,
                             end = listEndPadding,
                         ),
-                ) {
-                    items(items = filteredApps, key = { it.packageName }) { app ->
-                        AppCard(
-                            app = app,
-                            selected = app.packageName in uiState.selectedPackages,
-                            onSelectionChange = { checked ->
-                                viewModel.onAppSelectionChange(app.packageName, checked)
-                            },
-                            onClick = {
-                                viewModel.onAppSelectionChange(
-                                    app.packageName,
-                                    app.packageName !in uiState.selectedPackages,
-                                )
-                            },
-                        )
-                    }
-                }
-            }
-
-        }
-
-        currentSearchStatus.SearchPager(
-            onSearchStatusChange = { searchStatus = it },
-            padding =
-                SearchBarPadding(
-                    top = dynamicTopPadding,
-                    start = listStartPadding,
-                    end = listEndPadding,
-                ),
-            emptyResult = {
-                SearchEmptyState(
-                    text = FlyTxt.AccessControl.Search.Empty,
-                    modifier = Modifier.padding(bottom = mainLikePadding.calculateBottomPadding()),
-                )
-            },
-        ) {
-            val searchListState = rememberLazyListState()
-            val imeBottomPadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
-
-            LaunchedEffect(currentSearchStatus.searchText) {
-                if (currentSearchStatus.searchText.isNotBlank()) {
-                    searchListState.scrollToItem(0)
-                }
-            }
-
-            LazyColumn(
-                state = searchListState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding =
-                    PaddingValues(
-                        start = listStartPadding,
-                        end = listEndPadding,
-                        top = spacing.space6,
-                        bottom = maxOf(mainLikePadding.calculateBottomPadding(), imeBottomPadding),
-                    ),
-            ) {
-                items(items = filteredApps, key = { it.packageName }) { app ->
-                    AppCard(
-                        app = app,
-                        selected = app.packageName in uiState.selectedPackages,
-                        onSelectionChange = { checked ->
-                            viewModel.onAppSelectionChange(app.packageName, checked)
-                        },
-                        onClick = {
-                            viewModel.onAppSelectionChange(
-                                app.packageName,
-                                app.packageName !in uiState.selectedPackages,
+                    ) {
+                        items(items = filteredApps, key = { it.packageName }) { app ->
+                            AppCard(
+                                app = app,
+                                selected = app.packageName in uiState.selectedPackages,
+                                onSelectionChange = { checked ->
+                                    viewModel.onAppSelectionChange(app.packageName, checked)
+                                },
+                                onClick = {
+                                    viewModel.onAppSelectionChange(
+                                        app.packageName,
+                                        app.packageName !in uiState.selectedPackages,
+                                    )
+                                },
                             )
-                        },
-                    )
+                        }
+                    }
                 }
             }
         }
@@ -382,71 +297,100 @@ fun AccessControlScreen(navigator: Navigator) {
 }
 
 @Composable
-private fun AccessControlCollapsedSearchBar(
+private fun AccessControlSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
     label: String,
     topPadding: androidx.compose.ui.unit.Dp,
     startPadding: androidx.compose.ui.unit.Dp,
     endPadding: androidx.compose.ui.unit.Dp,
 ) {
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val isLightTheme = !isDarkTheme()
+    val surfaceColor = MiuixTheme.colorScheme.surfaceContainerHigh
     InputField(
-        query = "",
-        onQueryChange = {},
+        query = query,
+        onQueryChange = onQueryChange,
+        color = Color.Transparent,
         label = label,
+        onSearch = {
+            focusManager.clearFocus(force = true)
+            keyboardController?.hide()
+        },
+        expanded = false,
+        onExpandedChange = {},
         leadingIcon = {
             Icon(
                 imageVector = MiuixIcons.Basic.Search,
                 contentDescription = FlyTxt.Component.Editor.Action.Search,
-                modifier =
-                    Modifier.size(AppTheme.sizes.searchIconTouchTarget)
-                        .padding(start = spacing.space16, end = spacing.space8),
+                modifier = Modifier.size(AppTheme.sizes.searchIconTouchTarget).padding(start = spacing.space16, end = spacing.space8),
                 tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
         },
-        modifier =
-            Modifier.fillMaxWidth()
-                .padding(start = startPadding, end = endPadding)
-                .padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding),
-        onSearch = {},
-        enabled = false,
-        expanded = false,
-        onExpandedChange = {},
+        trailingIcon = {
+            AnimatedVisibility(visible = query.isNotEmpty()) {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.size(AppTheme.sizes.searchIconTouchTarget).padding(start = spacing.space8, end = spacing.space16),
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Basic.SearchCleanup,
+                        contentDescription = FlyTxt.Component.Button.Clear,
+                    )
+                }
+            }
+        },
+        modifier = Modifier.fillMaxWidth().padding(start = startPadding, end = endPadding).padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding).clip(CircleShape).glassCardSurface(CircleShape, fallbackColor = surfaceColor).edgeLight(
+            shape = CircleShape,
+            color = EdgeLightDefaults.tint(surfaceColor, isLightTheme),
+            width = EdgeLightDefaults.width(isLightTheme),
+            blurRadius = EdgeLightDefaults.BlurRadius,
+            blendMode = EdgeLightDefaults.blendMode(isLightTheme),
+        ),
     )
 }
 
 @Composable
 private fun AccessControlSortMenu(
     show: Boolean,
+    anchor: GlassPopupAnchor,
     sortMode: AccessControlViewModel.SortMode,
     onDismiss: () -> Unit,
     onSortModeChange: (AccessControlViewModel.SortMode) -> Unit,
 ) {
-    val entries =
-        remember(sortMode, onSortModeChange) {
-            listOf(
-                DropdownEntry(
-                    items =
-                        AccessControlViewModel.SortMode.entries.map { mode ->
-                            DropdownItem(
-                                text = mode.displayName,
-                                selected = mode == sortMode,
-                                onClick = { onSortModeChange(mode) },
-                            )
-                        }
-                )
+    GlassPopupHost(
+        show = show,
+        onDismissRequest = onDismiss,
+        anchor = anchor,
+        anchorContent = { GlassTopActionAnchorIcon(FlyCat.ListChevronsUpDown) },
+    ) {
+        AccessControlViewModel.SortMode.entries.forEach { mode ->
+            GlassMenuItem(
+                text = mode.displayName,
+                selected = mode == sortMode,
+                onClick = {
+                    onSortModeChange(mode)
+                    onDismiss()
+                },
             )
         }
+    }
+}
 
-    // Picking a sort mode dismisses the popup (collapseOnSelection defaults to true).
-    OverlayCascadingListPopup(
-        show = show,
-        entries = entries,
-        onDismissRequest = onDismiss,
-    )
+/** 操作菜单的级联子页。 */
+private enum class OpsMenuPage {
+    None,
+    Batch,
+    Region,
+    ImportExport,
+    ImportStrategy,
 }
 
 @Composable
 private fun AccessControlOperationsMenu(
     show: Boolean,
+    anchor: GlassPopupAnchor,
     uiState: AccessControlViewModel.UiState,
     onDismiss: () -> Unit,
     onShowSystemAppsChange: (Boolean) -> Unit,
@@ -458,109 +402,125 @@ private fun AccessControlOperationsMenu(
     onSelectNonChinaApps: () -> Unit,
     onImportPackages: (String) -> Int,
     onExportPackages: () -> String,
+    importStrategy: AccessControlImportStrategy,
+    onImportStrategyChange: (AccessControlImportStrategy) -> Unit,
 ) {
     val context = LocalContext.current
-    val clipboardManager =
-        remember(context) {
-            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        }
+    val clipboardManager = remember(context) { context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
     val settings = FlyTxt.AccessControl.Settings
-
-    val entries =
-        remember(uiState, onSelectAll, onDeselectAll, onInvertSelection, onSelectChinaApps, onSelectNonChinaApps, onImportPackages, onExportPackages) {
-            listOf(
-                DropdownEntry(
-                    items =
-                        listOf(
-                            DropdownItem(
-                                text = settings.ShowSystemApps,
-                                selected = uiState.showSystemApps,
-                                onClick = { onShowSystemAppsChange(!uiState.showSystemApps) },
-                            ),
-                            DropdownItem(
-                                text = settings.SelectedFirst,
-                                selected = uiState.selectedFirst,
-                                onClick = { onSelectedFirstChange(!uiState.selectedFirst) },
-                            ),
-                        )
-                ),
-                DropdownEntry(
-                    items =
-                        listOf(
-                            DropdownItem(
-                                text = settings.BatchOperation,
-                                children =
-                                    listOf(
-                                        DropdownItem(text = settings.SelectAll, onClick = onSelectAll),
-                                        DropdownItem(
-                                            text = settings.DeselectAll,
-                                            onClick = onDeselectAll,
-                                        ),
-                                        DropdownItem(
-                                            text = settings.Invert,
-                                            onClick = onInvertSelection,
-                                        ),
-                                    ),
-                            ),
-                            DropdownItem(
-                                text = settings.RegionQuickSelect,
-                                children =
-                                    listOf(
-                                        DropdownItem(
-                                            text = settings.ChinaApps,
-                                            onClick = { onSelectChinaApps() },
-                                        ),
-                                        DropdownItem(
-                                            text = settings.OverseasApps,
-                                            onClick = { onSelectNonChinaApps() },
-                                        ),
-                                    ),
-                            ),
-                            DropdownItem(
-                                text = settings.ImportExport,
-                                children =
-                                    listOf(
-                                        DropdownItem(
-                                            text = settings.Import,
-                                            onClick = {
-                                                val text =
-                                                    clipboardManager.primaryClip
-                                                        ?.takeIf { it.itemCount > 0 }
-                                                        ?.getItemAt(0)
-                                                        ?.text
-                                                        ?.toString()
-                                                        .orEmpty()
-                                                if (text.isNotEmpty()) {
-                                                    onImportPackages(text)
-                                                }
-                                            },
-                                        ),
-                                        DropdownItem(
-                                            text = settings.Export,
-                                            onClick = {
-                                                clipboardManager.setPrimaryClip(
-                                                    ClipData.newPlainText(
-                                                        "packages",
-                                                        onExportPackages(),
-                                                    )
-                                                )
-                                            },
-                                        ),
-                                    ),
-                            ),
-                        )
-                ),
-            )
+    val submenu = rememberGlassSubmenuState(show)
+    var submenuPage by remember { mutableStateOf(OpsMenuPage.None) }
+    val applyAndClose: (() -> Unit) -> Unit = { action ->
+        action()
+        submenu.close()
+        onDismiss()
+    }
+    val importFromClipboard = {
+        val text = clipboardManager.primaryClip
+            ?.takeIf { it.itemCount > 0 }
+            ?.getItemAt(0)
+            ?.text
+            ?.toString()
+            .orEmpty()
+        if (text.isNotEmpty()) {
+            onImportPackages(text)
         }
+        Unit
+    }
+    val exportToClipboard = {
+        clipboardManager.setPrimaryClip(ClipData.newPlainText("packages", onExportPackages()))
+        Unit
+    }
 
-    // Selecting any item (including inside a 2nd-level submenu) collapses and dismisses the popup —
-    // collapseOnSelection defaults to true. The submenu can also be backed out via the system back
-    // gesture or by tapping outside the popup (both handled by the Miuix cascading layout).
-    OverlayCascadingListPopup(
+    GlassPopupHost(
         show = show,
-        entries = entries,
         onDismissRequest = onDismiss,
-    )
+        anchor = anchor,
+        anchorContent = { GlassTopActionAnchorIcon(FlyCat.Bolt) },
+        submenu = submenu,
+        submenuContent = {
+            when (submenuPage) {
+                OpsMenuPage.Batch -> {
+                    GlassSubmenuPageHeader(submenu, settings.BatchOperation, anchor)
+                    GlassMenuItem(settings.SelectAll, onClick = { applyAndClose(onSelectAll) })
+                    GlassMenuItem(settings.DeselectAll, onClick = { applyAndClose(onDeselectAll) })
+                    GlassMenuItem(settings.Invert, onClick = { applyAndClose(onInvertSelection) })
+                }
+                OpsMenuPage.Region -> {
+                    GlassSubmenuPageHeader(submenu, settings.RegionQuickSelect, anchor)
+                    GlassMenuItem(settings.ChinaApps, onClick = { applyAndClose(onSelectChinaApps) })
+                    GlassMenuItem(settings.OverseasApps, onClick = { applyAndClose(onSelectNonChinaApps) })
+                }
+                OpsMenuPage.ImportExport -> {
+                    GlassSubmenuPageHeader(submenu, settings.ImportExport, anchor)
+                    GlassMenuItem(settings.Import, onClick = { applyAndClose(importFromClipboard) })
+                    GlassMenuItem(settings.Export, onClick = { applyAndClose(exportToClipboard) })
+                }
+                OpsMenuPage.ImportStrategy -> {
+                    GlassSubmenuPageHeader(submenu, FlyTxt.NetworkSettings.ProxyOptions.ImportStrategyTitle, anchor)
+                    GlassMenuItem(
+                        text = FlyTxt.MetaFeature.Backup.RestoreMerge,
+                        selected = importStrategy == AccessControlImportStrategy.MERGE,
+                        onClick = { applyAndClose { onImportStrategyChange(AccessControlImportStrategy.MERGE) } },
+                    )
+                    GlassMenuItem(
+                        text = FlyTxt.MetaFeature.Backup.RestoreOverwrite,
+                        selected = importStrategy == AccessControlImportStrategy.OVERWRITE,
+                        onClick = { applyAndClose { onImportStrategyChange(AccessControlImportStrategy.OVERWRITE) } },
+                    )
+                }
+                OpsMenuPage.None -> Unit
+            }
+        },
+    ) {
+        GlassMenuItem(
+            text = settings.ShowSystemApps,
+            selected = uiState.showSystemApps,
+            onClick = { applyAndClose { onShowSystemAppsChange(!uiState.showSystemApps) } },
+        )
+        GlassMenuItem(
+            text = settings.SelectedFirst,
+            selected = uiState.selectedFirst,
+            onClick = { applyAndClose { onSelectedFirstChange(!uiState.selectedFirst) } },
+        )
+        GlassMenuDivider()
+        GlassPopupSubmenuItem(
+            text = settings.BatchOperation,
+            anchor = anchor,
+            open = submenu.open && submenuPage == OpsMenuPage.Batch,
+            onOpen = { bounds ->
+                submenuPage = OpsMenuPage.Batch
+                submenu.openAt(bounds)
+            },
+        )
+        GlassPopupSubmenuItem(
+            text = settings.RegionQuickSelect,
+            anchor = anchor,
+            open = submenu.open && submenuPage == OpsMenuPage.Region,
+            onOpen = { bounds ->
+                submenuPage = OpsMenuPage.Region
+                submenu.openAt(bounds)
+            },
+        )
+        GlassPopupSubmenuItem(
+            text = settings.ImportExport,
+            anchor = anchor,
+            open = submenu.open && submenuPage == OpsMenuPage.ImportExport,
+            onOpen = { bounds ->
+                submenuPage = OpsMenuPage.ImportExport
+                submenu.openAt(bounds)
+            },
+        )
+        GlassPopupSubmenuItem(
+            text = FlyTxt.NetworkSettings.ProxyOptions.ImportStrategyTitle,
+            anchor = anchor,
+            open = submenu.open && submenuPage == OpsMenuPage.ImportStrategy,
+            onOpen = { bounds ->
+                submenuPage = OpsMenuPage.ImportStrategy
+                submenu.openAt(bounds)
+            },
+        )
+    }
 }
 
 @Composable
@@ -575,8 +535,7 @@ private fun AppCard(
 
     Card(modifier = Modifier.padding(vertical = spacing.space4), applyHorizontalPadding = false) {
         BasicComponent(
-            // Reduce the default 16dp vertical inside-margin a little for a tighter row, keep
-            // horizontal at 16dp so the card width is unchanged.
+            // 将默认的16dp垂直内边距稍微减小，使行间距更紧凑，水平方向保持16dp不变，以确保卡片宽度不变。
             insideMargin = PaddingValues(horizontal = spacing.space16, vertical = spacing.space12),
             startAction = {
                 AppIcon(
@@ -632,7 +591,5 @@ private fun AppIcon(
 
 @Composable
 private fun SearchEmptyState(text: String, modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = text, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
-    }
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(text = text, color = MiuixTheme.colorScheme.onSurfaceVariantSummary) }
 }

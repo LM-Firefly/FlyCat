@@ -49,10 +49,12 @@ dependencies {
     implementation(libs.sketch.animated.gif)
     implementation(libs.sketch.animated.webp)
     implementation(libs.sketch.compose.resources)
-    implementation(libs.haze)
-    implementation(libs.haze.blur)
     implementation(libs.shapes)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)
     implementation(libs.miuix.icons)
+    // 玻璃组件公开 API 暴露 LayerBackdrop/Backdrop 类型，需 api 传递给消费方。
+    api(libs.miuix.blur.android)
+    implementation(libs.miuix.shader.android)
+    implementation(libs.androidx.navigationevent.compose)
 }

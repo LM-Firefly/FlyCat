@@ -60,20 +60,19 @@ class ProfileManager(private val context: Context) :
         val uuid = generateProfileUUID()
         val normalizedName = name.trim().ifBlank { "New Profile" }
         val now = System.currentTimeMillis()
-        val imported =
-            Imported(
-                uuid = uuid,
-                name = normalizedName,
-                type = type,
-                source = source,
-                interval = interval,
-                upload = 0,
-                total = 0,
-                download = 0,
-                expire = 0,
-                createdAt = now,
-                ageSecretKey = normalizeAgeSecretKey(ageSecretKey).orEmpty(),
-            )
+        val imported = Imported(
+            uuid = uuid,
+            name = normalizedName,
+            type = type,
+            source = source,
+            interval = interval,
+            upload = 0,
+            total = 0,
+            download = 0,
+            expire = 0,
+            createdAt = now,
+            ageSecretKey = normalizeAgeSecretKey(ageSecretKey).orEmpty(),
+        )
         ImportedDao.insert(imported)
         ProfileProcessor.AutoUpdate.reschedule(context)
         return uuid
@@ -83,21 +82,20 @@ class ProfileManager(private val context: Context) :
         val newUUID = generateProfileUUID()
         val imported = ImportedDao.queryByUUID(uuid) ?: throw FileNotFoundException("profile $uuid not found")
         val now = System.currentTimeMillis()
-        val newImported =
-            Imported(
-                uuid = newUUID,
-                name = imported.name,
-                type = Profile.Type.File,
-                source = imported.source,
-                interval = imported.interval,
-                upload = imported.upload,
-                total = imported.total,
-                download = imported.download,
-                expire = imported.expire,
-                createdAt = now,
-                ageSecretKey = imported.ageSecretKey,
-                updatedAt = imported.updatedAt,
-            )
+        val newImported = Imported(
+            uuid = newUUID,
+            name = imported.name,
+            type = Profile.Type.File,
+            source = imported.source,
+            interval = imported.interval,
+            upload = imported.upload,
+            total = imported.total,
+            download = imported.download,
+            expire = imported.expire,
+            createdAt = now,
+            ageSecretKey = imported.ageSecretKey,
+            updatedAt = imported.updatedAt,
+        )
         val sourceDir = context.importedDir.resolve(uuid.toString())
         val targetDir = context.importedDir.resolve(newUUID.toString())
         if (!sourceDir.exists()) throw FileNotFoundException("profile $uuid not found")
@@ -115,18 +113,16 @@ class ProfileManager(private val context: Context) :
         ageSecretKey: String?,
     ) {
         val imported = ImportedDao.queryByUUID(uuid) ?: throw FileNotFoundException("profile $uuid not found")
-        val updated =
-            imported.copy(
-                name = name,
-                source = source,
-                interval = interval,
-                ageSecretKey =
-                    if (ageSecretKey != null) {
-                        normalizeAgeSecretKey(ageSecretKey).orEmpty()
-                    } else {
-                        imported.ageSecretKey
-                    },
-            )
+        val updated = imported.copy(
+            name = name,
+            source = source,
+            interval = interval,
+            ageSecretKey = if (ageSecretKey != null) {
+                normalizeAgeSecretKey(ageSecretKey).orEmpty()
+            } else {
+                imported.ageSecretKey
+            },
+        )
         ImportedDao.update(updated)
         ProfileProcessor.AutoUpdate.reschedule(context)
         context.sendProfileChanged(uuid)
@@ -203,8 +199,7 @@ class ProfileManager(private val context: Context) :
         )
     }
 
-    private fun normalizeAgeSecretKey(value: String?): String? =
-        value?.trim()?.takeIf { it.isNotEmpty() }
+    private fun normalizeAgeSecretKey(value: String?): String? = value?.trim()?.takeIf { it.isNotEmpty() }
 
     fun close() {
         cancel()

@@ -37,12 +37,7 @@ object GlobalUaOverride {
 
     fun buildYaml(userAgent: String = resolveUserAgent()): String {
         if (userAgent.isBlank()) return ""
-        val escaped =
-            userAgent
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
+        val escaped = userAgent.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")
         return "global-ua: \"$escaped\"\n"
     }
 

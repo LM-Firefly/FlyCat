@@ -23,5 +23,4 @@ package com.github.lmfirefly.flycat.core.util
 
 import kotlin.enums.enumEntries
 
-inline fun <reified T : Enum<T>> enumByNameOrNull(name: String?): T? =
-    if (name == null) null else enumEntries<T>().firstOrNull { it.name == name }
+inline fun <reified T : Enum<T>> enumByNameOrNull(name: String?): T? = if (name == null) null else enumEntries<T>().firstOrNull { it.name == name }

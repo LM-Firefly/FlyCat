@@ -37,9 +37,7 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 abstract class TrafficStatisticsDao {
-
     // 区域写入（更新插入）
-
     /**
      * 在单个事务中记录一批应用与路由的增量变更。
      * 增量在内存中根据组合主键预先合并，然后才执行SQL，从而避免单批次内对相同单元格的重复调用。
@@ -58,29 +56,26 @@ abstract class TrafficStatisticsDao {
             val key = AppKey(delta.dateMillis, delta.appKey, delta.slotIndex)
             val existing = mergedApp[key]
             if (existing == null) {
-                mergedApp[key] =
-                    AppTrafficDailyEntity(
-                        dateMillis = delta.dateMillis,
-                        appKey = delta.appKey,
-                        slotIndex = delta.slotIndex,
-                        packageName = delta.packageName,
-                        appName = delta.appName,
-                        totalUpload = delta.uploadDelta,
-                        totalDownload = delta.downloadDelta,
-                        lastActiveAt = delta.lastActiveAt,
-                    )
+                mergedApp[key] = AppTrafficDailyEntity(
+                    dateMillis = delta.dateMillis,
+                    appKey = delta.appKey,
+                    slotIndex = delta.slotIndex,
+                    packageName = delta.packageName,
+                    appName = delta.appName,
+                    totalUpload = delta.uploadDelta,
+                    totalDownload = delta.downloadDelta,
+                    lastActiveAt = delta.lastActiveAt,
+                )
             } else {
-                mergedApp[key] =
-                    existing.copy(
-                        totalUpload = existing.totalUpload + delta.uploadDelta,
-                        totalDownload = existing.totalDownload + delta.downloadDelta,
-                        packageName = existing.packageName ?: delta.packageName,
-                        appName = if (existing.appName.isNotBlank()) existing.appName else delta.appName,
-                        lastActiveAt = maxOf(existing.lastActiveAt, delta.lastActiveAt),
-                    )
+                mergedApp[key] = existing.copy(
+                    totalUpload = existing.totalUpload + delta.uploadDelta,
+                    totalDownload = existing.totalDownload + delta.downloadDelta,
+                    packageName = existing.packageName ?: delta.packageName,
+                    appName = if (existing.appName.isNotBlank()) existing.appName else delta.appName,
+                    lastActiveAt = maxOf(existing.lastActiveAt, delta.lastActiveAt),
+                )
             }
         }
-
         // --- 合并路由差异按 (dateMillis, appKey, routeKey, slotIndex) ---
         val mergedRoute = LinkedHashMap<RouteKey, RouteTrafficDailyEntity>()
         for (delta in routeDeltas) {
@@ -88,32 +83,28 @@ abstract class TrafficStatisticsDao {
             val key = RouteKey(delta.dateMillis, delta.appKey, delta.routeKey, delta.slotIndex)
             val existing = mergedRoute[key]
             if (existing == null) {
-                mergedRoute[key] =
-                    RouteTrafficDailyEntity(
-                        dateMillis = delta.dateMillis,
-                        appKey = delta.appKey,
-                        routeKey = delta.routeKey,
-                        slotIndex = delta.slotIndex,
-                        routeLabel = delta.routeLabel,
-                        totalUpload = delta.uploadDelta,
-                        totalDownload = delta.downloadDelta,
-                        lastActiveAt = delta.lastActiveAt,
-                    )
+                mergedRoute[key] = RouteTrafficDailyEntity(
+                    dateMillis = delta.dateMillis,
+                    appKey = delta.appKey,
+                    routeKey = delta.routeKey,
+                    slotIndex = delta.slotIndex,
+                    routeLabel = delta.routeLabel,
+                    totalUpload = delta.uploadDelta,
+                    totalDownload = delta.downloadDelta,
+                    lastActiveAt = delta.lastActiveAt,
+                )
             } else {
-                mergedRoute[key] =
-                    existing.copy(
-                        totalUpload = existing.totalUpload + delta.uploadDelta,
-                        totalDownload = existing.totalDownload + delta.downloadDelta,
-                        routeLabel = if (existing.routeLabel.isNotBlank()) existing.routeLabel else delta.routeLabel,
-                        lastActiveAt = maxOf(existing.lastActiveAt, delta.lastActiveAt),
-                    )
+                mergedRoute[key] = existing.copy(
+                    totalUpload = existing.totalUpload + delta.uploadDelta,
+                    totalDownload = existing.totalDownload + delta.downloadDelta,
+                    routeLabel = if (existing.routeLabel.isNotBlank()) existing.routeLabel else delta.routeLabel,
+                    lastActiveAt = maxOf(existing.lastActiveAt, delta.lastActiveAt),
+                )
             }
         }
-
         if (mergedApp.isNotEmpty()) upsertApp(mergedApp.values.toList())
         if (mergedRoute.isNotEmpty()) upsertRoute(mergedRoute.values.toList())
     }
-
     // 带累加的更新插入：冲突时将增量添加到现有总数，而非替换。
     @Query(
         """
@@ -138,7 +129,6 @@ abstract class TrafficStatisticsDao {
         totalDownload: Long,
         lastActiveAt: Long,
     )
-
     @Query(
         """
         INSERT INTO route_traffic_daily (date_millis, app_key, route_key, slot_index, route_label, total_upload, total_download, last_active_at)

@@ -35,44 +35,41 @@ val FlyCat.CircleCheckBig: ImageVector
         if (_CircleCheckBig != null) {
             return _CircleCheckBig!!
         }
-        _CircleCheckBig =
-            ImageVector.Builder(
-                    name = "CircleCheckBig",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
+        _CircleCheckBig = ImageVector.Builder(
+            name = "CircleCheckBig",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(21.801f, 10f)
+                arcTo(
+                    10f,
+                    10f,
+                    0f,
+                    isMoreThanHalf = true,
+                    isPositiveArc = true,
+                    17f,
+                    3.335f,
                 )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(21.801f, 10f)
-                        arcTo(
-                            10f,
-                            10f,
-                            0f,
-                            isMoreThanHalf = true,
-                            isPositiveArc = true,
-                            17f,
-                            3.335f,
-                        )
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveToRelative(9f, 11f)
-                        lineToRelative(3f, 3f)
-                        lineTo(22f, 4f)
-                    }
-                }
-                .build()
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveToRelative(9f, 11f)
+                lineToRelative(3f, 3f)
+                lineTo(22f, 4f)
+            }
+        }.build()
 
         return _CircleCheckBig!!
     }

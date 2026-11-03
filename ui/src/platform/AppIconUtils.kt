@@ -40,32 +40,28 @@ object AppIconUtils {
     private fun setIconState(context: Context, hide: Boolean) {
         val pm = context.packageManager
         val alias = ComponentName(context.packageName, MAIN_ACTIVITY_ALIAS)
-        val target =
-            if (hide) {
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-            } else {
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-            }
+        val target = if (hide) {
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        } else {
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        }
 
         runCatching {
-                val current = pm.getComponentEnabledSetting(alias)
-                val unchanged =
-                    current == target ||
-                        (!hide && current == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT)
-                if (unchanged) return
+            val current = pm.getComponentEnabledSetting(alias)
+            val unchanged = current == target || (!hide && current == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT)
+            if (unchanged) return
 
-                val main =
-                    ComponentName(context.packageName, "com.github.lmfirefly.flycat.MainActivity")
-                pm.setComponentEnabledSetting(
-                    main,
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                    PackageManager.DONT_KILL_APP,
-                )
-                pm.setComponentEnabledSetting(alias, target, PackageManager.DONT_KILL_APP)
-            }
-            .onFailure { error ->
-                Timber.w(error, "Failed to ${if (hide) "hide" else "show"} app icon")
-            }
+            val main = ComponentName(context.packageName, "com.github.lmfirefly.flycat.MainActivity")
+            pm.setComponentEnabledSetting(
+                main,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP,
+            )
+            pm.setComponentEnabledSetting(alias, target, PackageManager.DONT_KILL_APP)
+        }
+        .onFailure { error ->
+            Timber.w(error, "Failed to ${if (hide) "hide" else "show"} app icon")
+        }
     }
 
     fun toggleIcon(context: Context, hide: Boolean) {

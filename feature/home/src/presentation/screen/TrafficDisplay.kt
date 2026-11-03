@@ -46,7 +46,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,7 +54,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -68,6 +66,9 @@ import com.github.lmfirefly.flycat.core.util.format.formatBytesForDisplay
 import com.github.lmfirefly.flycat.feature.home.presentation.viewmodel.HomeProxyControlState
 import com.github.lmfirefly.flycat.feature.home.presentation.viewmodel.HomeViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassCapsuleSurface
+import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
+import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Activity
 import com.github.lmfirefly.flycat.presentation.icon.flycat.PlaneTakeoff
@@ -78,13 +79,10 @@ import com.github.lmfirefly.flycat.presentation.icon.flycat.Wifi
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Zashboard
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
-import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
-import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
+import top.yukonga.miuix.kmp.glass.GlassPopupSizing
+import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -111,10 +109,7 @@ fun TrafficDisplay(
     val spacing = AppTheme.spacing
     val componentSizes = AppTheme.sizes
     Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(top = componentSizes.homeTrafficTopPadding, bottom = spacing.space16),
+        modifier = modifier.fillMaxWidth().padding(top = componentSizes.homeTrafficTopPadding, bottom = spacing.space16),
         verticalArrangement = Arrangement.spacedBy(spacing.space24),
     ) {
         DownloadSection(
@@ -188,29 +183,47 @@ private fun ProfileModeBadge(profileName: String?, tunnelMode: TunnelState.Mode?
     var showModePopup by rememberSaveable { mutableStateOf(false) }
     val modeOptions = remember { listOf(TunnelState.Mode.Rule, TunnelState.Mode.Global, TunnelState.Mode.Direct) }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.space8)) {
-        Box {
-            Surface(color = MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtle), shape = RoundedCornerShape(50), modifier = Modifier.heightIn(min = 28.dp).widthIn(max = 200.dp).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = { onProfileNameClick(); if (enabledProfiles.isNotEmpty()) { showProfilePopup = true } })) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(spacing.space6)) {
-                    Text(text = profileName ?: FlyTxt.Home.Traffic.NoProfile, style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold), color = MiuixTheme.colorScheme.primary, modifier = Modifier.weight(1f, fill = false).basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp), maxLines = 1, softWrap = false)
-                }
+        val profileMenuAnchor = rememberGlassPopupAnchor()
+        val profileChipContent: @Composable () -> Unit = {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(spacing.space6)) {
+                Text(text = profileName ?: FlyTxt.Home.Traffic.NoProfile, style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold), color = MiuixTheme.colorScheme.primary, modifier = Modifier.weight(1f, fill = false).basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp), maxLines = 1, softWrap = false)
             }
-            OverlayListPopup(show = showProfilePopup, alignment = PopupPositionProvider.Align.BottomStart, onDismissRequest = { showProfilePopup = false }) {
-                ListPopupColumn {
-                    enabledProfiles.forEachIndexed { index, profile ->
-                        DropdownImpl(text = profile.name, optionSize = enabledProfiles.size, isSelected = currentProfileId == profile.uuid.toString(), onSelectedIndexChange = { showProfilePopup = false; onProfileSelected(profile.uuid.toString()) }, index = index)
-                    }
-                }
+        }
+        GlassCapsuleSurface(anchor = profileMenuAnchor, cornerRadius = 14.dp, fallbackColor = MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtle), modifier = Modifier.heightIn(min = 28.dp).widthIn(max = 200.dp).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = { onProfileNameClick(); if (enabledProfiles.isNotEmpty()) { showProfilePopup = true } }), content = profileChipContent)
+        GlassPopupHost(
+            show = showProfilePopup,
+            onDismissRequest = { showProfilePopup = false },
+            anchor = profileMenuAnchor,
+            anchorContent = profileChipContent,
+            alignToPageEnd = false,
+            sizing = GlassPopupSizing(minWidth = 188.dp, maxWidth = 280.dp),
+        ) {
+            enabledProfiles.forEach { profile ->
+                GlassMenuItem(
+                    text = profile.name,
+                    selected = currentProfileId == profile.uuid.toString(),
+                    onClick = { showProfilePopup = false; onProfileSelected(profile.uuid.toString()) },
+                    textMaxLines = Int.MAX_VALUE,
+                )
             }
         }
         Box(modifier = Modifier.size(spacing.space4).background(MiuixTheme.colorScheme.primary, CircleShape))
-        Box {
-            Surface(color = MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtle), shape = RoundedCornerShape(50), modifier = Modifier.heightIn(min = 28.dp).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = { onTunnelModeClick(); showModePopup = true })) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(spacing.space6)) {
-                    Text(text = tunnelMode.toDisplayName(), style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold), color = MiuixTheme.colorScheme.primary)
-                }
+        val modeMenuAnchor = rememberGlassPopupAnchor()
+        val modeChipContent: @Composable () -> Unit = {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(spacing.space6)) {
+                Text(text = tunnelMode.toDisplayName(), style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold), color = MiuixTheme.colorScheme.primary)
             }
-            OverlayListPopup(show = showModePopup, alignment = PopupPositionProvider.Align.BottomEnd, onDismissRequest = { showModePopup = false }) {
-                ListPopupColumn { modeOptions.forEachIndexed { index, mode -> DropdownImpl(text = mode.toDisplayName(), optionSize = modeOptions.size, isSelected = mode == tunnelMode, onSelectedIndexChange = { showModePopup = false; onTunnelModeSelected(mode) }, index = index) } }
+        }
+        GlassCapsuleSurface(anchor = modeMenuAnchor, cornerRadius = 14.dp, fallbackColor = MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtle), modifier = Modifier.heightIn(min = 28.dp).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = { onTunnelModeClick(); showModePopup = true }), content = modeChipContent)
+        GlassPopupHost(
+            show = showModePopup,
+            onDismissRequest = { showModePopup = false },
+            anchor = modeMenuAnchor,
+            anchorContent = modeChipContent,
+            alignToPageEnd = false,
+        ) {
+            modeOptions.forEach { mode ->
+                GlassMenuItem(text = mode.toDisplayName(), selected = mode == tunnelMode, onClick = { showModePopup = false; onTunnelModeSelected(mode) })
             }
         }
     }
@@ -225,20 +238,16 @@ private fun SpeedValue(speed: Long) {
     Row(verticalAlignment = Alignment.Bottom) {
         Text(
             text = value,
-            style =
-                MiuixTheme.textStyles.headline1.copy(
-                    fontSize = trafficValueFontSize,
-                    lineHeight = trafficValueFontSize,
-                    letterSpacing = trafficValueLetterSpacing,
-                ),
+            style = MiuixTheme.textStyles.headline1.copy(
+                fontSize = trafficValueFontSize,
+                lineHeight = trafficValueFontSize,
+                letterSpacing = trafficValueLetterSpacing,
+            ),
             color = MiuixTheme.colorScheme.primary,
         )
         Text(
             text = unit,
-            style =
-                MiuixTheme.textStyles.title2.copy(
-                    fontSize = trafficUnitFontSize
-                ),
+            style = MiuixTheme.textStyles.title2.copy(fontSize = trafficUnitFontSize),
             color = MiuixTheme.colorScheme.primary.copy(alpha = opacity.medium),
             modifier = Modifier.padding(bottom = spacing.space14, start = spacing.space8),
         )
@@ -288,50 +297,17 @@ private fun UploadSection(
         Row(
             horizontalArrangement = Arrangement.spacedBy(spacing.space8),
             verticalAlignment = Alignment.CenterVertically,
-            modifier =
-                Modifier.animateContentSize(
-                    tween(
-                        AnimationSpecs.DURATION_FAST,
-                        easing = AnimationSpecs.EmphasizedDecelerate,
-                    )
-                ),
+            modifier = Modifier.animateContentSize(tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.EmphasizedDecelerate)),
         ) {
             ProxyStatusCapsule(controlState = controlState, isEnabled = isEnabled, isRemoteController = isRemoteController, onClick = onClick)
             AnimatedVisibility(
                 visible = isRunning,
-                enter =
-                    slideInHorizontally(
-                        initialOffsetX = { it },
-                        animationSpec =
-                            tween(
-                                AnimationSpecs.DURATION_MEDIUM,
-                                easing = AnimationSpecs.EmphasizedDecelerate,
-                            ),
-                    ) +
-                        fadeIn(
-                            tween(AnimationSpecs.DURATION_MEDIUM, easing = AnimationSpecs.EnterEasing)
-                        ),
-                exit =
-                    slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec =
-                            tween(
-                                AnimationSpecs.DURATION_FAST,
-                                easing = AnimationSpecs.EmphasizedAccelerate,
-                            ),
-                    ) +
-                        fadeOut(
-                            tween(
-                                AnimationSpecs.DURATION_FAST,
-                                easing = AnimationSpecs.ExitEasing,
-                            )
-                        ),
-            ) {
-                ProxyTypeCapsule(runMode = runMode, isEnabled = isEnabled, onRunModeClick = onRunModeClick, onRunModeSelected = onRunModeSelected)
-            }
-            if (isRunning && onOpenDashboard != null) {
-                NetworkPanelStatusButton(onClick = onOpenDashboard)
-            }
+                enter = slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(AnimationSpecs.DURATION_MEDIUM, easing = AnimationSpecs.EmphasizedDecelerate),
+                ) + fadeIn(tween(AnimationSpecs.DURATION_MEDIUM, easing = AnimationSpecs.EnterEasing)),
+                exit = slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.EmphasizedAccelerate),
+                ) + fadeOut(tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.ExitEasing)),
+            ) { ProxyTypeCapsule(runMode = runMode, isEnabled = isEnabled, onRunModeClick = onRunModeClick, onRunModeSelected = onRunModeSelected) }
+            if (isRunning && onOpenDashboard != null) { NetworkPanelStatusButton(onClick = onOpenDashboard) }
         }
     }
 }
@@ -345,19 +321,27 @@ private fun ProxyTypeCapsule(runMode: RunMode, isEnabled: Boolean, onRunModeClic
     val interactionSource = remember { MutableInteractionSource() }
     var showPopup by rememberSaveable { mutableStateOf(false) }
     val runModeOptions = remember { listOf(RunMode.VpnService, RunMode.Tun, RunMode.Ebpf) }
-    Box {
-        Surface(color = primary.copy(alpha = opacity.subtle), shape = RoundedCornerShape(50), modifier = Modifier.height(componentSizes.statusCapsuleHeight).clickable(enabled = isEnabled, interactionSource = interactionSource, indication = null, role = Role.Button, onClick = {onRunModeClick(); showPopup = true })) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = spacing.space12), horizontalArrangement = Arrangement.spacedBy(spacing.space6)) {
-                Icon(imageVector = when (runMode) { RunMode.VpnService -> FlyCat.PlaneTakeoff; RunMode.Tun -> FlyCat.Tun; RunMode.Ebpf -> FlyCat.Tun }, contentDescription = null, tint = primary, modifier = Modifier.size(spacing.space12))
-                Text(text = when (runMode) { RunMode.VpnService -> FlyTxt.Home.RunMode.Vpn; RunMode.Tun -> FlyTxt.Home.RunMode.Tun; RunMode.Ebpf -> FlyTxt.Home.RunMode.Ebpf }, style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold), color = primary)
-            }
+    val runModeMenuAnchor = rememberGlassPopupAnchor()
+    val runModeChipContent: @Composable () -> Unit = {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = spacing.space12), horizontalArrangement = Arrangement.spacedBy(spacing.space6)) {
+            Icon(imageVector = when (runMode) { RunMode.VpnService -> FlyCat.PlaneTakeoff; RunMode.Tun -> FlyCat.Tun; RunMode.Ebpf -> FlyCat.Tun }, contentDescription = null, tint = primary, modifier = Modifier.size(spacing.space12))
+            Text(text = when (runMode) { RunMode.VpnService -> FlyTxt.Home.RunMode.Vpn; RunMode.Tun -> FlyTxt.Home.RunMode.Tun; RunMode.Ebpf -> FlyTxt.Home.RunMode.Ebpf }, style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold), color = primary)
         }
-        OverlayListPopup(show = showPopup, alignment = PopupPositionProvider.Align.BottomStart, onDismissRequest = { showPopup = false }) {
-            ListPopupColumn {
-                runModeOptions.forEachIndexed { index, mode ->
-                    DropdownImpl(text = when (mode) { RunMode.VpnService -> FlyTxt.Home.RunMode.Vpn; RunMode.Tun -> FlyTxt.Home.RunMode.Tun; RunMode.Ebpf -> FlyTxt.Home.RunMode.Ebpf }, optionSize = runModeOptions.size, isSelected = mode == runMode, onSelectedIndexChange = { showPopup = false; onRunModeSelected(mode) }, index = index)
-                }
-            }
+    }
+    GlassCapsuleSurface(anchor = runModeMenuAnchor, cornerRadius = componentSizes.statusCapsuleHeight / 2, fallbackColor = primary.copy(alpha = opacity.subtle), modifier = Modifier.height(componentSizes.statusCapsuleHeight).clickable(enabled = isEnabled, interactionSource = interactionSource, indication = null, role = Role.Button, onClick = { onRunModeClick(); showPopup = true }), content = runModeChipContent)
+    GlassPopupHost(
+        show = showPopup,
+        onDismissRequest = { showPopup = false },
+        anchor = runModeMenuAnchor,
+        anchorContent = runModeChipContent,
+        alignToPageEnd = false,
+    ) {
+        runModeOptions.forEach { mode ->
+            GlassMenuItem(
+                text = when (mode) { RunMode.VpnService -> FlyTxt.Home.RunMode.Vpn; RunMode.Tun -> FlyTxt.Home.RunMode.Tun; RunMode.Ebpf -> FlyTxt.Home.RunMode.Ebpf },
+                selected = mode == runMode,
+                onClick = { showPopup = false; onRunModeSelected(mode) },
+            )
         }
     }
 }
@@ -366,13 +350,10 @@ private fun ProxyTypeCapsule(runMode: RunMode, isEnabled: Boolean, onRunModeClic
 private fun NetworkPanelStatusButton(onClick: () -> Unit) {
     val componentSizes = AppTheme.sizes
     val primary = MiuixTheme.colorScheme.primary
-    Box(
-        modifier = Modifier
-            .size(componentSizes.statusCapsuleHeight)
-            .clip(CircleShape)
-            .background(primary.copy(alpha = AppTheme.opacity.subtle))
-            .clickable(role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
+    GlassCapsuleSurface(
+        cornerRadius = componentSizes.statusCapsuleHeight / 2,
+        fallbackColor = primary.copy(alpha = AppTheme.opacity.subtle),
+        modifier = Modifier.size(componentSizes.statusCapsuleHeight).clickable(role = Role.Button, onClick = onClick),
     ) {
         Icon(
             imageVector = FlyCat.Zashboard,
@@ -391,48 +372,25 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState, isEnabled: B
 
     val primary = MiuixTheme.colorScheme.primary
     val interactionSource = remember { MutableInteractionSource() }
-    Surface(
-        color = primary.copy(alpha = opacity.subtle),
-        shape = RoundedCornerShape(50),
-        modifier =
-            Modifier.height(componentSizes.statusCapsuleHeight).clickable(enabled = isEnabled, interactionSource = interactionSource, indication = null, role = Role.Button, onClick = onClick)
-                .animateContentSize(
-                    tween(
-                        AnimationSpecs.DURATION_FAST,
-                        easing = AnimationSpecs.EmphasizedDecelerate,
-                    )
-                ),
+    GlassCapsuleSurface(
+        cornerRadius = componentSizes.statusCapsuleHeight / 2,
+        fallbackColor = primary.copy(alpha = opacity.subtle),
+        modifier = Modifier.height(componentSizes.statusCapsuleHeight).clickable(enabled = isEnabled, interactionSource = interactionSource, indication = null, role = Role.Button, onClick = onClick).animateContentSize(
+            tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.EmphasizedDecelerate)
+        ),
     ) {
         AnimatedContent(
             targetState = controlState,
             transitionSpec = {
                 (slideInHorizontally(
-                        initialOffsetX = { it / 2 },
-                        animationSpec =
-                            tween(
-                                AnimationSpecs.DURATION_MEDIUM,
-                                easing = AnimationSpecs.EmphasizedDecelerate,
-                            ),
-                    ) +
-                        fadeIn(
-                            tween(AnimationSpecs.DURATION_MEDIUM, easing = AnimationSpecs.EnterEasing)
-                        ))
-                    .togetherWith(
-                        slideOutHorizontally(
-                            targetOffsetX = { -it / 2 },
-                            animationSpec =
-                                tween(
-                                    AnimationSpecs.DURATION_FAST,
-                                    easing = AnimationSpecs.EmphasizedAccelerate,
-                                ),
-                        ) +
-                            fadeOut(
-                                tween(
-                                    AnimationSpecs.DURATION_FAST,
-                                    easing = AnimationSpecs.ExitEasing,
-                                )
-                            )
-                    )
+                    initialOffsetX = { it / 2 },
+                    animationSpec = tween(AnimationSpecs.DURATION_MEDIUM, easing = AnimationSpecs.EmphasizedDecelerate),
+                ) + fadeIn(tween(AnimationSpecs.DURATION_MEDIUM, easing = AnimationSpecs.EnterEasing))).togetherWith(
+                    slideOutHorizontally(
+                        targetOffsetX = { -it / 2 },
+                        animationSpec = tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.EmphasizedAccelerate),
+                    ) + fadeOut(tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.ExitEasing))
+                )
             },
             label = "CapsuleStateTransition",
         ) { state ->
@@ -442,32 +400,26 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState, isEnabled: B
                 horizontalArrangement = Arrangement.spacedBy(spacing.space6),
             ) {
                 Icon(
-                    imageVector =
-                        when (state) {
-                            HomeProxyControlState.Idle -> FlyCat.Rocket
-                            HomeProxyControlState.Connecting,
-                            HomeProxyControlState.Disconnecting -> FlyCat.Waiting
-                            HomeProxyControlState.Lost,
-                            HomeProxyControlState.Running -> FlyCat.Activity
-                        },
+                    imageVector = when (state) {
+                        HomeProxyControlState.Idle -> FlyCat.Rocket
+                        HomeProxyControlState.Connecting,
+                        HomeProxyControlState.Disconnecting -> FlyCat.Waiting
+                        HomeProxyControlState.Lost,
+                        HomeProxyControlState.Running -> FlyCat.Activity
+                    },
                     contentDescription = null,
                     tint = primary,
                     modifier = Modifier.size(spacing.space12),
                 )
                 Text(
-                    text =
-                        when (state) {
-                            HomeProxyControlState.Idle -> FlyTxt.Home.Status.TapToStart
-                            HomeProxyControlState.Connecting -> FlyTxt.Home.Status.Connecting
-                            HomeProxyControlState.Running -> FlyTxt.Home.Status.Running
-                            HomeProxyControlState.Lost -> FlyTxt.Home.Status.Lost
-                            HomeProxyControlState.Disconnecting -> FlyTxt.Home.Status.Disconnecting
-                        },
-                    style =
-                        MiuixTheme.textStyles.footnote1.copy(
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                        ),
+                    text = when (state) {
+                        HomeProxyControlState.Idle -> FlyTxt.Home.Status.TapToStart
+                        HomeProxyControlState.Connecting -> FlyTxt.Home.Status.Connecting
+                        HomeProxyControlState.Running -> FlyTxt.Home.Status.Running
+                        HomeProxyControlState.Lost -> FlyTxt.Home.Status.Lost
+                        HomeProxyControlState.Disconnecting -> FlyTxt.Home.Status.Disconnecting
+                    },
+                    style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
                     color = primary,
                 )
             }
@@ -475,10 +427,9 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState, isEnabled: B
     }
 }
 
-private fun TunnelState.Mode?.toDisplayName(): String =
-    when (this) {
-        TunnelState.Mode.Direct -> FlyTxt.Home.TunnelMode.Direct
-        TunnelState.Mode.Global -> FlyTxt.Home.TunnelMode.Global
-        TunnelState.Mode.Rule -> FlyTxt.Home.TunnelMode.Rule
-        else -> "--"
-    }
+private fun TunnelState.Mode?.toDisplayName(): String = when (this) {
+    TunnelState.Mode.Direct -> FlyTxt.Home.TunnelMode.Direct
+    TunnelState.Mode.Global -> FlyTxt.Home.TunnelMode.Global
+    TunnelState.Mode.Rule -> FlyTxt.Home.TunnelMode.Rule
+    else -> "--"
+}

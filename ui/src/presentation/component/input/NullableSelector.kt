@@ -32,18 +32,16 @@ fun NullableBooleanSelector(
     value: Boolean?,
     onValueChange: (Boolean?) -> Unit,
 ) {
-    val items =
-        listOf(
-            FlyTxt.Component.Selector.NotModify,
-            FlyTxt.Component.Selector.Enable,
-            FlyTxt.Component.Selector.Disable,
-        )
-    val selectedIndex =
-        when (value) {
-            null -> 0
-            true -> 1
-            false -> 2
-        }
+    val items = listOf(
+        FlyTxt.Component.Selector.NotModify,
+        FlyTxt.Component.Selector.Enable,
+        FlyTxt.Component.Selector.Disable,
+    )
+    val selectedIndex = when (value) {
+        null -> 0
+        true -> 1
+        false -> 2
+    }
 
     WindowDropdownPreference(
         title = title,
@@ -106,20 +104,18 @@ fun ListMergeStrategySelector(
     value: ListMergeStrategy,
     onValueChange: (ListMergeStrategy) -> Unit,
 ) {
-    val items =
-        listOf(
-            FlyTxt.Component.Selector.NotModify,
-            FlyTxt.Component.Selector.Replace,
-            FlyTxt.Component.Selector.Prepend,
-            FlyTxt.Component.Selector.Append,
-        )
-    val values =
-        listOf(
-            ListMergeStrategy.None,
-            ListMergeStrategy.Replace,
-            ListMergeStrategy.Start,
-            ListMergeStrategy.End,
-        )
+    val items = listOf(
+        FlyTxt.Component.Selector.NotModify,
+        FlyTxt.Component.Selector.Replace,
+        FlyTxt.Component.Selector.Prepend,
+        FlyTxt.Component.Selector.Append,
+    )
+    val values = listOf(
+        ListMergeStrategy.None,
+        ListMergeStrategy.Replace,
+        ListMergeStrategy.Start,
+        ListMergeStrategy.End,
+    )
 
     NullableEnumSelector(
         title = title,
@@ -138,12 +134,11 @@ fun MapMergeStrategySelector(
     value: MapMergeStrategy,
     onValueChange: (MapMergeStrategy) -> Unit,
 ) {
-    val items =
-        listOf(
-            FlyTxt.Component.Selector.NotModify,
-            FlyTxt.Component.Selector.Replace,
-            FlyTxt.Component.Selector.Merge,
-        )
+    val items = listOf(
+        FlyTxt.Component.Selector.NotModify,
+        FlyTxt.Component.Selector.Replace,
+        FlyTxt.Component.Selector.Merge,
+    )
     val values = listOf(MapMergeStrategy.None, MapMergeStrategy.Replace, MapMergeStrategy.Merge)
 
     NullableEnumSelector(

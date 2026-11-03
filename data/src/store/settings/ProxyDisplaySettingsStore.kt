@@ -31,6 +31,7 @@ import com.tencent.mmkv.MMKV
 class ProxyDisplaySettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalMmkv), ProxyDisplaySettingsReader {
     override val sortMode by enumFlow(ProxySortMode.DEFAULT)
     override val displayMode by enumFlow(ProxyDisplayMode.DOUBLE_DETAILED)
+    override val groupTabsMode by boolFlow(false)
     override val proxyMode by enumFlow(TunnelState.Mode.Rule)
     override val sheetHeightFraction by floatFlow(PROXY_SHEET_HEIGHT_FRACTION_DEFAULT)
 }

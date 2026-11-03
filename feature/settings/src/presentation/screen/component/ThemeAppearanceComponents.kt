@@ -49,7 +49,7 @@ import com.github.lmfirefly.flycat.locale.FlyTxt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ColorPicker
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.TextField
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 
 @Composable
 internal fun ThemeModeAndColorItems(
@@ -71,12 +71,11 @@ internal fun ThemeModeSelectorItem(themeMode: ThemeMode, onThemeModeChange: (The
         title = FlyTxt.AppSettings.Interface.ThemeModeTitle,
         summary = FlyTxt.AppSettings.Interface.ThemeModeSummary,
         currentValue = themeMode,
-        items =
-            listOf(
-                FlyTxt.AppSettings.Interface.ThemeModeSystem,
-                FlyTxt.AppSettings.Interface.ThemeModeLight,
-                FlyTxt.AppSettings.Interface.ThemeModeDark,
-            ),
+        items = listOf(
+            FlyTxt.AppSettings.Interface.ThemeModeSystem,
+            FlyTxt.AppSettings.Interface.ThemeModeLight,
+            FlyTxt.AppSettings.Interface.ThemeModeDark,
+        ),
         values = ThemeMode.entries,
         onValueChange = onThemeModeChange,
     )
@@ -105,10 +104,9 @@ internal fun ThemeColorPickerItem(
 
     BasicComponent(
         title = FlyTxt.AppSettings.Interface.ColorThemeTitle,
-        summary =
-            FlyTxt.AppSettings.Interface.ColorThemeCustomSummary.format(
-                formatThemeSeedHex(themeSeedColorArgb)
-            ),
+        summary = FlyTxt.AppSettings.Interface.ColorThemeCustomSummary.format(
+            formatThemeSeedHex(themeSeedColorArgb)
+        ),
         onClick = {
             if (showBottomSheetInPlace) {
                 showThemeColorPicker.value = true
@@ -117,10 +115,9 @@ internal fun ThemeColorPickerItem(
             }
         },
         endActions = {
-            val previewColor =
-                remember(themeSeedColorArgb) {
-                    runCatching { colorFromArgb(themeSeedColorArgb) }.getOrDefault(Color.White)
-                }
+            val previewColor = remember(themeSeedColorArgb) {
+                runCatching { colorFromArgb(themeSeedColorArgb) }.getOrDefault(Color.White)
+            }
             Icon(
                 FlyCat.Palette,
                 tint = previewColor,
@@ -151,17 +148,15 @@ internal fun ThemeColorPickerSheet(
     onConfirm: (Long) -> Unit,
     renderInRootScaffold: Boolean = true,
 ) {
-    val pickerColor =
-        remember(show, initialSeedColorArgb) {
-            mutableStateOf(
-                runCatching { colorFromArgb(initialSeedColorArgb) }.getOrDefault(Color.White)
-            )
-        }
-    val hexField =
-        remember(show, initialSeedColorArgb) {
-            val hex = formatThemeSeedHex(initialSeedColorArgb)
-            mutableStateOf(TextFieldValue(hex, TextRange(hex.length)))
-        }
+    val pickerColor = remember(show, initialSeedColorArgb) {
+        mutableStateOf(
+            runCatching { colorFromArgb(initialSeedColorArgb) }.getOrDefault(Color.White)
+        )
+    }
+    val hexField = remember(show, initialSeedColorArgb) {
+        val hex = formatThemeSeedHex(initialSeedColorArgb)
+        mutableStateOf(TextFieldValue(hex, TextRange(hex.length)))
+    }
 
     AppActionBottomSheet(
         show = show,
@@ -186,7 +181,7 @@ internal fun ThemeColorPickerSheet(
                     },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                TextField(
+                GlassTextField(
                     value = hexField.value,
                     onValueChange = { updated ->
                         val upper = updated.copy(text = updated.text.uppercase())

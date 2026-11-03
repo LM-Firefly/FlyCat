@@ -32,7 +32,7 @@ import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import top.yukonga.miuix.kmp.basic.Button
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -49,27 +49,24 @@ internal suspend fun openProfileConfigPreview(
         return
     }
 
-    val configContent =
-        runCatching { withContext(Dispatchers.IO) { targetFile.readText() } }
-            .getOrElse {
-                onReadFailed(it.message ?: "Failed to read profile")
-                return
-            }
+    val configContent = runCatching { withContext(Dispatchers.IO) { targetFile.readText() } }.getOrElse {
+        onReadFailed(it.message ?: "Failed to read profile")
+        return
+    }
 
-    val saveCallback: (suspend (String) -> Unit)? =
-        if (editable) {
-            { updatedContent: String ->
-                runCatching { withContext(Dispatchers.IO) { targetFile.writeText(updatedContent) } }
-                    .getOrElse {
-                        throw IllegalStateException(
-                            it.message ?: FlyTxt.ProfilesPage.SettingsDialog.SaveFailed,
-                            it,
-                        )
-                    }
-            }
-        } else {
-            null
+    val saveCallback: (suspend (String) -> Unit)? = if (editable) {
+        { updatedContent: String ->
+            runCatching { withContext(Dispatchers.IO) { targetFile.writeText(updatedContent) } }
+                .getOrElse {
+                    throw IllegalStateException(
+                        it.message ?: FlyTxt.ProfilesPage.SettingsDialog.SaveFailed,
+                        it,
+                    )
+                }
         }
+    } else {
+        null
+    }
 
     onPreviewPrepared(configContent, saveCallback)
 }
@@ -89,20 +86,13 @@ internal fun ProfileEditOptionsDialog(
         onDismissFinished = onDismissFinished,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
-            Button(modifier = Modifier.fillMaxWidth(), onClick = onOpenConfig) {
-                Text(FlyTxt.ProfilesPage.SettingsDialog.OpenConfig)
-            }
-
-            Button(
-                modifier = Modifier.fillMaxWidth(),
+            GlassTextButton(text = FlyTxt.ProfilesPage.SettingsDialog.OpenConfig, onClick = onOpenConfig, modifier = Modifier.fillMaxWidth())
+            GlassTextButton(
+                text = FlyTxt.ProfilesPage.SettingsDialog.EditSettings,
                 onClick = onEditSettings,
-                colors = ButtonDefaults.buttonColorsPrimary(),
-            ) {
-                Text(
-                    text = FlyTxt.ProfilesPage.SettingsDialog.EditSettings,
-                    color = MiuixTheme.colorScheme.onPrimary,
-                )
-            }
+                modifier = Modifier.fillMaxWidth(),
+                primary = true,
+            )
         }
     }
 }

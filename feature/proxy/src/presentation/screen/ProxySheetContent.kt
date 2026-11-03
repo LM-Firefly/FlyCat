@@ -21,15 +21,7 @@
 
 package com.github.lmfirefly.flycat.feature.proxy.presentation.screen
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,10 +32,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -61,20 +56,27 @@ import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.ProxyChainI
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeGroupSheetContent
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSheetContent
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSortPopup
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeTabs
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeTestPullToRefresh
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.ProvideProxyDelayFlows
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.rememberNodeSheetHeight
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.rememberProxyGroupSelectionState
 import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProxyViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.NoOpNestedScrollConnection
 import com.github.lmfirefly.flycat.presentation.component.SearchInputToolbar
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardMaterial
+import com.github.lmfirefly.flycat.presentation.component.GlassTopActionDefaults
+import com.github.lmfirefly.flycat.presentation.component.rememberGlassSubmenuState
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetAction
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetIconAction
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
+import top.yukonga.miuix.kmp.glass.glassPopupAnchor
+import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import com.github.lmfirefly.flycat.presentation.icon.flycat.ListChevronsUpDown
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Search
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Speed
-import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
@@ -89,36 +91,22 @@ import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
 private const val NOTIFICATION_PROXY_SHEET_HEIGHT_FRACTION = 0.55f
 
-private fun proxySheetTransition(
-    enterSlideMillis: Int, exitSlideMillis: Int,
-    enterOffsetX: (Int) -> Int,
-    exitOffsetX: (Int) -> Int,
-    enterFadeMillis: Int = AnimationSpecs.Proxy.SheetFadeInDuration
-): ContentTransform = (slideInHorizontally(
-    animationSpec = tween(durationMillis = enterSlideMillis, easing = AnimationSpecs.Legacy),
-    initialOffsetX = enterOffsetX,
-) + fadeIn(animationSpec = tween(durationMillis = enterFadeMillis))) togetherWith
-    (slideOutHorizontally(
-        animationSpec = tween(durationMillis = exitSlideMillis, easing = AnimationSpecs.Legacy),
-        targetOffsetX = exitOffsetX,
-    ) + fadeOut(animationSpec = tween(durationMillis = AnimationSpecs.Proxy.SheetFadeOutDuration)))
-
-private fun LazyListState.isScrolledFromTop(): Boolean = firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
-
 @Composable
-fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = koinViewModel()) {
+fun ProxySheetContent(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel = koinViewModel(), onSheetTopPositioned: ((Float) -> Unit)? = null) {
     ProvideProxyDelayFlows(proxyViewModel) {
-        ProxySheetContentInner(onDismiss, proxyViewModel)
+        ProxySheetContentInner(onDismiss, proxyViewModel, onSheetTopPositioned)
     }
 }
 
 @Composable
-private fun ProxySheetContentInner(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel) {
+private fun ProxySheetContentInner(onDismiss: () -> Unit, proxyViewModel: ProxyViewModel, onSheetTopPositioned: ((Float) -> Unit)? = null) {
     val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsStateWithLifecycle()
     val sortMode by proxyViewModel.sortMode.collectAsStateWithLifecycle()
     val displayMode by proxyViewModel.displayMode.collectAsStateWithLifecycle()
     val showSheet = remember { mutableStateOf(true) }
     val showSortPopup = remember { mutableStateOf(false) }
+    // 「标签页模式」：与代理页共享存储级状态（ProxyDisplaySettingsStore），跨界面双向同步。
+    val groupTabsMode by proxyViewModel.groupTabsMode.collectAsStateWithLifecycle()
     val groupSelection = rememberProxyGroupSelectionState(
         proxyGroups = proxyGroups,
         onRefreshGroup = proxyViewModel::refreshGroup,
@@ -162,64 +150,74 @@ private fun ProxySheetContentInner(onDismiss: () -> Unit, proxyViewModel: ProxyV
             }
         }
     }
-    WindowBottomSheet(
-        show = showSheet.value,
-        title = selectedGroup?.name ?: FlyTxt.Proxy.Title,
-        backgroundColor = MiuixTheme.colorScheme.surface,
-        startAction = {
-            Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp4)) {
-                AppBottomSheetIconAction(
-                    action = AppBottomSheetAction(
-                        icon = FlyCat.Speed,
-                        contentDescription = FlyTxt.Proxy.Action.Test,
-                        onClick = {
-                            if (selectedGroup == null) {
-                                triggerTopDelayTest()
-                            } else {
-                                triggerSelectedGroupDelayTest()
-                            }
-                        },
-                    )
-                )
-                if (selectedGroup != null) {
+    // 与全应用弹层同宿主（AppActionBottomSheet）：浮动玻璃标题带的按钮真实采样内容录制层；
+    // 且玻璃弹窗经 Scaffold 弹窗宿主渲染——此前 WindowBottomSheet 的独立 Dialog 窗口使排序弹窗登记后无人渲染。
+    val sortMenuAnchor = rememberGlassPopupAnchor()
+    // 选中态变化后强制整窗重绘：弹层多层玻璃各自是独立 RenderNode，部分提交时会出现"标题已新/按钮旧"的混合帧；整窗失效促使一次完整合成。
+    val windowView = androidx.compose.ui.platform.LocalView.current.rootView
+    val selectGroupAndRedraw: (com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo) -> Unit = remember(groupSelection) {
+        { group -> groupSelection.selectGroup(group); windowView.invalidate() }
+    }
+    val clearSelectionAndRedraw: () -> Unit = remember(groupSelection) {
+        { groupSelection.clearSelection(); windowView.invalidate() }
+    }
+    // 「标签页模式」变更（含代理页远程切换）：开启时退出组选中，并强制整窗重绘避免玻璃混合帧。
+    LaunchedEffect(groupTabsMode) {
+        if (groupTabsMode) groupSelection.clearSelection()
+        windowView.invalidate()
+    }
+    // key 包裹整张弹层：每次导航重建子树，杜绝"标题新/按钮旧/网格旧"的陈旧作用域混合态。
+    key(selectedGroupName) {
+        AppActionBottomSheet(
+            show = showSheet.value,
+            onSheetTopPositioned = onSheetTopPositioned,
+            title = selectedGroup?.name ?: FlyTxt.Proxy.Title,
+            startAction = {
+                Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp4)) {
                     AppBottomSheetIconAction(
                         action = AppBottomSheetAction(
-                            icon = FlyCat.Search,
-                            contentDescription = FlyTxt.Component.Editor.Action.Search,
+                            icon = FlyCat.Speed,
+                            contentDescription = FlyTxt.Proxy.Action.Test,
                             onClick = {
-                                nodeSearchVisible = !nodeSearchVisible
-                                if (!nodeSearchVisible) nodeSearchQuery = ""
+                                if (selectedGroup == null) {
+                                    triggerTopDelayTest()
+                                } else {
+                                    triggerSelectedGroupDelayTest()
+                                }
                             },
                         )
                     )
+                    if (selectedGroup != null || groupTabsMode) {
+                        AppBottomSheetIconAction(
+                            action = AppBottomSheetAction(
+                                icon = FlyCat.Search,
+                                contentDescription = FlyTxt.Component.Editor.Action.Search,
+                                onClick = {
+                                    nodeSearchVisible = !nodeSearchVisible
+                                    if (!nodeSearchVisible) nodeSearchQuery = ""
+                                },
+                            )
+                        )
+                    }
                 }
-            }
-        },
-        endAction = {
-            AnimatedContent(
-                targetState = selectedGroup != null,
-                transitionSpec = {
-                    val motion = AnimationSpecs.Proxy
-                    val forward = targetState
-                    proxySheetTransition(
-                        enterSlideMillis = if (forward) motion.SheetSlideInDuration else motion.SheetSlideOutDuration,
-                        exitSlideMillis = motion.SheetSlideOutDuration,
-                        enterOffsetX = { width -> if (forward) width / 3 else -width / 3 },
-                        exitOffsetX = { width -> if (forward) -width / 3 else width / 3 },
-                    )
-                },
-                label = "notification_node_sheet_end_action",
-            ) { showBackAction ->
-                if (showBackAction) {
+            },
+            endAction = {
+                if (selectedGroup != null) {
                     AppBottomSheetIconAction(
                         action = AppBottomSheetAction(
                             icon = MiuixIcons.Back,
                             contentDescription = FlyTxt.Component.Navigation.Back,
-                            onClick = groupSelection.clearSelection,
+                            onClick = clearSelectionAndRedraw,
                         )
                     )
                 } else {
-                    Box {
+                    Box(
+                        modifier = Modifier.glassPopupAnchor(
+                            anchor = sortMenuAnchor,
+                            cornerRadius = GlassTopActionDefaults.ContainerSize / 2,
+                            floating = false,
+                        ),
+                    ) {
                         AppBottomSheetIconAction(
                             action = AppBottomSheetAction(
                                 icon = FlyCat.ListChevronsUpDown,
@@ -230,54 +228,46 @@ private fun ProxySheetContentInner(onDismiss: () -> Unit, proxyViewModel: ProxyV
                         NodeSortPopup(
                             show = showSortPopup.value,
                             onDismiss = { showSortPopup.value = false },
+                            anchor = sortMenuAnchor,
                             displayMode = displayMode,
                             sortMode = sortMode,
-                            alignment = PopupPositionProvider.Align.BottomEnd,
                             onDisplayModeSelected = proxyViewModel::setDisplayMode,
                             onSortSelected = proxyViewModel::setSortMode,
+                            tabsMode = groupTabsMode,
+                            onTabsModeChange = { enabled -> proxyViewModel.setGroupTabsMode(enabled) },
+                            alignToPageEnd = false,
                         )
                     }
                 }
-            }
-        },
-        onDismissRequest = { dismissSheet() },
-        onDismissFinished = onDismiss,
-        enableWindowDim = true,
-        insideMargin = DpSize(UiDp.dp16, UiDp.dp16),
-        enableNestedScroll = false,
-    ) {
-        AnimatedContent(
-            targetState = selectedGroupName,
-            transitionSpec = {
-                val motion = AnimationSpecs.Proxy
-                if (targetState != null) {
-                    proxySheetTransition(
-                        enterSlideMillis = motion.SheetSlideInDuration,
-                        exitSlideMillis = motion.SheetSlideOutDuration,
-                        enterOffsetX = { fullWidth -> fullWidth },
-                        exitOffsetX = { fullWidth -> -fullWidth / 3 },
-                    )
-                } else {
-                    proxySheetTransition(
-                        enterSlideMillis = motion.SheetSlideOutDuration,
-                        exitSlideMillis = motion.SheetSlideInDuration - 20,
-                        enterOffsetX = { fullWidth -> -fullWidth / 3 },
-                        exitOffsetX = { fullWidth -> fullWidth },
-                        enterFadeMillis = motion.SheetFadeInDuration - 20,
-                    )
-                }
             },
-            label = "notification_node_sheet_content",
-        ) { targetGroupName ->
-            val targetGroup = targetGroupName?.let { name ->
-                proxyGroups.firstOrNull { group -> group.name == name }
-            }
-            if (targetGroup == null) {
+            onDismissRequest = { dismissSheet() },
+            onDismissFinished = onDismiss,
+            enableWindowDim = true,
+            insideMargin = DpSize(UiDp.dp16, UiDp.dp16),
+            enableNestedScroll = false,
+            renderInRootScaffold = false,
+            // 面板采用玻璃卡片同配方（glassCardMaterial）：与代理页策略组/节点卡片一致的磨砂玻璃观感。
+            material = glassCardMaterial(),
+        ) {
+            // 即时切换（不走 AnimatedContent）：过渡帧会同时组合新旧两棵卡片树，软渲染下整帧重录制可达数百毫秒，表现为"第一次点击不生效"。
+            val targetGroup = selectedGroupName?.let { name -> proxyGroups.firstOrNull { group -> group.name == name } }
+            if (groupTabsMode && proxyGroups.isNotEmpty()) {
+                ProxySheetTabsContent(
+                    proxyViewModel = proxyViewModel,
+                    groups = proxyGroups,
+                    displayMode = displayMode,
+                    groupIconLookup = { name -> proxyGroups.firstOrNull { it.name == name }?.icon },
+                    searchQuery = nodeSearchQuery,
+                    onSearchQueryChange = { nodeSearchQuery = it },
+                    searchVisible = nodeSearchVisible,
+                    onSearchVisibleChange = { nodeSearchVisible = it },
+                )
+            } else if (targetGroup == null) {
                 val testingGroupNames by proxyViewModel.testingGroupNames.collectAsStateWithLifecycle()
                 NodeGroupSheetContent(
                     groups = proxyGroups,
                     displayMode = displayMode,
-                    onGroupClick = groupSelection.selectGroup,
+                    onGroupClick = selectGroupAndRedraw,
                     testingGroupNames = testingGroupNames,
                     sheetHeightFraction = NOTIFICATION_PROXY_SHEET_HEIGHT_FRACTION,
                     listState = groupListState,
@@ -309,6 +299,8 @@ private fun ProxySheetNodeContent(
     onTestDelay: () -> Unit,
     sheetHeightFraction: Float,
     listState: LazyListState,
+    // 各视图弹窗高度恒定（默认与分组视图同高），切换不触发壁纸层重录制/全表面重采样；标签页模式的 pager 页槽传 fillMaxSize 由槽位定高。
+    modifier: Modifier = Modifier.fillMaxWidth().height(rememberNodeSheetHeight(sheetHeightFraction)),
     groupIconLookup: ((String) -> String?)? = null,
     searchQuery: String = "",
     onSearchQueryChange: (String) -> Unit = {},
@@ -346,14 +338,16 @@ private fun ProxySheetNodeContent(
     }
     val onForceSelectProxy = remember(group.name, proxyViewModel) { { proxyName: String -> proxyViewModel.forceSelectProxy(group.name, proxyName) } }
     val onSingleNodeTestClick = remember(group.name, proxyViewModel) { { proxyName: String -> proxyViewModel.testProxyDelay(group.name, proxyName) } }
-    val sheetHeight = rememberNodeSheetHeight(sheetHeightFraction)
     val delayTestProgress by proxyViewModel.delayTestProgress.collectAsStateWithLifecycle()
-    Column {
+    Column(modifier = modifier) {
         if (group.chainPath.isNotEmpty()) {
             ProxyChainIndicator(
                 chain = group.chainPath,
-                modifier = Modifier.fillMaxWidth(),
+                // 与 Proxy.kt 同节奏：下缘外距补偿行盒下落白。
+                modifier = Modifier.fillMaxWidth().padding(bottom = UiDp.dp7),
                 groupIconLookup = groupIconLookup,
+                // 弹层内容列已带 16dp 内缩、节点网格无额外内缩：关闭 Card 的屏幕级水平内缩，链路条与卡片网格左右对齐。
+                applyHorizontalPadding = false,
             )
         }
         if (searchVisible) {
@@ -366,10 +360,13 @@ private fun ProxySheetNodeContent(
             SearchInputToolbar(
                 query = searchQuery,
                 onQueryChange = onSearchQueryChange,
-                modifier = Modifier.fillMaxWidth().padding(top = UiDp.dp12, bottom = UiDp.dp4),
+                modifier = Modifier.fillMaxWidth().padding(
+                    top = if (group.chainPath.isNotEmpty()) UiDp.dp5 else UiDp.dp12,
+                    bottom = UiDp.dp4,
+                ),
             )
         }
-        Box(modifier = Modifier.fillMaxWidth().height(sheetHeight).clipToBounds()) {
+        Box(modifier = Modifier.fillMaxWidth().weight(1f).clipToBounds()) {
             NodeTestPullToRefresh(
                 isRefreshing = isDelayTesting,
                 onRefresh = onTestDelay,
@@ -391,6 +388,66 @@ private fun ProxySheetNodeContent(
                     groupIconLookup = groupIconLookup,
                 )
             }
+        }
+    }
+}
+
+/**
+ * 「标签页模式」弹层内容：组名 tab 条 + 每组一页节点列表，与钻取式「组列表 ↔ 节点列表」互斥（由调用方分支选择）。
+ * 每页复用 [ProxySheetNodeContent]（链路条/搜索/下拉测速/节点网格），搜索状态跨页共享。
+ */
+@Composable
+private fun ProxySheetTabsContent(
+    proxyViewModel: ProxyViewModel,
+    groups: List<ProxyGroupInfo>,
+    displayMode: ProxyDisplayMode,
+    groupIconLookup: ((String) -> String?)? = null,
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
+    searchVisible: Boolean = false,
+    onSearchVisibleChange: (Boolean) -> Unit = {},
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val pagerState = rememberPagerState { groups.size }
+    // 总高与分组/节点视图同为 sheetHeight（tab 条 + pager 页占余量）：各视图弹窗高度恒定，切换不触发壁纸层重录制/全表面重采样。
+    val sheetHeight = rememberNodeSheetHeight(NOTIFICATION_PROXY_SHEET_HEIGHT_FRACTION)
+    Column(modifier = Modifier.fillMaxWidth().height(sheetHeight)) {
+        NodeTabs(
+            groups = groups,
+            selectedIndex = pagerState.currentPage,
+            onSelect = { index -> coroutineScope.launch { pagerState.animateScrollToPage(index) } },
+            // 弹层内容列已带 16dp 内缩、节点网格无额外内缩：tab 条去除非对称横内缩，与卡片网格左右对齐。
+            modifier = Modifier.fillMaxWidth().padding(vertical = UiDp.dp8),
+        )
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            beyondViewportPageCount = 0,
+            // 与 ProxyGroupTabsPane 同款：禁用 pager 拉伸过滚动；其嵌套滚动连接会吞掉子列表的竖向滚动，导致节点列表在 pager 内无法滚动。
+            overscrollEffect = null,
+            pageNestedScrollConnection = NoOpNestedScrollConnection,
+        ) { page ->
+            val group = groups[page]
+            val listState = rememberSaveable(group.name, saver = LazyListState.Saver) { LazyListState() }
+            ProxySheetNodeContent(
+                proxyViewModel = proxyViewModel,
+                group = group,
+                displayMode = displayMode,
+                onTestDelay = {
+                    coroutineScope.launch {
+                        if (listState.isScrolledFromTop()) listState.animateScrollToItem(0)
+                    }
+                    proxyViewModel.testDelay(group.name)
+                },
+                sheetHeightFraction = NOTIFICATION_PROXY_SHEET_HEIGHT_FRACTION,
+                listState = listState,
+                modifier = Modifier.fillMaxSize(),
+                groupIconLookup = groupIconLookup,
+                searchQuery = searchQuery,
+                onSearchQueryChange = onSearchQueryChange,
+                searchVisible = searchVisible,
+                onSearchVisibleChange = onSearchVisibleChange,
+            )
         }
     }
 }

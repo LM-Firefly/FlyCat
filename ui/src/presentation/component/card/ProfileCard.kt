@@ -23,6 +23,7 @@ package com.github.lmfirefly.flycat.presentation.component.card
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +32,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -44,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.core.model.profile.Profile
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassCapsuleSurface
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.CircleFadingArrowUp
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Delete
@@ -58,7 +61,6 @@ import com.github.lmfirefly.flycat.presentation.util.shouldShowUpdateButton
 import java.io.File
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -86,17 +88,15 @@ fun ProfileCard(
 
     val isDark = isSystemInDarkTheme()
     val secondaryContainer = colorScheme.secondaryContainer.copy(alpha = opacity.strong)
-    val actionIconTint =
-        remember(isDark, opacity) {
-            colorScheme.onSurface.copy(
-                alpha = if (isDark) opacity.subtleText else opacity.prominentText
-            )
-        }
+    val actionIconTint = remember(isDark, opacity) {
+        colorScheme.onSurface.copy(
+            alpha = if (isDark) opacity.subtleText else opacity.prominentText
+        )
+    }
 
     val isConfigSaved = remember(profile.uuid, profile.updatedAt) { profile.isConfigSaved(workDir) }
 
-    val updateBg =
-        remember(colorScheme, opacity) { colorScheme.primary.copy(alpha = opacity.subtle) }
+    val updateBg = remember(colorScheme, opacity) { colorScheme.primary.copy(alpha = opacity.subtle) }
     val updateTint = remember(colorScheme) { colorScheme.primary }
     val interactionSource = remember { MutableInteractionSource() }
 
@@ -167,16 +167,10 @@ fun ProfileCard(
                                 Text(
                                     text = timeText,
                                     fontSize = 12.sp,
-                                    color =
-                                        colorScheme.onTertiaryContainer.copy(
-                                            alpha = opacity.strong
-                                        ),
+                                    color = colorScheme.onTertiaryContainer.copy(alpha = opacity.strong),
                                     fontWeight = FontWeight.Medium,
                                     maxLines = 1,
-                                    modifier =
-                                        Modifier.padding(
-                                            end = componentSizes.profileMetaTrailingInset
-                                        ),
+                                    modifier = Modifier.padding(end = componentSizes.profileMetaTrailingInset),
                                 )
                             }
                         }
@@ -203,12 +197,17 @@ fun ProfileCard(
         )
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(
-                backgroundColor = secondaryContainer,
-                minHeight = componentSizes.compactActionButtonSize,
-                minWidth = componentSizes.compactActionButtonSize,
-                enabled = isConfigSaved && !isDownloading,
-                onClick = { if (isConfigSaved && !isDownloading) onExport(profile) },
+            GlassCapsuleSurface(
+                cornerRadius = componentSizes.compactActionButtonSize / 2,
+                fallbackColor = secondaryContainer,
+                modifier = Modifier
+                    .size(componentSizes.compactActionButtonSize)
+                    .clickable(
+                        enabled = isConfigSaved && !isDownloading,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { if (isConfigSaved && !isDownloading) onExport(profile) },
+                    ),
             ) {
                 Icon(
                     modifier = Modifier.size(spacing.space20).alpha(if (isConfigSaved) 1f else opacity.disabledSecondary),
@@ -220,12 +219,17 @@ fun ProfileCard(
 
             Spacer(Modifier.width(spacing.space8))
 
-            IconButton(
-                backgroundColor = secondaryContainer,
-                minHeight = componentSizes.compactActionButtonSize,
-                minWidth = componentSizes.compactActionButtonSize,
-                enabled = !isDownloading,
-                onClick = { if (!isDownloading) onDelete(profile) },
+            GlassCapsuleSurface(
+                cornerRadius = componentSizes.compactActionButtonSize / 2,
+                fallbackColor = secondaryContainer,
+                modifier = Modifier
+                    .size(componentSizes.compactActionButtonSize)
+                    .clickable(
+                        enabled = !isDownloading,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { if (!isDownloading) onDelete(profile) },
+                    ),
             ) {
                 Icon(
                     modifier = Modifier.size(spacing.space20),
@@ -238,13 +242,18 @@ fun ProfileCard(
             Spacer(Modifier.weight(1f))
 
             if (profile.shouldShowUpdateButton()) {
-                IconButton(
-                    modifier = Modifier.padding(end = spacing.space8),
-                    backgroundColor = updateBg,
-                    minHeight = componentSizes.compactActionButtonSize,
-                    minWidth = componentSizes.compactActionButtonSize,
-                    enabled = !isDownloading,
-                    onClick = { if (!isDownloading) onUpdate(profile) },
+                GlassCapsuleSurface(
+                    cornerRadius = componentSizes.compactActionButtonSize / 2,
+                    fallbackColor = updateBg,
+                    modifier = Modifier
+                        .padding(end = spacing.space8)
+                        .heightIn(min = componentSizes.compactActionButtonSize)
+                        .clickable(
+                            enabled = !isDownloading,
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { if (!isDownloading) onUpdate(profile) },
+                        ),
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = spacing.space10),
@@ -269,13 +278,18 @@ fun ProfileCard(
                 }
             }
 
-            IconButton(
-                modifier = Modifier.padding(end = spacing.space4),
-                backgroundColor = secondaryContainer,
-                minHeight = componentSizes.compactActionButtonSize,
-                minWidth = componentSizes.compactActionButtonSize,
-                enabled = !isDownloading,
-                onClick = { if (!isDownloading) onEdit(profile) },
+            GlassCapsuleSurface(
+                cornerRadius = componentSizes.compactActionButtonSize / 2,
+                fallbackColor = secondaryContainer,
+                modifier = Modifier
+                    .padding(end = spacing.space4)
+                    .heightIn(min = componentSizes.compactActionButtonSize)
+                    .clickable(
+                        enabled = !isDownloading,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { if (!isDownloading) onEdit(profile) },
+                    ),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = spacing.space10),

@@ -18,14 +18,12 @@ data class GitHubUpdateUiState(
     val message: String? = null,
 )
 
-class GitHubUpdateViewModel(
-    private val updateManager: GitHubUpdateManager,
-) : ViewModel() {
-    private val _uiState = MutableStateFlow(
-        GitHubUpdateUiState(source = updateManager.getSelectedSource()),
-    )
+class GitHubUpdateViewModel(private val updateManager: GitHubUpdateManager) : ViewModel() {
+    private val _uiState = MutableStateFlow(GitHubUpdateUiState(source = updateManager.getSelectedSource()))
     val uiState: StateFlow<GitHubUpdateUiState> = _uiState.asStateFlow()
     val downloadProgress: StateFlow<UpdateDownloadProgress> = updateManager.downloadProgress
+    // 自动检查发现的新版本候选；全局提示弹窗据此自动弹出。
+    val autoCheckCandidate: StateFlow<UpdateCandidate?> = updateManager.autoCheckCandidate
     private var downloadJob: Job? = null
     fun setSource(source: UpdateSource) {
         if (_uiState.value.source == source) return
@@ -39,54 +37,50 @@ class GitHubUpdateViewModel(
         Timber.i("Manual update check bypass cache: source=%s", source.key)
         _uiState.value = _uiState.value.copy(isChecking = true, message = null)
         viewModelScope.launch {
-            updateManager.checkForUpdate(source = source, isManualCheck = true)
-                .onSuccess { candidate ->
-                    Timber.i(
-                        "Manual update check finished: source=%s hasCandidate=%s tag=%s version=%s",
-                        source.key,
-                        candidate != null,
-                        candidate?.tag.orEmpty(),
-                        candidate?.versionName.orEmpty(),
-                    )
-                    _uiState.value = GitHubUpdateUiState(
-                        isChecking = false,
-                        source = source,
-                        candidate = candidate,
-                        message = if (candidate == null) FlyTxt.Component.Update.Message.NoUpdate else null,
-                    )
-                }
-                .onFailure { throwable ->
-                    Timber.w(throwable, "Manual update check failed: source=%s", source.key)
-                    _uiState.value = GitHubUpdateUiState(
-                        isChecking = false,
-                        source = source,
-                        message = FlyTxt.Component.Update.Message.CheckFailed.format(
-                            throwable.message ?: FlyTxt.Util.Error.UnknownError,
-                        ),
-                    )
-                }
+            updateManager.checkForUpdate(source = source, isManualCheck = true).onSuccess { candidate ->
+                Timber.i(
+                    "Manual update check finished: source=%s hasCandidate=%s tag=%s version=%s",
+                    source.key,
+                    candidate != null,
+                    candidate?.tag.orEmpty(),
+                    candidate?.versionName.orEmpty(),
+                )
+                _uiState.value = GitHubUpdateUiState(
+                    isChecking = false,
+                    source = source,
+                    candidate = candidate,
+                    message = if (candidate == null) FlyTxt.Component.Update.Message.NoUpdate else null,
+                )
+            }.onFailure { throwable ->
+                Timber.w(throwable, "Manual update check failed: source=%s", source.key)
+                _uiState.value = GitHubUpdateUiState(
+                    isChecking = false,
+                    source = source,
+                    message = FlyTxt.Component.Update.Message.CheckFailed.format(
+                        throwable.message ?: FlyTxt.Util.Error.UnknownError,
+                    ),
+                )
+            }
         }
     }
     fun downloadAndInstall(candidate: UpdateCandidate, selectedPackage: UpdateManifestPackage? = null) {
         if (downloadJob?.isActive == true) return
         downloadJob = viewModelScope.launch {
-            updateManager.downloadAndInstall(candidate, selectedPackage)
-                .onSuccess {
-                    _uiState.value = _uiState.value.copy(
-                        candidate = null,
-                        message = FlyTxt.Component.Update.Message.InstallPromptOpened,
+            updateManager.downloadAndInstall(candidate, selectedPackage).onSuccess {
+                _uiState.value = _uiState.value.copy(
+                    candidate = null,
+                    message = FlyTxt.Component.Update.Message.InstallPromptOpened,
+                )
+            }.onFailure { throwable ->
+                val message = if (throwable.isUpdateDownloadCancelled()) {
+                    FlyTxt.Component.Button.Cancel
+                } else {
+                    FlyTxt.Component.Update.Message.InstallFailed.format(
+                        throwable.message ?: FlyTxt.Util.Error.UnknownError,
                     )
                 }
-                .onFailure { throwable ->
-                    val message = if (throwable.isUpdateDownloadCancelled()) {
-                        FlyTxt.Component.Button.Cancel
-                    } else {
-                        FlyTxt.Component.Update.Message.InstallFailed.format(
-                            throwable.message ?: FlyTxt.Util.Error.UnknownError,
-                        )
-                    }
-                    _uiState.value = _uiState.value.copy(message = message)
-                }
+                _uiState.value = _uiState.value.copy(message = message)
+            }
         }
     }
     fun cancelDownload() {
@@ -94,6 +88,9 @@ class GitHubUpdateViewModel(
     }
     fun dismissCandidate() {
         _uiState.value = _uiState.value.copy(candidate = null)
+    }
+    fun dismissAutoCheckCandidate() {
+        updateManager.dismissAutoCheckCandidate()
     }
     fun consumeMessage() {
         _uiState.value = _uiState.value.copy(message = null)

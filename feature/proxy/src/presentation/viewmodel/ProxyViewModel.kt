@@ -69,10 +69,10 @@ class ProxyViewModel(
 
     data class DelayTestProgress(val tested: Int, val total: Int)
 
-    /** 防止并发分组测试（YumeBox: groupDelayTestInProgress boolean lock） */
+    /** 防止并发分组测试 */
     @Volatile
     private var groupDelayTestInProgress = false
-    /** 防止单节点重复测试（YumeBox: pendingProxyDelayTests Set） */
+    /** 防止单节点重复测试 */
     private val pendingProxyDelayTests = mutableSetOf<String>()
     @Volatile
     private var lastForceRefreshAtMs = 0L
@@ -91,21 +91,22 @@ class ProxyViewModel(
 
     private val groupSorter = ProxyGroupSorter()
 
-    val sortMode: StateFlow<ProxySortMode> =
-        proxyDisplaySettingsStore.sortMode.state.stateIn(
-            viewModelScope,
-            SharingStarted.Eagerly,
-            ProxySortMode.DEFAULT,
-        )
+    val sortMode: StateFlow<ProxySortMode> = proxyDisplaySettingsStore.sortMode.state.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        ProxySortMode.DEFAULT,
+    )
 
     val displayMode: StateFlow<ProxyDisplayMode> = proxyDisplaySettingsStore.displayMode.state
         .map { it.normalized() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProxyDisplayMode.DOUBLE_DETAILED)
 
-    val proxyGroups: StateFlow<List<ProxyGroupInfo>> =
-        proxyGroupRepository.proxyGroups
-            .map { groups -> groups.filterNot(ProxyGroupInfo::hidden) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    /** 「标签页模式」布局开关：存储级共享，代理页与通知栏节点面板跨界面双向同步。 */
+    val groupTabsMode: StateFlow<Boolean> = proxyDisplaySettingsStore.groupTabsMode.state
+
+    val proxyGroups: StateFlow<List<ProxyGroupInfo>> = proxyGroupRepository.proxyGroups
+        .map { groups -> groups.filterNot(ProxyGroupInfo::hidden) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /** 供 UI 订阅单节点实时延迟，避免每次测速结果都替换整个组列表。 */
     fun proxyDelayFlow(name: String): StateFlow<Int?> = proxyGroupRepository.proxyDelayFlow(name)
@@ -123,16 +124,14 @@ class ProxyViewModel(
         }
     }
 
-    val sortedProxyGroups: StateFlow<List<ProxyGroupInfo>> =
-        groupSorter.bind(scope = viewModelScope, proxyGroups = proxyGroups, sortMode = sortMode)
+    val sortedProxyGroups: StateFlow<List<ProxyGroupInfo>> = groupSorter.bind(scope = viewModelScope, proxyGroups = proxyGroups, sortMode = sortMode)
 
     fun ensureCoreLoaded(isActive: Boolean, source: String = "proxy_page") {
-        val changed =
-            if (isActive) {
-                activeSyncSources.add(source)
-            } else {
-                activeSyncSources.remove(source)
-            }
+        val changed = if (isActive) {
+            activeSyncSources.add(source)
+        } else {
+            activeSyncSources.remove(source)
+        }
         if (!changed) return
         healthCheck.updateSyncPriority(isActive, source)
         if (isActive) {
@@ -190,10 +189,9 @@ class ProxyViewModel(
                         _delayTestProgress.value = DelayTestProgress(tested = 0, total = targets.size)
                     }
                     setLoading(false)
-                    val error =
-                        healthCheck.runGroupHealthCheck(groupName, targets) { tested, total ->
-                            _delayTestProgress.value = DelayTestProgress(tested = tested, total = total)
-                        }
+                    val error = healthCheck.runGroupHealthCheck(groupName, targets) { tested, total ->
+                        _delayTestProgress.value = DelayTestProgress(tested = tested, total = total)
+                    }
                     error?.let { thrown ->
                         showError(FlyTxt.Proxy.Testing.Failed.format(thrown.message))
                     }
@@ -228,6 +226,10 @@ class ProxyViewModel(
         proxyDisplaySettingsStore.displayMode.set(mode)
     }
 
+    fun setGroupTabsMode(enabled: Boolean) {
+        proxyDisplaySettingsStore.groupTabsMode.set(enabled)
+    }
+
     fun selectProxy(groupName: String, proxyName: String) {
         // 预览态没有可切换的内核，patchSelector 必然失败；明确提示而不是让点击看似无响应。
         if (!connectionRepository.isRunning.value) {
@@ -242,8 +244,7 @@ class ProxyViewModel(
                     } else {
                         showError(FlyTxt.Proxy.Selection.Failed)
                     }
-                }
-                .onFailure { error ->
+                }.onFailure { error ->
                     if (error is ProxySelectTimeoutException) {
                         showError(FlyTxt.Proxy.Selection.Timeout)
                     } else {

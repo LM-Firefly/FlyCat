@@ -34,6 +34,9 @@ import androidx.compose.ui.platform.LocalContext
 import com.github.lmfirefly.flycat.core.model.profile.Profile
 import com.github.lmfirefly.flycat.feature.profiles.presentation.viewmodel.ProfilesViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
+import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopActionPill
 import com.github.lmfirefly.flycat.presentation.component.card.ProfileCard
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
@@ -42,6 +45,7 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.BadgePlus
 import com.github.lmfirefly.flycat.presentation.icon.flycat.CircleFadingArrowUp
+import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
@@ -128,28 +132,29 @@ internal fun ProfilesPageContent(
     onToggleProfile: (Profile) -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = FlyTxt.ProfilesPage.Title,
                 scrollBehavior = scrollBehavior,
                 actions = {
-                    Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp4)) {
-                        if (onUpdateAll != null) {
-                            IconButton(onClick = onUpdateAll) {
-                                Icon(
-                                    imageVector = FlyCat.CircleFadingArrowUp,
+                    GlassTopActionPill(
+                        actions = listOfNotNull(
+                            onUpdateAll?.let { update ->
+                                GlassTopAction(
+                                    icon = FlyCat.CircleFadingArrowUp,
                                     contentDescription = FlyTxt.ProfilesPage.Action.UpdateAll,
+                                    onClick = update,
                                 )
-                            }
-                        }
-                        IconButton(onClick = onAddProfile) {
-                            Icon(
-                                imageVector = FlyCat.BadgePlus,
+                            },
+                            GlassTopAction(
+                                icon = FlyCat.BadgePlus,
                                 contentDescription = FlyTxt.ProfilesPage.Action.AddProfile,
-                            )
-                        }
-                    }
+                                onClick = onAddProfile,
+                            ),
+                        ),
+                        backdrop = LocalTopBarBackdrop.current,
+                    )
                 },
             )
         },
@@ -192,10 +197,9 @@ private fun ProfilesList(
     onToggleProfile: (Profile) -> Unit,
 ) {
     val listState = rememberLazyListState()
-    val reorderState =
-        rememberReorderableLazyListState(listState) { from, to ->
-            onReorderProfiles(from.index, to.index)
-        }
+    val reorderState = rememberReorderableLazyListState(listState) { from, to ->
+        onReorderProfiles(from.index, to.index)
+    }
     val importedDir = LocalContext.current.filesDir.resolve("imported")
 
     ScreenLazyColumn(
@@ -210,8 +214,7 @@ private fun ProfilesList(
                     profile = profile,
                     workDir = importedDir,
                     isDownloading = isDownloading,
-                    modifier =
-                        Modifier.longPressDraggableHandle().alpha(if (isDragging) 0.9f else 1f),
+                    modifier = Modifier.longPressDraggableHandle().alpha(if (isDragging) 0.9f else 1f),
                     onExport = { onShareProfile(it) },
                     onUpdate = { onUpdateProfile(it) },
                     onDelete = { onDeleteProfile(it) },

@@ -34,14 +34,11 @@ import java.util.Locale
 
 object AppLanguageManager {
     @Volatile private var activeLanguage: AppLanguage = AppLanguage.System
-
     @Volatile private var activeLocale: Locale = Locale.getDefault()
-
     fun apply(language: AppLanguage) {
         activeLanguage = language
         val locale = resolveLocale(language)
         activeLocale = locale
-
         AppCompatDelegate.setApplicationLocales(
             when (language) {
                 AppLanguage.System -> LocaleListCompat.getEmptyLocaleList()
@@ -52,7 +49,6 @@ object AppLanguageManager {
                 AppLanguage.Ru -> LocaleListCompat.forLanguageTags("ru")
             }
         )
-
         Locale.setDefault(locale)
         LocaleUtils.setCurrentLocale(locale)
         val flyTag = when (language) {
@@ -75,29 +71,24 @@ object AppLanguageManager {
         }
         FlyLocaleManager.updateLocale(flyTag)
     }
-
     fun wrap(base: Context): Context {
         val configuration = Configuration(base.resources.configuration)
         applyLocale(configuration, activeLocale)
         return base.createConfigurationContext(configuration)
     }
-
     fun refreshSystemLanguage() {
         if (activeLanguage == AppLanguage.System) {
             apply(AppLanguage.System)
         }
     }
-
-    private fun resolveLocale(language: AppLanguage): Locale =
-        when (language) {
-            AppLanguage.System -> systemLocale()
-            AppLanguage.Zh -> Locale.SIMPLIFIED_CHINESE
-            AppLanguage.ZhHant -> Locale.TRADITIONAL_CHINESE
-            AppLanguage.En -> Locale.ENGLISH
-            AppLanguage.Ja -> Locale.JAPANESE
-            AppLanguage.Ru -> Locale.forLanguageTag("ru")
-        }
-
+    private fun resolveLocale(language: AppLanguage): Locale = when (language) {
+        AppLanguage.System -> systemLocale()
+        AppLanguage.Zh -> Locale.SIMPLIFIED_CHINESE
+        AppLanguage.ZhHant -> Locale.TRADITIONAL_CHINESE
+        AppLanguage.En -> Locale.ENGLISH
+        AppLanguage.Ja -> Locale.JAPANESE
+        AppLanguage.Ru -> Locale.forLanguageTag("ru")
+    }
     private fun systemLocale(): Locale {
         val resources = Resources.getSystem()
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -107,7 +98,6 @@ object AppLanguageManager {
             resources.configuration.locale ?: Locale.getDefault()
         }
     }
-
     private fun applyLocale(configuration: Configuration, locale: Locale) {
         configuration.setLocale(locale)
         configuration.setLayoutDirection(locale)

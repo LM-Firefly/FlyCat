@@ -35,35 +35,32 @@ val FlyCat.Close: ImageVector
         if (closeVector != null) {
             return closeVector!!
         }
-        closeVector =
-            ImageVector.Builder(
-                name = "X",
-                defaultWidth = 24.dp,
-                defaultHeight = 24.dp,
-                viewportWidth = 24f,
-                viewportHeight = 24f,
-            )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(18f, 6f)
-                        lineTo(6f, 18f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveToRelative(6f, 6f)
-                        lineToRelative(12f, 12f)
-                    }
-                }
-                .build()
+        closeVector = ImageVector.Builder(
+            name = "X",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(18f, 6f)
+                lineTo(6f, 18f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveToRelative(6f, 6f)
+                lineToRelative(12f, 12f)
+            }
+        }.build()
 
         return closeVector!!
     }

@@ -75,8 +75,6 @@ object HyperIsland {
     }
 
     /** 超级岛标题下的第二行：订阅用量（若有）+ 总流量。实时速率已由 hint 区展示，此处不再重复上下行。 */
-    private fun islandSubtitle(presentation: NotificationPresentation.Running): String =
-        listOf(presentation.usageLine, presentation.subText)
-            .filter { !it.isNullOrBlank() }
-            .joinToString(" · ")
+    private fun islandSubtitle(presentation: NotificationPresentation.Running): String = listOf(presentation.usageLine, presentation.subText)
+        .filter { !it.isNullOrBlank() }.joinToString(" · ")
 }

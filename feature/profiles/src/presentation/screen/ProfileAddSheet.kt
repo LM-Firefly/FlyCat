@@ -178,8 +178,7 @@ internal fun AddProfileSheet(
 
     var hasCameraPermission by remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
-                PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
         )
     }
 
@@ -267,57 +266,54 @@ internal fun AddProfileSheet(
         }
     }
 
-    val launcher =
-        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            uri?.let {
-                val actualFileName =
-                    readDisplayName(context, it, FlyTxt.ProfilesPage.Message.UnknownFile)
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            val actualFileName = readDisplayName(context, it, FlyTxt.ProfilesPage.Message.UnknownFile)
 
-                if (!isYamlConfigFileName(actualFileName)) {
-                    error = FlyTxt.ProfilesPage.Validation.YamlOnly
-                    return@let
-                }
+            if (!isYamlConfigFileName(actualFileName)) {
+                error = FlyTxt.ProfilesPage.Validation.YamlOnly
+                return@let
+            }
 
-                filePath = it.toString()
-                error = ""
-                applyFileNameText(actualFileName)
+            filePath = it.toString()
+            error = ""
+            applyFileNameText(actualFileName)
 
-                if (
-                    nameTextFieldValue.text.isBlank() || nameTextFieldValue.text == actualFileName
-                ) {
-                    applyNameText(
-                        profileNameFromConfigFileName(
-                            actualFileName,
-                            FlyTxt.ProfilesPage.Input.NewProfile,
-                        )
+            if (
+                nameTextFieldValue.text.isBlank() || nameTextFieldValue.text == actualFileName
+            ) {
+                applyNameText(
+                    profileNameFromConfigFileName(
+                        actualFileName,
+                        FlyTxt.ProfilesPage.Input.NewProfile,
+                    )
+                )
+            }
+        }
+    }
+
+    val qrImageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            scope.launch {
+                // QR 解码故障屏障：任何 ML Kit/IO 故障都以 toast 提示。
+                @Suppress("TooGenericExceptionCaught")
+                try {
+                    val result = readQrFromImage(context, it)
+                    if (result != null) {
+                        applyUrlText(result)
+                        selectedImportType = ProfileImportType.Url
+                        context.toast(FlyTxt.ProfilesPage.QrScanner.RecognizeSuccess)
+                    } else {
+                        context.toast(FlyTxt.ProfilesPage.QrScanner.RecognizeFailed)
+                    }
+                } catch (error: Exception) {
+                    context.toast(
+                        FlyTxt.ProfilesPage.QrScanner.RecognizeError.format(error.message ?: "")
                     )
                 }
             }
         }
-
-    val qrImageLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            uri?.let {
-                scope.launch {
-                    // QR decode fault barrier: any ML Kit/IO failure is surfaced as a toast.
-                    @Suppress("TooGenericExceptionCaught")
-                    try {
-                        val result = readQrFromImage(context, it)
-                        if (result != null) {
-                            applyUrlText(result)
-                            selectedImportType = ProfileImportType.Url
-                            context.toast(FlyTxt.ProfilesPage.QrScanner.RecognizeSuccess)
-                        } else {
-                            context.toast(FlyTxt.ProfilesPage.QrScanner.RecognizeFailed)
-                        }
-                    } catch (error: Exception) {
-                        context.toast(
-                            FlyTxt.ProfilesPage.QrScanner.RecognizeError.format(error.message ?: "")
-                        )
-                    }
-                }
-            }
-        }
+    }
 
     val dismissSheet = {
         if (!isDownloading) {
@@ -408,20 +404,17 @@ internal fun AddProfileSheet(
         },
         onDismissRequest = dismissSheet,
     ) {
-        val stableSheetHeight =
-            remember(stableSheetHeightPx, density) {
-                if (stableSheetHeightPx <= 0) {
-                    UiDp.dp0
-                } else {
-                    with(density) { stableSheetHeightPx.toDp() }
-                }
+        val stableSheetHeight = remember(stableSheetHeightPx, density) {
+            if (stableSheetHeightPx <= 0) {
+                UiDp.dp0
+            } else {
+                with(density) { stableSheetHeightPx.toDp() }
             }
+        }
         Column(
-            modifier =
-                Modifier.fillMaxWidth()
-                    .wrapContentHeight()
-                    .animateContentSize(animationSpec = tween(AnimationSpecs.DURATION_NORMAL, easing = AnimationSpecs.StandardEasing))
-                    .padding(bottom = UiDp.dp16)
+            modifier = Modifier.fillMaxWidth().wrapContentHeight()
+                .animateContentSize(animationSpec = tween(AnimationSpecs.DURATION_NORMAL, easing = AnimationSpecs.StandardEasing))
+                .padding(bottom = UiDp.dp16)
         ) {
             AnimatedContent(
                 targetState = isDownloading,
@@ -506,5 +499,4 @@ internal fun AddProfileSheet(
     }
 }
 
-private fun textFieldValueAtEnd(text: String): TextFieldValue =
-    TextFieldValue(text = text, selection = TextRange(text.length))
+private fun textFieldValueAtEnd(text: String): TextFieldValue = TextFieldValue(text = text, selection = TextRange(text.length))

@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.StateFlow
 interface ProxyDisplaySettingsReader {
     val sortMode: Preference<ProxySortMode>
     val displayMode: Preference<ProxyDisplayMode>
+    val groupTabsMode: Preference<Boolean>
     val proxyMode: Preference<Mode>
     val sheetHeightFraction: Preference<Float>
 }

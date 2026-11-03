@@ -51,11 +51,9 @@ object WifiSsidScanner {
                 var registered = false
                 lateinit var receiver: BroadcastReceiver
 
-                fun snapshot(): WifiSsidScanResult =
-                    runCatching {
-                        WifiSsidScanResult.Success(scanNetworks(wifiManager))
-                    }
-                        .getOrElse { WifiSsidScanResult.Unavailable }
+                fun snapshot(): WifiSsidScanResult = runCatching {
+                    WifiSsidScanResult.Success(scanNetworks(wifiManager))
+                }.getOrElse { WifiSsidScanResult.Unavailable }
 
                 fun finish(result: WifiSsidScanResult) {
                     if (registered) {
@@ -65,12 +63,11 @@ object WifiSsidScanner {
                     if (continuation.isActive) continuation.resume(result)
                 }
 
-                receiver =
-                    object : BroadcastReceiver() {
-                        override fun onReceive(context: Context, intent: Intent) {
-                            if (intent.action == WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) finish(snapshot())
-                        }
+                receiver = object : BroadcastReceiver() {
+                    override fun onReceive(context: Context, intent: Intent) {
+                        if (intent.action == WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) finish(snapshot())
                     }
+                }
 
                 runCatching {
                     ContextCompat.registerReceiver(
@@ -93,43 +90,35 @@ object WifiSsidScanner {
     }
 
     @Suppress("DEPRECATION")
-    private fun scanNetworks(wifiManager: WifiManager): List<WifiSsidNetwork> =
-        wifiManager.scanResults
-            .mapNotNull { result ->
-                WifiSsidObserver.normalizeSsid(result.SSID)?.let { ssid -> ssid to result }
-            }
-            .groupBy({ it.first }, { it.second })
-            .map { (ssid, results) ->
-                results.maxBy { it.level }.let { result ->
-                    WifiSsidNetwork(
-                        ssid = ssid,
-                        band = frequencyBand(result.frequency),
-                        wifiGeneration = wifiGeneration(result),
-                    )
-                }
-            }
-            .sortedBy(WifiSsidNetwork::ssid)
-
-    private fun frequencyBand(frequencyMhz: Int): String? =
-        when (frequencyMhz) {
-            in 2_400..2_500 -> "2.4G"
-            in 4_900..5_900 -> "5G"
-            in 5_925..7_125 -> "6G"
-            in 57_000..71_000 -> "60G"
-            else -> null
+    private fun scanNetworks(wifiManager: WifiManager): List<WifiSsidNetwork> = wifiManager.scanResults.mapNotNull { result ->
+        WifiSsidObserver.normalizeSsid(result.SSID)?.let { ssid -> ssid to result }
+    }.groupBy({ it.first }, { it.second }).map { (ssid, results) ->
+        results.maxBy { it.level }.let { result ->
+            WifiSsidNetwork(
+                ssid = ssid,
+                band = frequencyBand(result.frequency),
+                wifiGeneration = wifiGeneration(result),
+            )
         }
+    }.sortedBy(WifiSsidNetwork::ssid)
 
-    private fun wifiGeneration(result: ScanResult): String? =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) wifiGenerationOnR(result) else null
+    private fun frequencyBand(frequencyMhz: Int): String? = when (frequencyMhz) {
+        in 2_400..2_500 -> "2.4G"
+        in 4_900..5_900 -> "5G"
+        in 5_925..7_125 -> "6G"
+        in 57_000..71_000 -> "60G"
+        else -> null
+    }
+
+    private fun wifiGeneration(result: ScanResult): String? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) wifiGenerationOnR(result) else null
 
     @RequiresApi(Build.VERSION_CODES.R)
-    private fun wifiGenerationOnR(result: ScanResult): String? =
-        when (result.wifiStandard) {
-            ScanResult.WIFI_STANDARD_11N -> "Wi-Fi 4"
-            ScanResult.WIFI_STANDARD_11AC -> "Wi-Fi 5"
-            ScanResult.WIFI_STANDARD_11AX -> "Wi-Fi 6"
-            ScanResult.WIFI_STANDARD_11AD -> "WiGig"
-            ScanResult.WIFI_STANDARD_11BE -> "Wi-Fi 7"
-            else -> null
-        }
+    private fun wifiGenerationOnR(result: ScanResult): String? = when (result.wifiStandard) {
+        ScanResult.WIFI_STANDARD_11N -> "Wi-Fi 4"
+        ScanResult.WIFI_STANDARD_11AC -> "Wi-Fi 5"
+        ScanResult.WIFI_STANDARD_11AX -> "Wi-Fi 6"
+        ScanResult.WIFI_STANDARD_11AD -> "WiGig"
+        ScanResult.WIFI_STANDARD_11BE -> "Wi-Fi 7"
+        else -> null
+    }
 }

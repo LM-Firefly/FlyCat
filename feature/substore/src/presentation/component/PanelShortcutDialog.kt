@@ -56,8 +56,8 @@ import com.github.lmfirefly.flycat.presentation.component.dialog.AppFormDialog
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Reset
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -79,10 +79,9 @@ fun PanelShortcutDialog(
     var name by remember(url, defaultLabel) { mutableStateOf(defaultLabel) }
     var customIconUri by remember(url) { mutableStateOf<Uri?>(null) }
 
-    val pickIconLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            if (uri != null) customIconUri = uri
-        }
+    val pickIconLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) customIconUri = uri
+    }
 
     val faviconUrl = remember(url) { faviconUrlOf(url) }
     val iconModel: String = customIconUri?.toString() ?: faviconUrl
@@ -104,11 +103,7 @@ fun PanelShortcutDialog(
         ) {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier =
-                    Modifier.padding(vertical = spacing.space16)
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(25.dp))
-                        .background(Color.White),
+                modifier = Modifier.padding(vertical = spacing.space16).size(100.dp).clip(RoundedCornerShape(25.dp)).background(Color.White),
             ) {
                 Image(
                     painter = painterResource(defaultIconResId),
@@ -127,7 +122,7 @@ fun PanelShortcutDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(
+                GlassTextButton(
                     text = FlyTxt.Feature.Panel.ShortcutPickIcon,
                     onClick = { pickIconLauncher.launch("image/*") },
                     modifier = Modifier.weight(1f),
@@ -150,7 +145,7 @@ fun PanelShortcutDialog(
                 }
             }
 
-            TextField(
+            GlassTextField(
                 value = name,
                 onValueChange = { name = it },
                 label = FlyTxt.Feature.Panel.ShortcutName,
@@ -161,9 +156,7 @@ fun PanelShortcutDialog(
     }
 }
 
-private fun faviconUrlOf(url: String): String =
-    runCatching {
-            val u = java.net.URL(url)
-            "${u.protocol}://${u.host}/favicon.ico"
-        }
-        .getOrDefault(url)
+private fun faviconUrlOf(url: String): String = runCatching {
+    val u = java.net.URL(url)
+    "${u.protocol}://${u.host}/favicon.ico"
+}.getOrDefault(url)

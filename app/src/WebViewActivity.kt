@@ -41,14 +41,11 @@ import com.github.lmfirefly.flycat.presentation.webview.WebViewScreen
 class WebViewActivity : ComponentActivity() {
     companion object {
         private const val EXTRA_INITIAL_URL = "initial_url"
-
-        fun intent(context: Context, initialUrl: String): Intent =
-            Intent(context, WebViewActivity::class.java).apply {
-                action = Intent.ACTION_VIEW
-                putExtra(EXTRA_INITIAL_URL, initialUrl)
-                if (context !is Activity) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-
+        fun intent(context: Context, initialUrl: String): Intent = Intent(context, WebViewActivity::class.java).apply {
+            action = Intent.ACTION_VIEW
+            putExtra(EXTRA_INITIAL_URL, initialUrl)
+            if (context !is Activity) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
         fun start(
             context: Context,
             initialUrl: String = "file://${context.filesDir}/frontend/index.html",
@@ -58,43 +55,28 @@ class WebViewActivity : ComponentActivity() {
             context.startActivity(intent)
         }
     }
-
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
-
-    private val fileChooserLauncher =
-        registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-            filePathCallback?.onReceiveValue(uris.toTypedArray())
-            filePathCallback = null
-        }
-
+    private val fileChooserLauncher = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        filePathCallback?.onReceiveValue(uris.toTypedArray())
+        filePathCallback = null
+    }
     fun launchFilePicker(callback: ValueCallback<Array<Uri>>?, mimeTypes: Array<String>) {
         filePathCallback?.onReceiveValue(null)
         filePathCallback = callback
-        val types =
-            if (mimeTypes.isEmpty() || (mimeTypes.size == 1 && mimeTypes[0].isEmpty())) {
-                arrayOf("*/*")
-            } else {
-                mimeTypes
-            }
+        val types = if (mimeTypes.isEmpty() || (mimeTypes.size == 1 && mimeTypes[0].isEmpty())) {
+            arrayOf("*/*")
+        } else {
+            mimeTypes
+        }
         fileChooserLauncher.launch(types)
     }
-
-    override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(AppLanguageManager.wrap(newBase))
-    }
-
+    override fun attachBaseContext(newBase: Context) { super.attachBaseContext(AppLanguageManager.wrap(newBase)) }
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            window.isNavigationBarContrastEnforced = false
-        }
-
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) { window.isNavigationBarContrastEnforced = false }
         super.onCreate(savedInstanceState)
-
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        val isDarkMode =
-            (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                Configuration.UI_MODE_NIGHT_YES
+        val isDarkMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         val useLightNavigationBarIcons = !isDarkMode
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.setSystemBarsAppearance(
@@ -107,13 +89,9 @@ class WebViewActivity : ComponentActivity() {
             )
         } else {
             @Suppress("DEPRECATION")
-            WindowCompat.getInsetsController(window, window.decorView)
-                .isAppearanceLightNavigationBars = useLightNavigationBarIcons
+            WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightNavigationBars = useLightNavigationBarIcons
         }
-
-        val initialUrl =
-            intent.getStringExtra(EXTRA_INITIAL_URL) ?: "file://$filesDir/frontend/index.html"
-
+        val initialUrl = intent.getStringExtra(EXTRA_INITIAL_URL) ?: "file://$filesDir/frontend/index.html"
         setContent { WebViewScreen(initialUrl = initialUrl) }
     }
     override fun onDestroy() {

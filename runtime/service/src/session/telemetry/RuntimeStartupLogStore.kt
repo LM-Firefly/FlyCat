@@ -59,26 +59,23 @@ class RuntimeStartupLogStore(
         }
     }
 
-    fun snapshot(): String =
-        synchronized(lock) {
-            runCatching {
-                    if (file.exists()) {
-                        file.readText(StandardCharsets.UTF_8)
-                    } else {
-                        ""
-                    }
-                }
-                .getOrDefault("")
-        }
+    fun snapshot(): String = synchronized(lock) {
+        runCatching {
+            if (file.exists()) {
+                file.readText(StandardCharsets.UTF_8)
+            } else {
+                ""
+            }
+        }.getOrDefault("")
+    }
 
     companion object {
         private val lock = Any()
 
-        fun scopeForMode(mode: RunMode): Scope =
-            when (mode) {
-                RunMode.VpnService -> Scope.LOCAL_TUN
-                RunMode.Tun -> Scope.ROOT_TUN
-                RunMode.Ebpf -> Scope.ROOT_TUN // eBPF shares root daemon scope
-            }
+        fun scopeForMode(mode: RunMode): Scope = when (mode) {
+            RunMode.VpnService -> Scope.LOCAL_TUN
+            RunMode.Tun -> Scope.ROOT_TUN
+            RunMode.Ebpf -> Scope.ROOT_TUN // eBPF 共享根守护进程作用域
+        }
     }
 }

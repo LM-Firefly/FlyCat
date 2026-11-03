@@ -70,8 +70,7 @@ fun DualPaneLayout(
         val rawMinRightPx = with(density) { minRightWidth.toPx() }
 
         val minsTotal = rawMinLeftPx + rawMinRightPx
-        val minScale =
-            if (minsTotal > freeWidthPx && minsTotal > 0f) freeWidthPx / minsTotal else 1f
+        val minScale = if (minsTotal > freeWidthPx && minsTotal > 0f) freeWidthPx / minsTotal else 1f
         val minLeftPx = rawMinLeftPx * minScale
         val minRightPx = rawMinRightPx * minScale
 
@@ -101,20 +100,16 @@ fun DualPaneLayout(
 
             if (showDivider) {
                 Box(
-                    modifier =
-                        Modifier
-                            .fillMaxHeight()
-                            .width(dividerHitWidth)
-                            .then(
-                                if (canDrag) {
-                                    Modifier.draggable(
-                                        state = dragState,
-                                        orientation = Orientation.Horizontal,
-                                    )
-                                } else {
-                                    Modifier
-                                }
-                            ),
+                    modifier = Modifier.fillMaxHeight().width(dividerHitWidth).then(
+                        if (canDrag) {
+                            Modifier.draggable(
+                                state = dragState,
+                                orientation = Orientation.Horizontal,
+                            )
+                        } else {
+                            Modifier
+                        }
+                    ),
                     contentAlignment = Alignment.Center,
                 ) {
                     Box(

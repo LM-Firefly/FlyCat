@@ -30,6 +30,21 @@ func QueryConnections() *statistic.Snapshot {
 	return statistic.DefaultManager.Snapshot()
 }
 
+// QueryConnectionsByIDs 仅返回所请求连接 id 的完整详情。
+// 轮询器借此水合新出现的连接，而不必每出现一个新连接就重解码整张连接列表。
+func QueryConnectionsByIDs(ids []string) []*statistic.TrackerInfo {
+	result := make([]*statistic.TrackerInfo, 0, len(ids))
+	for _, id := range ids {
+		if id == "" {
+			continue
+		}
+		if c := statistic.DefaultManager.Get(id); c != nil {
+			result = append(result, c.Info())
+		}
+	}
+	return result
+}
+
 // ConnectionOverview contains only the dynamic per-connection counters needed for list refreshes.
 type ConnectionOverview struct {
 	ID       string `json:"id"`

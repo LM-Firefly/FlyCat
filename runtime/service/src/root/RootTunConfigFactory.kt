@@ -40,8 +40,7 @@ class RootTunConfigFactory(
     private val store: ServiceStore = ServiceStore(),
 ) {
     private val packageResolver = RootTunPackageResolver(context, store)
-    private val startupLogStore =
-        RuntimeStartupLogStore(context, RuntimeStartupLogStore.Scope.ROOT_TUN)
+    private val startupLogStore = RuntimeStartupLogStore(context, RuntimeStartupLogStore.Scope.ROOT_TUN)
 
     data class StaticRootTunPlan(
         val fingerprint: String,
@@ -88,9 +87,7 @@ class RootTunConfigFactory(
 
         log("ROOT_TUN factory: resolve active profile")
         val activeProfile = store.activeProfile ?: error("No active profile selected")
-        val imported =
-            ImportedDao.queryByUUID(activeProfile)
-                ?: error("Active profile metadata not found: $activeProfile")
+        val imported = ImportedDao.queryByUUID(activeProfile) ?: error("Active profile metadata not found: $activeProfile")
         val profileDir = context.importedDir.resolve(imported.uuid.toString())
         log("ROOT_TUN factory: activeProfile=${imported.uuid} name=${imported.name}")
 
@@ -102,40 +99,35 @@ class RootTunConfigFactory(
 
         val stack = firstNonBlank(store.tunStackMode) ?: "system"
         val allowIpv6 = staticPlan.allowIpv6
-        val config =
-            TunConfig(
-                ifName = staticPlan.ifName,
-                mtu = staticPlan.mtu,
-                stack = stack,
-                inet4Address = listOf(INET4),
-                inet6Address = if (allowIpv6) listOf(INET6) else emptyList(),
-                dnsHijack = staticPlan.dnsHijack,
-                autoRoute = staticPlan.autoRoute,
-                strictRoute = staticPlan.strictRoute,
-                autoRedirect = staticPlan.autoRedirect,
-                includeUid = staticPlan.includeUid,
-                excludeUid = staticPlan.excludeUid,
-                includeAndroidUser = staticPlan.includeAndroidUser,
-                routeAddress = staticPlan.routeAddress,
-                routeExcludeAddress = staticPlan.routeExcludeAddress,
-                dnsMode = staticPlan.dnsMode,
-                fakeIpRange = staticPlan.fakeIpRange,
-                fakeIpRange6 = staticPlan.fakeIpRange6,
-                allowIpv6 = allowIpv6,
-                debugLogPath = startupLogStore.path(),
-            )
+        val config = TunConfig(
+            ifName = staticPlan.ifName,
+            mtu = staticPlan.mtu,
+            stack = stack,
+            inet4Address = listOf(INET4),
+            inet6Address = if (allowIpv6) listOf(INET6) else emptyList(),
+            dnsHijack = staticPlan.dnsHijack,
+            autoRoute = staticPlan.autoRoute,
+            strictRoute = staticPlan.strictRoute,
+            autoRedirect = staticPlan.autoRedirect,
+            includeUid = staticPlan.includeUid,
+            excludeUid = staticPlan.excludeUid,
+            includeAndroidUser = staticPlan.includeAndroidUser,
+            routeAddress = staticPlan.routeAddress,
+            routeExcludeAddress = staticPlan.routeExcludeAddress,
+            dnsMode = staticPlan.dnsMode,
+            fakeIpRange = staticPlan.fakeIpRange,
+            fakeIpRange6 = staticPlan.fakeIpRange6,
+            allowIpv6 = allowIpv6,
+            debugLogPath = startupLogStore.path(),
+        )
         val transportFingerprint = buildTransportFingerprint(config)
-        val dynamicOverrides =
-            DynamicRootTunOverrides(
-                transportFingerprint = transportFingerprint,
-                profileFingerprint =
-                    buildProfileFingerprint(imported.uuid, profileDir.directoryLastModified ?: -1L),
-            )
+        val dynamicOverrides = DynamicRootTunOverrides(
+            transportFingerprint = transportFingerprint,
+            profileFingerprint = buildProfileFingerprint(imported.uuid, profileDir.directoryLastModified ?: -1L),
+        )
         log("ROOT_TUN factory: derived TunConfig transportFingerprint=$transportFingerprint")
 
-        log(
-            "ROOT_TUN factory: timings staticPlan=${staticPlanResolveCost}ms total=${System.currentTimeMillis() - startedAt}ms"
-        )
+        log("ROOT_TUN factory: timings staticPlan=${staticPlanResolveCost}ms total=${System.currentTimeMillis() - startedAt}ms")
 
         val summary = buildString {
             append("ROOT_TUN factory: includeUid=")
@@ -173,103 +165,91 @@ class RootTunConfigFactory(
 
         val uidPlan = packageResolver.resolve()
         val dnsMode = store.tunDnsMode
-        val plan =
-            StaticRootTunPlan(
-                fingerprint = fingerprint,
-                ifName = firstNonBlank(store.rootTunIfName) ?: IF_NAME,
-                mtu = store.rootTunMtu.coerceAtLeast(1),
-                dnsHijack = resolveDnsHijack(),
-                autoRoute = store.rootTunAutoRoute,
-                strictRoute = store.rootTunStrictRoute,
-                autoRedirect = store.rootTunAutoRedirect,
-                includeUid = uidPlan.includeUid,
-                excludeUid = uidPlan.excludeUid,
-                includeAndroidUser = resolveIncludeAndroidUser(store.rootTunIncludeAndroidUser),
-                routeAddress = resolveRouteAddress(store.allowIpv6),
-                routeExcludeAddress =
-                    store.rootTunRouteExcludeAddress.map(String::trim).filter(String::isNotEmpty),
-                dnsMode = dnsMode,
-                fakeIpRange =
-                    resolveFakeIpRange(
-                        dnsMode,
-                        store.rootTunFakeIpRange,
-                        FAKE_IP_RANGE,
-                    ),
-                fakeIpRange6 =
-                    resolveFakeIpRange(
-                        dnsMode,
-                        store.rootTunFakeIpRange6,
-                        FAKE_IP_RANGE6,
-                    ),
-                allowIpv6 = store.allowIpv6,
-                missingPackages = uidPlan.missingPackages,
-            )
+        val plan = StaticRootTunPlan(
+            fingerprint = fingerprint,
+            ifName = firstNonBlank(store.rootTunIfName) ?: IF_NAME,
+            mtu = store.rootTunMtu.coerceAtLeast(1),
+            dnsHijack = resolveDnsHijack(),
+            autoRoute = store.rootTunAutoRoute,
+            strictRoute = store.rootTunStrictRoute,
+            autoRedirect = store.rootTunAutoRedirect,
+            includeUid = uidPlan.includeUid,
+            excludeUid = uidPlan.excludeUid,
+            includeAndroidUser = resolveIncludeAndroidUser(store.rootTunIncludeAndroidUser),
+            routeAddress = resolveRouteAddress(store.allowIpv6),
+            routeExcludeAddress = store.rootTunRouteExcludeAddress.map(String::trim).filter(String::isNotEmpty),
+            dnsMode = dnsMode,
+            fakeIpRange = resolveFakeIpRange(
+                dnsMode,
+                store.rootTunFakeIpRange,
+                FAKE_IP_RANGE,
+            ),
+            fakeIpRange6 = resolveFakeIpRange(
+                dnsMode,
+                store.rootTunFakeIpRange6,
+                FAKE_IP_RANGE6,
+            ),
+            allowIpv6 = store.allowIpv6,
+            missingPackages = uidPlan.missingPackages,
+        )
         cachedStaticPlan = plan
         return plan
     }
 
-    private fun buildStaticPlanFingerprint(): String =
-        buildString {
-                append(store.accessControlMode.name)
-                append('|')
-                append(store.accessControlPackages.sorted().joinToString(","))
-                append('|')
-                append(store.allowIpv6)
-                append('|')
-                append(store.bypassPrivateNetwork)
-                append('|')
-                append(store.dnsHijacking)
-                append('|')
-                append(store.tunStackMode)
-                append('|')
-                append(store.rootTunIfName.trim())
-                append('|')
-                append(store.rootTunMtu)
-                append('|')
-                append(store.rootTunAutoRoute)
-                append('|')
-                append(store.rootTunStrictRoute)
-                append('|')
-                append(store.rootTunAutoRedirect)
-                append('|')
-                append(store.rootTunIncludeAndroidUser.joinToString(","))
-                append('|')
-                append(store.rootTunRouteExcludeAddress.joinToString(","))
-                append('|')
-                append(store.tunDnsMode.name)
-                append('|')
-                append(store.rootTunFakeIpRange.trim())
-                append('|')
-                append(store.rootTunFakeIpRange6.trim())
-            }
-            .hashCode()
-            .toString()
+    private fun buildStaticPlanFingerprint(): String = buildString {
+        append(store.accessControlMode.name)
+        append('|')
+        append(store.accessControlPackages.sorted().joinToString(","))
+        append('|')
+        append(store.allowIpv6)
+        append('|')
+        append(store.bypassPrivateNetwork)
+        append('|')
+        append(store.dnsHijacking)
+        append('|')
+        append(store.tunStackMode)
+        append('|')
+        append(store.rootTunIfName.trim())
+        append('|')
+        append(store.rootTunMtu)
+        append('|')
+        append(store.rootTunAutoRoute)
+        append('|')
+        append(store.rootTunStrictRoute)
+        append('|')
+        append(store.rootTunAutoRedirect)
+        append('|')
+        append(store.rootTunIncludeAndroidUser.joinToString(","))
+        append('|')
+        append(store.rootTunRouteExcludeAddress.joinToString(","))
+        append('|')
+        append(store.tunDnsMode.name)
+        append('|')
+        append(store.rootTunFakeIpRange.trim())
+        append('|')
+        append(store.rootTunFakeIpRange6.trim())
+    }.hashCode().toString()
 
-    private fun buildTransportFingerprint(config: TunConfig): String =
-        listOf(
-                config.ifName,
-                config.mtu.toString(),
-                config.stack,
-                config.dnsMode.name,
-                config.fakeIpRange.orEmpty(),
-                config.fakeIpRange6.orEmpty(),
-                config.allowIpv6.toString(),
-                config.dnsHijack.joinToString(","),
-                config.routeAddress.joinToString(","),
-                config.routeExcludeAddress.joinToString(","),
-                config.includeUid.joinToString(","),
-                config.excludeUid.joinToString(","),
-                config.includeAndroidUser.joinToString(","),
-                config.autoRoute.toString(),
-                config.strictRoute.toString(),
-                config.autoRedirect.toString(),
-            )
-            .joinToString("|")
-            .hashCode()
-            .toString()
+    private fun buildTransportFingerprint(config: TunConfig): String = listOf(
+        config.ifName,
+        config.mtu.toString(),
+        config.stack,
+        config.dnsMode.name,
+        config.fakeIpRange.orEmpty(),
+        config.fakeIpRange6.orEmpty(),
+        config.allowIpv6.toString(),
+        config.dnsHijack.joinToString(","),
+        config.routeAddress.joinToString(","),
+        config.routeExcludeAddress.joinToString(","),
+        config.includeUid.joinToString(","),
+        config.excludeUid.joinToString(","),
+        config.includeAndroidUser.joinToString(","),
+        config.autoRoute.toString(),
+        config.strictRoute.toString(),
+        config.autoRedirect.toString(),
+    ).joinToString("|").hashCode().toString()
 
-    private fun buildProfileFingerprint(profileUuid: UUID, updatedAt: Long): String =
-        "$profileUuid|$updatedAt"
+    private fun buildProfileFingerprint(profileUuid: UUID, updatedAt: Long): String = "$profileUuid|$updatedAt"
 
     private fun formatProfilesStoreLine(): String {
         val keyCount = runCatching { ProfileStore.countStoredKeys() }.getOrDefault(0)
@@ -315,8 +295,7 @@ class RootTunConfigFactory(
         return values.map(String::trim).filter(String::isNotEmpty)
     }
 
-    private fun firstNonBlank(vararg values: String?): String? =
-        values.firstOrNull { !it.isNullOrBlank() }?.trim()
+    private fun firstNonBlank(vararg values: String?): String? = values.firstOrNull { !it.isNullOrBlank() }?.trim()
 
     private fun resolveFakeIpRange(
         dnsMode: TunDnsMode,

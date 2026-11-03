@@ -42,13 +42,12 @@ internal class SessionRuntimeQueryCache {
         trafficTotal: Long,
     ) {
         synchronized(lock) {
-            snapshot =
-                SessionRuntimeQuerySnapshot(
-                    providers = providers,
-                    proxyGroups = proxyGroups,
-                    trafficNow = trafficNow,
-                    trafficTotal = trafficTotal,
-                )
+            snapshot = SessionRuntimeQuerySnapshot(
+                providers = providers,
+                proxyGroups = proxyGroups,
+                trafficNow = trafficNow,
+                trafficTotal = trafficTotal,
+            )
         }
     }
 
@@ -68,15 +67,13 @@ internal class SessionRuntimeQueryCache {
         synchronized(lock) {
             val currentGroups = snapshot.proxyGroups
             val index = currentGroups.indexOfFirst { it.name == name }
-            snapshot =
-                snapshot.copy(
-                    proxyGroups =
-                        if (index >= 0) {
-                            currentGroups.toMutableList().also { it[index] = proxyGroup }
-                        } else {
-                            currentGroups + proxyGroup
-                        },
-                )
+            snapshot = snapshot.copy(
+                proxyGroups = if (index >= 0) {
+                    currentGroups.toMutableList().also { it[index] = proxyGroup }
+                } else {
+                    currentGroups + proxyGroup
+                },
+            )
         }
     }
 }

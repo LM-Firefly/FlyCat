@@ -44,7 +44,7 @@ import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -79,11 +79,10 @@ private fun LinkOpenModeSection(mode: LinkOpenMode, onChange: (LinkOpenMode) -> 
         PreferenceEnumItem(
             title = FlyTxt.ProfilesPage.LinkSettings.OpenMode,
             currentValue = mode,
-            items =
-                listOf(
-                    FlyTxt.ProfilesPage.LinkSettings.OpenModeInApp,
-                    FlyTxt.ProfilesPage.LinkSettings.OpenModeExternal,
-                ),
+            items = listOf(
+                FlyTxt.ProfilesPage.LinkSettings.OpenModeInApp,
+                FlyTxt.ProfilesPage.LinkSettings.OpenModeExternal,
+            ),
             values = listOf(LinkOpenMode.IN_APP, LinkOpenMode.EXTERNAL_BROWSER),
             onValueChange = onChange,
         )
@@ -125,10 +124,7 @@ private fun ProfileLinkList(
         Column(modifier = Modifier.fillMaxWidth()) {
             links.forEachIndexed { index, link ->
                 Row(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .clickable { onOpen(link) }
-                            .padding(horizontal = spacing.space16, vertical = spacing.space12),
+                    modifier = Modifier.fillMaxWidth().clickable { onOpen(link) }.padding(horizontal = spacing.space16, vertical = spacing.space12),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -137,8 +133,7 @@ private fun ProfileLinkList(
                         Text(
                             text = link.url,
                             style = MiuixTheme.textStyles.body2,
-                            color =
-                                MiuixTheme.colorScheme.onSurface.copy(alpha = opacity.secondaryText),
+                            color = MiuixTheme.colorScheme.onSurface.copy(alpha = opacity.secondaryText),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -170,20 +165,16 @@ private fun LinkSettingsActions(onClose: () -> Unit, onAdd: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(spacing.space12),
     ) {
-        TextButton(
+        GlassTextButton(
             text = FlyTxt.ProfilesPage.LinkSettings.Close,
             onClick = onClose,
             modifier = Modifier.weight(1f),
         )
-        Button(
+        GlassTextButton(
+            text = FlyTxt.ProfilesPage.LinkSettings.AddLink,
             onClick = onAdd,
             modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.buttonColorsPrimary(),
-        ) {
-            Text(
-                FlyTxt.ProfilesPage.LinkSettings.AddLink,
-                color = MiuixTheme.colorScheme.onPrimary,
-            )
-        }
+            primary = true,
+        )
     }
 }

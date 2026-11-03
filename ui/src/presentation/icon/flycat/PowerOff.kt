@@ -35,61 +35,58 @@ val FlyCat.PowerOff: ImageVector
         if (_PowerOff != null) {
             return _PowerOff!!
         }
-        _PowerOff =
-            ImageVector.Builder(
-                    name = "PowerOff",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
+        _PowerOff = ImageVector.Builder(
+            name = "PowerOff",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(18.36f, 6.64f)
+                arcTo(9f, 9f, 0f, isMoreThanHalf = false, isPositiveArc = true, 20.77f, 15f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(6.16f, 6.16f)
+                arcToRelative(
+                    9f,
+                    9f,
+                    0f,
+                    isMoreThanHalf = true,
+                    isPositiveArc = false,
+                    12.68f,
+                    12.68f,
                 )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(18.36f, 6.64f)
-                        arcTo(9f, 9f, 0f, isMoreThanHalf = false, isPositiveArc = true, 20.77f, 15f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(6.16f, 6.16f)
-                        arcToRelative(
-                            9f,
-                            9f,
-                            0f,
-                            isMoreThanHalf = true,
-                            isPositiveArc = false,
-                            12.68f,
-                            12.68f,
-                        )
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(12f, 2f)
-                        verticalLineToRelative(4f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveToRelative(2f, 2f)
-                        lineToRelative(20f, 20f)
-                    }
-                }
-                .build()
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(12f, 2f)
+                verticalLineToRelative(4f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveToRelative(2f, 2f)
+                lineToRelative(20f, 20f)
+            }
+        }.build()
 
         return _PowerOff!!
     }

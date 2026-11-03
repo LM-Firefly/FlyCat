@@ -34,28 +34,24 @@ class RestartReceiver : BroadcastReceiver() {
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_MY_PACKAGE_REPLACED -> {
-                val reason =
-                    when (intent.action) {
-                        Intent.ACTION_BOOT_COMPLETED -> AutoRestartService.REASON_BOOT_COMPLETED
-                        Intent.ACTION_MY_PACKAGE_REPLACED ->
-                            AutoRestartService.REASON_PACKAGE_REPLACED
-                        else -> "unknown"
-                    }
-                val serviceIntent =
-                    Intent(context, AutoRestartService::class.java)
-                        .putExtra(AutoRestartService.EXTRA_REASON, reason)
+                val reason = when (intent.action) {
+                    Intent.ACTION_BOOT_COMPLETED -> AutoRestartService.REASON_BOOT_COMPLETED
+                    Intent.ACTION_MY_PACKAGE_REPLACED -> AutoRestartService.REASON_PACKAGE_REPLACED
+                    else -> "unknown"
+                }
+                val serviceIntent = Intent(context, AutoRestartService::class.java).putExtra(AutoRestartService.EXTRA_REASON, reason)
                 runCatching {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            context.startForegroundService(serviceIntent)
-                        } else {
-                            context.startService(serviceIntent)
-                        }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent)
+                    } else {
+                        context.startService(serviceIntent)
                     }
-                    .onFailure { error ->
-                        // Android 12+ 后台 FGS 启动限制/ROM 自启动限制会拒绝广播里直接拉起前台服务，降级为一次性恢复任务，由 WorkManager 退避重试直到条件允许。
-                        Timber.e(error, "Start auto-restart service failed, falling back to recovery work")
-                        RuntimeRecoveryWorker.runOnce(context)
-                    }
+                }
+                .onFailure { error ->
+                    // Android 12+ 后台 FGS 启动限制/ROM 自启动限制会拒绝广播里直接拉起前台服务，降级为一次性恢复任务，由 WorkManager 退避重试直到条件允许。
+                    Timber.e(error, "Start auto-restart service failed, falling back to recovery work")
+                    RuntimeRecoveryWorker.runOnce(context)
+                }
             }
         }
     }

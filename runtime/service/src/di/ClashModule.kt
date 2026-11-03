@@ -51,18 +51,17 @@ abstract class Module<E>(val service: Service) {
     ): ReceiveChannel<Intent> {
         val filter = IntentFilter().apply(configure)
         val channel = Channel<Intent>(capacity)
-        val receiver =
-            object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent?) {
-                    if (context == null || intent == null) {
-                        channel.close()
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (context == null || intent == null) {
+                    channel.close()
 
-                        return
-                    }
-
-                    channel.trySend(intent)
+                    return
                 }
+
+                channel.trySend(intent)
             }
+        }
 
         val registerContext = service.applicationContext
         registerContext.registerReceiverCompat(receiver, filter)

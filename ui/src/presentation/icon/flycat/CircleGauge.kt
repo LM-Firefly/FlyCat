@@ -35,70 +35,67 @@ val FlyCat.CircleGauge: ImageVector
         if (circleGaugeVector != null) {
             return circleGaugeVector!!
         }
-        circleGaugeVector =
-            ImageVector.Builder(
-                name = "CircleGauge",
-                defaultWidth = 24.dp,
-                defaultHeight = 24.dp,
-                viewportWidth = 24f,
-                viewportHeight = 24f,
-            )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.White),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(15.6f, 2.7f)
-                        arcToRelative(
-                            10f,
-                            10f,
-                            0f,
-                            isMoreThanHalf = true,
-                            isPositiveArc = false,
-                            5.7f,
-                            5.7f,
-                        )
-                    }
-                    path(
-                        stroke = SolidColor(Color.White),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(12f, 12f)
-                        moveToRelative(-2f, 0f)
-                        arcToRelative(
-                            2f,
-                            2f,
-                            0f,
-                            isMoreThanHalf = true,
-                            isPositiveArc = true,
-                            4f,
-                            0f,
-                        )
-                        arcToRelative(
-                            2f,
-                            2f,
-                            0f,
-                            isMoreThanHalf = true,
-                            isPositiveArc = true,
-                            -4f,
-                            0f,
-                        )
-                    }
-                    path(
-                        stroke = SolidColor(Color.White),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(13.4f, 10.6f)
-                        lineTo(19f, 5f)
-                    }
-                }
-                .build()
+        circleGaugeVector = ImageVector.Builder(
+            name = "CircleGauge",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(
+                stroke = SolidColor(Color.White),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(15.6f, 2.7f)
+                arcToRelative(
+                    10f,
+                    10f,
+                    0f,
+                    isMoreThanHalf = true,
+                    isPositiveArc = false,
+                    5.7f,
+                    5.7f,
+                )
+            }
+            path(
+                stroke = SolidColor(Color.White),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(12f, 12f)
+                moveToRelative(-2f, 0f)
+                arcToRelative(
+                    2f,
+                    2f,
+                    0f,
+                    isMoreThanHalf = true,
+                    isPositiveArc = true,
+                    4f,
+                    0f,
+                )
+                arcToRelative(
+                    2f,
+                    2f,
+                    0f,
+                    isMoreThanHalf = true,
+                    isPositiveArc = true,
+                    -4f,
+                    0f,
+                )
+            }
+            path(
+                stroke = SolidColor(Color.White),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(13.4f, 10.6f)
+                lineTo(19f, 5f)
+            }
+        }.build()
 
         return circleGaugeVector!!
     }

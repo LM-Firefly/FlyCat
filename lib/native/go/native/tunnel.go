@@ -87,6 +87,12 @@ func queryConnectionsOverview() *C.char {
 	return marshalJSON(tunnel.QueryConnectionsOverview())
 }
 
+//export queryConnectionsByIds
+func queryConnectionsByIds(idsNewlineSeparated *C.char) *C.char {
+	ids := strings.Split(C.GoString(idsNewlineSeparated), "\n")
+	return marshalJSON(tunnel.QueryConnectionsByIDs(ids))
+}
+
 //export queryConnectionGeneration
 func queryConnectionGeneration() C.uint64_t {
 	return C.uint64_t(tunnel.ConnectionGeneration())

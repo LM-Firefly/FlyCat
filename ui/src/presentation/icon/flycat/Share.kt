@@ -35,65 +35,62 @@ val FlyCat.Share: ImageVector
         if (shareVector != null) {
             return shareVector!!
         }
-        shareVector =
-            ImageVector.Builder(
-                name = "Share",
-                defaultWidth = 24.dp,
-                defaultHeight = 24.dp,
-                viewportWidth = 24f,
-                viewportHeight = 24f,
-            )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(12f, 2f)
-                        verticalLineToRelative(13f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveToRelative(16f, 6f)
-                        lineToRelative(-4f, -4f)
-                        lineToRelative(-4f, 4f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(4f, 12f)
-                        verticalLineToRelative(8f)
-                        arcToRelative(
-                            2f,
-                            2f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = false,
-                            2f,
-                            2f,
-                        )
-                        horizontalLineToRelative(12f)
-                        arcToRelative(
-                            2f,
-                            2f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = false,
-                            2f,
-                            -2f,
-                        )
-                        verticalLineToRelative(-8f)
-                    }
-                }
-                .build()
+        shareVector = ImageVector.Builder(
+            name = "Share",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(12f, 2f)
+                verticalLineToRelative(13f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveToRelative(16f, 6f)
+                lineToRelative(-4f, -4f)
+                lineToRelative(-4f, 4f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(4f, 12f)
+                verticalLineToRelative(8f)
+                arcToRelative(
+                    2f,
+                    2f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = false,
+                    2f,
+                    2f,
+                )
+                horizontalLineToRelative(12f)
+                arcToRelative(
+                    2f,
+                    2f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = false,
+                    2f,
+                    -2f,
+                )
+                verticalLineToRelative(-8f)
+            }
+        }.build()
 
         return shareVector!!
     }

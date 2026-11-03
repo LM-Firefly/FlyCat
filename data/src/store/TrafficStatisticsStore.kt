@@ -73,32 +73,23 @@ class TrafficStatisticsStore(
                 val merged = LinkedHashMap<String, AppTrafficDeltaRecord>()
                 for (record in records) {
                     if (record.uploadDelta <= 0L && record.downloadDelta <= 0L) continue
-                    val normalizedRouteKey =
-                        record.routeKey?.takeIf(String::isNotBlank)
-                            ?: TrafficStatisticsBuckets.UNATTRIBUTED_ROUTE_KEY
+                    val normalizedRouteKey = record.routeKey?.takeIf(String::isNotBlank) ?: TrafficStatisticsBuckets.UNATTRIBUTED_ROUTE_KEY
                     val mergeKey = "${record.appKey}::$normalizedRouteKey"
                     val existing = merged[mergeKey]
                     if (existing == null) {
-                        merged[mergeKey] =
-                            record.copy(
-                                routeKey = normalizedRouteKey,
-                                routeLabel =
-                                    record.routeLabel?.takeIf(String::isNotBlank)
-                                        ?: TrafficStatisticsBuckets.UNATTRIBUTED_ROUTE_NAME,
-                            )
+                        merged[mergeKey] = record.copy(
+                            routeKey = normalizedRouteKey,
+                            routeLabel = record.routeLabel?.takeIf(String::isNotBlank) ?: TrafficStatisticsBuckets.UNATTRIBUTED_ROUTE_NAME,
+                        )
                     } else {
-                        merged[mergeKey] =
-                            existing.copy(
-                                uploadDelta = existing.uploadDelta + record.uploadDelta,
-                                downloadDelta = existing.downloadDelta + record.downloadDelta,
-                                packageName = existing.packageName ?: record.packageName,
-                                appName =
-                                    if (existing.appName.isNotBlank()) existing.appName
-                                    else record.appName,
-                                routeLabel =
-                                    existing.routeLabel?.takeIf(String::isNotBlank)
-                                        ?: record.routeLabel,
-                            )
+                        merged[mergeKey] = existing.copy(
+                            uploadDelta = existing.uploadDelta + record.uploadDelta,
+                            downloadDelta = existing.downloadDelta + record.downloadDelta,
+                            packageName = existing.packageName ?: record.packageName,
+                            appName = if (existing.appName.isNotBlank()) existing.appName
+                                else record.appName,
+                            routeLabel = existing.routeLabel?.takeIf(String::isNotBlank) ?: record.routeLabel,
+                        )
                     }
                 }
                 val appDeltas = mutableListOf<AppTrafficDelta>()

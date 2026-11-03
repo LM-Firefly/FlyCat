@@ -29,30 +29,23 @@ import androidx.sqlite.driver.AndroidSQLiteDriver
 import androidx.sqlite.execSQL
 
 /**
- * Builds the traffic-statistics Room database and returns its DAO.
+ * 构建流量统计 Room 数据库并返回其 DAO。
  *
- * Keeping construction here confines the `TrafficDatabase` / `RoomDatabase` / `Room` types to
- * `:data`; callers (e.g. `:app` DI wiring) only ever touch [TrafficStatisticsDao], which exposes no
- * Room supertypes in its signatures. This lets `:data` keep Room as an `implementation` dependency
- * without leaking it onto the `:app` compile classpath.
+ * 将构造放在此处，可将 `TrafficDatabase` / `RoomDatabase` / `Room` 类型限制在 `:data` 中；
+ * 调用方（如 `:app` 的依赖注入配置）始终只接触 [TrafficStatisticsDao]，其签名中不暴露任何 Room 超类型。
+ * 这样 `:data` 可以将 Room 保持为 `implementation` 依赖，而不会将其泄漏到 `:app` 的编译类路径上。
  */
-fun createTrafficStatisticsDao(context: Context): TrafficStatisticsDao =
-    Room.databaseBuilder(
-            context.applicationContext,
-            TrafficDatabase::class.java,
-            TrafficDatabase.DATABASE_NAME,
-        )
-        .setDriver(AndroidSQLiteDriver())
-        .addMigrations(MIGRATION_1_2)
-        .fallbackToDestructiveMigration()
-        .build()
-        .trafficStatisticsDao()
+fun createTrafficStatisticsDao(context: Context): TrafficStatisticsDao = Room.databaseBuilder(
+    context.applicationContext,
+    TrafficDatabase::class.java,
+    TrafficDatabase.DATABASE_NAME,
+).setDriver(AndroidSQLiteDriver()).addMigrations(MIGRATION_1_2).fallbackToDestructiveMigration().build().trafficStatisticsDao()
 
 /**
- * v1→v2: Add `slot_index` column to both tables and promote it into the primary key.
+ * v1→v2: 向两个表中添加 `slot_index` 列，并将其提升为主键的一部分。
  *
- * Primary key changes require table recreation (SQLite cannot ALTER PK).
- * Existing rows are migrated with `slot_index = 0` (best-effort; per-slot breakdown is lost for historical data).
+ * 主键变更需要重建表（SQLite 无法 ALTER 修改主键）。
+ * 现有行以 `slot_index = 0` 进行迁移（尽力而为；历史数据的按槽位明细将丢失）。
  */
 private val MIGRATION_1_2 = object : Migration(1, 2) {
     override suspend fun migrate(connection: SQLiteConnection) {

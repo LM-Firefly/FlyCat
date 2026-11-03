@@ -26,6 +26,5 @@ import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-/** Extracts the `delay` field from a core health-check JSON payload; -1 when the field is absent. */
-internal fun parseDelayMillis(json: String): Int =
-    Json.parseToJsonElement(json).jsonObject["delay"]?.jsonPrimitive?.int ?: -1
+/** 从核心健康检查 JSON 负载中提取 `delay` 字段；当该字段不存在时为 -1。 */
+internal fun parseDelayMillis(json: String): Int = Json.parseToJsonElement(json).jsonObject["delay"]?.jsonPrimitive?.int ?: -1

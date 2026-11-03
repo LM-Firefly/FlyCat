@@ -50,15 +50,14 @@ val appUpdateModule = module {
     }
 }
 
-val appModule: List<Module> =
-    coreDiModules +
-        listOf(dataStoreModule, dataBackupModule, runtimeServiceModule, appUpdateModule) +
-        featureUpdateModules +
-        featureHomeModules +
-        featureLogModules +
-        featureProfilesModules +
-        featureSettingsModules +
-        featureSubStoreModules +
-        featureProxyModules +
-        featureOverrideModules +
-        featureDashboardModules
+val appModule: List<Module> = coreDiModules +
+    listOf(dataStoreModule, dataBackupModule, runtimeServiceModule, appUpdateModule) +
+    featureUpdateModules +
+    featureHomeModules +
+    featureLogModules +
+    featureProfilesModules +
+    featureSettingsModules +
+    featureSubStoreModules +
+    featureProxyModules +
+    featureOverrideModules +
+    featureDashboardModules

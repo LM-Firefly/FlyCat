@@ -40,8 +40,7 @@ fun Context.sendBroadcastSelf(intent: Intent) {
 }
 
 fun Context.sendProfileChanged(uuid: UUID) {
-    val intent =
-        Intent(Intents.actionProfileChanged(packageName)).putExtra(Intents.EXTRA_UUID, uuid.toString())
+    val intent = Intent(Intents.actionProfileChanged(packageName)).putExtra(Intents.EXTRA_UUID, uuid.toString())
 
     sendBroadcastSelf(intent)
 }

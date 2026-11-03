@@ -61,6 +61,12 @@ import com.github.lmfirefly.flycat.core.model.LogFileInfo
 import com.github.lmfirefly.flycat.core.model.LogMessage
 import com.github.lmfirefly.flycat.feature.log.presentation.viewmodel.LogViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
+import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
+import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopActionAnchorIcon
+import com.github.lmfirefly.flycat.presentation.component.GlassTopIconButton
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.misc.CenteredText
@@ -73,6 +79,7 @@ import com.github.lmfirefly.flycat.presentation.icon.flycat.Square
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.navigation.Route
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
+import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.util.toast
 import java.util.Date
@@ -94,6 +101,7 @@ import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.pressable
@@ -114,10 +122,10 @@ fun AppLogScreen(navigator: Navigator) {
 
     // 应用日志与崩溃日志分开管理，使两者都能在此页面上有条理地展示。
     val appFiles = remember(logFiles) {
-        logFiles.filter { !it.name.startsWith("crash_") && !it.name.startsWith("native_exit_") }
+        logFiles.filter { !it.name.startsWith("crash_") && !it.name.startsWith("native_exit_") && !it.name.startsWith("anr_exit_") }
     }
     val crashFiles = remember(logFiles) {
-        logFiles.filter { it.name.startsWith("crash_") || it.name.startsWith("native_exit_") }
+        logFiles.filter { it.name.startsWith("crash_") || it.name.startsWith("native_exit_") || it.name.startsWith("anr_exit_") }
     }
 
     val scope = rememberCoroutineScope()
@@ -165,42 +173,42 @@ fun AppLogScreen(navigator: Navigator) {
         }
     }
 
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = FlyTxt.Log.App.Title,
                 scrollBehavior = scrollBehavior,
                 navigationIcon = { NavigationBackIcon(navigator = navigator, extraStartPadding = 0.dp) },
                 actions = {
-                    Box {
-                        IconButton(onClick = { showLevelPopup = true }) {
-                            Icon(
-                                imageVector = MiuixIcons.Filter,
-                                contentDescription = FlyTxt.Log.App.LevelTitle,
-                                tint = MiuixTheme.colorScheme.onSurface,
-                            )
-                        }
-                        OverlayListPopup(
-                            show = showLevelPopup,
-                            alignment = PopupPositionProvider.Align.BottomEnd,
-                            onDismissRequest = { showLevelPopup = false },
-                        ) {
-                            ListPopupColumn {
-                                AppLogLevelOptions.forEachIndexed { index, label ->
-                                    DropdownImpl(
-                                        text = label,
-                                        optionSize = AppLogLevelOptions.size,
-                                        isSelected = logLevel == AppLogLevelValues[index],
-                                        onSelectedIndexChange = {
-                                            viewModel.onLogLevelChange(AppLogLevelValues[index])
-                                            showLevelPopup = false
-                                        },
-                                        index = index,
-                                    )
+                    val levelMenuAnchor = rememberGlassPopupAnchor()
+                    GlassTopIconButton(
+                        action = GlassTopAction(
+                            icon = MiuixIcons.Filter,
+                            contentDescription = FlyTxt.Log.App.LevelTitle,
+                            onClick = { showLevelPopup = true },
+                            anchor = levelMenuAnchor,
+                            popup = {
+                                GlassPopupHost(
+                                    show = showLevelPopup,
+                                    onDismissRequest = { showLevelPopup = false },
+                                    anchor = levelMenuAnchor,
+                                    anchorContent = { GlassTopActionAnchorIcon(MiuixIcons.Filter) },
+                                ) {
+                                    AppLogLevelOptions.forEachIndexed { index, label ->
+                                        GlassMenuItem(
+                                            text = label,
+                                            selected = logLevel == AppLogLevelValues[index],
+                                            onClick = {
+                                                viewModel.onLogLevelChange(AppLogLevelValues[index])
+                                                showLevelPopup = false
+                                            },
+                                        )
+                                    }
                                 }
-                            }
-                        }
-                    }
+                            },
+                        ),
+                        backdrop = LocalTopBarBackdrop.current,
+                    )
                 },
             )
         },
@@ -210,43 +218,42 @@ fun AppLogScreen(navigator: Navigator) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.End,
             ) {
-                FloatingActionButton(
-                    onClick = {
-                        val ts = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-                        saveRecentLogsLauncher.launch("flycat_log_$ts.log")
-                    },
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Download,
+                GlassTopIconButton(
+                    action = GlassTopAction(
+                        icon = MiuixIcons.Download,
                         contentDescription = FlyTxt.Log.Action.SaveRecentLogs,
-                        tint = MiuixTheme.colorScheme.onPrimary,
-                    )
-                }
-                FloatingActionButton(
-                    onClick = {
-                        if (isRecording) {
-                            viewModel.stopRecording()
-                        } else {
-                            viewModel.startRecording()
-                        }
-                    },
-                ) {
-                    Icon(
-                        imageVector = if (isRecording) FlyCat.Square else FlyCat.Play,
-                        contentDescription =
-                            if (isRecording) FlyTxt.Log.Action.StopRecording else FlyTxt.Log.Action.StartRecording,
-                        tint = MiuixTheme.colorScheme.onPrimary,
-                    )
-                }
-                FloatingActionButton(
-                    onClick = { viewModel.deleteAllLogs() },
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Delete,
+                        tint = MiuixTheme.colorScheme.primary,
+                        onClick = {
+                            val ts = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+                            saveRecentLogsLauncher.launch("flycat_log_$ts.log")
+                        },
+                    ),
+                    backdrop = LocalTopBarBackdrop.current,
+                )
+                GlassTopIconButton(
+                    action = GlassTopAction(
+                        icon = if (isRecording) FlyCat.Square else FlyCat.Play,
+                        contentDescription = if (isRecording) FlyTxt.Log.Action.StopRecording else FlyTxt.Log.Action.StartRecording,
+                        tint = MiuixTheme.colorScheme.primary,
+                        onClick = {
+                            if (isRecording) {
+                                viewModel.stopRecording()
+                            } else {
+                                viewModel.startRecording()
+                            }
+                        },
+                    ),
+                    backdrop = LocalTopBarBackdrop.current,
+                )
+                GlassTopIconButton(
+                    action = GlassTopAction(
+                        icon = MiuixIcons.Delete,
                         contentDescription = FlyTxt.Log.Action.ClearLogs,
-                        tint = MiuixTheme.colorScheme.onPrimary,
-                    )
-                }
+                        tint = MiuixTheme.colorScheme.primary,
+                        onClick = { viewModel.deleteAllLogs() },
+                    ),
+                    backdrop = LocalTopBarBackdrop.current,
+                )
             }
         },
     ) { innerPadding ->
@@ -267,9 +274,7 @@ fun AppLogScreen(navigator: Navigator) {
                         LogFileItem(
                             fileInfo = appFiles[index],
                             index = index,
-                            onClick = {
-                                navigator.push(Route.LogDetail(fileName = appFiles[index].name))
-                            },
+                            onClick = { navigator.push(Route.LogDetail(fileName = appFiles[index].name)) },
                         )
                     }
                 }
@@ -279,9 +284,7 @@ fun AppLogScreen(navigator: Navigator) {
                         LogFileItem(
                             fileInfo = crashFiles[index],
                             index = index,
-                            onClick = {
-                                navigator.push(Route.LogDetail(fileName = crashFiles[index].name))
-                            },
+                            onClick = { navigator.push(Route.LogDetail(fileName = crashFiles[index].name)) },
                         )
                     }
                 }
@@ -299,9 +302,7 @@ fun LogDetailScreen(
     val scrollBehavior = MiuixScrollBehavior()
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/plain"),
-    ) { targetUri ->
+    val exportLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.CreateDocument("text/plain")) { targetUri ->
         if (targetUri == null) return@rememberLauncherForActivityResult
         scope.launch {
             val success = viewModel.exportLogToUri(fileName, targetUri)
@@ -346,7 +347,7 @@ fun LogDetailScreen(
             logEntries = viewModel.readLogContentIncremental(fileName)
         }
     }
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = if (isCurrentFileRecording) FlyTxt.Log.Detail.RealTimeLog else fileName,
@@ -361,24 +362,41 @@ fun LogDetailScreen(
                 horizontalAlignment = Alignment.End,
             ) {
                 if (isCurrentFileRecording) {
-                    FloatingActionButton(
-                        onClick = { viewModel.stopRecording() },
-                    ) {
-                        Icon(
-                            imageVector = FlyCat.Square,
+                    GlassTopIconButton(
+                        action = GlassTopAction(
+                            icon = FlyCat.Square,
                             contentDescription = FlyTxt.Log.Action.Pause,
-                            tint = MiuixTheme.colorScheme.onPrimary,
-                        )
-                    }
+                            tint = MiuixTheme.colorScheme.primary,
+                            onClick = { viewModel.stopRecording() },
+                        ),
+                        backdrop = LocalTopBarBackdrop.current,
+                    )
                 }
-                FloatingActionButton(
-                    onClick = {
-                        val ts = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-                        val baseName = fileName.removeSuffix(".log")
-                        exportLauncher.launch("${baseName}_$ts.log")
-                    },
-                ) { Icon(imageVector = MiuixIcons.Download, contentDescription = FlyTxt.Log.Action.Save, tint = MiuixTheme.colorScheme.onPrimary) }
-                FloatingActionButton(onClick = { viewModel.deleteLogFile(fileName); navigator.navigateUp() }) { Icon(imageVector = MiuixIcons.Delete, contentDescription = FlyTxt.Log.Action.Delete, tint = MiuixTheme.colorScheme.onPrimary) }
+                GlassTopIconButton(
+                    action = GlassTopAction(
+                        icon = MiuixIcons.Download,
+                        contentDescription = FlyTxt.Log.Action.Save,
+                        tint = MiuixTheme.colorScheme.primary,
+                        onClick = {
+                            val ts = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+                            val baseName = fileName.removeSuffix(".log")
+                            exportLauncher.launch("${baseName}_$ts.log")
+                        },
+                    ),
+                    backdrop = LocalTopBarBackdrop.current,
+                )
+                GlassTopIconButton(
+                    action = GlassTopAction(
+                        icon = MiuixIcons.Delete,
+                        contentDescription = FlyTxt.Log.Action.Delete,
+                        tint = MiuixTheme.colorScheme.primary,
+                        onClick = {
+                            viewModel.deleteLogFile(fileName)
+                            navigator.navigateUp()
+                        },
+                    ),
+                    backdrop = LocalTopBarBackdrop.current,
+                )
             }
         },
     ) { innerPadding ->
@@ -394,16 +412,15 @@ fun LogDetailScreen(
 
 @Composable
 private fun LogEntryCard(entry: LogEntry, index: Int = 0, isNewEntry: Boolean = false) {
-    val levelColor =
-        when (entry.level) {
-            LogMessage.Level.Debug -> MiuixTheme.colorScheme.onSurfaceVariantSummary
-            LogMessage.Level.Info -> MiuixTheme.colorScheme.primary
-            LogMessage.Level.Warning -> androidx.compose.ui.graphics.Color(0xFFFF9800)
-            LogMessage.Level.Error -> androidx.compose.ui.graphics.Color(0xFFF44336)
-            LogMessage.Level.Silent,
-            LogMessage.Level.Unknown,
-                -> MiuixTheme.colorScheme.onSurfaceVariantSummary
-        }
+    val levelColor = when (entry.level) {
+        LogMessage.Level.Debug -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+        LogMessage.Level.Info -> MiuixTheme.colorScheme.primary
+        LogMessage.Level.Warning -> androidx.compose.ui.graphics.Color(0xFFFF9800)
+        LogMessage.Level.Error -> androidx.compose.ui.graphics.Color(0xFFF44336)
+        LogMessage.Level.Silent,
+        LogMessage.Level.Unknown,
+            -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+    }
     var visible by remember { mutableStateOf(!isNewEntry) }
     LaunchedEffect(Unit) {
         if (isNewEntry) {
@@ -412,7 +429,7 @@ private fun LogEntryCard(entry: LogEntry, index: Int = 0, isNewEntry: Boolean = 
         }
     }
     AnimatedVisibility(visible = visible, enter = fadeIn(animationSpec = tween(AnimationSpecs.DURATION_INSTANT)) + slideInVertically(animationSpec = tween(AnimationSpecs.DURATION_INSTANT), initialOffsetY = { -it / 2 })) {
-        Card(cornerRadius = AppTheme.radii.radius12, modifier = Modifier.padding(vertical = 4.dp)) {
+        Card(cornerRadius = AppTheme.radii.radius18, modifier = Modifier.padding(vertical = 4.dp)) {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(text = entry.time, style = MiuixTheme.textStyles.body2.copy(fontSize = 11.sp, fontFamily = FontFamily.Monospace), color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
@@ -435,7 +452,7 @@ private fun LogFileItem(fileInfo: LogFileInfo, index: Int, onClick: () -> Unit) 
     val sizeText = formatFileSize(if (fileInfo.isRecording) animatedSize.toLong() else fileInfo.size)
     val summary = "${java.time.Instant.ofEpochMilli(fileInfo.createdAt).atZone(java.time.ZoneId.systemDefault()).format(dateFormat)}  ·  $sizeText"
     AnimatedVisibility(visible = visible, enter = fadeIn(animationSpec = tween(AnimationSpecs.DURATION_NORMAL)) + slideInVertically(animationSpec = tween(AnimationSpecs.DURATION_NORMAL), initialOffsetY = { -it / 2 })) {
-        Card(cornerRadius = AppTheme.radii.radius12, modifier = Modifier.padding(vertical = 4.dp).pressable(interactionSource = interactionSource, indication = SinkFeedback()).clickable(interactionSource = interactionSource, indication = null, onClick = onClick)) {
+        Card(cornerRadius = AppTheme.radii.radius18, modifier = Modifier.padding(vertical = 4.dp).pressable(interactionSource = interactionSource, indication = SinkFeedback()).clickable(interactionSource = interactionSource, indication = null, onClick = onClick)) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Column(modifier = Modifier.weight(1f)) {Text(text = fileInfo.name, style = MiuixTheme.textStyles.body1, color = MiuixTheme.colorScheme.onSurface); Spacer(modifier = Modifier.size(4.dp)); Text(text = summary, style = MiuixTheme.textStyles.body2.copy(fontSize = 11.sp), color = MiuixTheme.colorScheme.onSurfaceVariantSummary) }
                 if (fileInfo.isRecording) { Text(text = FlyTxt.Log.Status.Recording, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.primary, modifier = Modifier.padding(start = 8.dp)) }

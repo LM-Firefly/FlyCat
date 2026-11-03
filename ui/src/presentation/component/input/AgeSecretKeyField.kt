@@ -27,7 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
-import top.yukonga.miuix.kmp.basic.TextField
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 
 @Composable
 fun AgeSecretKeyField(
@@ -36,7 +36,7 @@ fun AgeSecretKeyField(
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    TextField(
+    GlassTextField(
         value = value,
         onValueChange = onValueChange,
         label = label,

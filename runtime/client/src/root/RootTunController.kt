@@ -26,7 +26,9 @@ import android.content.Intent
 import com.github.lmfirefly.flycat.core.appContextOrSelf
 import com.github.lmfirefly.flycat.core.model.ConnectionOverviewSnapshot
 import com.github.lmfirefly.flycat.core.model.ConnectionSnapshot
+import com.github.lmfirefly.flycat.core.model.ConnectionSnapshotCodec
 import com.github.lmfirefly.flycat.core.model.Provider
+import com.github.lmfirefly.flycat.core.model.RuntimeRule
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupPayload
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySort
@@ -49,28 +51,25 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 object RootTunController {
-    private val binding: RootTunBindingContract =
-        requireNotNull(RuntimeServiceContractRegistry.rootTunBinding) {
-            "RootTunBindingContract not registered in RuntimeServiceContractRegistry"
-        }
+    private val binding: RootTunBindingContract = requireNotNull(RuntimeServiceContractRegistry.rootTunBinding) {
+        "RootTunBindingContract not registered in RuntimeServiceContractRegistry"
+    }
 
-    private val rootTunForegroundService =
-        requireNotNull(RuntimeServiceContractRegistry.rootTunForegroundService) {
-            "RootTunForegroundServiceContract not registered in RuntimeServiceContractRegistry"
-        }
+    private val rootTunForegroundService = requireNotNull(RuntimeServiceContractRegistry.rootTunForegroundService) {
+        "RootTunForegroundServiceContract not registered in RuntimeServiceContractRegistry"
+    }
 
     /**
      * Receives root-pushed status over the AIDL channel and freshens the in-process
      * [RootTunStatusFlow], replacing the old shared-MMKV polling.
      */
-    private val stateObserver =
-        object : IRootTunStateObserver.Stub() {
-            override fun onStatusChanged(statusJson: String) {
-                runCatching {
-                    RootTunStatusFlow.update(rootTunDecode<RootTunStatus>(statusJson))
-                }
+    private val stateObserver = object : IRootTunStateObserver.Stub() {
+        override fun onStatusChanged(statusJson: String) {
+            runCatching {
+                RootTunStatusFlow.update(rootTunDecode<RootTunStatus>(statusJson))
             }
         }
+    }
 
     init {
         binding.afterBind { service ->
@@ -90,13 +89,11 @@ object RootTunController {
         block(binder as IRootTunService)
     }
 
-    private suspend fun bind(context: Context): IRootTunService =
-        binding.bind(context) as IRootTunService
+    private suspend fun bind(context: Context): IRootTunService = binding.bind(context) as IRootTunService
 
     private suspend fun disconnect() = binding.disconnect()
 
-    private fun cachedBinder(context: Context): IRootTunService? =
-        binding.cachedBinder(context) as? IRootTunService
+    private fun cachedBinder(context: Context): IRootTunService? = binding.cachedBinder(context) as? IRootTunService
 
     private fun createIntent(context: Context): Intent = binding.createIntent(context)
 
@@ -143,25 +140,23 @@ object RootTunController {
         val appContext = context.appContextOrSelf
         val remoteStartAt = System.currentTimeMillis()
         try {
-            val result =
-                runCatching {
-                        remoteCall(context) { service ->
-                            val resultJson = service.startRootTun(rootTunEncode(request))
-                            rootTunDecode<RootTunOperationResult>(resultJson)
-                        }
-                    }
-                    .getOrElse { error ->
-                        rollbackFailedStart(
-                            context = appContext,
-                            error = error.message ?: "RootTun start failed",
-                        )
-                        trace +=
-                            "ROOT_TUN controller: total=${System.currentTimeMillis() - startedAt}ms failed=${error.message}"
-                        return RootTunOperationResult(
-                            success = false,
-                            error = error.message ?: "RootTun start failed",
-                        )
-                    }
+            val result = runCatching {
+                remoteCall(context) { service ->
+                    val resultJson = service.startRootTun(rootTunEncode(request))
+                    rootTunDecode<RootTunOperationResult>(resultJson)
+                }
+            }
+            .getOrElse { error ->
+                rollbackFailedStart(
+                    context = appContext,
+                    error = error.message ?: "RootTun start failed",
+                )
+                trace += "ROOT_TUN controller: total=${System.currentTimeMillis() - startedAt}ms failed=${error.message}"
+                return RootTunOperationResult(
+                    success = false,
+                    error = error.message ?: "RootTun start failed",
+                )
+            }
             trace += "ROOT_TUN controller: remoteStart=${System.currentTimeMillis() - remoteStartAt}ms"
             if (!result.success) {
                 rollbackFailedStart(
@@ -179,14 +174,12 @@ object RootTunController {
             } catch (error: Throwable) {
                 // fault barrier: post-start status sync spans binder/root process; any failure
                 // must roll the session back instead of leaving a half-started RootTun.
-                val rollbackResult =
-                    withContext(Dispatchers.IO) {
-                        runCatching {
-                                val resultJson = bind(context).stopRootTun()
-                                rootTunDecode<RootTunOperationResult>(resultJson)
-                            }
-                            .getOrNull()
-                    }
+                val rollbackResult = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val resultJson = bind(context).stopRootTun()
+                        rootTunDecode<RootTunOperationResult>(resultJson)
+                    }.getOrNull()
+                }
                 runCatching { rootTunForegroundService.stop(appContext) }
                 runCatching { RootService.stop(createIntent(appContext)) }
                 disconnect()
@@ -198,8 +191,7 @@ object RootTunController {
                         ?.takeIf { it.isNotBlank() }
                         ?.let { append(" | rollback: ").append(it) }
                 }
-                trace +=
-                    "ROOT_TUN controller: total=${System.currentTimeMillis() - startedAt}ms failed=$message"
+                trace += "ROOT_TUN controller: total=${System.currentTimeMillis() - startedAt}ms failed=$message"
                 RootTunStatusFlow.markIdle(message)
                 RootTunOperationResult(success = false, error = message)
             }
@@ -217,25 +209,22 @@ object RootTunController {
         val trace = mutableListOf<String>()
         val currentStatus = RootTunStatusFlow.current(appContext)
         val request = RootTunStartRequest(source = "controller.reload", mode = mode)
-        trace +=
-            "ROOT_TUN controller: reload request currentTransport=${currentStatus.transportFingerprint}"
+        trace += "ROOT_TUN controller: reload request currentTransport=${currentStatus.transportFingerprint}"
 
         try {
-            val result =
-                runCatching {
-                        remoteCall(appContext) { service ->
-                            trace += "ROOT_TUN controller: reload branch=service"
-                            val resultJson =
-                                service.reloadActiveProfile(rootTunEncode(request))
-                            rootTunDecode<RootTunOperationResult>(resultJson)
-                        }
-                    }
-                    .getOrElse { error ->
-                        return RootTunOperationResult(
-                            success = false,
-                            error = error.message ?: "RootTun reload failed",
-                        )
-                    }
+            val result = runCatching {
+                remoteCall(appContext) { service ->
+                    trace += "ROOT_TUN controller: reload branch=service"
+                    val resultJson = service.reloadActiveProfile(rootTunEncode(request))
+                    rootTunDecode<RootTunOperationResult>(resultJson)
+                }
+            }
+            .getOrElse { error ->
+                return RootTunOperationResult(
+                    success = false,
+                    error = error.message ?: "RootTun reload failed",
+                )
+            }
             if (result.success) {
                 runCatching { RootTunStatusFlow.update(queryStatus(appContext)) }
             }
@@ -250,14 +239,13 @@ object RootTunController {
             return RootTunOperationResult(success = true)
         }
 
-        val result =
-            remoteCall(
-                context = context,
-                onBinderFailure = { RootTunOperationResult(success = true) },
-            ) { service ->
-                val resultJson = service.stopRootTun()
-                rootTunDecode<RootTunOperationResult>(resultJson)
-            }
+        val result = remoteCall(
+            context = context,
+            onBinderFailure = { RootTunOperationResult(success = true) },
+        ) { service ->
+            val resultJson = service.stopRootTun()
+            rootTunDecode<RootTunOperationResult>(resultJson)
+        }
         disconnect()
         return result
     }
@@ -268,40 +256,33 @@ object RootTunController {
         disconnect()
     }
 
-    suspend fun queryStatus(context: Context): RootTunStatus =
-        remoteCall(context) { service ->
-            val statusJson = service.queryStatus()
-            rootTunDecode<RootTunStatus>(statusJson)
-        }
+    suspend fun queryStatus(context: Context): RootTunStatus = remoteCall(context) { service ->
+        val statusJson = service.queryStatus()
+        rootTunDecode<RootTunStatus>(statusJson)
+    }
 
-    suspend fun queryTunnelState(context: Context): TunnelState =
-        remoteCall(context) { service ->
-            rootTunDecode<TunnelState>(service.queryTunnelStateJson())
-        }
+    suspend fun queryTunnelState(context: Context): TunnelState = remoteCall(context) { service ->
+        rootTunDecode<TunnelState>(service.queryTunnelStateJson())
+    }
 
-    suspend fun queryTrafficNow(context: Context): Long =
-        remoteCall(context) { service -> service.queryTrafficNow() }
+    suspend fun queryTrafficNow(context: Context): Long = remoteCall(context) { service -> service.queryTrafficNow() }
 
-    suspend fun queryTrafficTotal(context: Context): Long =
-        remoteCall(context) { service -> service.queryTrafficTotal() }
+    suspend fun queryTrafficTotal(context: Context): Long = remoteCall(context) { service -> service.queryTrafficTotal() }
 
-    suspend fun queryConnections(context: Context): ConnectionSnapshot =
-        remoteCall(context) { service ->
-            rootTunDecode<ConnectionSnapshot>(service.queryConnectionsJson())
-        }
+    suspend fun queryConnections(context: Context): ConnectionSnapshot = remoteCall(context) { service ->
+        ConnectionSnapshotCodec.decodeSnapshot(service.queryConnectionsJson())
+    }
 
-    suspend fun queryConnectionsOverview(context: Context): ConnectionOverviewSnapshot =
-        remoteCall(context) { service ->
-            rootTunDecode<ConnectionOverviewSnapshot>(service.queryConnectionsOverviewJson())
-        }
+    suspend fun queryConnectionsOverview(context: Context): ConnectionOverviewSnapshot = remoteCall(context) { service ->
+        ConnectionSnapshotCodec.decodeOverview(service.queryConnectionsOverviewJson())
+    }
 
     suspend fun queryProxyGroupNames(
         context: Context,
         excludeNotSelectable: Boolean,
-    ): List<String> =
-        remoteCall(context) { service ->
-            rootTunDecode<List<String>>(service.queryProxyGroupNamesJson(excludeNotSelectable))
-        }
+    ): List<String> = remoteCall(context) { service ->
+        rootTunDecode<List<String>>(service.queryProxyGroupNamesJson(excludeNotSelectable))
+    }
 
     suspend fun queryAllProxyGroups(
         context: Context,
@@ -316,19 +297,21 @@ object RootTunController {
         ProxyGroupPayload.decodeGroup(raw)
     }
 
-    suspend fun queryProviders(context: Context): List<Provider> =
-        remoteCall(context) { service ->
-            rootTunDecode<List<Provider>>(service.queryProvidersJson())
-        }
+    suspend fun queryProviders(context: Context): List<Provider> = remoteCall(context) { service ->
+        rootTunDecode<List<Provider>>(service.queryProvidersJson())
+    }
 
-    suspend fun patchSelector(context: Context, group: String, name: String): Boolean =
-        remoteCall(context) { service -> service.patchSelector(group, name) }
+    suspend fun queryRules(context: Context): List<RuntimeRule> = remoteCall(context) { service ->
+        rootTunDecode<List<RuntimeRule>>(service.queryRulesJson())
+    }
 
-    suspend fun patchForceSelector(context: Context, group: String, name: String): Boolean =
-        remoteCall(context) { service -> service.patchForceSelector(group, name) }
+    suspend fun setRuleDisabled(context: Context, index: Int, disabled: Boolean): Boolean = remoteCall(context) { service -> service.setRuleDisabled(index, disabled) }
 
-    suspend fun closeConnection(context: Context, id: String): Boolean =
-        remoteCall(context) { service -> service.closeConnection(id) }
+    suspend fun patchSelector(context: Context, group: String, name: String): Boolean = remoteCall(context) { service -> service.patchSelector(group, name) }
+
+    suspend fun patchForceSelector(context: Context, group: String, name: String): Boolean = remoteCall(context) { service -> service.patchForceSelector(group, name) }
+
+    suspend fun closeConnection(context: Context, id: String): Boolean = remoteCall(context) { service -> service.closeConnection(id) }
 
     suspend fun closeAllConnections(context: Context) {
         remoteCall(context) { service -> service.closeAllConnections() }
@@ -346,8 +329,7 @@ object RootTunController {
         }
     }
 
-    suspend fun healthCheckProxy(context: Context, group: String, proxyName: String): String =
-        remoteCall(context) { service -> service.healthCheckProxy(group, proxyName) }
+    suspend fun healthCheckProxy(context: Context, group: String, proxyName: String): String = remoteCall(context) { service -> service.healthCheckProxy(group, proxyName) }
 
     suspend fun updateProvider(context: Context, type: Provider.Type, name: String) {
         val error = remoteCall(context) { service -> service.updateProvider(type.name, name) }
@@ -356,11 +338,10 @@ object RootTunController {
         }
     }
 
-    suspend fun queryRecentLogs(context: Context, sinceSeq: Long): RootTunLogChunk =
-        remoteCall(context) { service ->
-            val raw = service.queryRecentLogsJson(sinceSeq)
-            rootTunDecode<RootTunLogChunk>(raw)
-        }
+    suspend fun queryRecentLogs(context: Context, sinceSeq: Long): RootTunLogChunk = remoteCall(context) { service ->
+        val raw = service.queryRecentLogsJson(sinceSeq)
+        rootTunDecode<RootTunLogChunk>(raw)
+    }
 
     private fun isRuntimeActive(context: Context): Boolean {
         cachedBinder(context)?.let {

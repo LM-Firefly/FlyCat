@@ -43,56 +43,43 @@ class ProfileBindingStore(context: Context, private val metadataIndexStore: Meta
 
     override fun close() { storeScope.cancel() }
 
-    override suspend fun getBinding(profileId: String): ProfileBinding? =
-        withContext(Dispatchers.IO) { initJob.join(); bindingsStateFlow.value[profileId] }
+    override suspend fun getBinding(profileId: String): ProfileBinding? = withContext(Dispatchers.IO) { initJob.join(); bindingsStateFlow.value[profileId] }
 
-    override fun getBindingFlow(profileId: String): Flow<ProfileBinding?> =
-        bindingsStateFlow.asStateFlow().map { bindings -> bindings[profileId] }
+    override fun getBindingFlow(profileId: String): Flow<ProfileBinding?> = bindingsStateFlow.asStateFlow().map { bindings -> bindings[profileId] }
 
-    override suspend fun setBinding(binding: ProfileBinding) =
-        withContext(Dispatchers.IO) {
-            initJob.join()
-            val map = bindingsStateFlow.value.toMutableMap()
-            map[binding.profileId] = binding
-            saveBindings(map)
-        }
+    override suspend fun setBinding(binding: ProfileBinding) = withContext(Dispatchers.IO) {
+        initJob.join()
+        val map = bindingsStateFlow.value.toMutableMap()
+        map[binding.profileId] = binding
+        saveBindings(map)
+    }
 
-    override suspend fun removeBinding(profileId: String) =
-        withContext(Dispatchers.IO) {
-            initJob.join()
-            val map = bindingsStateFlow.value.toMutableMap()
-            map.remove(profileId)
-            saveBindings(map)
-        }
+    override suspend fun removeBinding(profileId: String) = withContext(Dispatchers.IO) {
+        initJob.join()
+        val map = bindingsStateFlow.value.toMutableMap()
+        map.remove(profileId)
+        saveBindings(map)
+    }
 
-    override suspend fun getAllBindings(): List<ProfileBinding> =
-        withContext(Dispatchers.IO) { bindingsStateFlow.value.values.toList() }
+    override suspend fun getAllBindings(): List<ProfileBinding> = withContext(Dispatchers.IO) { bindingsStateFlow.value.values.toList() }
 
-    override fun getAllBindingsFlow(): Flow<List<ProfileBinding>> =
-        bindingsStateFlow.asStateFlow().map { bindings -> bindings.values.toList() }
+    override fun getAllBindingsFlow(): Flow<List<ProfileBinding>> = bindingsStateFlow.asStateFlow().map { bindings -> bindings.values.toList() }
 
-    override suspend fun getProfilesUsingOverride(overrideId: String): List<String> =
-        withContext(Dispatchers.IO) {
-            bindingsStateFlow.value.values
-                .filter { binding -> isOverrideApplied(binding, overrideId) }
-                .map { it.profileId }
-        }
+    override suspend fun getProfilesUsingOverride(overrideId: String): List<String> = withContext(Dispatchers.IO) {
+        bindingsStateFlow.value.values.filter { binding -> isOverrideApplied(binding, overrideId) }.map { it.profileId }
+    }
 
-    override suspend fun isOverrideInUse(overrideId: String): Boolean =
-        withContext(Dispatchers.IO) {
-            bindingsStateFlow.value.values.any { binding -> isOverrideApplied(binding, overrideId) }
-        }
+    override suspend fun isOverrideInUse(overrideId: String): Boolean = withContext(Dispatchers.IO) {
+        bindingsStateFlow.value.values.any { binding -> isOverrideApplied(binding, overrideId) }
+    }
 
-    override suspend fun getOverrideUsageCount(overrideId: String): Int =
-        withContext(Dispatchers.IO) {
-            bindingsStateFlow.value.values.count { binding -> isOverrideApplied(binding, overrideId) }
-        }
+    override suspend fun getOverrideUsageCount(overrideId: String): Int = withContext(Dispatchers.IO) {
+        bindingsStateFlow.value.values.count { binding -> isOverrideApplied(binding, overrideId) }
+    }
 
     override suspend fun addOverride(profileId: String, overrideId: String, index: Int?) {
         val existing = getBinding(profileId)
-        val binding =
-            existing?.addOverride(overrideId, index)
-                ?: ProfileBinding.withOverride(profileId, overrideId)
+        val binding = existing?.addOverride(overrideId, index) ?: ProfileBinding.withOverride(profileId, overrideId)
         setBinding(binding)
     }
 
@@ -101,38 +88,30 @@ class ProfileBindingStore(context: Context, private val metadataIndexStore: Meta
         setBinding(existing.removeOverride(overrideId))
     }
 
-    override suspend fun removeOverrideFromAllBindings(overrideId: String) =
-        withContext(Dispatchers.IO) {
-            initJob.join()
-            val updatedIndex = metadataIndexStore.removeOverrideFromAllBindings(overrideId)
-            bindingsStateFlow.value = updatedIndex.profileChains
-        }
+    override suspend fun removeOverrideFromAllBindings(overrideId: String) = withContext(Dispatchers.IO) {
+        initJob.join()
+        val updatedIndex = metadataIndexStore.removeOverrideFromAllBindings(overrideId)
+        bindingsStateFlow.value = updatedIndex.profileChains
+    }
 
     override suspend fun clearOverrides(profileId: String) {
         val existing = getBinding(profileId) ?: return
         setBinding(existing.clearOverrides())
     }
 
-    suspend fun clearAll() =
-        withContext(Dispatchers.IO) {
-            initJob.join()
-            val updatedIndex = metadataIndexStore.updateProfileChains { emptyMap() }
-            bindingsStateFlow.value = updatedIndex.profileChains
-        }
+    suspend fun clearAll() = withContext(Dispatchers.IO) {
+        initJob.join()
+        val updatedIndex = metadataIndexStore.updateProfileChains { emptyMap() }
+        bindingsStateFlow.value = updatedIndex.profileChains
+    }
 
-    override suspend fun refreshFromMetadata(chains: Map<String, ProfileBinding>) =
-        withContext(Dispatchers.IO) {
-            bindingsStateFlow.value = chains
-        }
+    override suspend fun refreshFromMetadata(chains: Map<String, ProfileBinding>) = withContext(Dispatchers.IO) {
+        bindingsStateFlow.value = chains
+    }
 
     suspend fun setOverrides(profileId: String, overrideIds: List<String>) {
         val existing = getBinding(profileId)
-        val binding =
-            if (existing != null) {
-                existing.setOverrides(overrideIds)
-            } else {
-                ProfileBinding.withOverrides(profileId, overrideIds)
-            }
+        val binding = if (existing != null) { existing.setOverrides(overrideIds) } else { ProfileBinding.withOverrides(profileId, overrideIds) }
         setBinding(binding)
     }
 
@@ -142,19 +121,17 @@ class ProfileBindingStore(context: Context, private val metadataIndexStore: Meta
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun loadBindings(): Map<String, ProfileBinding> =
-        try {
-            metadataIndexStore.getIndex().profileChains
-        } catch (error: Exception) { // fault barrier: any metadata read/decode failure degrades to empty
-            Timber.w(error, "Failed to load bindings from metadata.yaml, returning empty map")
-            emptyMap()
-        }
+    private suspend fun loadBindings(): Map<String, ProfileBinding> = try {
+        metadataIndexStore.getIndex().profileChains
+    } catch (error: Exception) { // 故障屏障：任何元数据读取/解码失败都会降级为空
+        Timber.w(error, "Failed to load bindings from metadata.yaml, returning empty map")
+        emptyMap()
+    }
 
     private suspend fun saveBindings(map: Map<String, ProfileBinding>) {
         metadataIndexStore.updateProfileChains { _ -> map }
         bindingsStateFlow.value = map
     }
 
-    private fun isOverrideApplied(binding: ProfileBinding, overrideId: String): Boolean =
-        binding.overrideIds.contains(overrideId)
+    private fun isOverrideApplied(binding: ProfileBinding, overrideId: String): Boolean = binding.overrideIds.contains(overrideId)
 }

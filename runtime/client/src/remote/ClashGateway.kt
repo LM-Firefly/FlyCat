@@ -27,6 +27,7 @@ import com.github.lmfirefly.flycat.core.appContextOrSelf
 import com.github.lmfirefly.flycat.core.model.ConnectionOverviewSnapshot
 import com.github.lmfirefly.flycat.core.model.ConnectionSnapshot
 import com.github.lmfirefly.flycat.core.model.LogMessage
+import com.github.lmfirefly.flycat.core.model.LogMessageCodec
 import com.github.lmfirefly.flycat.core.model.Provider
 import com.github.lmfirefly.flycat.core.model.ProviderList
 import com.github.lmfirefly.flycat.core.model.RuntimeRule
@@ -44,7 +45,6 @@ import com.github.lmfirefly.flycat.runtime.api.remote.IClashManager
 import com.github.lmfirefly.flycat.runtime.api.remote.ILogObserver
 import com.github.lmfirefly.flycat.runtime.api.root.RootTunRuntimeRecoveryContract
 import com.github.lmfirefly.flycat.runtime.api.root.RootTunStatusFlow
-import com.github.lmfirefly.flycat.runtime.api.root.rootTunDecode
 import com.github.lmfirefly.flycat.runtime.api.session.LocalRuntimeSessionHelpers
 import com.github.lmfirefly.flycat.runtime.api.session.RuntimeSpec
 import com.github.lmfirefly.flycat.runtime.api.session.SpecMode
@@ -75,14 +75,12 @@ class ClashGateway(
     context: Context,
     private val remote: IClashManager,
     private val isRemoteControllerActive: () -> Boolean,
-    private val sessionHelpers: LocalRuntimeSessionHelpers =
-        requireNotNull(RuntimeServiceContractRegistry.localRuntimeSessionHelpers) {
-            "LocalRuntimeSessionHelpers not registered in RuntimeServiceContractRegistry"
-        },
-    private val rootTunRecovery: RootTunRuntimeRecoveryContract =
-        requireNotNull(RuntimeServiceContractRegistry.rootTunRuntimeRecovery) {
-            "RootTunRuntimeRecoveryContract not registered in RuntimeServiceContractRegistry"
-        },
+    private val sessionHelpers: LocalRuntimeSessionHelpers = requireNotNull(RuntimeServiceContractRegistry.localRuntimeSessionHelpers) {
+        "LocalRuntimeSessionHelpers not registered in RuntimeServiceContractRegistry"
+    },
+    private val rootTunRecovery: RootTunRuntimeRecoveryContract = requireNotNull(RuntimeServiceContractRegistry.rootTunRuntimeRecovery) {
+        "RootTunRuntimeRecoveryContract not registered in RuntimeServiceContractRegistry"
+    },
 ) : IClashManager {
     private val appContext = context.appContextOrSelf
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -94,54 +92,47 @@ class ClashGateway(
 
     private fun useRemote(): Boolean = isRemoteControllerActive()
 
-    override suspend fun queryTunnelState(): TunnelState =
-        dispatchSuspend(
-            localCall = { withContext(Dispatchers.IO) { Clash.queryTunnelState() } },
-            rootCall = { withContext(Dispatchers.IO) { RootTunController.queryTunnelState(appContext) } },
-            remoteCall = { remote.queryTunnelState() },
-        )
+    override suspend fun queryTunnelState(): TunnelState = dispatchSuspend(
+        localCall = { withContext(Dispatchers.IO) { Clash.queryTunnelState() } },
+        rootCall = { withContext(Dispatchers.IO) { RootTunController.queryTunnelState(appContext) } },
+        remoteCall = { remote.queryTunnelState() },
+    )
 
-    override suspend fun queryTrafficNow(): Long =
-        dispatchSuspend(
-            localCall = { if (!sessionHelpers.serviceRunning) 0L else withContext(Dispatchers.IO) { Clash.queryTrafficNow() } },
-            rootCall = { withContext(Dispatchers.IO) { RootTunController.queryTrafficNow(appContext) } },
-            remoteCall = { remote.queryTrafficNow() },
-        )
+    override suspend fun queryTrafficNow(): Long = dispatchSuspend(
+        localCall = { if (!sessionHelpers.serviceRunning) 0L else withContext(Dispatchers.IO) { Clash.queryTrafficNow() } },
+        rootCall = { withContext(Dispatchers.IO) { RootTunController.queryTrafficNow(appContext) } },
+        remoteCall = { remote.queryTrafficNow() },
+    )
 
-    override suspend fun queryTrafficTotal(): Long =
-        dispatchSuspend(
-            localCall = { if (!sessionHelpers.serviceRunning) 0L else withContext(Dispatchers.IO) { Clash.queryTrafficTotal() } },
-            rootCall = { withContext(Dispatchers.IO) { RootTunController.queryTrafficTotal(appContext) } },
-            remoteCall = { remote.queryTrafficTotal() },
-        )
+    override suspend fun queryTrafficTotal(): Long = dispatchSuspend(
+        localCall = { if (!sessionHelpers.serviceRunning) 0L else withContext(Dispatchers.IO) { Clash.queryTrafficTotal() } },
+        rootCall = { withContext(Dispatchers.IO) { RootTunController.queryTrafficTotal(appContext) } },
+        remoteCall = { remote.queryTrafficTotal() },
+    )
 
-    override suspend fun queryConnections(): ConnectionSnapshot =
-        dispatchSuspend(
-            localCall = { withContext(Dispatchers.IO) { Clash.queryConnections() } },
-            rootCall = { withContext(Dispatchers.IO) { RootTunController.queryConnections(appContext) } },
-            remoteCall = { remote.queryConnections() },
-        )
+    override suspend fun queryConnections(): ConnectionSnapshot = dispatchSuspend(
+        localCall = { withContext(Dispatchers.IO) { Clash.queryConnections() } },
+        rootCall = { withContext(Dispatchers.IO) { RootTunController.queryConnections(appContext) } },
+        remoteCall = { remote.queryConnections() },
+    )
 
-    override suspend fun queryConnectionsOverview(): ConnectionOverviewSnapshot =
-        dispatchSuspend(
-            localCall = { withContext(Dispatchers.IO) { Clash.queryConnectionsOverview() } },
-            rootCall = { withContext(Dispatchers.IO) { RootTunController.queryConnectionsOverview(appContext) } },
-            remoteCall = { remote.queryConnectionsOverview() },
-        )
+    override suspend fun queryConnectionsOverview(): ConnectionOverviewSnapshot = dispatchSuspend(
+        localCall = { withContext(Dispatchers.IO) { Clash.queryConnectionsOverview() } },
+        rootCall = { withContext(Dispatchers.IO) { RootTunController.queryConnectionsOverview(appContext) } },
+        remoteCall = { remote.queryConnectionsOverview() },
+    )
 
-    override suspend fun queryRules(): List<RuntimeRule> =
-        dispatchSuspend(
-            localCall = { withContext(Dispatchers.IO) { Clash.queryRules() } },
-            rootCall = { withContext(Dispatchers.IO) { Clash.queryRules() } },
-            remoteCall = { remote.queryRules() },
-        )
+    override suspend fun queryRules(): List<RuntimeRule> = dispatchSuspend(
+        localCall = { withContext(Dispatchers.IO) { Clash.queryRules() } },
+        rootCall = { withContext(Dispatchers.IO) { RootTunController.queryRules(appContext) } },
+        remoteCall = { remote.queryRules() },
+    )
 
-    override suspend fun setRuleDisabled(index: Int, disabled: Boolean): Boolean =
-        dispatchSuspend(
-            localCall = { withContext(Dispatchers.IO) { Clash.setRuleDisabled(index, disabled) } },
-            rootCall = { withContext(Dispatchers.IO) { Clash.setRuleDisabled(index, disabled) } },
-            remoteCall = { remote.setRuleDisabled(index, disabled) },
-        )
+    override suspend fun setRuleDisabled(index: Int, disabled: Boolean): Boolean = dispatchSuspend(
+        localCall = { withContext(Dispatchers.IO) { Clash.setRuleDisabled(index, disabled) } },
+        rootCall = { withContext(Dispatchers.IO) { RootTunController.setRuleDisabled(appContext, index, disabled) } },
+        remoteCall = { remote.setRuleDisabled(index, disabled) },
+    )
 
     override suspend fun queryProfileProxyGroupNames(excludeNotSelectable: Boolean): List<String> {
         if (useRemote()) return remote.queryProfileProxyGroupNames(excludeNotSelectable)
@@ -159,130 +150,117 @@ class ClashGateway(
         return sessionHelpers.previewTunRouteExcludeAddress(profileUuid)
     }
 
-    override suspend fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
-        dispatchSuspend(
-            localCall = {
-                withContext(Dispatchers.Default) {
-                    val spec = activeRuntimeSpec() ?: return@withContext emptyList()
-                    sessionHelpers.resolvedGroups(spec, excludeNotSelectable)
-                }
-            },
-            rootCall = {
-                withContext(Dispatchers.IO) {
-                    RootTunController.queryAllProxyGroups(appContext, excludeNotSelectable)
-                }
-            },
-            remoteCall = { remote.queryAllProxyGroups(excludeNotSelectable) },
-        )
+    override suspend fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> = dispatchSuspend(
+        localCall = {
+            withContext(Dispatchers.Default) {
+                val spec = activeRuntimeSpec() ?: return@withContext emptyList()
+                sessionHelpers.resolvedGroups(spec, excludeNotSelectable)
+            }
+        },
+        rootCall = {
+            withContext(Dispatchers.IO) {
+                RootTunController.queryAllProxyGroups(appContext, excludeNotSelectable)
+            }
+        },
+        remoteCall = { remote.queryAllProxyGroups(excludeNotSelectable) },
+    )
 
-    override suspend fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> =
-        dispatchSuspend(
-            localCall = {
-                withContext(Dispatchers.Default) {
-                    val spec = activeRuntimeSpec() ?: return@withContext emptyList()
-                    sessionHelpers.resolvedGroupNames(spec, excludeNotSelectable)
-                }
-            },
-            rootCall = {
-                withContext(Dispatchers.IO) { RootTunController.queryProxyGroupNames(appContext, excludeNotSelectable) }
-            },
-            remoteCall = { remote.queryProxyGroupNames(excludeNotSelectable) },
-        )
+    override suspend fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> = dispatchSuspend(
+        localCall = {
+            withContext(Dispatchers.Default) {
+                val spec = activeRuntimeSpec() ?: return@withContext emptyList()
+                sessionHelpers.resolvedGroupNames(spec, excludeNotSelectable)
+            }
+        },
+        rootCall = {
+            withContext(Dispatchers.IO) { RootTunController.queryProxyGroupNames(appContext, excludeNotSelectable) }
+        },
+        remoteCall = { remote.queryProxyGroupNames(excludeNotSelectable) },
+    )
 
-    override suspend fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup =
-        dispatchSuspend(
-            localCall = { withContext(Dispatchers.IO) { Clash.queryGroup(name, proxySort) } },
-            rootCall = { withContext(Dispatchers.IO) { RootTunController.queryProxyGroup(appContext, name, proxySort) } },
-            remoteCall = { remote.queryProxyGroup(name, proxySort) },
-        )
+    override suspend fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup = dispatchSuspend(
+        localCall = { withContext(Dispatchers.IO) { Clash.queryGroup(name, proxySort) } },
+        rootCall = { withContext(Dispatchers.IO) { RootTunController.queryProxyGroup(appContext, name, proxySort) } },
+        remoteCall = { remote.queryProxyGroup(name, proxySort) },
+    )
 
     override suspend fun queryProviders(): ProviderList {
         if (useRemote()) return remote.queryProviders()
-        val providers =
-            queryWithRuntimeSuspend(
-                localCall = { withContext(Dispatchers.IO) { ProviderList(Clash.queryProviders()).toList() } },
-                rootCall = { withContext(Dispatchers.IO) { RootTunController.queryProviders(appContext) } },
-                fallbackOnRootFailure = false,
-            )
+        val providers = queryWithRuntimeSuspend(
+            localCall = { withContext(Dispatchers.IO) { ProviderList(Clash.queryProviders()).toList() } },
+            rootCall = { withContext(Dispatchers.IO) { RootTunController.queryProviders(appContext) } },
+            fallbackOnRootFailure = false,
+        )
         return ProviderList(providers)
     }
 
-    override suspend fun patchTunnelMode(mode: TunnelState.Mode): Boolean =
-        dispatchSuspend(
-            localCall = { withContext(Dispatchers.IO) { Clash.patchTunnelMode(mode) } },
-            rootCall = { withContext(Dispatchers.IO) { Clash.patchTunnelMode(mode) } },
-            remoteCall = { remote.patchTunnelMode(mode) },
-        )
+    override suspend fun patchTunnelMode(mode: TunnelState.Mode): Boolean = dispatchSuspend(
+        localCall = { withContext(Dispatchers.IO) { Clash.patchTunnelMode(mode) } },
+        rootCall = { withContext(Dispatchers.IO) { Clash.patchTunnelMode(mode) } },
+        remoteCall = { remote.patchTunnelMode(mode) },
+    )
 
-    override suspend fun patchSelector(group: String, name: String): Boolean =
-        dispatchSuspend(
-            localCall = { withContext(Dispatchers.IO) { Clash.patchSelector(group, name) } },
-            rootCall = { withContext(Dispatchers.IO) { RootTunController.patchSelector(appContext, group, name) } },
-            remoteCall = { remote.patchSelector(group, name) },
-        )
+    override suspend fun patchSelector(group: String, name: String): Boolean = dispatchSuspend(
+        localCall = { withContext(Dispatchers.IO) { Clash.patchSelector(group, name) } },
+        rootCall = { withContext(Dispatchers.IO) { RootTunController.patchSelector(appContext, group, name) } },
+        remoteCall = { remote.patchSelector(group, name) },
+    )
 
-    override suspend fun patchForceSelector(group: String, name: String): Boolean =
-        dispatchSuspend(
-            localCall = { withContext(Dispatchers.IO) { Clash.patchForceSelector(group, name) } },
-            rootCall = { withContext(Dispatchers.IO) { RootTunController.patchForceSelector(appContext, group, name) } },
-            remoteCall = { remote.patchForceSelector(group, name) },
-        )
+    override suspend fun patchForceSelector(group: String, name: String): Boolean = dispatchSuspend(
+        localCall = { withContext(Dispatchers.IO) { Clash.patchForceSelector(group, name) } },
+        rootCall = { withContext(Dispatchers.IO) { RootTunController.patchForceSelector(appContext, group, name) } },
+        remoteCall = { remote.patchForceSelector(group, name) },
+    )
 
-    override suspend fun closeConnection(id: String): Boolean =
-        dispatchSuspend(
-            localCall = { withContext(Dispatchers.IO) { Clash.closeConnection(id) } },
-            rootCall = { withContext(Dispatchers.IO) { RootTunController.closeConnection(appContext, id) } },
-            remoteCall = { remote.closeConnection(id) },
-        )
+    override suspend fun closeConnection(id: String): Boolean = dispatchSuspend(
+        localCall = { withContext(Dispatchers.IO) { Clash.closeConnection(id) } },
+        rootCall = { withContext(Dispatchers.IO) { RootTunController.closeConnection(appContext, id) } },
+        remoteCall = { remote.closeConnection(id) },
+    )
 
-    override suspend fun closeAllConnections() =
-        dispatchSuspend(
-            localCall = { withContext(Dispatchers.IO) { Clash.closeAllConnections() } },
-            rootCall = { withContext(Dispatchers.IO) { RootTunController.closeAllConnections(appContext) } },
-            remoteCall = { remote.closeAllConnections() },
-        )
+    override suspend fun closeAllConnections() = dispatchSuspend(
+        localCall = { withContext(Dispatchers.IO) { Clash.closeAllConnections() } },
+        rootCall = { withContext(Dispatchers.IO) { RootTunController.closeAllConnections(appContext) } },
+        remoteCall = { remote.closeAllConnections() },
+    )
 
-    override suspend fun healthCheck(group: String) =
-        dispatchSuspend(
-            localCall = {
-                Timber.d("ClashManager healthCheck: group=%s", group)
-                withContext(Dispatchers.IO) { Clash.healthCheck(group).await() }
-            },
-            rootCall = { RootTunController.healthCheck(appContext, group) },
-            remoteCall = { remote.healthCheck(group) },
-        )
+    override suspend fun healthCheck(group: String) = dispatchSuspend(
+        localCall = {
+            Timber.d("ClashManager healthCheck: group=%s", group)
+            withContext(Dispatchers.IO) { Clash.healthCheck(group).await() }
+        },
+        rootCall = { RootTunController.healthCheck(appContext, group) },
+        remoteCall = { remote.healthCheck(group) },
+    )
 
-    override suspend fun healthCheckProxy(group: String, proxyName: String): Int =
-        dispatchSuspend(
-            localCall = {
-                Timber.d("ClashManager healthCheckProxy: group=%s proxy=%s", group, proxyName)
-                val raw = withContext(Dispatchers.IO) { Clash.healthCheckProxy(proxyName).await() }
-                raw.toIntOrNull() ?: -1
-            },
-            rootCall = {
-                RootTunController.healthCheckProxy(appContext, group, proxyName).toIntOrNull() ?: -1
-            },
-            remoteCall = { remote.healthCheckProxy(group, proxyName) },
-        )
+    override suspend fun healthCheckProxy(group: String, proxyName: String): Int = dispatchSuspend(
+        localCall = {
+            Timber.d("ClashManager healthCheckProxy: group=%s proxy=%s", group, proxyName)
+            val raw = withContext(Dispatchers.IO) { Clash.healthCheckProxy(proxyName).await() }
+            raw.toIntOrNull() ?: -1
+        },
+        rootCall = {
+            RootTunController.healthCheckProxy(appContext, group, proxyName).toIntOrNull() ?: -1
+        },
+        remoteCall = { remote.healthCheckProxy(group, proxyName) },
+    )
 
-    override suspend fun updateProvider(type: Provider.Type, name: String) =
-        dispatchSuspend(
-            localCall = { withContext(Dispatchers.IO) { Clash.updateProvider(type, name).await() } },
-            rootCall = { RootTunController.updateProvider(appContext, type, name) },
-            remoteCall = { remote.updateProvider(type, name) },
-        )
+    override suspend fun updateProvider(type: Provider.Type, name: String) = dispatchSuspend(
+        localCall = { withContext(Dispatchers.IO) { Clash.updateProvider(type, name).await() } },
+        rootCall = { RootTunController.updateProvider(appContext, type, name) },
+        remoteCall = { remote.updateProvider(type, name) },
+    )
 
-    override suspend fun requestStop() =
-        dispatchSuspend(
-            localCall = {
-                withContext(Dispatchers.IO) {
-                    sessionHelpers.stopLocalServices(appContext.packageName)
-                    Unit
-                }
-            },
-            rootCall = { RootTunController.requestStop(appContext) },
-            remoteCall = { remote.requestStop() },
-        )
+    override suspend fun requestStop() = dispatchSuspend(
+        localCall = {
+            withContext(Dispatchers.IO) {
+                sessionHelpers.stopLocalServices(appContext.packageName)
+                Unit
+            }
+        },
+        rootCall = { RootTunController.requestStop(appContext) },
+        remoteCall = { remote.requestStop() },
+    )
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     override fun setLogObserver(observer: ILogObserver?) {
@@ -312,7 +290,7 @@ class ClashGateway(
                             val chunk = RootTunController.queryRecentLogs(appContext, rootLogSeq)
                             if (chunk.items.isNotEmpty()) {
                                 chunk.items.forEach { raw ->
-                                    observer.newItem(rootTunDecode<LogMessage>(raw))
+                                    observer.newItem(LogMessageCodec.decodeDelimited(raw))
                                 }
                             }
                             rootLogSeq = chunk.nextSeq
@@ -337,23 +315,22 @@ class ClashGateway(
             Clash.unsubscribeLogcat()
 
             if (observer != null) {
-                logReceiver =
-                    Clash.subscribeLogcat().also { receiver ->
-                        scope.launch(Dispatchers.IO) {
-                            try {
-                                while (isActive) {
-                                    observer.newItem(receiver.receive())
-                                }
-                            } catch (_: CancellationException) {} catch (error: Exception) {
-                                Timber.w("UI crashed", error)
-                            } finally {
-                                withContext(NonCancellable) {
-                                    receiver.cancel()
-                                    Clash.unsubscribeLogcat()
-                                }
+                logReceiver = Clash.subscribeLogcat().also { receiver ->
+                    scope.launch(Dispatchers.IO) {
+                        try {
+                            while (isActive) {
+                                observer.newItem(receiver.receive())
+                            }
+                        } catch (_: CancellationException) {} catch (error: Exception) {
+                            Timber.w("UI crashed", error)
+                        } finally {
+                            withContext(NonCancellable) {
+                                receiver.cancel()
+                                Clash.unsubscribeLogcat()
                             }
                         }
                     }
+                }
             }
         }
     }
@@ -369,8 +346,7 @@ class ClashGateway(
     }
 
     private fun configuredRunMode(): RunMode {
-        val raw =
-            networkSettings.decodeString("runMode", RunMode.VpnService.name) ?: RunMode.VpnService.name
+        val raw = networkSettings.decodeString("runMode", RunMode.VpnService.name) ?: RunMode.VpnService.name
         return runCatching { RunMode.valueOf(raw) }.getOrDefault(RunMode.VpnService)
     }
 

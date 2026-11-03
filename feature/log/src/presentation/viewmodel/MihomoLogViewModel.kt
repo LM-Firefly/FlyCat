@@ -70,7 +70,7 @@ enum class LogConnectionState {
 }
 
 /**
- * 将 mihomo（内核）的实时日志流式传输到有界批处理缓冲区中，并提供实时级别/文本过滤视图——移植自 YumeBox 的实时日志预览功能。
+ * 将 mihomo（内核）的实时日志流式传输到有界批处理缓冲区中，并提供实时级别/文本过滤视图。
  * 通过 [ProxyControlContract.setLogObserver] 订阅，模式感知（local=JNI 推送 / root=轮询 / remote=HTTP 流），故 local/root/remote 均可预览。
  * 订阅仅在预览屏幕可见时建立：可见时 [setPreviewVisible] 订阅并启动处理，隐藏时退订并停止处理，与录制/后台完全解耦，仅预览时才订阅以节省功耗。
  */
@@ -83,11 +83,7 @@ class MihomoLogViewModel(private val clashControl: ProxyControlContract) : ViewM
     private val _levelFilter = MutableStateFlow(LogLevelFilter.All)
     private val _searchQuery = MutableStateFlow("")
     private val _connectionState = MutableStateFlow(LogConnectionState.Connecting)
-    private val logObserver = object : ILogObserver {
-        override fun newItem(log: LogMessage) {
-            enqueue(log)
-        }
-    }
+    private val logObserver = object : ILogObserver { override fun newItem(log: LogMessage) { enqueue(log) } }
     private var batchJob: Job? = null
     private var processing = false
     val levelFilter: StateFlow<LogLevelFilter> = _levelFilter.asStateFlow()

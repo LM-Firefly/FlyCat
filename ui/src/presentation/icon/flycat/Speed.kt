@@ -35,43 +35,42 @@ val FlyCat.Speed: ImageVector
         if (speedVector != null) {
             return speedVector!!
         }
-        speedVector =
-            ImageVector.Builder(
-                name = "Gauge",
-                defaultWidth = 24.dp,
-                defaultHeight = 24.dp,
-                viewportWidth = 24f,
-                viewportHeight = 24f,
-            )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveToRelative(12f, 14f)
-                        lineToRelative(4f, -4f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(3.34f, 19f)
-                        arcToRelative(
-                            10f,
-                            10f,
-                            0f,
-                            isMoreThanHalf = true,
-                            isPositiveArc = true,
-                            17.32f,
-                            0f,
-                        )
-                    }
-                }
-                .build()
+        speedVector = ImageVector.Builder(
+            name = "Gauge",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        )
+        .apply {
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveToRelative(12f, 14f)
+                lineToRelative(4f, -4f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(3.34f, 19f)
+                arcToRelative(
+                    10f,
+                    10f,
+                    0f,
+                    isMoreThanHalf = true,
+                    isPositiveArc = true,
+                    17.32f,
+                    0f,
+                )
+            }
+        }
+        .build()
 
         return speedVector!!
     }

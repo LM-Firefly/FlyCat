@@ -43,12 +43,11 @@ data class SearchStatus(
 
     fun isExpanding() = current == Status.EXPANDING
 
-    fun onAnimationComplete(): SearchStatus =
-        when (current) {
-            Status.EXPANDING -> copy(current = Status.EXPANDED)
-            Status.COLLAPSING -> copy(searchText = "", current = Status.COLLAPSED)
-            else -> this
-        }
+    fun onAnimationComplete(): SearchStatus = when (current) {
+        Status.EXPANDING -> copy(current = Status.EXPANDED)
+        Status.COLLAPSING -> copy(searchText = "", current = Status.COLLAPSED)
+        else -> this
+    }
 
     enum class Status {
         EXPANDED,

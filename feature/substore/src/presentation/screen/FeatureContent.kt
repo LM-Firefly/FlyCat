@@ -31,6 +31,9 @@ import com.github.lmfirefly.flycat.core.model.RemoteProtocol
 import com.github.lmfirefly.flycat.feature.substore.model.AutoCloseMode
 import com.github.lmfirefly.flycat.feature.substore.presentation.viewmodel.FeatureViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.input.EnumSelector
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
@@ -80,7 +83,7 @@ fun FeatureContent(
 
     LaunchedEffect(Unit) { viewModel.initializeSubStoreStatus() }
 
-    Scaffold(topBar = { TopBar(title = FlyTxt.Feature.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(onNavigateBack = onNavigateBack) }) }) {
+    GlassScaffold(topBar = { TopBar(title = FlyTxt.Feature.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(onNavigateBack = onNavigateBack) }) }) {
         innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
@@ -90,27 +93,29 @@ fun FeatureContent(
             item { topSection() }
 
             item {
-                val currentPanelName =
-                    panelDisplayNames.getOrElse(selectedPanelType) { FlyTxt.Feature.Panel.Unknown }
+                val currentPanelName = panelDisplayNames.getOrElse(selectedPanelType) { FlyTxt.Feature.Panel.Unknown }
                 val panelUrl = panelUrlFor(selectedPanelType, panelProtocol)
 
                 Title(FlyTxt.Feature.Panel.Section)
                 Card {
-                    val safeSelectedPanelType =
-                        selectedPanelType.coerceIn(0, panelDisplayNames.lastIndex)
-                    WindowDropdownPreference(
+                    val safeSelectedPanelType = selectedPanelType.coerceIn(0, panelDisplayNames.lastIndex)
+                    GlassDropdownPreference(
                         title = FlyTxt.Feature.Panel.SelectPanel,
                         summary = null,
-                        items = panelDisplayNames,
-                        selectedIndex = safeSelectedPanelType,
-                        onSelectedIndexChange = { viewModel.setSelectedPanelType(it) },
+                        options = panelDisplayNames.mapIndexed { index, name ->
+                            GlassDropdownOption(value = index, label = name)
+                        },
+                        selected = safeSelectedPanelType,
+                        onSelected = { viewModel.setSelectedPanelType(it) },
                     )
-                    WindowDropdownPreference(
+                    GlassDropdownPreference(
                         title = FlyTxt.Feature.Panel.Protocol,
                         summary = null,
-                        items = RemoteProtocol.entries.map { it.scheme.uppercase() },
-                        selectedIndex = RemoteProtocol.entries.indexOf(panelProtocol),
-                        onSelectedIndexChange = { viewModel.setPanelProtocol(RemoteProtocol.entries[it]) },
+                        options = RemoteProtocol.entries.map {
+                            GlassDropdownOption(value = it, label = it.scheme.uppercase())
+                        },
+                        selected = panelProtocol,
+                        onSelected = { viewModel.setPanelProtocol(it) },
                     )
                     ArrowPreference(
                         title = FlyTxt.Feature.Panel.OpenPanel,
@@ -195,16 +200,12 @@ fun FeatureContent(
     }
 }
 
-private fun panelUrlFor(
-    panelType: Int,
-    protocol: RemoteProtocol,
-): String {
-    val host =
-        when (panelType) {
-            0 -> "board.zash.run.place"
-            1 -> "metacubex.github.io/metacubexd"
-            2 -> "yacd.haishan.me"
-            else -> "board.zash.run.place"
-        }
+private fun panelUrlFor(panelType: Int, protocol: RemoteProtocol): String {
+    val host = when (panelType) {
+        0 -> "board.zash.run.place"
+        1 -> "metacubex.github.io/metacubexd"
+        2 -> "yacd.haishan.me"
+        else -> "board.zash.run.place"
+    }
     return "${protocol.scheme}://$host"
 }

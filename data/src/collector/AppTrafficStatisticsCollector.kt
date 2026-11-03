@@ -176,20 +176,18 @@ class AppTrafficStatisticsCollector(
             val bucketKey = buildTrafficBucketKey(hint, routeKey)
             val existing = pendingBuckets[bucketKey]
             if (existing == null) {
-                pendingBuckets[bucketKey] =
-                    PendingTrafficBucket(
-                        identityHint = hint,
-                        routeKey = routeKey,
-                        routeLabel = resolveRouteLabel(closed, routeKey),
-                        uploadDelta = uploadDelta,
-                        downloadDelta = downloadDelta,
-                    )
+                pendingBuckets[bucketKey] = PendingTrafficBucket(
+                    identityHint = hint,
+                    routeKey = routeKey,
+                    routeLabel = resolveRouteLabel(closed, routeKey),
+                    uploadDelta = uploadDelta,
+                    downloadDelta = downloadDelta,
+                )
             } else {
-                pendingBuckets[bucketKey] =
-                    existing.copy(
-                        uploadDelta = existing.uploadDelta + uploadDelta,
-                        downloadDelta = existing.downloadDelta + downloadDelta,
-                    )
+                pendingBuckets[bucketKey] = existing.copy(
+                    uploadDelta = existing.uploadDelta + uploadDelta,
+                    downloadDelta = existing.downloadDelta + downloadDelta,
+                )
             }
         }
     }
@@ -258,18 +256,16 @@ class AppTrafficStatisticsCollector(
         return if (routeKey.isNullOrBlank()) baseKey else "$baseKey::$routeKey"
     }
 
-    private fun resolveRouteKey(connection: ConnectionInfo): String =
-        connection.chains.lastOrNull()?.takeIf(String::isNotBlank)
-            ?: connection.providerChains.lastOrNull()?.takeIf(String::isNotBlank)
-            ?: connection.rulePayload.takeIf(String::isNotBlank)
-            ?: connection.rule.takeIf(String::isNotBlank)
-            ?: TrafficStatisticsBuckets.UNATTRIBUTED_ROUTE_KEY
+    private fun resolveRouteKey(connection: ConnectionInfo): String = connection.chains.lastOrNull()?.takeIf(String::isNotBlank)
+        ?: connection.providerChains.lastOrNull()?.takeIf(String::isNotBlank)
+        ?: connection.rulePayload.takeIf(String::isNotBlank)
+        ?: connection.rule.takeIf(String::isNotBlank)
+        ?: TrafficStatisticsBuckets.UNATTRIBUTED_ROUTE_KEY
 
-    private fun resolveRouteLabel(connection: ConnectionInfo, routeKey: String?): String =
-        connection.chains.lastOrNull()?.takeIf(String::isNotBlank)
-            ?: connection.providerChains.lastOrNull()?.takeIf(String::isNotBlank)
-            ?: routeKey
-            ?: TrafficStatisticsBuckets.UNATTRIBUTED_ROUTE_NAME
+    private fun resolveRouteLabel(connection: ConnectionInfo, routeKey: String?): String = connection.chains.lastOrNull()?.takeIf(String::isNotBlank)
+        ?: connection.providerChains.lastOrNull()?.takeIf(String::isNotBlank)
+        ?: routeKey
+        ?: TrafficStatisticsBuckets.UNATTRIBUTED_ROUTE_NAME
 
     override fun stop() {
         // Cancel producers first so no new mutex.withLock { ... } blocks are entered.

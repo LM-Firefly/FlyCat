@@ -52,17 +52,15 @@ import com.github.lmfirefly.flycat.runtime.service.session.RuntimeServiceLaunche
 import com.tencent.mmkv.MMKV
 
 class StatusProvider : ContentProvider() {
-    override fun call(method: String, arg: String?, extras: Bundle?): Bundle? =
-        when (method) {
-            METHOD_CURRENT_PROFILE -> {
-                syncCachedRuntimeState()
-                if (serviceRunning) Bundle().apply { putString("name", currentProfile) } else null
-            }
-            else -> super.call(method, arg, extras)
+    override fun call(method: String, arg: String?, extras: Bundle?): Bundle? = when (method) {
+        METHOD_CURRENT_PROFILE -> {
+            syncCachedRuntimeState()
+            if (serviceRunning) Bundle().apply { putString("name", currentProfile) } else null
         }
+        else -> super.call(method, arg, extras)
+    }
 
-    override fun insert(uri: Uri, values: ContentValues?): Uri? =
-        throw IllegalArgumentException("Stub!")
+    override fun insert(uri: Uri, values: ContentValues?): Uri? = throw IllegalArgumentException("Stub!")
 
     override fun query(
         uri: Uri,
@@ -79,8 +77,7 @@ class StatusProvider : ContentProvider() {
         selectionArgs: Array<out String>?,
     ): Int = throw IllegalArgumentException("Stub!")
 
-    override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int =
-        throw IllegalArgumentException("Stub!")
+    override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int = throw IllegalArgumentException("Stub!")
 
     override fun getType(uri: Uri): String? = throw IllegalArgumentException("Stub!")
 
@@ -115,8 +112,7 @@ class StatusProvider : ContentProvider() {
         const val METHOD_CURRENT_PROFILE = "currentProfile"
         const val ACTION_RUNTIME_PHASE_CHANGED = "com.github.lmfirefly.flycat.ACTION_RUNTIME_PHASE_CHANGED"
 
-        private val legacyRuntimeFiles =
-            listOf("service_running.lock", "service_autostart.lock", "service_running_mode.txt")
+        private val legacyRuntimeFiles = listOf("service_running.lock", "service_autostart.lock", "service_running_mode.txt")
         private const val SERVICE_CACHE_ID = "service_cache"
         private const val KEY_TUN_STARTING = "local_tun_starting"
         private const val KEY_RUNTIME_MODE = "local_runtime_mode"
@@ -237,11 +233,9 @@ class StatusProvider : ContentProvider() {
             serviceCache().encode(KEY_RUNTIME_REQUEST_SOURCE, source)
         }
 
-        fun queryRuntimeRequestSource(): String? =
-            serviceCache().decodeString(KEY_RUNTIME_REQUEST_SOURCE)
+        fun queryRuntimeRequestSource(): String? = serviceCache().decodeString(KEY_RUNTIME_REQUEST_SOURCE)
 
-        fun isTunStarting(): Boolean =
-            serviceCache().decodeBool(KEY_TUN_STARTING, false)
+        fun isTunStarting(): Boolean = serviceCache().decodeBool(KEY_TUN_STARTING, false)
 
         override fun clearLegacyStateFiles() {
             val filesDir = Global.application.filesDir
@@ -249,8 +243,7 @@ class StatusProvider : ContentProvider() {
         }
         override fun markRuntimeIdle(mode: RuntimeTargetMode) { markRuntimeIdle(mode.toRunMode()) }
 
-        private fun serviceCache(): MMKV =
-            MMKV.mmkvWithID(SERVICE_CACHE_ID, MMKV.MULTI_PROCESS_MODE)
+        private fun serviceCache(): MMKV = MMKV.mmkvWithID(SERVICE_CACHE_ID, MMKV.MULTI_PROCESS_MODE)
 
         private fun markRuntimePhase(mode: RunMode, phase: RuntimePhase) {
             if (mode == RunMode.VpnService && phase != RuntimePhase.Starting) {
@@ -291,19 +284,16 @@ class StatusProvider : ContentProvider() {
 
         private fun readPersistedRuntimeState(): Pair<RunMode?, RuntimePhase> {
             val cache = serviceCache()
-            val phase =
-                enumByNameOrNull<RuntimePhase>(cache.decodeString(KEY_RUNTIME_PHASE))
-                    ?: RuntimePhase.Idle
-            val mode =
-                enumByNameOrNull<RunMode>(cache.decodeString(KEY_RUNTIME_MODE))
-                    ?.takeIf { phase.isNotIdle }
+            val phase = enumByNameOrNull<RuntimePhase>(cache.decodeString(KEY_RUNTIME_PHASE))
+                ?: RuntimePhase.Idle
+            val mode = enumByNameOrNull<RunMode>(cache.decodeString(KEY_RUNTIME_MODE))
+                ?.takeIf { phase.isNotIdle }
             return mode to phase
         }
 
-        private fun readPersistedRuntimeStartedAt(): Long? =
-            serviceCache().decodeLong(KEY_RUNTIME_STARTED_AT, 0L).takeIf {
-                it > 0L
-            }
+        private fun readPersistedRuntimeStartedAt(): Long? = serviceCache().decodeLong(KEY_RUNTIME_STARTED_AT, 0L).takeIf {
+            it > 0L
+        }
 
         private fun isStartingWithinGrace(): Boolean {
             val startedAt = readPersistedRuntimeStartedAt() ?: return false

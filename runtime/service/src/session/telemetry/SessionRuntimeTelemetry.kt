@@ -25,13 +25,13 @@ import android.os.SystemClock
 import com.github.lmfirefly.flycat.core.Clash
 import com.github.lmfirefly.flycat.core.model.ConnectionSnapshot
 import com.github.lmfirefly.flycat.core.model.LogMessage
+import com.github.lmfirefly.flycat.core.model.LogMessageCodec
 import com.github.lmfirefly.flycat.core.model.traffic.Traffic
 import com.github.lmfirefly.flycat.core.util.ConnectionHistoryManager
 import com.github.lmfirefly.flycat.core.util.PollingTimers
 import com.github.lmfirefly.flycat.core.util.PollingTimerSpecs
 import com.github.lmfirefly.flycat.core.util.TrafficPushHub
 import com.github.lmfirefly.flycat.core.util.throttleByScene
-import com.github.lmfirefly.flycat.runtime.api.root.rootTunEncode
 import com.github.lmfirefly.flycat.runtime.service.session.RuntimeHost
 import com.github.lmfirefly.flycat.runtime.service.session.spec.RuntimeLogChunk
 import java.util.concurrent.atomic.AtomicLong
@@ -99,37 +99,36 @@ internal class SessionRuntimeTelemetry(
         val subscribe = logSubscribe ?: return
         val unsubscribe = logUnsubscribe ?: return
         host.onLogReady(false)
-        logJob =
-            scope.launch(Dispatchers.IO) {
-                val receiver = subscribe()
-                host.onLogReady(true)
-                onLogReadyChanged(true)
-                try {
-                    while (isActive) {
-                        val item = receiver.receive()
-                        host.onLogItem(item)
-                        if (hasActiveConsumer) {
-                            if (SystemClock.elapsedRealtime() - lastConsumerActiveTimestamp > 30_000L) {
-                                hasActiveConsumer = false
-                            } else {
-                                val encoded = rootTunEncode(item)
-                                val seq = logSeq.incrementAndGet()
-                                synchronized(recentLogs) {
-                                    recentLogs.addLast(seq to encoded)
-                                    while (recentLogs.size > MAX_BUFFERED_LOGS) {
-                                        recentLogs.removeFirst()
-                                    }
+        logJob = scope.launch(Dispatchers.IO) {
+            val receiver = subscribe()
+            host.onLogReady(true)
+            onLogReadyChanged(true)
+            try {
+                while (isActive) {
+                    val item = receiver.receive()
+                    host.onLogItem(item)
+                    if (hasActiveConsumer) {
+                        if (SystemClock.elapsedRealtime() - lastConsumerActiveTimestamp > 30_000L) {
+                            hasActiveConsumer = false
+                        } else {
+                            val encoded = LogMessageCodec.encodeDelimited(item)
+                            val seq = logSeq.incrementAndGet()
+                            synchronized(recentLogs) {
+                                recentLogs.addLast(seq to encoded)
+                                while (recentLogs.size > MAX_BUFFERED_LOGS) {
+                                    recentLogs.removeFirst()
                                 }
                             }
                         }
                     }
-                } finally {
-                    receiver.cancel()
-                    runCatching { unsubscribe() }
-                    host.onLogReady(false)
-                    onLogReadyChanged(false)
                 }
+            } finally {
+                receiver.cancel()
+                runCatching { unsubscribe() }
+                host.onLogReady(false)
+                onLogReadyChanged(false)
             }
+        }
     }
 
     private fun detachStream() {

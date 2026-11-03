@@ -30,6 +30,7 @@ import com.github.lmfirefly.flycat.core.contract.NetworkSettingsReader
 import com.github.lmfirefly.flycat.core.contract.Preference
 import com.github.lmfirefly.flycat.core.kernel.KernelManager
 import com.github.lmfirefly.flycat.core.model.AccessControlMode
+import com.github.lmfirefly.flycat.core.model.AccessControlImportStrategy
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
 import com.github.lmfirefly.flycat.core.model.tunnel.TunDnsMode
 import com.github.lmfirefly.flycat.core.model.tunnel.TunStack
@@ -69,6 +70,7 @@ class NetworkSettingsViewModel(
     val systemProxy: Preference<Boolean> = settings.systemProxy
     val disableAllOverride: Preference<Boolean> = settings.disableAllOverride
     val accessControlMode: Preference<AccessControlMode> = settings.accessControlMode
+    val accessControlImportStrategy: Preference<AccessControlImportStrategy> = settings.accessControlImportStrategy
 
     val tunStack: Preference<TunStack> = settings.tunStack
     val tunAutoRoute: Preference<Boolean> = settings.tunAutoRoute
@@ -106,11 +108,9 @@ class NetworkSettingsViewModel(
 
     private val runtimeSnapshot = proxyFacade.runtimeSnapshot
 
-    val serviceState: StateFlow<ServiceState> =
-        runtimeSnapshot
-            .map { snapshot -> ServiceState.fromPhase(snapshot.phase) }
-            .distinctUntilChanged()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServiceState.Idle)
+    val serviceState: StateFlow<ServiceState> = runtimeSnapshot
+        .map { snapshot -> ServiceState.fromPhase(snapshot.phase) }.distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServiceState.Idle)
 
     // ── Kernel Manager ──────────────────────────────────────────────────
     private val _kernels = MutableStateFlow<List<KernelInfo>>(emptyList())
@@ -151,162 +151,144 @@ class NetworkSettingsViewModel(
         }
     }
 
-    val uiState: StateFlow<NetworkSettingsUiState> =
-        combine(currentRunMode, runtimeSnapshot, tunDnsMode.state, rootAvailable, ebpfAvailable) {
-                configuredMode,
-                snapshot,
-                dnsMode,
-                rootAvail,
-                ebpfAvail ->
-                val effectiveMode = RuntimeStateMapper.resolveDisplayMode(snapshot, configuredMode)
-                val activeMode = RuntimeStateMapper.modeForOwner(snapshot.owner)
-                NetworkSettingsUiState(
-                    serviceState = ServiceState.fromPhase(snapshot.phase),
-                    configuredMode = configuredMode,
-                    effectiveMode = effectiveMode,
-                    needsRestart = snapshot.phase == RuntimePhase.Running && activeMode != configuredMode,
-                    rootAvailable = rootAvail,
-                    ebpfAvailable = ebpfAvail,
-                    showServiceOptions = true,
-                    showTunOnlyOptions = configuredMode == RunMode.VpnService,
-                    showAccessControlMode = true,
-                    showRootTunAdvanced = configuredMode == RunMode.Tun,
-                    showFakeIpRange = configuredMode == RunMode.Tun && dnsMode == TunDnsMode.FakeIp,
-                )
-            }
-            .distinctUntilChanged()
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = NetworkSettingsUiState(),
-            )
+    val uiState: StateFlow<NetworkSettingsUiState> = combine(currentRunMode, runtimeSnapshot, tunDnsMode.state, rootAvailable, ebpfAvailable) {
+        configuredMode,
+        snapshot,
+        dnsMode,
+        rootAvail,
+        ebpfAvail ->
+        val effectiveMode = RuntimeStateMapper.resolveDisplayMode(snapshot, configuredMode)
+        val activeMode = RuntimeStateMapper.modeForOwner(snapshot.owner)
+        NetworkSettingsUiState(
+            serviceState = ServiceState.fromPhase(snapshot.phase),
+            configuredMode = configuredMode,
+            effectiveMode = effectiveMode,
+            needsRestart = snapshot.phase == RuntimePhase.Running && activeMode != configuredMode,
+            rootAvailable = rootAvail,
+            ebpfAvailable = ebpfAvail,
+            showServiceOptions = true,
+            showTunOnlyOptions = configuredMode == RunMode.VpnService,
+            showAccessControlMode = true,
+            showRootTunAdvanced = configuredMode == RunMode.Tun,
+            showFakeIpRange = configuredMode == RunMode.Tun && dnsMode == TunDnsMode.FakeIp,
+        )
+    }.distinctUntilChanged().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = NetworkSettingsUiState(),
+    )
 
-    private val commonTunOptionsUiState: StateFlow<CommonTunOptionsUiState> =
-        combine(bypassPrivateNetwork.state, dnsHijack.state, enableIPv6.state, tunStack.state) {
-                bypassPrivateNetwork,
-                dnsHijack,
-                enableIPv6,
-                tunStack ->
-                CommonTunOptionsUiState(
-                    bypassPrivateNetwork = bypassPrivateNetwork,
-                    dnsHijack = dnsHijack,
-                    enableIPv6 = enableIPv6,
-                    tunStack = tunStack,
-                )
-            }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue =
-                    CommonTunOptionsUiState(
-                        bypassPrivateNetwork = bypassPrivateNetwork.value,
-                        dnsHijack = dnsHijack.value,
-                        enableIPv6 = enableIPv6.value,
-                        tunStack = tunStack.value,
-                    ),
-            )
+    private val commonTunOptionsUiState: StateFlow<CommonTunOptionsUiState> = combine(bypassPrivateNetwork.state, dnsHijack.state, enableIPv6.state, tunStack.state) {
+        bypassPrivateNetwork,
+        dnsHijack,
+        enableIPv6,
+        tunStack ->
+        CommonTunOptionsUiState(
+            bypassPrivateNetwork = bypassPrivateNetwork,
+            dnsHijack = dnsHijack,
+            enableIPv6 = enableIPv6,
+            tunStack = tunStack,
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = CommonTunOptionsUiState(
+            bypassPrivateNetwork = bypassPrivateNetwork.value,
+            dnsHijack = dnsHijack.value,
+            enableIPv6 = enableIPv6.value,
+            tunStack = tunStack.value,
+        ),
+    )
 
-    val tunServiceOptionsUiState: StateFlow<TunServiceOptionsUiState> =
-        combine(commonTunOptionsUiState, allowBypass.state, systemProxy.state) {
-                common,
-                allowBypass,
-                systemProxy ->
-                TunServiceOptionsUiState(
-                    common = common,
-                    allowBypass = allowBypass,
-                    systemProxy = systemProxy,
-                )
-            }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue =
-                    TunServiceOptionsUiState(
-                        common =
-                            CommonTunOptionsUiState(
-                                bypassPrivateNetwork = bypassPrivateNetwork.value,
-                                dnsHijack = dnsHijack.value,
-                                enableIPv6 = enableIPv6.value,
-                                tunStack = tunStack.value,
-                            ),
-                        allowBypass = allowBypass.value,
-                        systemProxy = systemProxy.value,
-                    ),
-            )
+    val tunServiceOptionsUiState: StateFlow<TunServiceOptionsUiState> = combine(commonTunOptionsUiState, allowBypass.state, systemProxy.state) {
+        common,
+        allowBypass,
+        systemProxy ->
+        TunServiceOptionsUiState(
+            common = common,
+            allowBypass = allowBypass,
+            systemProxy = systemProxy,
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = TunServiceOptionsUiState(
+            common = CommonTunOptionsUiState(
+                    bypassPrivateNetwork = bypassPrivateNetwork.value,
+                    dnsHijack = dnsHijack.value,
+                    enableIPv6 = enableIPv6.value,
+                    tunStack = tunStack.value,
+                ),
+            allowBypass = allowBypass.value,
+            systemProxy = systemProxy.value,
+        ),
+    )
 
-    private val rootTunRoutingUiState =
-        combine(
-            tunAutoRoute.state,
-            tunStrictRoute.state,
-            tunAutoRedirect.state,
-            tunDnsMode.state,
-        ) { tunAutoRoute, tunStrictRoute, tunAutoRedirect, tunDnsMode ->
-            RootTunRoutingUiState(
-                tunAutoRoute = tunAutoRoute,
-                tunStrictRoute = tunStrictRoute,
-                tunAutoRedirect = tunAutoRedirect,
-                tunDnsMode = tunDnsMode,
-            )
-        }
+    private val rootTunRoutingUiState = combine(
+        tunAutoRoute.state,
+        tunStrictRoute.state,
+        tunAutoRedirect.state,
+        tunDnsMode.state,
+    ) { tunAutoRoute, tunStrictRoute, tunAutoRedirect, tunDnsMode ->
+        RootTunRoutingUiState(
+            tunAutoRoute = tunAutoRoute,
+            tunStrictRoute = tunStrictRoute,
+            tunAutoRedirect = tunAutoRedirect,
+            tunDnsMode = tunDnsMode,
+        )
+    }
 
-    private val rootTunDraftsUiState =
-        combine(
-            tunIfNameDraft,
-            tunMtuDraft,
-            tunFakeIpRangeDraft,
-            tunFakeIpRange6Draft,
-        ) { tunIfNameDraft, tunMtuDraft, tunFakeIpRangeDraft, tunFakeIpRange6Draft
-            ->
-            RootTunDraftsUiState(
-                tunIfNameDraft = tunIfNameDraft,
-                tunMtuDraft = tunMtuDraft,
-                tunFakeIpRangeDraft = tunFakeIpRangeDraft,
-                tunFakeIpRange6Draft = tunFakeIpRange6Draft,
-            )
-        }
+    private val rootTunDraftsUiState = combine(
+        tunIfNameDraft,
+        tunMtuDraft,
+        tunFakeIpRangeDraft,
+        tunFakeIpRange6Draft,
+    ) { tunIfNameDraft, tunMtuDraft, tunFakeIpRangeDraft, tunFakeIpRange6Draft
+        ->
+        RootTunDraftsUiState(
+            tunIfNameDraft = tunIfNameDraft,
+            tunMtuDraft = tunMtuDraft,
+            tunFakeIpRangeDraft = tunFakeIpRangeDraft,
+            tunFakeIpRange6Draft = tunFakeIpRange6Draft,
+        )
+    }
 
-    val rootTunServiceOptionsUiState: StateFlow<RootTunServiceOptionsUiState> =
-        combine(commonTunOptionsUiState, rootTunRoutingUiState, rootTunDraftsUiState) {
-                common,
-                routing,
-                drafts ->
-                RootTunServiceOptionsUiState(
-                    common = common,
-                    tunAutoRoute = routing.tunAutoRoute,
-                    tunStrictRoute = routing.tunStrictRoute,
-                    tunAutoRedirect = routing.tunAutoRedirect,
-                    tunDnsMode = routing.tunDnsMode,
-                    tunIfNameDraft = drafts.tunIfNameDraft,
-                    tunMtuDraft = drafts.tunMtuDraft,
-                    tunFakeIpRangeDraft = drafts.tunFakeIpRangeDraft,
-                    tunFakeIpRange6Draft = drafts.tunFakeIpRange6Draft,
-                )
-            }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue =
-                    RootTunServiceOptionsUiState(
-                        common = commonTunOptionsUiState.value,
-                        tunAutoRoute = tunAutoRoute.value,
-                        tunStrictRoute = tunStrictRoute.value,
-                        tunAutoRedirect = tunAutoRedirect.value,
-                        tunDnsMode = tunDnsMode.value,
-                        tunIfNameDraft = tunIfNameDraft.value,
-                        tunMtuDraft = tunMtuDraft.value,
-                        tunFakeIpRangeDraft = tunFakeIpRangeDraft.value,
-                        tunFakeIpRange6Draft = tunFakeIpRange6Draft.value,
-                    ),
-            )
+    val rootTunServiceOptionsUiState: StateFlow<RootTunServiceOptionsUiState> = combine(commonTunOptionsUiState, rootTunRoutingUiState, rootTunDraftsUiState) {
+        common,
+        routing,
+        drafts ->
+        RootTunServiceOptionsUiState(
+            common = common,
+            tunAutoRoute = routing.tunAutoRoute,
+            tunStrictRoute = routing.tunStrictRoute,
+            tunAutoRedirect = routing.tunAutoRedirect,
+            tunDnsMode = routing.tunDnsMode,
+            tunIfNameDraft = drafts.tunIfNameDraft,
+            tunMtuDraft = drafts.tunMtuDraft,
+            tunFakeIpRangeDraft = drafts.tunFakeIpRangeDraft,
+            tunFakeIpRange6Draft = drafts.tunFakeIpRange6Draft,
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = RootTunServiceOptionsUiState(
+            common = commonTunOptionsUiState.value,
+            tunAutoRoute = tunAutoRoute.value,
+            tunStrictRoute = tunStrictRoute.value,
+            tunAutoRedirect = tunAutoRedirect.value,
+            tunDnsMode = tunDnsMode.value,
+            tunIfNameDraft = tunIfNameDraft.value,
+            tunMtuDraft = tunMtuDraft.value,
+            tunFakeIpRangeDraft = tunFakeIpRangeDraft.value,
+            tunFakeIpRange6Draft = tunFakeIpRange6Draft.value,
+        ),
+    )
 
-    val ebpfServiceOptionsUiState: StateFlow<EbpfServiceOptionsUiState> =
-        ebpfBypassCn.state
-            .map(::EbpfServiceOptionsUiState)
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                EbpfServiceOptionsUiState(bypassCn = ebpfBypassCn.value),
-            )
+    val ebpfServiceOptionsUiState: StateFlow<EbpfServiceOptionsUiState> = ebpfBypassCn.state.map(::EbpfServiceOptionsUiState).stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        EbpfServiceOptionsUiState(bypassCn = ebpfBypassCn.value),
+    )
 
     fun onRunModeChange(mode: RunMode) {
         if (mode == RunMode.Ebpf && !_ebpfAvailable.value) return
@@ -367,6 +349,10 @@ class NetworkSettingsViewModel(
 
     fun onAccessControlModeChange(mode: AccessControlMode) {
         controller.setAndRestartIfNeeded(accessControlMode, mode)
+    }
+
+    fun onAccessControlImportStrategyChange(strategy: AccessControlImportStrategy) {
+        accessControlImportStrategy.set(strategy)
     }
 
     fun ontunIfNameDraftChange(value: String) {
@@ -688,13 +674,12 @@ enum class ServiceState {
     Failed;
 
     companion object {
-        fun fromPhase(phase: RuntimePhase): ServiceState =
-            when (phase) {
-                RuntimePhase.Idle -> Idle
-                RuntimePhase.Starting -> Starting
-                RuntimePhase.Running -> Running
-                RuntimePhase.Stopping -> Stopping
-                RuntimePhase.Failed -> Failed
-            }
+        fun fromPhase(phase: RuntimePhase): ServiceState = when (phase) {
+            RuntimePhase.Idle -> Idle
+            RuntimePhase.Starting -> Starting
+            RuntimePhase.Running -> Running
+            RuntimePhase.Stopping -> Stopping
+            RuntimePhase.Failed -> Failed
+        }
     }
 }

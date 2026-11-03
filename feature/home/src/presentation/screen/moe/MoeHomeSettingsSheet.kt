@@ -27,11 +27,12 @@ import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottom
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetCloseAction
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetConfirmAction
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppFormDialog
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.component.misc.PreferenceSwitchItem
+import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 
 @Composable
 internal fun MoeHomeSettingsSheet(
@@ -81,7 +82,7 @@ internal fun MoeHomeSettingsSheet(
     ) {
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space16)) {
             item {
-                Card(modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12)) {
+                Card(modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12), applyHorizontalPadding = false) {
                     Column {
                         PreferenceSwitchItem(title = FlyTxt.AppSettings.Interface.ClassicHomeTitle, checked = draftClassicHomeEnabled, onCheckedChange = { draftClassicHomeEnabled = it })
                         if (draftClassicHomeEnabled) { PreferenceSwitchItem(title = FlyTxt.AppSettings.Interface.HitokotoTitle, summary = FlyTxt.AppSettings.Interface.HitokotoSummary, checked = draftHomeHitokotoEnabled, onCheckedChange = { draftHomeHitokotoEnabled = it }) }
@@ -92,12 +93,26 @@ internal fun MoeHomeSettingsSheet(
             }
             val showQuoteFields = !draftClassicHomeEnabled || draftHomeHitokotoEnabled
             if (showQuoteFields) {
-                item { TextField(value = draftQuote, onValueChange = { draftQuote = it }, label = FlyTxt.AppSettings.Interface.HomeQuoteTitle, useLabelAsPlaceholder = true, maxLines = 2, modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12)) }
-                item { TextField(value = draftQuoteAuthor, onValueChange = { draftQuoteAuthor = it }, label = FlyTxt.AppSettings.Interface.HomeQuoteAuthorTitle, useLabelAsPlaceholder = true, maxLines = 1, modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12)) }
+                item { GlassTextField(value = draftQuote, onValueChange = { draftQuote = it }, label = FlyTxt.AppSettings.Interface.HomeQuoteTitle, useLabelAsPlaceholder = true, maxLines = 2, modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12)) }
+                item { GlassTextField(value = draftQuoteAuthor, onValueChange = { draftQuoteAuthor = it }, label = FlyTxt.AppSettings.Interface.HomeQuoteAuthorTitle, useLabelAsPlaceholder = true, maxLines = 1, modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12)) }
                 if (!draftClassicHomeEnabled) {
                     item {
-                        Card(modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12)) {
-                            WindowDropdownPreference(title = FlyTxt.AppSettings.Interface.HomeWallpaperSourceTitle, summary = FlyTxt.AppSettings.Interface.HomeWallpaperSourceSummary, items = listOf(FlyTxt.AppSettings.Interface.HomeWallpaperSourceGallery, FlyTxt.AppSettings.Interface.HomeWallpaperSourceUrl), selectedIndex = -1, onSelectedIndexChange = { index -> when (index) { 0 -> onLaunchGalleryPicker(); 1 -> showUrlInputDialog = true } })
+                        Card(modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12), applyHorizontalPadding = false) {
+                            GlassDropdownPreference(
+                                title = FlyTxt.AppSettings.Interface.HomeWallpaperSourceTitle,
+                                summary = FlyTxt.AppSettings.Interface.HomeWallpaperSourceSummary,
+                                options = listOf(
+                                    GlassDropdownOption(value = 0, label = FlyTxt.AppSettings.Interface.HomeWallpaperSourceGallery),
+                                    GlassDropdownOption(value = 1, label = FlyTxt.AppSettings.Interface.HomeWallpaperSourceUrl)
+                                ),
+                                selected = null,
+                                onSelected = {
+                                    index -> when (index) {
+                                        0 -> onLaunchGalleryPicker();
+                                        1 -> showUrlInputDialog = true
+                                    }
+                                }
+                            )
                         }
                     }
                 }
@@ -123,6 +138,6 @@ internal fun MoeHomeSettingsSheet(
 private fun MoeHomeRemoteWallpaperUrlDialog(show: Boolean, initialUrl: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var url by remember { mutableStateOf(initialUrl) }
     AppFormDialog(show = show, title = FlyTxt.AppSettings.Interface.HomeWallpaperUrlDialogTitle, onDismissRequest = onDismiss, onConfirm = { val trimmed = url.trim(); if (trimmed.isNotEmpty()) onConfirm(trimmed) }, scrollable = false) {
-        TextField(value = url, onValueChange = { url = it }, label = "https://example.com/image.jpg", useLabelAsPlaceholder = true, singleLine = true, modifier = Modifier.fillMaxWidth())
+        GlassTextField(value = url, onValueChange = { url = it }, label = "https://example.com/image.jpg", useLabelAsPlaceholder = true, singleLine = true, modifier = Modifier.fillMaxWidth())
     }
 }

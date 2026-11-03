@@ -113,23 +113,17 @@ object ProfileStore : ProfileStoreReader {
             return
         }
 
-        val migratedSelections =
-            loadSelections()
-                .asSequence()
-                .mapNotNull { selection ->
-                    val groupName = selection.proxy.trim()
-                    val selectedProxy = selection.selected.trim()
-                    if (groupName.isEmpty() || selectedProxy.isEmpty()) {
-                        null
-                    } else {
-                        selection.copy(proxy = groupName, selected = selectedProxy)
-                    }
-                }
-                .groupBy { it.uuid to it.proxy }
-                .values
-                .mapNotNull { items ->
-                    items.maxByOrNull(Selection::updatedAt) ?: items.lastOrNull()
-                }
+        val migratedSelections = loadSelections().asSequence().mapNotNull { selection ->
+            val groupName = selection.proxy.trim()
+            val selectedProxy = selection.selected.trim()
+            if (groupName.isEmpty() || selectedProxy.isEmpty()) {
+                null
+            } else {
+                selection.copy(proxy = groupName, selected = selectedProxy)
+            }
+        }.groupBy { it.uuid to it.proxy }.values.mapNotNull { items ->
+            items.maxByOrNull(Selection::updatedAt) ?: items.lastOrNull()
+        }
 
         saveSelections(migratedSelections)
         removeAllSelectionScopeKeys()

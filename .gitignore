@@ -52,6 +52,7 @@ cmake-build-*/
 /platform/pkg/
 /runtime/client/pkg/
 /runtime/service/pkg/
+/ui/pkg/
 
 # Signing & secrets
 .env
@@ -106,6 +107,14 @@ Thumbs.db
 /output_apk/
 /rule.md
 /scripts/rewrite-git-email.sh
+/website/.vitepress/cache
+/website/.vitepress/dist
+/website/.vitepress/generated
+/website/node_modules
+# Website 生成产物（website/scripts/gen-api.mjs）
+/website/public/api/
+/website/api/*.md
+!/website/api/playground.md
 # Python bytecode
 __pycache__/
 *.pyc

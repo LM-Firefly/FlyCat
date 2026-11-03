@@ -35,27 +35,24 @@ val FlyCat.chevron: ImageVector
         if (chevronVector != null) {
             return chevronVector!!
         }
-        chevronVector =
-            ImageVector.Builder(
-                name = "IconName",
-                defaultWidth = 24.dp,
-                defaultHeight = 24.dp,
-                viewportWidth = 24f,
-                viewportHeight = 24f,
-            )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveToRelative(9f, 18f)
-                        lineToRelative(6f, -6f)
-                        lineToRelative(-6f, -6f)
-                    }
-                }
-                .build()
+        chevronVector = ImageVector.Builder(
+            name = "IconName",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveToRelative(9f, 18f)
+                lineToRelative(6f, -6f)
+                lineToRelative(-6f, -6f)
+            }
+        }.build()
 
         return chevronVector!!
     }

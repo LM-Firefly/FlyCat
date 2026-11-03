@@ -145,12 +145,11 @@ private fun CountryBadge(countryCode: String?) {
     }
 }
 
-private fun buildDisplayIpValue(ipAddress: String, isIpVisible: Boolean): String =
-    if (ipAddress.contains(":")) {
-        formatIpv6Address(ipAddress = ipAddress, isIpVisible = isIpVisible)
-    } else {
-        if (isIpVisible) ipAddress else maskIpv4Address(ipAddress)
-    }
+private fun buildDisplayIpValue(ipAddress: String, isIpVisible: Boolean): String = if (ipAddress.contains(":")) {
+    formatIpv6Address(ipAddress = ipAddress, isIpVisible = isIpVisible)
+} else {
+    if (isIpVisible) ipAddress else maskIpv4Address(ipAddress)
+}
 
 private fun maskIpv4Address(ipAddress: String): String {
     val segments = ipAddress.split(".")
@@ -190,9 +189,8 @@ private fun formatIpv6Address(ipAddress: String, isIpVisible: Boolean): String {
     }
 }
 
-internal fun maskIpAddress(ipAddress: String): String =
-    if (ipAddress.contains(":")) {
-        formatIpv6Address(ipAddress = ipAddress, isIpVisible = false)
-    } else {
-        maskIpv4Address(ipAddress)
-    }
+internal fun maskIpAddress(ipAddress: String): String = if (ipAddress.contains(":")) {
+    formatIpv6Address(ipAddress = ipAddress, isIpVisible = false)
+} else {
+    maskIpv4Address(ipAddress)
+}

@@ -60,7 +60,7 @@ buildscript {
     configurations["classpath"].resolutionStrategy.eachDependency {
         when {
             requested.group == "io.netty" -> useVersion("4.2.17.Final")
-            requested.group == "com.google.guava" -> useVersion("32.0.0-android")
+            requested.group == "com.google.guava" -> useVersion("33.8.0-android")
         }
     }
 }

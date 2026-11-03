@@ -90,45 +90,38 @@ fun ProxyControlButton(
                 coroutineScope.launch {
                     scaleAnim.animateTo(
                         targetValue = 0.92f,
-                        animationSpec =
-                            tween(
-                                ControlButtonPressInDurationMillis,
-                                easing = AnimationSpecs.EmphasizedAccelerate,
-                            ),
+                        animationSpec = tween(
+                            ControlButtonPressInDurationMillis,
+                            easing = AnimationSpecs.EmphasizedAccelerate,
+                        ),
                     )
                     scaleAnim.animateTo(
                         targetValue = 1.03f,
-                        animationSpec =
-                            tween(
-                                ControlButtonPressOutDurationMillis,
-                                easing = AnimationSpecs.EmphasizedDecelerate,
-                            ),
+                        animationSpec = tween(
+                            ControlButtonPressOutDurationMillis,
+                            easing = AnimationSpecs.EmphasizedDecelerate,
+                        ),
                     )
                     scaleAnim.animateTo(
                         targetValue = 1f,
-                        animationSpec =
-                            tween(
-                                ControlButtonSettleDurationMillis,
-                                easing = AnimationSpecs.StandardEasing,
-                            ),
+                        animationSpec = tween(
+                            ControlButtonSettleDurationMillis,
+                            easing = AnimationSpecs.StandardEasing,
+                        ),
                     )
                 }
                 onClick()
             },
             enabled = isEnabled,
-            modifier =
-                Modifier.fillMaxWidth(buttonWidthFraction)
-                    .scale(scaleAnim.value)
-                    .shadow(
-                        elevation = UiDp.dp1,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(cornerRadius),
-                        clip = false,
-                    )
-                    .border(
-                        width = UiDp.dp0_2,
-                        color = MiuixTheme.colorScheme.outline,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(cornerRadius),
-                    ),
+            modifier = Modifier.fillMaxWidth(buttonWidthFraction).scale(scaleAnim.value).shadow(
+                elevation = UiDp.dp1,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(cornerRadius),
+                clip = false,
+            ).border(
+                width = UiDp.dp0_2,
+                color = MiuixTheme.colorScheme.outline,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(cornerRadius),
+            ),
             colors = ButtonDefaults.buttonColors(MiuixTheme.colorScheme.background),
             cornerRadius = cornerRadius,
             minHeight = UiDp.dp36,
@@ -136,47 +129,19 @@ fun ProxyControlButton(
             AnimatedContent(
                 targetState = isRunning,
                 transitionSpec = {
-                    val iconTransition =
-                        tween<Float>(
-                            ControlButtonIconScaleDurationMillis,
-                            easing = AnimationSpecs.Legacy,
-                        )
-                    val enterTransition =
-                        slideInVertically(
-                            initialOffsetY = { it / 5 },
-                            animationSpec =
-                                tween(
-                                    ControlButtonIconEnterDurationMillis,
-                                    easing = AnimationSpecs.EnterEasing,
-                                ),
-                        ) +
-                            fadeIn(
-                                animationSpec =
-                                    tween(
-                                        ControlButtonIconEnterDurationMillis,
-                                        easing = AnimationSpecs.EnterEasing,
-                                    )
-                            ) +
-                            scaleIn(initialScale = 0.8f, animationSpec = iconTransition)
-
-                    val exitTransition =
-                        slideOutVertically(
-                            targetOffsetY = { -it / 5 },
-                            animationSpec =
-                                tween(
-                                    ControlButtonIconExitDurationMillis,
-                                    easing = AnimationSpecs.ExitEasing,
-                                ),
-                        ) +
-                            fadeOut(
-                                animationSpec =
-                                    tween(
-                                        ControlButtonIconExitDurationMillis,
-                                        easing = AnimationSpecs.ExitEasing,
-                                    )
-                            ) +
-                            scaleOut(targetScale = 0.8f, animationSpec = iconTransition)
-
+                    val iconTransition = tween<Float>(ControlButtonIconScaleDurationMillis, easing = AnimationSpecs.Legacy)
+                    val enterTransition = slideInVertically(
+                        initialOffsetY = { it / 5 },
+                        animationSpec = tween(ControlButtonIconEnterDurationMillis, easing = AnimationSpecs.EnterEasing),
+                        ) + fadeIn(
+                            animationSpec = tween(ControlButtonIconEnterDurationMillis, easing = AnimationSpecs.EnterEasing)
+                        ) + scaleIn(initialScale = 0.8f, animationSpec = iconTransition)
+                    val exitTransition = slideOutVertically(
+                        targetOffsetY = { -it / 5 },
+                        animationSpec = tween(ControlButtonIconExitDurationMillis, easing = AnimationSpecs.ExitEasing)
+                        ) + fadeOut(
+                            animationSpec = tween(ControlButtonIconExitDurationMillis, easing = AnimationSpecs.ExitEasing)
+                            ) + scaleOut(targetScale = 0.8f, animationSpec = iconTransition)
                     enterTransition.togetherWith(exitTransition)
                 },
                 label = "IconTransition",

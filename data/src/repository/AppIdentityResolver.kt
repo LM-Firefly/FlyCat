@@ -63,8 +63,7 @@ class AppIdentityResolver(context: Context) : AppIdentityReader {
     }
 
     override fun resolve(metadata: JsonObject): AppIdentity {
-        val explicitPackageName =
-            metadata["packageName"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+        val explicitPackageName = metadata["packageName"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
         val processName = metadata["process"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
         val uid = metadata["uid"]?.jsonPrimitive?.intOrNull
         return resolve(
@@ -86,41 +85,39 @@ class AppIdentityResolver(context: Context) : AppIdentityReader {
             return it
         }
 
-        val packageName =
-            findInstalledPackage(explicitPackageName)
-                ?: resolveByUid(uid)
-                ?: resolveByProcess(processName)
+        val packageName = findInstalledPackage(explicitPackageName)
+            ?: resolveByUid(uid)
+            ?: resolveByProcess(processName)
 
-        val identity =
-            when {
-                packageName != null ->
-                    AppIdentity(
-                        appKey = "package:$packageName",
-                        packageName = packageName,
-                        appName = resolveLabel(packageName).ifBlank { packageName },
-                    )
+        val identity = when {
+            packageName != null ->
+                AppIdentity(
+                    appKey = "package:$packageName",
+                    packageName = packageName,
+                    appName = resolveLabel(packageName).ifBlank { packageName },
+                )
 
-                uid != null && uid > 0 ->
-                    AppIdentity(
-                        appKey = "uid:$uid",
-                        packageName = null,
-                        appName = processName.ifBlank { "UID $uid" },
-                    )
+            uid != null && uid > 0 ->
+                AppIdentity(
+                    appKey = "uid:$uid",
+                    packageName = null,
+                    appName = processName.ifBlank { "UID $uid" },
+                )
 
-                processName.isNotBlank() ->
-                    AppIdentity(
-                        appKey = "process:$processName",
-                        packageName = null,
-                        appName = processName,
-                    )
+            processName.isNotBlank() ->
+                AppIdentity(
+                    appKey = "process:$processName",
+                    packageName = null,
+                    appName = processName,
+                )
 
-                else ->
-                    AppIdentity(
-                        appKey = UNKNOWN_APP_KEY,
-                        packageName = null,
-                        appName = UNKNOWN_APP_NAME,
-                    )
-            }
+            else ->
+                AppIdentity(
+                    appKey = UNKNOWN_APP_KEY,
+                    packageName = null,
+                    appName = UNKNOWN_APP_NAME,
+                )
+        }
 
         packageCache[cacheKey] = identity
         return identity
@@ -131,8 +128,7 @@ class AppIdentityResolver(context: Context) : AppIdentityReader {
         val cached = uidCache[uid]
         if (cached != null) return cached.ifEmpty { null }
 
-        val packageName =
-            packageManager.getPackagesForUid(uid)?.firstNotNullOfOrNull(::findInstalledPackage)
+        val packageName = packageManager.getPackagesForUid(uid)?.firstNotNullOfOrNull(::findInstalledPackage)
         uidCache[uid] = packageName ?: ""
         return packageName
     }
@@ -140,14 +136,10 @@ class AppIdentityResolver(context: Context) : AppIdentityReader {
     private fun resolveByProcess(processName: String): String? {
         if (processName.isBlank()) return null
 
-        val candidates =
-            buildList {
-                    add(processName)
-                    add(processName.substringBefore(':'))
-                }
-                .map(String::trim)
-                .filter(String::isNotEmpty)
-                .distinct()
+        val candidates = buildList {
+            add(processName)
+            add(processName.substringBefore(':'))
+        }.map(String::trim).filter(String::isNotEmpty).distinct()
 
         candidates.firstNotNullOfOrNull(::findInstalledPackage)?.let {
             return it
@@ -170,18 +162,14 @@ class AppIdentityResolver(context: Context) : AppIdentityReader {
         installedAppsCache?.let {
             return it
         }
-        val apps =
-            runCatching { packageManager.getInstalledApplications(PackageManager.GET_META_DATA) }
-                .getOrDefault(emptyList<ApplicationInfo>())
-                .map { app ->
-                    InstalledAppIdentity(
-                        packageName = app.packageName,
-                        processName = app.processName?.trim().orEmpty(),
-                        label =
-                            runCatching { app.loadLabel(packageManager).toString().trim() }
-                                .getOrDefault(""),
-                    )
-                }
+        val apps = runCatching { packageManager.getInstalledApplications(PackageManager.GET_META_DATA) }
+            .getOrDefault(emptyList<ApplicationInfo>()).map { app ->
+                InstalledAppIdentity(
+                    packageName = app.packageName,
+                    processName = app.processName?.trim().orEmpty(),
+                    label = runCatching { app.loadLabel(packageManager).toString().trim() }.getOrDefault(""),
+                )
+            }
         installedAppsCache = apps
         return apps
     }
@@ -189,20 +177,17 @@ class AppIdentityResolver(context: Context) : AppIdentityReader {
     private fun findInstalledPackage(packageName: String): String? {
         if (packageName.isBlank()) return null
         return runCatching {
-                packageManager.getApplicationInfo(packageName, 0)
-                packageName
-            }
-            .getOrNull()
+            packageManager.getApplicationInfo(packageName, 0)
+            packageName
+        }.getOrNull()
     }
 
-    private fun resolveLabel(packageName: String): String =
-        labelCache.getOrPut(packageName) {
-            runCatching {
-                    val info = packageManager.getApplicationInfo(packageName, 0)
-                    packageManager.getApplicationLabel(info).toString().trim()
-                }
-                .getOrDefault(packageName)
-        }
+    private fun resolveLabel(packageName: String): String = labelCache.getOrPut(packageName) {
+        runCatching {
+            val info = packageManager.getApplicationInfo(packageName, 0)
+            packageManager.getApplicationLabel(info).toString().trim()
+        }.getOrDefault(packageName)
+    }
 
     private data class InstalledAppIdentity(
         val packageName: String,

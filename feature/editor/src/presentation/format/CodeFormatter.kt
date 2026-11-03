@@ -28,33 +28,30 @@ import org.json.JSONObject
 
 object CodeFormatter {
     private val REGEX_MULTIPLE_NEWLINES = Regex("\n{3,}")
-    fun format(content: String, language: LanguageScope): String? =
-        when (language) {
-            LanguageScope.Json -> formatJson(content)
-            LanguageScope.Yaml -> formatYaml(content)
-            LanguageScope.JavaScript,
-            LanguageScope.Text -> content
-        }
+    fun format(content: String, language: LanguageScope): String? = when (language) {
+        LanguageScope.Json -> formatJson(content)
+        LanguageScope.Yaml -> formatYaml(content)
+        LanguageScope.JavaScript,
+        LanguageScope.Text -> content
+    }
 
-    fun validate(content: String, language: LanguageScope): Boolean =
-        when (language) {
-            LanguageScope.Json -> validateJson(content)
-            LanguageScope.Yaml -> true
-            LanguageScope.JavaScript -> true
-            LanguageScope.Text -> true
-        }
+    fun validate(content: String, language: LanguageScope): Boolean = when (language) {
+        LanguageScope.Json -> validateJson(content)
+        LanguageScope.Yaml -> true
+        LanguageScope.JavaScript -> true
+        LanguageScope.Text -> true
+    }
 
-    private fun formatJson(content: String): String? =
-        try {
-            val trimmed = content.trim()
-            when {
-                trimmed.startsWith("{") -> JSONObject(trimmed).toString(2)
-                trimmed.startsWith("[") -> JSONArray(trimmed).toString(2)
-                else -> null
-            }
-        } catch (_: JSONException) {
-            null
+    private fun formatJson(content: String): String? = try {
+        val trimmed = content.trim()
+        when {
+            trimmed.startsWith("{") -> JSONObject(trimmed).toString(2)
+            trimmed.startsWith("[") -> JSONArray(trimmed).toString(2)
+            else -> null
         }
+    } catch (_: JSONException) {
+        null
+    }
 
     private fun validateJson(content: String): Boolean {
         return try {
@@ -71,10 +68,9 @@ object CodeFormatter {
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun formatYaml(content: String): String? =
-        try {
-            content.lines().map { it.trimEnd() }.joinToString("\n").replace(REGEX_MULTIPLE_NEWLINES, "\n\n")
-        } catch (_: Exception) { // fault barrier: formatter must return null instead of crashing the editor
-            null
-        }
+    private fun formatYaml(content: String): String? = try {
+        content.lines().map { it.trimEnd() }.joinToString("\n").replace(REGEX_MULTIPLE_NEWLINES, "\n\n")
+    } catch (_: Exception) { // 故障屏障：格式化程序必须返回 null 而不是让编辑器崩溃
+        null
+    }
 }

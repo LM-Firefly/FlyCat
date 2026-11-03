@@ -67,125 +67,124 @@ object HyperIslandParams {
     ): String {
         val now = System.currentTimeMillis()
         val node = currentNode?.let { formatNodeDisplay(it) } ?: FlyTxt.Service.Notification.NoNode
-        val params =
-            JSONObject().apply {
-                put("business", BUSINESS)
-                put("protocol", 1)
-                put("orderId", BUSINESS)
-                put("islandFirstFloat", promote)
-                put("enableFloat", false)
-                put("updatable", true)
-                put("outEffectSrc", "")
-                // "reopen" 会重新展示已取消的通知；存活岛的更新不能请求它，否则丢帧会以新岛形式回归。
-                put("reopen", if (promote) "reopen" else "close")
-                put("sequence", sequence.incrementAndGet())
-                put("aodTitle", profileName)
-                put(
-                    "baseInfo",
-                    JSONObject().apply {
-                        put("type", 2)
-                        put("title", profileName)
-                        // 标题下方一行：订阅用量（若有）与总流量拼接，见 HyperIsland.islandSubtitle。
-                        put("content", usageText)
-                        put("subTitle", "")
-                        put("extraTitle", "")
-                        put("specialTitle", "")
-                        put("subContent", "")
-                        put("picFunction", "")
-                        put("showDivider", true)
-                        put("showContentDivider", false)
-                        put("colorTitle", "#111111")
-                        put("colorTitleDark", "#ffffff")
-                        put("colorContent", "#333333")
-                        put("colorContentDark", "#cccccc")
-                    },
-                )
-                put(
-                    "picInfo",
-                    JSONObject().apply {
-                        put("type", 1)
-                        put("pic", "")
-                    },
-                )
-                put(
-                    "hintInfo",
-                    JSONObject().apply {
-                        put("type", 2)
-                        put("content", FlyTxt.Service.Notification.CurrentNodeLabel)
-                        put("title", node)
-                        put(
-                            "timerInfo",
-                            JSONObject().apply {
-                                put("timerType", 0)
-                                put("timerWhen", 0L)
-                                put("timerTotal", 0L)
-                                put("timerSystemCurrent", now)
-                            },
-                        )
-                        put("subContent", FlyTxt.Service.Notification.RealtimeTraffic)
-                        put("subTitle", compactText)
-                        put("colorContent", "#666666")
-                        put("colorContentDark", "#aaaaaa")
-                        put("colorTitle", "#222222")
-                        put("colorTitleDark", "#eeeeee")
-                        put("colorSubContent", "#666666")
-                        put("colorSubContentDark", "#aaaaaa")
-                        put("colorSubTitle", "#222222")
-                        put("colorSubTitleDark", "#eeeeee")
-                    },
-                )
-                put(
-                    "param_island",
-                    JSONObject().apply {
-                        put("islandProperty", 1)
-                        put("islandTimeout", ISLAND_TIMEOUT_SECONDS)
-                        put(
-                            "bigIslandArea",
-                            JSONObject().apply {
-                                put("templateNo", 2)
-                                put(
-                                    "imageTextInfoLeft",
-                                    JSONObject().apply {
-                                        put("type", 1)
-                                        put(
-                                            "textInfo",
-                                            JSONObject().apply {
-                                                put("title", profileName)
-                                                put("content", "")
-                                                put("showHighlightColor", false)
-                                                put("narrowFont", false)
-                                            },
-                                        )
-                                    },
-                                )
-                                put(
-                                    "textInfo",
-                                    JSONObject().apply {
-                                        put("frontTitle", "")
-                                        put("title", compactText)
-                                        put("content", "")
-                                        put("showHighlightColor", false)
-                                        put("narrowFont", false)
-                                    },
-                                )
-                            },
-                        )
-                        put(
-                            "smallIslandArea",
-                            JSONObject().apply {
-                                put(
-                                    "picInfo",
-                                    JSONObject().apply {
-                                        put("type", 1)
-                                        put("pic", "miui.focus.pic_small")
-                                        put("picDark", "miui.focus.pic_small_dark")
-                                    },
-                                )
-                            },
-                        )
-                    },
-                )
-            }
+        val params = JSONObject().apply {
+            put("business", BUSINESS)
+            put("protocol", 1)
+            put("orderId", BUSINESS)
+            put("islandFirstFloat", promote)
+            put("enableFloat", false)
+            put("updatable", true)
+            put("outEffectSrc", "")
+            // "reopen" 会重新展示已取消的通知；存活岛的更新不能请求它，否则丢帧会以新岛形式回归。
+            put("reopen", if (promote) "reopen" else "close")
+            put("sequence", sequence.incrementAndGet())
+            put("aodTitle", profileName)
+            put(
+                "baseInfo",
+                JSONObject().apply {
+                    put("type", 2)
+                    put("title", profileName)
+                    // 标题下方一行：订阅用量（若有）与总流量拼接，见 HyperIsland.islandSubtitle。
+                    put("content", usageText)
+                    put("subTitle", "")
+                    put("extraTitle", "")
+                    put("specialTitle", "")
+                    put("subContent", "")
+                    put("picFunction", "")
+                    put("showDivider", true)
+                    put("showContentDivider", false)
+                    put("colorTitle", "#111111")
+                    put("colorTitleDark", "#ffffff")
+                    put("colorContent", "#333333")
+                    put("colorContentDark", "#cccccc")
+                },
+            )
+            put(
+                "picInfo",
+                JSONObject().apply {
+                    put("type", 1)
+                    put("pic", "")
+                },
+            )
+            put(
+                "hintInfo",
+                JSONObject().apply {
+                    put("type", 2)
+                    put("content", FlyTxt.Service.Notification.CurrentNodeLabel)
+                    put("title", node)
+                    put(
+                        "timerInfo",
+                        JSONObject().apply {
+                            put("timerType", 0)
+                            put("timerWhen", 0L)
+                            put("timerTotal", 0L)
+                            put("timerSystemCurrent", now)
+                        },
+                    )
+                    put("subContent", FlyTxt.Service.Notification.RealtimeTraffic)
+                    put("subTitle", compactText)
+                    put("colorContent", "#666666")
+                    put("colorContentDark", "#aaaaaa")
+                    put("colorTitle", "#222222")
+                    put("colorTitleDark", "#eeeeee")
+                    put("colorSubContent", "#666666")
+                    put("colorSubContentDark", "#aaaaaa")
+                    put("colorSubTitle", "#222222")
+                    put("colorSubTitleDark", "#eeeeee")
+                },
+            )
+            put(
+                "param_island",
+                JSONObject().apply {
+                    put("islandProperty", 1)
+                    put("islandTimeout", ISLAND_TIMEOUT_SECONDS)
+                    put(
+                        "bigIslandArea",
+                        JSONObject().apply {
+                            put("templateNo", 2)
+                            put(
+                                "imageTextInfoLeft",
+                                JSONObject().apply {
+                                    put("type", 1)
+                                    put(
+                                        "textInfo",
+                                        JSONObject().apply {
+                                            put("title", profileName)
+                                            put("content", "")
+                                            put("showHighlightColor", false)
+                                            put("narrowFont", false)
+                                        },
+                                    )
+                                },
+                            )
+                            put(
+                                "textInfo",
+                                JSONObject().apply {
+                                    put("frontTitle", "")
+                                    put("title", compactText)
+                                    put("content", "")
+                                    put("showHighlightColor", false)
+                                    put("narrowFont", false)
+                                },
+                            )
+                        },
+                    )
+                    put(
+                        "smallIslandArea",
+                        JSONObject().apply {
+                            put(
+                                "picInfo",
+                                JSONObject().apply {
+                                    put("type", 1)
+                                    put("pic", "miui.focus.pic_small")
+                                    put("picDark", "miui.focus.pic_small_dark")
+                                },
+                            )
+                        },
+                    )
+                },
+            )
+        }
         return JSONObject().put("param_v2", params).toString()
     }
 }

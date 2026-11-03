@@ -24,6 +24,7 @@ package com.github.lmfirefly.flycat.feature.settings.presentation.backup
 import android.app.Application
 import android.net.Uri
 import com.github.lmfirefly.flycat.core.contract.BackupDataSource
+import com.github.lmfirefly.flycat.core.model.backup.BackupRestoreStrategy
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -38,9 +39,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.github.lmfirefly.flycat.locale.FlyTxt
 
-data class BackupRestoreUiState(
-    val isBusy: Boolean = false,
-)
+data class BackupRestoreUiState(val isBusy: Boolean = false)
 
 sealed interface BackupRestoreEvent {
     data class Message(val text: String) : BackupRestoreEvent
@@ -67,10 +66,10 @@ class BackupRestoreViewModel(
         }
     }
 
-    fun restoreBackup(uri: Uri) {
+    fun restoreBackup(uri: Uri, strategy: BackupRestoreStrategy = BackupRestoreStrategy.Overwrite) {
         launchBusy {
             application.contentResolver.openInputStream(uri)?.use { input ->
-                repository.restoreBackup(input)
+                repository.restoreBackup(input, strategy)
             } ?: error("Failed to open input stream")
             _events.emit(BackupRestoreEvent.RestoreSuccess)
         }
@@ -84,10 +83,10 @@ class BackupRestoreViewModel(
         }
     }
 
-    fun restoreBackupFromFile(file: java.io.File) {
+    fun restoreBackupFromFile(file: java.io.File, strategy: BackupRestoreStrategy = BackupRestoreStrategy.Overwrite) {
         launchBusy {
             file.inputStream().use { input ->
-                repository.restoreBackup(input)
+                repository.restoreBackup(input, strategy)
             }
             _events.emit(BackupRestoreEvent.RestoreSuccess)
         }

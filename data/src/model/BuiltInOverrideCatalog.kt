@@ -44,37 +44,36 @@ class BuiltInOverrideDefinition(
 object BuiltInOverrideCatalog {
     private const val ASSET_DIR = "overrides/builtin"
 
-    val all: List<BuiltInOverrideDefinition> =
-        listOf(
-            BuiltInOverrideDefinition(
-                id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}prevent-dns-leak",
-                assetPath = "$ASSET_DIR/prevent_dns_leak.js",
-                contentType = OverrideContentType.JavaScript,
-                nameProvider = { FlyTxt.Override.BuiltIn.PreventDnsLeak },
-                description = "JavaScript",
-            ),
-            BuiltInOverrideDefinition(
-                id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}add-direct-rules",
-                assetPath = "$ASSET_DIR/add_direct_rules.yaml",
-                contentType = OverrideContentType.Yaml,
-                nameProvider = { FlyTxt.Override.BuiltIn.AddDirectRules },
-                description = "YAML",
-            ),
-            BuiltInOverrideDefinition(
-                id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}pudding-dog",
-                assetPath = "$ASSET_DIR/pudding_dog.yaml",
-                contentType = OverrideContentType.Yaml,
-                nameProvider = { FlyTxt.Override.BuiltIn.PuddingDog },
-                description = "YAML",
-            ),
-            BuiltInOverrideDefinition(
-                id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}acl4ssr-online-full",
-                assetPath = "$ASSET_DIR/acl4ssr_online_full.yaml",
-                contentType = OverrideContentType.Yaml,
-                nameProvider = { FlyTxt.Override.BuiltIn.Acl4ssrOnlineFull },
-                description = "YAML",
-            ),
-        )
+    val all: List<BuiltInOverrideDefinition> = listOf(
+        BuiltInOverrideDefinition(
+            id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}prevent-dns-leak",
+            assetPath = "$ASSET_DIR/prevent_dns_leak.js",
+            contentType = OverrideContentType.JavaScript,
+            nameProvider = { FlyTxt.Override.BuiltIn.PreventDnsLeak },
+            description = "JavaScript",
+        ),
+        BuiltInOverrideDefinition(
+            id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}add-direct-rules",
+            assetPath = "$ASSET_DIR/add_direct_rules.yaml",
+            contentType = OverrideContentType.Yaml,
+            nameProvider = { FlyTxt.Override.BuiltIn.AddDirectRules },
+            description = "YAML",
+        ),
+        BuiltInOverrideDefinition(
+            id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}pudding-dog",
+            assetPath = "$ASSET_DIR/pudding_dog.yaml",
+            contentType = OverrideContentType.Yaml,
+            nameProvider = { FlyTxt.Override.BuiltIn.PuddingDog },
+            description = "YAML",
+        ),
+        BuiltInOverrideDefinition(
+            id = "${OverrideInternalConstants.BUILTIN_OVERRIDE_PREFIX}acl4ssr-online-full",
+            assetPath = "$ASSET_DIR/acl4ssr_online_full.yaml",
+            contentType = OverrideContentType.Yaml,
+            nameProvider = { FlyTxt.Override.BuiltIn.Acl4ssrOnlineFull },
+            description = "YAML",
+        ),
+    )
 
     fun find(id: String): BuiltInOverrideDefinition? = all.firstOrNull { it.id == id }
 

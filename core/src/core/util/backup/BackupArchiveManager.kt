@@ -33,12 +33,11 @@ import java.util.zip.ZipOutputStream
 import kotlinx.serialization.json.Json
 
 class BackupArchiveManager(
-    private val json: Json =
-        Json {
-            ignoreUnknownKeys = true
-            encodeDefaults = true
-            prettyPrint = true
-        }
+    private val json: Json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        prettyPrint = true
+    }
 ) {
     data class BackupFiles(
         val importedDir: File,
@@ -114,8 +113,7 @@ class BackupArchiveManager(
         require(manifestFile.isFile) { "Backup manifest is missing" }
         require(payloadFile.isFile) { "Backup payload is missing" }
 
-        val manifest =
-            json.decodeFromString(BackupManifest.serializer(), manifestFile.readText())
+        val manifest = json.decodeFromString(BackupManifest.serializer(), manifestFile.readText())
         require(manifest.formatVersion <= BACKUP_FORMAT_VERSION) {
             "Backup format ${manifest.formatVersion} is newer than this app supports"
         }

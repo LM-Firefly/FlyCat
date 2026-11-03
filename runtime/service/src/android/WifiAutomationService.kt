@@ -70,12 +70,11 @@ class WifiAutomationService : Service(), KoinComponent {
     private val profileRepository: ProfileRepositoryContract by inject()
     private var observer: WifiSsidObserver? = null
     private var applyJob: Job? = null
-    private val runtimeEventsReceiver =
-        object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == Intents.actionClashStarted(packageName)) observer?.refresh()
-            }
+    private val runtimeEventsReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intents.actionClashStarted(packageName)) observer?.refresh()
         }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -115,11 +114,10 @@ class WifiAutomationService : Service(), KoinComponent {
 
     private fun onSsidObservation(observation: WifiSsidObservation) {
         applyJob?.cancel()
-        applyJob =
-            serviceScope.launch {
-                delay(RULE_STABILIZATION_MILLIS)
-                applyRule(observation)
-            }
+        applyJob = serviceScope.launch {
+            delay(RULE_STABILIZATION_MILLIS)
+            applyRule(observation)
+        }
     }
 
     private suspend fun applyRule(observation: WifiSsidObservation) {
@@ -128,8 +126,7 @@ class WifiAutomationService : Service(), KoinComponent {
 
         when (observation) {
             is WifiSsidObservation.Connected -> {
-                val rule =
-                    settings.wifiAutomationRules.value.firstOrNull { it.ssid == observation.ssid }
+                val rule = settings.wifiAutomationRules.value.firstOrNull { it.ssid == observation.ssid }
                 if (rule == null) {
                     applyFallbackAction(
                         settings.wifiAutomationOtherWifiAction.value,
@@ -213,13 +210,12 @@ class WifiAutomationService : Service(), KoinComponent {
                 )
             )
         }
-        val notification =
-            NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_logo_service)
-                .setContentTitle(getString(R.string.wifi_automation_notification_title))
-                .setContentText(getString(R.string.wifi_automation_notification_text))
-                .setOngoing(true)
-                .build()
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_logo_service)
+            .setContentTitle(getString(R.string.wifi_automation_notification_title))
+            .setContentText(getString(R.string.wifi_automation_notification_text))
+            .setOngoing(true)
+            .build()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
                 NOTIFICATION_ID,
@@ -240,8 +236,7 @@ class WifiAutomationService : Service(), KoinComponent {
             val appContext = context.applicationContext
             runCatching {
                 appContext.startForegroundService(Intent(appContext, WifiAutomationService::class.java))
-            }
-                .onFailure { error -> Timber.w(error, "Start Wi-Fi automation service failed") }
+            }.onFailure { error -> Timber.w(error, "Start Wi-Fi automation service failed") }
         }
 
         fun stop(context: Context) {

@@ -36,25 +36,23 @@ internal object ProxyRuntimeOwnership {
     fun detectOwner(
         rootStatus: RootTunStatus,
         isLocalSessionActive: (RunMode) -> Boolean,
-    ): RuntimeOwner =
-        rootStatus.detectRuntimeOwner(isLocalSessionActive)
+    ): RuntimeOwner = rootStatus.detectRuntimeOwner(isLocalSessionActive)
 
     fun startingSnapshot(
         owner: RuntimeOwner,
         targetMode: RunMode,
         profile: Profile,
         generation: Long,
-    ): RuntimeSnapshot =
-        RuntimeSnapshot(
-            owner = owner,
-            phase = RuntimePhase.Starting,
-            targetMode = targetMode.toRuntimeTargetMode(),
-            profileReady = true,
-            profileUuid = profile.uuid.toString(),
-            profileName = profile.name,
-            startedAt = System.currentTimeMillis(),
-            generation = generation,
-        )
+    ): RuntimeSnapshot = RuntimeSnapshot(
+        owner = owner,
+        phase = RuntimePhase.Starting,
+        targetMode = targetMode.toRuntimeTargetMode(),
+        profileReady = true,
+        profileUuid = profile.uuid.toString(),
+        profileName = profile.name,
+        startedAt = System.currentTimeMillis(),
+        generation = generation,
+    )
 
     fun activeSnapshot(
         owner: RuntimeOwner,
@@ -62,54 +60,48 @@ internal object ProxyRuntimeOwnership {
         rootStatus: RootTunStatus,
         localPhase: LocalRuntimePhase = LocalRuntimePhase.Idle,
         localStartedAt: Long? = null,
-    ): RuntimeSnapshot =
-        RuntimeSnapshot(
-            owner = owner,
-            phase =
-                when (owner) {
-                    RuntimeOwner.LocalTun -> localPhase.toRuntimePhase()
-                    RuntimeOwner.RootTun -> rootStatus.state
-                    RuntimeOwner.RemoteController -> RuntimePhase.Running
-                    RuntimeOwner.None -> RuntimePhase.Idle
-                },
-            targetMode = modeForOwner(owner, configuredMode).toRuntimeTargetMode(),
-            profileReady = owner == RuntimeOwner.RootTun && !rootStatus.profileUuid.isNullOrBlank(),
-            profileUuid = rootStatus.profileUuid.takeIf { owner == RuntimeOwner.RootTun },
-            profileName = rootStatus.profileName.takeIf { owner == RuntimeOwner.RootTun },
-            lastError = if (owner == RuntimeOwner.RootTun) rootStatus.lastError else null,
-            startedAt =
-                when (owner) {
-                    RuntimeOwner.LocalTun -> localStartedAt
-                    RuntimeOwner.RootTun -> rootStatus.startedAt
-                    RuntimeOwner.RemoteController -> null
-                    RuntimeOwner.None -> null
-                },
-        )
+    ): RuntimeSnapshot = RuntimeSnapshot(
+        owner = owner,
+        phase = when (owner) {
+            RuntimeOwner.LocalTun -> localPhase.toRuntimePhase()
+            RuntimeOwner.RootTun -> rootStatus.state
+            RuntimeOwner.RemoteController -> RuntimePhase.Running
+            RuntimeOwner.None -> RuntimePhase.Idle
+        },
+        targetMode = modeForOwner(owner, configuredMode).toRuntimeTargetMode(),
+        profileReady = owner == RuntimeOwner.RootTun && !rootStatus.profileUuid.isNullOrBlank(),
+        profileUuid = rootStatus.profileUuid.takeIf { owner == RuntimeOwner.RootTun },
+        profileName = rootStatus.profileName.takeIf { owner == RuntimeOwner.RootTun },
+        lastError = if (owner == RuntimeOwner.RootTun) rootStatus.lastError else null,
+        startedAt = when (owner) {
+            RuntimeOwner.LocalTun -> localStartedAt
+            RuntimeOwner.RootTun -> rootStatus.startedAt
+            RuntimeOwner.RemoteController -> null
+            RuntimeOwner.None -> null
+        },
+    )
 
     fun startedSnapshot(
         current: RuntimeSnapshot,
         owner: RuntimeOwner,
         configuredMode: RunMode,
-    ): RuntimeSnapshot =
-        current.copy(
-            owner = owner,
-            phase = RuntimePhase.Running,
-            targetMode = modeForOwner(owner, configuredMode).toRuntimeTargetMode(),
-            lastError = null,
-        )
+    ): RuntimeSnapshot = current.copy(
+        owner = owner,
+        phase = RuntimePhase.Running,
+        targetMode = modeForOwner(owner, configuredMode).toRuntimeTargetMode(),
+        lastError = null,
+    )
 
-    fun ownerForMode(mode: RunMode): RuntimeOwner =
-        when (mode) {
-            RunMode.VpnService -> RuntimeOwner.LocalTun
-            RunMode.Tun -> RuntimeOwner.RootTun
-            RunMode.Ebpf -> RuntimeOwner.RootTun // eBPF shares root daemon path
-        }
+    fun ownerForMode(mode: RunMode): RuntimeOwner = when (mode) {
+        RunMode.VpnService -> RuntimeOwner.LocalTun
+        RunMode.Tun -> RuntimeOwner.RootTun
+        RunMode.Ebpf -> RuntimeOwner.RootTun // eBPF 共享根守护进程路径
+    }
 
-    fun modeForOwner(owner: RuntimeOwner, configuredMode: RunMode): RunMode =
-        when (owner) {
-            RuntimeOwner.LocalTun -> RunMode.VpnService
-            RuntimeOwner.RootTun -> configuredMode
-            RuntimeOwner.RemoteController -> configuredMode
-            RuntimeOwner.None -> configuredMode
-        }
+    fun modeForOwner(owner: RuntimeOwner, configuredMode: RunMode): RunMode = when (owner) {
+        RuntimeOwner.LocalTun -> RunMode.VpnService
+        RuntimeOwner.RootTun -> configuredMode
+        RuntimeOwner.RemoteController -> configuredMode
+        RuntimeOwner.None -> configuredMode
+    }
 }

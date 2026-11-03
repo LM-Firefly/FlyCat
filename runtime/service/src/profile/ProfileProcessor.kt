@@ -105,12 +105,10 @@ object ProfileProcessor {
         withContext(Dispatchers.IO + NonCancellable) {
             processLock.withLock {
                 val targetDir = context.importedDir.resolve(uuid.toString())
-                val stagingDir =
-                    context.noBackupFilesDir.resolve("profile-staging").resolve(uuid.toString())
+                val stagingDir = context.noBackupFilesDir.resolve("profile-staging").resolve(uuid.toString())
                 val snapshot = profileLock.withLock {
-                    val imported =
-                        ImportedDao.queryByUUID(uuid)
-                            ?: throw IllegalArgumentException("profile $uuid not found")
+                    val imported = ImportedDao.queryByUUID(uuid)
+                        ?: throw IllegalArgumentException("profile $uuid not found")
 
                     stagingDir.deleteRecursively()
                     stagingDir.mkdirs()
@@ -167,32 +165,30 @@ object ProfileProcessor {
                             moveDirectory(stagingDir, targetDir)
                             backupDir.deleteRecursively()
 
-                            val finalName =
-                                if (snapshot.imported.type == Profile.Type.Url) {
-                                    resolveSubscriptionName(
-                                        snapshot.imported.name,
-                                        snapshot.imported.source,
-                                        subInfo,
-                                    )
-                                } else {
-                                    snapshot.imported.name
-                                }
-
-                            val updated =
-                                Imported(
-                                    snapshot.imported.uuid,
-                                    finalName,
-                                    snapshot.imported.type,
+                            val finalName = if (snapshot.imported.type == Profile.Type.Url) {
+                                resolveSubscriptionName(
+                                    snapshot.imported.name,
                                     snapshot.imported.source,
-                                    subInfo?.updateInterval ?: snapshot.imported.interval,
-                                    subInfo?.upload ?: snapshot.imported.upload,
-                                    subInfo?.download ?: snapshot.imported.download,
-                                    subInfo?.total ?: snapshot.imported.total,
-                                    subInfo?.expire ?: snapshot.imported.expire,
-                                    snapshot.imported.createdAt,
-                                    ageSecretKey = snapshot.imported.ageSecretKey,
-                                    updatedAt = System.currentTimeMillis(),
+                                    subInfo,
                                 )
+                            } else {
+                                snapshot.imported.name
+                            }
+
+                            val updated = Imported(
+                                snapshot.imported.uuid,
+                                finalName,
+                                snapshot.imported.type,
+                                snapshot.imported.source,
+                                subInfo?.updateInterval ?: snapshot.imported.interval,
+                                subInfo?.upload ?: snapshot.imported.upload,
+                                subInfo?.download ?: snapshot.imported.download,
+                                subInfo?.total ?: snapshot.imported.total,
+                                subInfo?.expire ?: snapshot.imported.expire,
+                                snapshot.imported.createdAt,
+                                ageSecretKey = snapshot.imported.ageSecretKey,
+                                updatedAt = System.currentTimeMillis(),
+                            )
                             ImportedDao.update(updated)
                             AutoUpdate.reschedule(context)
                             context.sendProfileChanged(snapshot.imported.uuid)
@@ -201,18 +197,14 @@ object ProfileProcessor {
                 } catch (error: Exception) {
                     // fault barrier: core fetch runs through the JNI bridge; roll back the staged update atomically, then rethrow (with a friendlier message for age errors).
                     profileLock.withLock {
-                        if (
-                            !snapshot.hasCommittedConfig &&
-                                ImportedDao.exists(snapshot.imported.uuid)
-                        ) {
+                        if (!snapshot.hasCommittedConfig && ImportedDao.exists(snapshot.imported.uuid)) {
                             ImportedDao.remove(snapshot.imported.uuid)
                             SelectionDao.clear(snapshot.imported.uuid)
                             targetDir.deleteRecursively()
                             context.sendProfileChanged(snapshot.imported.uuid)
                         } else if (ImportedDao.exists(snapshot.imported.uuid)) {
                             // Restore from .bak if atomic swap left orphaned backup
-                            val backupDir =
-                                context.importedDir.resolve("${uuid}.bak")
+                            val backupDir = context.importedDir.resolve("${uuid}.bak")
                             if (backupDir.exists() && !targetDir.exists()) {
                                 moveDirectory(backupDir, targetDir)
                             }
@@ -302,11 +294,10 @@ object ProfileProcessor {
             }
             val periodSeconds = profiles.minOf { it.interval }
             val request = PeriodicWorkRequestBuilder<ProfileAutoUpdateWorker>(
-                    repeatInterval = periodSeconds,
-                    repeatIntervalTimeUnit = TimeUnit.SECONDS,
-                ).setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).addTag(WORK_TAG).build()
-            val policy =
-                if (reanchor) ExistingPeriodicWorkPolicy.UPDATE else ExistingPeriodicWorkPolicy.KEEP
+                repeatInterval = periodSeconds,
+                repeatIntervalTimeUnit = TimeUnit.SECONDS,
+            ).setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).addTag(WORK_TAG).build()
+            val policy = if (reanchor) ExistingPeriodicWorkPolicy.UPDATE else ExistingPeriodicWorkPolicy.KEEP
             workManager.enqueueUniquePeriodicWork(WORK_NAME, policy, request)
             Timber.tag(TAG).i("Scheduled auto-update for ${profiles.size} profiles every ${periodSeconds}s ($policy)")
         }

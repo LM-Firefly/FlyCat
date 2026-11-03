@@ -40,7 +40,7 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 
 /**
  * Root Tun "service config" sub-page. Root provisions the virtual network interface and routing.
@@ -52,18 +52,16 @@ fun TunServiceOptionsScreen(navigator: Navigator) {
     val viewModel = koinViewModel<NetworkSettingsViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val rootTunServiceOptionsUiState by viewModel.rootTunServiceOptionsUiState.collectAsStateWithLifecycle()
+    val commonActions = remember(viewModel) {
+        CommonTunOptionActions(
+            onBypassPrivateNetworkChange = viewModel::onBypassPrivateNetworkChange,
+            onDnsHijackChange = viewModel::onDnsHijackChange,
+            onEnableIPv6Change = viewModel::onEnableIPv6Change,
+            onTunStackChange = viewModel::onTunStackChange,
+        )
+    }
 
-    val commonActions =
-        remember(viewModel) {
-            CommonTunOptionActions(
-                onBypassPrivateNetworkChange = viewModel::onBypassPrivateNetworkChange,
-                onDnsHijackChange = viewModel::onDnsHijackChange,
-                onEnableIPv6Change = viewModel::onEnableIPv6Change,
-                onTunStackChange = viewModel::onTunStackChange,
-            )
-        }
-
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = FlyTxt.NetworkSettings.RunMode.TunTitle,

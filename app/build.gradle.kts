@@ -425,8 +425,6 @@ dependencies {
     implementation(libs.miuix.preference)
     implementation(libs.miuix.icons)
     implementation(libs.miuix.blur.android)
-    implementation(libs.haze)
-    implementation(libs.haze.blur)
     implementation(libs.decompose)
     implementation(libs.decompose.extensions.compose)
 

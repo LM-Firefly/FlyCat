@@ -36,15 +36,13 @@ class ProvidersController(
     private val queryProvidersAction: suspend () -> List<Provider>,
     private val updateProviderAction: suspend (Provider.Type, String) -> Unit,
 ) : ProvidersRepository {
-    override suspend fun queryProviders(): Result<List<Provider>> =
-        try {
-            Result.success(queryProvidersAction())
-        } catch (error: Exception) { // fault barrier: injected bridge action may fail arbitrarily
-            Result.failure(error)
-        }
+    override suspend fun queryProviders(): Result<List<Provider>> = try {
+        Result.success(queryProvidersAction())
+    } catch (error: Exception) { // 故障屏障：注入的桥接操作可能任意失败
+        Result.failure(error)
+    }
 
-    override suspend fun updateProvider(provider: Provider): Result<Unit> =
-        updateProviderInternal(provider.type, provider.name)
+    override suspend fun updateProvider(provider: Provider): Result<Unit> = updateProviderInternal(provider.type, provider.name)
 
     override suspend fun updateAllProviders(providers: List<Provider>): Result<UpdateProvidersResult> {
         if (providers.isEmpty()) return Result.success(UpdateProvidersResult(emptyList()))
@@ -70,9 +68,7 @@ class ProvidersController(
         return withContext(Dispatchers.IO) {
             try {
                 val targetFile = buildTargetFile(provider)
-                val inputStream =
-                    context.contentResolver.openInputStream(uri)
-                        ?: return@withContext Result.failure(IllegalStateException(FlyTxt.Providers.Message.CannotReadFile.format(uri)))
+                val inputStream = context.contentResolver.openInputStream(uri) ?: return@withContext Result.failure(IllegalStateException(FlyTxt.Providers.Message.CannotReadFile.format(uri)))
 
                 inputStream.use { input ->
                     val size = input.available().toLong()
@@ -86,20 +82,19 @@ class ProvidersController(
                 }
 
                 Result.success(Unit)
-            } catch (error: Exception) { // fault barrier: IO and path-validation failures both become Result.failure
+            } catch (error: Exception) { // 故障屏障：IO 和路径验证失败均变为 Result.failure
                 Result.failure(error)
             }
         }
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun updateProviderInternal(type: Provider.Type, name: String): Result<Unit> =
-        try {
-            updateProviderAction(type, name)
-            Result.success(Unit)
-        } catch (error: Exception) { // fault barrier: injected bridge action may fail arbitrarily
-            Result.failure(error)
-        }
+    private suspend fun updateProviderInternal(type: Provider.Type, name: String): Result<Unit> = try {
+        updateProviderAction(type, name)
+        Result.success(Unit)
+    } catch (error: Exception) { // 故障屏障：注入的桥接操作可能任意失败
+        Result.failure(error)
+    }
 
     private fun buildTargetFile(provider: Provider): File {
         if (provider.path.isBlank()) {
@@ -107,12 +102,7 @@ class ProvidersController(
         }
         val targetFile = File(provider.path).canonicalFile
         val importedRoot = context.filesDir.resolve("imported").canonicalFile
-        val inImportedProviders =
-            targetFile.toPath().startsWith(importedRoot.toPath()) &&
-                targetFile
-                    .toRelativeString(importedRoot)
-                    .replace('\\', '/')
-                    .matches(REGEX_PROVIDER_PATH)
+        val inImportedProviders = targetFile.toPath().startsWith(importedRoot.toPath()) && targetFile.toRelativeString(importedRoot).replace('\\', '/').matches(REGEX_PROVIDER_PATH)
         if (!inImportedProviders) {
             throw IllegalStateException(
                 "Provider path must live under profile provider directories: ${provider.path}"

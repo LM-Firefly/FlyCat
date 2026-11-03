@@ -212,12 +212,12 @@ object PrivilegeManager {
     internal suspend fun awaitPairingPort(): Int? = suspendCancellableCoroutine { continuation ->
         discoverPairingPort { port -> if (continuation.isActive) continuation.resume(port) }
     }
-    /** 经 Privileged Server 转发 connectivity binder 事务（调用身份为服务端的 shell/root）。 */
+    /** 经 Privileged Server 转发 connectivity binder 事务（调用身份为服务端的 shell/root）；服务名优先在应用进程解析，失败则改由服务端解析。 */
     suspend fun setPackageNetworkingBlocked(uid: Int, blocked: Boolean): Boolean {
-        val connectivity = PrivilegeBinderWrapper.fromSystemService("connectivity")
+        val connectivity = PrivilegeBinderWrapper.fromSystemService(serviceName = "connectivity", source = PrivilegeSystemServiceSource.CURRENT_PROCESS,)
             ?: PrivilegeBinderWrapper.fromSystemService(
                 serviceName = "connectivity",
-                source = PrivilegeSystemServiceSource.SERVER_PROCESS,
+                source = PrivilegeSystemServiceSource.REMOTE_PROCESS,
             )
             ?: run {
                 Log.e(TAG, "connectivity service is not available")

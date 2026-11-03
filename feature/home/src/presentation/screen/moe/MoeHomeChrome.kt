@@ -94,67 +94,55 @@ internal fun MoeSidebarDecoration(
     val spacing = AppTheme.spacing
     val surface = MiuixTheme.colorScheme.surface
     val isDarkSurface = surface.luminance() < 0.5f
-    val glassBase =
-        if (isDarkSurface) {
-            Color.Black.copy(alpha = 0.24f)
-        } else {
-            surface.copy(alpha = 0.13f)
-        }
+    val glassBase = if (isDarkSurface) {
+        Color.Black.copy(alpha = 0.24f)
+    } else {
+        surface.copy(alpha = 0.13f)
+    }
     val glassTint = Color.Black.copy(alpha = 0.10f)
-    val glassGradientStart =
-        if (isDarkSurface) {
-            Color.Black.copy(alpha = 0.36f)
-        } else {
-            surface.copy(alpha = 0.23f)
-        }
-    val glassGradientEnd =
-        if (isDarkSurface) {
-            surface.copy(alpha = 0.18f)
-        } else {
-            surface.copy(alpha = 0.16f)
-        }
+    val glassGradientStart = if (isDarkSurface) {
+        Color.Black.copy(alpha = 0.36f)
+    } else {
+        surface.copy(alpha = 0.23f)
+    }
+    val glassGradientEnd = if (isDarkSurface) {
+        surface.copy(alpha = 0.18f)
+    } else {
+        surface.copy(alpha = 0.16f)
+    }
     val clampedBlurProgress = blurProgress.coerceIn(0f, 1f)
     val blurRadiusPx = lerpFloat(30f, 52f, clampedBlurProgress)
-    val blurColors =
-        BlurDefaults.blurColors(
-            blendColors =
-                listOf(
-                    BlendColorEntry(color = glassBase, mode = BlurBlendMode.SrcOver),
-                    BlendColorEntry(color = glassTint, mode = BlurBlendMode.SrcOver),
-                ),
-            saturation = if (isDarkSurface) 1.06f else 1.02f,
-            contrast = if (isDarkSurface) 1.08f else 1.10f,
-            brightness = if (isDarkSurface) 0.00f else -0.05f,
+    val blurColors = BlurDefaults.blurColors(
+        blendColors = listOf(
+            BlendColorEntry(color = glassBase, mode = BlurBlendMode.SrcOver),
+            BlendColorEntry(color = glassTint, mode = BlurBlendMode.SrcOver),
+        ),
+        saturation = if (isDarkSurface) 1.06f else 1.02f,
+        contrast = if (isDarkSurface) 1.08f else 1.10f,
+        brightness = if (isDarkSurface) 0.00f else -0.05f,
+    )
+    val blurModifier = if (blurEnabled) {
+        Modifier.textureBlur(
+            backdrop = backdrop,
+            shape = RectangleShape,
+            blurRadius = blurRadiusPx,
+            noiseCoefficient = 0f,
+            colors = blurColors,
+            enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
         )
-    val blurModifier =
-        if (blurEnabled) {
-            Modifier.textureBlur(
-                backdrop = backdrop,
-                shape = RectangleShape,
-                blurRadius = blurRadiusPx,
-                noiseCoefficient = 0f,
-                colors = blurColors,
-                enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
-            )
-        } else {
-            Modifier
-        }
+    } else {
+        Modifier
+    }
 
     Box(
-        modifier =
-            modifier
-                .then(blurModifier)
-                .background(
-                    brush =
-                        Brush.horizontalGradient(
-                            colors = listOf(glassGradientStart, glassGradientEnd)
-                        ),
-                    shape = RectangleShape,
-                )
-                .padding(
-                    horizontal = 0.dp,
-                    vertical = spacing.space24,
-                ),
+        modifier = modifier.then(blurModifier).background(
+            brush = Brush.horizontalGradient(colors = listOf(glassGradientStart, glassGradientEnd)),
+            shape = RectangleShape,
+        )
+        .padding(
+            horizontal = 0.dp,
+            vertical = spacing.space24,
+        ),
         content = content,
     )
 }
@@ -187,8 +175,7 @@ internal fun MoeSidebarContent(
 private const val MOE_LAUNCH_TEXT_SLIDE_DURATION = 450
 private const val MOE_LAUNCH_TEXT_TRANSIENT_DELAY = 220L
 
-private fun HomeProxyControlState.isMoeLaunchTransientState(): Boolean =
-    this == HomeProxyControlState.Connecting || this == HomeProxyControlState.Disconnecting
+private fun HomeProxyControlState.isMoeLaunchTransientState(): Boolean = this == HomeProxyControlState.Connecting || this == HomeProxyControlState.Disconnecting
 
 @Composable
 internal fun MoeLaunchControls(
@@ -228,41 +215,39 @@ private fun moeLaunchButtonBorderColor(): Color {
 private fun MoeLaunchConfigButton(surfaceColor: Color, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val pressScale by
-        animateFloatAsState(
-            targetValue = if (isPressed) MoeUi.Button.pressedScale else 1f,
-            animationSpec = spring(dampingRatio = 0.42f, stiffness = 520f),
-            label = "moe_launch_config_button_press_scale",
-        )
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) MoeUi.Button.pressedScale else 1f,
+        animationSpec = spring(dampingRatio = 0.42f, stiffness = 520f),
+        label = "moe_launch_config_button_press_scale",
+    )
     val contentColor = MiuixTheme.colorScheme.onBackground.copy(alpha = 0.62f)
     val borderColor = moeLaunchButtonBorderColor()
 
     Box(
-        modifier =
-            Modifier.graphicsLayer {
-                    scaleX = pressScale
-                    scaleY = pressScale
-                }
-                .size(MoeUi.Button.circleSize)
-                .shadow(
-                    elevation = MoeUi.Button.shadowElevation,
-                    shape = MoeUi.Shape.launchButton,
-                    clip = false,
-                    ambientColor = Color.Black.copy(alpha = 0.04f),
-                    spotColor = Color.Black.copy(alpha = 0.08f),
-                )
-                .clip(MoeUi.Shape.launchButton)
-                .background(surfaceColor, MoeUi.Shape.launchButton)
-                .border(
-                    width = MoeUi.Button.borderWidth,
-                    color = borderColor,
-                    shape = MoeUi.Shape.launchButton,
-                )
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = onClick,
-                ),
+        modifier = Modifier.graphicsLayer {
+            scaleX = pressScale
+            scaleY = pressScale
+        }
+        .size(MoeUi.Button.circleSize)
+        .shadow(
+            elevation = MoeUi.Button.shadowElevation,
+            shape = MoeUi.Shape.launchButton,
+            clip = false,
+            ambientColor = Color.Black.copy(alpha = 0.04f),
+            spotColor = Color.Black.copy(alpha = 0.08f),
+        )
+        .clip(MoeUi.Shape.launchButton)
+        .background(surfaceColor, MoeUi.Shape.launchButton)
+        .border(
+            width = MoeUi.Button.borderWidth,
+            color = borderColor,
+            shape = MoeUi.Shape.launchButton,
+        )
+        .clickable(
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = onClick,
+        ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -286,29 +271,25 @@ internal fun MoeLaunchButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val isRunning = controlState == HomeProxyControlState.Running
-    val contentColor =
-        MiuixTheme.colorScheme.onBackground.copy(alpha = if (enabled) 0.72f else 0.34f)
+    val contentColor = MiuixTheme.colorScheme.onBackground.copy(alpha = if (enabled) 0.72f else 0.34f)
     val borderColor = moeLaunchButtonBorderColor()
-    val pressScale by
-        animateFloatAsState(
-            targetValue = if (isPressed && enabled) MoeUi.Button.pressedScale else 1f,
-            animationSpec = spring(dampingRatio = 0.42f, stiffness = 520f),
-            label = "moe_launch_button_press_scale",
-        )
-    val targetLabel =
-        when {
-            isRemoteController && isRunning -> FlyTxt.Home.Status.Running
-            !enabled && controlState == HomeProxyControlState.Idle -> FlyTxt.Home.Traffic.NoProfile
-            else ->
-                when (controlState) {
-                    HomeProxyControlState.Idle -> FlyTxt.Home.Control.Start
-                    HomeProxyControlState.Connecting -> FlyTxt.Home.Status.Connecting
-                    HomeProxyControlState.Running ->
-                        if (isRemoteController) FlyTxt.Home.Status.Running else FlyTxt.Home.Control.Stop
-                    HomeProxyControlState.Lost -> FlyTxt.Home.Status.Lost
-                    HomeProxyControlState.Disconnecting -> FlyTxt.Home.Status.Disconnecting
-                }
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed && enabled) MoeUi.Button.pressedScale else 1f,
+        animationSpec = spring(dampingRatio = 0.42f, stiffness = 520f),
+        label = "moe_launch_button_press_scale",
+    )
+    val targetLabel = when {
+        isRemoteController && isRunning -> FlyTxt.Home.Status.Running
+        !enabled && controlState == HomeProxyControlState.Idle -> FlyTxt.Home.Traffic.NoProfile
+        else ->
+        when (controlState) {
+            HomeProxyControlState.Idle -> FlyTxt.Home.Control.Start
+            HomeProxyControlState.Connecting -> FlyTxt.Home.Status.Connecting
+            HomeProxyControlState.Running -> if (isRemoteController) FlyTxt.Home.Status.Running else FlyTxt.Home.Control.Stop
+            HomeProxyControlState.Lost -> FlyTxt.Home.Status.Lost
+            HomeProxyControlState.Disconnecting -> FlyTxt.Home.Status.Disconnecting
         }
+    }
     var displayedLabel by remember { mutableStateOf(targetLabel) }
 
     LaunchedEffect(targetLabel, controlState) {
@@ -320,37 +301,36 @@ internal fun MoeLaunchButton(
     }
 
     Box(
-        modifier =
-            modifier.graphicsLayer {
-                    scaleX = pressScale
-                    scaleY = pressScale
-                }
-                .fillMaxWidth()
-                .shadow(
-                    elevation = MoeUi.Button.shadowElevation,
-                    shape = MoeUi.Shape.launchButton,
-                    clip = false,
-                    ambientColor = Color.Black.copy(alpha = 0.04f),
-                    spotColor = Color.Black.copy(alpha = 0.08f),
-                )
-                .height(MoeUi.Button.height)
-                .clip(MoeUi.Shape.launchButton)
-                .background(surfaceColor, MoeUi.Shape.launchButton)
-                .border(
-                    width = MoeUi.Button.borderWidth,
-                    color = borderColor,
-                    shape = MoeUi.Shape.launchButton,
-                )
-                .clickable(
-                    enabled = enabled,
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = onClick,
-                )
-                .padding(
-                    horizontal = MoeUi.Button.horizontalPadding,
-                    vertical = MoeUi.Button.verticalPadding,
-                )
+        modifier = modifier.graphicsLayer {
+            scaleX = pressScale
+            scaleY = pressScale
+        }
+        .fillMaxWidth()
+        .shadow(
+            elevation = MoeUi.Button.shadowElevation,
+            shape = MoeUi.Shape.launchButton,
+            clip = false,
+            ambientColor = Color.Black.copy(alpha = 0.04f),
+            spotColor = Color.Black.copy(alpha = 0.08f),
+        )
+        .height(MoeUi.Button.height)
+        .clip(MoeUi.Shape.launchButton)
+        .background(surfaceColor, MoeUi.Shape.launchButton)
+        .border(
+            width = MoeUi.Button.borderWidth,
+            color = borderColor,
+            shape = MoeUi.Shape.launchButton,
+        )
+        .clickable(
+            enabled = enabled,
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = onClick,
+        )
+        .padding(
+            horizontal = MoeUi.Button.horizontalPadding,
+            vertical = MoeUi.Button.verticalPadding,
+        )
     ) {
         Box(
             modifier = Modifier.align(Alignment.Center).height(22.dp).clipToBounds(),
@@ -360,15 +340,14 @@ internal fun MoeLaunchButton(
                 targetState = displayedLabel,
                 transitionSpec = {
                     // 同一时长同一缓动、无延迟：新旧文本锁成一列同步上移，呈整体平移感
-                    val slideSpec =
-                        tween<IntOffset>(
-                            durationMillis = MOE_LAUNCH_TEXT_SLIDE_DURATION,
-                            easing = AnimationSpecs.StandardEasing,
-                        )
+                    val slideSpec = tween<IntOffset>(
+                        durationMillis = MOE_LAUNCH_TEXT_SLIDE_DURATION,
+                        easing = AnimationSpecs.StandardEasing,
+                    )
                     slideInVertically(initialOffsetY = { it }, animationSpec = slideSpec)
-                        .togetherWith(
-                            slideOutVertically(targetOffsetY = { -it }, animationSpec = slideSpec)
-                        )
+                    .togetherWith(
+                        slideOutVertically(targetOffsetY = { -it }, animationSpec = slideSpec)
+                    )
                 },
                 label = "moe_launch_button_text",
             ) { text ->

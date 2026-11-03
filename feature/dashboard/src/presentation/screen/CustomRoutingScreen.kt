@@ -44,12 +44,16 @@ import com.github.lmfirefly.flycat.feature.dashboard.presentation.util.sortPrese
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.util.sortPresetRegions
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.CustomRoutingViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
+import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopIconButton
 import com.github.lmfirefly.flycat.presentation.component.card.RoutingSwitchCard
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
+import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Edit
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
@@ -135,7 +139,7 @@ fun CustomRoutingScreen(navigator: Navigator, onOpenYamlEditor: (title: String, 
 
     BackHandler { saveAndExit() }
 
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = FlyTxt.MetaFeature.CustomRouting.Title,
@@ -143,34 +147,36 @@ fun CustomRoutingScreen(navigator: Navigator, onOpenYamlEditor: (title: String, 
                 navigationIconPadding = 0.dp,
                 navigationIcon = { NavigationBackIcon(navigator = navigator) },
                 actions = {
-                    IconButton(
-                        enabled = !isSaving,
-                        onClick = {
-                            when {
-                                !isDirty -> openEditor(customRoutingContent)
-                                !templateRoundTripSafe -> {
-                                    applyPresetSelection(presetSelection)
-                                    context.toast(FlyTxt.MetaFeature.CustomRouting.ManualYamlPresetDiscarded)
-                                    openEditor(customRoutingContent)
-                                }
-                                else -> {
-                                    scope.launch {
-                                        isSaving = true
-                                        viewModel.savePresetSelection(editedPresetSelection()).onSuccess {
-                                            isDirty = false
-                                            openEditor(viewModel.customRoutingContent.value)
+                    GlassTopIconButton(
+                        action = GlassTopAction(
+                            icon = FlyCat.Edit,
+                            contentDescription = FlyTxt.MetaFeature.CustomRouting.EditButton,
+                            onClick = {
+                                if (isSaving) return@GlassTopAction
+                                when {
+                                    !isDirty -> openEditor(customRoutingContent)
+                                    !templateRoundTripSafe -> {
+                                        applyPresetSelection(presetSelection)
+                                        context.toast(FlyTxt.MetaFeature.CustomRouting.ManualYamlPresetDiscarded)
+                                        openEditor(customRoutingContent)
+                                    }
+                                    else -> {
+                                        scope.launch {
+                                            isSaving = true
+                                            viewModel.savePresetSelection(editedPresetSelection()).onSuccess {
+                                                isDirty = false
+                                                openEditor(viewModel.customRoutingContent.value)
+                                            }.onFailure { error ->
+                                                context.toast(error.message ?: FlyTxt.MetaFeature.CustomRouting.SaveFailed)
+                                            }
+                                            isSaving = false
                                         }
-                                        .onFailure { error ->
-                                            context.toast(error.message ?: FlyTxt.MetaFeature.CustomRouting.SaveFailed)
-                                        }
-                                        isSaving = false
                                     }
                                 }
-                            }
-                        },
-                    ) {
-                        Icon(imageVector = FlyCat.Edit, contentDescription = FlyTxt.MetaFeature.CustomRouting.EditButton)
-                    }
+                            },
+                        ),
+                        backdrop = LocalTopBarBackdrop.current,
+                    )
                 },
             )
         }

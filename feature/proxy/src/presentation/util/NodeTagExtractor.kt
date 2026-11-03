@@ -21,28 +21,26 @@
 
 package com.github.lmfirefly.flycat.feature.proxy.presentation.util
 
-private val nodeKeywords =
-    listOf(
-        "IEPL",
-        "BGP",
-        "APL",
-        "IPLC",
-        "CMI",
-        "CN2",
-        "GIA",
-        "MPLS",
-        "专线",
-        "中转",
-        "游戏",
-        "企业",
-        "NF",
-        "Netflix",
-        "Disney",
-        "GPT",
-    )
+private val nodeKeywords = listOf(
+    "IEPL",
+    "BGP",
+    "APL",
+    "IPLC",
+    "CMI",
+    "CN2",
+    "GIA",
+    "MPLS",
+    "专线",
+    "中转",
+    "游戏",
+    "企业",
+    "NF",
+    "Netflix",
+    "Disney",
+    "GPT",
+)
 
-private val multiplierRegex =
-    Regex("""(?<![.\d])[xX×✕](\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)[xX×✕](?![.\d])""")
+private val multiplierRegex = Regex("""(?<![.\d])[xX×✕](\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)[xX×✕](?![.\d])""")
 
 data class NodeTags(
     val keywords: List<String>,

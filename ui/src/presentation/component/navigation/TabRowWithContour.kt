@@ -71,41 +71,19 @@ fun TabRowWithContour(
         tween<Color>(durationMillis = 220, easing = FastOutSlowInEasing)
     }
 
-    BoxWithConstraints(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-                .clip(shape)
-                .background(backgroundColor)
-                .padding(indicatorInset)
-    ) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).clip(shape).background(backgroundColor).padding(indicatorInset)) {
         val clampedSelectedTabIndex = selectedTabIndex.coerceIn(0, tabs.lastIndex)
         val tabCount = tabs.size
-        val tabWidth =
-            remember(maxWidth, tabCount) {
-                ((maxWidth - indicatorGap * (tabCount - 1)) / tabCount).coerceAtLeast(0.dp)
-            }
-        val targetOffset =
-            remember(tabWidth, clampedSelectedTabIndex) {
-                (tabWidth + indicatorGap) * clampedSelectedTabIndex
-            }
-        val indicatorOffset by
-            animateDpAsState(
-                targetValue = targetOffset,
-                animationSpec = indicatorAnimationSpec,
-                label = "tab_row_indicator_offset",
-            )
+        val tabWidth = remember(maxWidth, tabCount) { ((maxWidth - indicatorGap * (tabCount - 1)) / tabCount).coerceAtLeast(0.dp) }
+        val targetOffset = remember(tabWidth, clampedSelectedTabIndex) { (tabWidth + indicatorGap) * clampedSelectedTabIndex }
+        val indicatorOffset by animateDpAsState(
+            targetValue = targetOffset,
+            animationSpec = indicatorAnimationSpec,
+            label = "tab_row_indicator_offset",
+        )
 
         Box(modifier = Modifier.matchParentSize()) {
-            Box(
-                modifier =
-                    Modifier.offset(x = indicatorOffset)
-                        .width(tabWidth)
-                        .fillMaxHeight()
-                        .clip(shape)
-                        .background(selectedColor)
-            )
+            Box(modifier = Modifier.offset(x = indicatorOffset).width(tabWidth).fillMaxHeight().clip(shape).background(selectedColor))
         }
 
         Row(
@@ -116,26 +94,21 @@ fun TabRowWithContour(
                 val isSelected = clampedSelectedTabIndex == index
                 val textColor by
                     animateColorAsState(
-                        targetValue =
-                            if (isSelected) {
-                                MiuixTheme.colorScheme.onPrimary
-                            } else {
-                                MiuixTheme.colorScheme.onSurface
-                            },
+                        targetValue = if (isSelected) {
+                            MiuixTheme.colorScheme.onPrimary
+                        } else {
+                            MiuixTheme.colorScheme.onSurface
+                        },
                         animationSpec = textAnimationSpec,
                         label = "tab_row_text_color_$index",
                     )
 
                 Box(
-                    modifier =
-                        Modifier.weight(1f)
-                            .clip(shape)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = { onTabSelected(index) },
-                            )
-                            .padding(vertical = 10.dp),
+                    modifier = Modifier.weight(1f).clip(shape).clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { onTabSelected(index) },
+                    ).padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(text = tab, style = MiuixTheme.textStyles.body2, color = textColor)

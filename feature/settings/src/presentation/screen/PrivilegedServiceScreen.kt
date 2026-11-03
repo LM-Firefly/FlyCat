@@ -62,6 +62,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.core.contract.PrivilegeStartSource
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.PrivilegedServiceViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopIconButton
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppDialog
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
@@ -82,10 +85,10 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.TabRow
+import com.github.lmfirefly.flycat.presentation.component.SegmentedTabRow
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** 特权服务配置页：状态卡 + Root / 无线 ADB / 手动 / 外部 Shizuku 四种启动来源，参照 GKD 的特权服务页面形态。启动后的特权进程供超级岛防火墙绕过等系统级操作使用。 */
@@ -136,7 +139,7 @@ fun PrivilegedServiceScreen(navigator: Navigator) {
     LaunchedEffect(showPairDialog) {
         if (showPairDialog) viewModel.onPairDialogOpened()
     }
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = FlyTxt.AppSettings.ServiceSection.PrivilegeTitle,
@@ -175,48 +178,42 @@ fun PrivilegedServiceScreen(navigator: Navigator) {
                             }
                         }
                         /** 顶部快捷启停圆钮（对照 priv-ui）：▶ 按当前标签页来源启动，■ 停止。 */
-                        Box(
-                            modifier = Modifier.size(48.dp).clip(CircleShape).background(
-                                color = if (uiState.running) {
-                                    MiuixTheme.colorScheme.error
-                                } else {
-                                    MiuixTheme.colorScheme.primary
-                                },
-                            )
-                            .clickable(enabled = !uiState.busy && (uiState.running || selectedTab != 2)) {
-                                if (uiState.running) {
-                                    viewModel.stop()
-                                } else {
-                                    when (selectedTab) {
-                                        0 -> viewModel.start(PrivilegeStartSource.ROOT)
-                                        1 -> withLocalNetwork { viewModel.pairAndStart(pairingCode = "") }
-                                        3 -> viewModel.start(PrivilegeStartSource.SHIZUKU)
-                                        else -> Unit
-                                    }
-                                }
-                            },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = if (uiState.running) FlyCat.Square else FlyCat.Play,
+                        GlassTopIconButton(
+                            action = GlassTopAction(
+                                icon = if (uiState.running) FlyCat.Square else FlyCat.Play,
                                 contentDescription = if (uiState.running) {
                                     FlyTxt.AppSettings.ServiceSection.PrivilegeStop
                                 } else {
                                     FlyTxt.AppSettings.ServiceSection.PrivilegeStartButton
                                 },
                                 tint = if (uiState.running) {
-                                    MiuixTheme.colorScheme.onError
+                                    MiuixTheme.colorScheme.error
                                 } else {
-                                    MiuixTheme.colorScheme.onPrimary
+                                    MiuixTheme.colorScheme.primary
                                 },
-                            )
-                        }
+                                onClick = {
+                                    if (!uiState.busy && (uiState.running || selectedTab != 2)) {
+                                        if (uiState.running) {
+                                            viewModel.stop()
+                                        } else {
+                                            when (selectedTab) {
+                                                0 -> viewModel.start(PrivilegeStartSource.ROOT)
+                                                1 -> withLocalNetwork { viewModel.pairAndStart(pairingCode = "") }
+                                                3 -> viewModel.start(PrivilegeStartSource.SHIZUKU)
+                                                else -> Unit
+                                            }
+                                        }
+                                    }
+                                },
+                            ),
+                            backdrop = null,
+                        )
                     }
                 }
             }
             item {
                 val tabs = listOf("Root", "ADB", FlyTxt.AppSettings.ServiceSection.PrivilegeTabManual, FlyTxt.AppSettings.ServiceSection.PrivilegeTabExternal)
-                TabRow(
+                SegmentedTabRow(
                     tabs = tabs,
                     selectedTabIndex = selectedTab,
                     onTabSelected = { selectedTab = it },
@@ -291,14 +288,14 @@ fun PrivilegedServiceScreen(navigator: Navigator) {
                     text = FlyTxt.AppSettings.ServiceSection.PrivilegePairDialogInstructions,
                     color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                 )
-                TextField(
+                GlassTextField(
                     value = pairCode,
                     onValueChange = { pairCode = it },
                     label = FlyTxt.AppSettings.ServiceSection.PrivilegePairCodeHint,
                     useLabelAsPlaceholder = true,
                     singleLine = true,
                 )
-                TextField(
+                GlassTextField(
                     value = pairPort,
                     onValueChange = { pairPort = it },
                     label = FlyTxt.AppSettings.ServiceSection.PrivilegePairPortHint,
@@ -306,17 +303,17 @@ fun PrivilegedServiceScreen(navigator: Navigator) {
                     singleLine = true,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    TextButton(
+                    GlassTextButton(
                         text = FlyTxt.AppSettings.ServiceSection.PrivilegePairTutorial,
                         onClick = { openPrivilegeTutorial(context) },
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(
+                    GlassTextButton(
                         text = FlyTxt.Component.Button.Cancel,
                         onClick = { showPairDialog = false },
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(
+                    GlassTextButton(
                         text = FlyTxt.AppSettings.ServiceSection.PrivilegePairButton,
                         onClick = {
                             showPairDialog = false
@@ -340,12 +337,11 @@ private fun PrivilegeRootTab(uiState: PrivilegedServiceViewModel.UiState, viewMo
                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
             )
             Spacer(modifier = Modifier.height(12.dp))
-            Button(
+            GlassTextButton(
+                text = FlyTxt.AppSettings.ServiceSection.PrivilegeStartButton,
                 onClick = { viewModel.start(PrivilegeStartSource.ROOT) },
                 enabled = !uiState.busy,
-            ) {
-                Text(FlyTxt.AppSettings.ServiceSection.PrivilegeStartButton)
-            }
+            )
         }
     }
 }
@@ -372,7 +368,8 @@ private fun PrivilegeAdbTab(
                     color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                Button(
+                GlassTextButton(
+                    text = FlyTxt.AppSettings.ServiceSection.PrivilegeKeepAliveButton,
                     onClick = {
                         val ignored = isBatteryOptimizationIgnored(context)
                         val launched = batteryOptimizationIntents(context, ignored).any { intent ->
@@ -382,9 +379,7 @@ private fun PrivilegeAdbTab(
                             context.toast(FlyTxt.Util.Error.UnknownError)
                         }
                     },
-                ) {
-                    Text(FlyTxt.AppSettings.ServiceSection.PrivilegeKeepAliveButton)
-                }
+                )
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -396,7 +391,7 @@ private fun PrivilegeAdbTab(
                         modifier = Modifier.weight(1f),
                         color = MiuixTheme.colorScheme.onSurface,
                     )
-                    TextButton(
+                    GlassTextButton(
                         text = FlyTxt.AppSettings.ServiceSection.PrivilegeTutorial,
                         onClick = { openPrivilegeTutorial(context) },
                     )
@@ -430,18 +425,17 @@ private fun PrivilegeAdbTab(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Row {
-                    TextButton(
+                    GlassTextButton(
                         text = FlyTxt.AppSettings.ServiceSection.PrivilegePairButton,
                         onClick = onPairClick,
                         enabled = !uiState.busy,
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Button(
+                    GlassTextButton(
+                        text = FlyTxt.AppSettings.ServiceSection.PrivilegeStartButton,
                         onClick = onStartAdb,
                         enabled = !uiState.busy,
-                    ) {
-                        Text(FlyTxt.AppSettings.ServiceSection.PrivilegeStartButton)
-                    }
+                    )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -457,18 +451,17 @@ private fun PrivilegeAdbTab(
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Row {
-                    TextButton(
+                    GlassTextButton(
                         text = FlyTxt.AppSettings.ServiceSection.PrivilegeTcpControl,
                         onClick = onTcpControl,
                         enabled = !uiState.busy,
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Button(
+                    GlassTextButton(
+                        text = FlyTxt.AppSettings.ServiceSection.PrivilegeStartButton,
                         onClick = onStartTcp,
                         enabled = !uiState.busy && uiState.tcpPort != null,
-                    ) {
-                        Text(FlyTxt.AppSettings.ServiceSection.PrivilegeStartButton)
-                    }
+                    )
                 }
             }
         }
@@ -492,12 +485,13 @@ private fun PrivilegeManualTab(uiState: PrivilegedServiceViewModel.UiState, cont
             Spacer(modifier = Modifier.height(12.dp))
             val command = uiState.manualCommand
             Row {
-                TextButton(
+                GlassTextButton(
                     text = FlyTxt.AppSettings.ServiceSection.PrivilegeTutorial,
                     onClick = { openPrivilegeTutorial(context) },
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Button(
+                GlassTextButton(
+                    text = FlyTxt.AppSettings.ServiceSection.PrivilegeManualCopy,
                     onClick = {
                         if (command != null) {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -506,9 +500,7 @@ private fun PrivilegeManualTab(uiState: PrivilegedServiceViewModel.UiState, cont
                         }
                     },
                     enabled = command != null,
-                ) {
-                    Text(FlyTxt.AppSettings.ServiceSection.PrivilegeManualCopy)
-                }
+                )
             }
         }
     }
@@ -535,12 +527,11 @@ private fun PrivilegeExternalTab(uiState: PrivilegedServiceViewModel.UiState, vi
                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
             )
             Spacer(modifier = Modifier.height(12.dp))
-            Button(
+            GlassTextButton(
+                text = FlyTxt.AppSettings.ServiceSection.PrivilegeExternalStartButton,
                 onClick = viewModel::onExternalStart,
                 enabled = !uiState.busy,
-            ) {
-                Text(FlyTxt.AppSettings.ServiceSection.PrivilegeExternalStartButton)
-            }
+            )
         }
     }
 }

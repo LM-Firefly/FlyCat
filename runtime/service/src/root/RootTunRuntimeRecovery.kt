@@ -36,29 +36,23 @@ import com.github.lmfirefly.flycat.runtime.service.android.RootTunService
 import com.topjohnwu.superuser.ipc.RootService
 
 object RootTunRuntimeRecovery : RootTunRuntimeRecoveryContract {
-    private val bindingFailureMarkers =
-        listOf("root tun binder is null", "root tun service returned null binding", "binding died")
+    private val bindingFailureMarkers = listOf("root tun binder is null", "root tun service returned null binding", "binding died")
 
     override fun isBinderAlive(service: IInterface?): Boolean {
         val remote = service?.asBinder() ?: return false
         return remote.isBinderAlive && remote.pingBinder()
     }
 
-    override fun isBinderConnectionFailure(error: Throwable): Boolean =
-        generateSequence(error) { it.cause }
-            .any { cause ->
-                cause is DeadObjectException ||
-                    cause is RemoteException ||
-                    (cause is IllegalStateException &&
-                        bindingFailureMarkers.any { marker ->
-                            cause.message?.contains(marker, ignoreCase = true) == true
-                        })
+    override fun isBinderConnectionFailure(error: Throwable): Boolean = generateSequence(error) { it.cause }.any { cause ->
+        cause is DeadObjectException || cause is RemoteException || (cause is IllegalStateException && bindingFailureMarkers.any { marker ->
+                cause.message?.contains(marker, ignoreCase = true) == true
             }
+        )
+    }
 
-    override fun binderFailureReason(error: Throwable): String =
-        generateSequence(error) { it.cause }
-            .mapNotNull { cause -> cause.message?.trim()?.takeIf(String::isNotEmpty) }
-            .firstOrNull() ?: "RootTun IPC disconnected"
+    override fun binderFailureReason(error: Throwable): String = generateSequence(error) { it.cause }
+        .mapNotNull { cause -> cause.message?.trim()?.takeIf(String::isNotEmpty) }
+        .firstOrNull() ?: "RootTun IPC disconnected"
 
     override fun handleBinderGone(context: Context, reason: String?) {
         val appContext = context.appContextOrSelf

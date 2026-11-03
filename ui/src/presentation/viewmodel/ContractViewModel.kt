@@ -34,12 +34,11 @@ import kotlinx.coroutines.flow.update
 
 /** UI contract base: strongly-typed one-shot effects/event channel for ViewModels. */
 abstract class ContractViewModel<Effect : Any> : ViewModel() {
-    private val _effect =
-        MutableSharedFlow<Effect>(
-            replay = 0,
-            extraBufferCapacity = 1,
-            onBufferOverflow = BufferOverflow.DROP_OLDEST,
-        )
+    private val _effect = MutableSharedFlow<Effect>(
+        replay = 0,
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
     val effect: SharedFlow<Effect> = _effect.asSharedFlow()
 
     protected fun tryEmitEffect(effect: Effect) {
@@ -89,12 +88,11 @@ abstract class AndroidContractStateViewModel<State : LoadableState<State>, Effec
     protected val _uiState = MutableStateFlow(initialState)
     val uiState = _uiState.asStateFlow()
 
-    private val _effect =
-        MutableSharedFlow<Effect>(
-            replay = 0,
-            extraBufferCapacity = 1,
-            onBufferOverflow = BufferOverflow.DROP_OLDEST,
-        )
+    private val _effect = MutableSharedFlow<Effect>(
+        replay = 0,
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
     val effect: SharedFlow<Effect> = _effect.asSharedFlow()
 
     protected fun tryEmitEffect(effect: Effect) {

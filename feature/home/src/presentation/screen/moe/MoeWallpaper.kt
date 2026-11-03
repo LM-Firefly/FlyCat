@@ -105,16 +105,15 @@ private fun rememberWallpaperPainter(
     },
 )
 
-private suspend fun readImageBounds(context: Context, model: String): Pair<Int, Int>? =
-    withContext(Dispatchers.IO) {
-        runCatching {
-            context.contentResolver.openInputStream(Uri.parse(model))?.use { input ->
-                BitmapFactory.Options().apply { inJustDecodeBounds = true }.also { options ->
-                    BitmapFactory.decodeStream(input, null, options)
-                }.takeIf { it.outWidth > 0 && it.outHeight > 0 }?.let { it.outWidth to it.outHeight }
-            }
-        }.getOrNull()
-    }
+private suspend fun readImageBounds(context: Context, model: String): Pair<Int, Int>? = withContext(Dispatchers.IO) {
+    runCatching {
+        context.contentResolver.openInputStream(Uri.parse(model))?.use { input ->
+            BitmapFactory.Options().apply { inJustDecodeBounds = true }.also { options ->
+                BitmapFactory.decodeStream(input, null, options)
+            }.takeIf { it.outWidth > 0 && it.outHeight > 0 }?.let { it.outWidth to it.outHeight }
+        }
+    }.getOrNull()
+}
 
 private const val BUNDLED_WALLPAPER = "file:///android_asset/wallpaper.jpg"
 
@@ -124,9 +123,8 @@ private fun resolveWallpaperModel(context: Context, uri: String): String {
         val path = uri.removePrefix("file://")
         return if (path.startsWith("/android_asset/") || File(path).exists()) uri else BUNDLED_WALLPAPER
     }
-    val readable =
-        runCatching {
-            context.contentResolver.openInputStream(Uri.parse(uri))?.use { true } ?: false
-        }.getOrDefault(false)
+    val readable = runCatching {
+        context.contentResolver.openInputStream(Uri.parse(uri))?.use { true } ?: false
+    }.getOrDefault(false)
     return if (readable) uri else BUNDLED_WALLPAPER
 }

@@ -26,11 +26,6 @@ import androidx.compose.runtime.remember
 import com.github.lmfirefly.flycat.presentation.editor.LanguageScope
 
 @Composable
-fun rememberConfiguredCodeEditorState(
-    initialContent: String,
-    language: LanguageScope,
-    readOnly: Boolean = false,
-): CodeEditorState =
-    remember(initialContent, language, readOnly) {
-        CodeEditorState(initialContent = initialContent, language = language, readOnly = readOnly)
-    }
+fun rememberConfiguredCodeEditorState(initialContent: String, language: LanguageScope, readOnly: Boolean = false): CodeEditorState = remember(initialContent, language, readOnly) {
+    CodeEditorState(initialContent = initialContent, language = language, readOnly = readOnly)
+}

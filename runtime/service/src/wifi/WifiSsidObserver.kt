@@ -54,19 +54,14 @@ class WifiSsidObserver(
     private var started = false
     private var hasObservation = false
     private var lastObservation: WifiSsidObservation = WifiSsidObservation.NoWifi
+    private val request = NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+        .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN).build()
 
-    private val request =
-        NetworkRequest.Builder()
-            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
-            .build()
-
-    private val callback: ConnectivityManager.NetworkCallback =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            locationInfoCallback()
-        } else {
-            legacyCallback()
-        }
+    private val callback: ConnectivityManager.NetworkCallback = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        locationInfoCallback()
+    } else {
+        legacyCallback()
+    }
 
     fun start() {
         synchronized(lock) {
@@ -83,16 +78,15 @@ class WifiSsidObserver(
     }
 
     fun stop() {
-        val shouldUnregister =
-            synchronized(lock) {
-                if (!started) false else {
-                    started = false
-                    hasObservation = false
-                    legacyNetworks.clear()
-                    capabilityObservations.clear()
-                    true
-                }
+        val shouldUnregister = synchronized(lock) {
+            if (!started) false else {
+                started = false
+                hasObservation = false
+                legacyNetworks.clear()
+                capabilityObservations.clear()
+                true
             }
+        }
         if (shouldUnregister) {
             runCatching { connectivity?.unregisterNetworkCallback(callback) }
         }
@@ -104,86 +98,77 @@ class WifiSsidObserver(
         emit(observation, force = true)
     }
 
-    private fun legacyCallback() =
-        object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                synchronized(lock) { legacyNetworks += network }
-                emitLegacyObservation()
-            }
-
-            override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
-                synchronized(lock) { legacyNetworks += network }
-                emitLegacyObservation()
-            }
-
-            override fun onLost(network: Network) {
-                synchronized(lock) { legacyNetworks -= network }
-                emitLegacyObservation()
-            }
+    private fun legacyCallback() = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            synchronized(lock) { legacyNetworks += network }
+            emitLegacyObservation()
         }
+
+        override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+            synchronized(lock) { legacyNetworks += network }
+            emitLegacyObservation()
+        }
+
+        override fun onLost(network: Network) {
+            synchronized(lock) { legacyNetworks -= network }
+            emitLegacyObservation()
+        }
+    }
 
     @RequiresApi(Build.VERSION_CODES.S)
-    private fun locationInfoCallback() =
-        object : ConnectivityManager.NetworkCallback(FLAG_INCLUDE_LOCATION_INFO) {
-            override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
-                val observation =
-                    normalizeSsid((capabilities.transportInfo as? WifiInfo)?.ssid)
-                        ?.let(WifiSsidObservation::Connected)
-                        ?: WifiSsidObservation.Unavailable
-                val selected =
-                    synchronized(lock) {
-                        capabilityObservations[network] = observation
-                        selectCapabilityObservationLocked()
-                    }
-                emit(selected)
+    private fun locationInfoCallback() = object : ConnectivityManager.NetworkCallback(FLAG_INCLUDE_LOCATION_INFO) {
+        override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+            val observation = normalizeSsid((capabilities.transportInfo as? WifiInfo)?.ssid)
+                ?.let(WifiSsidObservation::Connected)
+                ?: WifiSsidObservation.Unavailable
+            val selected = synchronized(lock) {
+                capabilityObservations[network] = observation
+                selectCapabilityObservationLocked()
             }
-
-            override fun onLost(network: Network) {
-                val selected =
-                    synchronized(lock) {
-                        capabilityObservations.remove(network)
-                        selectCapabilityObservationLocked()
-                    }
-                emit(selected)
-            }
+            emit(selected)
         }
+
+        override fun onLost(network: Network) {
+            val selected = synchronized(lock) {
+                capabilityObservations.remove(network)
+                selectCapabilityObservationLocked()
+            }
+            emit(selected)
+        }
+    }
 
     @Suppress("DEPRECATION")
     private fun emitLegacyObservation() {
         val hasWifi = synchronized(lock) { legacyNetworks.isNotEmpty() }
-        val observation =
-            normalizeSsid(wifiManager?.connectionInfo?.ssid)
-                ?.let(WifiSsidObservation::Connected)
-                ?: if (hasWifi) WifiSsidObservation.Unavailable else WifiSsidObservation.NoWifi
+        val observation = normalizeSsid(wifiManager?.connectionInfo?.ssid)
+            ?.let(WifiSsidObservation::Connected)
+            ?: if (hasWifi) WifiSsidObservation.Unavailable else WifiSsidObservation.NoWifi
         emit(observation)
     }
 
     @Suppress("DEPRECATION")
     private fun emitInitialObservation() {
-        val wifiNetwork =
-            connectivity
-                ?.allNetworks
-                ?.firstOrNull { network ->
-                    connectivity.getNetworkCapabilities(network)
-                        ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
-                }
+        val wifiNetwork = connectivity
+            ?.allNetworks
+            ?.firstOrNull { network ->
+                connectivity.getNetworkCapabilities(network)
+                    ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+            }
         if (wifiNetwork == null) {
             emit(WifiSsidObservation.NoWifi)
             return
         }
 
-        val observation =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val wifiInfo =
-                    connectivity.getNetworkCapabilities(wifiNetwork)?.transportInfo as? WifiInfo
-                normalizeSsid(wifiInfo?.ssid)
-                    ?.let(WifiSsidObservation::Connected)
-                    ?: WifiSsidObservation.Unavailable
-            } else {
-                normalizeSsid(wifiManager?.connectionInfo?.ssid)
-                    ?.let(WifiSsidObservation::Connected)
-                    ?: WifiSsidObservation.Unavailable
-            }
+        val observation = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val wifiInfo = connectivity.getNetworkCapabilities(wifiNetwork)?.transportInfo as? WifiInfo
+            normalizeSsid(wifiInfo?.ssid)
+                ?.let(WifiSsidObservation::Connected)
+                ?: WifiSsidObservation.Unavailable
+        } else {
+            normalizeSsid(wifiManager?.connectionInfo?.ssid)
+                ?.let(WifiSsidObservation::Connected)
+                ?: WifiSsidObservation.Unavailable
+        }
         emit(observation)
     }
 
@@ -197,48 +182,44 @@ class WifiSsidObserver(
     }
 
     private fun emit(observation: WifiSsidObservation, force: Boolean = false) {
-        val shouldEmit =
-            synchronized(lock) {
-                if (!started) { false } else {
-                    val changed = !hasObservation || lastObservation != observation
-                    lastObservation = observation
-                    hasObservation = true
-                    force || changed
-                }
+        val shouldEmit = synchronized(lock) {
+            if (!started) { false } else {
+                val changed = !hasObservation || lastObservation != observation
+                lastObservation = observation
+                hasObservation = true
+                force || changed
             }
+        }
         if (shouldEmit) onChanged(observation)
     }
 
     companion object {
         private const val READ_TIMEOUT_MILLIS = 2_500L
 
-        suspend fun readOnce(context: Context): WifiSsidObservation =
-            withTimeoutOrNull(READ_TIMEOUT_MILLIS) {
-                suspendCancellableCoroutine { continuation ->
-                    lateinit var observer: WifiSsidObserver
-                    observer =
-                        WifiSsidObserver(context) { observation ->
-                            if (continuation.isActive) {
-                                observer.stop()
-                                continuation.resume(observation)
-                            }
+        suspend fun readOnce(context: Context): WifiSsidObservation = withTimeoutOrNull(READ_TIMEOUT_MILLIS) {
+            suspendCancellableCoroutine { continuation ->
+                lateinit var observer: WifiSsidObserver
+                observer = WifiSsidObserver(context) { observation ->
+                        if (continuation.isActive) {
+                            observer.stop()
+                            continuation.resume(observation)
                         }
-                    continuation.invokeOnCancellation { observer.stop() }
-                    observer.start()
-                }
-            } ?: WifiSsidObservation.NoWifi
-
-        /** Removes Android's legacy display quotes but preserves every other SSID byte/character. */
-        fun normalizeSsid(raw: String?): String? =
-            raw
-                ?.takeUnless { it == WifiManager.UNKNOWN_SSID }
-                ?.let { value ->
-                    if (value.length >= 2 && value.first() == '"' && value.last() == '"') {
-                        value.substring(1, value.length - 1)
-                    } else {
-                        value
                     }
-                }
-                ?.takeIf { it.isNotEmpty() }
+                continuation.invokeOnCancellation { observer.stop() }
+                observer.start()
+            }
+        } ?: WifiSsidObservation.NoWifi
+
+        /** 删除 Android 的旧显示引号，但保留所有其他 SSID 字节/字符。 */
+        fun normalizeSsid(raw: String?): String? = raw
+        ?.takeUnless { it == WifiManager.UNKNOWN_SSID }
+        ?.let { value ->
+            if (value.length >= 2 && value.first() == '"' && value.last() == '"') {
+                value.substring(1, value.length - 1)
+            } else {
+                value
+            }
+        }
+        ?.takeIf { it.isNotEmpty() }
     }
 }

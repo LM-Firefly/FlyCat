@@ -70,10 +70,9 @@ import androidx.compose.runtime.remember
  * - Cleaner code
  */
 @Composable
-fun <T> rememberScreenState(initializer: () -> T): androidx.compose.runtime.MutableState<T> =
-    remember {
-        mutableStateOf(initializer())
-    }
+fun <T> rememberScreenState(initializer: () -> T): androidx.compose.runtime.MutableState<T> = remember {
+    mutableStateOf(initializer())
+}
 
 /**
  * Extension function to update state immutably.

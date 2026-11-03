@@ -6,7 +6,6 @@ import android.app.ApplicationExitInfo
 import android.content.Context
 import android.os.Build
 import android.os.Process
-import android.util.Base64
 import android.util.Log
 import com.github.lmfirefly.flycat.core.contract.AppLogSettings
 import com.tencent.mmkv.MMKV
@@ -21,9 +20,7 @@ object AppLogBridge {
     @Volatile
     var runtimeLogWriter: ((String) -> Unit)? = null
 
-    /**
-     * File-writing path switch: when false, logs are still buffered for export but not forwarded to LogRecordService.
-     */
+    /** 文件写入路径开关：为 false 时，日志仍会被缓冲以便导出，但不会转发到 LogRecordService。 */
     @Volatile
     var runtimeLogRecordingEnabled: Boolean = false
 
@@ -166,13 +163,14 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
                 it.reason == ExitReasonCode.CRASH
             }
         if (exitInfos.isEmpty()) return
-        val newestTimestamp = exitInfos.maxOfOrNull { it.timestamp } ?: return
+        val newest = exitInfos.maxByOrNull { it.timestamp } ?: return
         val prefs = ctx.getSharedPreferences("crash_handler_prefs", Context.MODE_PRIVATE)
         val lastSavedTimestamp = prefs.getLong("last_exit_info_ts", 0L)
-        if (newestTimestamp <= lastSavedTimestamp) return
+        if (newest.timestamp <= lastSavedTimestamp) return
         val timestamp = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss").format(LocalDateTime.now())
         val logDir = File(ctx.filesDir, "logs").apply { mkdirs() }
-        val file = File(logDir, "native_exit_$timestamp.log")
+        // 按最新一条的 reason 命名：Java 崩溃写入 crash_* 区（与进程内处理器同区展示），ANR 单列，避免全部伪装成 native_exit。
+        val file = File(logDir, "${exitReasonFilePrefix(newest.reason)}_$timestamp.log")
         file.printWriter().use { writer ->
             writer.println("package=${ctx.packageName}")
             writer.println("collectedAt=$timestamp")
@@ -185,25 +183,16 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
                 writer.println("processName=${info.processName}")
                 writer.println("timestamp=${info.timestamp}")
                 writer.println("description=${info.description}")
-                // Append native/Java trace when available (API 31+)
+                // 在可用时附加 Native/Java 追踪（API 31+）
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     try {
                         info.traceInputStream?.use { input ->
                             val bytes = input.readBytes()
                             if (bytes.isNotEmpty()) {
+                                // tombstone(protobuf) 与 ANR/文本 trace 统一抽取可读字符串行：信号、原因、崩溃库、符号、线程名等（原 32 字节启发式会把 tombstone 误判为 utf8 文本写成乱码）。
                                 writer.println("trace=")
-                                if (isLikelyProtobuf(bytes)) {
-                                    // protobuf binary → Base64, preserving full data
-                                    writer.println("encoding=base64")
-                                    writer.println(Base64.encodeToString(bytes, Base64.NO_WRAP))
-                                } else {
-                                    // text tombstone → sanitize non-printable chars
-                                    val trace = bytes.decodeToString()
-                                        .replace("\u0000", "")
-                                        .filter { it.code >= 0x20 || it in "\n\r\t" }
-                                    writer.println("encoding=utf8")
-                                    writer.println(trace)
-                                }
+                                writer.println("encoding=strings")
+                                extractReadableStrings(bytes).forEach { writer.println(it) }
                             }
                         }
                     } catch (_: Exception) { /* best-effort */ }
@@ -211,10 +200,16 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
                 writer.println("---")
             }
         }
-        prefs.edit().putLong("last_exit_info_ts", newestTimestamp).apply()
+        prefs.edit().putLong("last_exit_info_ts", newest.timestamp).apply()
         Timber.w("Native/ANR exit info saved to ${file.absolutePath}")
     }
-    // Exit reason codes matching android.app.ApplicationExitReason (API 30+)
+    /** ApplicationExitInfo 落盘文件前缀：Java 崩溃与进程内 crash_* 同区，ANR 单列前缀。 */
+    private fun exitReasonFilePrefix(reason: Int): String = when (reason) {
+        ExitReasonCode.CRASH -> "crash_exit"
+        ExitReasonCode.ANR -> "anr_exit"
+        else -> "native_exit"
+    }
+    // 与 android.app.ApplicationExitReason 匹配的退出原因代码（API 30+）
     private object ExitReasonCode {
         const val CRASH = 4
         const val NATIVE_CRASH = 5
@@ -230,12 +225,25 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
         }
     }
 
-    private fun isLikelyProtobuf(bytes: ByteArray): Boolean {
-        if (bytes.size < 2) return false
-        val head = bytes.take(32)
-        val nullCount = head.count { it == 0.toByte() }
-        val nonAscii = head.count { it.toInt() and 0x80 != 0 }
-        return nullCount > 4 || nonAscii > 8
+    /** 从二进制 trace（protobuf tombstone 或文本）中抽取可打印 ASCII 连续段，每段一行，给出可读的崩溃摘要。 */
+    private fun extractReadableStrings(bytes: ByteArray, minRun: Int = 4, maxLines: Int = 4000): List<String> {
+        val lines = ArrayList<String>()
+        val sb = StringBuilder()
+        var last: String? = null
+        fun flush() {
+            if (sb.length >= minRun) {
+                val s = sb.toString()
+                if (s != last) { lines.add(s); last = s }
+            }
+            sb.setLength(0)
+        }
+        for (b in bytes) {
+            val c = b.toInt() and 0xFF
+            if (c in 0x20..0x7E) sb.append(c.toChar()) else flush()
+            if (lines.size >= maxLines) return lines
+        }
+        flush()
+        return lines
     }
 
     private fun collectDeviceInfo(context: Context): Map<String, String> {

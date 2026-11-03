@@ -35,77 +35,74 @@ val FlyCat.Wifi: ImageVector
         if (wifiVector != null) {
             return wifiVector!!
         }
-        wifiVector =
-            ImageVector.Builder(
-                name = "Wifi",
-                defaultWidth = 24.dp,
-                defaultHeight = 24.dp,
-                viewportWidth = 24f,
-                viewportHeight = 24f,
-            )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(12f, 20f)
-                        horizontalLineToRelative(0.01f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(2f, 8.82f)
-                        arcToRelative(
-                            15f,
-                            15f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = true,
-                            20f,
-                            0f,
-                        )
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(5f, 12.859f)
-                        arcToRelative(
-                            10f,
-                            10f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = true,
-                            14f,
-                            0f,
-                        )
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(8.5f, 16.429f)
-                        arcToRelative(
-                            5f,
-                            5f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = true,
-                            7f,
-                            0f,
-                        )
-                    }
-                }
-                .build()
+        wifiVector = ImageVector.Builder(
+            name = "Wifi",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(12f, 20f)
+                horizontalLineToRelative(0.01f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(2f, 8.82f)
+                arcToRelative(
+                    15f,
+                    15f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = true,
+                    20f,
+                    0f,
+                )
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(5f, 12.859f)
+                arcToRelative(
+                    10f,
+                    10f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = true,
+                    14f,
+                    0f,
+                )
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(8.5f, 16.429f)
+                arcToRelative(
+                    5f,
+                    5f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = true,
+                    7f,
+                    0f,
+                )
+            }
+        }.build()
 
         return wifiVector!!
     }

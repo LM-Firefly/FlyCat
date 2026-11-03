@@ -35,84 +35,81 @@ val FlyCat.Delete: ImageVector
         if (deleteVector != null) {
             return deleteVector!!
         }
-        deleteVector =
-            ImageVector.Builder(
-                name = "Trash",
-                defaultWidth = 24.dp,
-                defaultHeight = 24.dp,
-                viewportWidth = 24f,
-                viewportHeight = 24f,
-            )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(19f, 6f)
-                        verticalLineToRelative(14f)
-                        arcToRelative(
-                            2f,
-                            2f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = true,
-                            -2f,
-                            2f,
-                        )
-                        horizontalLineTo(7f)
-                        arcToRelative(
-                            2f,
-                            2f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = true,
-                            -2f,
-                            -2f,
-                        )
-                        verticalLineTo(6f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(3f, 6f)
-                        horizontalLineToRelative(18f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(8f, 6f)
-                        verticalLineTo(4f)
-                        arcToRelative(
-                            2f,
-                            2f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = true,
-                            2f,
-                            -2f,
-                        )
-                        horizontalLineToRelative(4f)
-                        arcToRelative(
-                            2f,
-                            2f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = true,
-                            2f,
-                            2f,
-                        )
-                        verticalLineToRelative(2f)
-                    }
-                }
-                .build()
+        deleteVector = ImageVector.Builder(
+            name = "Trash",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(19f, 6f)
+                verticalLineToRelative(14f)
+                arcToRelative(
+                    2f,
+                    2f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = true,
+                    -2f,
+                    2f,
+                )
+                horizontalLineTo(7f)
+                arcToRelative(
+                    2f,
+                    2f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = true,
+                    -2f,
+                    -2f,
+                )
+                verticalLineTo(6f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(3f, 6f)
+                horizontalLineToRelative(18f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(8f, 6f)
+                verticalLineTo(4f)
+                arcToRelative(
+                    2f,
+                    2f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = true,
+                    2f,
+                    -2f,
+                )
+                horizontalLineToRelative(4f)
+                arcToRelative(
+                    2f,
+                    2f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = true,
+                    2f,
+                    2f,
+                )
+                verticalLineToRelative(2f)
+            }
+        }.build()
 
         return deleteVector!!
     }

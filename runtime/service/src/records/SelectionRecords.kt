@@ -63,14 +63,12 @@ object SelectionDao {
 
     fun upsertManualSelection(selection: Selection) {
         migrateLegacyIfNeeded()
-        val normalized =
-            selection.copy(
-                proxy = selection.proxy.trim(),
-                selected = selection.selected.trim(),
-                updatedAt =
-                    if (selection.updatedAt > 0L) selection.updatedAt
-                    else System.currentTimeMillis(),
-            )
+        val normalized = selection.copy(
+            proxy = selection.proxy.trim(),
+            selected = selection.selected.trim(),
+            updatedAt = if (selection.updatedAt > 0L) selection.updatedAt
+                else System.currentTimeMillis(),
+        )
         if (normalized.proxy.isEmpty() || normalized.selected.isEmpty()) {
             return
         }
@@ -161,19 +159,16 @@ internal object SelectionRestoreExecutor {
     ) {
         val selectorGroups = runtimeGroups.associateBy { it.name }
         selections.forEach { selection ->
-            val group =
-                selectorGroups[selection.proxy]
-                    ?: run {
-                        removeSelection(profileUuid, selection, tag, "group missing")
-                        return@forEach
-                    }
+            val group = selectorGroups[selection.proxy] ?: run {
+                removeSelection(profileUuid, selection, tag, "group missing")
+                return@forEach
+            }
             if (group.type != Proxy.Type.Selector) {
                 removeSelection(profileUuid, selection, tag, "group not selector")
                 return@forEach
             }
 
-            val currentNodes =
-                group.proxies.mapNotNull { proxy -> proxy.name.trim().takeIf { it.isNotEmpty() } }
+            val currentNodes = group.proxies.mapNotNull { proxy -> proxy.name.trim().takeIf { it.isNotEmpty() } }
             val targetNode = selection.selected.trim()
             if (targetNode.isEmpty() || targetNode !in currentNodes) {
                 removeSelection(profileUuid, selection, tag, "node missing")

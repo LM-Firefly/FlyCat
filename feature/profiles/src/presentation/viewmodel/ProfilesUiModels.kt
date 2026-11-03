@@ -52,19 +52,18 @@ data class DownloadProgress(
 internal fun FetchStatus.toDownloadProgress(): DownloadProgress {
     val percent = if (max > 0) ((progress * 100) / max).coerceIn(0, 100) else null
     val detail = args.firstOrNull().orEmpty().trim()
-    val message =
-        when (action) {
-            FetchStatus.Action.FetchConfiguration ->
-                if (percent == null || percent <= 5) {
-                    FlyTxt.ProfilesVM.Progress.Preparing
-                } else {
-                    detail.ifBlank { FlyTxt.ProfilesPage.Progress.Downloading }
-                }
+    val message = when (action) {
+        FetchStatus.Action.FetchConfiguration ->
+            if (percent == null || percent <= 5) {
+                FlyTxt.ProfilesVM.Progress.Preparing
+            } else {
+                detail.ifBlank { FlyTxt.ProfilesPage.Progress.Downloading }
+            }
 
-            FetchStatus.Action.FetchProviders -> detail
-            FetchStatus.Action.SubscriptionInfo -> ""
-            FetchStatus.Action.Verifying -> detail.ifBlank { FlyTxt.ProfilesVM.Progress.Verifying }
-        }
+        FetchStatus.Action.FetchProviders -> detail
+        FetchStatus.Action.SubscriptionInfo -> ""
+        FetchStatus.Action.Verifying -> detail.ifBlank { FlyTxt.ProfilesVM.Progress.Verifying }
+    }
 
     return DownloadProgress(percent = percent, message = message)
 }

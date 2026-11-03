@@ -26,6 +26,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,16 +45,22 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.github.lmfirefly.flycat.core.model.traffic.TrafficData
+import com.github.lmfirefly.flycat.presentation.component.EdgeLightDefaults
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.component.chart.TrafficChartConfig
+import com.github.lmfirefly.flycat.presentation.component.edgeLight
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val SPEED_CHART_SAMPLE_LIMIT = 24
+private const val SPEED_CHART_GLASS_ALPHA = 0.55f
 private const val SPEED_CHART_IDLE_WAVE_AMPLITUDE = 0.022f
 private const val SPEED_CHART_IDLE_WAVE_SPAN = 4f
 
@@ -67,6 +74,7 @@ fun SpeedChart(
 ) {
     val componentSizes = AppTheme.sizes
     val opacity = AppTheme.opacity
+    val isLightTheme = !isDarkTheme()
     val downloadColor = MiuixTheme.colorScheme.primary
     val uploadColor = Color(0xFF52C41A)
     val fractions = remember(speedHistory) { buildSpeedChartFractions(speedHistory = speedHistory) }
@@ -93,46 +101,51 @@ fun SpeedChart(
     }
     val currentPhase = idlePhase.value % SPEED_CHART_SAMPLE_LIMIT.toFloat()
 
-    Canvas(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .height(UiDp.dp130)
-                .clip(RoundedCornerShape(UiDp.dp12))
-                .clickable(onClick = onClick)
-    ) {
-        val barGapPx = componentSizes.speedChartBarGap.toPx()
-        val barCornerRadiusPx = componentSizes.speedChartBarCornerRadius.toPx()
-        val chartBarCount = SPEED_CHART_SAMPLE_LIMIT
-
-        val totalGapWidth = barGapPx * (chartBarCount - 1)
-        val barWidthPx = ((size.width - totalGapWidth) / chartBarCount).coerceAtLeast(0f)
-        if (barWidthPx <= 0f) {
-            return@Canvas
-        }
-
-        val downloadBarColor = downloadColor.copy(alpha = opacity.mediumStrong)
-        val uploadBarColor = uploadColor.copy(alpha = opacity.mediumStrong)
-
-        if (!isRunning) {
-            drawIdleBars(
-                fractions = fractions,
-                barWidthPx = barWidthPx,
-                barGapPx = barGapPx,
-                barCornerRadiusPx = barCornerRadiusPx,
-                downloadBarColor = downloadBarColor,
-                uploadBarColor = uploadBarColor,
-                wavePhase = currentPhase
+    val chartShape = RoundedCornerShape(UiDp.dp12)
+    Box(modifier = modifier.fillMaxWidth().height(UiDp.dp130).clip(chartShape).clickable(onClick = onClick)) {
+            // 玻璃作为降透明度底层：空图表时壁纸透出更多，避免整卡发白。
+            Box(
+                modifier = Modifier.matchParentSize()
+                    .glassCardSurface(shape = chartShape, fallbackColor = MiuixTheme.colorScheme.surface)
+                    .graphicsLayer { alpha = SPEED_CHART_GLASS_ALPHA }
+                    .edgeLight(
+                        shape = chartShape,
+                        color = EdgeLightDefaults.tint(MiuixTheme.colorScheme.surface, isLightTheme),
+                        width = EdgeLightDefaults.width(isLightTheme),
+                        blendMode = EdgeLightDefaults.blendMode(isLightTheme),
+                    ),
             )
-        } else {
-            drawStaticBars(
-                fractions = fractions,
-                barWidthPx = barWidthPx,
-                barGapPx = barGapPx,
-                barCornerRadiusPx = barCornerRadiusPx,
-                downloadBarColor = downloadBarColor,
-                uploadBarColor = uploadBarColor
-            )
+            Canvas(modifier = Modifier.matchParentSize()) {
+            val barGapPx = componentSizes.speedChartBarGap.toPx()
+            val barCornerRadiusPx = componentSizes.speedChartBarCornerRadius.toPx()
+            val chartBarCount = SPEED_CHART_SAMPLE_LIMIT
+            val totalGapWidth = barGapPx * (chartBarCount - 1)
+            val barWidthPx = ((size.width - totalGapWidth) / chartBarCount).coerceAtLeast(0f)
+            if (barWidthPx <= 0f) {
+                return@Canvas
+            }
+            val downloadBarColor = downloadColor.copy(alpha = opacity.mediumStrong)
+            val uploadBarColor = uploadColor.copy(alpha = opacity.mediumStrong)
+            if (!isRunning) {
+                drawIdleBars(
+                    fractions = fractions,
+                    barWidthPx = barWidthPx,
+                    barGapPx = barGapPx,
+                    barCornerRadiusPx = barCornerRadiusPx,
+                    downloadBarColor = downloadBarColor,
+                    uploadBarColor = uploadBarColor,
+                    wavePhase = currentPhase
+                )
+            } else {
+                drawStaticBars(
+                    fractions = fractions,
+                    barWidthPx = barWidthPx,
+                    barGapPx = barGapPx,
+                    barCornerRadiusPx = barCornerRadiusPx,
+                    downloadBarColor = downloadBarColor,
+                    uploadBarColor = uploadBarColor
+                )
+            }
         }
     }
 }
@@ -167,8 +180,7 @@ private fun DrawScope.drawStaticBars(
     downloadBarColor: Color,
     uploadBarColor: Color
 ) {
-    val barCornerRadius =
-        createBarCornerRadius(barWidthPx = barWidthPx, barCornerRadiusPx = barCornerRadiusPx)
+    val barCornerRadius = createBarCornerRadius(barWidthPx = barWidthPx, barCornerRadiusPx = barCornerRadiusPx)
     for (index in fractions.download.indices) {
         val barLeftPx = index * (barWidthPx + barGapPx)
         if (barLeftPx >= size.width || barLeftPx + barWidthPx <= 0f) {
@@ -195,8 +207,7 @@ private fun DrawScope.drawIdleBars(
     uploadBarColor: Color,
     wavePhase: Float
 ) {
-    val barCornerRadius =
-        createBarCornerRadius(barWidthPx = barWidthPx, barCornerRadiusPx = barCornerRadiusPx)
+    val barCornerRadius = createBarCornerRadius(barWidthPx = barWidthPx, barCornerRadiusPx = barCornerRadiusPx)
     for (index in fractions.download.indices) {
         val barLeftPx = index * (barWidthPx + barGapPx)
         if (barLeftPx >= size.width || barLeftPx + barWidthPx <= 0f) {
@@ -214,14 +225,10 @@ private fun DrawScope.drawIdleBars(
     }
 }
 
-private fun DrawScope.createBarCornerRadius(
-    barWidthPx: Float,
-    barCornerRadiusPx: Float,
-): CornerRadius =
-    CornerRadius(
-        x = barCornerRadiusPx.coerceAtMost(barWidthPx / 2f),
-        y = barCornerRadiusPx.coerceAtMost(size.height / 2f),
-    )
+private fun DrawScope.createBarCornerRadius(barWidthPx: Float, barCornerRadiusPx: Float): CornerRadius = CornerRadius(
+    x = barCornerRadiusPx.coerceAtMost(barWidthPx / 2f),
+    y = barCornerRadiusPx.coerceAtMost(size.height / 2f),
+)
 
 private fun DrawScope.drawOverlayBar(
     leftPx: Float,
@@ -264,12 +271,11 @@ private fun DrawScope.drawTopRoundedRect(color: Color, leftPx: Float, topPx: Flo
 
 private fun applyIdleWave(fraction: Float, index: Int, phase: Float): Float {
     val distance = kotlin.math.abs(index - phase)
-    val wrappedDistance =
-        minOf(
-            distance,
-            distance + SPEED_CHART_SAMPLE_LIMIT,
-            kotlin.math.abs(index + SPEED_CHART_SAMPLE_LIMIT - phase),
-        )
+    val wrappedDistance = minOf(
+        distance,
+        distance + SPEED_CHART_SAMPLE_LIMIT,
+        kotlin.math.abs(index + SPEED_CHART_SAMPLE_LIMIT - phase),
+    )
     val normalized = (1f - wrappedDistance / SPEED_CHART_IDLE_WAVE_SPAN).coerceIn(0f, 1f)
     val wave = normalized * normalized
     return fraction + wave * SPEED_CHART_IDLE_WAVE_AMPLITUDE

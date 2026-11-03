@@ -2,8 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur" />
-
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.telephony" android:required="false"/>
 
@@ -24,8 +22,6 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" tools:ignore="BatteryLife"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:ignore="RequestInstallPackagesPolicy"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="AllFilesAccessPolicy,ScopedStorage"/>
     <!-- ren.shiror.fyl.fytxt:core 的 uses-sdk < 4 触发合并器向后兼容隐式注入，应用零使用，剔除 -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove"/>

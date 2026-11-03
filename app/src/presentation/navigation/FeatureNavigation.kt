@@ -35,9 +35,9 @@ import com.github.lmfirefly.flycat.common.util.buildRemotePanelUrl
 import com.github.lmfirefly.flycat.common.util.requiresLocalNetworkPermission
 import com.github.lmfirefly.flycat.core.contract.RemoteControllerStoreReader
 import com.github.lmfirefly.flycat.core.model.RemoteBackend
+import com.github.lmfirefly.flycat.feature.settings.presentation.screen.RemoteControllerSection
 import com.github.lmfirefly.flycat.feature.substore.presentation.component.PanelShortcutDialog
 import com.github.lmfirefly.flycat.feature.substore.presentation.screen.FeatureContent
-import com.github.lmfirefly.flycat.feature.settings.presentation.screen.RemoteControllerSection
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -46,10 +46,8 @@ fun FeatureScreen(navigator: Navigator) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val remoteControllerStore = koinInject<RemoteControllerStoreReader>()
-
     var shortcutTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
     var shortcutDialogVisible by remember { mutableStateOf(false) }
-
     FeatureContent(
         onNavigateBack = { navigator.pop() },
         onOpenInAppUrl = { url -> WebViewActivity.start(context, url) },
@@ -59,8 +57,7 @@ fun FeatureScreen(navigator: Navigator) {
             WebViewActivity.start(context, targetUrl)
         },
         onCreatePanelShortcut = { url, label ->
-            val targetUrl =
-                remoteControllerStore.activeBackend()?.let { buildRemotePanelUrl(url, it) } ?: url
+            val targetUrl = remoteControllerStore.activeBackend()?.let { buildRemotePanelUrl(url, it) } ?: url
             shortcutTarget = targetUrl to label
             shortcutDialogVisible = true
         },

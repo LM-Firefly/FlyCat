@@ -35,27 +35,24 @@ val FlyCat.Check: ImageVector
         if (checkVector != null) {
             return checkVector!!
         }
-        checkVector =
-            ImageVector.Builder(
-                name = "Check",
-                defaultWidth = 24.dp,
-                defaultHeight = 24.dp,
-                viewportWidth = 24f,
-                viewportHeight = 24f,
-            )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(20f, 6f)
-                        lineTo(9f, 17f)
-                        lineToRelative(-5f, -5f)
-                    }
-                }
-                .build()
+        checkVector = ImageVector.Builder(
+            name = "Check",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(20f, 6f)
+                lineTo(9f, 17f)
+                lineToRelative(-5f, -5f)
+            }
+        }.build()
 
         return checkVector!!
     }

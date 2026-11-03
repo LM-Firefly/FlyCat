@@ -22,6 +22,7 @@
 package com.github.lmfirefly.flycat.data.store
 
 import com.github.lmfirefly.flycat.core.contract.NetworkSettingsReader
+import com.github.lmfirefly.flycat.core.model.AccessControlImportStrategy
 import com.github.lmfirefly.flycat.core.model.AccessControlMode
 import com.github.lmfirefly.flycat.core.model.WifiAutomationFallbackAction
 import com.github.lmfirefly.flycat.core.model.WifiAutomationRule
@@ -47,9 +48,9 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
         if (!mmkv.containsKey("tunStack") && legacy.containsKey("tun_stack_mode")) {
             val raw = legacy.decodeString("tun_stack_mode", "system")?.lowercase() ?: "system"
             val mapped = when (raw) {
+                "mips" -> "Mips"
                 "gvisor" -> "GVisor"
                 "mixed" -> "Mixed"
-                "mips" -> "Mips"
                 else -> "System"
             }
             mmkv.encode("tunStack", mapped)
@@ -75,6 +76,7 @@ class NetworkSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = e
     override val tunFakeIpRange by strFlow("198.18.0.1/16")
     override val tunFakeIpRange6 by strFlow("fc00::/18")
     override val accessControlMode by enumFlow(AccessControlMode.ALLOW_ALL)
+    override val accessControlImportStrategy by enumFlow(AccessControlImportStrategy.MERGE)
     override val accessControlPackages by stringSetFlow(emptySet())
     override val accessControlShowSystemApps by boolFlow(false)
     override val accessControlSelectedFirst by boolFlow(true)

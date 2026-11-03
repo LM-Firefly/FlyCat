@@ -84,8 +84,5 @@ class RuleToggleUseCase(
     }
 }
 
-private fun RuntimeRule.matchesQuery(query: String): Boolean =
-    payload.contains(query, ignoreCase = true) ||
-        type.contains(query, ignoreCase = true) ||
-        proxy.contains(query, ignoreCase = true) ||
-        index.toString().contains(query)
+private fun RuntimeRule.matchesQuery(query: String): Boolean = payload.contains(query, ignoreCase = true) ||
+    type.contains(query, ignoreCase = true) || proxy.contains(query, ignoreCase = true) || index.toString().contains(query)

@@ -69,27 +69,20 @@ private fun parseIpCidrOrNull(raw: String): ParsedCidr? {
 }
 
 private fun buildIncludedRoutes(cidrs: List<ParsedCidr>, bitSize: Int): List<IPNet> {
-    val mergedExcluded =
-        cidrs
-            .asSequence()
-            .filter { it.bitSize == bitSize }
-            .map(::toRange)
-            .sortedBy { it.start }
-            .fold(mutableListOf<AddressRange>()) { acc, range ->
-                val last = acc.lastOrNull()
-                if (last == null) {
-                    acc += range
-                } else if (range.start <= last.endInclusive + BigInteger.ONE) {
-                    acc[acc.lastIndex] =
-                        AddressRange(
-                            start = last.start,
-                            endInclusive = maxOf(last.endInclusive, range.endInclusive),
-                        )
-                } else {
-                    acc += range
-                }
-                acc
-            }
+    val mergedExcluded = cidrs.asSequence().filter { it.bitSize == bitSize }.map(::toRange).sortedBy { it.start }.fold(mutableListOf<AddressRange>()) { acc, range ->
+        val last = acc.lastOrNull()
+        if (last == null) {
+            acc += range
+        } else if (range.start <= last.endInclusive + BigInteger.ONE) {
+            acc[acc.lastIndex] = AddressRange(
+                start = last.start,
+                endInclusive = maxOf(last.endInclusive, range.endInclusive),
+            )
+        } else {
+            acc += range
+        }
+        acc
+    }
 
     if (mergedExcluded.isEmpty()) {
         return listOf(IPNet(rootRouteAddress(bitSize), 0))
@@ -121,12 +114,11 @@ private fun toRange(cidr: ParsedCidr): AddressRange {
     val bitSize = cidr.bitSize
     val hostBits = bitSize - cidr.prefix
     val addressValue = BigInteger(1, cidr.address.address)
-    val networkValue =
-        if (hostBits == 0) {
-            addressValue
-        } else {
-            addressValue.shiftRight(hostBits).shiftLeft(hostBits)
-        }
+    val networkValue = if (hostBits == 0) {
+        addressValue
+    } else {
+        addressValue.shiftRight(hostBits).shiftLeft(hostBits)
+    }
     val blockSize = BigInteger.ONE.shiftLeft(hostBits)
     return AddressRange(
         start = networkValue,
@@ -163,8 +155,7 @@ private fun bigIntegerToAddressString(value: BigInteger, bitSize: Int): String {
     return InetAddress.getByAddress(normalized).hostAddress
 }
 
-private fun rootRouteAddress(bitSize: Int): String =
-    "0.0.0.0".takeIf { bitSize == IPV4_BITS } ?: "::"
+private fun rootRouteAddress(bitSize: Int): String = "0.0.0.0".takeIf { bitSize == IPV4_BITS } ?: "::"
 
 private const val IPV4_BITS = 32
 private const val IPV6_BITS = 128

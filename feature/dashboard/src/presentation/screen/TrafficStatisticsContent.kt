@@ -38,29 +38,37 @@ import com.github.lmfirefly.flycat.core.util.format.formatBytes
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.AppSortMode
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.TrafficStatisticsViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
+import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
+import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopActionAnchorIcon
+import com.github.lmfirefly.flycat.presentation.component.GlassTopIconButton
+import com.github.lmfirefly.flycat.presentation.component.SegmentedTabRow
+import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.chart.TimeSlotBarChart
 import com.github.lmfirefly.flycat.presentation.component.chart.TrafficDonutChart
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
 import com.github.lmfirefly.flycat.presentation.component.misc.Title
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
-import com.github.lmfirefly.flycat.presentation.component.navigation.TabRowWithContour
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.component.rememberAppIconBitmap
+import com.github.lmfirefly.flycat.presentation.component.rememberSurfaceBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.util.toast
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.DropdownImpl
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Sort
@@ -83,7 +91,7 @@ fun TrafficStatisticsContent(onBack: () -> Unit) {
     val tabLabels = remember { timeRanges.map { it.toLabel() } }
     val activeSummary = uiState.summary
 
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = FlyTxt.TrafficStatistics.Title,
@@ -91,18 +99,17 @@ fun TrafficStatisticsContent(onBack: () -> Unit) {
                 navigationIconPadding = 0.dp,
                 navigationIcon = { NavigationBackIcon(onNavigateBack = onBack) },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            viewModel.clearAllStatistics()
-                            context.toast(FlyTxt.TrafficStatistics.Action.ClearSuccess)
-                        },
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Delete,
+                    GlassTopIconButton(
+                        action = GlassTopAction(
+                            icon = MiuixIcons.Delete,
                             contentDescription = FlyTxt.TrafficStatistics.Action.Clear,
-                            tint = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
+                            onClick = {
+                                viewModel.clearAllStatistics()
+                                context.toast(FlyTxt.TrafficStatistics.Action.ClearSuccess)
+                            },
+                        ),
+                        backdrop = LocalTopBarBackdrop.current,
+                    )
                 },
             )
         },
@@ -118,11 +125,12 @@ fun TrafficStatisticsContent(onBack: () -> Unit) {
                 layout(constraints.maxWidth, placeable.height + topPx) { placeable.place(0, topPx) }
             },
         ) {
-            TabRowWithContour(
+            SegmentedTabRow(
                 tabs = tabLabels,
                 selectedTabIndex = selectedTabIndex,
                 onTabSelected = { index -> timeRanges.getOrNull(index)?.let(viewModel::setTimeRange) },
-                modifier = Modifier.padding(horizontal = spacing.space16),
+                // 顶部留白：折叠到顶时 TabRow 紧贴迷你顶栏，玻璃/渐隐层会盖住胶囊圆角头部，加 gap 避免裁切。
+                modifier = Modifier.padding(start = spacing.space16, end = spacing.space16, top = spacing.space6),
             )
             ScreenLazyColumn(
                 scrollBehavior = scrollBehavior,
@@ -131,7 +139,7 @@ fun TrafficStatisticsContent(onBack: () -> Unit) {
                 contentPadding = PaddingValues(bottom = mainLikePadding.calculateBottomPadding() + spacing.space12),
             ) {
                 item {
-                    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.space16)) {
+                    Card(modifier = Modifier.fillMaxWidth().padding(start = spacing.space16, end = spacing.space16, top = spacing.space12), applyHorizontalPadding = false) {
                         Column(
                             modifier = Modifier.padding(horizontal = spacing.space18, vertical = spacing.space18),
                             verticalArrangement = Arrangement.spacedBy(spacing.space16),
@@ -171,40 +179,49 @@ fun TrafficStatisticsContent(onBack: () -> Unit) {
                                     AppSortMode.TOTAL to FlyTxt.TrafficStatistics.Sort.ByTotal,
                                 )
                             }
-                            IconButton(onClick = { sortExpanded = true }) {
-                                Icon(
-                                    imageVector = MiuixIcons.Sort,
-                                    contentDescription = null,
-                                    tint = MiuixTheme.colorScheme.onSurface,
+                            val sortMenuAnchor = rememberGlassPopupAnchor(suppressTransformSurface = true)
+                            // 列表头按钮位于 GlassScaffold 录制子树内，不得采样 LocalTopBarBackdrop（层自引用会让 hwui prepareTree 无限递归崩溃，见特权服务页记录）；
+                            // 以兄弟纯色录制层供按钮采样——真实玻璃质感且无自引用循环（同关于页卡片采样壁纸层的安全模式）。
+                            val buttonBackdrop = rememberSurfaceBackdrop(MiuixTheme.colorScheme.background)
+                            Box {
+                                Box(modifier = Modifier.matchParentSize().layerBackdrop(buttonBackdrop))
+                                GlassTopIconButton(
+                                    action = GlassTopAction(
+                                        icon = MiuixIcons.Sort,
+                                        contentDescription = FlyTxt.Proxy.Action.Sort,
+                                        onClick = { sortExpanded = true },
+                                        // 自动接线锚点：按钮上报边界并隐藏自身，弹窗折叠端点直接复用按钮玻璃材质，关闭动画落点即玻璃圆钮本体。
+                                        anchor = sortMenuAnchor,
+                                        popup = {
+                                            GlassPopupHost(
+                                                show = sortExpanded,
+                                                onDismissRequest = { sortExpanded = false },
+                                                anchor = sortMenuAnchor,
+                                                anchorContent = { GlassTopActionAnchorIcon(MiuixIcons.Sort) },
+                                            ) {
+                                                sortOptions.forEachIndexed { index, (mode, label) ->
+                                                    val arrow = if (currentMode == mode) { if (currentAscending) " ↑" else " ↓" } else ""
+                                                    GlassMenuItem(
+                                                        text = label + arrow,
+                                                        selected = currentMode == mode,
+                                                        onClick = {
+                                                            viewModel.setAppSortMode(mode)
+                                                            sortExpanded = false
+                                                        },
+                                                    )
+                                                }
+                                            }
+                                        },
+                                    ),
+                                    backdrop = buttonBackdrop,
                                 )
-                            }
-                            WindowListPopup(
-                                show = sortExpanded,
-                                popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
-                                onDismissRequest = { sortExpanded = false },
-                            ) {
-                                ListPopupColumn {
-                                    sortOptions.forEachIndexed { index, (mode, label) ->
-                                        val arrow = if (currentMode == mode) { if (currentAscending) " ↑" else " ↓" } else ""
-                                        DropdownImpl(
-                                            text = label + arrow,
-                                            optionSize = sortOptions.size,
-                                            isSelected = currentMode == mode,
-                                            onSelectedIndexChange = {
-                                                viewModel.setAppSortMode(mode)
-                                                sortExpanded = false
-                                            },
-                                            index = index,
-                                        )
-                                    }
-                                }
                             }
                         }
                     }
                 }
                 if (uiState.topApps.isEmpty()) {
                     item {
-                        Card(modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.space16)) {
+                        Card(modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.space16), applyHorizontalPadding = false) {
                             Box(modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.space14, vertical = spacing.space18), contentAlignment = Alignment.Center) {
                                 Text(
                                     text = FlyTxt.TrafficStatistics.Section.EmptyApps,
@@ -234,11 +251,9 @@ private fun TrafficMetricCard(
     val spacing = AppTheme.spacing
     val semanticColors = AppTheme.colors
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth(), applyHorizontalPadding = false) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = spacing.space14, vertical = spacing.space12),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.space14, vertical = spacing.space12),
             verticalArrangement = Arrangement.spacedBy(spacing.space18),
         ) {
             TrafficMetricLine(
@@ -292,11 +307,10 @@ private fun AppTrafficRow(
     val share = if (total > 0L) usage.totalBytes.toDouble() / total.toDouble() else 0.0
     Card(
         modifier = Modifier.fillMaxWidth(),
+        applyHorizontalPadding = false,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = spacing.space14, vertical = spacing.space12),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.space14, vertical = spacing.space12),
             horizontalArrangement = Arrangement.spacedBy(spacing.space12),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -316,10 +330,7 @@ private fun AppTrafficRow(
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    text = FlyTxt.TrafficStatistics.Metric.UsageLine.format(
-                        formatBytes(usage.totalDownload),
-                        formatBytes(usage.totalUpload),
-                    ),
+                    text = FlyTxt.TrafficStatistics.Metric.UsageLine.format(formatBytes(usage.totalDownload), formatBytes(usage.totalUpload)),
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
@@ -357,10 +368,7 @@ private fun AppIconBadge(
 
     if (appKey == TrafficStatisticsBuckets.UNATTRIBUTED_APP_KEY) {
         Box(
-            modifier = Modifier
-                .size(componentSizes.iconBadgeMedium)
-                .clip(RoundedCornerShape(radii.radius12))
-                .background(semanticColors.traffic.unattributed.copy(alpha = opacity.softOverlay)),
+            modifier = Modifier.size(componentSizes.iconBadgeMedium).clip(RoundedCornerShape(radii.radius12)).background(semanticColors.traffic.unattributed.copy(alpha = opacity.softOverlay)),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -378,18 +386,13 @@ private fun AppIconBadge(
         Image(
             bitmap = bitmap,
             contentDescription = appName,
-            modifier = Modifier
-                .size(componentSizes.iconBadgeMedium)
-                .clip(RoundedCornerShape(radii.radius12)),
+            modifier = Modifier.size(componentSizes.iconBadgeMedium).clip(RoundedCornerShape(radii.radius12)),
         )
         return
     }
 
     Box(
-        modifier = Modifier
-            .size(componentSizes.iconBadgeMedium)
-            .clip(RoundedCornerShape(radii.radius12))
-            .background(MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtleStrong)),
+        modifier = Modifier.size(componentSizes.iconBadgeMedium).clip(RoundedCornerShape(radii.radius12)).background(MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtleStrong)),
         contentAlignment = Alignment.Center,
     ) {
         Text(

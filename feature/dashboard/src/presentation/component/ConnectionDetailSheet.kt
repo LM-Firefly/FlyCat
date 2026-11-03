@@ -53,6 +53,7 @@ import com.github.lmfirefly.flycat.core.util.ProxyChainResolver
 import com.github.lmfirefly.flycat.core.util.format.formatBytes
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.ConnectionViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import kotlinx.coroutines.launch
@@ -79,7 +80,6 @@ fun ConnectionDetailSheet(
     val scope = rememberCoroutineScope()
     var isInterrupting by remember(connectionInfo?.id, show) { mutableStateOf(false) }
     val detailState = remember(connectionInfo) { connectionInfo?.toDetailState() }
-
     AppActionBottomSheet(
         show = show,
         title = detailState?.displayHost.orEmpty(),
@@ -102,11 +102,9 @@ fun ConnectionDetailSheet(
                         chains = info.chains,
                     )
                 }
-
                 if (info.rule.isNotEmpty()) {
                     item { RuleInfoSection(rule = info.rule, rulePayload = info.rulePayload) }
                 }
-
                 if (canInterrupt) {
                     item {
                         InterruptConnectionButton(
@@ -115,9 +113,7 @@ fun ConnectionDetailSheet(
                                 if (isInterrupting) return@InterruptConnectionButton
                                 isInterrupting = true
                                 scope.launch {
-                                    val closed =
-                                        runCatching { onInterruptConnection(info.id) }
-                                            .getOrDefault(false)
+                                    val closed = runCatching { onInterruptConnection(info.id) }.getOrDefault(false)
                                     isInterrupting = false
                                     if (closed) {
                                         onDismiss()
@@ -127,7 +123,6 @@ fun ConnectionDetailSheet(
                         )
                     }
                 }
-
                 item { Spacer(modifier = Modifier.height(spacing.space16)) }
             }
         }
@@ -170,7 +165,6 @@ private fun ConnectionInfoSection(
             )
             SectionTitle(headerTitle)
         }
-
         InfoRow(label = FlyTxt.Connection.Detail.Label.Protocol, value = state.network.uppercase())
         if (state.process.isNotEmpty()) {
             InfoRow(label = FlyTxt.Connection.Detail.Label.Process, value = state.process)
@@ -183,7 +177,6 @@ private fun ConnectionInfoSection(
             )
         }
         InfoRow(label = FlyTxt.Connection.Detail.Label.Duration, value = state.duration)
-
         InfoRow(
             label = FlyTxt.Connection.Detail.Label.Upload,
             value = formatBytes(upload),
@@ -194,7 +187,6 @@ private fun ConnectionInfoSection(
             value = formatBytes(download),
             valueColor = appColors.protocol.udp,
         )
-
         if (rule.isNotEmpty() || chains.isNotEmpty()) {
             Spacer(modifier = Modifier.height(spacing.space4))
             ProxyChainRow(rule = rule, chains = chains)
@@ -213,13 +205,11 @@ private fun ProxyChainRow(rule: String, chains: List<String>) {
     ) {
         displayChains.forEachIndexed { index, chain ->
             val isLast = index == displayChains.lastIndex
-
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(spacing.space2),
             ) {
                 ChainNode(name = chain, isActive = isLast)
-
                 if (!isLast) {
                     Text(
                         text = "->",
@@ -235,22 +225,17 @@ private fun ProxyChainRow(rule: String, chains: List<String>) {
 
 @Composable
 private fun InterruptConnectionButton(isInterrupting: Boolean, onInterrupt: () -> Unit) {
-    Button(
+    GlassTextButton(
+        text = if (isInterrupting) {
+            FlyTxt.Connection.Detail.Action.Interrupting
+        } else {
+            FlyTxt.Connection.Detail.Action.Interrupt
+        },
         onClick = onInterrupt,
         enabled = !isInterrupting,
         modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.buttonColors(),
-    ) {
-        Text(
-            text =
-                if (isInterrupting) {
-                    FlyTxt.Connection.Detail.Action.Interrupting
-                } else {
-                    FlyTxt.Connection.Detail.Action.Interrupt
-                },
-            color = MiuixTheme.colorScheme.error,
-        )
-    }
+        danger = true,
+    )
 }
 
 @Composable
@@ -260,39 +245,27 @@ private fun ChainNode(name: String, isActive: Boolean) {
     val opacity = AppTheme.opacity
     val sizes = AppTheme.sizes
     val appColors = AppTheme.colors
-    val backgroundColor =
-        if (isActive) {
-            appColors.connection.chainActive.copy(alpha = opacity.subtleStrong)
-        } else {
-            MiuixTheme.colorScheme.surfaceVariant
-        }
-    val textColor =
-        if (isActive) {
-            appColors.connection.chainActive
-        } else {
-            appColors.connection.chainInactiveText
-        }
-
+    val backgroundColor = if (isActive) {
+        appColors.connection.chainActive.copy(alpha = opacity.subtleStrong)
+    } else {
+        MiuixTheme.colorScheme.surfaceVariant
+    }
+    val textColor = if (isActive) {
+        appColors.connection.chainActive
+    } else {
+        appColors.connection.chainInactiveText
+    }
     Row(
-        modifier =
-            Modifier.clip(RoundedCornerShape(radii.radius8))
-                .background(backgroundColor)
-                .padding(
-                    horizontal = sizes.nodeChainNodeHorizontalPadding,
-                    vertical = sizes.nodeChainNodeVerticalPadding,
-                ),
+        modifier = Modifier.clip(RoundedCornerShape(radii.radius8)).background(backgroundColor).padding(
+            horizontal = sizes.nodeChainNodeHorizontalPadding,
+            vertical = sizes.nodeChainNodeVerticalPadding,
+        ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.space4),
     ) {
         if (isActive) {
-            Box(
-                modifier =
-                    Modifier.size(sizes.nodeChainIndicatorSize)
-                        .clip(CircleShape)
-                        .background(appColors.connection.chainActive)
-            )
+            Box(modifier = Modifier.size(sizes.nodeChainIndicatorSize).clip(CircleShape).background(appColors.connection.chainActive))
         }
-
         Text(
             text = name,
             style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
@@ -310,7 +283,6 @@ private fun RuleInfoSection(rule: String, rulePayload: String) {
         verticalArrangement = Arrangement.spacedBy(spacing.space12),
     ) {
         SectionTitle(FlyTxt.Connection.Detail.Section.Rule)
-
         InfoRow(label = FlyTxt.Connection.Detail.Label.Type, value = rule)
         if (rulePayload.isNotEmpty()) {
             InfoRow(label = FlyTxt.Connection.Detail.Label.Content, value = rulePayload)
@@ -356,16 +328,13 @@ private fun InfoRow(
 
 private fun calculateDuration(start: String): String {
     if (start.isEmpty()) return "00:00:00"
-
     return try {
         val startTime = java.time.OffsetDateTime.parse(start).toInstant()
         val now = java.time.Instant.now()
         val duration = java.time.Duration.between(startTime, now)
-
         val hours = duration.toHours()
         val minutes = duration.toMinutes() % 60
         val seconds = duration.seconds % 60
-
         "%02d:%02d:%02d".format(hours, minutes, seconds)
     } catch (_: java.time.DateTimeException) {
         "00:00:00"
@@ -390,26 +359,21 @@ private fun ConnectionInfo.toDetailState(): ConnectionDetailState {
     val sourceIP = metadata.stringOrEmpty("sourceIP")
     val sourcePort = metadata.stringOrEmpty("sourcePort")
     val destinationIP = metadata.stringOrEmpty("destinationIP")
-
-    val displayHost =
-        when {
-            host.isNotEmpty() && destinationPort.isNotEmpty() -> "$host:$destinationPort"
-            host.isNotEmpty() -> host
-            sourceIP.isNotEmpty() -> "$sourceIP:$sourcePort"
-            else -> ""
-        }
-
+    val displayHost = when {
+        host.isNotEmpty() && destinationPort.isNotEmpty() -> "$host:$destinationPort"
+        host.isNotEmpty() -> host
+        sourceIP.isNotEmpty() -> "$sourceIP:$sourcePort"
+        else -> ""
+    }
     return ConnectionDetailState(
         metadata = metadata,
         displayHost = displayHost,
         network = network,
         process = process,
         sourceAddress = "$sourceIP:$sourcePort",
-        destinationAddress =
-            destinationIP.takeIf(String::isNotEmpty)?.let { "$it:$destinationPort" }.orEmpty(),
+        destinationAddress = destinationIP.takeIf(String::isNotEmpty)?.let { "$it:$destinationPort" }.orEmpty(),
         duration = start.takeIf(String::isNotEmpty)?.let(::calculateDuration) ?: "00:00:00",
     )
 }
 
-private fun JsonObject.stringOrEmpty(key: String): String =
-    get(key)?.jsonPrimitive?.content.orEmpty()
+private fun JsonObject.stringOrEmpty(key: String): String = get(key)?.jsonPrimitive?.content.orEmpty()

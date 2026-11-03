@@ -58,6 +58,7 @@ type QueryNowFn = unsafe extern "C" fn(*mut u64, *mut u64);
 type QueryTotalFn = unsafe extern "C" fn(*mut u64, *mut u64);
 type QueryConnectionsFn = unsafe extern "C" fn() -> *mut c_char;
 type QueryConnectionsOverviewFn = unsafe extern "C" fn() -> *mut c_char;
+type QueryConnectionsByIdsFn = unsafe extern "C" fn(*const c_char) -> *mut c_char;
 type QueryConnectionGenerationFn = unsafe extern "C" fn() -> u64;
 type QueryProxyGroupVersionFn = unsafe extern "C" fn() -> u64;
 type QueryRulesFn = unsafe extern "C" fn() -> *mut c_char;
@@ -129,6 +130,7 @@ struct MihomoQuerySymbols {
     query_total: QueryTotalFn,
     query_connections: QueryConnectionsFn,
     query_connections_overview: QueryConnectionsOverviewFn,
+    query_connections_by_ids: QueryConnectionsByIdsFn,
     query_connection_generation: QueryConnectionGenerationFn,
     query_proxy_group_version: QueryProxyGroupVersionFn,
     query_rules: QueryRulesFn,
@@ -260,6 +262,7 @@ fn resolve_mihomo_query_symbols() -> Result<&'static MihomoQuerySymbols, String>
             let q_total = CString::new("queryTotal").map_err(|_| "invalid symbol name".to_string())?;
             let q_connections = CString::new("queryConnections").map_err(|_| "invalid symbol name".to_string())?;
             let q_connections_overview = CString::new("queryConnectionsOverview").map_err(|_| "invalid symbol name".to_string())?;
+            let q_connections_by_ids = CString::new("queryConnectionsByIds").map_err(|_| "invalid symbol name".to_string())?;
             let q_connection_generation = CString::new("queryConnectionGeneration").map_err(|_| "invalid symbol name".to_string())?;
             let q_proxy_group_version = CString::new("queryProxyGroupVersion").map_err(|_| "invalid symbol name".to_string())?;
             let q_rules = CString::new("queryRules").map_err(|_| "invalid symbol name".to_string())?;
@@ -357,6 +360,10 @@ fn resolve_mihomo_query_symbols() -> Result<&'static MihomoQuerySymbols, String>
             let connections_overview_ptr = unsafe { dlsym(handle, q_connections_overview.as_ptr()) };
             if connections_overview_ptr.is_null() {
                 return Err("resolve queryConnectionsOverview failed".to_string());
+            }
+            let connections_by_ids_ptr = unsafe { dlsym(handle, q_connections_by_ids.as_ptr()) };
+            if connections_by_ids_ptr.is_null() {
+                return Err("resolve queryConnectionsByIds failed".to_string());
             }
             let connection_generation_ptr = unsafe { dlsym(handle, q_connection_generation.as_ptr()) };
             if connection_generation_ptr.is_null() {
@@ -587,6 +594,7 @@ fn resolve_mihomo_query_symbols() -> Result<&'static MihomoQuerySymbols, String>
             let query_total: QueryTotalFn = unsafe { mem::transmute(total_ptr) };
             let query_connections: QueryConnectionsFn = unsafe { mem::transmute(connections_ptr) };
             let query_connections_overview: QueryConnectionsOverviewFn = unsafe { mem::transmute(connections_overview_ptr) };
+            let query_connections_by_ids: QueryConnectionsByIdsFn = unsafe { mem::transmute(connections_by_ids_ptr) };
             let query_connection_generation: QueryConnectionGenerationFn = unsafe { mem::transmute(connection_generation_ptr) };
             let query_proxy_group_version: QueryProxyGroupVersionFn = unsafe { mem::transmute(proxy_group_version_ptr) };
             let query_rules: QueryRulesFn = unsafe { mem::transmute(rules_ptr) };
@@ -651,6 +659,7 @@ fn resolve_mihomo_query_symbols() -> Result<&'static MihomoQuerySymbols, String>
                 query_total,
                 query_connections,
                 query_connections_overview,
+                query_connections_by_ids,
                 query_connection_generation,
                 query_proxy_group_version,
                 query_rules,
@@ -2075,6 +2084,40 @@ pub extern "system" fn Java_com_github_lmfirefly_flycat_core_bridge_Bridge_nativ
             Err(_) => return Ok::<_, jni::errors::Error>(std::ptr::null_mut()),
         };
         Ok::<_, jni::errors::Error>(call_json_query0(env, symbols.query_connections_overview))
+    })
+    .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_github_lmfirefly_flycat_core_bridge_Bridge_nativeQueryConnectionsByIds<
+    'local,
+>(
+    mut env: EnvUnowned<'local>,
+    _bridge: JObject<'local>,
+    ids: JString<'local>,
+) -> jstring {
+    env.with_env(|env| {
+        let symbols = match resolve_mihomo_query_symbols() {
+            Ok(s) => s,
+            Err(_) => return Ok::<_, jni::errors::Error>(std::ptr::null_mut()),
+        };
+        let ids_s = match ids.try_to_string(env) {
+            Ok(value) => value,
+            Err(_) => {
+                env.exception_clear();
+                return Ok::<_, jni::errors::Error>(std::ptr::null_mut());
+            }
+        };
+        let ids_c = CString::new(ids_s).unwrap_or_default();
+        let raw_ptr = unsafe { (symbols.query_connections_by_ids)(ids_c.as_ptr()) };
+        if raw_ptr.is_null() {
+            return Ok::<_, jni::errors::Error>(std::ptr::null_mut());
+        }
+        let response = unsafe { CStr::from_ptr(raw_ptr) }
+            .to_string_lossy()
+            .into_owned();
+        unsafe { free(raw_ptr.cast()) };
+        Ok::<_, jni::errors::Error>(new_java_string(env, response))
     })
     .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

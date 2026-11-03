@@ -134,24 +134,25 @@ class GitHubUpdateManager(
     private val preferences = appContext.getSharedPreferences(PREFERENCE_FILE, Context.MODE_PRIVATE)
     private val packageProfile = PackageProfile.fromPackageName(appContext.packageName)
     private val _downloadProgress = MutableStateFlow(UpdateDownloadProgress())
+    private val _autoCheckCandidate = MutableStateFlow<UpdateCandidate?>(null)
     @Volatile
     private var activeDownloadJob: Job? = null
     @Volatile
     private var downloadCancelRequested: Boolean = false
     @Volatile
     private var autoCheckJob: Job? = null
+    // 用户在本次进程内忽略过的候选指纹——「稍后」后不再自动弹出同一版本（对齐 YumeBox dismissedVersionCode 的会话级语义）。
+    @Volatile
+    private var dismissedPromptFingerprint: String? = null
     val downloadProgress: StateFlow<UpdateDownloadProgress> = _downloadProgress.asStateFlow()
+    // 自动检查发现的新版本候选；非空即驱动全局「发现新版本」提示弹窗。
+    val autoCheckCandidate: StateFlow<UpdateCandidate?> = _autoCheckCandidate.asStateFlow()
     fun getSelectedSource(): UpdateSource {
         val stored = appSettingsStore.updateSourceKey.value.ifBlank { buildConfig.updateSource }
         return UpdateSource.fromKey(stored)
     }
-    fun setSelectedSource(source: UpdateSource) {
-        appSettingsStore.updateSourceKey.set(source.key)
-    }
-    suspend fun checkForUpdate(
-        source: UpdateSource = getSelectedSource(),
-        isManualCheck: Boolean = false,
-    ): Result<UpdateCandidate?> = withContext(Dispatchers.IO) {
+    fun setSelectedSource(source: UpdateSource) { appSettingsStore.updateSourceKey.set(source.key) }
+    suspend fun checkForUpdate(source: UpdateSource = getSelectedSource(), isManualCheck: Boolean = false): Result<UpdateCandidate?> = withContext(Dispatchers.IO) {
         runCatching {
             Timber.i("Update check start: source=%s manual=%s", source.key, isManualCheck)
             val release = fetchRelease(source)
@@ -208,6 +209,8 @@ class GitHubUpdateManager(
                         lastCheckAtMs = SystemClock.elapsedRealtime()
                         runCatching {
                             checkForUpdate(getSelectedSource())
+                        }.onSuccess { result ->
+                            result.getOrNull()?.let { publishAutoCheckCandidate(it) }
                         }.onFailure { throwable ->
                             if (throwable is CancellationException) throw throwable
                             Timber.w(throwable, "Update auto check failed")
@@ -223,6 +226,17 @@ class GitHubUpdateManager(
             autoCheckJob?.cancel()
             autoCheckJob = null
         }
+    }
+    // 将候选写入提示流；若用户本次进程已忽略同一指纹则跳过，避免每小时自动检查反复弹窗。
+    private fun publishAutoCheckCandidate(candidate: UpdateCandidate) {
+        val fingerprint = candidatePromptFingerprint(candidate)
+        if (fingerprint.isNotBlank() && fingerprint == dismissedPromptFingerprint) return
+        _autoCheckCandidate.value = candidate
+    }
+    // 「稍后」：清除当前提示并记住该版本指纹，本次进程内不再自动弹出。
+    fun dismissAutoCheckCandidate() {
+        _autoCheckCandidate.value?.let { dismissedPromptFingerprint = candidatePromptFingerprint(it) }
+        _autoCheckCandidate.value = null
     }
     suspend fun downloadAndInstall(
         candidate: UpdateCandidate,
@@ -274,6 +288,7 @@ class GitHubUpdateManager(
                         message = FlyTxt.Component.Update.Message.DownloadReady,
                     )
                     openInstaller(outputFile)
+                    dismissAutoCheckCandidate()
                     return@runCatching
                 }
             }
@@ -637,9 +652,7 @@ class GitHubUpdateManager(
         }
         appContext.startActivity(intent)
     }
-    private fun updateUserAgent(): String {
-        return "${buildConfig.userAgentAppName}/${buildConfig.versionName}"
-    }
+    private fun updateUserAgent(): String { return "${buildConfig.userAgentAppName}/${buildConfig.versionName}" }
     private companion object {
         private const val TAG = "GitHubUpdateManager"
         const val FALLBACK_APK_FILE_NAME = "FlyCat-release.apk"
@@ -659,10 +672,7 @@ internal fun universalCoverageAbis(abiTag: String): Set<String> = when (abiTag.l
     else -> setOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
 }
 
-private data class PackageProfile(
-    val extension: Boolean,
-    val standalone: Boolean,
-) {
+private data class PackageProfile(val extension: Boolean, val standalone: Boolean) {
     companion object {
         fun fromPackageName(packageName: String): PackageProfile {
             val lower = packageName.lowercase()
@@ -676,5 +686,4 @@ private data class PackageProfile(
 
 internal class UpdateDownloadCancelledException : IOException(FlyTxt.Component.Button.Cancel)
 
-internal fun Throwable.isUpdateDownloadCancelled(): Boolean =
-    this is UpdateDownloadCancelledException || message == FlyTxt.Component.Button.Cancel
+internal fun Throwable.isUpdateDownloadCancelled(): Boolean = this is UpdateDownloadCancelledException || message == FlyTxt.Component.Button.Cancel

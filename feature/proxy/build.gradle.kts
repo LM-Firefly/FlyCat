@@ -45,8 +45,6 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
     implementation(libs.timber)
-    implementation(libs.haze)
-    implementation(libs.haze.blur)
     implementation(libs.sketch.compose)
     implementation(libs.sketch.http)
     implementation(libs.miuix.ui)

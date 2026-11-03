@@ -29,13 +29,12 @@ enum class AutoCloseMode(val minutes: Int?) {
     MINUTES_5(5),
     MINUTES_10(10);
 
-    fun getDisplayName(): String =
-        when (this) {
-            ALWAYS_ON -> FlyTxt.Feature.ServiceStatus.AutoCloseModeAlwaysOn
-            DISABLED -> FlyTxt.Feature.ServiceStatus.AutoCloseModeDisabled
-            MINUTES_5 -> FlyTxt.Feature.ServiceStatus.AutoCloseMode5Min
-            MINUTES_10 -> FlyTxt.Feature.ServiceStatus.AutoCloseMode10Min
-        }
+    fun getDisplayName(): String = when (this) {
+        ALWAYS_ON -> FlyTxt.Feature.ServiceStatus.AutoCloseModeAlwaysOn
+        DISABLED -> FlyTxt.Feature.ServiceStatus.AutoCloseModeDisabled
+        MINUTES_5 -> FlyTxt.Feature.ServiceStatus.AutoCloseMode5Min
+        MINUTES_10 -> FlyTxt.Feature.ServiceStatus.AutoCloseMode10Min
+    }
 
     val shouldStartTimer: Boolean
         get() = minutes != null

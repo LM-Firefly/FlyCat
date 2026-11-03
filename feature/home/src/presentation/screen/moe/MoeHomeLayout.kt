@@ -148,21 +148,16 @@ private fun MoeHomePanel(
     screenCorner: Dp,
 ) {
     val corner = lerpDp(UiDp.dp0, screenCorner, sidebar)
-    val heroScale =
-        if (state.pageProgress >= 0.999f) 1f
+    val heroScale = if (state.pageProgress >= 0.999f) 1f
         else lerpFloat(1f, 0.965f, FastOutSlowInEasing.transform(1f - state.pageProgress.coerceIn(0f, 1f)))
     Box(
         Modifier.fillMaxSize()
-            .padding(start = lerpDp(UiDp.dp0, contentStart, sidebar))
-            .graphicsLayer {
-                shape =
-                    RoundedCornerShape(
-                        topStart = corner,
-                        bottomStart = corner,
-                    )
-                clip = true
-            }
-            .background(state.contentSurface)
+        .padding(start = lerpDp(UiDp.dp0, contentStart, sidebar))
+        .graphicsLayer {
+            shape = RoundedCornerShape(topStart = corner, bottomStart = corner)
+            clip = true
+        }
+        .background(state.contentSurface)
     ) {
         MoeHero(state, heroScale)
         MoeHomeCopy(state, now, heroHeight)
@@ -218,14 +213,11 @@ private fun BoxScope.MoeHero(state: MoeHomeLayoutState, scale: Float) {
         }
         AnimatedVisibility(
             visible = state.isRunning,
-            modifier =
-                Modifier.align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .padding(
-                        start = MoeUi.Hero.contentHorizontalInset,
-                        end = MoeUi.Hero.contentHorizontalInset,
-                        bottom = MoeUi.Hero.trafficBottomInset,
-                    ),
+            modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(
+                start = MoeUi.Hero.contentHorizontalInset,
+                end = MoeUi.Hero.contentHorizontalInset,
+                bottom = MoeUi.Hero.trafficBottomInset,
+            ),
             enter = fadeIn() + slideInVertically { it / 3 },
             exit = fadeOut() + slideOutVertically { it / 3 },
         ) {
@@ -245,14 +237,11 @@ context(actions: MoeHomeActions)
 @Composable
 private fun BoxScope.MoeHomeCopy(state: MoeHomeLayoutState, now: Long, heroHeight: Dp) {
     Column(
-        modifier =
-            Modifier.align(Alignment.TopStart)
-                .fillMaxWidth()
-                .padding(
-                    start = MoeUi.Hero.containerHorizontalInset + MoeUi.Hero.contentHorizontalInset,
-                    end = MoeUi.Hero.containerHorizontalInset + MoeUi.Hero.contentHorizontalInset,
-                    top = state.statusBarTop + heroHeight + MoeUi.Hero.belowHeroTopGap,
-                ),
+        modifier = Modifier.align(Alignment.TopStart).fillMaxWidth().padding(
+            start = MoeUi.Hero.containerHorizontalInset + MoeUi.Hero.contentHorizontalInset,
+            end = MoeUi.Hero.containerHorizontalInset + MoeUi.Hero.contentHorizontalInset,
+            top = state.statusBarTop + heroHeight + MoeUi.Hero.belowHeroTopGap,
+        ),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(MoeUi.Hero.belowHeroContentGap),
     ) {

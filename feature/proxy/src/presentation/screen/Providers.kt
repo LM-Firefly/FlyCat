@@ -70,6 +70,11 @@ import com.github.lmfirefly.flycat.core.util.format.formatBytes
 import com.github.lmfirefly.flycat.core.util.path.runtimeHomeDir
 import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProvidersViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
+import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
+import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopIconButton
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
@@ -81,6 +86,7 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.CircleFadingArrowUp
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
+import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.navigation.Route
 import com.github.lmfirefly.flycat.presentation.state.ProviderFilePreviewStore
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
@@ -104,16 +110,17 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Edit
+import top.yukonga.miuix.kmp.glass.glassPopupAnchor
+import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowListPopup
 
-private fun Provider.VehicleType.localizedDisplayName(): String =
-    when (this) {
-        Provider.VehicleType.HTTP -> FlyTxt.Providers.VehicleType.Http
-        Provider.VehicleType.File -> FlyTxt.Providers.VehicleType.File
-        Provider.VehicleType.Inline -> FlyTxt.Providers.VehicleType.Inline
-        Provider.VehicleType.Compatible -> FlyTxt.Providers.VehicleType.Compatible
-    }
+private fun Provider.VehicleType.localizedDisplayName(): String = when (this) {
+    Provider.VehicleType.HTTP -> FlyTxt.Providers.VehicleType.Http
+    Provider.VehicleType.File -> FlyTxt.Providers.VehicleType.File
+    Provider.VehicleType.Inline -> FlyTxt.Providers.VehicleType.Inline
+    Provider.VehicleType.Compatible -> FlyTxt.Providers.VehicleType.Compatible
+}
 
 private data class ProviderSection(
     val title: String,
@@ -151,33 +158,30 @@ fun ProvidersContent(navigator: Navigator) {
     }
 
     val coroutineScope = rememberCoroutineScope()
-    val updatableProviders =
-        remember(providers) { providers.filter { it.vehicleType == Provider.VehicleType.HTTP } }
-    val sections =
-        remember(providers) {
-            val (proxyProviders, ruleProviders) =
-                providers.partition { it.type == Provider.Type.Proxy }
-            buildList {
-                if (proxyProviders.isNotEmpty()) {
-                    add(
-                        ProviderSection(
-                            title = FlyTxt.Providers.Type.ProxyProviders.format(proxyProviders.size),
-                            providers = proxyProviders,
-                        )
+    val updatableProviders = remember(providers) { providers.filter { it.vehicleType == Provider.VehicleType.HTTP } }
+    val sections = remember(providers) {
+        val (proxyProviders, ruleProviders) = providers.partition { it.type == Provider.Type.Proxy }
+        buildList {
+            if (proxyProviders.isNotEmpty()) {
+                add(
+                    ProviderSection(
+                        title = FlyTxt.Providers.Type.ProxyProviders.format(proxyProviders.size),
+                        providers = proxyProviders,
                     )
-                }
-                if (ruleProviders.isNotEmpty()) {
-                    add(
-                        ProviderSection(
-                            title = FlyTxt.Providers.Type.RuleProviders.format(ruleProviders.size),
-                            providers = ruleProviders,
-                        )
+                )
+            }
+            if (ruleProviders.isNotEmpty()) {
+                add(
+                    ProviderSection(
+                        title = FlyTxt.Providers.Type.RuleProviders.format(ruleProviders.size),
+                        providers = ruleProviders,
                     )
-                }
+                )
             }
         }
+    }
 
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = FlyTxt.Providers.Title,
@@ -186,12 +190,14 @@ fun ProvidersContent(navigator: Navigator) {
                 navigationIcon = { NavigationBackIcon(navigator = navigator) },
                 actions = {
                     if (isRunning && updatableProviders.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.updateAllProviders() }) {
-                            Icon(
-                                imageVector = FlyCat.CircleFadingArrowUp,
+                        GlassTopIconButton(
+                            action = GlassTopAction(
+                                icon = FlyCat.CircleFadingArrowUp,
                                 contentDescription = FlyTxt.Providers.Action.UpdateAll,
-                            )
-                        }
+                                onClick = { viewModel.updateAllProviders() },
+                            ),
+                            backdrop = LocalTopBarBackdrop.current,
+                        )
                     }
                 },
             )
@@ -215,9 +221,7 @@ fun ProvidersContent(navigator: Navigator) {
                 scrollBehavior = scrollBehavior,
                 innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
             ) {
-                item(key = "providers_runtime_info") {
-                    ProvidersInfoCard(basePath = context.runtimeHomeDir.absolutePath)
-                }
+                item(key = "providers_runtime_info") { ProvidersInfoCard(basePath = context.runtimeHomeDir.absolutePath) }
                 sections.forEach { section ->
                     providerSection(
                         section = section,
@@ -280,17 +284,13 @@ private fun ProviderCard(
     val updateBg = remember(colorScheme) { colorScheme.primary.copy(alpha = 0.1f) }
     val updateTint = remember(colorScheme) { colorScheme.primary }
 
-    val filePicker =
-        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) {
-            uri: Uri? ->
-            uri?.let { onUpload(it) }
-        }
+    val filePicker = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) {
+        uri: Uri? ->
+        uri?.let { onUpload(it) }
+    }
 
     Card(modifier = Modifier.padding(vertical = UiDp.dp4)) {
-        Column(
-            modifier =
-                Modifier.fillMaxWidth().padding(horizontal = UiDp.dp16, vertical = UiDp.dp12),
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = UiDp.dp16, vertical = UiDp.dp12)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -304,12 +304,7 @@ private fun ProviderCard(
                     )
                     if (provider.count > 0) {
                         Spacer(modifier = Modifier.width(UiDp.dp8))
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
-                                .padding(horizontal = UiDp.dp8, vertical = UiDp.dp2)
-                        ) {
+                        Box(modifier = Modifier.clip(RoundedCornerShape(50)).background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)).padding(horizontal = UiDp.dp8, vertical = UiDp.dp2)) {
                             Text(
                                 text = provider.count.toString(),
                                 style = MiuixTheme.textStyles.footnote1,
@@ -320,13 +315,15 @@ private fun ProviderCard(
                     }
                 }
                 if (provider.path.isNotBlank()) {
+                    val actionsAnchor = rememberGlassPopupAnchor()
                     Box {
                         IconButton(
                             backgroundColor = updateBg,
                             minHeight = UiDp.dp35,
                             minWidth = UiDp.dp35,
                             enabled = !isUpdating,
-                            onClick = { showPopup.value = true }
+                            onClick = { showPopup.value = true },
+                            modifier = Modifier.glassPopupAnchor(anchor = actionsAnchor, cornerRadius = UiDp.dp18, floating = true),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = UiDp.dp10),
@@ -349,30 +346,39 @@ private fun ProviderCard(
                             }
                         }
                         val popupItems = remember { listOf(FlyTxt.Providers.Action.View, FlyTxt.Providers.Action.Update, FlyTxt.Providers.Action.Upload) }
-                        WindowListPopup(
+                        GlassPopupHost(
                             show = showPopup.value,
-                            popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
-                            alignment = PopupPositionProvider.Align.End,
-                            onDismissRequest = { showPopup.value = false }
+                            onDismissRequest = { showPopup.value = false },
+                            anchor = actionsAnchor,
+                            anchorContent = {
+                                Icon(
+                                    imageVector = MiuixIcons.Edit,
+                                    contentDescription = FlyTxt.Providers.Action.Operation,
+                                    modifier = Modifier.size(UiDp.dp20),
+                                )
+                            },
                         ) {
-                            ListPopupColumn {
-                                popupItems.forEachIndexed { index, item ->
-                                    DropdownImpl(
-                                        text = item,
-                                        optionSize = popupItems.size,
-                                        isSelected = false,
-                                        onSelectedIndexChange = {
-                                            showPopup.value = false
-                                            when (index) {
-                                                0 -> onView()
-                                                1 -> onUpdate()
-                                                2 -> filePicker.launch("*/*")
-                                            }
-                                        },
-                                        index = index
-                                    )
-                                }
-                            }
+                            GlassMenuItem(
+                                text = popupItems[0],
+                                onClick = {
+                                    showPopup.value = false
+                                    onView()
+                                },
+                            )
+                            GlassMenuItem(
+                                text = popupItems[1],
+                                onClick = {
+                                    showPopup.value = false
+                                    onUpdate()
+                                },
+                            )
+                            GlassMenuItem(
+                                text = popupItems[2],
+                                onClick = {
+                                    showPopup.value = false
+                                    filePicker.launch("*/*")
+                                },
+                            )
                         }
                     }
                 }
@@ -586,8 +592,7 @@ private fun LazyListScope.providerSection(
     }
 }
 
-private fun formatTimestamp(ts: Long): String =
-    java.time.Instant.ofEpochMilli(ts).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
+private fun formatTimestamp(ts: Long): String = java.time.Instant.ofEpochMilli(ts).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
 
 private fun formatUsagePercent(info: SubscriptionInfo): String? {
     val total = info.total.toULong()

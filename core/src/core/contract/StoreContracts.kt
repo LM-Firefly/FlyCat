@@ -29,6 +29,7 @@ import com.github.lmfirefly.flycat.core.model.Provider
 import com.github.lmfirefly.flycat.core.model.RemoteProtocol
 import com.github.lmfirefly.flycat.core.model.UpdateProvidersResult
 import com.github.lmfirefly.flycat.core.model.UpdateSource
+import com.github.lmfirefly.flycat.core.model.backup.BackupRestoreStrategy
 import com.github.lmfirefly.flycat.core.model.profile.LinkOpenMode
 import com.github.lmfirefly.flycat.core.model.traffic.AppTrafficUsage
 import com.github.lmfirefly.flycat.core.model.traffic.DailyTraffic
@@ -136,7 +137,7 @@ interface SubStoreNavigationHandler {
 /** Contract for backup export/restore operations. */
 interface BackupDataSource {
     suspend fun exportBackup(output: OutputStream)
-    suspend fun restoreBackup(input: InputStream)
+    suspend fun restoreBackup(input: InputStream, strategy: BackupRestoreStrategy = BackupRestoreStrategy.Overwrite)
     fun defaultBackupFileName(now: Long = System.currentTimeMillis()): String
 }
 

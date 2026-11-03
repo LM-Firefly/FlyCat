@@ -105,17 +105,15 @@ fun PulseRippleLoadingAnimation(
             )
         }
 
-        val gradient =
-            Brush.radialGradient(
-                colors =
-                    listOf(
-                        color.copy(alpha = breathe.value * opacity.secondaryText),
-                        color.copy(alpha = breathe.value * opacity.mediumOverlay),
-                        color.copy(alpha = opacity.none),
-                    ),
-                center = Offset(centerX, centerY),
-                radius = UiDp.dp35.toPx(),
-            )
+        val gradient = Brush.radialGradient(
+            colors = listOf(
+                color.copy(alpha = breathe.value * opacity.secondaryText),
+                color.copy(alpha = breathe.value * opacity.mediumOverlay),
+                color.copy(alpha = opacity.none),
+            ),
+            center = Offset(centerX, centerY),
+            radius = UiDp.dp35.toPx(),
+        )
         drawCircle(brush = gradient, radius = UiDp.dp35.toPx(), center = Offset(centerX, centerY))
 
         drawCircle(
@@ -130,21 +128,15 @@ fun PulseRippleLoadingAnimation(
 fun StartupLoadingOverlay(isVisible: Boolean, loadingText: String?, modifier: Modifier = Modifier) {
     AnimatedVisibility(
         visible = isVisible,
-        enter =
-            fadeIn(
-                animationSpec =
-                    tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.EnterEasing)
-            ) +
-                scaleIn(
-                    initialScale = 0.9f,
-                    animationSpec =
-                        tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.StandardEasing),
-                ),
-        exit =
-            fadeOut(
-                animationSpec =
-                    tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.ExitEasing)
-            ),
+        enter = fadeIn(
+            animationSpec = tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.EnterEasing)
+        ) + scaleIn(
+            initialScale = 0.9f,
+            animationSpec = tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.StandardEasing),
+        ),
+        exit = fadeOut(
+            animationSpec = tween(AnimationSpecs.DURATION_FAST, easing = AnimationSpecs.ExitEasing)
+        ),
         modifier = modifier,
     ) {
         Column(
@@ -160,26 +152,23 @@ fun StartupLoadingOverlay(isVisible: Boolean, loadingText: String?, modifier: Mo
                 targetState = loadingText ?: FlyTxt.Component.Loading.Starting,
                 transitionSpec = {
                     fadeIn(
-                        animationSpec =
-                            tween(
-                                AnimationSpecs.DURATION_INSTANT,
-                                easing = AnimationSpecs.EnterEasing,
-                            )
+                        animationSpec = tween(
+                            AnimationSpecs.DURATION_INSTANT,
+                            easing = AnimationSpecs.EnterEasing,
+                        )
                     ) togetherWith
                         fadeOut(
-                            animationSpec =
-                                tween(
-                                    AnimationSpecs.DURATION_INSTANT,
-                                    easing = AnimationSpecs.ExitEasing,
-                                )
+                            animationSpec = tween(
+                                AnimationSpecs.DURATION_INSTANT,
+                                easing = AnimationSpecs.ExitEasing,
+                            )
                         )
                 },
                 label = "loadingText",
             ) { text ->
                 Text(
                     text = text,
-                    style =
-                        MiuixTheme.textStyles.body1.copy(fontSize = 16.sp, letterSpacing = 2.sp),
+                    style = MiuixTheme.textStyles.body1.copy(fontSize = 16.sp, letterSpacing = 2.sp),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }

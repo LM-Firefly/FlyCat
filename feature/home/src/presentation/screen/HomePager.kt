@@ -40,6 +40,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
@@ -52,6 +53,7 @@ import com.github.lmfirefly.flycat.core.model.tunnel.TunnelState.Mode
 import com.github.lmfirefly.flycat.feature.home.presentation.viewmodel.HomeProxyControlState
 import com.github.lmfirefly.flycat.feature.home.presentation.viewmodel.HomeViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.navigation.LocalDetailNavigator
@@ -64,8 +66,8 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -120,27 +122,27 @@ fun HomePager(mainInnerPadding: PaddingValues, onOpenDashboard: (() -> Unit)? = 
     val scrollBehavior = MiuixScrollBehavior()
 
     val isRunning = controlState == HomeProxyControlState.Running
-    val isProxyEnabled =
-        if (isRemoteController) {
-            false
-        } else {
-            homeProfileState.profilesLoaded && homeProfileState.profiles.isNotEmpty() && controlState.canInteract
-        }
+    val isProxyEnabled = if (isRemoteController) { false } else { homeProfileState.profilesLoaded && homeProfileState.profiles.isNotEmpty() && controlState.canInteract }
 
     val quoteTitle = if (homeHitokotoEnabled) homeQuote.ifBlank { FlyTxt.Home.Title } else FlyTxt.Home.Title
-    Scaffold(topBar = { TopBar(title = quoteTitle, scrollBehavior = scrollBehavior, bottomContent = { if (homeHitokotoEnabled && homeQuote.isNotBlank() && homeQuoteAuthor.isNotBlank()) { Text(text = "—— ${homeQuoteAuthor}", style = MiuixTheme.textStyles.body1, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, modifier = Modifier.fillMaxWidth().padding(end = UiDp.dp24, bottom = UiDp.dp8), textAlign = TextAlign.End) } }) }) { innerPadding ->
+    val isHomeQuote = homeHitokotoEnabled && homeQuote.isNotBlank()
+    // 一言放 titleContent（随滚动缩放），作者放 bottomContent（不缩放），固定于一言下一行右下角。
+    GlassScaffold(topBar = { TopBar(title = quoteTitle, titleContent = if (isHomeQuote) {
+        { Text(text = quoteTitle, style = MiuixTheme.textStyles.title1.copy(fontSize = 26.sp, lineHeight = 30.sp), color = MiuixTheme.colorScheme.onSurface, modifier = Modifier.fillMaxWidth().padding(horizontal = TopAppBarDefaults.TitlePadding)) }
+    } else null, scrollBehavior = scrollBehavior, bottomContent = {
+        if (isHomeQuote && homeQuoteAuthor.isNotBlank()) {
+            Text(text = "—— ${homeQuoteAuthor}", style = MiuixTheme.textStyles.body1, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, modifier = Modifier.fillMaxWidth().padding(start = TopAppBarDefaults.TitlePadding, end = TopAppBarDefaults.TitlePadding, bottom = UiDp.dp8), textAlign = TextAlign.End)
+        }
+    }) }) { innerPadding ->
         ScreenLazyColumn(
             scrollBehavior = scrollBehavior,
             innerPadding = combinePaddingValues(innerPadding, mainInnerPadding),
         ) {
             item {
                 Column(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .padding(horizontal = UiDp.dp24),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = UiDp.dp24),
                     horizontalAlignment = Alignment.Start,
-                    verticalArrangement =
-                        Arrangement.spacedBy(UiDp.dp24),
+                    verticalArrangement = Arrangement.spacedBy(UiDp.dp24),
                 ) {
                     HomeTrafficSection(
                         homeViewModel = homeViewModel,
@@ -179,13 +181,11 @@ fun HomePager(mainInnerPadding: PaddingValues, onOpenDashboard: (() -> Unit)? = 
                     Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp16)) {
                         HomeNodeInfoSection(homeViewModel = homeViewModel, isRunning = isRunning)
                         IpInfoDisplay(
-                            state =
-                                if (isRunning) {
-                                    ipMonitoringState
-                                } else {
-                                    com.github.lmfirefly.flycat.core.model.IpMonitoringState
-                                        .Loading
-                                }
+                            state = if (isRunning) {
+                                ipMonitoringState
+                            } else {
+                                com.github.lmfirefly.flycat.core.model.IpMonitoringState.Loading
+                            }
                         )
                         HomeSpeedChartSection(homeViewModel = homeViewModel, isRunning = isRunning, onClick = { openSecondary(Route.TrafficStatistics) }, isActive = isActive)
                         if (isRunning) { HomeTopologyChartSection(homeViewModel = homeViewModel, onClick = { openSecondary(Route.Connection) }) }

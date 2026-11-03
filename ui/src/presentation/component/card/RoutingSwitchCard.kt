@@ -67,12 +67,11 @@ fun <T> RoutingSwitchCard(
 ) {
     val spacing = AppTheme.spacing
 
-    val rowsPerCard =
-        when {
-            items.size > 32 -> 12
-            items.size > 20 -> 16
-            else -> items.size.coerceAtLeast(1)
-        }
+    val rowsPerCard = when {
+        items.size > 32 -> 12
+        items.size > 20 -> 16
+        else -> items.size.coerceAtLeast(1)
+    }
     val itemChunks = remember(items, rowsPerCard) { items.chunked(rowsPerCard) }
 
     Column(
@@ -114,14 +113,11 @@ private fun RoutingSwitchRow(
 
     val interactionSource = remember { MutableInteractionSource() }
     Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .padding(contentPadding)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = { onCheckedChange(!checked) },
-                ),
+        modifier = Modifier.fillMaxWidth().padding(contentPadding).clickable(
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = { onCheckedChange(!checked) },
+        ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.space16),
     ) {
@@ -145,16 +141,15 @@ private fun RoutingIcon(iconUrl: String?, size: Dp) {
 
     val context = LocalContext.current
     val placeholderColorInt = MiuixTheme.colorScheme.onSurface.copy(alpha = opacity.subtle).toArgb()
-    val request =
-        remember(iconUrl, placeholderColorInt, context) {
-            iconUrl?.takeIf(String::isNotBlank)?.let { url ->
-                ImageRequest(context, url) {
-                    placeholder(IntColorDrawableStateImage(placeholderColorInt))
-                    error(IntColorDrawableStateImage(placeholderColorInt))
-                    crossfade(true)
-                }
+    val request = remember(iconUrl, placeholderColorInt, context) {
+        iconUrl?.takeIf(String::isNotBlank)?.let { url ->
+            ImageRequest(context, url) {
+                placeholder(IntColorDrawableStateImage(placeholderColorInt))
+                error(IntColorDrawableStateImage(placeholderColorInt))
+                crossfade(true)
             }
         }
+    }
 
     if (request == null) return
 

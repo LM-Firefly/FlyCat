@@ -27,6 +27,7 @@ import com.github.lmfirefly.flycat.core.contract.ConnectionRepository
 import com.github.lmfirefly.flycat.core.model.ConnectionInfo
 import com.github.lmfirefly.flycat.core.model.ConnectionOverviewSnapshot
 import com.github.lmfirefly.flycat.core.model.ConnectionSnapshot
+import com.github.lmfirefly.flycat.core.model.ConnectionSnapshotCodec
 import com.github.lmfirefly.flycat.core.util.ConnectionHistoryManager
 import com.github.lmfirefly.flycat.core.util.ProxyChainResolver
 import com.github.lmfirefly.flycat.core.util.format.formatBytes
@@ -178,9 +179,26 @@ class ConnectionPollingUseCase(
 
     private fun mergeOverviewSnapshot(overview: ConnectionOverviewSnapshot): ConnectionSnapshot? {
         val activeIds = overview.connections.mapTo(linkedSetOf()) { it.id }
+
+        // 仅对新出现的连接 id 走定向 by-id 查询来水合，
+        // 而不必每来一个新连接就重解码整张连接列表的 JSON。
+        val unknownIds = overview.connections.mapNotNull { overviewConn ->
+            overviewConn.id.takeUnless { connectionDetailsById.containsKey(it) }
+        }
+        if (unknownIds.isNotEmpty()) {
+            val hydrated = runCatching {
+                ConnectionSnapshotCodec.decodeConnectionList(
+                    Bridge.nativeQueryConnectionsByIds(unknownIds.joinToString("\n")),
+                )
+            }.getOrDefault(emptyList())
+            // 没有任何返回（旧内核无 by-id 导出）：退回做一次全量快照。
+            if (hydrated.isEmpty()) return null
+            hydrated.forEach { connectionDetailsById[it.id] = it }
+        }
+
         val mergedConnections = ArrayList<ConnectionInfo>(overview.connections.size)
         for (connection in overview.connections) {
-            val detail = connectionDetailsById[connection.id] ?: return null
+            val detail = connectionDetailsById[connection.id] ?: continue
             mergedConnections += detail.copy(upload = connection.upload, download = connection.download)
         }
         connectionDetailsById.keys.retainAll(activeIds)

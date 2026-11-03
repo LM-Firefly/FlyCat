@@ -110,19 +110,17 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
     }.distinctUntilChanged()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val uiState: StateFlow<TrafficStatisticsUiState> =
-        combine(
-            selectedTimeRange,
-            sortedAppsFlow,
-            barChartFlow,
-        ) { range, sortedApps, (barItems, barLabels) ->
-            buildUiState(range, sortedApps, barItems, barLabels)
-        }
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                TrafficStatisticsUiState(),
-            )
+    val uiState: StateFlow<TrafficStatisticsUiState> = combine(
+        selectedTimeRange,
+        sortedAppsFlow,
+        barChartFlow,
+    ) { range, sortedApps, (barItems, barLabels) ->
+        buildUiState(range, sortedApps, barItems, barLabels)
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        TrafficStatisticsUiState(),
+    )
 
     fun setTimeRange(range: StatisticsTimeRange) {
         selectedTimeRange.value = range
@@ -157,12 +155,11 @@ class TrafficStatisticsViewModel(private val trafficStatisticsStore: TrafficStat
 
         return TrafficStatisticsUiState(
             selectedTimeRange = range,
-            summary =
-                DailyTrafficSummary(
-                    dateMillis = range.days.toLong(),
-                    totalUpload = totalUpload,
-                    totalDownload = totalDownload,
-                ),
+            summary = DailyTrafficSummary(
+                dateMillis = range.days.toLong(),
+                totalUpload = totalUpload,
+                totalDownload = totalDownload,
+            ),
             topApps = sortedApps,
             barChartItems = barItems,
             barChartLabels = barLabels,

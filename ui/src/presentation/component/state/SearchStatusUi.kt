@@ -72,6 +72,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.takeOrElse
 import androidx.compose.ui.zIndex
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.Sizes
@@ -83,7 +84,7 @@ import top.yukonga.miuix.kmp.icon.basic.Search
 import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
-/** Search-bar padding trio threaded from the screen; unspecified fields fall back to theme values. */
+/** 从屏幕层传入的搜索栏内缩三元组；未指定的字段回退到主题默认值。 */
 data class SearchBarPadding(
     val top: Dp = Dp.Unspecified,
     val start: Dp = Dp.Unspecified,
@@ -103,10 +104,10 @@ fun SearchStatus.TopAppBarAnim(
             label = "SearchTopBarAlpha",
         )
     Box(
-        modifier =
-            modifier.fillMaxWidth().background(colorScheme.surface).graphicsLayer {
-                this.alpha = alpha
-            }
+        // 顶栏背景由其自身的渐进色带负责（静止时透明、内容滚入渐显）；此处仅做整体淡出，勿垫不透明底色，否则静止时会盖住壁纸渐变形成灰白色块。
+        modifier = modifier.fillMaxWidth().graphicsLayer {
+            this.alpha = alpha
+        }
     ) {
         content()
     }
@@ -122,39 +123,33 @@ fun SearchStatus.SearchPager(
 ) {
     val spacing = AppTheme.spacing
     val componentSizes = AppTheme.sizes
-    val resolvedPadding =
-        SearchBarPadding(
-            top = padding.top.takeOrElse { componentSizes.searchBarTopPadding },
-            start = padding.start.takeOrElse { spacing.space0 },
-            end = padding.end.takeOrElse { spacing.space0 },
-        )
+    val resolvedPadding = SearchBarPadding(
+        top = padding.top.takeOrElse { componentSizes.searchBarTopPadding },
+        start = padding.start.takeOrElse { spacing.space0 },
+        end = padding.end.takeOrElse { spacing.space0 },
+    )
 
     val searchStatus = this
     val isCollapsed = searchStatus.isCollapsed()
     val isExpanded = searchStatus.isExpanded()
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
-    val topPadding by
-        animateDpAsState(
-            targetValue =
-                if (searchStatus.shouldExpand()) {
-                    systemBarsPadding + componentSizes.listItemVerticalMinimal
-                } else {
-                    max(searchStatus.offsetY, spacing.space0)
-                },
-            animationSpec = tween(AnimationSpecs.DURATION_NORMAL, easing = AnimationSpecs.EnterEasing),
-            label = "SearchTopPadding",
-            finishedListener = { onSearchStatusChange(searchStatus.onAnimationComplete()) },
-        )
-    val surfaceAlpha by
-        animateFloatAsState(
-            targetValue = if (searchStatus.shouldExpand()) 1f else 0f,
-            // Match topPadding's duration/easing so the surface dim and the layout settle on the
-            // same
-            // frame. Previously the dim finished 100ms earlier (200 vs 300), exposing the content
-            // mid-collapse and reading as an end-of-animation hitch.
-            animationSpec = tween(AnimationSpecs.DURATION_NORMAL, easing = AnimationSpecs.EnterEasing),
-            label = "SearchSurfaceAlpha",
-        )
+    val topPadding by animateDpAsState(
+        targetValue = if (searchStatus.shouldExpand()) {
+            systemBarsPadding + componentSizes.listItemVerticalMinimal
+        } else {
+            max(searchStatus.offsetY, spacing.space0)
+        },
+        animationSpec = tween(AnimationSpecs.DURATION_NORMAL, easing = AnimationSpecs.EnterEasing),
+        label = "SearchTopPadding",
+        finishedListener = { onSearchStatusChange(searchStatus.onAnimationComplete()) },
+    )
+    val surfaceAlpha by animateFloatAsState(
+        targetValue = if (searchStatus.shouldExpand()) 1f else 0f,
+        // 使 topPadding 的持续时间/缓动与表面变暗和布局的稳定保持一致。
+        // 此前，变暗效果在100毫秒前就已完成（200 vs 300），导致内容在收起过程中暴露，并被误读为动画结束时的卡顿。
+        animationSpec = tween(AnimationSpecs.DURATION_NORMAL, easing = AnimationSpecs.EnterEasing),
+        label = "SearchSurfaceAlpha",
+    )
 
     BackHandler(enabled = !isCollapsed) {
         onSearchStatusChange(
@@ -163,17 +158,13 @@ fun SearchStatus.SearchPager(
     }
 
     Column(
-        modifier =
-            Modifier.fillMaxSize()
-                .zIndex(5f)
-                .background(colorScheme.surface.copy(alpha = surfaceAlpha))
-                .then(
-                    if (!isCollapsed) {
-                        Modifier.pointerInput(searchStatus.current) {}
-                    } else {
-                        Modifier
-                    }
-                )
+        modifier = Modifier.fillMaxSize().zIndex(5f).background(colorScheme.surface.copy(alpha = surfaceAlpha)).then(
+            if (!isCollapsed) {
+                Modifier.pointerInput(searchStatus.current) {}
+            } else {
+                Modifier
+            }
+        )
     ) {
         SearchPagerTopRow(
             searchStatus = searchStatus,
@@ -200,16 +191,13 @@ private fun SearchPagerTopRow(
 ) {
     val isCollapsed = searchStatus.isCollapsed()
     Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .padding(top = topPadding)
-                .then(
-                    if (!isCollapsed) {
-                        Modifier.background(colorScheme.surface)
-                    } else {
-                        Modifier
-                    }
-                ),
+        modifier = Modifier.fillMaxWidth().padding(top = topPadding).then(
+            if (!isCollapsed) {
+                Modifier.background(colorScheme.surface)
+            } else {
+                Modifier
+            }
+        ),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -240,11 +228,9 @@ private fun SearchPagerCancelButton(
     val isExpanded = searchStatus.isExpanded() || searchStatus.isExpanding()
     AnimatedVisibility(
         visible = isExpanded,
-        // Animate only the layout width (expand/shrink) + fade. The previous slide-in/out fought
-        // the
-        // simultaneous width animation (slide offset keyed off the shrinking width), which made the
-        // adjacent weight(1f) search bar reflow jerkily on removal. Dropping the slide keeps the
-        // space reclaim smooth.
+        // 仅对布局宽度（展开/收缩）+淡入淡出进行动画处理。
+        // 之前的滑入/滑出动画与同时进行的宽度动画相互冲突（滑动偏移量依赖于收缩的宽度），
+        // 导致移除时相邻的 `weight(1f)` 搜索栏出现卡顿的重新布局。去掉滑动动画后，空间回收过程保持平滑流畅。
         enter = fadeIn() + expandHorizontally(),
         exit = fadeOut() + shrinkHorizontally(),
     ) {
@@ -252,25 +238,23 @@ private fun SearchPagerCancelButton(
             text = FlyTxt.Component.Button.Cancel,
             fontWeight = FontWeight.Bold,
             color = colorScheme.primary,
-            modifier =
-                Modifier.padding(
-                        start = spacing.space4,
-                        end = spacing.space16,
-                        top = searchBarTopPadding,
-                        bottom = spacing.space6,
+            modifier = Modifier.padding(
+                start = spacing.space4,
+                end = spacing.space16,
+                top = searchBarTopPadding,
+                bottom = spacing.space6,
+            ).clickable(
+                interactionSource = null,
+                indication = null,
+                enabled = searchStatus.isExpanded(),
+            ) {
+                onSearchStatusChange(
+                    searchStatus.copy(
+                        searchText = "",
+                        current = SearchStatus.Status.COLLAPSING,
                     )
-                    .clickable(
-                        interactionSource = null,
-                        indication = null,
-                        enabled = searchStatus.isExpanded(),
-                    ) {
-                        onSearchStatusChange(
-                            searchStatus.copy(
-                                searchText = "",
-                                current = SearchStatus.Status.COLLAPSING,
-                            )
-                        )
-                    },
+                )
+            },
         )
     }
 }
@@ -329,22 +313,20 @@ private fun SearchBar(
             onSearchStatusChange(searchStatus.copy(searchText = it.text))
         },
         singleLine = true,
-        textStyle =
-            TextStyle(
-                fontWeight = FontWeight.Medium,
-                fontSize = 17.sp,
-                color = colorScheme.onSurface,
-            ),
+        textStyle = TextStyle(
+            fontWeight = FontWeight.Medium,
+            fontSize = 17.sp,
+            color = colorScheme.onSurface,
+        ),
         cursorBrush = SolidColor(colorScheme.primary),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(start = padding.start, end = padding.end)
-                .padding(top = padding.top, bottom = componentSizes.searchBarBottomPadding)
-                .heightIn(min = componentSizes.searchFieldMinHeight)
-                .background(colorScheme.secondaryContainer, CircleShape)
-                .focusRequester(focusRequester),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = padding.start, end = padding.end)
+            .padding(top = padding.top, bottom = componentSizes.searchBarBottomPadding)
+            .heightIn(min = componentSizes.searchFieldMinHeight)
+            .glassCardSurface(CircleShape, fallbackColor = colorScheme.secondaryContainer)
+            .focusRequester(focusRequester),
         decorationBox = { innerTextField ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -371,9 +353,7 @@ private fun SearchBarLeadingIcon(componentSizes: Sizes, spacing: Spacing) {
     Icon(
         imageVector = MiuixIcons.Basic.Search,
         contentDescription = FlyTxt.Component.Editor.Action.Search,
-        modifier =
-            Modifier.size(componentSizes.searchIconTouchTarget)
-                .padding(start = spacing.space16, end = spacing.space8),
+        modifier = Modifier.size(componentSizes.searchIconTouchTarget).padding(start = spacing.space16, end = spacing.space8),
         tint = colorScheme.onSurfaceVariantSummary,
     )
 }
@@ -394,10 +374,8 @@ private fun SearchBarClearButton(
             imageVector = MiuixIcons.Basic.SearchCleanup,
             contentDescription = FlyTxt.Component.Button.Clear,
             tint = colorScheme.onSurface,
-            modifier =
-                Modifier.size(componentSizes.searchIconTouchTarget)
-                    .padding(start = spacing.space8, end = spacing.space16)
-                    .clickable(interactionSource = null, indication = null) { onClear() },
+            modifier = Modifier.size(componentSizes.searchIconTouchTarget).padding(start = spacing.space8, end = spacing.space16)
+            .clickable(interactionSource = null, indication = null) { onClear() },
         )
     }
 }

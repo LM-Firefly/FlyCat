@@ -125,10 +125,9 @@ object ProxyServiceContracts {
     const val SOURCE_AUTO_RESTART_REPLACED = "auto_restart_replaced"
     const val SOURCE_UNKNOWN = "unknown"
 
-    fun intentSelf(action: String, packageName: String? = null): android.content.Intent =
-        android.content.Intent(action).apply {
-            if (!packageName.isNullOrBlank()) {
-                setPackage(packageName)
-            }
+    fun intentSelf(action: String, packageName: String? = null): android.content.Intent = android.content.Intent(action).apply {
+        if (!packageName.isNullOrBlank()) {
+            setPackage(packageName)
         }
+    }
 }

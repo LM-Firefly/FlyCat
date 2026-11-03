@@ -31,20 +31,16 @@ class CustomRoutingBootstrapper(private val overrideConfigRepository: OverrideCo
     override suspend fun ensureDefaultContent(): String {
         val existingContent = overrideConfigRepository.loadCustomRoutingContent()
         if (!existingContent.isNullOrBlank()) {
-            // Content file exists, but its metadata entry may be missing (e.g. content was
-            // written without going through save()). The compile pipeline keeps the custom
-            // routing override in a profile chain only when the metadata entry exists, so
-            // re-save here to heal the metadata when it is absent.
-            val hasMetadata =
-                overrideConfigRepository.getById(
-                    OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID
-                ) != null
+            // 内容文件存在，但其元数据条目可能缺失（例如内容未经 save() 写入）。
+            // 编译管线仅在元数据条目存在时，才会在 profile 链中保留自定义路由覆盖，因此当元数据缺失时，请在此处重新保存以修复元数据。
+            val hasMetadata = overrideConfigRepository.getById(
+                OverrideInternalConstants.CUSTOM_ROUTING_OVERRIDE_ID
+            ) != null
             if (!hasMetadata) {
                 overrideConfigRepository.saveCustomRoutingContent(existingContent)
             }
             return existingContent
         }
-
         val generatedYaml = buildPresetTemplateYaml(defaultOverridePresetTemplateSelection())
         overrideConfigRepository.saveCustomRoutingContent(generatedYaml)
         return generatedYaml

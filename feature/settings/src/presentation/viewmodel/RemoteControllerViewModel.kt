@@ -43,26 +43,23 @@ class RemoteControllerViewModel(
     private val proxyFacade: ProxyControlContract,
 ) : AndroidViewModel(application) {
 
-    val controllerEnabled: StateFlow<Boolean> =
-        store.controllerEnabled.state.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = store.controllerEnabled.value,
-        )
+    val controllerEnabled: StateFlow<Boolean> = store.controllerEnabled.state.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = store.controllerEnabled.value,
+    )
 
-    val backends: StateFlow<List<RemoteBackend>> =
-        store.backends.state.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = store.backends.value,
-        )
+    val backends: StateFlow<List<RemoteBackend>> = store.backends.state.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = store.backends.value,
+    )
 
-    val activeBackendId: StateFlow<String> =
-        store.activeBackendId.state.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = store.activeBackendId.value,
-        )
+    val activeBackendId: StateFlow<String> = store.activeBackendId.state.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = store.activeBackendId.value,
+    )
 
     fun setEnabled(enabled: Boolean) {
         store.controllerEnabled.set(enabled)
@@ -70,14 +67,13 @@ class RemoteControllerViewModel(
     }
 
     fun addBackend(name: String, host: String, port: Int, secret: String) {
-        val backend =
-            RemoteBackend(
-                id = RemoteBackend.newId(),
-                name = name.trim(),
-                host = host.trim(),
-                port = port,
-                secret = secret.trim(),
-            )
+        val backend = RemoteBackend(
+            id = RemoteBackend.newId(),
+            name = name.trim(),
+            host = host.trim(),
+            port = port,
+            secret = secret.trim(),
+        )
         store.backends.add(backend)
         if (store.activeBackendId.value.isBlank()) {
             store.activeBackendId.set(backend.id)

@@ -80,16 +80,14 @@ object RuntimeServiceLauncher : LocalRuntimeServiceContract {
         StatusProvider.markTunStarting()
         StatusProvider.markRuntimeStarting(mode)
 
-        val intent =
-            Intent(appContext, TunService::class.java).putExtra(EXTRA_REQUEST_SOURCE, source)
+        val intent = Intent(appContext, TunService::class.java).putExtra(EXTRA_REQUEST_SOURCE, source)
 
-        runCatching { appContext.startForegroundService(intent) }
-            .onFailure { error ->
-                StatusProvider.clearTunStarting()
-                StatusProvider.markRuntimeIdle(mode)
-                startupLogStore.append("${logScope.tag} launcher: failed=${error.message}")
-                throw error
-            }
+        runCatching { appContext.startForegroundService(intent) }.onFailure { error ->
+            StatusProvider.clearTunStarting()
+            StatusProvider.markRuntimeIdle(mode)
+            startupLogStore.append("${logScope.tag} launcher: failed=${error.message}")
+            throw error
+        }
     }
 
     fun stop(context: Context, mode: RunMode) {

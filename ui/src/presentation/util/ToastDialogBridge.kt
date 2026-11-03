@@ -49,8 +49,7 @@ object ToastDialogBridge {
     fun show(message: String, title: String = DEFAULT_TITLE) {
         if (message.isBlank()) return
 
-        val event =
-            ToastDialogEvent(id = nextId.getAndIncrement(), title = title, message = message)
+        val event = ToastDialogEvent(id = nextId.getAndIncrement(), title = title, message = message)
 
         synchronized(lock) {
             if (_event.value == null) {

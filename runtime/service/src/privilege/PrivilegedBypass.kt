@@ -78,8 +78,6 @@ object PrivilegedBypass {
             else -> true
         }
     }
-    private fun xmsfUid(context: Context): Int? =
-        runCatching { context.packageManager.getPackageUid(XMSF_PACKAGE, 0) }
-            .onFailure { error -> Log.w(TAG, "$XMSF_PACKAGE is not installed", error) }
-            .getOrNull()
+    private fun xmsfUid(context: Context): Int? = runCatching { context.packageManager.getPackageUid(XMSF_PACKAGE, 0) }
+        .onFailure { error -> Log.w(TAG, "$XMSF_PACKAGE is not installed", error) }.getOrNull()
 }

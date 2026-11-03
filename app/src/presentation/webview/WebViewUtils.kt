@@ -22,12 +22,10 @@
 package com.github.lmfirefly.flycat.presentation.webview
 
 object WebViewUtils {
-    private val onlinePanelUrls =
-        listOf(
-            "https://board.zash.run.place",
-            "https://metacubex.github.io/metacubexd",
-            "https://yacd.haishan.me",
-        )
-
+    private val onlinePanelUrls = listOf(
+        "https://board.zash.run.place",
+        "https://metacubex.github.io/metacubexd",
+        "https://yacd.haishan.me",
+    )
     fun getPanelUrl(panelType: Int): String = onlinePanelUrls.getOrElse(panelType) { "" }
 }

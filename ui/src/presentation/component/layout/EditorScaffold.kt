@@ -102,10 +102,7 @@ fun EditorListItem(
 ) {
     Card(modifier = modifier.padding(vertical = UiDp.dp4)) {
         Row(
-            modifier =
-                Modifier.fillMaxWidth()
-                    .clickable(onClick = onClick)
-                    .padding(horizontal = UiDp.dp16, vertical = UiDp.dp12),
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = UiDp.dp16, vertical = UiDp.dp12),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(

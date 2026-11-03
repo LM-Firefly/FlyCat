@@ -53,49 +53,39 @@ fun HomeIdleContent(oneWord: String, author: String, modifier: Modifier = Modifi
     val authorColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
 
     Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(
-                    top = componentSizes.homeIdleTopPadding,
-                    bottom = componentSizes.homeIdleBottomPadding,
-                ),
+        modifier = modifier.fillMaxWidth().padding(
+            top = componentSizes.homeIdleTopPadding,
+            bottom = componentSizes.homeIdleBottomPadding,
+        ),
         verticalArrangement = Arrangement.spacedBy(spacing.space16),
         horizontalAlignment = Alignment.Start,
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier =
-                    Modifier.fillMaxWidth().padding(top = spacing.space18, start = spacing.space8)
-            ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(top = spacing.space18, start = spacing.space8)) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(spacing.space12),
                     verticalAlignment = Alignment.Top,
                 ) {
                     Box(
-                        modifier =
-                            Modifier.padding(top = spacing.space12)
-                                .width(componentSizes.homeIdleAccentLineWidth)
-                                .height(componentSizes.homeIdleAccentLineHeight)
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors =
-                                            listOf(
-                                                accentColor.copy(alpha = opacity.accent),
-                                                Color.Transparent,
-                                            )
-                                    )
+                        modifier = Modifier.padding(top = spacing.space12)
+                        .width(componentSizes.homeIdleAccentLineWidth).height(componentSizes.homeIdleAccentLineHeight)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    accentColor.copy(alpha = opacity.accent),
+                                    Color.Transparent,
                                 )
+                            )
+                        )
                     )
                     Text(
                         text = oneWord,
-                        style =
-                            MiuixTheme.textStyles.headline1.copy(
-                                fontSize = 28.sp,
-                                lineHeight = 50.sp,
-                                letterSpacing = 0.8.sp,
-                                fontWeight = FontWeight.Medium,
-                            ),
+                        style = MiuixTheme.textStyles.headline1.copy(
+                            fontSize = 28.sp,
+                            lineHeight = 50.sp,
+                            letterSpacing = 0.8.sp,
+                            fontWeight = FontWeight.Medium,
+                        ),
                         color = MiuixTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Start,
                         modifier = Modifier.weight(1f),
@@ -110,20 +100,18 @@ fun HomeIdleContent(oneWord: String, author: String, modifier: Modifier = Modifi
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                modifier =
-                    Modifier.width(componentSizes.homeIdleAuthorDividerWidth)
-                        .height(componentSizes.homeIdleAuthorDividerHeight)
-                        .background(authorColor.copy(alpha = opacity.muted))
+                modifier = Modifier.width(componentSizes.homeIdleAuthorDividerWidth)
+                    .height(componentSizes.homeIdleAuthorDividerHeight)
+                    .background(authorColor.copy(alpha = opacity.muted))
             )
             Spacer(modifier = Modifier.width(spacing.space12))
             Text(
                 text = author,
-                style =
-                    MiuixTheme.textStyles.title3.copy(
-                        fontSize = 15.sp,
-                        letterSpacing = 1.6.sp,
-                        fontWeight = FontWeight.Medium,
-                    ),
+                style = MiuixTheme.textStyles.title3.copy(
+                    fontSize = 15.sp,
+                    letterSpacing = 1.6.sp,
+                    fontWeight = FontWeight.Medium,
+                ),
                 color = authorColor,
             )
         }

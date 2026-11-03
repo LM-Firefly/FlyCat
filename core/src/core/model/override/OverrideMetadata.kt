@@ -39,8 +39,7 @@ data class OverrideMetadata(
         const val ID_PREFIX = "cfg-"
         const val LEGACY_SYSTEM_PREFIX = "preset-"
 
-        fun generateId(): String =
-            "$ID_PREFIX${System.currentTimeMillis()}-${(1000..9999).random()}"
+        fun generateId(): String = "$ID_PREFIX${System.currentTimeMillis()}-${(1000..9999).random()}"
 
         fun create(
             name: String,
@@ -63,14 +62,13 @@ data class OverrideMetadata(
         name: String = this.name,
         description: String? = this.description,
         contentType: OverrideContentType = this.contentType,
-    ): OverrideMetadata =
-        copy(
-            name = name,
-            description = description,
-            contentType = contentType,
-            updatedAt = System.currentTimeMillis(),
-            sortOrder = sortOrder,
-        )
+    ): OverrideMetadata = copy(
+        name = name,
+        description = description,
+        contentType = contentType,
+        updatedAt = System.currentTimeMillis(),
+        sortOrder = sortOrder,
+    )
 
     fun duplicateAsUser(): OverrideMetadata {
         val now = System.currentTimeMillis()
@@ -93,35 +91,26 @@ data class MetadataIndex(
 ) {
     fun getById(id: String): OverrideMetadata? = configs[id]
 
-    fun upsert(metadata: OverrideMetadata): MetadataIndex =
-        copy(configs = configs + (metadata.id to metadata))
+    fun upsert(metadata: OverrideMetadata): MetadataIndex = copy(configs = configs + (metadata.id to metadata))
 
     fun remove(id: String): MetadataIndex = copy(configs = configs - id)
 
-    fun removeOverrideFromProfileChains(overrideId: String): MetadataIndex =
-        copy(
-            profileChains =
-                profileChains.mapValues { (_, binding) -> binding.removeOverride(overrideId) }
-        )
+    fun removeOverrideFromProfileChains(overrideId: String): MetadataIndex = copy(profileChains = profileChains.mapValues { (_, binding) -> binding.removeOverride(overrideId) })
 
-    fun sanitizeProfileChains(predicate: (String) -> Boolean): MetadataIndex =
-        copy(
-            profileChains =
-                profileChains.mapValues { (_, binding) ->
-                    binding.copy(overrideIds = binding.overrideIds.filter(predicate))
-                }
-        )
+    fun sanitizeProfileChains(predicate: (String) -> Boolean): MetadataIndex = copy(
+        profileChains = profileChains.mapValues { (_, binding) ->
+            binding.copy(overrideIds = binding.overrideIds.filter(predicate))
+        }
+    )
 
-    fun sortedUserMetadata(): List<OverrideMetadata> =
-        configs.values.sortedWith(
-            compareBy<OverrideMetadata> { if (it.sortOrder > 0L) 0 else 1 }
-                .thenBy { if (it.sortOrder > 0L) it.sortOrder else Long.MAX_VALUE }
-                .thenByDescending(OverrideMetadata::updatedAt)
-                .thenBy(OverrideMetadata::createdAt)
-        )
+    fun sortedUserMetadata(): List<OverrideMetadata> = configs.values.sortedWith(
+        compareBy<OverrideMetadata> { if (it.sortOrder > 0L) 0 else 1 }
+            .thenBy { if (it.sortOrder > 0L) it.sortOrder else Long.MAX_VALUE }
+            .thenByDescending(OverrideMetadata::updatedAt)
+            .thenBy(OverrideMetadata::createdAt)
+    )
 
-    fun nextUserSortOrder(): Long =
-        sortedUserMetadata().maxOfOrNull(OverrideMetadata::sortOrder)?.plus(1L) ?: 1L
+    fun nextUserSortOrder(): Long = sortedUserMetadata().maxOfOrNull(OverrideMetadata::sortOrder)?.plus(1L) ?: 1L
 
     fun normalizeUserSortOrders(): MetadataIndex {
         val updatedConfigs = configs.toMutableMap()
@@ -144,9 +133,7 @@ data class MetadataIndex(
 
     fun getProfileChain(profileId: String): ProfileBinding? = profileChains[profileId]
 
-    fun upsertProfileChain(binding: ProfileBinding): MetadataIndex =
-        copy(profileChains = profileChains + (binding.profileId to binding))
+    fun upsertProfileChain(binding: ProfileBinding): MetadataIndex = copy(profileChains = profileChains + (binding.profileId to binding))
 
-    fun removeProfileChain(profileId: String): MetadataIndex =
-        copy(profileChains = profileChains - profileId)
+    fun removeProfileChain(profileId: String): MetadataIndex = copy(profileChains = profileChains - profileId)
 }

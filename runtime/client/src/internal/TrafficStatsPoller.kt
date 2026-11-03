@@ -93,29 +93,28 @@ internal class TrafficStatsPoller(
                 val cached = liveConnections.remove(event.id)
                 // 加入时的元数据保留在缓存命中路径上；close 不再携带完整元数据（高频率路径）。规则/链来自 close，因为匹配可能延迟完成。
                 // close 自身的瘦身份（包名/进程/uid）合并回元数据：join 时身份可能尚未解析，缺哪项补哪项。
-                val merged =
-                    cached?.copy(
-                        upload = event.upload,
-                        download = event.download,
-                        uploadDelta = event.uploadDelta,
-                        downloadDelta = event.downloadDelta,
-                        rule = event.rule,
-                        rulePayload = event.rulePayload,
-                        chains = event.chains,
-                        providerChains = event.providerChains,
-                        metadata = mergeIdentity(cached.metadata, event),
-                    ) ?: ConnectionInfo(
-                        id = event.id,
-                        upload = event.upload,
-                        download = event.download,
-                        uploadDelta = event.uploadDelta,
-                        downloadDelta = event.downloadDelta,
-                        metadata = slimIdentityMetadata(event),
-                        rule = event.rule,
-                        rulePayload = event.rulePayload,
-                        chains = event.chains,
-                        providerChains = event.providerChains,
-                    )
+                val merged = cached?.copy(
+                    upload = event.upload,
+                    download = event.download,
+                    uploadDelta = event.uploadDelta,
+                    downloadDelta = event.downloadDelta,
+                    rule = event.rule,
+                    rulePayload = event.rulePayload,
+                    chains = event.chains,
+                    providerChains = event.providerChains,
+                    metadata = mergeIdentity(cached.metadata, event),
+                ) ?: ConnectionInfo(
+                    id = event.id,
+                    upload = event.upload,
+                    download = event.download,
+                    uploadDelta = event.uploadDelta,
+                    downloadDelta = event.downloadDelta,
+                    metadata = slimIdentityMetadata(event),
+                    rule = event.rule,
+                    rulePayload = event.rulePayload,
+                    chains = event.chains,
+                    providerChains = event.providerChains,
+                )
                 if (_reliableConnectionCloseEvents.trySend(merged).isFailure) {
                     logReliableQueueRejected("close", merged.id)
                 }
@@ -130,16 +129,15 @@ internal class TrafficStatsPoller(
         override fun received(jsonPayload: String) {
             runCatching {
                 val event = eventJson.decodeFromString<ConnectionJoinPayload>(jsonPayload)
-                val connection =
-                    ConnectionInfo(
-                        id = event.id,
-                        metadata = event.metadata,
-                        start = event.start,
-                        chains = event.chains,
-                        providerChains = event.providerChains,
-                        rule = event.rule,
-                        rulePayload = event.rulePayload,
-                    )
+                val connection = ConnectionInfo(
+                    id = event.id,
+                    metadata = event.metadata,
+                    start = event.start,
+                    chains = event.chains,
+                    providerChains = event.providerChains,
+                    rule = event.rule,
+                    rulePayload = event.rulePayload,
+                )
                 liveConnections[event.id] = connection
                 if (_reliableConnectionJoinEvents.trySend(connection).isFailure) {
                     logReliableQueueRejected("join", connection.id)
@@ -153,12 +151,8 @@ internal class TrafficStatsPoller(
     }
     private val trafficUpdatePackedCallback = object : TrafficUpdatePackedInterface {
         override fun received(uploadTotal: Long, downloadTotal: Long, uploadSpeed: Long, downloadSpeed: Long) {
-            val packedTotal =
-                (encodeTrafficValue(uploadTotal) shl 32) or
-                    encodeTrafficValue(downloadTotal)
-            val packedNow =
-                (encodeTrafficValue(uploadSpeed) shl 32) or
-                    encodeTrafficValue(downloadSpeed)
+            val packedTotal = (encodeTrafficValue(uploadTotal) shl 32) or encodeTrafficValue(downloadTotal)
+            val packedNow = (encodeTrafficValue(uploadSpeed) shl 32) or encodeTrafficValue(downloadSpeed)
             // 统一写入 TrafficPushHub（唯一数据源）
             TrafficPushHub.update(trafficNowPacked = packedNow, trafficTotalPacked = packedTotal)
             // 仅在 totals 实际变化时更新 connectionSnapshot，避免触发下游无效传播
@@ -235,10 +229,9 @@ internal class TrafficStatsPoller(
                                 failureBackoffUntilMs = 0L
                             }.onFailure { error ->
                                 consecutiveFailures++
-                                failureBackoffUntilMs =
-                                    nowMs +
-                                        (consecutiveFailures * PollingTimerSpecs.TrafficPoller.FAILURE_BACKOFF_STEP_MS)
-                                            .coerceAtMost(PollingTimerSpecs.TrafficPoller.FAILURE_BACKOFF_MAX_MS)
+                                failureBackoffUntilMs = nowMs +
+                                    (consecutiveFailures * PollingTimerSpecs.TrafficPoller.FAILURE_BACKOFF_STEP_MS)
+                                        .coerceAtMost(PollingTimerSpecs.TrafficPoller.FAILURE_BACKOFF_MAX_MS)
                                 Timber.d(
                                     error,
                                     "Traffic polling skipped (consecutive failures: %d)",

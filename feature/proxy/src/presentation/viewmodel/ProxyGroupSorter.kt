@@ -53,64 +53,55 @@ internal class ProxyGroupSorter {
         scope: CoroutineScope,
         proxyGroups: StateFlow<List<ProxyGroupInfo>>,
         sortMode: StateFlow<ProxySortMode>,
-    ): StateFlow<List<ProxyGroupInfo>> =
-        combine(proxyGroups, sortMode, groupOriginalOrder) { groups, mode, originalOrderCache ->
-                // 排序是 O(组数×节点数) 纯计算，下移默认调度器避免在 Main 上随每次发布重排。
-                withContext(Dispatchers.Default) {
-                    buildSortedProxyGroups(groups, mode, originalOrderCache)
-                }
-            }
-            .stateIn(
-                scope = scope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList(),
-            )
+    ): StateFlow<List<ProxyGroupInfo>> = combine(proxyGroups, sortMode, groupOriginalOrder) { groups, mode, originalOrderCache ->
+        // 排序是 O(组数×节点数) 纯计算，下移默认调度器避免在 Main 上随每次发布重排。
+        withContext(Dispatchers.Default) {
+            buildSortedProxyGroups(groups, mode, originalOrderCache)
+        }
+    }.stateIn(
+        scope = scope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList(),
+    )
 
     private fun sortProxies(
         proxies: List<Proxy>,
         sortMode: ProxySortMode,
         originalOrder: List<String>,
-    ): List<Proxy> =
-        when (sortMode) {
-            ProxySortMode.DEFAULT -> reorderByNameSequence(proxies, originalOrder)
-            ProxySortMode.BY_NAME -> {
-                val originalIndex =
-                    originalOrder.withIndex().associate { (index, name) -> name to index }
-                proxies
-                    .sortedWith(
-                        compareBy<Proxy>(
-                            { it.name.lowercase() },
-                            { originalIndex[it.name] ?: Int.MAX_VALUE },
-                        )
-                    )
-                    .takeUnless { it.hasSameProxyOrderAs(proxies) } ?: proxies
-            }
-            ProxySortMode.BY_LATENCY -> {
-                val originalIndex =
-                    originalOrder.withIndex().associate { (index, name) -> name to index }
-                proxies
-                    .sortedWith(
-                        compareBy<Proxy>(
-                            { proxy ->
-                                when {
-                                    proxy.delay > 0 -> 0
-                                    proxy.delay < 0 -> 2
-                                    else -> 1
-                                }
-                            },
-                            { proxy ->
-                                when {
-                                    proxy.delay > 0 -> proxy.delay
-                                    proxy.delay < 0 -> Int.MAX_VALUE - 1
-                                    else -> Int.MAX_VALUE
-                                }
-                            },
-                            { proxy -> originalIndex[proxy.name] ?: Int.MAX_VALUE },
-                        )
-                    )
-                    .takeUnless { it.hasSameProxyOrderAs(proxies) } ?: proxies
-            }
+    ): List<Proxy> = when (sortMode) {
+        ProxySortMode.DEFAULT -> reorderByNameSequence(proxies, originalOrder)
+        ProxySortMode.BY_NAME -> {
+            val originalIndex = originalOrder.withIndex().associate { (index, name) -> name to index }
+            proxies.sortedWith(
+                compareBy<Proxy>(
+                    { it.name.lowercase() },
+                    { originalIndex[it.name] ?: Int.MAX_VALUE },
+                )
+            ).takeUnless { it.hasSameProxyOrderAs(proxies) } ?: proxies
         }
+        ProxySortMode.BY_LATENCY -> {
+            val originalIndex = originalOrder.withIndex().associate { (index, name) -> name to index }
+            proxies.sortedWith(
+                compareBy<Proxy>(
+                    { proxy ->
+                        when {
+                            proxy.delay > 0 -> 0
+                            proxy.delay < 0 -> 2
+                            else -> 1
+                        }
+                    },
+                    { proxy ->
+                        when {
+                            proxy.delay > 0 -> proxy.delay
+                            proxy.delay < 0 -> Int.MAX_VALUE - 1
+                            else -> Int.MAX_VALUE
+                        }
+                    },
+                    { proxy -> originalIndex[proxy.name] ?: Int.MAX_VALUE },
+                )
+            ).takeUnless { it.hasSameProxyOrderAs(proxies) } ?: proxies
+        }
+    }
 
     private fun reorderByNameSequence(
         proxies: List<Proxy>,
@@ -147,26 +138,22 @@ internal class ProxyGroupSorter {
                 nextCache[group.name] = cached
                 cached.result
             } else {
-                val sortedProxies =
-                    sortProxies(
-                        proxies = group.proxies,
-                        sortMode = mode,
-                        originalOrder = originalOrder,
-                    )
-                val result =
-                    if (sortedProxies === group.proxies) {
-                        group
-                    } else {
-                        group.copy(proxies = sortedProxies)
-                    }
+                val sortedProxies = sortProxies(
+                    proxies = group.proxies,
+                    sortMode = mode,
+                    originalOrder = originalOrder,
+                )
+                val result = if (sortedProxies === group.proxies) {
+                    group
+                } else {
+                    group.copy(proxies = sortedProxies)
+                }
                 SortedGroupCacheEntry(
-                        sourceGroup = group,
-                        sortMode = mode,
-                        originalOrder = originalOrder,
-                        result = result,
-                    )
-                    .also { nextCache[group.name] = it }
-                    .result
+                    sourceGroup = group,
+                    sortMode = mode,
+                    originalOrder = originalOrder,
+                    result = result,
+                ).also { nextCache[group.name] = it }.result
             }
         }
         sortedGroupCache = nextCache
@@ -188,12 +175,11 @@ internal class ProxyGroupSorter {
         groups.forEach { group ->
             val latestNames = group.proxies.map { it.name }
             val previous = next[group.name]
-            val merged =
-                if (previous == null) {
-                    latestNames
-                } else {
-                    mergeStableOrder(previous, latestNames)
-                }
+            val merged = if (previous == null) {
+                latestNames
+            } else {
+                mergeStableOrder(previous, latestNames)
+            }
             if (previous != merged) {
                 next[group.name] = merged
                 changed = true

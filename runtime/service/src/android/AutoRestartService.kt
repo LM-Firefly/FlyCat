@@ -126,24 +126,22 @@ class AutoRestartService : Service() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true
         createNotificationChannel()
         val notification = createNotification()
-        val started =
-            runCatching {
-                    val foregroundFlags =
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                        } else {
-                            0
-                        }
-                    startForeground(NOTIFICATION_ID, notification, foregroundFlags)
-                }
-                .recoverCatching {
-                    // Some vendors reject special-use type at runtime; fallback to the default call.
-                    startForeground(NOTIFICATION_ID, notification)
-                }
-                .onFailure { error ->
-                    Timber.tag(TAG).e(error, "Failed to start foreground for auto-restart service")
-                }
-                .isSuccess
+        val started = runCatching {
+            val foregroundFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            } else {
+                0
+            }
+            startForeground(NOTIFICATION_ID, notification, foregroundFlags)
+        }
+        .recoverCatching {
+            // 部分厂商在运行时拒绝 special-use 前台服务类型；回退为默认调用。
+            startForeground(NOTIFICATION_ID, notification)
+        }
+        .onFailure { error ->
+            Timber.tag(TAG).e(error, "Failed to start foreground for auto-restart service")
+        }
+        .isSuccess
         if (!started) {
             foregroundStarted.set(false)
         }
@@ -189,12 +187,11 @@ class AutoRestartService : Service() {
             skipForPostUpdateColdStart = skipUpdateOnPostUpdateColdStart,
         )
 
-        val startupSource =
-            when (reason) {
-                REASON_BOOT_COMPLETED -> ProxyServiceContracts.SOURCE_AUTO_RESTART_BOOT
-                REASON_PACKAGE_REPLACED -> ProxyServiceContracts.SOURCE_AUTO_RESTART_REPLACED
-                else -> ProxyServiceContracts.SOURCE_AUTO_RESTART
-            }
+        val startupSource = when (reason) {
+            REASON_BOOT_COMPLETED -> ProxyServiceContracts.SOURCE_AUTO_RESTART_BOOT
+            REASON_PACKAGE_REPLACED -> ProxyServiceContracts.SOURCE_AUTO_RESTART_REPLACED
+            else -> ProxyServiceContracts.SOURCE_AUTO_RESTART
+        }
         when (bootstrap.runMode) {
             RunMode.VpnService -> {
                 if (VpnService.prepare(this) != null) {
@@ -211,35 +208,26 @@ class AutoRestartService : Service() {
             }
         }
 
-        val activationResult =
-            runCatching { awaitRuntimeActivation(bootstrap.runMode) }
-                .getOrElse { error ->
-                    cleanupIncompleteRuntime(bootstrap.runMode)
-                    throw error
-                }
+        val activationResult = runCatching { awaitRuntimeActivation(bootstrap.runMode) }.getOrElse { error ->
+            cleanupIncompleteRuntime(bootstrap.runMode)
+            throw error
+        }
         val logScope = RuntimeStartupLogStore.scopeForMode(bootstrap.runMode)
         val startupLogStore = RuntimeStartupLogStore(this, logScope)
         when (activationResult) {
             is RuntimeActivationResult.Running -> {
                 startupLogStore.append("${logScope.tag} auto-start: running reason=$reason")
-                Timber.tag(TAG)
-                    .i(
-                        "Auto start active: reason=$reason profile=${activeProfile.name}, " +
-                            "mode=${bootstrap.runMode}"
-                    )
+                Timber.tag(TAG).i("Auto start active: reason=$reason profile=${activeProfile.name}, " + "mode=${bootstrap.runMode}")
             }
             is RuntimeActivationResult.Failed -> {
                 cleanupIncompleteRuntime(bootstrap.runMode)
                 val message = activationResult.error ?: "runtime entered Failed"
-                startupLogStore.append(
-                    "${logScope.tag} auto-start: failed reason=$reason error=$message"
-                )
+                startupLogStore.append("${logScope.tag} auto-start: failed reason=$reason error=$message")
                 error(message)
             }
             is RuntimeActivationResult.TimedOut -> {
-                val timeoutMessage =
-                    "runtime activation timed out in ${activationResult.lastState.phase}" +
-                        activationResult.lastState.error?.let { ": $it" }.orEmpty()
+                val timeoutMessage = "runtime activation timed out in ${activationResult.lastState.phase}" +
+                    activationResult.lastState.error?.let { ": $it" }.orEmpty()
                 startupLogStore.append(
                     "${logScope.tag} auto-start: timeout reason=$reason " +
                         "phase=${activationResult.lastState.phase} " +
@@ -260,24 +248,23 @@ class AutoRestartService : Service() {
         }
     }
 
-    private suspend fun awaitRuntimeActivation(mode: RunMode): RuntimeActivationResult =
-        activationAwaiter.await(mode) {
-            when (mode) {
-                RunMode.Tun, RunMode.Ebpf ->
-                    RootTunServiceBridge.queryStatus(this)
-                        .also(RootTunStatusFlow::update)
-                        .let { status ->
-                            RuntimeActivationState(
-                                phase = status.state,
-                                error = status.lastError,
-                            )
-                        }
-                RunMode.VpnService ->
-                    RuntimeActivationState(
-                        phase = StatusProvider.queryRuntimePhase(mode),
-                    )
-            }
+    private suspend fun awaitRuntimeActivation(mode: RunMode): RuntimeActivationResult = activationAwaiter.await(mode) {
+        when (mode) {
+            RunMode.Tun, RunMode.Ebpf ->
+                RootTunServiceBridge.queryStatus(this)
+                    .also(RootTunStatusFlow::update)
+                    .let { status ->
+                        RuntimeActivationState(
+                            phase = status.state,
+                            error = status.lastError,
+                        )
+                    }
+            RunMode.VpnService ->
+                RuntimeActivationState(
+                    phase = StatusProvider.queryRuntimePhase(mode),
+                )
         }
+    }
 
     private suspend fun cleanupIncompleteRuntime(mode: RunMode) {
         when (mode) {
@@ -288,17 +275,13 @@ class AutoRestartService : Service() {
             }
             RunMode.VpnService -> {
                 val source = StatusProvider.queryRuntimeRequestSource()
-                val autoSources =
-                    setOf(
-                        ProxyServiceContracts.SOURCE_AUTO_RESTART,
-                        ProxyServiceContracts.SOURCE_AUTO_RESTART_BOOT,
-                        ProxyServiceContracts.SOURCE_AUTO_RESTART_REPLACED,
-                    )
+                val autoSources = setOf(
+                    ProxyServiceContracts.SOURCE_AUTO_RESTART,
+                    ProxyServiceContracts.SOURCE_AUTO_RESTART_BOOT,
+                    ProxyServiceContracts.SOURCE_AUTO_RESTART_REPLACED,
+                )
                 if (source !in autoSources) {
-                    Timber.tag(TAG)
-                        .i(
-                            "Skip cleanupIncompleteRuntime for Vpn: request source already switched to $source"
-                        )
+                    Timber.tag(TAG).i("Skip cleanupIncompleteRuntime for Vpn: request source already switched to $source")
                     return
                 }
                 RuntimeServiceLauncher.stop(this, mode)
@@ -332,8 +315,7 @@ class AutoRestartService : Service() {
                 return
             }
             AutoStartUpdatePolicy.Decision.UnsupportedProfileType -> {
-                Timber.tag(TAG)
-                    .d("Skip boot update: unsupported profile type=${activeProfile.type}")
+                Timber.tag(TAG).d("Skip boot update: unsupported profile type=${activeProfile.type}")
                 return
             }
             AutoStartUpdatePolicy.Decision.NoActiveProfile -> return
@@ -350,27 +332,25 @@ class AutoRestartService : Service() {
     }
 
     private fun createNotificationChannel() {
-        val channel =
-            NotificationChannel(
-                    CHANNEL_ID,
-                    "Auto Restart Service",
-                    NotificationManager.IMPORTANCE_LOW,
-                )
-                .apply {
-                    description = "Used to restart proxy service automatically"
-                    setShowBadge(false)
-                }
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            "Auto Restart Service",
+            NotificationManager.IMPORTANCE_LOW,
+        )
+        .apply {
+            description = "Used to restart proxy service automatically"
+            setShowBadge(false)
+        }
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
     }
 
-    private fun createNotification(): Notification =
-        NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("FlyCat")
-            .setContentText("Checking auto-start...")
-            .setSmallIcon(R.drawable.ic_logo_service)
-            .setOngoing(true)
-            .build()
+    private fun createNotification(): Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+        .setContentTitle("FlyCat")
+        .setContentText("Checking auto-start...")
+        .setSmallIcon(R.drawable.ic_logo_service)
+        .setOngoing(true)
+        .build()
 
     override fun onDestroy() {
         bootstrap.clearAutoStart()

@@ -69,14 +69,13 @@ object ProxyAutoStartUtils {
         }
         val isPostUpdateColdStart = featureStore.consumePostUpdateColdStartPending()
 
-        val activeProfile =
-            try {
-                profilesRepository.queryActiveProfile()
-            } catch (error: Exception) {
-                if (error is CancellationException) throw error
-                Timber.tag(TAG).e(error, "Failed to load active profile")
-                return
-            }
+        val activeProfile = try {
+            profilesRepository.queryActiveProfile()
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            Timber.tag(TAG).e(error, "Failed to load active profile")
+            return
+        }
 
         tryUpdateActiveProfileOnStart(
             appSettingsStorage = appSettingsStorage,

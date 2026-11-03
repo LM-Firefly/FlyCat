@@ -111,14 +111,13 @@ internal class RootTunRuntimeHost(
     }
 
     private fun RuntimeSnapshot.toRootTunStatus(spec: RuntimeSpec?): RootTunStatus {
-        val state =
-            when (phase) {
-                RuntimePhase.Idle -> RuntimePhase.Idle
-                RuntimePhase.Starting -> RuntimePhase.Starting
-                RuntimePhase.Running -> RuntimePhase.Running
-                RuntimePhase.Stopping -> RuntimePhase.Stopping
-                RuntimePhase.Failed -> RuntimePhase.Failed
-            }
+        val state = when (phase) {
+            RuntimePhase.Idle -> RuntimePhase.Idle
+            RuntimePhase.Starting -> RuntimePhase.Starting
+            RuntimePhase.Running -> RuntimePhase.Running
+            RuntimePhase.Stopping -> RuntimePhase.Stopping
+            RuntimePhase.Failed -> RuntimePhase.Failed
+        }
         return RootTunStatus(
             state = state,
             running = state.isActiveOrStopping,

@@ -28,11 +28,10 @@ import com.github.lmfirefly.flycat.runtime.service.session.telemetry.RuntimeStar
 import com.topjohnwu.superuser.Shell
 
 class RootTunTransport : RuntimeTransport {
-    private val startupLogStore =
-        RuntimeStartupLogStore(
-            com.github.lmfirefly.flycat.core.Global.application,
-            RuntimeStartupLogStore.Scope.ROOT_TUN,
-        )
+    private val startupLogStore = RuntimeStartupLogStore(
+        com.github.lmfirefly.flycat.core.Global.application,
+        RuntimeStartupLogStore.Scope.ROOT_TUN,
+    )
 
     override fun start(spec: RuntimeSpec) {
         when (spec.runMode) {
@@ -61,18 +60,11 @@ class RootTunTransport : RuntimeTransport {
 
     companion object {
         /** Finds the mihomo root daemon PID by scanning /proc for the libmihomo.so executable. */
-        fun findMihomoPid(): Int? =
-            runCatching {
-                Shell.cmd(
-                    "for proc in /proc/[0-9]*; do " +
-                        "pid=\${proc##*/}; exe=\$(readlink \"\$proc/exe\" 2>/dev/null); " +
-                        "case \"\${exe%% *}\" in */libmihomo.so) echo \$pid;; esac; " +
-                        "done"
-                )
-                    .exec()
-                    .out
-                    .mapNotNull { it.trim().toIntOrNull() }
-                    .firstOrNull()
-            }.getOrNull()
+        fun findMihomoPid(): Int? = runCatching {
+            Shell.cmd(
+                "for proc in /proc/[0-9]*; do " + "pid=\${proc##*/}; exe=\$(readlink \"\$proc/exe\" 2>/dev/null); " +
+                    "case \"\${exe%% *}\" in */libmihomo.so) echo \$pid;; esac; " + "done"
+            ).exec().out.mapNotNull { it.trim().toIntOrNull() }.firstOrNull()
+        }.getOrNull()
     }
 }

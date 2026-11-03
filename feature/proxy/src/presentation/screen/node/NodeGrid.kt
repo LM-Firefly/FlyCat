@@ -78,13 +78,10 @@ internal fun LazyListScope.nodeGridItems(
                 showCountryFlag = true,
                 resolvedChildNodeName = resolveChildNodeName?.invoke(proxy),
                 groupIconUri = if (proxy.isGroup) groupIconLookup?.invoke(proxy.name) else null,
-                modifier =
-                    Modifier.animateItem()
-                        .rowReveal(rememberRowShown(index, revealCount))
-                        .padding(
-                            horizontal = outerHorizontalPadding,
-                            vertical = itemVerticalPadding,
-                        ),
+                modifier = Modifier.animateItem().rowReveal(rememberRowShown(index, revealCount)).padding(
+                    horizontal = outerHorizontalPadding,
+                    vertical = itemVerticalPadding,
+                ),
             )
         }
         return

@@ -99,16 +99,15 @@ fun TrafficBarChart(
     val computedMaxValue = maxDisplayValue ?: items.maxOfOrNull { it.value } ?: 1L
     val safeMaxValue = if (computedMaxValue <= 0L) 1L else computedMaxValue
 
-    val displayItems =
-        remember(items) {
-            if (items.size <= 7) {
-                items + List(7 - items.size) { BarChartItem("", 0L) }
-            } else {
-                items.take(7)
-            }
+    val displayItems = remember(items) {
+        if (items.size <= 7) {
+            items + List(7 - items.size) { BarChartItem("", 0L) }
+        } else {
+            items.take(7)
         }
+    }
 
-    // Single Animatable replaces 9 animateFloatAsState calls for max + bar heights.
+    // 单个 Animatable 替换了 9 个 animateFloatAsState 调用，用于最大 + 条形高度。
     val animProgress = remember { Animatable(0f) }
     LaunchedEffect(safeMaxValue, displayItems) {
         animProgress.snapTo(0f)
@@ -144,12 +143,11 @@ fun TrafficBarChart(
                 val isSelected = index == selectedIndex || item.isHighlighted
                 val isValidItem = item.label.isNotEmpty()
 
-                val targetHeight =
-                    if (animatedMaxValue > 0 && item.value > 0) {
-                        (item.value.toFloat() / animatedMaxValue).coerceIn(0.04f, 1f)
-                    } else {
-                        0.04f
-                    }
+                val targetHeight = if (animatedMaxValue > 0 && item.value > 0) {
+                    (item.value.toFloat() / animatedMaxValue).coerceIn(0.04f, 1f)
+                } else {
+                    0.04f
+                }
 
                 val animatedHeight = if (isValidItem) targetHeight * animProgress.value else 0f
 
@@ -159,23 +157,18 @@ fun TrafficBarChart(
                 ) {
                     if (isValidItem && animatedHeight > 0f) {
                         Spacer(
-                            modifier =
-                                Modifier.width(barWidth)
-                                    .fillMaxHeight(animatedHeight)
-                                    .clip(
-                                        RoundedCornerShape(
-                                            topStart = radii.radius4,
-                                            topEnd = radii.radius4,
-                                        )
-                                    )
-                                    .background(if (isSelected) highlightColor else barColor)
-                                    .then(
-                                        if (onItemClick != null) {
-                                            Modifier.clickable { onItemClick(index) }
-                                        } else {
-                                            Modifier
-                                        }
-                                    )
+                            modifier = Modifier.width(barWidth).fillMaxHeight(animatedHeight).clip(
+                                RoundedCornerShape(
+                                    topStart = radii.radius4,
+                                    topEnd = radii.radius4,
+                                )
+                            ).background(if (isSelected) highlightColor else barColor).then(
+                                if (onItemClick != null) {
+                                    Modifier.clickable { onItemClick(index) }
+                                } else {
+                                    Modifier
+                                }
+                            )
                         )
                     }
                 }
@@ -195,12 +188,11 @@ fun TrafficBarChart(
                     modifier = Modifier.weight(1f).wrapContentWidth(Alignment.CenterHorizontally),
                     text = item.label,
                     style = MiuixTheme.textStyles.footnote1.copy(fontSize = 9.sp),
-                    color =
-                        if (isSelected) {
-                            MiuixTheme.colorScheme.primary
-                        } else {
-                            MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        },
+                    color = if (isSelected) {
+                        MiuixTheme.colorScheme.primary
+                    } else {
+                        MiuixTheme.colorScheme.onSurfaceVariantSummary
+                    },
                     maxLines = 1,
                 )
             }
@@ -247,7 +239,7 @@ fun TimeSlotBarChart(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Legend
+        // 图例
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
@@ -288,7 +280,7 @@ fun TimeSlotBarChart(
             )
         }
         Spacer(modifier = Modifier.height(spacing.space8))
-        // Chart
+        // 图表主体
         var selectedIndex by remember { mutableIntStateOf(-1) }
         var selectedOffsetY by remember { mutableStateOf(0f) }
         BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(chartHeight)) {
@@ -313,7 +305,7 @@ fun TimeSlotBarChart(
                 val barWidthPx = slotWidth * 0.55f
                 val cornerRadiusPx = (barWidthPx / 4f).coerceAtMost(UiDp.dp10.toPx())
                 val progress = animationProgress.value
-                // Average line
+                // 平均线
                 if (averageValue > 0) {
                     val avgY = size.height * (1f - averageValue.toFloat() / maxValue.toFloat())
                     drawLine(
@@ -326,7 +318,7 @@ fun TimeSlotBarChart(
                         ),
                     )
                 }
-                // Stacked bars
+                // 堆叠柱
                 items.forEachIndexed { index, item ->
                     val hasUpload = item.upload > 0L
                     val hasDownload = item.download > 0L
@@ -336,7 +328,7 @@ fun TimeSlotBarChart(
                     val centerX = slotWidth * index + slotWidth / 2f
                     val left = centerX - barWidthPx / 2f
                     if (total <= 0L) {
-                        // Empty slot 鈥?small default pill bar
+                        // 空槽 -小默认药丸栏
                         val defaultHeight = (size.height * 0.03f).coerceAtLeast(cornerRadiusPx * 2)
                         val r = cornerRadiusPx.coerceAtMost(defaultHeight / 2f)
                         val pillColor = downloadColor.copy(alpha = barAlpha * 0.25f)
@@ -353,7 +345,7 @@ fun TimeSlotBarChart(
                         totalHeight * (item.download.toFloat() / total.toFloat())
                     } else if (hasDownload) totalHeight else 0f
                     val uploadHeight = totalHeight - downloadHeight
-                    // Download (bottom) 鈥?plain rect only when upload sits above
+                    // 下载（底部）——仅当上传位于上方时才为纯矩形
                     if (hasDownload && hasUpload && downloadHeight > 0.5f) {
                         drawRect(
                             color = downloadColor.copy(alpha = barAlpha),
@@ -361,7 +353,7 @@ fun TimeSlotBarChart(
                             size = Size(barWidthPx, downloadHeight),
                         )
                     }
-                    // Upload (top segment) 鈥?rounded top only, flat bottom
+                    // 上传（顶部部分）-仅圆顶，平底
                     if (hasUpload && uploadHeight > 0.5f) {
                         val uploadTop = size.height - totalHeight
                         val r = cornerRadiusPx.coerceAtMost(uploadHeight / 2f)
@@ -378,7 +370,7 @@ fun TimeSlotBarChart(
                         }
                         drawPath(path, color = uploadColor.copy(alpha = barAlpha), style = Fill)
                     }
-                    // Only download 鈥?rounded top only, flat bottom
+                    // 仅下载 — 仅圆顶，平底
                     if (hasDownload && !hasUpload && downloadHeight > 0.5f) {
                         val r = cornerRadiusPx.coerceAtMost(downloadHeight / 2f)
                         val right = left + barWidthPx
@@ -397,7 +389,7 @@ fun TimeSlotBarChart(
                     }
                 }
             }
-            // Tooltip for selected bar
+            // 选定栏的工具提示
             if (selectedIndex in items.indices && items[selectedIndex].upload + items[selectedIndex].download > 0L) {
                 val selectedItem = items[selectedIndex]
                 val selectedLabel = labels.getOrElse(selectedIndex) { "" }
@@ -450,7 +442,7 @@ fun TimeSlotBarChart(
             }
         }
         Spacer(modifier = Modifier.height(spacing.space4))
-        // Labels
+        // 标签
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,

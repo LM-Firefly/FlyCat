@@ -28,7 +28,7 @@ const val RUNTIME_HOME_DIR_NAME = "mihomo"
 const val PROFILE_PROVIDERS_DIR_NAME = "providers"
 const val RULE_PROVIDER_SCOPE = "rules"
 const val PROXY_PROVIDER_SCOPE = "proxies"
-// Kept as the literal "acg" so wallpapers copied under the old path stay resolvable after the rename.
+// 保留字面"acg"，以便在重命名后，复制到旧路径下的壁纸仍可正常解析。
 const val MOE_ASSETS_DIR_NAME = "acg"
 const val MOE_WALLPAPER_FILE_NAME = "wallpaper.dat"
 const val APPLICATION_SCOPE_NAME = "applicationScope"
@@ -39,14 +39,9 @@ val Context.runtimeHomeDir: File
 val Context.moeAssetsDir: File
     get() = filesDir.resolve(MOE_ASSETS_DIR_NAME)
 
-/**
- * Stable app-private slot for the locally copied home wallpaper. The directory is created on access
- * so callers can stream-copy into the returned file directly.
- */
-fun Context.moeWallpaperFile(): File =
-    moeAssetsDir.apply { mkdirs() }.resolve(MOE_WALLPAPER_FILE_NAME)
+/** 为本地复制的主屏幕壁纸提供一个稳定的私有插槽。该目录在访问时创建，因此调用方可以直接向返回的文件进行流式复制。 */
+fun Context.moeWallpaperFile(): File = moeAssetsDir.apply { mkdirs() }.resolve(MOE_WALLPAPER_FILE_NAME)
 
 fun profileProvidersRoot(profileDir: File): File = profileDir.resolve(PROFILE_PROVIDERS_DIR_NAME)
 
-fun profileProviderScopeDir(profileDir: File, scope: String): File =
-    profileProvidersRoot(profileDir).resolve(scope)
+fun profileProviderScopeDir(profileDir: File, scope: String): File = profileProvidersRoot(profileDir).resolve(scope)

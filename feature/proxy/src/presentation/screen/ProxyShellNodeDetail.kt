@@ -34,6 +34,7 @@ import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSo
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.ProvideProxyDelayFlows
 import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProxyViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.misc.CenteredText
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Speed
@@ -43,7 +44,6 @@ import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -114,8 +114,7 @@ private fun ProxyShellNodeDetailContent(
                 val proxyIndex = currentGroup.proxies.indexOfFirst { proxy -> proxy.name == currentGroup.now }
                 if (proxyIndex < 0) return
                 // 搜索栏固定在滚动列表外，列表无头部偏移。
-                val listItemIndex =
-                    if (displayMode.isSingleColumn) proxyIndex
+                val listItemIndex = if (displayMode.isSingleColumn) proxyIndex
                     else proxyIndex / 2
                 coroutineScope.launch {
                     nodeListState.animateLocateToItem(listItemIndex)
@@ -123,8 +122,7 @@ private fun ProxyShellNodeDetailContent(
             }
         }
     }
-    Scaffold(
-        floatingActionButton = {},
+    GlassScaffold(
         topBar = {
             DetailTopBar(
                 title = currentGroupName ?: FlyTxt.Proxy.Title,

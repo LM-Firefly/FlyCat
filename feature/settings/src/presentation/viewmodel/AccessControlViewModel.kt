@@ -25,7 +25,9 @@ import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.github.lmfirefly.flycat.core.contract.AccessControlControllerContract
 import com.github.lmfirefly.flycat.core.contract.NetworkSettingsReader
+import com.github.lmfirefly.flycat.core.contract.Preference
 import com.github.lmfirefly.flycat.core.model.AccessControlMode
+import com.github.lmfirefly.flycat.core.model.AccessControlImportStrategy
 import com.github.lmfirefly.flycat.feature.settings.domain.InstalledAppsUseCase
 import com.github.lmfirefly.flycat.feature.settings.presentation.util.ChinaAppDetector
 import com.github.lmfirefly.flycat.presentation.viewmodel.AndroidContractStateViewModel
@@ -68,14 +70,12 @@ class AccessControlViewModel(
         INSTALL_TIME,
         UPDATE_TIME;
 
-        val displayName: String
-            get() =
-                when (this) {
-                    PACKAGE_NAME -> FlyTxt.AccessControl.SortMode.PackageName
-                    LABEL -> FlyTxt.AccessControl.SortMode.Label
-                    INSTALL_TIME -> FlyTxt.AccessControl.SortMode.InstallTime
-                    UPDATE_TIME -> FlyTxt.AccessControl.SortMode.UpdateTime
-                }
+        val displayName: String get() = when (this) {
+            PACKAGE_NAME -> FlyTxt.AccessControl.SortMode.PackageName
+            LABEL -> FlyTxt.AccessControl.SortMode.Label
+            INSTALL_TIME -> FlyTxt.AccessControl.SortMode.InstallTime
+            UPDATE_TIME -> FlyTxt.AccessControl.SortMode.UpdateTime
+        }
     }
 
     data class UiState(
@@ -97,19 +97,16 @@ class AccessControlViewModel(
         override fun withMessage(message: String?): UiState = copy(message = message)
     }
 
-    val filteredApps: StateFlow<List<AppInfo>> =
-        uiState
-            .map { state ->
-                filterApps(
-                    apps = state.apps,
-                    selectedPackages = state.selectedPackages,
-                    query = state.searchQuery,
-                    showSystemApps = state.showSystemApps,
-                    sortMode = state.sortMode,
-                    selectedFirst = state.selectedFirst,
-                )
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val filteredApps: StateFlow<List<AppInfo>> = uiState.map { state ->
+        filterApps(
+            apps = state.apps,
+            selectedPackages = state.selectedPackages,
+            query = state.searchQuery,
+            showSystemApps = state.showSystemApps,
+            sortMode = state.sortMode,
+            selectedFirst = state.selectedFirst,
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     sealed interface AccessControlUiEffect {
         data class ShowMessage(val message: String) : AccessControlUiEffect
@@ -149,14 +146,12 @@ class AccessControlViewModel(
             val selectedPackages = settings.accessControlPackages.value
             val showSystemApps = settings.accessControlShowSystemApps.value
             val selectedFirst = settings.accessControlSelectedFirst.value
-            val apps =
-                runCatching { withContext(Dispatchers.IO) { loadInstalledApps() } }
-                    .getOrElse {
-                        _uiState.update { state ->
-                            state.copy(isLoading = false, needsMiuiPermission = true)
-                        }
-                        return@launch
-                    }
+            val apps = runCatching { withContext(Dispatchers.IO) { loadInstalledApps() } }.getOrElse {
+                _uiState.update { state ->
+                    state.copy(isLoading = false, needsMiuiPermission = true)
+                }
+                return@launch
+            }
 
             _uiState.update { state ->
                 state.copy(
@@ -192,20 +187,16 @@ class AccessControlViewModel(
         descending: Boolean = false,
     ): List<AppInfo> {
         val filtered = apps.filter { app ->
-            val matchesQuery =
-                query.isEmpty() ||
-                    app.label.contains(query, ignoreCase = true) ||
-                    app.packageName.contains(query, ignoreCase = true)
+            val matchesQuery = query.isEmpty() || app.label.contains(query, ignoreCase = true) || app.packageName.contains(query, ignoreCase = true)
             val matchesSystemFilter = showSystemApps || !app.isSystemApp
             matchesQuery && matchesSystemFilter
         }
-        val baseComparator =
-            when (sortMode) {
-                SortMode.PACKAGE_NAME -> compareBy<AppInfo> { it.packageName.lowercase() }
-                SortMode.LABEL -> compareBy { it.label.lowercase() }
-                SortMode.INSTALL_TIME -> compareBy<AppInfo> { it.installTime }
-                SortMode.UPDATE_TIME -> compareBy<AppInfo> { it.updateTime }
-            }
+        val baseComparator = when (sortMode) {
+            SortMode.PACKAGE_NAME -> compareBy<AppInfo> { it.packageName.lowercase() }
+            SortMode.LABEL -> compareBy { it.label.lowercase() }
+            SortMode.INSTALL_TIME -> compareBy<AppInfo> { it.installTime }
+            SortMode.UPDATE_TIME -> compareBy<AppInfo> { it.updateTime }
+        }
         val comparator = if (selectedFirst) {
             compareByDescending<AppInfo> { selectedPackages.contains(it.packageName) }
                 .then(if (descending) baseComparator.reversed() else baseComparator)
@@ -236,12 +227,11 @@ class AccessControlViewModel(
     fun onAppSelectionChange(packageName: String, selected: Boolean) {
         _uiState.update { state ->
             state.copy(
-                selectedPackages =
-                    if (selected) {
-                        state.selectedPackages + packageName
-                    } else {
-                        state.selectedPackages - packageName
-                    }
+                selectedPackages = if (selected) {
+                    state.selectedPackages + packageName
+                } else {
+                    state.selectedPackages - packageName
+                }
             )
         }
         persistSelectionAndApply()
@@ -279,8 +269,7 @@ class AccessControlViewModel(
 
     fun selectChinaAppsInCurrentList() = applyRegionalSelectionInCurrentList(selectChina = true)
 
-    fun selectNonChinaAppsInCurrentList() =
-        applyRegionalSelectionInCurrentList(selectChina = false)
+    fun selectNonChinaAppsInCurrentList() = applyRegionalSelectionInCurrentList(selectChina = false)
 
     /**
      * China-app membership is computed on demand (FlClash-style deep scan behind
@@ -292,28 +281,22 @@ class AccessControlViewModel(
         if (currentFiltered.isEmpty()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val chinaPackages =
-                runCatching {
-                        chinaAppDetector.detectChinaPackages(
-                            currentFiltered.map {
-                                ChinaAppDetector.Candidate(it.packageName, it.updateTime)
-                            }
-                        )
+            val chinaPackages = runCatching {
+                chinaAppDetector.detectChinaPackages(
+                    currentFiltered.map {
+                        ChinaAppDetector.Candidate(it.packageName, it.updateTime)
                     }
-                    .getOrElse {
-                        _uiState.update { state -> state.copy(isLoading = false) }
-                        return@launch
-                    }
+                )
+            }.getOrElse {
+                _uiState.update { state -> state.copy(isLoading = false) }
+                return@launch
+            }
             _uiState.update { state ->
                 val currentPackages = currentFiltered.mapTo(linkedSetOf()) { it.packageName }
-                val targetPackages =
-                    currentFiltered
-                        .filter { (it.packageName in chinaPackages) == selectChina }
-                        .mapTo(linkedSetOf()) { it.packageName }
+                val targetPackages = currentFiltered.filter { (it.packageName in chinaPackages) == selectChina }.mapTo(linkedSetOf()) { it.packageName }
                 state.copy(
                     isLoading = false,
-                    selectedPackages =
-                        state.selectedPackages.minus(currentPackages).plus(targetPackages),
+                    selectedPackages = state.selectedPackages.minus(currentPackages).plus(targetPackages),
                 )
             }
             persistSelectionAndApply()
@@ -322,13 +305,25 @@ class AccessControlViewModel(
 
     fun exportPackages(): String = _uiState.value.selectedPackages.joinToString("\n")
 
+    /** 访问控制名单导入策略（剪贴板导入时合并或覆盖），与网络设置共用同一存储。 */
+    val importStrategy: Preference<AccessControlImportStrategy> = settings.accessControlImportStrategy
+
+    fun onImportStrategyChange(strategy: AccessControlImportStrategy) {
+        importStrategy.set(strategy)
+    }
+
     fun importPackages(text: String): Int {
         val packages = text.lines().map { it.trim() }.filter { it.isNotEmpty() }.toSet()
-        val validPackages =
-            packages.intersect(_uiState.value.apps.mapTo(linkedSetOf()) { it.packageName })
+        val validPackages = packages.intersect(_uiState.value.apps.mapTo(linkedSetOf()) { it.packageName })
 
         _uiState.update { state ->
-            state.copy(selectedPackages = state.selectedPackages + validPackages)
+            state.copy(
+                selectedPackages = if (settings.accessControlImportStrategy.value == AccessControlImportStrategy.OVERWRITE) {
+                    validPackages
+                } else {
+                    state.selectedPackages + validPackages
+                }
+            )
         }
 
         persistSelectionAndApply()

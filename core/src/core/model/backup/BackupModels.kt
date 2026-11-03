@@ -21,11 +21,16 @@
 
 package com.github.lmfirefly.flycat.core.model.backup
 
+import com.github.lmfirefly.flycat.core.model.AccessControlImportStrategy
 import com.github.lmfirefly.flycat.core.model.AccessControlMode
+import com.github.lmfirefly.flycat.core.model.AppBackgroundStyle
 import com.github.lmfirefly.flycat.core.model.AppColorTheme
 import com.github.lmfirefly.flycat.core.model.AppLanguage
+import com.github.lmfirefly.flycat.core.model.NotificationLineContent
 import com.github.lmfirefly.flycat.core.model.RemoteBackend
 import com.github.lmfirefly.flycat.core.model.ThemeMode
+import com.github.lmfirefly.flycat.core.model.WifiAutomationFallbackAction
+import com.github.lmfirefly.flycat.core.model.WifiAutomationRule
 import com.github.lmfirefly.flycat.core.model.profile.Imported
 import com.github.lmfirefly.flycat.core.model.profile.LinkOpenMode
 import com.github.lmfirefly.flycat.core.model.profile.Profile
@@ -34,12 +39,20 @@ import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode
 import com.github.lmfirefly.flycat.core.model.tunnel.RunMode
 import com.github.lmfirefly.flycat.core.model.tunnel.TunDnsMode
-import com.github.lmfirefly.flycat.core.model.tunnel.TunnelState
 import com.github.lmfirefly.flycat.core.model.tunnel.TunStack
+import com.github.lmfirefly.flycat.core.model.tunnel.TunnelState
 import java.util.UUID
 import kotlinx.serialization.Serializable
 
 const val BACKUP_FORMAT_VERSION = 1
+
+/** 恢复备份时如何处理设备上已有的数据。 */
+enum class BackupRestoreStrategy {
+    /** 用备份替换现有设置和数据。 */
+    Overwrite,
+    /** 保留现有数据并补充备份中的缺失项，冲突时保留本机内容。 */
+    Merge,
+}
 
 @Serializable
 data class BackupManifest(
@@ -76,8 +89,12 @@ data class AppSettingsBackup(
     val hideAppIcon: Boolean = false,
     val excludeFromRecents: Boolean = false,
     val showTrafficNotification: Boolean = true,
+    val superIslandEnabled: Boolean = true,
+    val notificationFirstLine: NotificationLineContent = NotificationLineContent.ProfileName,
+    val notificationSecondLine: NotificationLineContent = NotificationLineContent.LiveTraffic,
+    val notificationFirstLineText: String = "",
+    val notificationSecondLineText: String = "",
     val bottomBarAutoHide: Boolean = true,
-    val topBarBlurEnabled: Boolean = false,
     val classicHomeEnabled: Boolean = false,
     val homeHitokotoEnabled: Boolean = false,
     val moeWallpaperUri: String = "",
@@ -88,7 +105,12 @@ data class AppSettingsBackup(
     val moeHomeQuote: String = "",
     val moeHomeQuoteAuthor: String = "",
     val moeSidebarExpanded: Boolean = true,
+    val moeWallpaperScrimEnabled: Boolean = true,
+    val appBackgroundStyle: AppBackgroundStyle = AppBackgroundStyle.DynamicGradient,
+    val appBackgroundWallpaperBlur: Float = 0f,
     val pageScale: Float = 1.0f,
+    val predictiveBackEnabled: Boolean = false,
+    val predictiveBackMaxProgress: Float = 50.0f,
     val logLevel: Int = 2, // Log.INFO
     val autoCheckAppUpdate: Boolean = false,
     val updateSourceKey: String = "Stable",
@@ -115,9 +137,18 @@ data class NetworkSettingsBackup(
     val tunFakeIpRange: String = "198.18.0.1/16",
     val tunFakeIpRange6: String = "fc00::/18",
     val accessControlMode: AccessControlMode = AccessControlMode.ALLOW_ALL,
+    val accessControlImportStrategy: AccessControlImportStrategy = AccessControlImportStrategy.MERGE,
     val accessControlPackages: Set<String> = emptySet(),
     val accessControlSelectedFirst: Boolean = true,
     val accessControlShowSystemApps: Boolean = false,
+    val disableAllOverride: Boolean = false,
+    val ebpfBypassCn: Boolean = false,
+    val wifiAutomationEnabled: Boolean = false,
+    val wifiAutomationRules: List<WifiAutomationRule> = emptyList(),
+    val wifiAutomationOtherWifiAction: WifiAutomationFallbackAction = WifiAutomationFallbackAction.Keep,
+    val wifiAutomationNoWifiAction: WifiAutomationFallbackAction = WifiAutomationFallbackAction.Keep,
+    val wifiAutomationOtherWifiProfileUuid: String = "",
+    val wifiAutomationNoWifiProfileUuid: String = "",
 )
 
 @Serializable
@@ -136,6 +167,7 @@ data class FeatureSettingsBackup(
 data class ProxyDisplaySettingsBackup(
     val sortMode: ProxySortMode = ProxySortMode.DEFAULT,
     val displayMode: ProxyDisplayMode = ProxyDisplayMode.DOUBLE_DETAILED,
+    val groupTabsMode: Boolean = false,
     val proxyMode: TunnelState.Mode = TunnelState.Mode.Rule,
     val sheetHeightFraction: Float = PROXY_SHEET_HEIGHT_FRACTION_DEFAULT,
 )
@@ -176,38 +208,36 @@ data class ImportedBackup(
     val ageSecretKey: String = "",
     val updatedAt: Long = 0L,
 ) {
-    fun toImported(): Imported =
-        Imported(
-            uuid = UUID.fromString(uuid),
-            name = name,
-            type = type,
-            source = source,
-            interval = interval,
-            upload = upload,
-            download = download,
-            total = total,
-            expire = expire,
-            createdAt = createdAt,
-            ageSecretKey = ageSecretKey,
-            updatedAt = updatedAt,
-        )
+    fun toImported(): Imported = Imported(
+        uuid = UUID.fromString(uuid),
+        name = name,
+        type = type,
+        source = source,
+        interval = interval,
+        upload = upload,
+        download = download,
+        total = total,
+        expire = expire,
+        createdAt = createdAt,
+        ageSecretKey = ageSecretKey,
+        updatedAt = updatedAt,
+    )
 
     companion object {
-        fun from(imported: Imported): ImportedBackup =
-            ImportedBackup(
-                uuid = imported.uuid.toString(),
-                name = imported.name,
-                type = imported.type,
-                source = imported.source,
-                interval = imported.interval,
-                upload = imported.upload,
-                download = imported.download,
-                total = imported.total,
-                expire = imported.expire,
-                createdAt = imported.createdAt,
-                ageSecretKey = imported.ageSecretKey,
-                updatedAt = imported.updatedAt,
-            )
+        fun from(imported: Imported): ImportedBackup = ImportedBackup(
+            uuid = imported.uuid.toString(),
+            name = imported.name,
+            type = imported.type,
+            source = imported.source,
+            interval = imported.interval,
+            upload = imported.upload,
+            download = imported.download,
+            total = imported.total,
+            expire = imported.expire,
+            createdAt = imported.createdAt,
+            ageSecretKey = imported.ageSecretKey,
+            updatedAt = imported.updatedAt,
+        )
     }
 }
 

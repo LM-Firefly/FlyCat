@@ -132,10 +132,7 @@ class OverrideCrudUseCase(
                 contentType = contentTypeHeader,
             )
             val content = connection.inputStream.bufferedReader().use { it.readText() }
-            val inferredContentType =
-                OverrideContentType.fromFileName(sourceName)
-                    ?: inferContentTypeFromHeader(contentTypeHeader)
-                    ?: inferContentTypeFromContent(content)
+            val inferredContentType = OverrideContentType.fromFileName(sourceName) ?: inferContentTypeFromHeader(contentTypeHeader) ?: inferContentTypeFromContent(content)
             val normalizedSourceName = ensureSourceNameExtension(sourceName, inferredContentType)
             val config = buildImportConfigInternal(content = content, sourceName = normalizedSourceName, fallbackContentType = inferredContentType)
             configRepo.save(config)
@@ -273,12 +270,10 @@ private fun inferContentTypeFromHeader(contentType: String): OverrideContentType
     }
 }
 
-private fun inferContentTypeFromContent(content: String): OverrideContentType =
-    if (content.trimStart().startsWith("function") || "module.exports" in content) OverrideContentType.JavaScript
+private fun inferContentTypeFromContent(content: String): OverrideContentType = if (content.trimStart().startsWith("function") || "module.exports" in content) OverrideContentType.JavaScript
     else OverrideContentType.Yaml
 
-private fun ensureSourceNameExtension(sourceName: String, contentType: OverrideContentType): String =
-    if (OverrideContentType.fromFileName(sourceName) != null) sourceName
+private fun ensureSourceNameExtension(sourceName: String, contentType: OverrideContentType): String = if (OverrideContentType.fromFileName(sourceName) != null) sourceName
     else "$sourceName.${contentType.extension}"
 
 internal fun normalizeImportedConfigSourceName(sourceName: String?): String? {

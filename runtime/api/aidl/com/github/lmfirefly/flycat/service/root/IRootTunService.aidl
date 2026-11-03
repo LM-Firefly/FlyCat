@@ -19,6 +19,8 @@ interface IRootTunService {
     String queryProxyGroupNamesJson(boolean excludeNotSelectable);
     String queryProxyGroupJson(String name, String sort);
     String queryProvidersJson();
+    String queryRulesJson();
+    boolean setRuleDisabled(int index, boolean disabled);
     boolean patchSelector(String group, String name);
     boolean patchForceSelector(String group, String name);
     boolean closeConnection(String id);

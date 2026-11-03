@@ -109,9 +109,8 @@ fun RuntimePhase.toLocalRuntimePhase(): LocalRuntimePhase = when (this) {
     RuntimePhase.Failed -> LocalRuntimePhase.Failed
 }
 
-fun RootTunStatus.detectRuntimeOwner(isLocalActive: (RunMode) -> Boolean): RuntimeOwner =
-    when {
-        state.isActiveOrStopping || runtimeReady -> RuntimeOwner.RootTun
-        isLocalActive(RunMode.VpnService) -> RuntimeOwner.LocalTun
-        else -> RuntimeOwner.None
-    }
+fun RootTunStatus.detectRuntimeOwner(isLocalActive: (RunMode) -> Boolean): RuntimeOwner = when {
+    state.isActiveOrStopping || runtimeReady -> RuntimeOwner.RootTun
+    isLocalActive(RunMode.VpnService) -> RuntimeOwner.LocalTun
+    else -> RuntimeOwner.None
+}

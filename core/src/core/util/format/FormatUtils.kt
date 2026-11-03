@@ -53,9 +53,8 @@ object ByteFormatter {
         }
     }
 
-    /** One decimal below 10, none above — keeps the displayed number short. */
-    private fun adaptive(num: Double): String =
-        if (num < 10) "%.1f".format(num) else "%.0f".format(num)
+    /** 10 以下保留一位小数，10 及以上不保留 — 保持显示数字简短。*/
+    private fun adaptive(num: Double): String = if (num < 10) "%.1f".format(num) else "%.0f".format(num)
 }
 
 fun formatBytes(bytes: Long): String = ByteFormatter.format(bytes)

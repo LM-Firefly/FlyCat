@@ -28,42 +28,36 @@ import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeSnapshot
 import com.github.lmfirefly.flycat.runtime.api.contract.toRuntimeTargetMode
 
 /**
- * Pure utility for mapping runtime state to UI-relevant information.
- * Moved from runtime:client to runtime:api so feature modules can use it
- * without depending on runtime:client.
+ * 用于把运行时状态映射为 UI 关注信息的纯工具函数集。
+ * 从 `runtime:client` 移入 `runtime:api`，使功能模块无需依赖 `runtime:client` 即可使用。
  */
 object RuntimeStateMapper {
-    fun isRunningOrStarting(snapshot: RuntimeSnapshot): Boolean =
-        snapshot.phase == RuntimePhase.Starting || snapshot.phase == RuntimePhase.Running
+    fun isRunningOrStarting(snapshot: RuntimeSnapshot): Boolean = snapshot.phase == RuntimePhase.Starting || snapshot.phase == RuntimePhase.Running
 
-    fun isActuallyRunning(snapshot: RuntimeSnapshot): Boolean =
-        snapshot.phase == RuntimePhase.Running
+    fun isActuallyRunning(snapshot: RuntimeSnapshot): Boolean = snapshot.phase == RuntimePhase.Running
 
-    fun modeForOwner(owner: RuntimeOwner): RunMode? =
-        when (owner) {
-            RuntimeOwner.LocalTun -> RunMode.VpnService
-            RuntimeOwner.RootTun -> null // RootTun always runs Tun; use configured mode
-            RuntimeOwner.RemoteController -> null
-            RuntimeOwner.None -> null
-        }
+    fun modeForOwner(owner: RuntimeOwner): RunMode? = when (owner) {
+        RuntimeOwner.LocalTun -> RunMode.VpnService
+        RuntimeOwner.RootTun -> null // RootTun 始终运行 Tun；使用配置模式
+        RuntimeOwner.RemoteController -> null
+        RuntimeOwner.None -> null
+    }
 
-    fun resolveDisplayMode(snapshot: RuntimeSnapshot, configuredMode: RunMode): RunMode =
-        if (isRunningOrStarting(snapshot)) {
-            modeForOwner(snapshot.owner) ?: configuredMode
-        } else {
-            configuredMode
-        }
+    fun resolveDisplayMode(snapshot: RuntimeSnapshot, configuredMode: RunMode): RunMode = if (isRunningOrStarting(snapshot)) {
+        modeForOwner(snapshot.owner) ?: configuredMode
+    } else {
+        configuredMode
+    }
 
     fun idleSnapshot(
         configuredMode: RunMode,
         generation: Long = 0L,
         lastError: String? = null,
-    ): RuntimeSnapshot =
-        RuntimeSnapshot(
-            owner = RuntimeOwner.None,
-            phase = if (lastError.isNullOrBlank()) RuntimePhase.Idle else RuntimePhase.Failed,
-            targetMode = configuredMode.toRuntimeTargetMode(),
-            lastError = lastError,
-            generation = generation,
-        )
+    ): RuntimeSnapshot = RuntimeSnapshot(
+        owner = RuntimeOwner.None,
+        phase = if (lastError.isNullOrBlank()) RuntimePhase.Idle else RuntimePhase.Failed,
+        targetMode = configuredMode.toRuntimeTargetMode(),
+        lastError = lastError,
+        generation = generation,
+    )
 }

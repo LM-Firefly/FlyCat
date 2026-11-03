@@ -57,6 +57,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
@@ -74,7 +75,6 @@ import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.util.strippedLicenseContent
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -90,7 +90,8 @@ fun OpenSourceLicensesScreen(navigator: Navigator, librariesResId: Int) {
     val libraries by produceLibraries(librariesResId)
     val libraryItems = remember(libraries) { libraries?.libraries.orEmpty().groupBy { it.name }.map { (name, group) -> LibraryGroup(name = name, entries = group.sortedBy { it.uniqueId }) } }
 
-    Scaffold(
+    GlassScaffold(
+        // 顶栏色带采样默认的全局壁纸录制层（勿传 LocalTopBarBackdrop——正文录制层会被涂抹进色带，绿色许可证徽章渗入顶栏）。
         topBar = { TopBar(title = FlyTxt.OpenSourceLicenses.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(navigator = navigator) }) }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
@@ -128,17 +129,16 @@ private fun LibraryGroupItem(group: LibraryGroup, onOpenUrl: (String) -> Unit) {
         insideMargin = PaddingValues(spacing.space0),
     ) {
         Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .then(
-                        when {
-                            expandable -> Modifier.clickable { expanded = !expanded }
-                            url != null -> Modifier.clickable { onOpenUrl(url) }
-                            else -> Modifier
-                        }
-                    )
-                    .padding(spacing.space16),
+            modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                when {
+                    expandable -> Modifier.clickable { expanded = !expanded }
+                    url != null -> Modifier.clickable { onOpenUrl(url) }
+                    else -> Modifier
+                }
+            )
+            .padding(spacing.space16),
             verticalArrangement = Arrangement.spacedBy(spacing.space10),
         ) {
             Row(
@@ -240,10 +240,9 @@ private fun LicenseChip(licenseName: String) {
     val opacity = AppTheme.opacity
 
     Box(
-        modifier =
-            Modifier.clip(RoundedCornerShape(radii.radius12))
-                .background(MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtle))
-                .padding(horizontal = spacing.space10, vertical = spacing.space4)
+        modifier = Modifier.clip(RoundedCornerShape(radii.radius12))
+        .background(MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtle))
+        .padding(horizontal = spacing.space10, vertical = spacing.space4)
     ) {
         Text(
             text = licenseName,

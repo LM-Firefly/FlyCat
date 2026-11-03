@@ -21,34 +21,31 @@
 
 package com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode
 import com.github.lmfirefly.flycat.locale.FlyTxt
-import top.yukonga.miuix.kmp.basic.DropdownImpl
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.ListPopupDefaults
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
-import top.yukonga.miuix.kmp.window.WindowListPopup
+import com.github.lmfirefly.flycat.presentation.component.GlassMenuDivider
+import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
+import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
+import com.github.lmfirefly.flycat.presentation.component.GlassPopupSubmenuItem
+import com.github.lmfirefly.flycat.presentation.component.GlassSubmenuPageHeader
+import com.github.lmfirefly.flycat.presentation.component.GlassTopActionAnchorIcon
+import com.github.lmfirefly.flycat.presentation.component.rememberGlassSubmenuState
+import com.github.lmfirefly.flycat.presentation.icon.FlyCat
+import com.github.lmfirefly.flycat.presentation.icon.flycat.ArrowDownUp
+import com.github.lmfirefly.flycat.presentation.icon.flycat.Folders
+import com.github.lmfirefly.flycat.presentation.icon.flycat.LayoutPanelLeft
+import com.github.lmfirefly.flycat.presentation.icon.flycat.ListChevronsUpDown
+import top.yukonga.miuix.kmp.glass.GlassPopupAnchor
 
-internal val NodeSortModes =
-    listOf(ProxySortMode.DEFAULT, ProxySortMode.BY_NAME, ProxySortMode.BY_LATENCY)
+internal val NodeSortModes = listOf(ProxySortMode.DEFAULT, ProxySortMode.BY_NAME, ProxySortMode.BY_LATENCY)
 
-internal val NodeDisplayModes = listOf(
-    ProxyDisplayMode.SINGLE_DETAILED,
-    ProxyDisplayMode.DOUBLE_DETAILED,
-)
-
-private val ProxyDisplayMode.displayName: String
-    get() = when (this) {
-        ProxyDisplayMode.SINGLE_DETAILED -> FlyTxt.Proxy.DisplayMode.SingleDetailed
-        ProxyDisplayMode.SINGLE_SIMPLE -> FlyTxt.Proxy.DisplayMode.SingleSimple
-        ProxyDisplayMode.DOUBLE_DETAILED -> FlyTxt.Proxy.DisplayMode.DoubleDetailed
-        ProxyDisplayMode.DOUBLE_SIMPLE -> FlyTxt.Proxy.DisplayMode.DoubleSimple
-    }
+internal val NodeDisplayModes = listOf(ProxyDisplayMode.SINGLE_DETAILED, ProxyDisplayMode.DOUBLE_DETAILED)
 
 private val ProxySortMode.displayName: String
     get() = when (this) {
@@ -57,50 +54,130 @@ private val ProxySortMode.displayName: String
         ProxySortMode.BY_LATENCY -> FlyTxt.Proxy.SortMode.ByLatency
     }
 
+/** 级联二级页：布局 / 排序。 */
+private enum class NodeMenuPage {
+    None,
+    Layout,
+    Sort,
+}
+
+/**
+ * 代理页「更多」玻璃菜单：
+ * 根面板 = 「布局」「排序」两个级联二级页；
+ * 「布局」页 = 单列 / 双列（互斥）+ 标签页模式（独立开关，可选）；
+ * 「排序」页 = 默认顺序 / 按名称排序 / 按延迟排序。
+ */
 @Composable
 internal fun NodeSortPopup(
     show: Boolean,
     onDismiss: () -> Unit,
+    anchor: GlassPopupAnchor,
     displayMode: ProxyDisplayMode,
     sortMode: ProxySortMode,
-    alignment: PopupPositionProvider.Align = PopupPositionProvider.Align.Start,
     onDisplayModeSelected: (ProxyDisplayMode) -> Unit,
     onSortSelected: (ProxySortMode) -> Unit,
+    /** 非空时在布局页展示「标签页模式」开关行；不支持该模式的宿主传 null 隐藏。 */
+    tabsMode: Boolean? = null,
+    onTabsModeChange: ((Boolean) -> Unit)? = null,
+    /** 弹层标题行内的锚点场景传 false（面板放置贴锚点）；页面顶栏场景用默认 true（贴页右缘）。 */
+    alignToPageEnd: Boolean = true,
 ) {
-    val selectedDisplayIndex = if (displayMode.isSingleColumn) 0 else 1
-    val selectedSortIndex = NodeSortModes.indexOf(sortMode).coerceAtLeast(0)
-    WindowListPopup(
+    val submenu = rememberGlassSubmenuState(show)
+    var submenuPage by remember { mutableStateOf(NodeMenuPage.None) }
+    val applyAndClose: (() -> Unit) -> Unit = { action ->
+        action()
+        submenu.close()
+        onDismiss()
+    }
+    GlassPopupHost(
         show = show,
-        popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
-        alignment = alignment,
         onDismissRequest = onDismiss,
+        anchor = anchor,
+        alignToPageEnd = alignToPageEnd,
+        anchorContent = { GlassTopActionAnchorIcon(FlyCat.ListChevronsUpDown) },
+        submenu = submenu,
+        submenuContent = {
+            when (submenuPage) {
+                NodeMenuPage.Layout -> {
+                    GlassSubmenuPageHeader(
+                        submenu,
+                        FlyTxt.Proxy.Action.Layout,
+                        anchor,
+                        icon = FlyCat.LayoutPanelLeft,
+                    )
+                    GlassMenuItem(
+                        text = FlyTxt.Proxy.DisplayMode.SingleDetailed,
+                        selected = displayMode.isSingleColumn,
+                        onClick = {
+                            applyAndClose {
+                                if (!displayMode.isSingleColumn) {
+                                    onDisplayModeSelected(ProxyDisplayMode.SINGLE_DETAILED)
+                                }
+                            }
+                        },
+                    )
+                    GlassMenuItem(
+                        text = FlyTxt.Proxy.DisplayMode.DoubleDetailed,
+                        selected = !displayMode.isSingleColumn,
+                        onClick = {
+                            applyAndClose {
+                                if (displayMode.isSingleColumn) {
+                                    onDisplayModeSelected(ProxyDisplayMode.DOUBLE_DETAILED)
+                                }
+                            }
+                        },
+                    )
+                    if (tabsMode != null && onTabsModeChange != null) {
+                        GlassMenuDivider()
+                        GlassMenuItem(
+                            text = FlyTxt.Proxy.Action.TabsMode,
+                            selected = tabsMode,
+                            onClick = { applyAndClose { onTabsModeChange(!tabsMode) } },
+                        )
+                    }
+                }
+                NodeMenuPage.Sort -> {
+                    GlassSubmenuPageHeader(
+                        submenu,
+                        FlyTxt.Proxy.Action.Sort,
+                        anchor,
+                        icon = FlyCat.ArrowDownUp,
+                    )
+                    NodeSortModes.forEach { mode ->
+                        GlassMenuItem(
+                            text = mode.displayName,
+                            selected = mode == sortMode,
+                            onClick = {
+                                applyAndClose {
+                                    if (mode != sortMode) onSortSelected(mode)
+                                }
+                            },
+                        )
+                    }
+                }
+                NodeMenuPage.None -> Unit
+            }
+        },
     ) {
-        ListPopupColumn {
-            NodeDisplayModes.forEachIndexed { index, mode ->
-                DropdownImpl(
-                    text = mode.displayName,
-                    optionSize = NodeDisplayModes.size,
-                    isSelected = selectedDisplayIndex == index,
-                    onSelectedIndexChange = {
-                        if (selectedDisplayIndex != index) onDisplayModeSelected(mode)
-                        onDismiss()
-                    },
-                    index = index,
-                )
-            }
-            Spacer(modifier = androidx.compose.ui.Modifier.height(6.dp))
-            NodeSortModes.forEachIndexed { index, mode ->
-                DropdownImpl(
-                    text = mode.displayName,
-                    optionSize = NodeSortModes.size,
-                    isSelected = selectedSortIndex == index,
-                    onSelectedIndexChange = {
-                        if (mode != sortMode) onSortSelected(mode)
-                        onDismiss()
-                    },
-                    index = index,
-                )
-            }
-        }
+        GlassPopupSubmenuItem(
+            text = FlyTxt.Proxy.Action.Layout,
+            anchor = anchor,
+            open = submenu.open && submenuPage == NodeMenuPage.Layout,
+            onOpen = { bounds ->
+                submenuPage = NodeMenuPage.Layout
+                submenu.openAt(bounds)
+            },
+            icon = FlyCat.LayoutPanelLeft,
+        )
+        GlassPopupSubmenuItem(
+            text = FlyTxt.Proxy.Action.Sort,
+            anchor = anchor,
+            open = submenu.open && submenuPage == NodeMenuPage.Sort,
+            onOpen = { bounds ->
+                submenuPage = NodeMenuPage.Sort
+                submenu.openAt(bounds)
+            },
+            icon = FlyCat.ArrowDownUp,
+        )
     }
 }

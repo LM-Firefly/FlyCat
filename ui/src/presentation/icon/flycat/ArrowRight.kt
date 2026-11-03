@@ -35,36 +35,33 @@ val FlyCat.ArrowRight: ImageVector
         if (arrowRightVector != null) {
             return arrowRightVector!!
         }
-        arrowRightVector =
-            ImageVector.Builder(
-                name = "ArrowRight",
-                defaultWidth = 24.dp,
-                defaultHeight = 24.dp,
-                viewportWidth = 24f,
-                viewportHeight = 24f,
-            )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(5f, 12f)
-                        horizontalLineToRelative(14f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveToRelative(12f, 5f)
-                        lineToRelative(7f, 7f)
-                        lineToRelative(-7f, 7f)
-                    }
-                }
-                .build()
+        arrowRightVector = ImageVector.Builder(
+            name = "ArrowRight",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(5f, 12f)
+                horizontalLineToRelative(14f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveToRelative(12f, 5f)
+                lineToRelative(7f, 7f)
+                lineToRelative(-7f, 7f)
+            }
+        }.build()
 
         return arrowRightVector!!
     }

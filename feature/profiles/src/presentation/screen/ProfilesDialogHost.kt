@@ -162,18 +162,17 @@ private fun ProfileSettingsDialogHost(
         },
         onSaveOverrideSettings = { ids ->
             scope.launch {
-                state.binding =
-                    saveProfileOverrides(
-                        profile = profile,
-                        selectedIds = ids,
-                        binding = state.binding,
-                        bindingProvider = bindingProvider,
-                        routingBootstrapper = routingBootstrapper,
-                        OverrideApplyExecutor = OverrideApplyExecutor,
-                        currentProfileUuid = currentProfile?.uuid,
-                        isRunning = isRunning,
-                        context = context,
-                    )
+                state.binding = saveProfileOverrides(
+                    profile = profile,
+                    selectedIds = ids,
+                    binding = state.binding,
+                    bindingProvider = bindingProvider,
+                    routingBootstrapper = routingBootstrapper,
+                    OverrideApplyExecutor = OverrideApplyExecutor,
+                    currentProfileUuid = currentProfile?.uuid,
+                    isRunning = isRunning,
+                    context = context,
+                )
             }
         },
     )
@@ -192,9 +191,7 @@ private suspend fun saveProfileOverrides(
 ): ProfileBinding? {
     val profileId = profile.uuid.toString()
     val overrideIds = selectedIds.distinct()
-    val updatedBinding =
-        binding?.copy(overrideIds = overrideIds)
-            ?: ProfileBinding(profileId = profileId, overrideIds = overrideIds)
+    val updatedBinding = binding?.copy(overrideIds = overrideIds) ?: ProfileBinding(profileId = profileId, overrideIds = overrideIds)
 
     bindingProvider.setBinding(updatedBinding)
     val refreshedBinding = bindingProvider.getBinding(profileId)

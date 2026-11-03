@@ -131,6 +131,7 @@ data class Radii(
     val radius12: Dp = UiDp.dp12,
     val radius16: Dp = UiDp.dp16,
     val radius18: Dp = UiDp.dp18,
+    val radius20: Dp = UiDp.dp20,
     val radius24: Dp = UiDp.dp24,
     val radius36: Dp = UiDp.dp36,
     val full: Dp = UiDp.dp999,

@@ -41,7 +41,7 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 
 /**
  * The VpnService "service config" sub-page (reached from the network-settings Advanced section).
@@ -54,17 +54,16 @@ fun VpnServiceOptionsScreen(navigator: Navigator) {
     val viewModel = koinViewModel<NetworkSettingsViewModel>()
     val tunServiceOptionsUiState by viewModel.tunServiceOptionsUiState.collectAsStateWithLifecycle()
 
-    val commonActions =
-        remember(viewModel) {
-            CommonTunOptionActions(
-                onBypassPrivateNetworkChange = viewModel::onBypassPrivateNetworkChange,
-                onDnsHijackChange = viewModel::onDnsHijackChange,
-                onEnableIPv6Change = viewModel::onEnableIPv6Change,
-                onTunStackChange = viewModel::onTunStackChange,
-            )
-        }
+    val commonActions = remember(viewModel) {
+        CommonTunOptionActions(
+            onBypassPrivateNetworkChange = viewModel::onBypassPrivateNetworkChange,
+            onDnsHijackChange = viewModel::onDnsHijackChange,
+            onEnableIPv6Change = viewModel::onEnableIPv6Change,
+            onTunStackChange = viewModel::onTunStackChange,
+        )
+    }
 
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = FlyTxt.NetworkSettings.Section.VpnOptions,

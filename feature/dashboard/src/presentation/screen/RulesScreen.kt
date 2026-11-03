@@ -21,22 +21,19 @@
 
 package com.github.lmfirefly.flycat.feature.dashboard.presentation.screen
 
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -46,34 +43,35 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.core.model.RuntimeRule
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.RulesViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.EdgeLightDefaults
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.card.Card
-import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
+import com.github.lmfirefly.flycat.presentation.component.edgeLight
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
+import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.misc.CenteredText
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
-import com.github.lmfirefly.flycat.presentation.component.state.SearchBarPadding
-import com.github.lmfirefly.flycat.presentation.component.state.SearchPager
 import com.github.lmfirefly.flycat.presentation.component.state.SearchStatus
 import com.github.lmfirefly.flycat.presentation.component.state.TopAppBarAnim
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
 import com.github.lmfirefly.flycat.presentation.util.toast
 import java.util.Locale
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -81,11 +79,11 @@ import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Search
+import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun RulesScreen(navigator: Navigator) {
-    val density = LocalDensity.current
     val viewModel = koinViewModel<RulesViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val filteredRules by viewModel.filteredRules.collectAsStateWithLifecycle()
@@ -103,22 +101,17 @@ fun RulesScreen(navigator: Navigator) {
             )
         )
     }
-    val dynamicTopPadding by remember {
-        derivedStateOf { spacing.space12 * (1f - scrollBehavior.state.collapsedFraction) }
-    }
+    val dynamicTopPadding by remember { derivedStateOf { spacing.space12 * (1f - scrollBehavior.state.collapsedFraction) } }
     val listStartPadding = spacing.screenHorizontal
     val listEndPadding = spacing.screenHorizontal
-    val currentSearchStatus =
-        remember(searchStatus, filteredRules) {
-            searchStatus.copy(
-                resultStatus =
-                    when {
-                        searchStatus.searchText.isBlank() -> SearchStatus.ResultStatus.DEFAULT
-                        filteredRules.isEmpty() -> SearchStatus.ResultStatus.EMPTY
-                        else -> SearchStatus.ResultStatus.SHOW
-                    }
-            )
-        }
+    val currentSearchStatus = remember(searchStatus, filteredRules) {
+        searchStatus.copy(resultStatus = when {
+                searchStatus.searchText.isBlank() -> SearchStatus.ResultStatus.DEFAULT
+                filteredRules.isEmpty() -> SearchStatus.ResultStatus.EMPTY
+                else -> SearchStatus.ResultStatus.SHOW
+            }
+        )
+    }
 
     LaunchedEffect(state.toggleError) {
         val error = state.toggleError ?: return@LaunchedEffect
@@ -139,7 +132,7 @@ fun RulesScreen(navigator: Navigator) {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
+        GlassScaffold(
             topBar = {
                 currentSearchStatus.TopAppBarAnim {
                     TopBar(
@@ -148,36 +141,14 @@ fun RulesScreen(navigator: Navigator) {
                         navigationIconPadding = 0.dp,
                         navigationIcon = { NavigationBackIcon(navigator = navigator) },
                         bottomContent = {
-                            Box(
-                                modifier =
-                                    Modifier.alpha(if (currentSearchStatus.isCollapsed()) 1f else 0f)
-                                        .onGloballyPositioned { coordinates ->
-                                            with(density) {
-                                                val collapsedBarOffset = coordinates.positionInWindow().y.toDp()
-                                                if (currentSearchStatus.offsetY != collapsedBarOffset) {
-                                                    searchStatus = currentSearchStatus.copy(offsetY = collapsedBarOffset)
-                                                }
-                                            }
-                                        }
-                                        .then(
-                                            if (currentSearchStatus.isCollapsed()) {
-                                                Modifier.pointerInput(currentSearchStatus.current) {
-                                                    detectTapGestures {
-                                                        searchStatus = currentSearchStatus.copy(current = SearchStatus.Status.EXPANDING)
-                                                    }
-                                                }
-                                            } else {
-                                                Modifier
-                                            }
-                                        )
-                            ) {
-                                RulesCollapsedSearchBar(
-                                    label = currentSearchStatus.label,
-                                    topPadding = dynamicTopPadding,
-                                    startPadding = listStartPadding,
-                                    endPadding = listEndPadding,
-                                )
-                            }
+                            RulesSearchBar(
+                                query = searchStatus.searchText,
+                                onQueryChange = { searchStatus = searchStatus.copy(searchText = it) },
+                                label = searchStatus.label,
+                                topPadding = dynamicTopPadding,
+                                startPadding = listStartPadding,
+                                endPadding = listEndPadding,
+                            )
                         },
                     )
                 }
@@ -206,6 +177,13 @@ fun RulesScreen(navigator: Navigator) {
                         )
                     }
 
+                    searchStatus.searchText.isNotBlank() && filteredRules.isEmpty() -> {
+                        CenteredText(
+                            firstLine = FlyTxt.Rules.Empty.NoResults,
+                            secondLine = searchStatus.searchText,
+                        )
+                    }
+
                     else -> {
                         ScreenLazyColumn(
                             scrollBehavior = scrollBehavior,
@@ -227,79 +205,61 @@ fun RulesScreen(navigator: Navigator) {
                 }
             }
         }
-
-        currentSearchStatus.SearchPager(
-            onSearchStatusChange = { searchStatus = it },
-            padding =
-                SearchBarPadding(
-                    top = dynamicTopPadding,
-                    start = listStartPadding,
-                    end = listEndPadding,
-                ),
-            emptyResult = {
-                CenteredText(
-                    firstLine = FlyTxt.Rules.Empty.NoResults,
-                    secondLine = currentSearchStatus.searchText,
-                )
-            },
-        ) {
-            val searchListState = rememberLazyListState()
-            val listBottomPadding =
-                maxOf(
-                    mainLikePadding.calculateBottomPadding(),
-                    WindowInsets.ime.asPaddingValues().calculateBottomPadding(),
-                )
-            androidx.compose.foundation.lazy.LazyColumn(
-                state = searchListState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding =
-                    PaddingValues(
-                        top = spacing.space6,
-                        bottom = listBottomPadding,
-                    ),
-            ) {
-                items(items = filteredRules, key = { it.index }, contentType = { "rule" }) { rule ->
-                    RuleCard(
-                        rule = rule,
-                        enabled = !rule.disabled,
-                        toggling = rule.index in state.togglingIndexes,
-                        onEnabledChange = { enabled -> viewModel.setRuleEnabled(rule.index, enabled) },
-                    )
-                }
-            }
-        }
     }
 }
 
 @Composable
-private fun RulesCollapsedSearchBar(
+private fun RulesSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
     label: String,
     topPadding: androidx.compose.ui.unit.Dp,
     startPadding: androidx.compose.ui.unit.Dp,
     endPadding: androidx.compose.ui.unit.Dp,
 ) {
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val isLightTheme = !isDarkTheme()
+    val surfaceColor = MiuixTheme.colorScheme.surfaceContainerHigh
     InputField(
-        query = "",
-        onQueryChange = {},
+        query = query,
+        onQueryChange = onQueryChange,
+        color = Color.Transparent,
         label = label,
+        onSearch = {
+            focusManager.clearFocus(force = true)
+            keyboardController?.hide()
+        },
+        expanded = false,
+        onExpandedChange = {},
         leadingIcon = {
             Icon(
                 imageVector = MiuixIcons.Basic.Search,
                 contentDescription = FlyTxt.Component.Editor.Action.Search,
-                modifier =
-                    Modifier.size(AppTheme.sizes.searchIconTouchTarget)
-                        .padding(start = AppTheme.spacing.space16, end = AppTheme.spacing.space8),
+                modifier = Modifier.size(AppTheme.sizes.searchIconTouchTarget).padding(start = AppTheme.spacing.space16, end = AppTheme.spacing.space8),
                 tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
         },
-        modifier =
-            Modifier.fillMaxWidth()
-                .padding(start = startPadding, end = endPadding)
-                .padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding),
-        onSearch = {},
-        enabled = false,
-        expanded = false,
-        onExpandedChange = {},
+        trailingIcon = {
+            AnimatedVisibility(visible = query.isNotEmpty()) {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.size(AppTheme.sizes.searchIconTouchTarget).padding(start = AppTheme.spacing.space8, end = AppTheme.spacing.space16),
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Basic.SearchCleanup,
+                        contentDescription = FlyTxt.Component.Button.Clear,
+                    )
+                }
+            }
+        },
+        modifier = Modifier.fillMaxWidth().padding(start = startPadding, end = endPadding).padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding).clip(CircleShape).glassCardSurface(CircleShape, fallbackColor = surfaceColor).edgeLight(
+            shape = CircleShape,
+            color = EdgeLightDefaults.tint(surfaceColor, isLightTheme),
+            width = EdgeLightDefaults.width(isLightTheme),
+            blurRadius = EdgeLightDefaults.BlurRadius,
+            blendMode = EdgeLightDefaults.blendMode(isLightTheme),
+        ),
     )
 }
 
@@ -312,18 +272,14 @@ private fun RuleCard(
 ) {
     val spacing = AppTheme.spacing
     val totalCount = rule.hitCount + rule.missCount
-    val hitRate =
-        if (totalCount > 0L) {
-            String.format(Locale.getDefault(), "%.1f%%", rule.hitCount * 100.0 / totalCount)
-        } else {
-            "-"
-        }
+    val hitRate = if (totalCount > 0L) {
+        String.format(Locale.getDefault(), "%.1f%%", rule.hitCount * 100.0 / totalCount)
+    } else {
+        "-"
+    }
 
     Card(modifier = Modifier.padding(vertical = spacing.space4)) {
-        Column(
-            modifier =
-                Modifier.fillMaxWidth().padding(horizontal = spacing.space16, vertical = spacing.space12)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.space16, vertical = spacing.space12)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,

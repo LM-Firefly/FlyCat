@@ -23,6 +23,7 @@ package com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -58,6 +59,7 @@ import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlag
 import com.github.lmfirefly.flycat.presentation.component.misc.EmojiAwareText
 import com.github.lmfirefly.flycat.presentation.component.misc.GroupIcon
@@ -193,7 +195,8 @@ private fun NodeGroupCompactCard(
             .fillMaxWidth()
             .pressable(interactionSource = interactionSource, indication = SinkFeedback())
             .clip(shape)
-            .background(MiuixTheme.colorScheme.background)
+            .glassCardSurface(shape = shape, fallbackColor = MiuixTheme.colorScheme.background)
+            .border(AppTheme.sizes.nodeCardBorderWidth, MiuixTheme.colorScheme.surfaceVariant, shape)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -267,49 +270,41 @@ internal fun NodeGroupCard(
     onTestClick: ((ProxyGroupInfo) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val cardShape = RoundedCornerShape(AppTheme.radii.radius12)
+    val cardShape = RoundedCornerShape(AppTheme.radii.radius18)
     val interactionSource = remember { MutableInteractionSource() }
     val testInteractionSource = remember { MutableInteractionSource() }
 
     val proxiesByName = remember(group.proxies) { group.proxies.associateBy(Proxy::name) }
     val currentProxy = remember(group.now, proxiesByName) { proxiesByName[group.now] }
-    val currentNode =
-        remember(currentProxy?.name, currentProxy?.title, group.now) {
-            resolveProxyDisplayPresentation(
-                name = currentProxy?.name ?: group.now,
-                title = currentProxy?.title,
-            )
-        }
-    val currentNodeName =
-        remember(currentNode.displayName, group.now) {
-            currentNode.displayName.ifBlank { group.now.trim() }.ifBlank { FlyTxt.Proxy.Mode.Direct }
-        }
-    val iconUri =
-        remember(group.icon) {
-            group.icon?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeGroupIconUri)
-        }
+    val currentNode = remember(currentProxy?.name, currentProxy?.title, group.now) {
+        resolveProxyDisplayPresentation(
+            name = currentProxy?.name ?: group.now,
+            title = currentProxy?.title,
+        )
+    }
+    val currentNodeName = remember(currentNode.displayName, group.now) {
+        currentNode.displayName.ifBlank { group.now.trim() }.ifBlank { FlyTxt.Proxy.Mode.Direct }
+    }
+    val iconUri = remember(group.icon) {
+        group.icon?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeGroupIconUri)
+    }
     val currentDelay = liveProxyDelay(currentProxy?.name, currentProxy?.delay)
     val badge = remember(group.type) { groupBadge(group.type) }
     val delayLabel = nodeLatencyLabel(currentDelay)
 
     Column(
-        modifier =
-            modifier
-                .shadow(
-                    elevation = UiDp.dp4,
-                    shape = cardShape,
-                    ambientColor = Color.Black.copy(alpha = 0.05f),
-                    spotColor = Color.Black.copy(alpha = 0.05f),
-                )
-                .pressable(interactionSource = interactionSource, indication = SinkFeedback())
-                .clip(cardShape)
-                .background(MiuixTheme.colorScheme.background)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = { onClick(group) },
-                )
-                .padding(horizontal = UiDp.dp16, vertical = UiDp.dp14),
+        modifier = modifier.shadow(
+            elevation = UiDp.dp4,
+            shape = cardShape,
+            ambientColor = Color.Black.copy(alpha = 0.05f),
+            spotColor = Color.Black.copy(alpha = 0.05f),
+        ).pressable(interactionSource = interactionSource, indication = SinkFeedback()).clip(cardShape)
+        .glassCardSurface(shape = cardShape, fallbackColor = MiuixTheme.colorScheme.background)
+        .clickable(
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = { onClick(group) },
+        ).padding(horizontal = UiDp.dp16, vertical = UiDp.dp14),
         verticalArrangement = Arrangement.spacedBy(UiDp.dp10),
     ) {
         Row(
@@ -352,10 +347,8 @@ internal fun NodeGroupCard(
                             text = badge.label,
                             style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
                             color = primary,
-                            modifier =
-                                Modifier.clip(RoundedCornerShape(50))
-                                    .background(primary.copy(alpha = 0.1f))
-                                    .padding(horizontal = UiDp.dp8, vertical = UiDp.dp3),
+                            modifier = Modifier.clip(RoundedCornerShape(50)).background(primary.copy(alpha = 0.1f))
+                                .padding(horizontal = UiDp.dp8, vertical = UiDp.dp3),
                         )
                     }
 
@@ -370,26 +363,17 @@ internal fun NodeGroupCard(
                         )
                         if (onTestClick != null) {
                             Box(
-                                modifier =
-                                    Modifier
-                                        .padding(start = UiDp.dp6)
-                                        .width(UiDp.dp28)
-                                        .height(UiDp.dp22)
-                                        .clickable(
-                                            interactionSource = testInteractionSource,
-                                            indication = null,
-                                            enabled = !isDelayTesting,
-                                            onClick = { onTestClick(group) },
-                                        ),
+                                modifier = Modifier.padding(start = UiDp.dp6).width(UiDp.dp28).height(UiDp.dp22).clickable(
+                                    interactionSource = testInteractionSource,
+                                    indication = null,
+                                    enabled = !isDelayTesting,
+                                    onClick = { onTestClick(group) },
+                                ),
                                 contentAlignment = Alignment.CenterEnd,
                             ) {
                                 val primary = MiuixTheme.colorScheme.primary
                                 Box(
-                                    modifier =
-                                        Modifier
-                                            .size(UiDp.dp22)
-                                            .clip(CircleShape)
-                                            .background(primary.copy(alpha = 0.1f)),
+                                    modifier = Modifier.size(UiDp.dp22).clip(CircleShape).background(primary.copy(alpha = 0.1f)),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     if (isDelayTesting) {
