@@ -129,16 +129,14 @@ class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConf
                     expectedNameCache = ExpectedGroupCache(cacheKey, names)
                     expectedNameNegative = null
                 } else {
-                    expectedNameNegative =
-                        ExpectedGroupNegative(cacheKey, System.currentTimeMillis())
+                    expectedNameNegative = ExpectedGroupNegative(cacheKey, System.currentTimeMillis())
                 }
             }
             names
         }
     }
 
-    fun runtimeGroupNames(excludeNotSelectable: Boolean): List<String> =
-        Clash.queryGroupNames(excludeNotSelectable)
+    fun runtimeGroupNames(excludeNotSelectable: Boolean): List<String> = Clash.queryGroupNames(excludeNotSelectable)
 
     suspend fun resolvedGroupNames(
         spec: RuntimeSpec?,
@@ -195,7 +193,7 @@ class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConf
         // Batch query: single JNI call replaces N × queryGroup() round-trips.
         val batchResult = Clash.queryGroupsBatch(names, ProxySort.Default)
         val batchByName = batchResult.associateBy { it.name }
-        val coreNamesByTrimmed = buildCoreNamesByTrimmed(excludeNotSelectable)
+        val coreNamesByTrimmed = buildCoreNamesByTrimmed(names)
         return names.mapNotNull { name ->
             // Try exact match from batch result first.
             batchByName[name]?.takeIf(::isUsable)
@@ -209,8 +207,7 @@ class RuntimeProxyGroupResolver(private val compiledConfigPipeline: CompiledConf
         }
     }
 
-    private fun buildCoreNamesByTrimmed(excludeNotSelectable: Boolean): Map<String, String> {
-        val coreNames = runtimeGroupNames(excludeNotSelectable)
+    private fun buildCoreNamesByTrimmed(coreNames: List<String>): Map<String, String> {
         val lookup = HashMap<String, String>(coreNames.size)
         coreNames.forEach { coreName ->
             val key = coreName.trim()

@@ -49,8 +49,7 @@ object TrafficPushHub {
     }
 
     /** 在 [thresholdMs] 内是否收到过推送事件。 */
-    fun isActive(thresholdMs: Long): Boolean =
-        SystemClock.elapsedRealtime() - lastUpdateTimestampMs < thresholdMs
+    fun isActive(thresholdMs: Long): Boolean = SystemClock.elapsedRealtime() - lastUpdateTimestampMs < thresholdMs
 
     fun reset() {
         _trafficNow.value = 0L

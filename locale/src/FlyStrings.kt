@@ -152,8 +152,6 @@ public data class FlyStrings_AppSettings_Interface(
     public val ColorThemeCustomSummary: String,
     public val ThemeColorPolarityInvertTitle: String,
     public val ThemeColorPolarityInvertSummary: String,
-    public val TopBarBlurTitle: String,
-    public val TopBarBlurSummary: String,
     public val AutoHideNavbarTitle: String,
     public val AutoHideNavbarSummary: String,
     public val PageScaleTitle: String,
@@ -175,6 +173,12 @@ public data class FlyStrings_AppSettings_Interface(
     public val HomeWallpaperSourceUrl: String,
     public val HomeWallpaperUrlDialogTitle: String,
     public val WallpaperScrimTitle: String,
+    public val WallpaperBlurTitle: String,
+    public val AppBackgroundTitle: String,
+    public val AppBackgroundSummary: String,
+    public val AppBackgroundOff: String,
+    public val AppBackgroundDynamic: String,
+    public val AppBackgroundWallpaper: String,
 )
 
 public data class FlyStrings_AppSettings_Privacy(
@@ -182,6 +186,29 @@ public data class FlyStrings_AppSettings_Privacy(
     public val HideIconSummary: String,
     public val HideFromRecentsTitle: String,
     public val HideFromRecentsSummary: String,
+)
+
+public data class FlyStrings_AppSettings_Notification(
+    public val ContentSection: String,
+    public val ContentSummary: String,
+    public val FirstLineTitle: String,
+    public val SecondLineTitle: String,
+    public val CustomTextTitle: String,
+    public val CustomTextEmpty: String,
+    public val PreviewSection: String,
+    public val PreviewSummary: String,
+    public val LineProfileName: String,
+    public val LineStatus: String,
+    public val LineCurrentNode: String,
+    public val LineLiveTraffic: String,
+    public val LineUsedTraffic: String,
+    public val LineSessionTraffic: String,
+    public val LineTotalTraffic: String,
+    public val LineRemainingTraffic: String,
+    public val LineSubscriptionUsage: String,
+    public val LineExpiryDate: String,
+    public val LineCustomText: String,
+    public val LineHidden: String,
 )
 
 public data class FlyStrings_AppSettings_ServiceSection(
@@ -294,6 +321,7 @@ public data class FlyStrings_AppSettings(
     public val Behavior: FlyStrings_AppSettings_Behavior,
     public val Interface: FlyStrings_AppSettings_Interface,
     public val Privacy: FlyStrings_AppSettings_Privacy,
+    public val Notification: FlyStrings_AppSettings_Notification,
     public val ServiceSection: FlyStrings_AppSettings_ServiceSection,
     public val Network: FlyStrings_AppSettings_Network,
     public val PredictiveBack: FlyStrings_AppSettings_PredictiveBack,
@@ -904,6 +932,12 @@ public data class FlyStrings_MetaFeature_Backup(
     public val BackupSummary: String,
     public val RestoreTitle: String,
     public val RestoreSummary: String,
+    public val RestoreStrategySection: String,
+    public val RestoreStrategyTitle: String,
+    public val RestoreOverwrite: String,
+    public val RestoreMerge: String,
+    public val RestoreOverwriteSummary: String,
+    public val RestoreMergeSummary: String,
     public val BackupDialogTitle: String,
     public val BackupDialogMessage: String,
     public val RestoreDialogTitle: String,
@@ -988,6 +1022,8 @@ public data class FlyStrings_NetworkSettings_Section(
 
 public data class FlyStrings_NetworkSettings_Advanced(
     public val DisableOverrideTitle: String,
+    public val ServiceConfigSummary: String,
+    public val DisableOverrideSummary: String,
 )
 
 public data class FlyStrings_NetworkSettings_Kernel(
@@ -1008,16 +1044,19 @@ public data class FlyStrings_NetworkSettings_Kernel(
     public val InstalledTag: String,
     public val PluginFormatTitle: String,
     public val PluginFormatBody: String,
+    public val SectionSummary: String,
 )
 
 public data class FlyStrings_NetworkSettings_RunMode(
     public val SectionTitle: String,
+    public val CurrentModeTitle: String,
     public val VpnServiceTitle: String,
     public val VpnServiceSummary: String,
     public val TunTitle: String,
     public val TunSummary: String,
     public val EbpfTitle: String,
     public val EbpfSummary: String,
+    public val SectionSummary: String,
 )
 
 public data class FlyStrings_NetworkSettings_EbpfOptions(
@@ -1045,6 +1084,7 @@ public data class FlyStrings_NetworkSettings_ProxyOptions(
     public val AllowSelected: String,
     public val RejectSelected: String,
     public val ManageAccessControlTitle: String,
+    public val ImportStrategyTitle: String,
 )
 
 public data class FlyStrings_NetworkSettings_RootTun(
@@ -1620,6 +1660,8 @@ public data class FlyStrings_Proxy_Action(
     public val Panel: String,
     public val Test: String,
     public val Sort: String,
+    public val TabsMode: String,
+    public val Layout: String,
 )
 
 public data class FlyStrings_Proxy_Node(

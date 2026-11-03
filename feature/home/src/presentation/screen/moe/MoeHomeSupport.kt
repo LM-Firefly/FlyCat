@@ -193,10 +193,8 @@ private fun MoeSidebarValueStack(
     ) {
         MoeSidebarTimeValue(value = topValue)
         Box(
-            modifier =
-                Modifier.width(MoeUi.Sidebar.dividerWidth)
-                    .height(MoeUi.Sidebar.dividerHeight)
-                    .background(Color.White.copy(alpha = MoeUi.Sidebar.dividerAlpha))
+            modifier = Modifier.width(MoeUi.Sidebar.dividerWidth)
+                .height(MoeUi.Sidebar.dividerHeight).background(Color.White.copy(alpha = MoeUi.Sidebar.dividerAlpha))
         )
         MoeSidebarTimeValue(value = bottomValue)
     }
@@ -218,16 +216,11 @@ private fun MoeSidebarIconRail(icons: List<MoeSidebarIconItem>) {
 @Composable
 private fun MoeSidebarIconItemView(item: MoeSidebarIconItem) {
     Box(
-        modifier =
-            Modifier.size(MoeUi.Sidebar.iconHitSize)
-                .clickable(
-                    interactionSource =
-                        remember {
-                            androidx.compose.foundation.interaction.MutableInteractionSource()
-                        },
-                    indication = null,
-                    onClick = item.onClick,
-                ),
+        modifier = Modifier.size(MoeUi.Sidebar.iconHitSize).clickable(
+            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+            indication = null,
+            onClick = item.onClick,
+        ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -295,28 +288,18 @@ private fun MoeBatteryCapsule(percent: Int?) {
     val fillFraction = (clampedPercent / 100f).coerceIn(0.12f, 1f)
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
-            modifier =
-                Modifier.width(MoeUi.Sidebar.batteryWidth)
-                    .height(MoeUi.Sidebar.batteryHeight)
-                    .clip(RoundedCornerShape(moeRadii.full))
-                    .background(Color.White.copy(alpha = 0.36f))
-                    .padding(2.dp),
+            modifier = Modifier.width(MoeUi.Sidebar.batteryWidth).height(MoeUi.Sidebar.batteryHeight)
+                .clip(RoundedCornerShape(moeRadii.full)).background(Color.White.copy(alpha = 0.36f)).padding(2.dp),
             contentAlignment = Alignment.CenterStart,
         ) {
             Box(
-                modifier =
-                    Modifier.fillMaxWidth(fillFraction)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(moeRadii.full))
-                        .background(Color.White.copy(alpha = 0.86f))
+                modifier = Modifier.fillMaxWidth(fillFraction).fillMaxHeight()
+                    .clip(RoundedCornerShape(moeRadii.full)).background(Color.White.copy(alpha = 0.86f))
             )
         }
         Box(
-            modifier =
-                Modifier.width(MoeUi.Sidebar.batteryKnobWidth)
-                    .height(MoeUi.Sidebar.batteryHeight * 0.46f)
-                    .clip(RoundedCornerShape(moeRadii.full))
-                    .background(Color.White.copy(alpha = 0.54f))
+            modifier = Modifier.width(MoeUi.Sidebar.batteryKnobWidth).height(MoeUi.Sidebar.batteryHeight * 0.46f)
+                .clip(RoundedCornerShape(moeRadii.full)).background(Color.White.copy(alpha = 0.54f))
         )
     }
 }
@@ -324,10 +307,8 @@ private fun MoeBatteryCapsule(percent: Int?) {
 @Composable
 private fun MoeSidebarDivider() {
     Box(
-        modifier =
-            Modifier.width(MoeUi.Sidebar.dividerWidth)
-                .height(MoeUi.Sidebar.dividerHeight)
-                .background(Color.White.copy(alpha = MoeUi.Sidebar.dividerAlpha))
+        modifier = Modifier.width(MoeUi.Sidebar.dividerWidth).height(MoeUi.Sidebar.dividerHeight)
+            .background(Color.White.copy(alpha = MoeUi.Sidebar.dividerAlpha))
     )
 }
 
@@ -336,8 +317,7 @@ internal enum class MoeWallpaperQualityMode {
     BackgroundBlur,
 }
 
-internal fun lerpFloat(start: Float, stop: Float, progress: Float): Float =
-    start + (stop - start) * progress
+internal fun lerpFloat(start: Float, stop: Float, progress: Float): Float = start + (stop - start) * progress
 
 internal fun lerpDp(start: Dp, stop: Dp, progress: Float): Dp = start + (stop - start) * progress
 

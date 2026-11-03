@@ -69,6 +69,12 @@ import com.github.lmfirefly.flycat.feature.log.presentation.viewmodel.LogConnect
 import com.github.lmfirefly.flycat.feature.log.presentation.viewmodel.LogLevelFilter
 import com.github.lmfirefly.flycat.feature.log.presentation.viewmodel.MihomoLogViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
+import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
+import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopActionAnchorIcon
+import com.github.lmfirefly.flycat.presentation.component.GlassTopActionPill
 import com.github.lmfirefly.flycat.presentation.component.SearchInputToolbar
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
@@ -79,6 +85,7 @@ import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Search
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.util.toast
 import kotlinx.coroutines.Dispatchers
@@ -94,6 +101,7 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Filter
@@ -176,67 +184,63 @@ fun MihomoLogScreen(navigator: Navigator) {
             )
         }
     }
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = FlyTxt.Log.Mihomo.Title,
                 scrollBehavior = scrollBehavior,
                 navigationIcon = { NavigationBackIcon(navigator = navigator, extraStartPadding = 0.dp) },
                 actions = {
-                    Box {
-                        IconButton(modifier = Modifier.padding(end = 4.dp), onClick = { showLevelPopup = true }) {
-                            Icon(
-                                imageVector = MiuixIcons.Filter,
+                    val levelMenuAnchor = rememberGlassPopupAnchor()
+                    GlassTopActionPill(
+                        actions = listOfNotNull(
+                            GlassTopAction(
+                                icon = MiuixIcons.Filter,
                                 contentDescription = FlyTxt.Log.Level.Filter,
-                                tint = MiuixTheme.colorScheme.onSurface,
-                            )
-                        }
-                        OverlayListPopup(
-                            show = showLevelPopup,
-                            alignment = PopupPositionProvider.Align.BottomEnd,
-                            onDismissRequest = { showLevelPopup = false },
-                        ) {
-                            ListPopupColumn {
-                                LevelFilters.forEachIndexed { index, filter ->
-                                    DropdownImpl(
-                                        text = filter.displayName(),
-                                        optionSize = LevelFilters.size,
-                                        isSelected = selectedLevelIndex == index,
-                                        onSelectedIndexChange = {
-                                            if (filter != levelFilter) viewModel.setLevelFilter(filter)
-                                            showLevelPopup = false
-                                        },
-                                        index = index,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    IconButton(
-                        modifier = Modifier.padding(end = 4.dp),
-                        onClick = {
-                            searchVisible = !searchVisible
-                            // 与节点子页一致：收起即清空查询，避免搜索框隐藏后仍按旧查询过滤。
-                            if (!searchVisible) {
-                                searchQuery = ""
-                                viewModel.setSearchQuery("")
-                            }
-                        },
-                    ) {
-                        Icon(
-                            imageVector = FlyCat.Search,
-                            contentDescription = FlyTxt.Component.Editor.Action.Search,
-                        )
-                    }
-                    if (filteredEntries.isNotEmpty()) {
-                        IconButton(onClick = { exportLauncher.launch("mihomo_log_${System.currentTimeMillis()}.txt") }) {
-                            Icon(
-                                imageVector = MiuixIcons.Download,
-                                contentDescription = FlyTxt.Log.Mihomo.Export,
-                                tint = MiuixTheme.colorScheme.onSurface,
-                            )
-                        }
-                    }
+                                onClick = { showLevelPopup = true },
+                                anchor = levelMenuAnchor,
+                                popup = {
+                                    GlassPopupHost(
+                                        show = showLevelPopup,
+                                        onDismissRequest = { showLevelPopup = false },
+                                        anchor = levelMenuAnchor,
+                                        anchorContent = { GlassTopActionAnchorIcon(MiuixIcons.Filter) },
+                                    ) {
+                                        LevelFilters.forEachIndexed { index, filter ->
+                                            GlassMenuItem(
+                                                text = filter.displayName(),
+                                                selected = selectedLevelIndex == index,
+                                                onClick = {
+                                                    if (filter != levelFilter) viewModel.setLevelFilter(filter)
+                                                    showLevelPopup = false
+                                                },
+                                            )
+                                        }
+                                    }
+                                },
+                            ),
+                            GlassTopAction(
+                                icon = FlyCat.Search,
+                                contentDescription = FlyTxt.Component.Editor.Action.Search,
+                                onClick = {
+                                    searchVisible = !searchVisible
+                                    // 与节点子页一致：收起即清空查询，避免搜索框隐藏后仍按旧查询过滤。
+                                    if (!searchVisible) {
+                                        searchQuery = ""
+                                        viewModel.setSearchQuery("")
+                                    }
+                                },
+                            ),
+                            if (filteredEntries.isNotEmpty()) {
+                                GlassTopAction(
+                                    icon = MiuixIcons.Download,
+                                    contentDescription = FlyTxt.Log.Mihomo.Export,
+                                    onClick = { exportLauncher.launch("mihomo_log_${System.currentTimeMillis()}.txt") },
+                                )
+                            } else { null },
+                        ),
+                        backdrop = LocalTopBarBackdrop.current,
+                    )
                 },
             )
         },
@@ -315,7 +319,7 @@ private fun MihomoLogEntryRow(entry: LiveLogEntry, onClick: () -> Unit, modifier
             -> MiuixTheme.colorScheme.onSurfaceVariantSummary
     }
     val interactionSource = remember { MutableInteractionSource() }
-    Card(cornerRadius = AppTheme.radii.radius12, modifier = modifier.padding(vertical = 3.dp).clickable(interactionSource = interactionSource, indication = null, onClick = onClick)) {
+    Card(cornerRadius = AppTheme.radii.radius18, modifier = modifier.padding(vertical = 3.dp).clickable(interactionSource = interactionSource, indication = null, onClick = onClick)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(

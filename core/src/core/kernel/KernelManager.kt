@@ -60,9 +60,7 @@ import timber.log.Timber
 
 /** 反序列化可能以 "ebpf"（字符串）或 ["ebpf"]（数组）形式出现的能力。 */
 private object FlexCapabilitiesSerializer : KSerializer<Set<String>> {
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("FlexCapabilities", PrimitiveKind.STRING)
-
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("FlexCapabilities", PrimitiveKind.STRING)
     override fun deserialize(decoder: Decoder): Set<String> {
         val json = (decoder as? JsonDecoder)?.decodeJsonElement() ?: return emptySet()
         return when (json) {
@@ -71,7 +69,6 @@ private object FlexCapabilitiesSerializer : KSerializer<Set<String>> {
             else -> emptySet()
         }
     }
-
     override fun serialize(encoder: Encoder, value: Set<String>) = encoder.encodeString(value.joinToString(","))
 }
 
@@ -87,21 +84,15 @@ object KernelManager {
     private const val CERTIFIED_WORKFLOW = ".github/workflows/build-kernels.yml"
     const val CAPABILITY_EBPF = "ebpf"
     private const val LEGACY_EBPF_ID = "ebpf"
-
     private val json = Json { ignoreUnknownKeys = true }
     private val installMutex = Mutex()
-    private val client: HttpClient by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        HttpClient(OkHttp) { expectSuccess = false }
-    }
-
+    private val client: HttpClient by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { HttpClient(OkHttp) { expectSuccess = false } }
     /** 返回 ABI 特定的清单 URL (例如 `kernel-index-x86_64.json`)。 */
     fun indexUrlForAbi(abi: String): String {
         val base = INDEX_URL.substringBeforeLast("/")
         return if (abi == DEFAULT_ABI) INDEX_URL else "$base/kernel-index-$abi.json"
     }
-
     private val DEFAULT_ABI = "arm64-v8a"
-
     private fun currentAbi(): String {
         val primary = Build.SUPPORTED_ABIS.firstOrNull() ?: return DEFAULT_ABI
         return when {
@@ -112,10 +103,8 @@ object KernelManager {
             else -> DEFAULT_ABI
         }
     }
-
     @Serializable
     data class ReleaseMetadata(val kind: String = "official")
-
     @Serializable
     data class BuilderMetadata(
         val repository: String = "",
@@ -124,7 +113,6 @@ object KernelManager {
         val commit: String = "",
         val format: String = "",
     )
-
     @Serializable
     data class Index(
         val release: ReleaseMetadata = ReleaseMetadata(),
@@ -135,7 +123,6 @@ object KernelManager {
         val shellAbi: Int,
         val kernels: List<Kernel>,
     )
-
     @Serializable
     data class Kernel(
         val id: String,
@@ -198,8 +185,7 @@ object KernelManager {
         withContext(Dispatchers.IO) {
             validateKernel(kernel)
             libraryDirectory(context).mkdirs()
-            val archive =
-                File(libraryDirectory(context), "$CORE_FILE_PREFIX${kernel.id}.so.xz.download")
+            val archive = File(libraryDirectory(context), "$CORE_FILE_PREFIX${kernel.id}.so.xz.download")
             try {
                 download(kernel, archive)
                 installArchive(context, kernel, archive)
@@ -258,8 +244,7 @@ object KernelManager {
             }
             val kernel = index.kernels.single()
             libraryDirectory(context).mkdirs()
-            val archive =
-                File(libraryDirectory(context), "$CORE_FILE_PREFIX${kernel.id}.so.xz.download")
+            val archive = File(libraryDirectory(context), "$CORE_FILE_PREFIX${kernel.id}.so.xz.download")
             try {
                 zip.getInputStream(zip.getEntry(kernel.asset)).use { input ->
                     archive.outputStream().buffered().use { output -> input.copyTo(output) }
@@ -297,16 +282,13 @@ object KernelManager {
         return target
     }
 
-    fun libraryFile(context: Context, id: String): File =
-        File(libraryDirectory(context), "$CORE_FILE_PREFIX$id.so")
+    fun libraryFile(context: Context, id: String): File = File(libraryDirectory(context), "$CORE_FILE_PREFIX$id.so")
 
-    fun activeKernelId(context: Context): String =
-        runCatching {
-            File(libraryDirectory(context), ACTIVE_FILE).takeIf(File::isFile)?.readText()?.trim()
-        }
-            .getOrNull()
-            ?.takeIf { it == BUNDLED_ALPHA_ID || (isKernelId(it) && isInstalled(context, it)) }
-            ?: BUNDLED_ALPHA_ID
+    fun activeKernelId(context: Context): String = runCatching {
+        File(libraryDirectory(context), ACTIVE_FILE).takeIf(File::isFile)?.readText()?.trim()
+    }.getOrNull()
+        ?.takeIf { it == BUNDLED_ALPHA_ID || (isKernelId(it) && isInstalled(context, it)) }
+        ?: BUNDLED_ALPHA_ID
 
     fun activate(context: Context, id: String) {
         require(id == BUNDLED_ALPHA_ID || isKernelId(id)) { "Invalid kernel id" }
@@ -327,32 +309,28 @@ object KernelManager {
             id == LEGACY_EBPF_ID
     }
 
-    fun installedKernelIds(context: Context): List<String> =
-        libraryDirectory(context).listFiles().orEmpty()
-            .asSequence()
-            .map { it.name }
-            .filter { it.startsWith(CORE_FILE_PREFIX) && it.endsWith(CORE_METADATA_SUFFIX) }
-            .map { it.removePrefix(CORE_FILE_PREFIX).removeSuffix(CORE_METADATA_SUFFIX) }
-            .filter { isKernelId(it) && isInstalled(context, it) }
-            .distinct()
-            .sorted()
-            .toList()
+    fun installedKernelIds(context: Context): List<String> = libraryDirectory(context).listFiles().orEmpty()
+        .asSequence()
+        .map { it.name }
+        .filter { it.startsWith(CORE_FILE_PREFIX) && it.endsWith(CORE_METADATA_SUFFIX) }
+        .map { it.removePrefix(CORE_FILE_PREFIX).removeSuffix(CORE_METADATA_SUFFIX) }
+        .filter { isKernelId(it) && isInstalled(context, it) }
+        .distinct()
+        .sorted()
+        .toList()
 
-    fun installedName(context: Context, id: String): String =
-        readInstalledKernel(context, id)?.name?.takeIf { it.isNotBlank() } ?: id
+    fun installedName(context: Context, id: String): String = readInstalledKernel(context, id)?.name?.takeIf { it.isNotBlank() } ?: id
 
     fun installedCommit(context: Context, id: String): String? {
         if (id == BUNDLED_ALPHA_ID || !isInstalled(context, id)) return null
         return readInstalledKernel(context, id)?.commit
     }
 
-    fun installed(context: Context): File? =
-        activeKernelId(context)
-            .takeIf { it != BUNDLED_ALPHA_ID }
-            ?.let { libraryFile(context, it).takeIf(File::isFile) }
+    fun installed(context: Context): File? = activeKernelId(context)
+        .takeIf { it != BUNDLED_ALPHA_ID }
+        ?.let { libraryFile(context, it).takeIf(File::isFile) }
 
-    fun isInstalled(context: Context, id: String): Boolean =
-        id == BUNDLED_ALPHA_ID || (isKernelId(id) && libraryFile(context, id).isFile)
+    fun isInstalled(context: Context, id: String): Boolean = id == BUNDLED_ALPHA_ID || (isKernelId(id) && libraryFile(context, id).isFile)
 
     private suspend fun download(kernel: Kernel, target: File) {
         target.delete()
@@ -419,33 +397,28 @@ object KernelManager {
         check(kernel.capabilities.all(::isCapability)) { "Invalid kernel capability" }
     }
 
-    private fun isKernelId(id: String): Boolean =
-        id.matches(Regex("[a-z0-9][a-z0-9-]*")) && id.length <= 48
+    private fun isKernelId(id: String): Boolean = id.matches(Regex("[a-z0-9][a-z0-9-]*")) && id.length <= 48
 
-    private fun isCapability(value: String): Boolean =
-        value.matches(Regex("[a-z0-9][a-z0-9-]*")) && value.length <= 48
+    private fun isCapability(value: String): Boolean = value.matches(Regex("[a-z0-9][a-z0-9-]*")) && value.length <= 48
 
-    private fun metadataFile(context: Context, id: String): File =
-        File(libraryDirectory(context), "$CORE_FILE_PREFIX$id$CORE_METADATA_SUFFIX")
+    private fun metadataFile(context: Context, id: String): File = File(libraryDirectory(context), "$CORE_FILE_PREFIX$id$CORE_METADATA_SUFFIX")
 
-    private fun readInstalledKernel(context: Context, id: String): InstalledKernel? =
-        runCatching {
-            json.decodeFromString<InstalledKernel>(metadataFile(context, id).readText())
-        }.getOrNull()?.takeIf { metadata ->
-            metadata.id == id && metadata.commit.matches(Regex("[0-9a-f]{6,40}"))
-        }
+    private fun readInstalledKernel(context: Context, id: String): InstalledKernel? = runCatching {
+        json.decodeFromString<InstalledKernel>(metadataFile(context, id).readText())
+    }.getOrNull()?.takeIf { metadata ->
+        metadata.id == id && metadata.commit.matches(Regex("[0-9a-f]{6,40}"))
+    }
 
-    private fun writeInstalledKernel(context: Context, kernel: Kernel) =
-        writeInstalledKernel(
-            context,
-            InstalledKernel(
-                kernel.id,
-                kernel.name,
-                kernel.version,
-                kernel.commit,
-                kernel.capabilities,
-            ),
-        )
+    private fun writeInstalledKernel(context: Context, kernel: Kernel) = writeInstalledKernel(
+        context,
+        InstalledKernel(
+            kernel.id,
+            kernel.name,
+            kernel.version,
+            kernel.commit,
+            kernel.capabilities,
+        ),
+    )
 
     private fun writeInstalledKernel(context: Context, metadata: InstalledKernel) {
         val target = metadataFile(context, metadata.id)
@@ -457,18 +430,17 @@ object KernelManager {
 
     private fun libraryDirectory(context: Context): File = context.filesDir.resolve("lib")
 
-    private fun sha256(file: File): String =
-        MessageDigest.getInstance("SHA-256").let { digest ->
-            file.inputStream().buffered().use { input ->
-                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                while (true) {
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    digest.update(buffer, 0, count)
-                }
+    private fun sha256(file: File): String = MessageDigest.getInstance("SHA-256").let { digest ->
+        file.inputStream().buffered().use { input ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                digest.update(buffer, 0, count)
             }
-            digest.digest().joinToString("") { "%02x".format(it) }
         }
+        digest.digest().joinToString("") { "%02x".format(it) }
+    }
 
     /**
      * 验证 [file] 是适用于 [abi] 的有效 mihomo 内核二进制。

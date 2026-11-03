@@ -44,5 +44,4 @@ class ScrollAwareFabController {
 }
 
 @Composable
-fun rememberScrollAwareFabController(): ScrollAwareFabController =
-    remember { ScrollAwareFabController() }
+fun rememberScrollAwareFabController(): ScrollAwareFabController = remember { ScrollAwareFabController() }

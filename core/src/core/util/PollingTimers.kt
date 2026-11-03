@@ -116,20 +116,18 @@ object PollingTimerSpecs {
         name: String,
         intervalMillis: Long,
         initialDelayMillis: Long = intervalMillis,
-    ): PollingTimerSpec =
-        PollingTimerSpec(
-            name = "dynamic_$name",
-            intervalMillis = intervalMillis,
-            initialDelayMillis = initialDelayMillis,
-        )
+    ): PollingTimerSpec = PollingTimerSpec(
+        name = "dynamic_$name",
+        intervalMillis = intervalMillis,
+        initialDelayMillis = initialDelayMillis,
+    )
 }
 
 object PollingTimers {
     private const val STOP_TIMEOUT_MILLIS = 5_000L
 
-    // One lightweight scheduler lane for all periodic tick emission in this process.
-    private val schedulerScope =
-        CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
+    // 轻量级调度作用域：本对象所有周期性 tick 发射共用这一个单线程调度器。
+    private val schedulerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
     private data class TimerKey(val intervalMillis: Long, val initialDelayMillis: Long)
     private val tickerCache = ConcurrentHashMap<TimerKey, SharedFlow<Long>>()
 
@@ -148,8 +146,7 @@ object PollingTimers {
                 .onCompletion { tickerCache.remove(key) }
                 .shareIn(
                     scope = schedulerScope,
-                    started =
-                        SharingStarted.WhileSubscribed(stopTimeoutMillis = STOP_TIMEOUT_MILLIS),
+                    started = SharingStarted.WhileSubscribed(stopTimeoutMillis = STOP_TIMEOUT_MILLIS),
                     replay = 0,
                 )
         }

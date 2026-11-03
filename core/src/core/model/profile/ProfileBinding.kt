@@ -29,31 +29,26 @@ data class ProfileBinding(
     val overrideIds: List<String> = emptyList(),
 ) {
     companion object {
-        fun disabled(profileId: String): ProfileBinding =
-            ProfileBinding(profileId = profileId, overrideIds = emptyList())
+        fun disabled(profileId: String): ProfileBinding = ProfileBinding(profileId = profileId, overrideIds = emptyList())
 
-        fun withOverrides(profileId: String, overrideIds: List<String>): ProfileBinding =
-            ProfileBinding(profileId = profileId, overrideIds = overrideIds)
+        fun withOverrides(profileId: String, overrideIds: List<String>): ProfileBinding = ProfileBinding(profileId = profileId, overrideIds = overrideIds)
 
-        fun withOverride(profileId: String, overrideId: String): ProfileBinding =
-            ProfileBinding(profileId = profileId, overrideIds = listOf(overrideId))
+        fun withOverride(profileId: String, overrideId: String): ProfileBinding = ProfileBinding(profileId = profileId, overrideIds = listOf(overrideId))
     }
 
     fun addOverride(overrideId: String, index: Int? = null): ProfileBinding {
         if (overrideIds.contains(overrideId)) return this
 
-        val newList =
-            if (index != null) {
-                overrideIds.toMutableList().apply { add(index.coerceAtMost(size), overrideId) }
-            } else {
-                overrideIds + overrideId
-            }
+        val newList = if (index != null) {
+            overrideIds.toMutableList().apply { add(index.coerceAtMost(size), overrideId) }
+        } else {
+            overrideIds + overrideId
+        }
 
         return copy(overrideIds = newList)
     }
 
-    fun removeOverride(overrideId: String): ProfileBinding =
-        copy(overrideIds = overrideIds - overrideId)
+    fun removeOverride(overrideId: String): ProfileBinding = copy(overrideIds = overrideIds - overrideId)
 
     fun moveOverride(fromIndex: Int, toIndex: Int): ProfileBinding {
         if (fromIndex !in overrideIds.indices || toIndex !in overrideIds.indices) return this

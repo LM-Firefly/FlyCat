@@ -60,27 +60,24 @@ class DialerReceiver : BroadcastReceiver() {
                         .build()
                 )
 
-                val launchIntent =
-                    Intent(Intent.ACTION_MAIN).apply {
-                        component = Components.MAIN_ACTIVITY
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    }
-                val pendingIntent =
-                    PendingIntent.getActivity(
-                        context,
-                        0,
-                        launchIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                    )
+                val launchIntent = Intent(Intent.ACTION_MAIN).apply {
+                    component = Components.MAIN_ACTIVITY
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                }
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    0,
+                    launchIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
 
-                val notification =
-                    NotificationCompat.Builder(context, CHANNEL_ID)
-                        .setSmallIcon(R.drawable.ic_logo_service)
-                        .setContentTitle(FlyTxt.Service.Tile.ClickToOpen)
-                        .setContentIntent(pendingIntent)
-                        .setAutoCancel(true)
-                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        .build()
+                val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_logo_service)
+                    .setContentTitle(FlyTxt.Service.Tile.ClickToOpen)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .build()
                 manager.notify(NOTIFICATION_ID, notification)
             }
             .onFailure { error -> Timber.e(error, "Secret code notification failed") }

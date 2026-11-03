@@ -25,12 +25,11 @@ import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
 
-internal fun InetAddress.asSocketAddressText(port: Int): String =
-    when (this) {
-        is Inet6Address -> "[${numericToTextFormat(this)}]:$port"
-        is Inet4Address -> "${this.hostAddress}:$port"
-        else -> throw IllegalArgumentException("Unsupported Inet type ${this.javaClass}")
-    }
+internal fun InetAddress.asSocketAddressText(port: Int): String = when (this) {
+    is Inet6Address -> "[${numericToTextFormat(this)}]:$port"
+    is Inet4Address -> "${this.hostAddress}:$port"
+    else -> throw IllegalArgumentException("Unsupported Inet type ${this.javaClass}")
+}
 
 // hostAddress renders the Inet6 scope as an interface NAME (e.g. %wlan0); the Go core
 // needs the numeric scope id, so the groups are formatted by hand.

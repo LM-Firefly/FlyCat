@@ -53,51 +53,40 @@ class ProfilesRepository(private val context: Context) : ProfileRepositoryContra
         source: String,
         ageSecretKey: String,
         interval: Long,
-    ): UUID =
-        safeApiCall(TAG, "createProfile") {
-                Timber.d("Creating profile: type=$type, name=$name")
-                profileService().create(type, name, source, ageSecretKey, interval)
-            }
-            .getOrThrow()
+    ): UUID = safeApiCall(TAG, "createProfile") {
+        Timber.d("Creating profile: type=$type, name=$name")
+        profileService().create(type, name, source, ageSecretKey, interval)
+    }.getOrThrow()
 
-    override suspend fun cloneProfile(uuid: UUID): UUID =
-        safeApiCall(TAG, "cloneProfile") {
-                Timber.d("Cloning profile: uuid=$uuid")
-                profileService().clone(uuid)
-            }
-            .getOrThrow()
+    override suspend fun cloneProfile(uuid: UUID): UUID = safeApiCall(TAG, "cloneProfile") {
+        Timber.d("Cloning profile: uuid=$uuid")
+        profileService().clone(uuid)
+    }.getOrThrow()
 
     override suspend fun deleteProfile(uuid: UUID) {
         safeApiCall(TAG, "deleteProfile") {
-                Timber.d("Deleting profile: uuid=$uuid")
-                profileService().delete(uuid)
-            }
-            .getOrThrow()
+            Timber.d("Deleting profile: uuid=$uuid")
+            profileService().delete(uuid)
+        }.getOrThrow()
     }
 
-    override suspend fun queryAllProfiles(): List<Profile> =
-        withContext(Dispatchers.IO) {
-            safeApiCall(TAG, "queryAllProfiles") {
-                    profileService().queryAll()
-                }
-                .getOrThrow()
-        }
+    override suspend fun queryAllProfiles(): List<Profile> = withContext(Dispatchers.IO) {
+        safeApiCall(TAG, "queryAllProfiles") {
+            profileService().queryAll()
+        }.getOrThrow()
+    }
 
-    override suspend fun queryActiveProfile(): Profile? =
-        withContext(Dispatchers.IO) {
-            safeApiCall(TAG, "queryActiveProfile") {
-                    profileService().queryActive()
-                }
-                .getOrThrow()
-        }
+    override suspend fun queryActiveProfile(): Profile? = withContext(Dispatchers.IO) {
+        safeApiCall(TAG, "queryActiveProfile") {
+            profileService().queryActive()
+        }.getOrThrow()
+    }
 
-    override suspend fun queryProfileByUUID(uuid: UUID): Profile? =
-        withContext(Dispatchers.IO) {
-            safeApiCall(TAG, "queryProfileByUUID") {
-                    profileService().queryByUUID(uuid)
-                }
-                .getOrThrow()
-        }
+    override suspend fun queryProfileByUUID(uuid: UUID): Profile? = withContext(Dispatchers.IO) {
+        safeApiCall(TAG, "queryProfileByUUID") {
+            profileService().queryByUUID(uuid)
+        }.getOrThrow()
+    }
 
     override suspend fun setActiveProfile(uuid: UUID) {
         withContext(Dispatchers.IO) {
@@ -105,10 +94,8 @@ class ProfilesRepository(private val context: Context) : ProfileRepositoryContra
                     val startedAt = System.currentTimeMillis()
                     Timber.d("Setting active profile: uuid=$uuid")
                     val profileManager = profileService()
-
-                    val profile =
-                        profileManager.queryByUUID(uuid)
-                            ?: throw IllegalArgumentException("Profile not found: $uuid")
+                    val profile = profileManager.queryByUUID(uuid)
+                        ?: throw IllegalArgumentException("Profile not found: $uuid")
 
                     profileManager.setActive(profile)
 

@@ -35,111 +35,108 @@ val FlyCat.ClipboardCopy: ImageVector
         if (_ClipboardCopy != null) {
             return _ClipboardCopy!!
         }
-        _ClipboardCopy =
-            ImageVector.Builder(
-                    name = "ClipboardCopy",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
+        _ClipboardCopy = ImageVector.Builder(
+            name = "ClipboardCopy",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(9f, 2f)
+                lineTo(15f, 2f)
+                arcTo(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 16f, 3f)
+                lineTo(16f, 5f)
+                arcTo(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 15f, 6f)
+                lineTo(9f, 6f)
+                arcTo(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 8f, 5f)
+                lineTo(8f, 3f)
+                arcTo(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 9f, 2f)
+                close()
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(8f, 4f)
+                horizontalLineTo(6f)
+                arcToRelative(
+                    2f,
+                    2f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = false,
+                    -2f,
+                    2f,
                 )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(9f, 2f)
-                        lineTo(15f, 2f)
-                        arcTo(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 16f, 3f)
-                        lineTo(16f, 5f)
-                        arcTo(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 15f, 6f)
-                        lineTo(9f, 6f)
-                        arcTo(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 8f, 5f)
-                        lineTo(8f, 3f)
-                        arcTo(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 9f, 2f)
-                        close()
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(8f, 4f)
-                        horizontalLineTo(6f)
-                        arcToRelative(
-                            2f,
-                            2f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = false,
-                            -2f,
-                            2f,
-                        )
-                        verticalLineToRelative(14f)
-                        arcToRelative(
-                            2f,
-                            2f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = false,
-                            2f,
-                            2f,
-                        )
-                        horizontalLineToRelative(12f)
-                        arcToRelative(
-                            2f,
-                            2f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = false,
-                            2f,
-                            -2f,
-                        )
-                        verticalLineToRelative(-2f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(16f, 4f)
-                        horizontalLineToRelative(2f)
-                        arcToRelative(
-                            2f,
-                            2f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = true,
-                            2f,
-                            2f,
-                        )
-                        verticalLineToRelative(4f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(21f, 14f)
-                        horizontalLineTo(11f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveToRelative(15f, 10f)
-                        lineToRelative(-4f, 4f)
-                        lineToRelative(4f, 4f)
-                    }
-                }
-                .build()
+                verticalLineToRelative(14f)
+                arcToRelative(
+                    2f,
+                    2f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = false,
+                    2f,
+                    2f,
+                )
+                horizontalLineToRelative(12f)
+                arcToRelative(
+                    2f,
+                    2f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = false,
+                    2f,
+                    -2f,
+                )
+                verticalLineToRelative(-2f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(16f, 4f)
+                horizontalLineToRelative(2f)
+                arcToRelative(
+                    2f,
+                    2f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = true,
+                    2f,
+                    2f,
+                )
+                verticalLineToRelative(4f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(21f, 14f)
+                horizontalLineTo(11f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveToRelative(15f, 10f)
+                lineToRelative(-4f, 4f)
+                lineToRelative(4f, 4f)
+            }
+        }.build()
 
         return _ClipboardCopy!!
     }

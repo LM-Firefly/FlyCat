@@ -36,7 +36,8 @@ import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -51,26 +52,23 @@ fun TextEditBottomSheet(
 ) {
     AppActionBottomSheet(show = show.value, title = title, onDismissRequest = onDismiss) {
         Column {
-            TextField(
+            GlassTextField(
                 value = textFieldValue.value,
                 onValueChange = { textFieldValue.value = it },
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(UiDp.dp16))
             Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
-                Button(onClick = onSecondaryClick, modifier = Modifier.weight(1f)) {
-                    Text(secondaryButtonText)
-                }
-                Button(
+                GlassTextButton(text = secondaryButtonText, onClick = onSecondaryClick, modifier = Modifier.weight(1f))
+                GlassTextButton(
+                    text = FlyTxt.Component.Button.Confirm,
                     onClick = {
                         onConfirm(textFieldValue.value.text)
                         show.value = false
                     },
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(FlyTxt.Component.Button.Confirm, color = MiuixTheme.colorScheme.onPrimary)
-                }
+                    primary = true,
+                )
             }
             Spacer(modifier = Modifier.height(UiDp.dp16))
         }
@@ -94,16 +92,15 @@ fun WarningBottomSheet(
                 }
             }
             Spacer(modifier = Modifier.height(UiDp.dp16))
-            Button(
+            GlassTextButton(
+                text = FlyTxt.Component.Button.Confirm,
                 onClick = {
                     onConfirm()
                     show.value = false
                 },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColorsPrimary(),
-            ) {
-                Text(FlyTxt.Component.Button.Confirm, color = MiuixTheme.colorScheme.onPrimary)
-            }
+                primary = true,
+            )
             Spacer(modifier = Modifier.height(UiDp.dp16))
         }
     }

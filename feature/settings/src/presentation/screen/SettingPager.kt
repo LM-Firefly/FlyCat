@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.core.contract.SubStoreNavigationHandler
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.RemoteControllerViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
@@ -87,44 +88,33 @@ private fun CircularIcon(
     val componentSizes = AppTheme.sizes
 
     Box(
-        modifier =
-            modifier
-                .padding(start = spacing.space4, end = spacing.space16)
-                .requiredSize(componentSizes.settingsIconSlotSize),
+        modifier = modifier.padding(start = spacing.space4, end = spacing.space16).requiredSize(componentSizes.settingsIconSlotSize),
         contentAlignment = Alignment.Center,
     ) {
         Box(
-            modifier =
-                Modifier.layout { measurable, _ ->
-                        val containerSize = componentSizes.settingsIconContainerSize.roundToPx()
-                        val parentSize = componentSizes.settingsIconSlotSize.roundToPx()
-                        val offset = (containerSize - parentSize) / 2
-
-                        val placeable =
-                            measurable.measure(
-                                androidx.compose.ui.unit.Constraints.fixed(
-                                    containerSize,
-                                    containerSize,
-                                )
-                            )
-                        layout(parentSize, parentSize) { placeable.place(-offset, -offset) }
-                    }
-                    .size(componentSizes.settingsIconContainerSize)
-                    .clip(RoundedCornerShape(radii.radius16))
-                    .background(MiuixTheme.colorScheme.primary),
+            modifier = Modifier.layout { measurable, _ ->
+                val containerSize = componentSizes.settingsIconContainerSize.roundToPx()
+                val parentSize = componentSizes.settingsIconSlotSize.roundToPx()
+                val offset = (containerSize - parentSize) / 2
+                val placeable = measurable.measure(
+                    androidx.compose.ui.unit.Constraints.fixed(
+                        containerSize,
+                        containerSize,
+                    )
+                )
+                layout(parentSize, parentSize) { placeable.place(-offset, -offset) }
+            }.size(componentSizes.settingsIconContainerSize).clip(RoundedCornerShape(radii.radius16)).background(MiuixTheme.colorScheme.primary),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = imageVector,
                 contentDescription = contentDescription,
                 tint = MiuixTheme.colorScheme.onPrimary,
-                modifier =
-                    Modifier.size(componentSizes.settingsIconGlyphSize)
-                        .graphicsLayer(
-                            scaleX = iconSize,
-                            scaleY = iconSize,
-                            transformOrigin = TransformOrigin.Center,
-                        ),
+                modifier = Modifier.size(componentSizes.settingsIconGlyphSize).graphicsLayer(
+                    scaleX = iconSize,
+                    scaleY = iconSize,
+                    transformOrigin = TransformOrigin.Center,
+                ),
             )
         }
     }
@@ -161,7 +151,7 @@ fun SettingPager(mainInnerPadding: PaddingValues) {
         }
     }
 
-    Scaffold(topBar = { TopBar(title = FlyTxt.Settings.Title, scrollBehavior = scrollBehavior) }) {
+    GlassScaffold(topBar = { TopBar(title = FlyTxt.Settings.Title, scrollBehavior = scrollBehavior) }) {
         innerPadding ->
         ScreenLazyColumn(
             scrollBehavior = scrollBehavior,
@@ -248,8 +238,7 @@ private fun VersionBadge(versionInfo: String?) {
     Surface(
         color = MiuixTheme.colorScheme.primary.copy(alpha = opacity.subtle),
         shape = RoundedCornerShape(50),
-        modifier =
-            Modifier.defaultMinSize(minHeight = componentSizes.versionBadgeHeight).padding(end = spacing.space12),
+        modifier = Modifier.defaultMinSize(minHeight = componentSizes.versionBadgeHeight).padding(end = spacing.space12),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -258,11 +247,10 @@ private fun VersionBadge(versionInfo: String?) {
         ) {
             Text(
                 text = versionInfo ?: "Unknown",
-                style =
-                    MiuixTheme.textStyles.footnote1.copy(
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
+                style = MiuixTheme.textStyles.footnote1.copy(
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
                 color = MiuixTheme.colorScheme.primary,
             )
         }

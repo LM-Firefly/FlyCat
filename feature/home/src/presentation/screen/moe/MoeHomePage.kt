@@ -169,31 +169,25 @@ fun MoeHomePage(
                     value = System.currentTimeMillis()
                 }
         }
-    val elapsedMillis =
-        if (isRunning && startedAt != null && !isRemoteController) {
-            (now - startedAt).coerceAtLeast(0L)
+    val elapsedMillis = if (isRunning && startedAt != null && !isRemoteController) {
+        (now - startedAt).coerceAtLeast(0L)
+    } else {
+        0L
+    }
+    val durationPair = remember(isRunning, isRemoteController, elapsedMillis, now) {
+        if (isRunning && !isRemoteController) {
+            formatMoeDuration(elapsedMillis)
         } else {
-            0L
+            formatMoeClock(now)
         }
-    val durationPair =
-        remember(isRunning, isRemoteController, elapsedMillis, now) {
-            if (isRunning && !isRemoteController) {
-                formatMoeDuration(elapsedMillis)
-            } else {
-                formatMoeClock(now)
-            }
-        }
-    val displayTrafficData =
-        remember(trafficData, isRunning) {
-            if (isRunning) trafficData else TrafficData.zero
-        }
+    }
+    val displayTrafficData = remember(trafficData, isRunning) { if (isRunning) trafficData else TrafficData.zero }
     val systemDark = isSystemInDarkTheme()
-    val isDarkHomeSurface =
-        when (themeMode) {
-            ThemeMode.Dark -> true
-            ThemeMode.Light -> false
-            ThemeMode.Auto -> systemDark
-        }
+    val isDarkHomeSurface = when (themeMode) {
+        ThemeMode.Dark -> true
+        ThemeMode.Light -> false
+        ThemeMode.Auto -> systemDark
+    }
     val contentSurface = if (isDarkHomeSurface) MiuixTheme.colorScheme.surface else Color.White
     val handlePageChange = LocalHandlePageChange.current
     val sidebarIcons = remember(onOpenDashboard) {
@@ -205,60 +199,55 @@ fun MoeHomePage(
         )
     }
     val quote = remember(moeHomeQuote, moeHomeQuoteAuthor) { MoeQuote(text = moeHomeQuote.ifBlank { FlyTxt.AppSettings.Interface.HomeQuoteDefault }, author = moeHomeQuoteAuthor.ifBlank { FlyTxt.AppSettings.Interface.HomeQuoteAuthorDefault }) }
-    val animatedSidebarToggleProgress by
-        animateFloatAsState(
-            targetValue = if (sidebarExpanded) 1f else 0f,
-            animationSpec =
-                tween(
-                    durationMillis = if (sidebarExpanded) 420 else 320,
-                    easing =
-                        if (sidebarExpanded) {
-                            AnimationSpecs.EmphasizedDecelerate
-                        } else {
-                            AnimationSpecs.EmphasizedAccelerate
-                        },
-                ),
-            label = "moe_sidebar_toggle",
-        )
+    val animatedSidebarToggleProgress by animateFloatAsState(
+        targetValue = if (sidebarExpanded) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = if (sidebarExpanded) 420 else 320,
+            easing = if (sidebarExpanded) {
+                AnimationSpecs.EmphasizedDecelerate
+            } else {
+                AnimationSpecs.EmphasizedAccelerate
+            },
+        ),
+        label = "moe_sidebar_toggle",
+    )
 
-    val handleProxyAction: () -> Unit =
-        remember(isRemoteController, hasEnabledProfile, recommendedProfile, visualControlState) {
-            {
-                if (isRemoteController) {
-                    // no-op
-                } else if (!hasEnabledProfile || recommendedProfile == null) {
-                    context.toast(FlyTxt.ProfilesVM.Error.ProfileNotExist, Toast.LENGTH_SHORT)
-                } else if (visualControlState == HomeProxyControlState.Idle) {
-                    recommendedProfile?.let { profile ->
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.VirtualKey)
-                        scope.launch { homeViewModel.startProxy(profileId = profile.uuid.toString()) }
-                    }
-                } else if (visualControlState == HomeProxyControlState.Running) {
+    val handleProxyAction: () -> Unit = remember(isRemoteController, hasEnabledProfile, recommendedProfile, visualControlState) {
+        {
+            if (isRemoteController) {
+                // 无操作
+            } else if (!hasEnabledProfile || recommendedProfile == null) {
+                context.toast(FlyTxt.ProfilesVM.Error.ProfileNotExist, Toast.LENGTH_SHORT)
+            } else if (visualControlState == HomeProxyControlState.Idle) {
+                recommendedProfile?.let { profile ->
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.VirtualKey)
-                    scope.launch { homeViewModel.stopProxy() }
+                    scope.launch { homeViewModel.startProxy(profileId = profile.uuid.toString()) }
                 }
+            } else if (visualControlState == HomeProxyControlState.Running) {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                scope.launch { homeViewModel.stopProxy() }
             }
         }
+    }
 
     val navigator = LocalNavigator.current
-    val wallpaperPickerLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-            uri ?: return@rememberLauncherForActivityResult
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                )
-            }
-            navigator.push(
-                Route.MoeWallpaperCrop(
-                    wallpaperUri = uri.toString(),
-                    initialZoom = wallpaperZoom,
-                    initialBiasX = wallpaperBiasX,
-                    initialBiasY = wallpaperBiasY,
-                )
+    val wallpaperPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        runCatching {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION,
             )
         }
+        navigator.push(
+            Route.MoeWallpaperCrop(
+                wallpaperUri = uri.toString(),
+                initialZoom = wallpaperZoom,
+                initialBiasX = wallpaperBiasX,
+                initialBiasY = wallpaperBiasY,
+            )
+        )
+    }
     val launchWallpaperPicker = remember {
         {
             wallpaperPickerLauncher.launch(
@@ -328,18 +317,14 @@ private fun rememberMoeBatteryPercent(context: Context): Int? {
     val percent by
         produceState<Int?>(initialValue = null, context) {
             // 为粘性广播注册接收器是一个同步的Binder调用；将其移出主线程以保持界面响应性。
-            val batteryIntent =
-                withContext(Dispatchers.IO) {
-                    context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-                }
+            val batteryIntent = withContext(Dispatchers.IO) { context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) }
             val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
             val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
-            value =
-                if (level >= 0 && scale > 0) {
-                    ((level / scale.toFloat()) * 100).toInt().coerceIn(0, 100)
-                } else {
-                    null
-                }
+            value = if (level >= 0 && scale > 0) {
+                ((level / scale.toFloat()) * 100).toInt().coerceIn(0, 100)
+            } else {
+                null
+            }
         }
     return percent
 }

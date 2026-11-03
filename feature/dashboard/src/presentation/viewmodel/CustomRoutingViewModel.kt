@@ -45,8 +45,7 @@ class CustomRoutingViewModel(
     private val customRoutingInitializer: CustomRoutingInitializer,
 ) : ViewModel() {
     private val presetSelectionState = MutableStateFlow(defaultOverridePresetTemplateSelection())
-    val presetSelection: StateFlow<OverridePresetTemplateSelection> =
-        presetSelectionState.asStateFlow()
+    val presetSelection: StateFlow<OverridePresetTemplateSelection> = presetSelectionState.asStateFlow()
 
     private val customRoutingContentState = MutableStateFlow("")
     val customRoutingContent: StateFlow<String> = customRoutingContentState.asStateFlow()
@@ -56,16 +55,13 @@ class CustomRoutingViewModel(
 
     init {
         viewModelScope.launch(Dispatchers.Default) {
-            runCatching { reloadStateFromStoredContent() }
-                .onFailure {
-                    Timber.e(it, "Failed to reload custom routing state from stored content")
-                }
+            runCatching { reloadStateFromStoredContent() }.onFailure {
+                Timber.e(it, "Failed to reload custom routing state from stored content")
+            }
         }
     }
 
-    suspend fun savePresetSelection(
-        updatedPresetSelection: OverridePresetTemplateSelection
-    ): Result<Unit> = runCatching {
+    suspend fun savePresetSelection(updatedPresetSelection: OverridePresetTemplateSelection): Result<Unit> = runCatching {
         check(templateRoundTripSafeState.value) { "Preset changes cannot overwrite manually edited custom routing YAML" }
         val generatedYaml = buildPresetTemplateYaml(updatedPresetSelection)
         overrideConfigRepository.saveCustomRoutingContent(generatedYaml)
@@ -76,13 +72,12 @@ class CustomRoutingViewModel(
     }
 
     suspend fun saveCustomRoutingYaml(content: String): Result<Unit> = runCatching {
-        val contentToSave =
-            if (content.isBlank()) {
-                buildPresetTemplateYaml(defaultOverridePresetTemplateSelection())
-            } else {
-                YamlCodec.validate(content)
-                content
-            }
+        val contentToSave = if (content.isBlank()) {
+            buildPresetTemplateYaml(defaultOverridePresetTemplateSelection())
+        } else {
+            YamlCodec.validate(content)
+            content
+        }
         overrideConfigRepository.saveCustomRoutingContent(contentToSave)
         applyContentState(contentToSave)
         activeProfileOverrideApplier.reapplyActiveProfileIfUsingOverride(

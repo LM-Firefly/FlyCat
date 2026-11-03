@@ -34,13 +34,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -48,6 +52,7 @@ import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Search
 import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 通用搜索输入条（miuix InputField 胶囊样式）。
@@ -71,6 +76,8 @@ fun SearchInputToolbar(query: String, onQueryChange: (String) -> Unit, modifier:
     InputField(
         query = query,
         onQueryChange = onQueryChange,
+        // 背景透明，由外层玻璃胶囊采样壁纸。
+        color = Color.Transparent,
         onSearch = {
             focusManager.clearFocus(force = true)
             keyboardController?.hide()
@@ -109,6 +116,8 @@ fun SearchInputToolbar(query: String, onQueryChange: (String) -> Unit, modifier:
         },
         modifier = modifier
             .fillMaxWidth()
+            .clip(CircleShape)
+            .glassCardSurface(CircleShape, fallbackColor = MiuixTheme.colorScheme.surfaceContainerHigh)
             .focusRequester(focusRequester)
             .onFocusChanged { focusState ->
                 inputFocused = focusState.isFocused

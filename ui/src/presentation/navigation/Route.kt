@@ -62,6 +62,9 @@ sealed interface Route {
     data object PrivilegedService : Route
 
     @Serializable
+    data object NotificationSettings : Route
+
+    @Serializable
     data object AccessControl : Route
 
     @Serializable

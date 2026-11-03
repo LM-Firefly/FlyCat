@@ -28,6 +28,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -43,14 +44,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,17 +74,23 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.core.model.override.OverrideConfig
 import com.github.lmfirefly.flycat.core.model.override.OverrideContentType
-import com.github.lmfirefly.flycat.feature.override.presentation.component.OverrideAnimatedFab
-import com.github.lmfirefly.flycat.feature.override.presentation.component.OverrideCardActionIconButton
-import com.github.lmfirefly.flycat.feature.override.presentation.component.OverrideStatusBadge
 import com.github.lmfirefly.flycat.feature.override.presentation.viewmodel.OverrideConfigViewModel
-import com.github.lmfirefly.flycat.feature.override.presentation.component.rememberOverrideFabController
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
+import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
+import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
+import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopActionPill
+import com.github.lmfirefly.flycat.presentation.component.SegmentedTabRow
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetCloseAction
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetConfirmAction
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppDialog
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
@@ -88,15 +98,19 @@ import com.github.lmfirefly.flycat.presentation.component.misc.CenteredText
 import com.github.lmfirefly.flycat.presentation.component.misc.Title
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
+import com.github.lmfirefly.flycat.presentation.component.stickySegmentedTabs
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.BadgePlus
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Delete
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Diff
+import com.github.lmfirefly.flycat.presentation.icon.flycat.Download
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Edit
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Share
 import com.github.lmfirefly.flycat.presentation.icon.flycat.ShieldCheck
 import com.github.lmfirefly.flycat.presentation.icon.flycat.ShieldMinus
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
+import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.Spacing
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.util.toast
@@ -107,15 +121,15 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
+import top.yukonga.miuix.kmp.glass.GlassPopupAnchor
+import top.yukonga.miuix.kmp.glass.glassPopupAnchor
+import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 private val overrideConfigItemGap = Spacing().space12
@@ -140,47 +154,43 @@ fun OverrideListScreen(onNavigateBack: () -> Unit, onOpenCodeEditor: (OverrideCo
     val applyTargetConfig = remember { mutableStateOf<OverrideConfig?>(null) }
 
     val listState = rememberLazyListState()
-    val createFabController = rememberOverrideFabController()
-    val configItems =
-        remember(userConfigs, usageCountMap) {
-            userConfigs.map { config ->
-                OverrideConfigListItem(
-                    config = config,
-                    isInUse = (usageCountMap[config.id] ?: 0) > 0,
-                )
-            }
+    var selectedSectionIndex by rememberSaveable { mutableIntStateOf(0) }
+    val configItems = remember(userConfigs, usageCountMap) {
+        userConfigs.map { config ->
+            OverrideConfigListItem(
+                config = config,
+                isInUse = (usageCountMap[config.id] ?: 0) > 0,
+            )
         }
-    val reorderState =
-        rememberReorderableLazyListState(listState) { from, to ->
-            viewModel.reorderUserConfigs(from.index, to.index)
-        }
+    }
+    // 吸顶 tab 行永远占第一格，两个分区的条目都从索引 1 开始。
+    val userListIndexOffset = 1
+    val reorderState = rememberReorderableLazyListState(listState) { from, to ->
+        val fromUser = from.index - userListIndexOffset
+        val toUser = to.index - userListIndexOffset
+        if (fromUser < 0 || toUser < 0) return@rememberReorderableLazyListState
+        viewModel.reorderUserConfigs(fromUser, toUser)
+    }
 
-    val exportConfigLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.StartActivityForResult(),
-        ) { result ->
-            val uri = result.data?.data
-            val targetConfig = exportTargetConfig.value
-            if (uri == null || targetConfig == null) {
-                exportTargetConfig.value = null
-                return@rememberLauncherForActivityResult
-            }
-
-            runCatching {
-                    context.contentResolver.openOutputStream(uri)?.use { output ->
-                        output.write(targetConfig.content.toByteArray())
-                        output.flush()
-                    } ?: error(FlyTxt.Override.Export.Failed.format(targetConfig.name))
-                }
-                .onSuccess {
-                    context.toast(FlyTxt.Override.Export.Success.format(targetConfig.name))
-                }
-                .onFailure { error ->
-                    context.toast(FlyTxt.Override.Export.Failed.format(error.message))
-                }
-
+    val exportConfigLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
+        val uri = result.data?.data
+        val targetConfig = exportTargetConfig.value
+        if (uri == null || targetConfig == null) {
             exportTargetConfig.value = null
+            return@rememberLauncherForActivityResult
         }
+        runCatching {
+            context.contentResolver.openOutputStream(uri)?.use { output ->
+                output.write(targetConfig.content.toByteArray())
+                output.flush()
+            } ?: error(FlyTxt.Override.Export.Failed.format(targetConfig.name))
+        }.onSuccess {
+            context.toast(FlyTxt.Override.Export.Success.format(targetConfig.name))
+        }.onFailure { error ->
+            context.toast(FlyTxt.Override.Export.Failed.format(error.message))
+        }
+        exportTargetConfig.value = null
+    }
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
@@ -192,35 +202,62 @@ fun OverrideListScreen(onNavigateBack: () -> Unit, onOpenCodeEditor: (OverrideCo
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(configItems, pendingRevealConfigId) {
+    LaunchedEffect(configItems, builtInConfigs, pendingRevealConfigId, selectedSectionIndex) {
         val targetId = pendingRevealConfigId ?: return@LaunchedEffect
-        val targetIndex = configItems.indexOfFirst { it.config.id == targetId }
-        if (targetIndex < 0) return@LaunchedEffect
-        listState.animateScrollToItem((targetIndex - 1).coerceAtLeast(0))
+        val builtInIndex = builtInConfigs.indexOfFirst { it.id == targetId }
+        val userIndex = configItems.indexOfFirst { it.config.id == targetId }
+        val targetSection = when {
+            userIndex >= 0 -> 1
+            builtInIndex >= 0 -> 0
+            else -> return@LaunchedEffect
+        }
+        if (selectedSectionIndex != targetSection) {
+            selectedSectionIndex = targetSection
+            return@LaunchedEffect
+        }
+        val targetIndex = userListIndexOffset + if (targetSection == 0) builtInIndex else userIndex
+        listState.animateScrollToItem(targetIndex.coerceAtLeast(0))
         viewModel.consumePendingRevealConfig(targetId)
     }
 
-    Scaffold(
-        floatingActionButton = {
-            OverrideAnimatedFab(
-                controller = createFabController,
-                visible = !showCreateDialog.value,
-                imageVector = FlyCat.BadgePlus,
-                contentDescription = FlyTxt.Override.Action.Create,
-                onClick = {
-                    createDialogMode = OverrideConfigInputMode.CreateNew
-                    showCreateDialog.value = true
+    GlassScaffold(
+        topBar = {
+            TopBar(
+                title = FlyTxt.Override.Title,
+                scrollBehavior = scrollBehavior,
+                navigationIconPadding = 0.dp,
+                navigationIcon = { NavigationBackIcon(onNavigateBack = onNavigateBack) },
+                actions = {
+                    GlassTopActionPill(
+                        actions = listOf(
+                            GlassTopAction(
+                                icon = FlyCat.BadgePlus,
+                                contentDescription = FlyTxt.Override.Action.Create,
+                                onClick = {
+                                    createDialogMode = OverrideConfigInputMode.CreateNew
+                                    showCreateDialog.value = true
+                                },
+                            ),
+                            GlassTopAction(
+                                icon = FlyCat.Download,
+                                contentDescription = FlyTxt.Override.Action.NetworkImport,
+                                onClick = {
+                                    createDialogMode = OverrideConfigInputMode.LocalFile
+                                    showCreateDialog.value = true
+                                },
+                            ),
+                        ),
+                        backdrop = LocalTopBarBackdrop.current,
+                    )
                 },
             )
         },
-        topBar = { TopBar(title = FlyTxt.Override.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(onNavigateBack = onNavigateBack) }) },
     ) { paddingValues ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
             scrollBehavior = scrollBehavior,
             innerPadding = combinePaddingValues(paddingValues, mainLikePadding),
             lazyListState = listState,
-            onScrollDirectionChanged = createFabController::onScrollDirectionChanged,
         ) {
             when {
                 userConfigs.isEmpty() && builtInConfigs.isEmpty() -> {
@@ -233,13 +270,18 @@ fun OverrideListScreen(onNavigateBack: () -> Unit, onOpenCodeEditor: (OverrideCo
                         )
                     }
                 }
-
                 else -> {
-                    // Built-in overrides section
-                    if (builtInConfigs.isNotEmpty()) {
-                        item(key = "builtin-section-header", contentType = "section-header") {
-                            Title(FlyTxt.Override.Section.BuiltIn)
-                        }
+                    stickySegmentedTabs(
+                        key = "__override_sections__",
+                        tabs = listOf(
+                            FlyTxt.Override.Section.BuiltIn,
+                            FlyTxt.Override.Section.User,
+                        ),
+                        selectedTabIndex = selectedSectionIndex,
+                        onTabSelected = { selectedSectionIndex = it },
+                        tabHeight = UiDp.dp42,
+                    )
+                    if (selectedSectionIndex == 0) {
                         items(
                             items = builtInConfigs,
                             key = { it.id },
@@ -264,12 +306,7 @@ fun OverrideListScreen(onNavigateBack: () -> Unit, onOpenCodeEditor: (OverrideCo
                                 onEdit = { onOpenCodeEditor(config) },
                             )
                         }
-                    }
-                    // User overrides section
-                    if (userConfigs.isNotEmpty()) {
-                        item(key = "user-section-header", contentType = "section-header") {
-                            Title(FlyTxt.Override.Section.User)
-                        }
+                    } else {
                         items(
                             items = configItems,
                             key = { it.config.id },
@@ -360,144 +397,44 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val accentTintColor = colorScheme.primary
-
+    var actionsOpen by remember(config.id) { mutableStateOf(false) }
+    var actionsMounted by remember(config.id) { mutableStateOf(false) }
+    val actionsMenuAnchor = rememberGlassPopupAnchor()
     Card(
-        modifier =
-            Modifier.fillMaxWidth()
-                .padding(vertical = overrideConfigItemGap / 2)
-                .longPressDraggableHandle()
-                .alpha(if (isDragging) 0.92f else 1f),
+        modifier = Modifier.fillMaxWidth()
+            .padding(vertical = overrideConfigItemGap / 2)
+            .longPressDraggableHandle()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {
+                    actionsMounted = true
+                    actionsOpen = true
+                },
+            )
+            .alpha(if (isDragging) 0.92f else 1f),
         insideMargin = PaddingValues(UiDp.dp16),
     ) {
-        Column {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(UiDp.dp12),
-                verticalAlignment = Alignment.Top,
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(UiDp.dp8),
-                ) {
-                    Text(
-                        text = config.name,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight(550),
-                        color = colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = config.contentType.label,
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = colorScheme.onSurfaceVariantSummary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                OverrideConfigStateIndicator(inUse = isInUse)
-            }
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = UiDp.dp12),
-                thickness = UiDp.dp0_5,
-                color = colorScheme.outline.copy(alpha = 0.5f),
-            )
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp8)) {
-                    OverrideCardActionIconButton(
-                        imageVector = FlyCat.Share,
-                        contentDescription = FlyTxt.Override.Card.Export,
-                        onClick = onExport,
-                    )
-                    OverrideCardActionIconButton(
-                        imageVector = FlyCat.Delete,
-                        contentDescription = FlyTxt.Override.Card.Delete,
-                        onClick = onDelete,
-                    )
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                IconButton(
-                    modifier = Modifier.padding(start = UiDp.dp4),
-                    backgroundColor = colorScheme.secondaryContainer.copy(alpha = 0.78f),
-                    minHeight = UiDp.dp35,
-                    minWidth = UiDp.dp35,
-                    onClick = onApply,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = UiDp.dp10),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(UiDp.dp2),
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(UiDp.dp20),
-                            imageVector = FlyCat.Diff,
-                            tint = colorScheme.onSurface.copy(alpha = 0.85f),
-                            contentDescription = FlyTxt.Override.Card.Apply,
-                        )
-                        Text(
-                            modifier = Modifier.padding(end = UiDp.dp3),
-                            text = FlyTxt.Override.Card.ApplyButton,
-                            color = colorScheme.onSurface.copy(alpha = 0.85f),
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 15.sp,
-                        )
-                    }
-                }
-
-                IconButton(
-                    modifier = Modifier.padding(start = UiDp.dp4, end = UiDp.dp8),
-                    backgroundColor = colorScheme.primary.copy(alpha = 0.1f),
-                    minHeight = UiDp.dp35,
-                    minWidth = UiDp.dp35,
-                    onClick = onEdit,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = UiDp.dp10),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(UiDp.dp2),
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(UiDp.dp20),
-                            imageVector = FlyCat.Edit,
-                            tint = accentTintColor,
-                            contentDescription = FlyTxt.Override.Card.Edit,
-                        )
-                        Text(
-                            modifier = Modifier.padding(end = UiDp.dp3),
-                            text = FlyTxt.Override.Card.EditButton,
-                            color = accentTintColor,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 15.sp,
-                        )
-                    }
-                }
-            }
-        }
+        OverrideConfigRow(
+            config = config,
+            anchor = actionsMenuAnchor,
+            statusBadge = { OverrideConfigStatusBadge(isBuiltIn = false, isInUse = isInUse) },
+        )
     }
-}
-
-@Composable
-private fun OverrideConfigStateIndicator(inUse: Boolean) {
-    val tint = if (inUse) colorScheme.primary else colorScheme.onSurfaceVariantSummary
-    OverrideStatusBadge(
-        imageVector = if (inUse) FlyCat.ShieldCheck else FlyCat.ShieldMinus,
-        contentDescription =
-            if (inUse) FlyTxt.Override.Status.InUse else FlyTxt.Override.Status.NotInUse,
-        tint = tint,
-        backgroundColor =
-            if (inUse) {
-                colorScheme.primary.copy(alpha = 0.1f)
-            } else {
-                colorScheme.secondaryContainer.copy(alpha = 0.78f)
-            },
-    )
+    if (actionsMounted) {
+        OverrideConfigActionsMenu(
+            show = actionsOpen,
+            anchor = actionsMenuAnchor,
+            isBuiltIn = false,
+            isInUse = isInUse,
+            onDismiss = { actionsOpen = false },
+            onDismissFinished = { actionsMounted = false },
+            onEdit = onEdit,
+            onApply = onApply,
+            onExport = onExport,
+            onDelete = { onDelete() },
+        )
+    }
 }
 
 @Composable
@@ -507,129 +444,175 @@ private fun OverrideBuiltInConfigCard(
     onApply: () -> Unit,
     onEdit: () -> Unit,
 ) {
-    val accentTintColor = colorScheme.primary
-
+    var actionsOpen by remember(config.id) { mutableStateOf(false) }
+    var actionsMounted by remember(config.id) { mutableStateOf(false) }
+    val actionsMenuAnchor = rememberGlassPopupAnchor()
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = overrideConfigItemGap / 2),
+        modifier = Modifier.fillMaxWidth()
+            .padding(vertical = overrideConfigItemGap / 2)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {
+                    actionsMounted = true
+                    actionsOpen = true
+                },
+            ),
         insideMargin = PaddingValues(UiDp.dp16),
     ) {
-        Column {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(UiDp.dp12),
-                verticalAlignment = Alignment.Top,
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(UiDp.dp8),
-                ) {
-                    Text(
-                        text = config.name,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight(550),
-                        color = colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = config.contentType.label,
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = colorScheme.onSurfaceVariantSummary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                OverrideBuiltInIndicator()
-            }
+        OverrideConfigRow(
+            config = config,
+            anchor = actionsMenuAnchor,
+            statusBadge = { OverrideConfigStatusBadge(isBuiltIn = true, isInUse = true) },
+        )
+    }
+    if (actionsMounted) {
+        OverrideConfigActionsMenu(
+            show = actionsOpen,
+            anchor = actionsMenuAnchor,
+            isBuiltIn = true,
+            isInUse = true,
+            onDismiss = { actionsOpen = false },
+            onDismissFinished = { actionsMounted = false },
+            onEdit = onEdit,
+            onApply = onApply,
+            onExport = onExport,
+            onDelete = null,
+        )
+    }
+}
 
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = UiDp.dp12),
-                thickness = UiDp.dp0_5,
-                color = colorScheme.outline.copy(alpha = 0.5f),
+/** 卡片主体：名称 + 类型副标题 + 右侧盾牌徽章（兼作操作菜单的弹出锚点）。 */
+@Composable
+private fun OverrideConfigRow(
+    config: OverrideConfig,
+    anchor: GlassPopupAnchor,
+    statusBadge: @Composable () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(UiDp.dp12),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(UiDp.dp8),
+        ) {
+            Text(
+                text = config.name,
+                fontSize = 17.sp,
+                fontWeight = FontWeight(550),
+                color = colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp8)) {
-                    OverrideCardActionIconButton(
-                        imageVector = FlyCat.Share,
-                        contentDescription = FlyTxt.Override.Card.Export,
-                        onClick = onExport,
-                    )
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                IconButton(
-                    modifier = Modifier.padding(start = UiDp.dp4),
-                    backgroundColor = colorScheme.secondaryContainer.copy(alpha = 0.78f),
-                    minHeight = UiDp.dp35,
-                    minWidth = UiDp.dp35,
-                    onClick = onApply,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = UiDp.dp10),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(UiDp.dp2),
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(UiDp.dp20),
-                            imageVector = FlyCat.Diff,
-                            tint = colorScheme.onSurface.copy(alpha = 0.85f),
-                            contentDescription = FlyTxt.Override.Card.Apply,
-                        )
-                        Text(
-                            modifier = Modifier.padding(end = UiDp.dp3),
-                            text = FlyTxt.Override.Card.ApplyButton,
-                            color = colorScheme.onSurface.copy(alpha = 0.85f),
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 15.sp,
-                        )
-                    }
-                }
-
-                IconButton(
-                    modifier = Modifier.padding(start = UiDp.dp4),
-                    backgroundColor = colorScheme.primary.copy(alpha = 0.1f),
-                    minHeight = UiDp.dp35,
-                    minWidth = UiDp.dp35,
-                    onClick = onEdit,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = UiDp.dp10),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(UiDp.dp2),
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(UiDp.dp20),
-                            imageVector = FlyCat.Edit,
-                            tint = accentTintColor,
-                            contentDescription = FlyTxt.Override.Card.Edit,
-                        )
-                        Text(
-                            modifier = Modifier.padding(end = UiDp.dp3),
-                            text = FlyTxt.Override.Card.EditButton,
-                            color = accentTintColor,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 15.sp,
-                        )
-                    }
-                }
-            }
+            Text(
+                text = config.contentType.label,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                fontWeight = FontWeight.Medium,
+                color = colorScheme.onSurfaceVariantSummary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Box(
+            modifier = Modifier.glassPopupAnchor(
+                anchor = anchor,
+                cornerRadius = AppTheme.sizes.statusCapsuleHeight / 2,
+                floating = true,
+            ),
+        ) {
+            statusBadge()
         }
     }
 }
 
+/** 整卡点击弹出的玻璃操作菜单：从盾牌徽章里长出来，收起动画播完才卸载。 */
 @Composable
-private fun OverrideBuiltInIndicator() {
-    val tint = colorScheme.primary
-    OverrideStatusBadge(
-        imageVector = FlyCat.ShieldCheck,
-        contentDescription = FlyTxt.Override.Status.BuiltIn,
-        tint = tint,
-        backgroundColor = tint.copy(alpha = 0.15f),
-    )
+private fun OverrideConfigActionsMenu(
+    show: Boolean,
+    anchor: GlassPopupAnchor,
+    isBuiltIn: Boolean,
+    isInUse: Boolean,
+    onDismiss: () -> Unit,
+    onDismissFinished: () -> Unit,
+    onEdit: () -> Unit,
+    onApply: () -> Unit,
+    onExport: () -> Unit,
+    onDelete: (() -> Unit)?,
+) {
+    GlassPopupHost(
+        show = show,
+        onDismissRequest = onDismiss,
+        anchor = anchor,
+        anchorContent = { OverrideConfigStatusBadge(isBuiltIn = isBuiltIn, isInUse = isInUse) },
+        onDismissFinished = onDismissFinished,
+    ) {
+        GlassMenuItem(
+            text = FlyTxt.Override.Card.Edit,
+            icon = FlyCat.Edit,
+            onClick = {
+                onDismiss()
+                onEdit()
+            },
+        )
+        GlassMenuItem(
+            text = FlyTxt.Override.Card.Apply,
+            icon = FlyCat.Diff,
+            onClick = {
+                onDismiss()
+                onApply()
+            },
+        )
+        GlassMenuItem(
+            text = FlyTxt.Override.Card.Export,
+            icon = FlyCat.Share,
+            onClick = {
+                onDismiss()
+                onExport()
+            },
+        )
+        if (onDelete != null) {
+            GlassMenuItem(
+                text = FlyTxt.Override.Card.Delete,
+                icon = FlyCat.Delete,
+                contentColor = AppTheme.colors.status.destructive,
+                onClick = {
+                    onDismiss()
+                    onDelete()
+                },
+            )
+        }
+    }
+}
+
+/** 卡片与菜单共享的盾牌徽章：内置 > 使用中 > 未使用。 */
+@Composable
+private fun OverrideConfigStatusBadge(isBuiltIn: Boolean, isInUse: Boolean) {
+    val active = isInUse && !isBuiltIn
+    Box(
+        modifier = Modifier.size(AppTheme.sizes.statusCapsuleHeight + AppTheme.spacing.space4).background(
+            color = if (active) {
+                colorScheme.primary.copy(alpha = AppTheme.opacity.subtle)
+            } else {
+                colorScheme.secondaryContainer.copy(alpha = AppTheme.opacity.surfaceVariant)
+            },
+            shape = CircleShape,
+        ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = if (isBuiltIn || isInUse) FlyCat.ShieldCheck else FlyCat.ShieldMinus,
+            contentDescription = when {
+                isBuiltIn -> FlyTxt.Override.Status.BuiltIn
+                isInUse -> FlyTxt.Override.Status.InUse
+                else -> FlyTxt.Override.Status.NotInUse
+            },
+            tint = if (active) colorScheme.primary else colorScheme.onSurfaceVariantSummary,
+            modifier = Modifier.size(UiDp.dp18),
+        )
+    }
 }
 
 @Composable
@@ -653,53 +636,32 @@ private fun CreateConfigDialog(
     var networkImportUrl by remember(show.value) { mutableStateOf("") }
     var isNetworkImporting by remember(show.value) { mutableStateOf(false) }
     var stableContentHeightPx by remember(show.value) { mutableStateOf(0) }
-    val canConfirm =
-        when (inputMode) {
-            OverrideConfigInputMode.CreateNew -> nameTextFieldValueState.value.text.isNotBlank()
-            OverrideConfigInputMode.LocalFile ->
-                selectedImportUri != null && selectedImportFileName.isNotBlank()
-            OverrideConfigInputMode.NetworkUrl -> networkImportUrl.isNotBlank() && !isNetworkImporting
-        }
-    val stableContentHeight =
-        remember(stableContentHeightPx, density) {
-            if (stableContentHeightPx <= 0) {
-                UiDp.dp0
-            } else {
-                with(density) { stableContentHeightPx.toDp() }
+    val canConfirm = when (inputMode) {
+        OverrideConfigInputMode.CreateNew -> nameTextFieldValueState.value.text.isNotBlank()
+        OverrideConfigInputMode.LocalFile -> selectedImportUri != null && selectedImportFileName.isNotBlank()
+        OverrideConfigInputMode.NetworkUrl -> networkImportUrl.isNotBlank() && !isNetworkImporting
+    }
+    val stableContentHeight = remember(stableContentHeightPx, density) { if (stableContentHeightPx <= 0) { UiDp.dp0 } else { with(density) { stableContentHeightPx.toDp() } } }
+    val importConfigLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri ->
+        selectedImportUri = uri
+        selectedImportFileName = uri?.let { selectedUri ->
+            context.contentResolver.query(
+                selectedUri,
+                arrayOf(OpenableColumns.DISPLAY_NAME),
+                null,
+                null,
+                null,
+            )
+            ?.use { cursor ->
+                val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (cursor.moveToFirst() && columnIndex >= 0) { cursor.getString(columnIndex) } else { "" }
+            }.orEmpty().ifBlank {
+                selectedUri.lastPathSegment
+                    ?.substringAfterLast('/')
+                    ?.substringAfterLast('\\').orEmpty()
             }
-        }
-    val importConfigLauncher =
-        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri ->
-            selectedImportUri = uri
-            selectedImportFileName =
-                uri?.let { selectedUri ->
-                        context.contentResolver
-                            .query(
-                                selectedUri,
-                                arrayOf(OpenableColumns.DISPLAY_NAME),
-                                null,
-                                null,
-                                null,
-                            )
-                            ?.use { cursor ->
-                                val columnIndex =
-                                    cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                                if (cursor.moveToFirst() && columnIndex >= 0) {
-                                    cursor.getString(columnIndex)
-                                } else {
-                                    ""
-                                }
-                            }
-                            .orEmpty()
-                            .ifBlank {
-                                selectedUri.lastPathSegment
-                                    ?.substringAfterLast('/')
-                                    ?.substringAfterLast('\\')
-                                    .orEmpty()
-                            }
-                    }
-                    .orEmpty()
-        }
+        }.orEmpty()
+    }
 
     AppActionBottomSheet(
         show = show.value,
@@ -720,20 +682,18 @@ private fun CreateConfigDialog(
                         OverrideConfigInputMode.LocalFile -> {
                             val importUri = selectedImportUri ?: return@AppBottomSheetConfirmAction
                             runCatching {
-                                    context.contentResolver
-                                        .openInputStream(importUri)
-                                        ?.bufferedReader()
-                                        ?.use { reader -> reader.readText() }
-                                        ?: error(FlyTxt.Override.Import.ReadError)
-                                }
-                                .onSuccess { content ->
-                                    onConfirmImport(content, selectedImportFileName)
-                                }
-                                .onFailure { error ->
-                                    context.toast(
-                                        FlyTxt.Override.Import.FileError.format(error.message)
-                                    )
-                                }
+                                context.contentResolver
+                                    .openInputStream(importUri)
+                                    ?.bufferedReader()
+                                    ?.use { reader -> reader.readText() }
+                                    ?: error(FlyTxt.Override.Import.ReadError)
+                            }.onSuccess { content ->
+                                onConfirmImport(content, selectedImportFileName)
+                            }.onFailure { error ->
+                                context.toast(
+                                    FlyTxt.Override.Import.FileError.format(error.message)
+                                )
+                            }
                         }
 
                         OverrideConfigInputMode.NetworkUrl -> {
@@ -781,14 +741,10 @@ private fun CreateConfigDialog(
                     when (currentInputMode) {
                         OverrideConfigInputMode.CreateNew -> {
                             Column(
-                                modifier =
-                                    Modifier.fillMaxWidth().onSizeChanged {
-                                        stableContentHeightPx =
-                                            maxOf(stableContentHeightPx, it.height)
-                                    },
+                                modifier = Modifier.fillMaxWidth().onSizeChanged { stableContentHeightPx = maxOf(stableContentHeightPx, it.height) },
                                 verticalArrangement = Arrangement.spacedBy(UiDp.dp16),
                             ) {
-                                TextField(
+                                GlassTextField(
                                     value = nameTextFieldValueState.value,
                                     onValueChange = { updatedTextFieldValue ->
                                         nameTextFieldValueState.value = updatedTextFieldValue
@@ -801,11 +757,7 @@ private fun CreateConfigDialog(
 
                         OverrideConfigInputMode.LocalFile -> {
                             ImportOverrideFileContent(
-                                modifier =
-                                    Modifier.fillMaxWidth().onSizeChanged {
-                                        stableContentHeightPx =
-                                            maxOf(stableContentHeightPx, it.height)
-                                    },
+                                modifier = Modifier.fillMaxWidth().onSizeChanged { stableContentHeightPx = maxOf(stableContentHeightPx, it.height) },
                                 fileName = selectedImportFileName,
                                 onPickFile = { importConfigLauncher.launch("*/*") },
                             )
@@ -813,11 +765,7 @@ private fun CreateConfigDialog(
 
                         OverrideConfigInputMode.NetworkUrl -> {
                             ImportOverrideNetworkContent(
-                                modifier =
-                                    Modifier.fillMaxWidth().onSizeChanged {
-                                        stableContentHeightPx =
-                                            maxOf(stableContentHeightPx, it.height)
-                                    },
+                                modifier = Modifier.fillMaxWidth().onSizeChanged { stableContentHeightPx = maxOf(stableContentHeightPx, it.height) },
                                 url = networkImportUrl,
                                 enabled = !isNetworkImporting,
                                 onUrlChange = { networkImportUrl = it },
@@ -835,20 +783,14 @@ private fun OverrideInputModeSelector(
     selectedMode: OverrideConfigInputMode,
     onSelectedModeChange: (OverrideConfigInputMode) -> Unit,
 ) {
-    val inputModeOptions = remember { OverrideConfigInputMode.entries.toList() }
+    val inputModeOptions = OverrideConfigInputMode.entries
     val selectedModeIndex = inputModeOptions.indexOf(selectedMode).coerceAtLeast(0)
-    val inputModeItems = remember { inputModeOptions.map { inputMode -> DropdownItem(title = inputMode.label) } }
-
-    top.yukonga.miuix.kmp.basic.Card {
-        WindowSpinnerPreference(
-            title = FlyTxt.ProfilesPage.Type.Title,
-            items = inputModeItems,
-            selectedIndex = selectedModeIndex,
-            onSelectedIndexChange = { index ->
-                inputModeOptions.getOrNull(index)?.let(onSelectedModeChange)
-            },
-        )
-    }
+    SegmentedTabRow(
+        tabs = inputModeOptions.map(OverrideConfigInputMode::label),
+        selectedTabIndex = selectedModeIndex,
+        onTabSelected = { index -> inputModeOptions.getOrNull(index)?.let(onSelectedModeChange) },
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable
@@ -856,20 +798,13 @@ private fun OverrideTypeSelector(
     selectedType: OverrideContentType,
     onSelectedTypeChange: (OverrideContentType) -> Unit,
 ) {
-    val contentTypeOptions = remember { OverrideContentType.entries.toList() }
-    val selectedTypeIndex = contentTypeOptions.indexOf(selectedType).coerceAtLeast(0)
-    val contentTypeItems = remember { contentTypeOptions.map { contentType -> DropdownItem(title = contentType.label) } }
-
-    top.yukonga.miuix.kmp.basic.Card {
-        WindowSpinnerPreference(
-            title = FlyTxt.Override.Dialog.Create.Type,
-            items = contentTypeItems,
-            selectedIndex = selectedTypeIndex,
-            onSelectedIndexChange = { index ->
-                contentTypeOptions.getOrNull(index)?.let(onSelectedTypeChange)
-            },
-        )
-    }
+    GlassDropdownPreference(
+        title = FlyTxt.Override.Dialog.Create.Type,
+        options = OverrideContentType.entries.map { GlassDropdownOption(it, it.label) },
+        selected = selectedType,
+        onSelected = onSelectedTypeChange,
+        glassSurface = true,
+    )
 }
 
 @Composable
@@ -879,14 +814,13 @@ private fun ImportOverrideFileContent(
     onPickFile: () -> Unit,
 ) {
     Box(
-        modifier =
-            modifier.clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() },
-                onClick = onPickFile,
-            )
+        modifier = modifier.clickable(
+            indication = null,
+            interactionSource = remember { MutableInteractionSource() },
+            onClick = onPickFile,
+        )
     ) {
-        TextField(
+        GlassTextField(
             value = fileName,
             onValueChange = {},
             label = FlyTxt.ProfilesPage.Input.SelectFile,
@@ -905,7 +839,7 @@ private fun ImportOverrideNetworkContent(
     enabled: Boolean,
     onUrlChange: (String) -> Unit,
 ) {
-    TextField(
+    GlassTextField(
         value = url,
         onValueChange = onUrlChange,
         label = FlyTxt.Override.Dialog.Create.Url,
@@ -930,12 +864,11 @@ private fun DeleteConfirmDialog(
         isInUse = if (show.value && config != null) viewModel.isConfigInUse(config.id) else false
     }
 
-    val summary =
-        when {
-            config == null -> ""
-            isInUse -> FlyTxt.Override.Dialog.Delete.InUseMessage.format(config.name)
-            else -> FlyTxt.Override.Dialog.Delete.Message.format(config.name)
-        }
+    val summary = when {
+        config == null -> ""
+        isInUse -> FlyTxt.Override.Dialog.Delete.InUseMessage.format(config.name)
+        else -> FlyTxt.Override.Dialog.Delete.Message.format(config.name)
+    }
 
     AppDialog(
         show = show.value,
@@ -944,16 +877,13 @@ private fun DeleteConfirmDialog(
         onDismissRequest = onDismiss,
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
-            Button(modifier = Modifier.weight(1f), onClick = onDismiss) {
-                Text(FlyTxt.Override.Dialog.Button.Cancel)
-            }
-            Button(
-                modifier = Modifier.weight(1f),
+            GlassTextButton(text = FlyTxt.Override.Dialog.Button.Cancel, onClick = onDismiss, modifier = Modifier.weight(1f))
+            GlassTextButton(
+                text = FlyTxt.Override.Dialog.Button.Delete,
                 onClick = onConfirm,
-                colors = ButtonDefaults.buttonColorsPrimary(),
-            ) {
-                Text(text = FlyTxt.Override.Dialog.Button.Delete, color = colorScheme.onPrimary)
-            }
+                modifier = Modifier.weight(1f),
+                primary = true,
+            )
         }
     }
 }
@@ -970,11 +900,10 @@ private enum class OverrideConfigInputMode {
 }
 
 private val OverrideContentType.label: String
-    get() =
-        when (this) {
-            OverrideContentType.Yaml -> "YAML"
-            OverrideContentType.JavaScript -> "JavaScript"
-        }
+    get() = when (this) {
+        OverrideContentType.Yaml -> "YAML"
+        OverrideContentType.JavaScript -> "JavaScript"
+    }
 
 private val OverrideContentType.exportMimeType: String
     get() = when (this) {
@@ -983,9 +912,8 @@ private val OverrideContentType.exportMimeType: String
     }
 
 private val OverrideConfigInputMode.label: String
-    get() =
-        when (this) {
-            OverrideConfigInputMode.CreateNew -> FlyTxt.Override.Action.New
-            OverrideConfigInputMode.LocalFile -> FlyTxt.ProfilesPage.Type.LocalFile
-            OverrideConfigInputMode.NetworkUrl -> FlyTxt.Override.Action.NetworkImport
-        }
+    get() = when (this) {
+        OverrideConfigInputMode.CreateNew -> FlyTxt.Override.Action.New
+        OverrideConfigInputMode.LocalFile -> FlyTxt.ProfilesPage.Type.LocalFile
+        OverrideConfigInputMode.NetworkUrl -> FlyTxt.Override.Action.NetworkImport
+    }

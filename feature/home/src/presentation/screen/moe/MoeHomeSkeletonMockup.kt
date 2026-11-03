@@ -159,16 +159,9 @@ internal fun MoeHomeSkeletonMockup(
                 modifier = Modifier.fillMaxHeight().weight(0.78f),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Box(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .weight(2f)
-                            .clip(RoundedCornerShape(13.dp))
-                            .background(maskStrong)
-                ) {
+                Box(modifier = Modifier.fillMaxWidth().weight(2f).clip(RoundedCornerShape(13.dp)).background(maskStrong)) {
                     Column(
-                        modifier =
-                            Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(7.dp),
+                        modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(7.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         // Traffic strip: UP on the left, DOWN on the right.
@@ -176,18 +169,8 @@ internal fun MoeHomeSkeletonMockup(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            Box(
-                                Modifier.width(30.dp)
-                                    .height(9.dp)
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(onHero)
-                            )
-                            Box(
-                                Modifier.width(30.dp)
-                                    .height(9.dp)
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(onHero)
-                            )
+                            Box(Modifier.width(30.dp).height(9.dp).clip(RoundedCornerShape(3.dp)).background(onHero))
+                            Box(Modifier.width(30.dp).height(9.dp).clip(RoundedCornerShape(3.dp)).background(onHero))
                         }
                         // Node info: flag circle + node name on the left, ping on the right.
                         Row(
@@ -223,26 +206,17 @@ internal fun MoeHomeSkeletonMockup(
                             contentAlignment = Alignment.Center,
                         ) {
                             Box(
-                                modifier =
-                                    Modifier.graphicsLayer {
-                                            scaleX = heroRippleScale.value
-                                            scaleY = heroRippleScale.value
-                                            alpha = heroRippleAlpha.value
-                                        }
-                                        .size(16.dp)
-                                        .clip(CircleShape)
-                                        .background(colorScheme.primary)
+                                modifier = Modifier.graphicsLayer {
+                                    scaleX = heroRippleScale.value
+                                    scaleY = heroRippleScale.value
+                                    alpha = heroRippleAlpha.value
+                                }.size(16.dp).clip(CircleShape).background(colorScheme.primary)
                             )
                             Box(
-                                modifier =
-                                    Modifier.graphicsLayer {
-                                            scaleX = heroLongPressScale.value
-                                            scaleY = heroLongPressScale.value
-                                        }
-                                        .size(16.dp)
-                                        .clip(CircleShape)
-                                        .background(colorScheme.surface)
-                                        .border(2.dp, colorScheme.primary, CircleShape)
+                                modifier = Modifier.graphicsLayer {
+                                    scaleX = heroLongPressScale.value
+                                    scaleY = heroLongPressScale.value
+                                }.size(16.dp).clip(CircleShape).background(colorScheme.surface).border(2.dp, colorScheme.primary, CircleShape)
                             )
                         }
                     }
@@ -294,15 +268,10 @@ internal fun MoeHomeSkeletonMockup(
             }
         }
 
-        // Wallpaper demo: dim scrim + the photo-picker bottom sheet sliding up. Clipped to the
-        // phone-frame's inner radius so they follow the rounded corners instead of sharp edges.
+        // 壁纸演示：暗色遮罩 + 照片选择器底部弹窗上滑。裁剪至手机框架内圆角，使其跟随圆角边缘而非直角。
         if (wallpaper) {
             Box(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(15.dp))) {
-                Box(
-                    modifier =
-                        Modifier.matchParentSize()
-                            .background(Color.Black.copy(alpha = 0.40f * sheetProgress.value))
-                )
+                Box(modifier = Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.40f * sheetProgress.value)))
                 PhotoPickerSheet(
                     sheetProgress = sheetProgress.value,
                     modifier = Modifier.align(Alignment.BottomCenter),
@@ -345,68 +314,48 @@ private fun HighlightedLaunchRow(modifier: Modifier = Modifier, isActive: Boolea
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        // Config button: a bordered surface circle with an icon glyph in the middle.
+        // 配置按钮：一个带有边框的圆形表面，中间有一个图标符号。
         Box(
-            modifier =
-                Modifier.size(22.dp)
-                    .clip(CircleShape)
-                    .background(colorScheme.surface)
-                    .border(1.dp, frameBorder, CircleShape),
+            modifier = Modifier.size(22.dp).clip(CircleShape).background(colorScheme.surface).border(1.dp, frameBorder, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(maskStrong))
         }
 
-        // Launch capsule filling the remaining width, pressing on each tap.
+        // 启动胶囊填满剩余宽度，循环播放按压动画。
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
             Box(
-                modifier =
-                    Modifier.graphicsLayer {
-                            scaleX = rippleScale.value
-                            scaleY = rippleScale.value
-                            alpha = rippleAlpha.value
-                        }
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .background(colorScheme.primary)
+                modifier = Modifier.graphicsLayer {
+                    scaleX = rippleScale.value
+                    scaleY = rippleScale.value
+                    alpha = rippleAlpha.value
+                }.size(26.dp).clip(CircleShape).background(colorScheme.primary)
             )
 
             Box(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .graphicsLayer {
-                            scaleX = pressScale.value
-                            scaleY = pressScale.value
-                        }
-                        .height(22.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(colorScheme.surface)
-                        .border(1.dp, frameBorder, RoundedCornerShape(50)),
+                modifier = Modifier.fillMaxWidth().graphicsLayer {
+                    scaleX = pressScale.value
+                    scaleY = pressScale.value
+                }.height(22.dp).clip(RoundedCornerShape(50))
+                .background(colorScheme.surface).border(1.dp, frameBorder, RoundedCornerShape(50)),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = FlyTxt.Home.Control.Start,
                     color = colorScheme.onSurface.copy(alpha = 0.72f),
-                    style =
-                        MiuixTheme.textStyles.footnote1.copy(
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        ),
+                    style = MiuixTheme.textStyles.footnote1.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
                 )
             }
 
-            // Prominent touch dot over the capsule's center, pressing in sync with it.
+            // 胶囊中央有明显的触控点，与胶囊同步按压。
             Box(
-                modifier =
-                    Modifier.offset(x = 4.dp, y = 4.dp)
-                        .graphicsLayer {
-                            scaleX = pressScale.value
-                            scaleY = pressScale.value
-                        }
-                        .size(20.dp)
-                        .clip(CircleShape)
-                        .background(colorScheme.primary)
-                        .border(2.dp, colorScheme.surface, CircleShape)
+                modifier = Modifier.offset(x = 4.dp, y = 4.dp).graphicsLayer {
+                    scaleX = pressScale.value
+                    scaleY = pressScale.value
+                }.size(20.dp).clip(CircleShape).background(colorScheme.primary).border(2.dp, colorScheme.surface, CircleShape)
             )
         }
     }
@@ -425,36 +374,27 @@ private fun PlainLaunchRow(modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        // Config button: a bordered surface circle with an icon glyph in the middle.
+        // 配置按钮：一个带有边框的圆形表面，中间有一个图标符号。
         Box(
-            modifier =
-                Modifier.size(22.dp)
-                    .clip(CircleShape)
-                    .background(colorScheme.surface)
-                    .border(1.dp, frameBorder, CircleShape),
+            modifier = Modifier.size(22.dp).clip(CircleShape).background(colorScheme.surface).border(1.dp, frameBorder, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(maskStrong))
         }
 
-        // Launch capsule filling the remaining width, without any tap animation.
+        // 启动胶囊填满剩余宽度，没有任何点击动画。
         Box(
-            modifier =
-                Modifier.weight(1f)
-                    .height(22.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(colorScheme.surface)
-                    .border(1.dp, frameBorder, RoundedCornerShape(50)),
+            modifier = Modifier.weight(1f).height(22.dp).clip(RoundedCornerShape(50))
+                .background(colorScheme.surface).border(1.dp, frameBorder, RoundedCornerShape(50)),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = FlyTxt.Home.Control.Start,
                 color = colorScheme.onSurface.copy(alpha = 0.72f),
-                style =
-                    MiuixTheme.textStyles.footnote1.copy(
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
+                style = MiuixTheme.textStyles.footnote1.copy(
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                ),
             )
         }
     }
@@ -469,26 +409,15 @@ private fun PhotoPickerSheet(sheetProgress: Float, modifier: Modifier = Modifier
     val maskStrong = colorScheme.onSurface.copy(alpha = opacity.subtleStrong)
 
     Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.7f)
-                .graphicsLayer { translationY = (1f - sheetProgress) * size.height }
-                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                .background(colorScheme.surface)
-                .padding(8.dp)
+        modifier = modifier.fillMaxWidth().fillMaxHeight(0.7f).graphicsLayer { translationY = (1f - sheetProgress) * size.height }
+            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)).background(colorScheme.surface).padding(8.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Box(
-                Modifier.width(22.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(mask)
-            )
+            Box(Modifier.width(22.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(mask))
 
             // Tab pills: "全部" highlighted, "影集" muted.
             Row(
@@ -530,11 +459,7 @@ private fun PhotoPickerSheet(sheetProgress: Float, modifier: Modifier = Modifier
                         repeat(3) { col ->
                             val isCamera = row == 0 && col == 0
                             Box(
-                                modifier =
-                                    Modifier.weight(1f)
-                                        .fillMaxHeight()
-                                        .clip(RoundedCornerShape(5.dp))
-                                        .background(if (isCamera) mask else maskStrong),
+                                modifier = Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(5.dp)).background(if (isCamera) mask else maskStrong),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 if (isCamera) {
@@ -583,47 +508,33 @@ internal fun HomeToNodeSwipeMockup(modifier: Modifier = Modifier, isActive: Bool
                 strongPlaceholder = strongPlaceholder,
                 nodeCardBackground = nodeCardBackground,
                 frameBorder = frameBorder,
-                modifier =
-                    Modifier.fillMaxSize()
-                        .graphicsLayer {
-                            translationX = (1f - swipeProgress.value) * size.width
-                            alpha = 0.7f + 0.3f * swipeProgress.value
-                        },
+                modifier = Modifier.fillMaxSize().graphicsLayer {
+                    translationX = (1f - swipeProgress.value) * size.width
+                    alpha = 0.7f + 0.3f * swipeProgress.value
+                },
             )
 
             HomePagePreview(
                 placeholder = placeholder,
                 strongPlaceholder = strongPlaceholder,
                 frameBorder = frameBorder,
-                modifier =
-                    Modifier.fillMaxSize()
-                        .graphicsLayer {
-                            translationX = -swipeProgress.value * size.width
-                            val scale = 1f - 0.025f * swipeProgress.value
-                            scaleX = scale
-                            scaleY = scale
-                        }
-                        .padding(7.dp),
+                modifier = Modifier.fillMaxSize().graphicsLayer {
+                    translationX = -swipeProgress.value * size.width
+                    val scale = 1f - 0.025f * swipeProgress.value
+                    scaleX = scale
+                    scaleY = scale
+                }.padding(7.dp),
             )
 
             Box(
-                modifier =
-                    Modifier.matchParentSize()
-                        .graphicsLayer {
-                            translationX = (0.22f - 0.32f * swipeProgress.value) * size.width
-                        },
+                modifier = Modifier.matchParentSize().graphicsLayer { translationX = (0.22f - 0.32f * swipeProgress.value) * size.width },
                 contentAlignment = Alignment.Center,
             ) {
                 Box(
-                    modifier =
-                        Modifier.graphicsLayer {
-                                scaleX = touchScale.value
-                                scaleY = touchScale.value
-                            }
-                            .size(22.dp)
-                            .clip(CircleShape)
-                            .background(colorScheme.primary)
-                            .border(2.dp, colorScheme.surface, CircleShape)
+                    modifier = Modifier.graphicsLayer {
+                        scaleX = touchScale.value
+                        scaleY = touchScale.value
+                    }.size(22.dp).clip(CircleShape).background(colorScheme.primary).border(2.dp, colorScheme.surface, CircleShape)
                 )
             }
         }
@@ -641,24 +552,15 @@ private fun HomePagePreview(
     val opacity = AppTheme.opacity
 
     Row(
-        modifier =
-            modifier
-                .clip(RoundedCornerShape(15.dp))
-                .background(colorScheme.surface)
-                .border(1.dp, frameBorder, RoundedCornerShape(15.dp))
-                .padding(7.dp),
+        modifier = modifier.clip(RoundedCornerShape(15.dp)).background(colorScheme.surface)
+            .border(1.dp, frameBorder, RoundedCornerShape(15.dp)).padding(7.dp),
     ) {
         Column(
             modifier = Modifier.fillMaxHeight().weight(0.22f),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.height(10.dp))
-            Box(
-                Modifier.width(12.dp)
-                    .height(52.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(strongPlaceholder)
-            )
+            Box(Modifier.width(12.dp).height(52.dp).clip(RoundedCornerShape(6.dp)).background(strongPlaceholder))
             Spacer(Modifier.weight(1f))
             repeat(3) { index ->
                 Box(
@@ -695,12 +597,11 @@ private fun HomePagePreview(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 repeat(3) { index ->
-                    val lineWidth =
-                        when (index) {
-                            0 -> 0.92f
-                            1 -> 0.76f
-                            else -> 0.48f
-                        }
+                    val lineWidth = when (index) {
+                        0 -> 0.92f
+                        1 -> 0.76f
+                        else -> 0.48f
+                    }
                     Box(
                         Modifier.fillMaxWidth(lineWidth)
                             .height(8.dp)
@@ -746,12 +647,8 @@ private fun NodePagePreview(
     val opacity = AppTheme.opacity
 
     Column(
-        modifier =
-            modifier
-                .clip(RoundedCornerShape(15.dp))
-                .background(colorScheme.surface)
-                .border(1.dp, frameBorder, RoundedCornerShape(15.dp))
-                .padding(10.dp),
+        modifier = modifier.clip(RoundedCornerShape(15.dp)).background(colorScheme.surface)
+            .border(1.dp, frameBorder, RoundedCornerShape(15.dp)).padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(
@@ -815,17 +712,12 @@ private fun NodePreviewCard(
     val opacity = AppTheme.opacity
 
     Row(
-        modifier =
-            modifier
-                .clip(RoundedCornerShape(11.dp))
-                .background(nodeCardBackground)
-                .border(
-                    1.dp,
-                    if (selected) colorScheme.primary.copy(alpha = opacity.disabled)
-                    else Color.Transparent,
-                    RoundedCornerShape(11.dp),
-                )
-                .padding(7.dp),
+        modifier = modifier.clip(RoundedCornerShape(11.dp)).background(nodeCardBackground).border(
+            1.dp,
+            if (selected) colorScheme.primary.copy(alpha = opacity.disabled)
+            else Color.Transparent,
+            RoundedCornerShape(11.dp),
+        ).padding(7.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(7.dp),
     ) {
@@ -921,11 +813,8 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier, isActive: Boo
             Spacer(Modifier.height(8.dp))
 
             Row(
-                modifier =
-                    Modifier.clip(RoundedCornerShape(50))
-                        .background(colorScheme.surface)
-                        .border(1.dp, frameBorder, RoundedCornerShape(50))
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(colorScheme.surface)
+                .border(1.dp, frameBorder, RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 5.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 repeat(4) {
@@ -939,26 +828,17 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier, isActive: Boo
         }
 
         Box(modifier = Modifier.matchParentSize().clip(RoundedCornerShape(15.dp))) {
-            Box(
-                modifier =
-                    Modifier.matchParentSize()
-                        .background(Color.Black.copy(alpha = 0.40f * sheetProgress.value))
-            )
+            Box(modifier = Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.40f * sheetProgress.value)))
 
             Box(
-                modifier =
-                    Modifier.align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .fillMaxHeight(0.62f)
-                        .graphicsLayer { translationY = (1f - sheetProgress.value) * size.height }
-                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                        .background(colorScheme.surface)
-                        .border(
-                            1.dp,
-                            frameBorder,
-                            RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-                        )
-                        .padding(12.dp)
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.62f)
+                .graphicsLayer { translationY = (1f - sheetProgress.value) * size.height }
+                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                .background(colorScheme.surface).border(
+                    1.dp,
+                    frameBorder,
+                    RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                ).padding(12.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -1032,12 +912,8 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier, isActive: Boo
                     }
                     repeat(3) { index ->
                         Box(
-                            modifier =
-                                Modifier.fillMaxWidth()
-                                    .height(26.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(recessed)
-                                    .padding(horizontal = 12.dp),
+                            modifier = Modifier.fillMaxWidth().height(26.dp).clip(RoundedCornerShape(10.dp))
+                            .background(recessed).padding(horizontal = 12.dp),
                             contentAlignment = Alignment.CenterStart,
                         ) {
                             Box(
@@ -1058,19 +934,11 @@ internal fun ProfilesSkeletonMockup(modifier: Modifier = Modifier, isActive: Boo
 private fun ProfileCardMock(index: Int, modifier: Modifier = Modifier) {
     val colorScheme = MiuixTheme.colorScheme
     val opacity = AppTheme.opacity
-
     val maskInner = colorScheme.onSurface.copy(alpha = opacity.subtleStrong)
     val card = colorScheme.surfaceVariant.copy(alpha = opacity.surfaceVariant)
     val frameBorder = colorScheme.outline.copy(alpha = opacity.surfaceSoft)
 
-    Box(
-        modifier =
-            modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(card)
-                .border(1.dp, frameBorder, RoundedCornerShape(12.dp))
-                .padding(8.dp)
-    ) {
+    Box(modifier = modifier.clip(RoundedCornerShape(12.dp)).background(card).border(1.dp, frameBorder, RoundedCornerShape(12.dp)).padding(8.dp)) {
         Column(
             modifier = Modifier.fillMaxHeight(),
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -1095,16 +963,12 @@ private fun ProfileCardMock(index: Int, modifier: Modifier = Modifier) {
                     )
                 }
                 Box(
-                    modifier =
-                        Modifier.width(22.dp)
-                            .height(12.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(if (index == 0) colorScheme.primary else maskInner)
+                    modifier = Modifier.width(22.dp).height(12.dp).clip(RoundedCornerShape(50))
+                        .background(if (index == 0) colorScheme.primary else maskInner)
                 ) {
                     Box(
                         modifier = Modifier.fillMaxSize().padding(1.5.dp),
-                        contentAlignment =
-                            if (index == 0) Alignment.CenterEnd else Alignment.CenterStart,
+                        contentAlignment = if (index == 0) Alignment.CenterEnd else Alignment.CenterStart,
                     ) {
                         Box(Modifier.size(9.dp).clip(CircleShape).background(colorScheme.surface))
                     }
@@ -1185,26 +1049,18 @@ private fun AddButtonGlyph(modifier: Modifier = Modifier, isActive: Boolean = tr
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Box(
-            modifier =
-                Modifier.graphicsLayer {
-                        scaleX = rippleScale.value
-                        scaleY = rippleScale.value
-                        alpha = rippleAlpha.value
-                    }
-                    .size(16.dp)
-                    .clip(RoundedCornerShape(5.dp))
-                    .background(colorScheme.primary)
+            modifier = Modifier.graphicsLayer {
+                scaleX = rippleScale.value
+                scaleY = rippleScale.value
+                alpha = rippleAlpha.value
+            }.size(16.dp).clip(RoundedCornerShape(5.dp)).background(colorScheme.primary)
         )
 
         Box(
-            modifier =
-                Modifier.graphicsLayer {
-                        scaleX = tapScale.value
-                        scaleY = tapScale.value
-                    }
-                    .size(16.dp)
-                    .clip(RoundedCornerShape(5.dp))
-                    .background(colorScheme.primary),
+            modifier = Modifier.graphicsLayer {
+                scaleX = tapScale.value
+                scaleY = tapScale.value
+            }.size(16.dp).clip(RoundedCornerShape(5.dp)).background(colorScheme.primary),
             contentAlignment = Alignment.Center,
         ) {
             Box(Modifier.width(8.dp).height(2.dp).background(colorScheme.onPrimary))

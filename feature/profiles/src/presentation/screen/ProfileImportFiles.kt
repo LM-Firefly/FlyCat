@@ -31,8 +31,7 @@ import timber.log.Timber
 import java.io.File
 import java.util.UUID
 
-internal fun importedProfileDir(context: Context, profile: Profile): File =
-    context.filesDir.importedProfileDir(profile.uuid)
+internal fun importedProfileDir(context: Context, profile: Profile): File = context.filesDir.importedProfileDir(profile.uuid)
 
 internal fun importedConfigFile(context: Context, profile: Profile): File = importedProfileDir(context, profile).resolve("config.yaml")
 

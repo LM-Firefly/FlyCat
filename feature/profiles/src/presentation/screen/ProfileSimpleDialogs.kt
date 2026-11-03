@@ -34,6 +34,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.lmfirefly.flycat.core.model.profile.Profile
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppTextFieldDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.DialogButtonRow
@@ -130,31 +131,23 @@ internal fun ShareOptionsDialog(
         content = {
             Column(verticalArrangement = Arrangement.spacedBy(spacing.space12)) {
                 if (profile.type == Profile.Type.Url) {
-                    Button(
+                    GlassTextButton(
+                        text = FlyTxt.ProfilesPage.ShareDialog.ShareLink,
                         onClick = { onShareLink(profile) },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            FlyTxt.ProfilesPage.ShareDialog.ShareLink,
-                            color = MiuixTheme.colorScheme.onPrimary,
-                        )
-                    }
+                        primary = true,
+                    )
                 }
-                Button(
+                GlassTextButton(
+                    text = FlyTxt.ProfilesPage.ShareDialog.ShareFile,
                     onClick = { onShareFile(profile) },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(),
-                ) {
-                    Text(FlyTxt.ProfilesPage.ShareDialog.ShareFile)
-                }
-                Button(
+                )
+                GlassTextButton(
+                    text = FlyTxt.ProfilesPage.Button.Cancel,
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(),
-                ) {
-                    Text(FlyTxt.ProfilesPage.Button.Cancel)
-                }
+                )
             }
         },
     )

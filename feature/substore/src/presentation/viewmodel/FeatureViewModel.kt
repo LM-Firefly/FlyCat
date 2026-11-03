@@ -70,14 +70,11 @@ class FeatureViewModel(
     private val _autoCloseMode = MutableStateFlow(autoCloseModeFromOrdinal(subStoreAutoCloseModeOrdinal.value))
     val autoCloseMode: StateFlow<AutoCloseMode> = _autoCloseMode.asStateFlow()
 
-    val serviceRunningState: StateFlow<Boolean> =
-        SubStoreServiceController.snapshot
-            .map { it.isRunning }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = SubStoreServiceController.snapshot.value.isRunning,
-            )
+    val serviceRunningState: StateFlow<Boolean> = SubStoreServiceController.snapshot.map { it.isRunning }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = SubStoreServiceController.snapshot.value.isRunning,
+    )
 
     private var autoCloseJob: Job? = null
 
@@ -90,12 +87,10 @@ class FeatureViewModel(
     }
 
     private val _isDownloadingSubStoreFrontend = MutableStateFlow(false)
-    val isDownloadingSubStoreFrontend: StateFlow<Boolean> =
-        _isDownloadingSubStoreFrontend.asStateFlow()
+    val isDownloadingSubStoreFrontend: StateFlow<Boolean> = _isDownloadingSubStoreFrontend.asStateFlow()
 
     private val _isDownloadingSubStoreBackend = MutableStateFlow(false)
-    val isDownloadingSubStoreBackend: StateFlow<Boolean> =
-        _isDownloadingSubStoreBackend.asStateFlow()
+    val isDownloadingSubStoreBackend: StateFlow<Boolean> = _isDownloadingSubStoreBackend.asStateFlow()
 
     private val _isSubStoreInitialized = MutableStateFlow(false)
     val isSubStoreInitialized: StateFlow<Boolean> = _isSubStoreInitialized.asStateFlow()
@@ -120,12 +115,11 @@ class FeatureViewModel(
             runCatching {
                     SubStoreServiceController.startService(
                         context = application,
-                        request =
-                            SubStoreServiceRequest(
-                                backendPort = backendPort.value,
-                                frontendPort = frontendPort.value,
-                                allowLan = allowLanAccess.value,
-                            ),
+                        request = SubStoreServiceRequest(
+                            backendPort = backendPort.value,
+                            frontendPort = frontendPort.value,
+                            allowLan = allowLanAccess.value,
+                        ),
                     )
                 }
                 .onSuccess {

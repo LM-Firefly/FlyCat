@@ -29,26 +29,15 @@ object LocaleUtils {
     private const val FLAG_CDN_BASE_URL = "https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@main/third_party/region-flags/svg/"
     // 无对应国家码时回退到联合国旗作为国际/未知占位。
     private const val UNKNOWN_FLAG_PATH = "UN.svg"
-
     @Volatile private var override: Locale? = null
-
-    fun setCurrentLocale(locale: Locale?) {
-        override = locale
-    }
-
+    fun setCurrentLocale(locale: Locale?) { override = locale }
     fun currentLocale(): Locale = override ?: Locale.getDefault()
-
     fun unknownFlagUrl(baseUrl: String = FLAG_CDN_BASE_URL): String = "$baseUrl$UNKNOWN_FLAG_PATH"
-
-    fun normalizeFlagUrl(
-        countryCode: String?,
-        baseUrl: String = FLAG_CDN_BASE_URL,
-    ): String {
-        val normalizedCode =
-            countryCode
-                ?.trim()
-                ?.takeIf { it.isNotEmpty() && it.all(Char::isLetter) }
-                ?: return unknownFlagUrl(baseUrl)
+    fun normalizeFlagUrl(countryCode: String?, baseUrl: String = FLAG_CDN_BASE_URL): String {
+        val normalizedCode = countryCode
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() && it.all(Char::isLetter) }
+            ?: return unknownFlagUrl(baseUrl)
         if (normalizedCode.equals(UNKNOWN_FLAG_CODE, ignoreCase = true)) {
             return unknownFlagUrl(baseUrl)
         }

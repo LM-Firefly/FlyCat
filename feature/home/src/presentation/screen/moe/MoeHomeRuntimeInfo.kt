@@ -84,10 +84,7 @@ private fun MoeTrafficItem(label: String, speed: Long) {
 internal fun MoeHomeInfoPanel(serverName: String?, serverPing: Int?, modifier: Modifier = Modifier) {
     val flaggedNode = remember(serverName) { serverName?.let(::extractFlaggedName) }
     val resolvedNodeName = flaggedNode?.displayName ?: serverName.orEmpty().ifBlank { "" }
-    val resolvedPing =
-        serverPing
-            ?.takeIf { it in 1..1000 }
-            ?.let { ping -> FlyTxt.Home.NodeInfo.DelayValue.format(ping) }
+    val resolvedPing = serverPing ?.takeIf { it in 1..1000 } ?.let { ping -> FlyTxt.Home.NodeInfo.DelayValue.format(ping) }
     Row(
         modifier = modifier.fillMaxWidth().heightIn(min = MoeUi.Hero.infoRowMinHeight),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -106,8 +103,7 @@ internal fun MoeHomeInfoPanel(serverName: String?, serverPing: Int?, modifier: M
             MoeInfoBlock(
                 value = resolvedPing,
                 modifier = Modifier.width(MoeUi.Hero.delayWidth),
-                valueColor =
-                    if (serverPing < 500) AppTheme.colors.moe.pingExcellent
+                valueColor = if (serverPing < 500) AppTheme.colors.moe.pingExcellent
                     else AppTheme.colors.moe.pingWarning,
                 alignEnd = true,
             )
@@ -126,11 +122,10 @@ private fun MoeInfoBlock(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement =
-            Arrangement.spacedBy(
-                space = MoeUi.Info.blockGap,
-                alignment = if (alignEnd) Alignment.End else Alignment.Start,
-            ),
+        horizontalArrangement = Arrangement.spacedBy(
+            space = MoeUi.Info.blockGap,
+            alignment = if (alignEnd) Alignment.End else Alignment.Start,
+        ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         leading?.invoke()

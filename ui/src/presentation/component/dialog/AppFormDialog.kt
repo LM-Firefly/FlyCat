@@ -58,14 +58,13 @@ fun AppFormDialog(
         onDismissRequest = onDismissRequest,
         onDismissFinished = onDismissFinished,
     ) {
-        val contentModifier =
-            Modifier.fillMaxWidth().let {
-                if (scrollable) {
-                    it.heightIn(max = UiDp.dp420).verticalScroll(rememberScrollState())
-                } else {
-                    it
-                }
+        val contentModifier = Modifier.fillMaxWidth().let {
+            if (scrollable) {
+                it.heightIn(max = UiDp.dp420).verticalScroll(rememberScrollState())
+            } else {
+                it
             }
+        }
 
         AppDialogColumn {
             Column(

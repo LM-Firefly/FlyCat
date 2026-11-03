@@ -21,9 +21,13 @@
 
 package com.github.lmfirefly.flycat.runtime.service.notification
 
+import com.github.lmfirefly.flycat.core.model.NotificationDisplaySettings
+import com.github.lmfirefly.flycat.core.model.NotificationLineContent
+import com.github.lmfirefly.flycat.core.model.NotificationLineValues
 import com.github.lmfirefly.flycat.core.model.profile.Imported
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup
+import com.github.lmfirefly.flycat.core.model.resolve
 import com.github.lmfirefly.flycat.core.model.traffic.TrafficData
 import com.github.lmfirefly.flycat.core.util.format.formatBytes
 import com.github.lmfirefly.flycat.core.util.format.formatSpeed
@@ -63,13 +67,32 @@ internal object NotificationPresentationFactory {
         currentNode: String?,
         trafficNow: Long,
         trafficTotal: Long,
+        displaySettings: NotificationDisplaySettings = NotificationDisplaySettings(),
     ): NotificationPresentation.Running {
         val speedLine = buildSpeedLine(trafficNow)
         val totalLine = buildTotalLine(trafficTotal)
+        val used = profile?.let { (it.upload + it.download).coerceAtLeast(0L) } ?: 0L
+        val total = profile?.total?.coerceAtLeast(0L) ?: 0L
+        val expire = profile?.expire?.takeIf { it > 0L }
+        val node = currentNode ?: FlyTxt.Service.Notification.NoNode
+        val values = NotificationLineValues(
+            profileName = profileName,
+            currentNode = node,
+            liveTraffic = speedLine,
+            usedTraffic = formatBytes(used),
+            sessionTraffic = totalLine,
+            totalTraffic = if (total > 0L) formatBytes(total) else "—",
+            remainingTraffic = if (total > 0L) formatBytes((total - used).coerceAtLeast(0L)) else "—",
+            subscriptionUsage = buildUsageLine(profile).ifBlank { "—" },
+            expiryDate = expire?.let(::expireDate) ?: "—",
+            status = FlyTxt.Service.Notification.Running,
+        )
+        val title = displaySettings.firstLine.resolve(values, displaySettings.firstLineText).ifBlank { profileName }
+        val content = displaySettings.secondLine.resolve(values, displaySettings.secondLineText)
         return NotificationPresentation.Running(
-            title = profileName,
-            content = speedLine,
-            expandedText = "$speedLine\n$totalLine",
+            title = title,
+            content = content,
+            expandedText = listOf(content, FlyTxt.Service.Notification.CurrentNode.format(node), totalLine).filter { it.isNotBlank() }.distinct().joinToString("\n"),
             subText = totalLine,
             usageLine = buildUsageLine(profile),
             compactTraffic = buildCompactTrafficLine(trafficNow),
@@ -77,12 +100,11 @@ internal object NotificationPresentationFactory {
         )
     }
 
-    fun createStatus(profileName: String, status: String): NotificationPresentation.Status =
-        NotificationPresentation.Status(
-            title = profileName,
-            content = status,
-            expandedText = status,
-        )
+    fun createStatus(profileName: String, status: String): NotificationPresentation.Status = NotificationPresentation.Status(
+        title = profileName,
+        content = status,
+        expandedText = status,
+    )
 
     private fun buildSpeedLine(trafficNow: Long): String {
         val (upNow, downNow) = TrafficData.from(trafficNow)
@@ -94,9 +116,7 @@ internal object NotificationPresentationFactory {
         return FlyTxt.Service.Notification.TotalTraffic.format(formatBytes(data.upload + data.download))
     }
 
-    /**
-     * 仅包含数值，不含标签，以便超级岛可以渲染为：`1.2 GB / 100 GB | 2026-08-31`。配置文件不携带订阅信息时返回空串，避免与标题重复显示文件名。
-     */
+    /** 仅包含数值，不含标签，以便超级岛可以渲染为：`1.2 GB / 100 GB | 2026-08-31`。配置文件不携带订阅信息时返回空串，避免与标题重复显示文件名。 */
     private fun buildUsageLine(profile: Imported?): String {
         val used = profile?.let { (it.upload + it.download).coerceAtLeast(0L) } ?: 0L
         val total = profile?.total ?: 0L
@@ -122,10 +142,8 @@ internal object NotificationPresentationFactory {
         queryGroupNames: () -> List<String>,
     ): String? {
         fun findGroup(name: String): ProxyGroup? = queryGroups(listOf(name)).firstOrNull()
-        val startGroup =
-            findGroup("Proxy")?.takeIf(::isSelectableGroup)
-                ?: queryGroups(queryGroupNames()).firstOrNull(::isSelectableGroup)
-                ?: return null
+        val startGroup = findGroup("Proxy")?.takeIf(::isSelectableGroup)
+            ?: queryGroups(queryGroupNames()).firstOrNull(::isSelectableGroup) ?: return null
         val seed = startGroup.now.ifBlank { startGroup.proxies.firstOrNull()?.name.orEmpty() }
         return resolveSelection(seed, ::findGroup, mutableSetOf())
     }

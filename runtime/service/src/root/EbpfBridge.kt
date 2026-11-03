@@ -39,8 +39,7 @@ object EbpfOverride {
     const val FILE_NAME = "__ebpf_override__.yaml"
     private const val LISTENER_NAME = "ebpf-in"
     private const val CN_PROVIDER_NAME = "CN-IP"
-    private const val CN_PROVIDER_URL =
-        "https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geoip/cn.mrs"
+    private const val CN_PROVIDER_URL = "https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geoip/cn.mrs"
     /**
      * @param bypassCn 是否要附加一个国内IP绕过规则提供者
      * @param includeUid 要专门拦截的UID列表（AcceptSelected）；留空表示未设置

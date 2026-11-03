@@ -59,10 +59,7 @@ object SubStorePaths {
 
     fun isBackendReady(): Boolean = backendBundle.exists()
 
-    fun isFrontendReady(): Boolean =
-        frontendDir.exists() &&
-            frontendDir.isDirectory &&
-            (frontendDir.listFiles()?.isNotEmpty() == true)
+    fun isFrontendReady(): Boolean = frontendDir.exists() && frontendDir.isDirectory && (frontendDir.listFiles()?.isNotEmpty() == true)
 
     fun isResourcesReady(): Boolean = isBackendReady() && isFrontendReady()
 }

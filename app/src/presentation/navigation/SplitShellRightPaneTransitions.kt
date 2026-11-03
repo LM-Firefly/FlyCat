@@ -21,24 +21,21 @@ import androidx.compose.animation.slideOutVertically
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 
 /**
- * Vertical slide + fade transition for the tablet split-shell right pane.
- * Forward (push) slides content up from the bottom; backward (pop) slides down.
+ * 平板分屏右侧面板的垂直滑动 + 淡入淡出过渡效果。
+ * 前进（push）从底部向上滑入内容；后退（pop）从顶部向下滑出。
  */
 internal fun splitShellRightPaneTransform(forward: Boolean): ContentTransform {
     val enterOffset = { height: Int -> if (forward) height / 10 else -height / 14 }
     val exitOffset = { height: Int -> if (forward) -height / 14 else height / 10 }
-
     return ContentTransform(
-        targetContentEnter =
-            slideInVertically(
-                animationSpec = tween(AnimationSpecs.DURATION_NORMAL, easing = AnimationSpecs.Legacy),
-                initialOffsetY = enterOffset,
-            ) + fadeIn(animationSpec = tween(AnimationSpecs.DURATION_FAST)),
-        initialContentExit =
-            slideOutVertically(
-                animationSpec = tween(AnimationSpecs.DURATION_NORMAL, easing = AnimationSpecs.Legacy),
-                targetOffsetY = exitOffset,
-            ) + fadeOut(animationSpec = tween(AnimationSpecs.DURATION_FAST)),
+        targetContentEnter = slideInVertically(
+            animationSpec = tween(AnimationSpecs.DURATION_NORMAL, easing = AnimationSpecs.Legacy),
+            initialOffsetY = enterOffset,
+        ) + fadeIn(animationSpec = tween(AnimationSpecs.DURATION_FAST)),
+        initialContentExit = slideOutVertically(
+            animationSpec = tween(AnimationSpecs.DURATION_NORMAL, easing = AnimationSpecs.Legacy),
+            targetOffsetY = exitOffset,
+        ) + fadeOut(animationSpec = tween(AnimationSpecs.DURATION_FAST)),
         sizeTransform = SizeTransform(clip = false),
     )
 }

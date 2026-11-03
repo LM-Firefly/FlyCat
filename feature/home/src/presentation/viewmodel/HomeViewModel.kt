@@ -104,30 +104,22 @@ class HomeViewModel(
     val hasEnabledProfile: StateFlow<Boolean> = profiles.map { list -> list.any { it.active } }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val runtimeSnapshot = proxyFacade.runtimeSnapshot
-    val isRunning =
-        runtimeSnapshot
-            .map(RuntimeStateMapper::isActuallyRunning)
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                RuntimeStateMapper.isActuallyRunning(runtimeSnapshot.value),
-            )
-    val isRemoteController: StateFlow<Boolean> =
-        runtimeSnapshot
-            .map { it.owner == RuntimeOwner.RemoteController }
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                runtimeSnapshot.value.owner == RuntimeOwner.RemoteController,
-            )
-    val controllerBackendName: StateFlow<String?> =
-        combine(
-                remoteControllerStore.activeBackendId.state,
-                remoteControllerStore.backends.state,
-            ) { id, list ->
-                list.firstOrNull { it.id == id }?.let { it.name.ifBlank { "${it.host}:${it.port}" } }
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val isRunning = runtimeSnapshot.map(RuntimeStateMapper::isActuallyRunning).stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        RuntimeStateMapper.isActuallyRunning(runtimeSnapshot.value),
+    )
+    val isRemoteController: StateFlow<Boolean> = runtimeSnapshot.map { it.owner == RuntimeOwner.RemoteController }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        runtimeSnapshot.value.owner == RuntimeOwner.RemoteController,
+    )
+    val controllerBackendName: StateFlow<String?> = combine(
+        remoteControllerStore.activeBackendId.state,
+        remoteControllerStore.backends.state,
+    ) { id, list ->
+        list.firstOrNull { it.id == id }?.let { it.name.ifBlank { "${it.host}:${it.port}" } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     val currentProfile = proxyFacade.currentProfile
 
     data class HomeProfileState(val profiles: List<Profile>, val profilesLoaded: Boolean, val recommendedProfile: Profile?, val hasEnabledProfile: Boolean, val currentProfile: Profile?)
@@ -145,19 +137,17 @@ class HomeViewModel(
 
     val vpnPrepareIntent = vpnController.vpnPrepareIntent
 
-    val controlState: StateFlow<HomeProxyControlState> =
-        combine(runtimeSnapshot, vpnController.pendingTransition) { snapshot, pendingTransition ->
-                resolveControlState(snapshot.owner, snapshot.phase, pendingTransition)
-            }
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                resolveControlState(
-                    runtimeSnapshot.value.owner,
-                    runtimeSnapshot.value.phase,
-                    vpnController.pendingTransition.value,
-                ),
-            )
+    val controlState: StateFlow<HomeProxyControlState> = combine(runtimeSnapshot, vpnController.pendingTransition) { snapshot, pendingTransition ->
+        resolveControlState(snapshot.owner, snapshot.phase, pendingTransition)
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        resolveControlState(
+            runtimeSnapshot.value.owner,
+            runtimeSnapshot.value.phase,
+            vpnController.pendingTransition.value,
+        ),
+    )
 
     private val _speedHistory = MutableStateFlow<List<TrafficData>>(emptyList())
     val speedHistory: StateFlow<List<TrafficData>> = _speedHistory.asStateFlow()
@@ -171,36 +161,26 @@ class HomeViewModel(
     private var reconcileJob: Job? = null
     private var lastReconcileTime = 0L
 
-    private val mainProxyNode: StateFlow<Proxy?> =
-        proxyFacade.resolvedPrimaryNode
+    private val mainProxyNode: StateFlow<Proxy?> = proxyFacade.resolvedPrimaryNode
 
-    val selectedServerName: StateFlow<String?> =
-        mainProxyNode
-            .map { it?.name }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val selectedServerName: StateFlow<String?> = mainProxyNode.map { it?.name }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val selectedServerPing: StateFlow<Int?> =
-        mainProxyNode
-            .map { node -> node?.delay?.takeIf { delay -> delay > 0 } }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val selectedServerPing: StateFlow<Int?> = mainProxyNode.map { node -> node?.delay?.takeIf { delay -> delay > 0 } }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val ipMonitoringState: StateFlow<IpMonitoringState> =
-        isRunning
-            .flatMapLatest { running ->
-                if (running) {
-                    networkInfoService.startIpMonitoring(
-                        isProxyActiveFlow = isRunning,
-                    )
-                } else {
-                    flowOf(IpMonitoringState.Loading)
-                }
-            }
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                IpMonitoringState.Loading,
+    val ipMonitoringState: StateFlow<IpMonitoringState> = isRunning.flatMapLatest { running ->
+        if (running) {
+            networkInfoService.startIpMonitoring(
+                isProxyActiveFlow = isRunning,
             )
+        } else {
+            flowOf(IpMonitoringState.Loading)
+        }
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        IpMonitoringState.Loading,
+    )
 
     init {
         refreshProfiles()
@@ -240,12 +220,11 @@ class HomeViewModel(
                 _uiState.update {
                     it.copy(
                         isStartingProxy = state == HomeProxyControlState.Connecting,
-                        loadingProgress =
-                            if (state == HomeProxyControlState.Connecting) {
-                                FlyTxt.Home.Message.Preparing
-                            } else {
-                                null
-                            },
+                        loadingProgress = if (state == HomeProxyControlState.Connecting) {
+                            FlyTxt.Home.Message.Preparing
+                        } else {
+                            null
+                        },
                     )
                 }
             }
@@ -358,11 +337,10 @@ class HomeViewModel(
             return
         }
 
-        val request =
-            PendingStartRequest(
-                profileId = profileId,
-                mode = mode ?: networkSettingsStore.runMode.value,
-            )
+        val request = PendingStartRequest(
+            profileId = profileId,
+            mode = mode ?: networkSettingsStore.runMode.value,
+        )
         pendingStartRequest = request
         vpnController.startProxy(
             mode = request.mode,

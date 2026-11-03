@@ -50,74 +50,60 @@ class VpnTunTransport(
     private val store: ServiceStore = ServiceStore(),
 ) : RuntimeTransport {
     private val random = SecureRandom()
-    private val startupLogStore =
-        RuntimeStartupLogStore(vpnService, RuntimeStartupLogStore.Scope.LOCAL_TUN)
+    private val startupLogStore = RuntimeStartupLogStore(vpnService, RuntimeStartupLogStore.Scope.LOCAL_TUN)
     private val ownerResolver = SocketOwnerResolver(vpnService)
 
     override fun start(spec: RuntimeSpec) {
         startupLogStore.append("LOCAL_TUN transport start: begin")
-        val device =
-            with(vpnService.Builder()) {
-                val explicitRouteExcludes =
-                    store.tunRouteExcludeAddress.map(String::trim).filter(String::isNotEmpty)
-                val hasExplicitRouteExcludes = explicitRouteExcludes.isNotEmpty()
-
-                addAddress(TUN_GATEWAY, TUN_SUBNET_PREFIX)
-                if (store.allowIpv6) {
-                    addAddress(TUN_GATEWAY6, TUN_SUBNET_PREFIX6)
-                }
-
-                configureRoutes(explicitRouteExcludes)
-                configurePerAppRouting()
-
-                setBlocking(false)
-                setMtu(TUN_MTU)
-                setSession("FlyCat")
-                addDnsServer(TUN_DNS)
-                if (store.allowIpv6) {
-                    addDnsServer(TUN_DNS6)
-                }
-                setConfigureIntent(
-                    PendingIntent.getActivity(
-                        vpnService,
-                        R.id.nf_vpn_status,
-                        Intent()
-                            .setComponent(Components.PROXY_SHEET_ACTIVITY)
-                            .addFlags(
-                                Intent.FLAG_ACTIVITY_NEW_TASK or
-                                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                                    Intent.FLAG_ACTIVITY_NO_ANIMATION
-                            ),
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                    )
-                )
-
-                if (Build.VERSION.SDK_INT >= 29) {
-                    setMetered(false)
-                }
-
-                configureHttpProxy(hasExplicitRouteExcludes)
-
-                if (store.allowBypass) {
-                    allowBypass()
-                }
-
-                TunDevice(
-                    fd = establish()?.detachFd() ?: error("Establish VPN rejected by system"),
-                    stack = store.tunStackMode,
-                    gateway =
-                        "$TUN_GATEWAY/$TUN_SUBNET_PREFIX" +
-                            if (store.allowIpv6) ",$TUN_GATEWAY6/$TUN_SUBNET_PREFIX6" else "",
-                    portal = TUN_PORTAL + if (store.allowIpv6) ",$TUN_PORTAL6" else "",
-                    dns =
-                        if (store.dnsHijacking) {
-                            NET_ANY
-                        } else {
-                            (TUN_DNS + if (store.allowIpv6) ",$TUN_DNS6" else "")
-                        },
-                )
+        val device = with(vpnService.Builder()) {
+            val explicitRouteExcludes = store.tunRouteExcludeAddress.map(String::trim).filter(String::isNotEmpty)
+            val hasExplicitRouteExcludes = explicitRouteExcludes.isNotEmpty()
+            addAddress(TUN_GATEWAY, TUN_SUBNET_PREFIX)
+            if (store.allowIpv6) {
+                addAddress(TUN_GATEWAY6, TUN_SUBNET_PREFIX6)
             }
-
+            configureRoutes(explicitRouteExcludes)
+            configurePerAppRouting()
+            setBlocking(false)
+            setMtu(TUN_MTU)
+            setSession("FlyCat")
+            addDnsServer(TUN_DNS)
+            if (store.allowIpv6) {
+                addDnsServer(TUN_DNS6)
+            }
+            setConfigureIntent(
+                PendingIntent.getActivity(
+                    vpnService,
+                    R.id.nf_vpn_status,
+                    Intent()
+                        .setComponent(Components.PROXY_SHEET_ACTIVITY)
+                        .addFlags(
+                            Intent.FLAG_ACTIVITY_NEW_TASK or
+                                Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                                Intent.FLAG_ACTIVITY_NO_ANIMATION
+                        ),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            )
+            if (Build.VERSION.SDK_INT >= 29) {
+                setMetered(false)
+            }
+            configureHttpProxy(hasExplicitRouteExcludes)
+            if (store.allowBypass) {
+                allowBypass()
+            }
+            TunDevice(
+                fd = establish()?.detachFd() ?: error("Establish VPN rejected by system"),
+                stack = store.tunStackMode,
+                gateway = "$TUN_GATEWAY/$TUN_SUBNET_PREFIX" + if (store.allowIpv6) ",$TUN_GATEWAY6/$TUN_SUBNET_PREFIX6" else "",
+                portal = TUN_PORTAL + if (store.allowIpv6) ",$TUN_PORTAL6" else "",
+                dns = if (store.dnsHijacking) {
+                    NET_ANY
+                } else {
+                    (TUN_DNS + if (store.allowIpv6) ",$TUN_DNS6" else "")
+                },
+            )
+        }
         startTun(
             fd = device.fd,
             stack = device.stack,
@@ -137,15 +123,14 @@ class VpnTunTransport(
     private fun VpnService.Builder.configureRoutes(explicitRouteExcludes: List<String>) {
         val hasExplicitRouteExcludes = explicitRouteExcludes.isNotEmpty()
         val canUseExcludeRoute = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-        val includedRoutes =
-            if (hasExplicitRouteExcludes && !canUseExcludeRoute) {
-                buildIncludedRoutesFromExcludedCidrs(
-                    cidrs = explicitRouteExcludes,
-                    includeIpv6 = store.allowIpv6,
-                )
-            } else {
-                null
-            }
+        val includedRoutes = if (hasExplicitRouteExcludes && !canUseExcludeRoute) {
+            buildIncludedRoutesFromExcludedCidrs(
+                cidrs = explicitRouteExcludes,
+                includeIpv6 = store.allowIpv6,
+            )
+        } else {
+            null
+        }
 
         if (hasExplicitRouteExcludes && canUseExcludeRoute) {
             addRoute(NET_ANY, 0)
@@ -278,26 +263,24 @@ class VpnTunTransport(
         private const val NET_ANY = "0.0.0.0"
         private const val NET_ANY6 = "::"
 
-        private val httpProxyLocalList =
-            listOf(
-                "localhost",
-                "*.local",
-                "127.*",
-                "10.*",
-                "172.16.*",
-                "172.17.*",
-                "172.18.*",
-                "172.19.*",
-                "172.2*",
-                "172.30.*",
-                "172.31.*",
-                "192.168.*",
-            )
-        private val httpProxyBlackList =
-            listOf(
-                "*.linksys.com",
-                "*.linksyssmartwifi.com",
-                "*.mijia.tech",
-            )
+        private val httpProxyLocalList = listOf(
+            "localhost",
+            "*.local",
+            "127.*",
+            "10.*",
+            "172.16.*",
+            "172.17.*",
+            "172.18.*",
+            "172.19.*",
+            "172.2*",
+            "172.30.*",
+            "172.31.*",
+            "192.168.*",
+        )
+        private val httpProxyBlackList = listOf(
+            "*.linksys.com",
+            "*.linksyssmartwifi.com",
+            "*.mijia.tech",
+        )
     }
 }

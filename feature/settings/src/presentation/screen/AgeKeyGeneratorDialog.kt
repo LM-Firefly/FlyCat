@@ -35,12 +35,12 @@ import androidx.compose.ui.Modifier
 import com.github.lmfirefly.flycat.core.model.AgeKeyPair
 import com.github.lmfirefly.flycat.core.util.crypto.AgeKeyCrypto
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppDialog
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 
 /**
  * Age key generator dialog. The secret/public fields are editable so a key can be typed or pasted,
@@ -65,8 +65,7 @@ fun AgeKeyGeneratorDialog(
 
     AppDialog(
         show = show,
-        title =
-            if (hybrid) FlyTxt.MetaFeature.AgeKey.HybridTitle else FlyTxt.MetaFeature.AgeKey.X25519Title,
+        title = if (hybrid) FlyTxt.MetaFeature.AgeKey.HybridTitle else FlyTxt.MetaFeature.AgeKey.X25519Title,
         onDismissRequest = onDismiss,
         onDismissFinished = onDismissFinished,
     ) {
@@ -74,14 +73,14 @@ fun AgeKeyGeneratorDialog(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(spacing.space12),
         ) {
-            TextField(
+            GlassTextField(
                 value = secretKey,
                 onValueChange = { secretKey = it },
                 label = FlyTxt.MetaFeature.AgeKey.SecretKey,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            TextField(
+            GlassTextField(
                 value = publicKey,
                 onValueChange = { publicKey = it },
                 label = FlyTxt.MetaFeature.AgeKey.PublicKey,
@@ -93,7 +92,7 @@ fun AgeKeyGeneratorDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(spacing.space12),
             ) {
-                TextButton(
+                GlassTextButton(
                     text = FlyTxt.MetaFeature.AgeKey.DerivePublicKey,
                     onClick = {
                         scope.launch {
@@ -106,14 +105,13 @@ fun AgeKeyGeneratorDialog(
                     enabled = secretKey.isNotBlank(),
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(
+                GlassTextButton(
                     text = FlyTxt.MetaFeature.AgeKey.Generate,
                     onClick = {
-                        if (generating) return@TextButton
+                        if (generating) return@GlassTextButton
                         generating = true
                         scope.launch {
-                            val keyPair =
-                                if (hybrid) AgeKeyCrypto.genHybridKeyPair()
+                            val keyPair = if (hybrid) AgeKeyCrypto.genHybridKeyPair()
                                 else AgeKeyCrypto.genAgeKey()
                             generating = false
                             if (keyPair != null) {
@@ -124,7 +122,7 @@ fun AgeKeyGeneratorDialog(
                     },
                     enabled = !generating,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    primary = true,
                 )
             }
         }

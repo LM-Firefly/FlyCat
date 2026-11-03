@@ -199,13 +199,12 @@ object RootTunStatusFlow {
         _flow.value = status.copy(running = status.state.isActiveOrStopping)
     }
 
-    fun markIdle(error: String? = null) =
-        update(
-            RootTunStatus(
-                state = RuntimePhase.Idle,
-                lastError = error,
-                runtimeReady = false,
-                controllerReady = true,
-            )
+    fun markIdle(error: String? = null) = update(
+        RootTunStatus(
+            state = RuntimePhase.Idle,
+            lastError = error,
+            runtimeReady = false,
+            controllerReady = true,
         )
+    )
 }

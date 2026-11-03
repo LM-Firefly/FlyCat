@@ -62,12 +62,7 @@ class ProvidersViewModel(
                 .onFailure { error ->
                     Timber.e(error, "Failed to query providers")
                     _uiState.update {
-                        it.copy(
-                            error =
-                                FlyTxt.Providers.Message.FetchFailed.format(
-                                    error.message ?: "Unknown error"
-                                )
-                        )
+                        it.copy(error = FlyTxt.Providers.Message.FetchFailed.format(error.message ?: "Unknown error"))
                     }
                 }
             _uiState.update { it.copy(isLoading = false) }
@@ -91,12 +86,7 @@ class ProvidersViewModel(
                 .onFailure { error ->
                     Timber.e(error, "Failed to update provider: %s", provider.name)
                     _uiState.update {
-                        it.copy(
-                            error =
-                                FlyTxt.Providers.Message.UpdateFailed.format(
-                                    error.message ?: "Unknown error"
-                                )
-                        )
+                        it.copy(error = FlyTxt.Providers.Message.UpdateFailed.format(error.message ?: "Unknown error"))
                     }
                 }
             _uiState.update { it.copy(updatingProviders = it.updatingProviders - providerKey) }
@@ -105,8 +95,7 @@ class ProvidersViewModel(
 
     fun updateAllProviders() {
         viewModelScope.launch {
-            val httpProviders =
-                _providers.value.filter { it.vehicleType == Provider.VehicleType.HTTP }
+            val httpProviders = _providers.value.filter { it.vehicleType == Provider.VehicleType.HTTP }
             if (httpProviders.isEmpty()) return@launch
 
             _uiState.update { it.copy(isUpdatingAll = true) }
@@ -123,24 +112,14 @@ class ProvidersViewModel(
                         val failedNames = updateResult.failedProviders.joinToString(", ")
                         Timber.w("Failed to update providers: %s", failedNames)
                         _uiState.update {
-                            it.copy(
-                                error =
-                                    FlyTxt.Providers.Message.UpdateFailed.format(
-                                        "Failed providers: $failedNames"
-                                    )
-                            )
+                            it.copy(error = FlyTxt.Providers.Message.UpdateFailed.format("Failed providers: $failedNames"))
                         }
                     }
                 }
                 .onFailure { error ->
                     Timber.e(error, "Failed to update all providers")
                     _uiState.update {
-                        it.copy(
-                            error =
-                                FlyTxt.Providers.Message.UpdateFailed.format(
-                                    error.message ?: "Unknown error"
-                                )
-                        )
+                        it.copy(error = FlyTxt.Providers.Message.UpdateFailed.format(error.message ?: "Unknown error"))
                     }
                 }
 
@@ -174,12 +153,7 @@ class ProvidersViewModel(
                 .onFailure { error ->
                     Timber.e(error, "Failed to upload provider file: %s", provider.name)
                     _uiState.update {
-                        it.copy(
-                            error =
-                                FlyTxt.Providers.Message.UploadFailed.format(
-                                    error.message ?: "Unknown error"
-                                )
-                        )
+                        it.copy(error = FlyTxt.Providers.Message.UploadFailed.format(error.message ?: "Unknown error"))
                     }
                 }
 

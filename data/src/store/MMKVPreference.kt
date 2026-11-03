@@ -152,195 +152,156 @@ import kotlin.reflect.KProperty
  * @param mmkvID Optional MMKV instance ID (null = default)
  * @param externalMmkv Optional external MMKV instance (overrides mmkvID)
  */
-abstract class MMKVPreference(
-    mmkvID: String? = null,
-    externalMmkv: MMKV? = null,
-) {
+abstract class MMKVPreference(mmkvID: String? = null, externalMmkv: MMKV? = null) {
     @PublishedApi
-    internal val mmkv: MMKV =
-        externalMmkv
-            ?: mmkvID?.let { MMKV.mmkvWithID(it, MMKV.MULTI_PROCESS_MODE) }
-            ?: MMKV.defaultMMKV()
+    internal val mmkv: MMKV = externalMmkv
+        ?: mmkvID?.let { MMKV.mmkvWithID(it, MMKV.MULTI_PROCESS_MODE) }
+        ?: MMKV.defaultMMKV()
 
-    protected fun bool(default: Boolean = false) =
-        MMKVProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeBool(key, def) },
-            setter = { key, value -> mmkv.encode(key, value) },
-        )
+    protected fun bool(default: Boolean = false) = MMKVProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeBool(key, def) },
+        setter = { key, value -> mmkv.encode(key, value) },
+    )
 
-    protected fun str(default: String = "") =
-        MMKVProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeString(key) ?: def },
-            setter = { key, value -> mmkv.encode(key, value) },
-        )
+    protected fun str(default: String = "") = MMKVProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeString(key) ?: def },
+        setter = { key, value -> mmkv.encode(key, value) },
+    )
 
-    protected fun int(default: Int = 0) =
-        MMKVProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeInt(key, def) },
-            setter = { key, value -> mmkv.encode(key, value) },
-        )
+    protected fun int(default: Int = 0) = MMKVProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeInt(key, def) },
+        setter = { key, value -> mmkv.encode(key, value) },
+    )
 
-    protected fun long(default: Long = 0L) =
-        MMKVProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeLong(key, def) },
-            setter = { key, value -> mmkv.encode(key, value) },
-        )
+    protected fun long(default: Long = 0L) = MMKVProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeLong(key, def) },
+        setter = { key, value -> mmkv.encode(key, value) },
+    )
 
-    protected fun float(default: Float = 0f) =
-        MMKVProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeFloat(key, def) },
-            setter = { key, value -> mmkv.encode(key, value) },
-        )
+    protected fun float(default: Float = 0f) = MMKVProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeFloat(key, def) },
+        setter = { key, value -> mmkv.encode(key, value) },
+    )
 
-    protected fun double(default: Double = 0.0) =
-        MMKVProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeDouble(key, def) },
-            setter = { key, value -> mmkv.encode(key, value) },
-        )
+    protected fun double(default: Double = 0.0) = MMKVProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeDouble(key, def) },
+        setter = { key, value -> mmkv.encode(key, value) },
+    )
 
-    protected inline fun <reified T : Enum<T>> enum(default: T) =
-        MMKVProperty(
-            default = default,
-            getter = { key, def -> enumByNameOrNull<T>(mmkv.decodeString(key)) ?: def },
-            setter = { key, value -> mmkv.encode(key, value.name) },
-        )
+    protected inline fun <reified T : Enum<T>> enum(default: T) = MMKVProperty(
+        default = default,
+        getter = { key, def -> enumByNameOrNull<T>(mmkv.decodeString(key)) ?: def },
+        setter = { key, value -> mmkv.encode(key, value.name) },
+    )
 
-    protected fun byteArray(default: ByteArray = ByteArray(0)) =
-        MMKVProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeBytes(key) ?: def },
-            setter = { key, value -> mmkv.encode(key, value) },
-        )
+    protected fun byteArray(default: ByteArray = ByteArray(0)) = MMKVProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeBytes(key) ?: def },
+        setter = { key, value -> mmkv.encode(key, value) },
+    )
 
-    protected fun stringSet(default: Set<String> = emptySet()) =
-        MMKVProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeStringSet(key) ?: def },
-            setter = { key, value -> mmkv.encode(key, value) },
-            skipEqualityCheck = true,
-        )
+    protected fun stringSet(default: Set<String> = emptySet()) = MMKVProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeStringSet(key) ?: def },
+        setter = { key, value -> mmkv.encode(key, value) },
+        skipEqualityCheck = true,
+    )
 
-    protected fun stringList(default: List<String> = emptyList()) =
-        jsonList(
-            default = default,
-            decode = { str -> decodeFromString<List<String>>(str) },
-            encode = { value -> encodeToString(value) },
-        )
+    protected fun stringList(default: List<String> = emptyList()) = jsonList(
+        default = default,
+        decode = { str -> decodeFromString<List<String>>(str) },
+        encode = { value -> encodeToString(value) },
+    )
 
-    protected fun intList(default: List<Int> = emptyList()) =
-        jsonList(
-            default = default,
-            decode = { str -> decodeFromString<List<Int>>(str) },
-            encode = { value -> encodeToString(value) },
-        )
+    protected fun intList(default: List<Int> = emptyList()) = jsonList(
+        default = default,
+        decode = { str -> decodeFromString<List<Int>>(str) },
+        encode = { value -> encodeToString(value) },
+    )
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    protected fun <T> jsonList(
-        default: List<T> = emptyList(),
-        decode: Json.(String) -> List<T>,
-        encode: Json.(List<T>) -> String,
-    ) =
-        MMKVProperty(
-            default = default,
-            getter = { key, def ->
-                runCatching { mmkv.decodeString(key)?.let { json.decode(it) } ?: def }
-                    .getOrDefault(def)
-            },
-            setter = { key, value -> mmkv.encode(key, json.encode(value)) },
-        )
+    protected fun <T> jsonList(default: List<T> = emptyList(), decode: Json.(String) -> List<T>, encode: Json.(List<T>) -> String) = MMKVProperty(
+        default = default,
+        getter = { key, def ->
+            runCatching { mmkv.decodeString(key)?.let { json.decode(it) } ?: def }.getOrDefault(def)
+        },
+        setter = { key, value -> mmkv.encode(key, json.encode(value)) },
+    )
 
-    protected fun boolFlow(default: Boolean = false) =
-        MMKVFlowProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeBool(key, def) },
-            setter = { key, value -> mmkv.encode(key, value) },
-        )
+    protected fun boolFlow(default: Boolean = false) = MMKVFlowProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeBool(key, def) },
+        setter = { key, value -> mmkv.encode(key, value) },
+    )
 
-    protected fun strFlow(default: String = "") =
-        MMKVFlowProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeString(key) ?: def },
-            setter = { key, value -> mmkv.encode(key, value) },
-        )
+    protected fun strFlow(default: String = "") = MMKVFlowProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeString(key) ?: def },
+        setter = { key, value -> mmkv.encode(key, value) },
+    )
 
-    protected fun intFlow(default: Int = 0) =
-        MMKVFlowProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeInt(key, def) },
-            setter = { key, value -> mmkv.encode(key, value) },
-        )
+    protected fun intFlow(default: Int = 0) = MMKVFlowProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeInt(key, def) },
+        setter = { key, value -> mmkv.encode(key, value) },
+    )
 
-    protected fun longFlow(default: Long = 0L) =
-        MMKVFlowProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeLong(key, def) },
-            setter = { key, value -> mmkv.encode(key, value) },
-        )
+    protected fun longFlow(default: Long = 0L) = MMKVFlowProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeLong(key, def) },
+        setter = { key, value -> mmkv.encode(key, value) },
+    )
 
-    protected fun floatFlow(default: Float = 0f) =
-        MMKVFlowProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeFloat(key, def) },
-            setter = { key, value -> mmkv.encode(key, value) },
-        )
+    protected fun floatFlow(default: Float = 0f) = MMKVFlowProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeFloat(key, def) },
+        setter = { key, value -> mmkv.encode(key, value) },
+    )
 
-    protected fun doubleFlow(default: Double = 0.0) =
-        MMKVFlowProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeDouble(key, def) },
-            setter = { key, value -> mmkv.encode(key, value) },
-        )
+    protected fun doubleFlow(default: Double = 0.0) = MMKVFlowProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeDouble(key, def) },
+        setter = { key, value -> mmkv.encode(key, value) },
+    )
 
-    protected inline fun <reified T : Enum<T>> enumFlow(default: T) =
-        MMKVFlowProperty(
-            default = default,
-            getter = { key, def -> enumByNameOrNull<T>(mmkv.decodeString(key)) ?: def },
-            setter = { key, value -> mmkv.encode(key, value.name) },
-        )
+    protected inline fun <reified T : Enum<T>> enumFlow(default: T) = MMKVFlowProperty(
+        default = default,
+        getter = { key, def -> enumByNameOrNull<T>(mmkv.decodeString(key)) ?: def },
+        setter = { key, value -> mmkv.encode(key, value.name) },
+    )
 
-    protected fun stringSetFlow(default: Set<String> = emptySet()) =
-        MMKVFlowProperty(
-            default = default,
-            getter = { key, def -> mmkv.decodeStringSet(key) ?: def },
-            setter = { key, value -> mmkv.encode(key, value) },
-            skipEqualityCheck = true,
-        )
+    protected fun stringSetFlow(default: Set<String> = emptySet()) = MMKVFlowProperty(
+        default = default,
+        getter = { key, def -> mmkv.decodeStringSet(key) ?: def },
+        setter = { key, value -> mmkv.encode(key, value) },
+        skipEqualityCheck = true,
+    )
 
-    protected fun stringListFlow(default: List<String> = emptyList()) =
-        jsonListFlow(
-            default = default,
-            decode = { str -> decodeFromString<List<String>>(str) },
-            encode = { value -> encodeToString(value) },
-        )
+    protected fun stringListFlow(default: List<String> = emptyList()) = jsonListFlow(
+        default = default,
+        decode = { str -> decodeFromString<List<String>>(str) },
+        encode = { value -> encodeToString(value) },
+    )
 
-    protected fun intListFlow(default: List<Int> = emptyList()) =
-        jsonListFlow(
-            default = default,
-            decode = { str -> decodeFromString<List<Int>>(str) },
-            encode = { value -> encodeToString(value) },
-        )
+    protected fun intListFlow(default: List<Int> = emptyList()) = jsonListFlow(
+        default = default,
+        decode = { str -> decodeFromString<List<Int>>(str) },
+        encode = { value -> encodeToString(value) },
+    )
 
-    protected fun <T> jsonListFlow(
-        default: List<T> = emptyList(),
-        decode: Json.(String) -> List<T>,
-        encode: Json.(List<T>) -> String,
-    ) =
-        MMKVFlowProperty(
-            default = default,
-            getter = { key, def ->
-                runCatching { mmkv.decodeString(key)?.let { json.decode(it) } ?: def }
-                    .getOrDefault(def)
-            },
-            setter = { key, value -> mmkv.encode(key, json.encode(value)) },
-            skipEqualityCheck = true,
-        )
+    protected fun <T> jsonListFlow(default: List<T> = emptyList(), decode: Json.(String) -> List<T>, encode: Json.(List<T>) -> String) = MMKVFlowProperty(
+        default = default,
+        getter = { key, def -> runCatching { mmkv.decodeString(key)?.let { json.decode(it) } ?: def }.getOrDefault(def) },
+        setter = { key, value -> mmkv.encode(key, json.encode(value)) },
+        skipEqualityCheck = true,
+    )
 
     protected class MMKVProperty<T>(
         private val default: T,
@@ -348,9 +309,7 @@ abstract class MMKVPreference(
         private val setter: (key: String, value: T) -> Unit,
         private val skipEqualityCheck: Boolean = false,
     ) : ReadOnlyProperty<Any?, T> {
-        override fun getValue(thisRef: Any?, property: KProperty<*>): T =
-            getter(property.name, default)
-
+        override fun getValue(thisRef: Any?, property: KProperty<*>): T = getter(property.name, default)
         operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
             if (!skipEqualityCheck && value == getter(property.name, default)) return
             setter(property.name, value)
@@ -364,31 +323,27 @@ abstract class MMKVPreference(
         private val skipEqualityCheck: Boolean = false,
     ) : ReadOnlyProperty<Any?, Preference<T>> {
         private var cached: Preference<T>? = null
-
-        override fun getValue(thisRef: Any?, property: KProperty<*>): Preference<T> =
-            cached
-                ?: run {
-                    val key = property.name
-                    val initialValue = getter(key, default)
-                    val flow = MutableStateFlow(initialValue)
-                    Preference(
-                            state = flow.asStateFlow(),
-                            update = { value ->
-                                if (skipEqualityCheck || value != flow.value) {
-                                    setter(key, value)
-                                    flow.value = value
-                                }
-                            },
-                            get = { getter(key, default) },
-                            refreshState = {
-                                val latest = getter(key, default)
-                                if (skipEqualityCheck || latest != flow.value) {
-                                    flow.value = latest
-                                }
-                            },
-                        )
-                        .also { cached = it }
-                }
+        override fun getValue(thisRef: Any?, property: KProperty<*>): Preference<T> = cached ?: run {
+            val key = property.name
+            val initialValue = getter(key, default)
+            val flow = MutableStateFlow(initialValue)
+            Preference(
+                state = flow.asStateFlow(),
+                update = { value ->
+                    if (skipEqualityCheck || value != flow.value) {
+                        setter(key, value)
+                        flow.value = value
+                    }
+                },
+                get = { getter(key, default) },
+                refreshState = {
+                    val latest = getter(key, default)
+                    if (skipEqualityCheck || latest != flow.value) {
+                        flow.value = latest
+                    }
+                },
+            ).also { cached = it }
+        }
     }
 }
 

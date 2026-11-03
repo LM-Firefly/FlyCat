@@ -76,14 +76,13 @@ fun TrafficDonutChart(
     val opacity = AppTheme.opacity
 
     val safeTotal = total.coerceAtLeast(0L)
-    val interactiveSlices =
-        remember(slices, safeTotal) {
-            if (safeTotal <= 0L) {
-                emptyList()
-            } else {
-                buildInteractiveSlices(slices, safeTotal, segmentGapAngle)
-            }
+    val interactiveSlices = remember(slices, safeTotal) {
+        if (safeTotal <= 0L) {
+            emptyList()
+        } else {
+            buildInteractiveSlices(slices, safeTotal, segmentGapAngle)
         }
+    }
     val animationProgress = remember { Animatable(0f) }
     var lastAnimationKey by remember { mutableStateOf(animationKey) }
     var hasAnimatedForKey by remember { mutableStateOf(false) }
@@ -113,32 +112,29 @@ fun TrafficDonutChart(
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Canvas(
-            modifier =
-                Modifier.fillMaxSize().pointerInput(interactiveSlices, selectedKey) {
-                    detectTapGestures { offset ->
-                        if (interactiveSlices.isEmpty()) {
-                            onSliceClick(null)
-                            return@detectTapGestures
-                        }
-
-                        val center = Offset(size.width / 2f, size.height / 2f)
-                        val dx = offset.x - center.x
-                        val dy = offset.y - center.y
-                        val radius = min(size.width, size.height) / 2f
-                        val innerRadius = (radius - strokeWidth.toPx()).coerceAtLeast(0f)
-                        val distance = sqrt(dx.pow(2) + dy.pow(2))
-                        if (distance !in innerRadius..radius) {
-                            onSliceClick(null)
-                            return@detectTapGestures
-                        }
-
-                        val angle = ((atan2(dy, dx) * 180f / PI.toFloat()) + 450f) % 360f
-                        val tapped = interactiveSlices.firstOrNull {
-                            angle >= it.startAngle && angle < it.endAngle
-                        }
-                        onSliceClick(tapped?.key)
+            modifier = Modifier.fillMaxSize().pointerInput(interactiveSlices, selectedKey) {
+                detectTapGestures { offset ->
+                    if (interactiveSlices.isEmpty()) {
+                        onSliceClick(null)
+                        return@detectTapGestures
                     }
+                    val center = Offset(size.width / 2f, size.height / 2f)
+                    val dx = offset.x - center.x
+                    val dy = offset.y - center.y
+                    val radius = min(size.width, size.height) / 2f
+                    val innerRadius = (radius - strokeWidth.toPx()).coerceAtLeast(0f)
+                    val distance = sqrt(dx.pow(2) + dy.pow(2))
+                    if (distance !in innerRadius..radius) {
+                        onSliceClick(null)
+                        return@detectTapGestures
+                    }
+                    val angle = ((atan2(dy, dx) * 180f / PI.toFloat()) + 450f) % 360f
+                    val tapped = interactiveSlices.firstOrNull {
+                        angle >= it.startAngle && angle < it.endAngle
+                    }
+                    onSliceClick(tapped?.key)
                 }
+            }
         ) {
             val stroke = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Butt)
             val canvasSize = Size(size.width, size.height)
@@ -170,26 +166,23 @@ fun TrafficDonutChart(
                 val animatedSweep = slice.sweepAngle * animationProgress.value
                 if (animatedSweep <= 0f) return@forEach
 
-                val drawSize =
-                    if (isSelected) {
-                        Size(width = size.width + expansionPx, height = size.height + expansionPx)
-                    } else {
-                        canvasSize
-                    }
-                val drawTopLeft =
-                    if (isSelected) {
-                        Offset(-expansionPx / 2f, -expansionPx / 2f)
-                    } else {
-                        Offset.Zero
-                    }
+                val drawSize = if (isSelected) {
+                    Size(width = size.width + expansionPx, height = size.height + expansionPx)
+                } else {
+                    canvasSize
+                }
+                val drawTopLeft = if (isSelected) {
+                    Offset(-expansionPx / 2f, -expansionPx / 2f)
+                } else {
+                    Offset.Zero
+                }
 
                 drawArc(
-                    color =
-                        if (selectedKey == null || isSelected) {
-                            slice.color
-                        } else {
-                            slice.color.copy(alpha = opacity.emphasizedTrack)
-                        },
+                    color = if (selectedKey == null || isSelected) {
+                        slice.color
+                    } else {
+                        slice.color.copy(alpha = opacity.emphasizedTrack)
+                    },
                     startAngle = slice.startAngle - 90f,
                     sweepAngle = animatedSweep,
                     useCenter = false,
@@ -227,25 +220,23 @@ private fun buildInteractiveSlices(
     }
     val sliceCount = visibleSlices.size
     val minRawSweep = rawSweeps.minOrNull() ?: 0f
-    val uniformGap =
-        when {
-            sliceCount <= 1 -> 0f
-            minRawSweep <= 0f -> 0f
-            else -> min(segmentGapAngle.coerceAtLeast(0f), minRawSweep * 0.6f)
-        }
+    val uniformGap = when {
+        sliceCount <= 1 -> 0f
+        minRawSweep <= 0f -> 0f
+        else -> min(segmentGapAngle.coerceAtLeast(0f), minRawSweep * 0.6f)
+    }
     val totalGap = uniformGap * sliceCount
     val availableSweep = (360f - totalGap).coerceAtLeast(0f)
 
     var cursor = 0f
     var consumedSweep = 0f
     return visibleSlices.mapIndexed { index, slice ->
-        val sweep =
-            if (index == visibleSlices.lastIndex) {
-                (availableSweep - consumedSweep).coerceAtLeast(0f)
-            } else {
-                val share = slice.value.toFloat() / normalizedTotal.toFloat()
-                (availableSweep * share).coerceAtLeast(0f)
-            }
+        val sweep = if (index == visibleSlices.lastIndex) {
+            (availableSweep - consumedSweep).coerceAtLeast(0f)
+        } else {
+            val share = slice.value.toFloat() / normalizedTotal.toFloat()
+            (availableSweep * share).coerceAtLeast(0f)
+        }
         val start = cursor + uniformGap / 2f
         val end = (start + sweep).coerceAtMost(360f)
         cursor += sweep + uniformGap

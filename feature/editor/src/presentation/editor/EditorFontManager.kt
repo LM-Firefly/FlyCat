@@ -28,17 +28,15 @@ import timber.log.Timber
 object EditorFontManager {
     private const val FONT_PATH = "fonts/JetBrainsMono-Regular.ttf"
     private var cachedFont: Typeface? = null
-
     @Suppress("TooGenericExceptionCaught")
-    fun getEditorTypeface(context: Context): Typeface =
-        cachedFont
-            ?: try {
-                Typeface.createFromAsset(context.assets, FONT_PATH).also {
-                    cachedFont = it
-                    Timber.d("JetBrainsMono font loaded successfully")
-                }
-            } catch (error: Exception) { // fault barrier: createFromAsset throws undocumented RuntimeException
-                Timber.w(error, "Failed to load JetBrainsMono font, falling back to MONOSPACE")
-                Typeface.MONOSPACE
-            }
+    fun getEditorTypeface(context: Context): Typeface = cachedFont
+    ?: try {
+        Typeface.createFromAsset(context.assets, FONT_PATH).also {
+            cachedFont = it
+            Timber.d("JetBrainsMono font loaded successfully")
+        }
+    } catch (error: Exception) { // 故障屏障：createFromAsset 抛出未文档化的 RuntimeException
+        Timber.w(error, "Failed to load JetBrainsMono font, falling back to MONOSPACE")
+        Typeface.MONOSPACE
+    }
 }

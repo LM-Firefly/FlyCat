@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
@@ -67,7 +68,7 @@ import top.yukonga.miuix.kmp.utils.SinkFeedback
 @Composable
 fun LogHubScreen(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = FlyTxt.Log.Title,
@@ -111,14 +112,13 @@ private fun LogHubEntry(index: Int, title: String, summary: String, onClick: () 
     }
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(animationSpec = tween(AnimationSpecs.DURATION_NORMAL)) +
-            slideInVertically(animationSpec = tween(AnimationSpecs.DURATION_NORMAL), initialOffsetY = { -it / 2 }),
+        enter = fadeIn(animationSpec = tween(AnimationSpecs.DURATION_NORMAL)) + slideInVertically(animationSpec = tween(AnimationSpecs.DURATION_NORMAL), initialOffsetY = { -it / 2 }),
     ) {
         Card(
-            cornerRadius = AppTheme.radii.radius12,
+            cornerRadius = AppTheme.radii.radius18,
             modifier = Modifier.padding(vertical = 4.dp)
-                .pressable(interactionSource = interactionSource, indication = SinkFeedback())
-                .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
+            .pressable(interactionSource = interactionSource, indication = SinkFeedback())
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
         ) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {

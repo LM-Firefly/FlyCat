@@ -4,6 +4,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
@@ -26,13 +27,18 @@ fun ProxyChainIndicator(
     chain: List<String>,
     modifier: Modifier = Modifier,
     groupIconLookup: ((String) -> String?)? = null,
+    /** 是否由 [Card] 施加屏幕级水平内缩；容器自带内缩且需与卡片网格对齐时传 `false`。 */
+    applyHorizontalPadding: Boolean = true,
 ) {
     Card(
         modifier = modifier,
+        applyHorizontalPadding = applyHorizontalPadding,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                // 链路条高度拉到节点卡片一半左右（节点卡约 72dp），内容纵向居中。
+                .heightIn(min = UiDp.dp32)
                 .horizontalScroll(rememberScrollState())
                 .padding(horizontal = UiDp.dp6, vertical = UiDp.dp6),
             horizontalArrangement = Arrangement.spacedBy(UiDp.dp4),

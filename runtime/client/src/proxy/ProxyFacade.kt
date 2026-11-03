@@ -105,17 +105,14 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         onScheduleFullRefresh = { delayMillis -> scheduleRuntimeProxyGroupsRefresh(delayMillis) },
     )
     private val rootTunManager = RootTunManager(appContext)
-    private val _runtimeSnapshot =
-        MutableStateFlow(RuntimeStateMapper.idleSnapshot(networkSettingsStorage.runMode.value))
+    private val _runtimeSnapshot = MutableStateFlow(RuntimeStateMapper.idleSnapshot(networkSettingsStorage.runMode.value))
     override val runtimeSnapshot: StateFlow<RuntimeSnapshot> = _runtimeSnapshot.asStateFlow()
 
-    override val isRunning: StateFlow<Boolean> = runtimeSnapshot
-        .map { it.running }
-        .stateIn(
-            scope,
-            SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000L),
-            runtimeSnapshot.value.running,
-        )
+    override val isRunning: StateFlow<Boolean> = runtimeSnapshot.map { it.running }.stateIn(
+        scope,
+        SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000L),
+        runtimeSnapshot.value.running,
+    )
 
     override val proxyGroups: StateFlow<List<ProxyGroupInfo>> = proxyGroupManager.proxyGroups
     override fun proxyDelayFlow(name: String): StateFlow<Int?> = proxyGroupManager.proxyDelayFlow(name)
@@ -137,8 +134,7 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     private var previewWarmupJob: Job? = null
     private val operationMutex = Mutex()
     private val proxyGroupSyncMutex = Mutex()
-    private val syncPriorityRequests =
-        MutableStateFlow<Map<String, ProxySyncPriority>>(emptyMap())
+    private val syncPriorityRequests = MutableStateFlow<Map<String, ProxySyncPriority>>(emptyMap())
     private var activeProxyGroupSyncPriority = ProxySyncPriority.OFF
     private val generationCounter = AtomicLong(0L)
     private val remoteSwitch = RemoteSwitch(
@@ -200,8 +196,7 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
      * Test connectivity to a remote mihomo backend.
      * Creates a temporary [HttpClashManager] and queries the tunnel state.
      */
-    override suspend fun testRemoteConnection(backend: RemoteBackend): Result<TunnelState> =
-        safeRun("ProxyFacade", "Test remote connection") { HttpClashManager(backendProvider = { backend }).queryTunnelState() }
+    override suspend fun testRemoteConnection(backend: RemoteBackend): Result<TunnelState> = safeRun("ProxyFacade", "Test remote connection") { HttpClashManager(backendProvider = { backend }).queryTunnelState() }
 
     private fun observeRemoteController() {
         scope.launch {
@@ -383,9 +378,8 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
 
         operationMutex.withLock {
             val targetOwner = ProxyRuntimeOwnership.ownerForMode(mode)
-            val currentOwner =
-                detectActiveOwner().takeIf { it != RuntimeOwner.None }
-                    ?: _runtimeSnapshot.value.owner
+            val currentOwner = detectActiveOwner().takeIf { it != RuntimeOwner.None }
+                ?: _runtimeSnapshot.value.owner
             if (currentOwner != RuntimeOwner.None) {
                 stopProxyInternal(targetMode = mode, completeImmediately = true)
             }
@@ -437,20 +431,15 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         operationMutex.withLock { stopProxyInternal(targetMode, completeImmediately = true) }
     }
 
-    suspend fun queryProxyGroupNames(excludeNotSelectable: Boolean = false): List<String> =
-        proxyGroupManager.queryProxyGroupNames(excludeNotSelectable)
+    suspend fun queryProxyGroupNames(excludeNotSelectable: Boolean = false): List<String> = proxyGroupManager.queryProxyGroupNames(excludeNotSelectable)
 
-    suspend fun queryProfileProxyGroups(excludeNotSelectable: Boolean = false): List<ProxyGroup> =
-        proxyGroupManager.queryProfileProxyGroups(excludeNotSelectable)
+    suspend fun queryProfileProxyGroups(excludeNotSelectable: Boolean = false): List<ProxyGroup> = proxyGroupManager.queryProfileProxyGroups(excludeNotSelectable)
 
-    suspend fun queryProxyGroup(name: String, sort: ProxySort = ProxySort.Default): ProxyGroup =
-        proxyGroupManager.queryProxyGroup(name, sort)
+    suspend fun queryProxyGroup(name: String, sort: ProxySort = ProxySort.Default): ProxyGroup = proxyGroupManager.queryProxyGroup(name, sort)
 
-    override suspend fun selectProxy(group: String, proxyName: String): Boolean =
-        proxyGroupManager.selectProxy(group, proxyName)
+    override suspend fun selectProxy(group: String, proxyName: String): Boolean = proxyGroupManager.selectProxy(group, proxyName)
 
-    override suspend fun forceSelectProxy(group: String, proxyName: String): Boolean =
-        proxyGroupManager.forceSelectProxy(group, proxyName)
+    override suspend fun forceSelectProxy(group: String, proxyName: String): Boolean = proxyGroupManager.forceSelectProxy(group, proxyName)
 
     override suspend fun patchTunnelMode(mode: TunnelState.Mode): Boolean {
         connectCurrentBackend()
@@ -461,14 +450,11 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         return ok
     }
 
-    override suspend fun healthCheck(group: String) =
-        proxyGroupManager.healthCheck(group)
+    override suspend fun healthCheck(group: String) = proxyGroupManager.healthCheck(group)
 
-    override suspend fun healthCheckAll() =
-        proxyGroupManager.healthCheckAll()
+    override suspend fun healthCheckAll() = proxyGroupManager.healthCheckAll()
 
-    override suspend fun healthCheckProxy(group: String, proxyName: String): Int =
-        proxyGroupManager.healthCheckProxy(group, proxyName)
+    override suspend fun healthCheckProxy(group: String, proxyName: String): Int = proxyGroupManager.healthCheckProxy(group, proxyName)
 
     suspend fun queryTunnelState(): TunnelState = traffic.queryTunnelState()
 
@@ -609,8 +595,7 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         targetMode: RunMode,
         completeImmediately: Boolean = false,
     ) {
-        val owner =
-            detectActiveOwner().takeIf { it != RuntimeOwner.None } ?: _runtimeSnapshot.value.owner
+        val owner = detectActiveOwner().takeIf { it != RuntimeOwner.None } ?: _runtimeSnapshot.value.owner
         val generation = nextGeneration()
 
         if (owner == RuntimeOwner.None) {
@@ -688,8 +673,7 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
         RuntimeContractResolver.localRuntimeStatus.reconcilePersistedRuntimeState()
         val persistedRootStatus = rootTunManager.resolveObservedRootTunStatus()
         val shouldBootstrapRootTun = rootTunManager.shouldBootstrapRootTunRuntime(persistedRootStatus)
-        val rootStatus =
-            persistedRootStatus.takeIf { rootTunManager.shouldAttachRootTunForegroundService(it) } ?: RootTunStatus()
+        val rootStatus = persistedRootStatus.takeIf { rootTunManager.shouldAttachRootTunForegroundService(it) } ?: RootTunStatus()
         rootTunManager.applyRootTunStatus(rootStatus)
         val owner = ProxyRuntimeOwnership.detectOwner(rootStatus, ::isLocalSessionActive)
 
@@ -766,10 +750,9 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
 
     private suspend fun handleRuntimeStarted(forceOwner: RuntimeOwner? = null) {
         val currentSnapshot = _runtimeSnapshot.value
-        val owner =
-            forceOwner
-                ?: currentSnapshot.owner.takeIf { it != RuntimeOwner.None }
-                ?: detectActiveOwner()
+        val owner = forceOwner
+            ?: currentSnapshot.owner.takeIf { it != RuntimeOwner.None }
+            ?: detectActiveOwner()
         if (owner == RuntimeOwner.None) return
 
         publishRuntimeSnapshot(
@@ -1029,11 +1012,10 @@ class ProxyFacade(private val context: Context, private val networkSettingsStora
     private suspend fun refreshRootCurrentProfile(status: RootTunStatus) {
         safeRun("ProxyFacade", "Refresh root current profile") {
                 connectCurrentBackend()
-                val profile =
-                    status.profileUuid
-                        ?.takeIf { it.isNotBlank() }
-                        ?.let { uuid -> ServiceClient.profile().queryByUUID(java.util.UUID.fromString(uuid)) }
-                        ?: ServiceClient.profile().queryActive()
+                val profile = status.profileUuid
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { uuid -> ServiceClient.profile().queryByUUID(java.util.UUID.fromString(uuid)) }
+                    ?: ServiceClient.profile().queryActive()
 
                 if (profile != null) {
                     _currentProfile.value = profile

@@ -95,13 +95,12 @@ fun MessageHost(message: Message?, onDismiss: () -> Unit) {
 }
 
 private fun getTitle(type: MessageType, title: String): String {
-    val prefix =
-        when (type) {
-            MessageType.SUCCESS -> "鉁?"
-            MessageType.ERROR -> "鉁?"
-            MessageType.WARNING -> "鈿?"
-            MessageType.INFO -> ""
-        }
+    val prefix = when (type) {
+        MessageType.SUCCESS -> "✅ "
+        MessageType.ERROR -> "❌ "
+        MessageType.WARNING -> "⚠️ "
+        MessageType.INFO -> ""
+    }
     return prefix + title
 }
 
@@ -116,8 +115,7 @@ fun SimpleMessage(message: String?, onDismiss: () -> Unit) {
 fun ErrorMessage(error: String?, onDismiss: () -> Unit) {
     if (error != null) {
         MessageHost(
-            message =
-                Message(FlyTxt.Component.Message.Error, error, MessageType.ERROR, autoClose = false),
+            message = Message(FlyTxt.Component.Message.Error, error, MessageType.ERROR, autoClose = false),
             onDismiss = onDismiss,
         )
     }

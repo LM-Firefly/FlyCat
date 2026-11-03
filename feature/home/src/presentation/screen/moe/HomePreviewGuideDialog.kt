@@ -52,13 +52,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppDialog
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
-import com.github.lmfirefly.flycat.locale.FlyTxt
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.layout.DialogDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowDialog
 
 @Composable
 fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit) {
@@ -71,24 +71,22 @@ fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit) {
     // Keep the dialog body within ~70% of screen height so title/buttons stay reachable on tablets.
     val contentMaxHeight = (configuration.screenHeightDp * 0.70f).dp
 
-    WindowDialog(
+    AppDialog(
         show = show,
         modifier = Modifier,
-        title =
-            when (page) {
-                0 -> FlyTxt.Home.PreviewGuide.Title
-                1 -> FlyTxt.Home.PreviewGuide.WallpaperTitle
-                2 -> FlyTxt.Home.PreviewGuide.SwipeTitle
-                else -> FlyTxt.Home.PreviewGuide.AddTitle
-            },
+        title = when (page) {
+            0 -> FlyTxt.Home.PreviewGuide.Title
+            1 -> FlyTxt.Home.PreviewGuide.WallpaperTitle
+            2 -> FlyTxt.Home.PreviewGuide.SwipeTitle
+            else -> FlyTxt.Home.PreviewGuide.AddTitle
+        },
         titleColor = DialogDefaults.titleColor(),
-        summary =
-            when (page) {
-                0 -> FlyTxt.Home.PreviewGuide.Description
-                1 -> FlyTxt.Home.PreviewGuide.WallpaperDescription
-                2 -> FlyTxt.Home.PreviewGuide.SwipeDescription
-                else -> FlyTxt.Home.PreviewGuide.AddDescription
-            },
+        summary = when (page) {
+            0 -> FlyTxt.Home.PreviewGuide.Description
+            1 -> FlyTxt.Home.PreviewGuide.WallpaperDescription
+            2 -> FlyTxt.Home.PreviewGuide.SwipeDescription
+            else -> FlyTxt.Home.PreviewGuide.AddDescription
+        },
         summaryColor = DialogDefaults.summaryColor(),
         backgroundColor = DialogDefaults.backgroundColor(),
         enableWindowDim = true,
@@ -129,13 +127,10 @@ fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     repeat(4) { i ->
                         Box(
-                            modifier =
-                                Modifier.size(7.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (i == page) colorScheme.primary
-                                        else colorScheme.onSurface.copy(alpha = opacity.muted)
-                                    )
+                            modifier = Modifier.size(7.dp).clip(CircleShape).background(
+                                if (i == page) colorScheme.primary
+                                else colorScheme.onSurface.copy(alpha = opacity.muted)
+                            )
                         )
                     }
                 }
@@ -160,5 +155,5 @@ fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit) {
 
 @Composable
 private fun GuideButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    TextButton(text = text, onClick = onClick, modifier = modifier)
+    GlassTextButton(text = text, onClick = onClick, modifier = modifier)
 }

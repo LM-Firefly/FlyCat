@@ -85,15 +85,12 @@ class LogStore(
 
     override fun isRecording(): Boolean = logRecordGateway.isRecording
 
-    override fun isCurrentRecordingFile(fileName: String): Boolean =
-        isRecording() && logRecordGateway.currentLogFileName == fileName
+    override fun isCurrentRecordingFile(fileName: String): Boolean = isRecording() && logRecordGateway.currentLogFileName == fileName
 
     override fun listLogFiles(): List<LogFileInfo> {
         val currentlyRecording = isRecording()
         val currentFileName = logRecordGateway.currentLogFileName
-        val files =
-            logDir.listFiles(::isManagedLogFile)?.sortedByDescending { it.lastModified() }
-                ?: emptyList()
+        val files = logDir.listFiles(::isManagedLogFile)?.sortedByDescending { it.lastModified() } ?: emptyList()
         return files.map { file ->
             LogFileInfo(
                 name = file.name,
@@ -104,21 +101,17 @@ class LogStore(
         }
     }
 
-    override suspend fun readLogEntries(
-        fileName: String,
-        maxEntries: Int,
-    ): List<LogEntry> =
-        withContext(Dispatchers.IO) {
-            val file = resolveLogFile(fileName) ?: return@withContext emptyList()
-            if (maxEntries <= 0) return@withContext emptyList()
-            try {
-                readTailLogEntries(file, maxEntries)
-            } catch (_: IOException) {
-                emptyList()
-            } catch (_: SecurityException) {
-                emptyList()
-            }
+    override suspend fun readLogEntries(fileName: String, maxEntries: Int): List<LogEntry> = withContext(Dispatchers.IO) {
+        val file = resolveLogFile(fileName) ?: return@withContext emptyList()
+        if (maxEntries <= 0) return@withContext emptyList()
+        try {
+            readTailLogEntries(file, maxEntries)
+        } catch (_: IOException) {
+            emptyList()
+        } catch (_: SecurityException) {
+            emptyList()
         }
+    }
 
     override suspend fun readLogEntriesSince(fileName: String, sinceByteOffset: Long, maxEntries: Int): Pair<List<LogEntry>, Long> = withContext(Dispatchers.IO) {
         val file = resolveLogFile(fileName)
@@ -209,56 +202,52 @@ class LogStore(
         val files = logDir.listFiles { file ->
             file.isFile && (
                 file.name.startsWith("crash_") ||
-                file.name.startsWith("native_exit_")
+                file.name.startsWith("native_exit_") ||
+                file.name.startsWith("anr_exit_")
             ) && file.name.endsWith(logRecordGateway.logSuffix)
         } ?: return emptyList()
         return files.sortedByDescending { it.lastModified() }.take(maxFiles)
     }
 
-    override suspend fun readTempLogEntries(maxEntries: Int): List<LogEntry> =
-        withContext(Dispatchers.IO) {
-            val currentlyRecording = isRecording()
-            val currentFileName = logRecordGateway.currentLogFileName
-            if (!currentlyRecording || currentFileName == null) {
-                return@withContext emptyList()
-            }
-            readLogEntries(currentFileName, maxEntries)
+    override suspend fun readTempLogEntries(maxEntries: Int): List<LogEntry> = withContext(Dispatchers.IO) {
+        val currentlyRecording = isRecording()
+        val currentFileName = logRecordGateway.currentLogFileName
+        if (!currentlyRecording || currentFileName == null) {
+            return@withContext emptyList()
         }
+        readLogEntries(currentFileName, maxEntries)
+    }
 
-    override suspend fun writeLogEntries(targetUri: Any, entries: List<LogEntry>): Boolean =
-        writeLogEntriesInternal(targetUri as Uri, entries)
+    override suspend fun writeLogEntries(targetUri: Any, entries: List<LogEntry>): Boolean = writeLogEntriesInternal(targetUri as Uri, entries)
 
-    private suspend fun writeLogEntriesInternal(targetUri: Uri, entries: List<LogEntry>): Boolean =
-        withContext(Dispatchers.IO) {
-            try {
-                application.contentResolver.openOutputStream(targetUri)?.use { output ->
-                    val sb = StringBuilder()
-                    entries.forEach { entry ->
-                        sb.append("[${entry.time}] [${entry.level.name}] ${entry.message}\n")
-                    }
-                    output.write(sb.toString().toByteArray())
+    private suspend fun writeLogEntriesInternal(targetUri: Uri, entries: List<LogEntry>): Boolean = withContext(Dispatchers.IO) {
+        try {
+            application.contentResolver.openOutputStream(targetUri)?.use { output ->
+                val sb = StringBuilder()
+                entries.forEach { entry ->
+                    sb.append("[${entry.time}] [${entry.level.name}] ${entry.message}\n")
                 }
-                true
-            } catch (_: IOException) {
-                false
-            } catch (_: SecurityException) {
-                false
+                output.write(sb.toString().toByteArray())
             }
+            true
+        } catch (_: IOException) {
+            false
+        } catch (_: SecurityException) {
+            false
         }
+    }
 
-    override suspend fun deleteLogFile(fileName: String): Boolean =
-        withContext(Dispatchers.IO) {
-            val file = resolveLogFile(fileName) ?: return@withContext false
-            stopRecordingIfNeeded(file.name)
-            file.delete()
-        }
+    override suspend fun deleteLogFile(fileName: String): Boolean = withContext(Dispatchers.IO) {
+        val file = resolveLogFile(fileName) ?: return@withContext false
+        stopRecordingIfNeeded(file.name)
+        file.delete()
+    }
 
-    override suspend fun deleteAllLogs() =
-        withContext(Dispatchers.IO) {
-            stopRecordingIfNeeded()
-            val files = logDir.listFiles(::isManagedLogFile) ?: return@withContext
-            files.forEach { it.delete() }
-        }
+    override suspend fun deleteAllLogs() = withContext(Dispatchers.IO) {
+        stopRecordingIfNeeded()
+        val files = logDir.listFiles(::isManagedLogFile) ?: return@withContext
+        files.forEach { it.delete() }
+    }
 
     private suspend fun stopRecordingIfNeeded(fileName: String? = null) {
         if (!isRecording()) return

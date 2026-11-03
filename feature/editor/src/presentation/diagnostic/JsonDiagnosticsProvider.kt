@@ -95,16 +95,15 @@ object JsonDiagnosticsProvider {
         )
     }
 
-    private fun formatErrorMessage(message: String): String =
-        when {
-            message.contains("Unterminated") -> FlyTxt.Editor.JsonDiagnostic.UnterminatedStringOrObject
-            message.contains("Expected") -> {
-                val expectedPattern = "Expected (\\S+)".toRegex()
-                val expected = expectedPattern.find(message)?.groupValues?.get(1) ?: FlyTxt.Editor.JsonDiagnostic.Unknown
-                FlyTxt.Editor.JsonDiagnostic.Expected.format(expected)
-            }
-            message.contains("No value") -> FlyTxt.Editor.JsonDiagnostic.MissingValue
-            message.contains("Duplicate") -> FlyTxt.Editor.JsonDiagnostic.DuplicateKey
-            else -> message
+    private fun formatErrorMessage(message: String): String = when {
+        message.contains("Unterminated") -> FlyTxt.Editor.JsonDiagnostic.UnterminatedStringOrObject
+        message.contains("Expected") -> {
+            val expectedPattern = "Expected (\\S+)".toRegex()
+            val expected = expectedPattern.find(message)?.groupValues?.get(1) ?: FlyTxt.Editor.JsonDiagnostic.Unknown
+            FlyTxt.Editor.JsonDiagnostic.Expected.format(expected)
         }
+        message.contains("No value") -> FlyTxt.Editor.JsonDiagnostic.MissingValue
+        message.contains("Duplicate") -> FlyTxt.Editor.JsonDiagnostic.DuplicateKey
+        else -> message
+    }
 }

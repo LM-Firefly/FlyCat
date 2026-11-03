@@ -46,34 +46,32 @@ internal fun rememberProfileImportLaunchers(
     onQrDecoded: (String) -> Unit,
 ): ProfileImportLaunchers {
     val scope = rememberCoroutineScope()
-    val file =
-        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            uri ?: return@rememberLauncherForActivityResult
-            val fileName = readDisplayName(context, uri, FlyTxt.ProfilesPage.Message.UnknownFile)
-            if (!isYamlConfigFileName(fileName)) {
-                onUnsupportedFile()
-                return@rememberLauncherForActivityResult
-            }
-            onFileSelected(uri, fileName)
+    val file = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        val fileName = readDisplayName(context, uri, FlyTxt.ProfilesPage.Message.UnknownFile)
+        if (!isYamlConfigFileName(fileName)) {
+            onUnsupportedFile()
+            return@rememberLauncherForActivityResult
         }
-    val qrImage =
-        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            uri ?: return@rememberLauncherForActivityResult
-            scope.launch {
-                @Suppress("TooGenericExceptionCaught")
-                try {
-                    val value = readQrFromImage(context, uri)
-                    if (value == null) {
-                        context.toast(FlyTxt.ProfilesPage.QrScanner.RecognizeFailed)
-                    } else {
-                        onQrDecoded(value)
-                        context.toast(FlyTxt.ProfilesPage.QrScanner.RecognizeSuccess)
-                    }
-                } catch (error: Exception) {
-                    context.toast(FlyTxt.ProfilesPage.QrScanner.RecognizeError.format(error.message ?: ""))
+        onFileSelected(uri, fileName)
+    }
+    val qrImage = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                val value = readQrFromImage(context, uri)
+                if (value == null) {
+                    context.toast(FlyTxt.ProfilesPage.QrScanner.RecognizeFailed)
+                } else {
+                    onQrDecoded(value)
+                    context.toast(FlyTxt.ProfilesPage.QrScanner.RecognizeSuccess)
                 }
+            } catch (error: Exception) {
+                context.toast(FlyTxt.ProfilesPage.QrScanner.RecognizeError.format(error.message ?: ""))
             }
         }
+    }
     return ProfileImportLaunchers(
         pickFile = { file.launch("*/*") },
         selectQrImage = { qrImage.launch("image/*") },

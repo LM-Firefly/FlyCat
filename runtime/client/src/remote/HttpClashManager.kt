@@ -93,8 +93,7 @@ class HttpClashManager(
         createHttpClient(HttpClientProfile.API, json = json)
     }
 
-    private fun requireBackend(): RemoteBackend =
-        backendProvider() ?: error("No active remote controller backend")
+    private fun requireBackend(): RemoteBackend = backendProvider() ?: error("No active remote controller backend")
 
     /** Builds an absolute URL to [pathSegments] under the active backend's base URL. */
     private fun buildUrl(vararg pathSegments: String, query: Map<String, String> = emptyMap()): String {
@@ -146,12 +145,11 @@ class HttpClashManager(
 
     // ---- Tunnel / traffic ------------------------------------------------
 
-    override suspend fun queryTunnelState(): TunnelState =
-        withContext(Dispatchers.IO) {
-            val raw = request(HttpMethod.Get, "configs").bodyAsText()
-            val configs = json.decodeFromString<RawConfigs>(raw)
-            TunnelState(configs.mode)
-        }
+    override suspend fun queryTunnelState(): TunnelState = withContext(Dispatchers.IO) {
+        val raw = request(HttpMethod.Get, "configs").bodyAsText()
+        val configs = json.decodeFromString<RawConfigs>(raw)
+        TunnelState(configs.mode)
+    }
 
     /** 用于远程后端（`GET /configs`）的可达性探测。如果后端成功响应则返回 true；若出现任何非取消错误则返回 false。 */
     @Suppress("TooGenericExceptionCaught")
@@ -168,17 +166,15 @@ class HttpClashManager(
         }
     }
 
-    override suspend fun queryTrafficNow(): Long =
-        withContext(Dispatchers.IO) {
-            val sample = readTrafficSample() ?: return@withContext 0L
-            (encodeTrafficValue(sample.up) shl 32) or encodeTrafficValue(sample.down)
-        }
+    override suspend fun queryTrafficNow(): Long = withContext(Dispatchers.IO) {
+        val sample = readTrafficSample() ?: return@withContext 0L
+        (encodeTrafficValue(sample.up) shl 32) or encodeTrafficValue(sample.down)
+    }
 
-    override suspend fun queryTrafficTotal(): Long =
-        withContext(Dispatchers.IO) {
-            val sample = readTrafficSample() ?: return@withContext 0L
-            (encodeTrafficValue(sample.upTotal) shl 32) or encodeTrafficValue(sample.downTotal)
-        }
+    override suspend fun queryTrafficTotal(): Long = withContext(Dispatchers.IO) {
+        val sample = readTrafficSample() ?: return@withContext 0L
+        (encodeTrafficValue(sample.upTotal) shl 32) or encodeTrafficValue(sample.downTotal)
+    }
 
     /**
      * Reads the FIRST line of the streaming `/traffic` endpoint (one JSON line per second) and
@@ -192,50 +188,46 @@ class HttpClashManager(
         }
     }.getOrNull()
 
-    override suspend fun queryConnections(): ConnectionSnapshot =
-        withContext(Dispatchers.IO) { fetchConnections() }
+    override suspend fun queryConnections(): ConnectionSnapshot = withContext(Dispatchers.IO) { fetchConnections() }
 
-    override suspend fun queryConnectionsOverview(): ConnectionOverviewSnapshot =
-        withContext(Dispatchers.IO) {
-            val snapshot = fetchConnections()
-            ConnectionOverviewSnapshot(
-                downloadTotal = snapshot.downloadTotal,
-                uploadTotal = snapshot.uploadTotal,
-                memory = snapshot.memory,
-                connections = snapshot.connections.map { connection ->
-                    ConnectionOverviewInfo(
-                        id = connection.id,
-                        upload = connection.upload,
-                        download = connection.download,
-                    )
-                },
+    override suspend fun queryConnectionsOverview(): ConnectionOverviewSnapshot = withContext(Dispatchers.IO) {
+        val snapshot = fetchConnections()
+        ConnectionOverviewSnapshot(
+            downloadTotal = snapshot.downloadTotal,
+            uploadTotal = snapshot.uploadTotal,
+            memory = snapshot.memory,
+            connections = snapshot.connections.map { connection ->
+                ConnectionOverviewInfo(
+                    id = connection.id,
+                    upload = connection.upload,
+                    download = connection.download,
+                )
+            },
+        )
+    }
+
+    override suspend fun queryRules(): List<RuntimeRule> = withContext(Dispatchers.IO) {
+        val raw = request(HttpMethod.Get, "rules").bodyAsText()
+        val response = json.decodeFromString<RawRulesResponse>(raw)
+        response.rules.map { rule ->
+            RuntimeRule(
+                index = rule.index,
+                type = rule.type,
+                payload = rule.payload,
+                proxy = rule.proxy,
+                size = rule.size,
+                disabled = rule.disabled ?: rule.extra?.disabled ?: false,
+                hitCount = rule.hitCount ?: rule.extra?.hitCount ?: 0L,
+                missCount = rule.missCount ?: rule.extra?.missCount ?: 0L,
             )
         }
+    }
 
-    override suspend fun queryRules(): List<RuntimeRule> =
-        withContext(Dispatchers.IO) {
-            val raw = request(HttpMethod.Get, "rules").bodyAsText()
-            val response = json.decodeFromString<RawRulesResponse>(raw)
-            response.rules.map { rule ->
-                RuntimeRule(
-                    index = rule.index,
-                    type = rule.type,
-                    payload = rule.payload,
-                    proxy = rule.proxy,
-                    size = rule.size,
-                    disabled = rule.disabled ?: rule.extra?.disabled ?: false,
-                    hitCount = rule.hitCount ?: rule.extra?.hitCount ?: 0L,
-                    missCount = rule.missCount ?: rule.extra?.missCount ?: 0L,
-                )
-            }
-        }
-
-    override suspend fun setRuleDisabled(index: Int, disabled: Boolean): Boolean =
-        withContext(Dispatchers.IO) {
-            runCatching {
-                request(HttpMethod.Patch, "rules", "disable", body = mapOf(index.toString() to disabled)).status.isSuccess()
-            }.getOrDefault(false)
-        }
+    override suspend fun setRuleDisabled(index: Int, disabled: Boolean): Boolean = withContext(Dispatchers.IO) {
+        runCatching {
+            request(HttpMethod.Patch, "rules", "disable", body = mapOf(index.toString() to disabled)).status.isSuccess()
+        }.getOrDefault(false)
+    }
 
     private suspend fun fetchConnections(): ConnectionSnapshot {
         val raw = request(HttpMethod.Get, "connections").bodyAsText()
@@ -252,22 +244,16 @@ class HttpClashManager(
 
     // ---- Proxy groups ----------------------------------------------------
 
-    override suspend fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
-        withContext(Dispatchers.IO) {
-            val nodes = fetchProxies()
-            val groups = orderGroups(fetchGroups(), nodes)
-            groups
-                .filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }
-                .map { buildGroup(it, nodes, ProxySort.Default) }
-        }
+    override suspend fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> = withContext(Dispatchers.IO) {
+        val nodes = fetchProxies()
+        val groups = orderGroups(fetchGroups(), nodes)
+        groups.filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }.map { buildGroup(it, nodes, ProxySort.Default) }
+    }
 
-    override suspend fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> =
-        withContext(Dispatchers.IO) {
-            val nodes = fetchProxies()
-            orderGroups(fetchGroups(), nodes)
-                .filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }
-                .map { it.name }
-        }
+    override suspend fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> = withContext(Dispatchers.IO) {
+        val nodes = fetchProxies()
+        orderGroups(fetchGroups(), nodes).filter { !excludeNotSelectable || it.type in Proxy.Type.manuallySelectable }.map { it.name }
+    }
 
     /** Stable group order: index in GLOBAL.all (config order); groups absent from it sort last by name. */
     private fun orderGroups(groups: List<RawProxy>, nodes: Map<String, RawProxy>): List<RawProxy> {
@@ -278,18 +264,17 @@ class HttpClashManager(
         )
     }
 
-    override suspend fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup =
-        withContext(Dispatchers.IO) {
-            val nodes = fetchProxies()
-            val group = nodes[name]
-                ?: return@withContext ProxyGroup(
-                    name = name,
-                    type = Proxy.Type.Unknown,
-                    proxies = emptyList(),
-                    now = "",
-                )
-            buildGroup(group, nodes, proxySort)
-        }
+    override suspend fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup = withContext(Dispatchers.IO) {
+        val nodes = fetchProxies()
+        val group = nodes[name]
+            ?: return@withContext ProxyGroup(
+                name = name,
+                type = Proxy.Type.Unknown,
+                proxies = emptyList(),
+                now = "",
+            )
+        buildGroup(group, nodes, proxySort)
+    }
 
     private suspend fun fetchProxies(): Map<String, RawProxy> {
         val raw = request(HttpMethod.Get, "proxies").bodyAsText()
@@ -304,47 +289,43 @@ class HttpClashManager(
     // ---- Selection / connections mutation --------------------------------
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun patchSelector(group: String, name: String): Boolean =
-        withContext(Dispatchers.IO) {
-            try {
-                val response = request(
-                    HttpMethod.Put,
-                    "proxies",
-                    group,
-                    body = SelectBody(name),
-                )
-                response.status.isSuccess()
-            } catch (_: Throwable) { // fault barrier: remote REST call must degrade to "not selected"
-                false
-            }
+    override suspend fun patchSelector(group: String, name: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val response = request(
+                HttpMethod.Put,
+                "proxies",
+                group,
+                body = SelectBody(name),
+            )
+            response.status.isSuccess()
+        } catch (_: Throwable) { // 故障屏障：远程 REST 调用必须降级为“未选中”
+            false
         }
+    }
 
-    override suspend fun patchForceSelector(group: String, name: String): Boolean =
-        patchSelector(group, name)
+    override suspend fun patchForceSelector(group: String, name: String): Boolean = patchSelector(group, name)
 
-    override suspend fun patchTunnelMode(mode: TunnelState.Mode): Boolean =
-        withContext(Dispatchers.IO) {
-            try {
-                val response = request(
-                    HttpMethod.Put,
-                    "configs",
-                    body = mapOf("mode" to mode.name.lowercase()),
-                )
-                response.status.isSuccess()
-            } catch (error: Throwable) {
-                false
-            }
+    override suspend fun patchTunnelMode(mode: TunnelState.Mode): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val response = request(
+                HttpMethod.Put,
+                "configs",
+                body = mapOf("mode" to mode.name.lowercase()),
+            )
+            response.status.isSuccess()
+        } catch (error: Throwable) {
+            false
         }
+    }
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun closeConnection(id: String): Boolean =
-        withContext(Dispatchers.IO) {
-            try {
-                request(HttpMethod.Delete, "connections", id).status.isSuccess()
-            } catch (error: Throwable) { // fault barrier: remote REST call must degrade to "not closed"
-                false
-            }
+    override suspend fun closeConnection(id: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            request(HttpMethod.Delete, "connections", id).status.isSuccess()
+        } catch (error: Throwable) { // 故障屏障：远程 REST 调用必须降级为“未关闭”
+            false
         }
+    }
 
     override suspend fun closeAllConnections() {
         withContext(Dispatchers.IO) {
@@ -368,32 +349,30 @@ class HttpClashManager(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun healthCheckProxy(group: String, proxyName: String): Int =
-        try {
-            val response = request(
-                HttpMethod.Get,
-                "proxies",
-                proxyName,
-                "delay",
-                query = delayQuery,
-            )
-            if (response.status.isSuccess()) {
-                json.decodeFromString<RawDelayResult>(response.bodyAsText()).delay
-            } else {
-                -1
-            }
-        } catch (error: Throwable) { // fault barrier: remote REST delay test must degrade to timeout (-1)
+    override suspend fun healthCheckProxy(group: String, proxyName: String): Int = try {
+        val response = request(
+            HttpMethod.Get,
+            "proxies",
+            proxyName,
+            "delay",
+            query = delayQuery,
+        )
+        if (response.status.isSuccess()) {
+            json.decodeFromString<RawDelayResult>(response.bodyAsText()).delay
+        } else {
             -1
         }
+    } catch (error: Throwable) { // 故障屏障：远程 REST 延迟测试必须降级为超时（-1）
+        -1
+    }
 
     // ---- Providers -------------------------------------------------------
 
-    override suspend fun queryProviders(): ProviderList =
-        withContext(Dispatchers.IO) {
-            val proxies = fetchProviderCategory("proxies")
-            val rules = fetchProviderCategory("rules")
-            ProviderList((proxies + rules).map { it.toProvider() })
-        }
+    override suspend fun queryProviders(): ProviderList = withContext(Dispatchers.IO) {
+        val proxies = fetchProviderCategory("proxies")
+        val rules = fetchProviderCategory("rules")
+        ProviderList((proxies + rules).map { it.toProvider() })
+    }
 
     private suspend fun fetchProviderCategory(category: String): List<RawProvider> = runCatching {
         val raw = request(HttpMethod.Get, "providers", category).bodyAsText()
@@ -476,14 +455,13 @@ class HttpClashManager(
 
     // ---- Adapters --------------------------------------------------------
 
-    private fun RawProxy.toProxy(): Proxy =
-        Proxy(
-            name = name,
-            title = name,
-            subtitle = "",
-            type = type,
-            delay = history.lastOrNull()?.delay ?: 0,
-        )
+    private fun RawProxy.toProxy(): Proxy = Proxy(
+        name = name,
+        title = name,
+        subtitle = "",
+        type = type,
+        delay = history.lastOrNull()?.delay ?: 0,
+    )
 
     private fun buildGroup(group: RawProxy, nodes: Map<String, RawProxy>, sort: ProxySort): ProxyGroup {
         val members = group.all.map { memberName ->

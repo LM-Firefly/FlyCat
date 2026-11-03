@@ -31,13 +31,11 @@ import java.net.ServerSocket
 import java.net.Socket
 
 object NetworkUtils {
-    fun isPortInUse(port: Int): Boolean =
-        try {
-            ServerSocket(port).use { false }
-        } catch (_: IOException) {
-            true
-        }
-
+    fun isPortInUse(port: Int): Boolean = try {
+        ServerSocket(port).use { false }
+    } catch (_: IOException) {
+        true
+    }
     suspend fun waitForPortReady(host: String, port: Int, timeoutMs: Long = 5000, probeIntervalMs: Long = 120): Boolean = withContext(Dispatchers.IO) {
         val deadline = SystemClock.elapsedRealtime() + timeoutMs
         while (SystemClock.elapsedRealtime() < deadline) {

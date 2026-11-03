@@ -65,16 +65,14 @@ object ServiceClient {
                         Global.init(appContext)
                         val store = remoteStore
                             ?: error("ServiceClient not configured: call configure() before connect()")
-                        val httpManager =
-                            HttpClashManager(backendProvider = { store.activeBackend() })
-                        clashManager =
-                            ClashGateway(
-                                appContext,
-                                remote = httpManager,
-                                isRemoteControllerActive = {
-                                    store.isActive()
-                                },
-                            )
+                        val httpManager = HttpClashManager(backendProvider = { store.activeBackend() })
+                        clashManager = ClashGateway(
+                            appContext,
+                            remote = httpManager,
+                            isRemoteControllerActive = {
+                                store.isActive()
+                            },
+                        )
                         profileManager = instantiateServiceObject(
                             className = PROFILE_MANAGER_CLASS,
                             context = appContext,
@@ -107,11 +105,9 @@ object ServiceClient {
         initialized = false
     }
 
-    fun clash(): IClashManager =
-        clashManager ?: throw IllegalStateException("ServiceClient not connected")
+    fun clash(): IClashManager = clashManager ?: throw IllegalStateException("ServiceClient not connected")
 
-    fun profile(): IProfileManager =
-        profileManager ?: throw IllegalStateException("ServiceClient not connected")
+    fun profile(): IProfileManager = profileManager ?: throw IllegalStateException("ServiceClient not connected")
 
     fun isConnected(): Boolean = initialized && clashManager != null && profileManager != null
 

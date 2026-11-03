@@ -35,54 +35,51 @@ val FlyCat.Undo: ImageVector
         if (_IconName != null) {
             return _IconName!!
         }
-        _IconName =
-            ImageVector.Builder(
-                    name = "IconName",
-                    defaultWidth = 24.dp,
-                    defaultHeight = 24.dp,
-                    viewportWidth = 24f,
-                    viewportHeight = 24f,
+        _IconName = ImageVector.Builder(
+            name = "IconName",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(3f, 12f)
+                arcToRelative(
+                    9f,
+                    9f,
+                    0f,
+                    isMoreThanHalf = true,
+                    isPositiveArc = false,
+                    9f,
+                    -9f,
                 )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(3f, 12f)
-                        arcToRelative(
-                            9f,
-                            9f,
-                            0f,
-                            isMoreThanHalf = true,
-                            isPositiveArc = false,
-                            9f,
-                            -9f,
-                        )
-                        arcToRelative(
-                            9.75f,
-                            9.75f,
-                            0f,
-                            isMoreThanHalf = false,
-                            isPositiveArc = false,
-                            -6.74f,
-                            2.74f,
-                        )
-                        lineTo(3f, 8f)
-                    }
-                    path(
-                        stroke = SolidColor(Color.Black),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(3f, 3f)
-                        verticalLineToRelative(5f)
-                        horizontalLineToRelative(5f)
-                    }
-                }
-                .build()
+                arcToRelative(
+                    9.75f,
+                    9.75f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = false,
+                    -6.74f,
+                    2.74f,
+                )
+                lineTo(3f, 8f)
+            }
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(3f, 3f)
+                verticalLineToRelative(5f)
+                horizontalLineToRelative(5f)
+            }
+        }.build()
 
         return _IconName!!
     }

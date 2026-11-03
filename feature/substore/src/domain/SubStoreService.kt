@@ -61,12 +61,11 @@ class SubStoreService : Service() {
                     error(FlyTxt.Feature.SubStore.JavetLoadFailed)
                 }
 
-                val engine =
-                    CaseEngine(
-                        backendPort = request.backendPort,
-                        frontendPort = request.frontendPort,
-                        allowLan = request.allowLan,
-                    )
+                val engine = CaseEngine(
+                    backendPort = request.backendPort,
+                    frontendPort = request.frontendPort,
+                    allowLan = request.allowLan,
+                )
                 caseEngine = engine
 
                 if (!engine.isInitialized()) {
@@ -75,10 +74,8 @@ class SubStoreService : Service() {
 
                 caseEngine = engine
                 engine.startServer()
-                val frontendReady =
-                    NetworkUtils.waitForPortReady(host = "127.0.0.1", port = request.frontendPort)
-                val backendReady =
-                    NetworkUtils.waitForPortReady(host = "127.0.0.1", port = request.backendPort)
+                val frontendReady = NetworkUtils.waitForPortReady(host = "127.0.0.1", port = request.frontendPort)
+                val backendReady = NetworkUtils.waitForPortReady(host = "127.0.0.1", port = request.backendPort)
                 Timber.w("Sub-Store port readiness: frontend=${request.frontendPort} ready=$frontendReady, backend=${request.backendPort} ready=$backendReady")
                 if (!frontendReady || !backendReady) {
                     throw Exception("Sub-Store 启动超时（frontend:${request.frontendPort} ready=$frontendReady, backend:${request.backendPort} ready=$backendReady）")
@@ -103,24 +100,21 @@ class SubStoreService : Service() {
         cleanupService()
     }
 
-    private fun ensureJavetLibraryLoaded(): Boolean =
-        runCatching {
-                NativeLibraryManager.initialize(applicationContext)
-                val javetLibBaseName = NativeLibraryManager.JAVET_LIBRARY_NAME
-
-                if (!NativeLibraryManager.isLibraryAvailable(javetLibBaseName)) {
-                    val results = NativeLibraryManager.extractAllLibraries()
-                    if (results[javetLibBaseName] != true) {
-                        Timber.e("Javet extract failed")
-                        return false
-                    }
-                }
-                true
+    private fun ensureJavetLibraryLoaded(): Boolean = runCatching {
+        NativeLibraryManager.initialize(applicationContext)
+        val javetLibBaseName = NativeLibraryManager.JAVET_LIBRARY_NAME
+        if (!NativeLibraryManager.isLibraryAvailable(javetLibBaseName)) {
+            val results = NativeLibraryManager.extractAllLibraries()
+            if (results[javetLibBaseName] != true) {
+                Timber.e("Javet extract failed")
+                return false
             }
-            .getOrElse { error ->
-                Timber.e(error, "Javet load error")
-                false
-            }
+        }
+        true
+    }.getOrElse { error ->
+        Timber.e(error, "Javet load error")
+        false
+    }
 
     private fun cleanupService() {
         runCatching { caseEngine?.stopServer() }

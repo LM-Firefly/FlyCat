@@ -22,11 +22,7 @@
 package com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node
 
 import android.annotation.SuppressLint
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,15 +30,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -51,101 +43,42 @@ import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.core.model.proxy.normalizeProxySheetHeightFraction
 import com.github.lmfirefly.flycat.locale.FlyTxt
-import com.github.lmfirefly.flycat.presentation.component.navigation.LocalTopBarHazeState
-import com.github.lmfirefly.flycat.presentation.component.navigation.LocalTopBarHazeStyle
+import com.github.lmfirefly.flycat.presentation.component.SegmentedTabRow
+import com.github.lmfirefly.flycat.presentation.component.misc.GroupIcon
+import com.github.lmfirefly.flycat.presentation.component.misc.normalizeGroupIconUri
 import com.github.lmfirefly.flycat.presentation.theme.SheetLeadMillis
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.theme.rememberRowReveal
-import dev.chrisbanes.haze.HazeInput
-import dev.chrisbanes.haze.HazeProgressive
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.blur.HazeBlurStyle
-import dev.chrisbanes.haze.blur.hazeBlur
 import top.yukonga.miuix.kmp.basic.PullToRefresh
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.overScrollHorizontal
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 
-val NodeSheetContentPadding =
-    PaddingValues(start = UiDp.dp0, end = UiDp.dp0, top = UiDp.dp8, bottom = UiDp.dp16)
+val NodeSheetContentPadding = PaddingValues(start = UiDp.dp0, end = UiDp.dp0, top = UiDp.dp8, bottom = UiDp.dp16)
 
-private fun LazyListState.isScrolledFromTop(): Boolean =
-    firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
+private fun LazyListState.isScrolledFromTop(): Boolean = firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
 
-private fun Modifier.nodeTabHaze(state: HazeState?, style: HazeBlurStyle?): Modifier {
-    if (state == null || style == null) return this
-    return hazeBlur(
-        input = HazeInput.Sources(state),
-        style = style.then {
-            blurRadius(UiDp.dp30)
-            noiseFactor(0f)
-            progressive(
-                HazeProgressive.verticalGradient(
-                    startIntensity = 1f,
-                    endIntensity = 0f,
-                )
-            )
+/** 「标签页模式」组名 tab 条：玻璃分段轨道 + 滑动指示器（[SegmentedTabRow] 的 scrollable 形态），组多时轨道内横滑，选中组自动居中；tab 文字前拼接策略组图标（[GroupIcon]，加载成功才渲染）。 */
+@Composable
+internal fun NodeTabs(
+    groups: List<ProxyGroupInfo>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier.fillMaxWidth().padding(horizontal = UiDp.dp12, vertical = UiDp.dp8),
+) {
+    val tabs = remember(groups) { groups.map { it.name } }
+    val tabIconUris = remember(groups) { groups.map { group -> group.icon?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeGroupIconUri) } }
+    SegmentedTabRow(
+        tabs = tabs,
+        selectedTabIndex = selectedIndex,
+        onTabSelected = onSelect,
+        modifier = modifier,
+        scrollable = true,
+        tabIcon = { index ->
+            val iconUri = tabIconUris.getOrNull(index)
+            if (iconUri != null) {
+                GroupIcon(iconUri = iconUri, width = UiDp.dp16)
+            }
         },
     )
-}
-
-@Composable
-internal fun NodeTabs(groups: List<ProxyGroupInfo>, selectedIndex: Int, onSelect: (Int) -> Unit) {
-    val hazeState = LocalTopBarHazeState.current
-    val hazeStyle = LocalTopBarHazeStyle.current
-    val listState = rememberLazyListState()
-
-    LaunchedEffect(selectedIndex, groups.size) {
-        if (groups.isEmpty()) return@LaunchedEffect
-        val target = (selectedIndex - 1).coerceAtLeast(0).coerceAtMost(groups.lastIndex)
-        if (target != listState.firstVisibleItemIndex) {
-            listState.animateScrollToItem(target)
-        }
-    }
-
-    LazyRow(
-        state = listState,
-        modifier =
-            Modifier.fillMaxWidth()
-                .nodeTabHaze(hazeState, hazeStyle)
-                .background(MiuixTheme.colorScheme.surface)
-                .overScrollHorizontal(),
-        contentPadding =
-            PaddingValues(start = UiDp.dp14, end = UiDp.dp14, top = UiDp.dp10, bottom = UiDp.dp10),
-        horizontalArrangement = Arrangement.spacedBy(UiDp.dp8),
-        overscrollEffect = null,
-    ) {
-        itemsIndexed(groups, key = { _, group -> group.name }) { index, group ->
-            val selected = index == selectedIndex
-            val background =
-                if (selected) {
-                    MiuixTheme.colorScheme.primary
-                } else {
-                    MiuixTheme.colorScheme.surface
-                }
-            val textColor =
-                if (selected) {
-                    MiuixTheme.colorScheme.onPrimary
-                } else {
-                    MiuixTheme.colorScheme.onSurface
-                }
-
-            Box(
-                modifier =
-                    Modifier.clip(RoundedCornerShape(50))
-                        .background(background)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = { onSelect(index) },
-                        )
-                        .padding(horizontal = UiDp.dp11, vertical = UiDp.dp6)
-            ) {
-                Text(text = group.name, color = textColor, style = MiuixTheme.textStyles.footnote1)
-            }
-        }
-    }
 }
 
 @SuppressLint("ConfigurationScreenWidthHeight")

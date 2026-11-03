@@ -67,21 +67,19 @@ fun ConfigPreviewScreen(
     val coroutineScope = rememberCoroutineScope()
     var isSaving by remember { mutableStateOf(false) }
 
-    val formattedContent =
-        remember(initialContent, language) {
-            if (language == LanguageScope.Json) {
-                CodeFormatter.format(initialContent, language) ?: initialContent
-            } else {
-                initialContent
-            }
+    val formattedContent = remember(initialContent, language) {
+        if (language == LanguageScope.Json) {
+            CodeFormatter.format(initialContent, language) ?: initialContent
+        } else {
+            initialContent
         }
+    }
 
-    val editorState =
-        rememberConfiguredCodeEditorState(
-            initialContent = formattedContent,
-            language = language,
-            readOnly = readOnly,
-        )
+    val editorState = rememberConfiguredCodeEditorState(
+        initialContent = formattedContent,
+        language = language,
+        readOnly = readOnly,
+    )
     val scrollBehavior = MiuixScrollBehavior()
 
     Scaffold(

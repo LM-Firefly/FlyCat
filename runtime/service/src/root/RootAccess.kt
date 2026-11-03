@@ -51,13 +51,7 @@ object RootPackageShell : RootPackageQueryContract {
         if (!hasRootAccess()) return null
 
         val now = System.currentTimeMillis()
-        val normalizedPackages =
-            packages
-                ?.asSequence()
-                ?.map(String::trim)
-                ?.filter(String::isNotEmpty)
-                ?.toSortedSet()
-                ?.takeIf { it.isNotEmpty() }
+        val normalizedPackages = packages ?.asSequence() ?.map(String::trim) ?.filter(String::isNotEmpty) ?.toSortedSet() ?.takeIf { it.isNotEmpty() }
 
         if (normalizedPackages == null) {
             packageUidCache
@@ -82,20 +76,16 @@ object RootPackageShell : RootPackageQueryContract {
 
         if (!result.isSuccess) return null
 
-        val resolved =
-            stdout
-                .asSequence()
-                .mapNotNull { line ->
-                    val match = packageUidRegex.find(line.trim()) ?: return@mapNotNull null
-                    val packageName = match.groupValues[1]
-                    val uid = match.groupValues[2].toIntOrNull() ?: return@mapNotNull null
-                    packageName to uid
-                }
-                .filter { (packageName, _) ->
-                    normalizedPackages == null || packageName in normalizedPackages
-                }
-                .toMap()
-                .ifEmpty { null }
+        val resolved = stdout.asSequence().mapNotNull { line ->
+            val match = packageUidRegex.find(line.trim()) ?: return@mapNotNull null
+            val packageName = match.groupValues[1]
+            val uid = match.groupValues[2].toIntOrNull() ?: return@mapNotNull null
+            packageName to uid
+        }
+        .filter { (packageName, _) ->
+            normalizedPackages == null || packageName in normalizedPackages
+        }
+        .toMap().ifEmpty { null }
 
         resolved?.let { value ->
             val cacheEntry = CacheEntry(value = value, cachedAt = now)
@@ -178,11 +168,9 @@ object RootAccessSupport : RootAccessSupportContract {
         )
     }
 
-    override suspend fun evaluateAsync(context: Context): RootAccessStatus =
-        withContext(Dispatchers.IO) { evaluate(context) }
+    override suspend fun evaluateAsync(context: Context): RootAccessStatus = withContext(Dispatchers.IO) { evaluate(context) }
 
-    override suspend fun requireRootTunAccess(context: Context): RootAccessStatus =
-        evaluateAsync(context).also { status ->
-            check(status.canStartRootTun) { status.rootTunBlockedMessage() }
-        }
+    override suspend fun requireRootTunAccess(context: Context): RootAccessStatus = evaluateAsync(context).also { status ->
+        check(status.canStartRootTun) { status.rootTunBlockedMessage() }
+    }
 }

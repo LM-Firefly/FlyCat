@@ -162,12 +162,10 @@ object NativeLibraryManager {
     }
 
     fun extractLibrary(info: LibraryInfo): Boolean {
-        val targetDir =
-            libsBaseDir
-                ?: run {
-                    Timber.w("Library manager not initialized")
-                    return false
-                }
+        val targetDir = libsBaseDir ?: run {
+            Timber.w("Library manager not initialized")
+            return false
+        }
         targetDir.mkdirs()
         val targetFile = File(targetDir, info.name)
 
@@ -193,9 +191,7 @@ object NativeLibraryManager {
 
     @SuppressLint("SetWorldReadable")
     private fun extractFromMainApk(info: LibraryInfo, targetFile: File): Boolean {
-        val apkPath =
-            appContext?.applicationInfo?.sourceDir
-                ?: throw RuntimeException("Context not initialized")
+        val apkPath = appContext?.applicationInfo?.sourceDir ?: throw RuntimeException("Context not initialized")
 
         ZipFile(apkPath).use { zip ->
             var libEntry = zip.getEntry("lib/${getSupportedAbi()}/${info.name}")
@@ -320,13 +316,11 @@ object NativeLibraryManager {
 
     private val actualLibraryNames = mutableMapOf<String, String>()
 
-    private fun getExtensionApk(packageName: String): File? =
-        runCatching {
-                val pm = appContext?.packageManager ?: return null
-                val info = pm.getApplicationInfo(packageName, 0)
-                File(info.sourceDir)
-            }
-            .getOrNull()
+    private fun getExtensionApk(packageName: String): File? = runCatching {
+        val pm = appContext?.packageManager ?: return null
+        val info = pm.getApplicationInfo(packageName, 0)
+        File(info.sourceDir)
+    }.getOrNull()
 
     fun getLibraryPath(name: String): String? {
         if (!isInitialized) return null
@@ -518,27 +512,26 @@ object NativeLibraryManager {
         return installed
     }
 
-    private fun replaceLibrary(targetFile: File, replacementFile: File): Boolean =
-        runCatching {
-            targetFile.parentFile?.mkdirs()
-            val backupFile = File(targetFile.parentFile, "${targetFile.name}.previous")
-            if (backupFile.exists() && !backupFile.delete()) {
-                error("Unable to clear native library backup: ${backupFile.absolutePath}")
-            }
-            val hasPrevious = targetFile.exists()
-            if (hasPrevious && !targetFile.renameTo(backupFile)) {
-                error("Unable to back up native library: ${targetFile.absolutePath}")
-            }
-            if (!replacementFile.renameTo(targetFile)) {
-                if (hasPrevious) backupFile.renameTo(targetFile)
-                error("Unable to install native library: ${targetFile.absolutePath}")
-            }
-            backupFile.delete()
-            targetFile.setWritable(false, false)
-            targetFile.setReadable(true, false)
-            true
-        }.getOrElse { error ->
-            Timber.e(error, "Native library replacement failed: ${targetFile.name}")
-            false
+    private fun replaceLibrary(targetFile: File, replacementFile: File): Boolean = runCatching {
+        targetFile.parentFile?.mkdirs()
+        val backupFile = File(targetFile.parentFile, "${targetFile.name}.previous")
+        if (backupFile.exists() && !backupFile.delete()) {
+            error("Unable to clear native library backup: ${backupFile.absolutePath}")
         }
+        val hasPrevious = targetFile.exists()
+        if (hasPrevious && !targetFile.renameTo(backupFile)) {
+            error("Unable to back up native library: ${targetFile.absolutePath}")
+        }
+        if (!replacementFile.renameTo(targetFile)) {
+            if (hasPrevious) backupFile.renameTo(targetFile)
+            error("Unable to install native library: ${targetFile.absolutePath}")
+        }
+        backupFile.delete()
+        targetFile.setWritable(false, false)
+        targetFile.setReadable(true, false)
+        true
+    }.getOrElse { error ->
+        Timber.e(error, "Native library replacement failed: ${targetFile.name}")
+        false
+    }
 }

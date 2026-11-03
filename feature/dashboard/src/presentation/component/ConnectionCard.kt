@@ -21,7 +21,6 @@
 
 package com.github.lmfirefly.flycat.feature.dashboard.presentation.component
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -46,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.ConnectionCardItem
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import top.yukonga.miuix.kmp.basic.Icon
@@ -67,7 +67,7 @@ fun ConnectionCard(
     val spacing = AppTheme.spacing
     val radii = AppTheme.radii
     val sizes = AppTheme.sizes
-    val shape = RoundedCornerShape(radii.radius24)
+    val shape = RoundedCornerShape(radii.radius18)
     val interactionSource = remember { MutableInteractionSource() }
     val network = item.network
     val chainText = item.ruleChain
@@ -77,7 +77,7 @@ fun ConnectionCard(
             .fillMaxWidth()
             .pressable(interactionSource = interactionSource, indication = SinkFeedback())
             .clip(shape)
-            .background(MiuixTheme.colorScheme.background)
+            .glassCardSurface(shape = shape, fallbackColor = MiuixTheme.colorScheme.background)
             .border(sizes.nodeCardBorderWidth, MiuixTheme.colorScheme.surfaceVariant, shape)
             .clickable(
                 interactionSource = interactionSource,
@@ -190,12 +190,18 @@ fun ConnectionCard(
                     modifier = Modifier.heightIn(min = sizes.connectionLeadingIconSize),
                     contentAlignment = Alignment.Center,
                 ) {
+                    val closeShape = RoundedCornerShape(50)
                     Icon(
                         imageVector = MiuixIcons.Delete,
                         contentDescription = FlyTxt.Connection.Detail.Action.Interrupt,
                         tint = MiuixTheme.colorScheme.error,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(50))
+                            .clip(closeShape)
+                            .glassCardSurface(
+                                shape = closeShape,
+                                fallbackColor = MiuixTheme.colorScheme.secondaryContainer,
+                                glassTint = MiuixTheme.colorScheme.error.copy(alpha = 0.10f),
+                            )
                             .clickable(onClick = onClose)
                             .padding(horizontal = spacing.space12, vertical = spacing.space8),
                     )

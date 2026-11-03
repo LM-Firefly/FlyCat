@@ -28,24 +28,23 @@ object TrafficChartConfig {
 
     val minimumVisibleFraction = 0.02f
 
-    fun calculateBarFraction(speedBytes: Long): Float =
-        when {
-            speedBytes <= 0 -> minimumVisibleFraction
-            speedBytes < firstSpeedBound -> {
-                val ratio = (speedBytes / firstSpeedBound).coerceIn(0.0, 1.0)
-                (ratio * 0.4).toFloat().coerceAtLeast(minimumVisibleFraction)
-            }
-
-            speedBytes < secondSpeedBound -> {
-                val ratio = ((speedBytes - firstSpeedBound) / (secondSpeedBound - firstSpeedBound)).coerceIn(0.0, 1.0)
-                (0.4 + ratio * 0.3).toFloat()
-            }
-
-            speedBytes < thirdSpeedBound -> {
-                val ratio = ((speedBytes - secondSpeedBound) / (thirdSpeedBound - secondSpeedBound)).coerceIn(0.0, 1.0)
-                (0.7 + ratio * 0.3).toFloat()
-            }
-
-            else -> 1.0f
+    fun calculateBarFraction(speedBytes: Long): Float = when {
+        speedBytes <= 0 -> minimumVisibleFraction
+        speedBytes < firstSpeedBound -> {
+            val ratio = (speedBytes / firstSpeedBound).coerceIn(0.0, 1.0)
+            (ratio * 0.4).toFloat().coerceAtLeast(minimumVisibleFraction)
         }
+
+        speedBytes < secondSpeedBound -> {
+            val ratio = ((speedBytes - firstSpeedBound) / (secondSpeedBound - firstSpeedBound)).coerceIn(0.0, 1.0)
+            (0.4 + ratio * 0.3).toFloat()
+        }
+
+        speedBytes < thirdSpeedBound -> {
+            val ratio = ((speedBytes - secondSpeedBound) / (thirdSpeedBound - secondSpeedBound)).coerceIn(0.0, 1.0)
+            (0.7 + ratio * 0.3).toFloat()
+        }
+
+        else -> 1.0f
+    }
 }

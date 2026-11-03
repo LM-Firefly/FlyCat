@@ -37,7 +37,7 @@ import com.github.lmfirefly.flycat.core.model.profile.ProfileLink
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppFormDialog
-import top.yukonga.miuix.kmp.basic.TextField
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 
 @Composable
 internal fun LinkSettingsDialog(
@@ -106,23 +106,21 @@ internal fun AddLinkDialog(
 
     AppFormDialog(
         show = show.value,
-        title =
-            if (linkToEdit != null) {
-                FlyTxt.ProfilesPage.LinkSettings.EditLink
-            } else {
-                FlyTxt.ProfilesPage.LinkSettings.AddLink
-            },
+        title = if (linkToEdit != null) {
+            FlyTxt.ProfilesPage.LinkSettings.EditLink
+        } else {
+            FlyTxt.ProfilesPage.LinkSettings.AddLink
+        },
         onDismissRequest = onDismiss,
         onConfirm = {
-            error =
-                when {
-                    currentName.text.isBlank() ->
-                        FlyTxt.ProfilesPage.LinkSettings.Validation.EnterName
-                    currentUrl.text.isBlank() -> FlyTxt.ProfilesPage.LinkSettings.Validation.EnterUrl
-                    !currentUrl.text.startsWith("http", ignoreCase = true) ->
-                        FlyTxt.ProfilesPage.LinkSettings.Validation.InvalidUrl
-                    else -> ""
-                }
+            error = when {
+                currentName.text.isBlank() ->
+                    FlyTxt.ProfilesPage.LinkSettings.Validation.EnterName
+                currentUrl.text.isBlank() -> FlyTxt.ProfilesPage.LinkSettings.Validation.EnterUrl
+                !currentUrl.text.startsWith("http", ignoreCase = true) ->
+                    FlyTxt.ProfilesPage.LinkSettings.Validation.InvalidUrl
+                else -> ""
+            }
             if (error.isEmpty()) {
                 onNameChange(currentName.text)
                 onUrlChange(currentUrl.text)
@@ -133,7 +131,7 @@ internal fun AddLinkDialog(
         cancelText = FlyTxt.ProfilesPage.Button.Cancel,
         confirmText = FlyTxt.ProfilesPage.Button.Confirm,
     ) {
-        TextField(
+        GlassTextField(
             value = currentName,
             onValueChange = {
                 currentName = it
@@ -143,7 +141,7 @@ internal fun AddLinkDialog(
             useLabelAsPlaceholder = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        TextField(
+        GlassTextField(
             value = currentUrl,
             onValueChange = {
                 currentUrl = it

@@ -80,8 +80,7 @@ class LogRecordService : Service() {
             if (isRecording) return
             val timestamp = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss").format(LocalDateTime.now())
             val fileName = "$LOG_PREFIX$timestamp$LOG_SUFFIX"
-            val intent =
-                Intent(context, LogRecordService::class.java).apply { action = ACTION_START }
+            val intent = Intent(context, LogRecordService::class.java).apply { action = ACTION_START }
             // 先派发、后同步置位：startService 异步（onStartCommand 稍后才执行），而 LogStore 会立即读
             // isRecording 作为 UI 按钮状态与写入开关（runtimeLogRecordingEnabled）的依据；若等服务侧才置位，
             // 两者都会读到旧值（按钮状态倒置、录制文件恒 0B）。派发失败则抛出且不置位，状态保持一致。
@@ -95,8 +94,7 @@ class LogRecordService : Service() {
         }
 
         fun stop(context: Context) {
-            val intent =
-                Intent(context, LogRecordService::class.java).apply { action = ACTION_STOP }
+            val intent = Intent(context, LogRecordService::class.java).apply { action = ACTION_STOP }
             context.startService(intent)
             // 同 start()：同步置位，供 LogStore 立即读到「已停止」。
             isRecording = false
@@ -164,8 +162,7 @@ class LogRecordService : Service() {
 
         runCatching {
                 val logDir = getLogDir(applicationContext)
-                val timestamp =
-                    DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss").format(LocalDateTime.now())
+                val timestamp = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss").format(LocalDateTime.now())
                 // 文件名优先沿用 companion start() 预生成的 currentLogFileName（UI 侧已据此显示「记录中」）。
                 val fileName = currentLogFileName ?: "$LOG_PREFIX$timestamp$LOG_SUFFIX"
                 logFile = File(logDir, fileName)
@@ -260,12 +257,10 @@ class LogRecordService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel =
-                NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW)
-                    .apply {
-                        description = "日志记录服务通知"
-                        setShowBadge(false)
-                    }
+            val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW).apply {
+                description = "日志记录服务通知"
+                setShowBadge(false)
+            }
 
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager?.createNotificationChannel(channel)
@@ -274,22 +269,20 @@ class LogRecordService : Service() {
 
     private fun createNotification(): Notification {
         val intent = Intent().setComponent(Components.MAIN_ACTIVITY)
-        val pendingIntent =
-            PendingIntent.getActivity(
-                this,
-                0,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
 
         val stopIntent = Intent(this, LogRecordService::class.java).apply { action = ACTION_STOP }
-        val stopPendingIntent =
-            PendingIntent.getService(
-                this,
-                1,
-                stopIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
+        val stopPendingIntent = PendingIntent.getService(
+            this,
+            1,
+            stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("正在记录日志")

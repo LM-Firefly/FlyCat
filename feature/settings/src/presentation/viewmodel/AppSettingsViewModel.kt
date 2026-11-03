@@ -30,8 +30,10 @@ import com.github.lmfirefly.flycat.core.contract.FeatureStoreReader
 import com.github.lmfirefly.flycat.core.contract.Preference
 import com.github.lmfirefly.flycat.core.contract.PrivilegedAccessReader
 import com.github.lmfirefly.flycat.core.contract.UpdateSettings
+import com.github.lmfirefly.flycat.core.model.AppBackgroundStyle
 import com.github.lmfirefly.flycat.core.model.AppColorTheme
 import com.github.lmfirefly.flycat.core.model.AppLanguage
+import com.github.lmfirefly.flycat.core.model.NotificationLineContent
 import com.github.lmfirefly.flycat.core.model.ThemeMode
 import com.github.lmfirefly.flycat.core.model.UpdateSource
 import com.github.lmfirefly.flycat.core.util.XiaomiAutoStart
@@ -73,8 +75,11 @@ class AppSettingsViewModel(
     val excludeFromRecents: Preference<Boolean> = settings.excludeFromRecents
     val showTrafficNotification: Preference<Boolean> = settings.showTrafficNotification
     val superIslandEnabled: Preference<Boolean> = settings.superIslandEnabled
+    val notificationFirstLine: Preference<NotificationLineContent> = settings.notificationFirstLine
+    val notificationSecondLine: Preference<NotificationLineContent> = settings.notificationSecondLine
+    val notificationFirstLineText: Preference<String> = settings.notificationFirstLineText
+    val notificationSecondLineText: Preference<String> = settings.notificationSecondLineText
     val bottomBarAutoHide: Preference<Boolean> = settings.bottomBarAutoHide
-    val topBarBlurEnabled: Preference<Boolean> = settings.topBarBlurEnabled
     val classicHomeEnabled: Preference<Boolean> = settings.classicHomeEnabled
     val homeHitokotoEnabled: Preference<Boolean> = settings.homeHitokotoEnabled
     val moeWallpaperUri: Preference<String> = settings.moeWallpaperUri
@@ -86,6 +91,8 @@ class AppSettingsViewModel(
     val moeHomeQuoteAuthor: Preference<String> = settings.moeHomeQuoteAuthor
     val moeSidebarExpanded: Preference<Boolean> = settings.moeSidebarExpanded
     val moeWallpaperScrimEnabled: Preference<Boolean> = settings.moeWallpaperScrimEnabled
+    val appBackgroundStyle: Preference<AppBackgroundStyle> = settings.appBackgroundStyle
+    val appBackgroundWallpaperBlur: Preference<Float> = settings.appBackgroundWallpaperBlur
     val pageScale: Preference<Float> = settings.pageScale
     val predictiveBackEnabled: Preference<Boolean> = settings.predictiveBackEnabled
     val predictiveBackMaxProgress: Preference<Float> = settings.predictiveBackMaxProgress
@@ -99,7 +106,6 @@ class AppSettingsViewModel(
 
     data class MainScreenSettings(
         val bottomBarAutoHide: Boolean,
-        val topBarBlurEnabled: Boolean,
         val moeMainUiEnabled: Boolean,
         val moeWallpaperUri: String,
         val moeWallpaperZoom: Float,
@@ -109,7 +115,6 @@ class AppSettingsViewModel(
 
     private data class DisplayPrefs(
         val bottomBarAutoHide: Boolean,
-        val topBarBlurEnabled: Boolean,
         val moeMainUiEnabled: Boolean,
     )
 
@@ -123,7 +128,6 @@ class AppSettingsViewModel(
     val mainScreenSettings: StateFlow<MainScreenSettings> = combine(
         combine(
             bottomBarAutoHide.state,
-            topBarBlurEnabled.state,
             classicHomeEnabled.state,
             ::DisplayPrefs,
         ),
@@ -137,7 +141,6 @@ class AppSettingsViewModel(
     ) { display, wallpaper ->
         MainScreenSettings(
             bottomBarAutoHide = display.bottomBarAutoHide,
-            topBarBlurEnabled = display.topBarBlurEnabled,
             moeMainUiEnabled = display.moeMainUiEnabled,
             moeWallpaperUri = wallpaper.uri,
             moeWallpaperZoom = wallpaper.zoom,
@@ -149,7 +152,6 @@ class AppSettingsViewModel(
         SharingStarted.WhileSubscribed(5_000),
         MainScreenSettings(
             bottomBarAutoHide = bottomBarAutoHide.value,
-            topBarBlurEnabled = topBarBlurEnabled.value,
             moeMainUiEnabled = classicHomeEnabled.value,
             moeWallpaperUri = moeWallpaperUri.value,
             moeWallpaperZoom = moeWallpaperZoom.value,
@@ -160,12 +162,14 @@ class AppSettingsViewModel(
 
     fun onThemeModeChange(mode: ThemeMode) = themeMode.set(mode)
 
+    fun onAppBackgroundStyleChange(style: AppBackgroundStyle) = appBackgroundStyle.set(style)
+    fun onAppBackgroundWallpaperBlurChange(radius: Float) = appBackgroundWallpaperBlur.set(radius)
+
     data class ActivitySettings(
         val themeMode: ThemeMode,
         val themeSeedColorArgb: Long,
         val invertOnPrimaryColors: Boolean,
         val excludeFromRecents: Boolean,
-        val topBarBlurEnabled: Boolean,
         val pageScale: Float,
     )
 
@@ -177,7 +181,6 @@ class AppSettingsViewModel(
 
     private data class MiscPrefs(
         val excludeFromRecents: Boolean,
-        val topBarBlur: Boolean,
         val scale: Float,
     )
 
@@ -190,7 +193,6 @@ class AppSettingsViewModel(
         ),
         combine(
             excludeFromRecents.state,
-            topBarBlurEnabled.state,
             pageScale.state,
             ::MiscPrefs,
         ),
@@ -200,7 +202,6 @@ class AppSettingsViewModel(
             themeSeedColorArgb = theme.seedArgb,
             invertOnPrimaryColors = theme.invert,
             excludeFromRecents = misc.excludeFromRecents,
-            topBarBlurEnabled = misc.topBarBlur,
             pageScale = misc.scale,
         )
     }.stateIn(
@@ -211,7 +212,6 @@ class AppSettingsViewModel(
             themeSeedColorArgb = themeSeedColorArgb.value,
             invertOnPrimaryColors = invertOnPrimaryColors.value,
             excludeFromRecents = excludeFromRecents.value,
-            topBarBlurEnabled = topBarBlurEnabled.value,
             pageScale = pageScale.value,
         ),
     )
@@ -227,8 +227,6 @@ class AppSettingsViewModel(
     fun resetThemeSeedColor() = themeSeedColorArgb.set(DEFAULT_CUSTOM_THEME_SEED_ARGB)
 
     fun onBottomBarAutoHideChange(enabled: Boolean) = bottomBarAutoHide.set(enabled)
-
-    fun onTopBarBlurEnabledChange(enabled: Boolean) = topBarBlurEnabled.set(enabled)
 
     fun onClassicHomeEnabledChange(enabled: Boolean) = classicHomeEnabled.set(enabled)
 
@@ -300,6 +298,14 @@ class AppSettingsViewModel(
     fun onExcludeFromRecentsChange(exclude: Boolean) = excludeFromRecents.set(exclude)
 
     fun onShowTrafficNotificationChange(show: Boolean) = showTrafficNotification.set(show)
+
+    fun onNotificationFirstLineChange(content: NotificationLineContent) = notificationFirstLine.set(content)
+
+    fun onNotificationSecondLineChange(content: NotificationLineContent) = notificationSecondLine.set(content)
+
+    fun onNotificationFirstLineTextChange(text: String) = notificationFirstLineText.set(text)
+
+    fun onNotificationSecondLineTextChange(text: String) = notificationSecondLineText.set(text)
 
     fun onSuperIslandEnabledChange(enabled: Boolean) = superIslandEnabled.set(enabled)
 

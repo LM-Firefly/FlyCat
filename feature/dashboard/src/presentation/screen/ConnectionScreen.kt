@@ -62,14 +62,21 @@ import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.Conn
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.ConnectionTab
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.ConnectionViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
+import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
+import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopActionAnchorIcon
+import com.github.lmfirefly.flycat.presentation.component.GlassTopActionPill
+import com.github.lmfirefly.flycat.presentation.component.SegmentedTabRow
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
-import com.github.lmfirefly.flycat.presentation.component.navigation.TabRowWithContour
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.DropdownImpl
@@ -80,12 +87,18 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
+import top.yukonga.miuix.kmp.basic.TextFieldDefaults
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -161,7 +174,7 @@ fun ConnectionScreen(navigator: Navigator) {
             viewModel.stopPolling()
         }
     }
-    // Stop polling when app goes to background, resume on foreground (unless detail sheet is open)
+    // 应用进入后台时停止轮询，回到前台时恢复轮询（除非详情面板已打开）
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, showDetailSheet) {
         var wasPollingBeforePause = false
@@ -189,7 +202,7 @@ fun ConnectionScreen(navigator: Navigator) {
             viewModel.resumePolling()
         }
     }
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = FlyTxt.Connection.Title,
@@ -197,62 +210,57 @@ fun ConnectionScreen(navigator: Navigator) {
                 navigationIconPadding = 0.dp,
                 navigationIcon = { NavigationBackIcon(navigator = navigator) },
                 actions = {
-                    Box {
-                        IconButton(
-                            modifier = Modifier.padding(end = spacing.space12),
-                            onClick = { showSortPopup = true },
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Sort,
+                    val sortMenuAnchor = rememberGlassPopupAnchor()
+                    GlassTopActionPill(
+                        actions = listOf(
+                            GlassTopAction(
+                                icon = MiuixIcons.Sort,
                                 contentDescription = FlyTxt.Connection.SortBy.trimEnd(':', '：'),
-                                tint = MiuixTheme.colorScheme.onSurface,
-                            )
-                        }
-                        OverlayListPopup(
-                            show = showSortPopup,
-                            alignment = PopupPositionProvider.Align.BottomEnd,
-                            onDismissRequest = { showSortPopup = false },
-                        ) {
-                            ListPopupColumn {
-                                SortModes.forEachIndexed { index, mode ->
-                                    DropdownImpl(
-                                        text = mode.getDisplayName(),
-                                        optionSize = SortModes.size,
-                                        isSelected = selectedSortIndex == index,
-                                        onSelectedIndexChange = {
-                                            if (mode != state.sortBy) viewModel.setSortBy(mode)
-                                            showSortPopup = false
+                                onClick = { showSortPopup = true },
+                                anchor = sortMenuAnchor,
+                                popup = {
+                                    GlassPopupHost(
+                                        show = showSortPopup,
+                                        onDismissRequest = { showSortPopup = false },
+                                        anchor = sortMenuAnchor,
+                                        anchorContent = {
+                                            GlassTopActionAnchorIcon(MiuixIcons.Sort)
                                         },
-                                        index = index,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    IconButton(onClick = { showSearchBar = !showSearchBar }) {
-                        Icon(
-                            imageVector = MiuixIcons.Search,
-                            contentDescription = FlyTxt.Connection.Search,
-                            tint = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
-                    IconButton(
-                        onClick = {
-                            scope.launch {
-                                val closed = viewModel.closeAllConnections()
-                                if (closed) {
-                                    showDetailSheet = false
-                                    selectedConnection = null
-                                }
-                            }
-                        },
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Delete,
-                            contentDescription = FlyTxt.Connection.CloseAll,
-                            tint = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
+                                    ) {
+                                        SortModes.forEachIndexed { index, mode ->
+                                            GlassMenuItem(
+                                                text = mode.getDisplayName(),
+                                                selected = selectedSortIndex == index,
+                                                onClick = {
+                                                    if (mode != state.sortBy) viewModel.setSortBy(mode)
+                                                    showSortPopup = false
+                                                },
+                                            )
+                                        }
+                                    }
+                                },
+                            ),
+                            GlassTopAction(
+                                icon = MiuixIcons.Search,
+                                contentDescription = FlyTxt.Connection.Search,
+                                onClick = { showSearchBar = !showSearchBar },
+                            ),
+                            GlassTopAction(
+                                icon = MiuixIcons.Delete,
+                                contentDescription = FlyTxt.Connection.CloseAll,
+                                onClick = {
+                                    scope.launch {
+                                        val closed = viewModel.closeAllConnections()
+                                        if (closed) {
+                                            showDetailSheet = false
+                                            selectedConnection = null
+                                        }
+                                    }
+                                },
+                            ),
+                        ),
+                        backdrop = LocalTopBarBackdrop.current,
+                    )
                 },
             )
         }
@@ -269,12 +277,8 @@ fun ConnectionScreen(navigator: Navigator) {
                 layout(constraints.maxWidth, placeable.height + topPx) { placeable.place(0, topPx) }
             },
         ) {
-            TabRowWithContour(
-                modifier = Modifier.padding(
-                    top = spacing.space20,
-                    start = spacing.screenHorizontal,
-                    end = spacing.screenHorizontal,
-                ),
+            SegmentedTabRow(
+                modifier = Modifier.padding(top = spacing.space20, start = spacing.screenHorizontal, end = spacing.screenHorizontal),
                 tabs = tabs,
                 selectedTabIndex = selectedTabIndex,
                 onTabSelected = { selectedTabIndex = it },
@@ -296,7 +300,7 @@ fun ConnectionScreen(navigator: Navigator) {
                         .padding(horizontal = spacing.screenHorizontal, vertical = spacing.space8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    TextField(
+                    GlassTextField(
                         value = searchText,
                         onValueChange = { searchText = it },
                         modifier = Modifier.weight(1f),

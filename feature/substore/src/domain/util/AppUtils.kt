@@ -69,11 +69,10 @@ object AppUtils : FirstRunInitializer {
                     zipPath.outputStream().use { outputStream -> inputStream.copyTo(outputStream) }
                 }
 
-                val stagingDir =
-                    File(cacheDir, "substore_frontend_stage").apply {
-                        if (exists()) deleteRecursively()
-                        mkdirs()
-                    }
+                val stagingDir = File(cacheDir, "substore_frontend_stage").apply {
+                    if (exists()) deleteRecursively()
+                    mkdirs()
+                }
 
                 val unzipSuccess = ArchiveUtils.unzipZip(zipPath, stagingDir)
                 if (!unzipSuccess) {

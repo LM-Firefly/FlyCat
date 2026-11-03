@@ -33,12 +33,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.core.contract.StoreSynchronizer
+import com.github.lmfirefly.flycat.core.model.backup.BackupRestoreStrategy
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppDialog
 import com.github.lmfirefly.flycat.presentation.component.misc.Title
@@ -59,21 +64,11 @@ fun BackupRestoreSection() {
     val storeSynchronizer = koinInject<StoreSynchronizer>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-
     var restoreUri by remember { mutableStateOf<Uri?>(null) }
     var showRestartDialog by remember { mutableStateOf(false) }
-
-    val exportLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.CreateDocument("application/zip")
-        ) { uri ->
-            uri?.let(viewModel::exportBackup)
-        }
-
-    val restoreLauncher =
-        rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri ->
-            restoreUri = uri
-        }
+    var restoreStrategy by rememberSaveable { mutableStateOf(BackupRestoreStrategy.Overwrite) }
+    val exportLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.CreateDocument("application/zip")) { uri -> uri?.let(viewModel::exportBackup) }
+    val restoreLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri -> restoreUri = uri }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -110,6 +105,29 @@ fun BackupRestoreSection() {
         )
     }
 
+    Title(FlyTxt.MetaFeature.Backup.RestoreStrategySection)
+    Card {
+        GlassDropdownPreference(
+            options = BackupRestoreStrategy.entries.map { option ->
+                GlassDropdownOption(
+                    value = option,
+                    label = when (option) {
+                        BackupRestoreStrategy.Overwrite -> FlyTxt.MetaFeature.Backup.RestoreOverwrite
+                        BackupRestoreStrategy.Merge -> FlyTxt.MetaFeature.Backup.RestoreMerge
+                    },
+                )
+            },
+            selected = restoreStrategy,
+            title = FlyTxt.MetaFeature.Backup.RestoreStrategyTitle,
+            summary = when (restoreStrategy) {
+                BackupRestoreStrategy.Overwrite -> FlyTxt.MetaFeature.Backup.RestoreOverwriteSummary
+                BackupRestoreStrategy.Merge -> FlyTxt.MetaFeature.Backup.RestoreMergeSummary
+            },
+            enabled = !uiState.isBusy,
+            onSelected = { restoreStrategy = it },
+        )
+    }
+
     BackupConfirmDialog(
         show = restoreUri != null,
         title = FlyTxt.MetaFeature.Backup.RestoreConfirmTitle,
@@ -119,7 +137,7 @@ fun BackupRestoreSection() {
         onConfirm = {
             val uri = restoreUri ?: return@BackupConfirmDialog
             restoreUri = null
-            viewModel.restoreBackup(uri)
+            viewModel.restoreBackup(uri, strategy = restoreStrategy)
         },
     )
 
@@ -147,16 +165,13 @@ private fun BackupConfirmDialog(
 ) {
     AppDialog(show = show, title = title, summary = message, onDismissRequest = onDismiss) {
         Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
-            Button(modifier = Modifier.weight(1f), onClick = onDismiss) {
-                Text(FlyTxt.Component.Button.Cancel)
-            }
-            Button(
-                modifier = Modifier.weight(1f),
+            GlassTextButton(text = FlyTxt.Component.Button.Cancel, onClick = onDismiss, modifier = Modifier.weight(1f))
+            GlassTextButton(
+                text = confirmText,
                 onClick = onConfirm,
-                colors = ButtonDefaults.buttonColorsPrimary(),
-            ) {
-                Text(text = confirmText, color = MiuixTheme.colorScheme.onPrimary)
-            }
+                modifier = Modifier.weight(1f),
+                primary = true,
+            )
         }
     }
 }

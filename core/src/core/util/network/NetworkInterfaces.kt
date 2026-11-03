@@ -29,27 +29,26 @@ import java.net.NetworkInterface
 import java.net.SocketException
 
 object NetworkInterfaces {
-    suspend fun getLocalIpAddress(): String? =
-        withContext(Dispatchers.IO) {
-            try {
-                val interfaces = NetworkInterface.getNetworkInterfaces()
-                for (networkInterface in interfaces) {
-                    if (networkInterface.isUp && !networkInterface.isLoopback) {
-                        val addresses = networkInterface.inetAddresses
-                        for (address in addresses) {
-                            if (!address.isLoopbackAddress && address is InetAddress) {
-                                val hostAddress = address.hostAddress
-                                if (hostAddress?.contains(':') == false) {
-                                    return@withContext hostAddress
-                                }
+    suspend fun getLocalIpAddress(): String? = withContext(Dispatchers.IO) {
+        try {
+            val interfaces = NetworkInterface.getNetworkInterfaces()
+            for (networkInterface in interfaces) {
+                if (networkInterface.isUp && !networkInterface.isLoopback) {
+                    val addresses = networkInterface.inetAddresses
+                    for (address in addresses) {
+                        if (!address.isLoopbackAddress && address is InetAddress) {
+                            val hostAddress = address.hostAddress
+                            if (hostAddress?.contains(':') == false) {
+                                return@withContext hostAddress
                             }
                         }
                     }
                 }
-                null
-            } catch (error: SocketException) {
-                Timber.w(error, "Failed to get local IP address")
-                null
             }
+            null
+        } catch (error: SocketException) {
+            Timber.w(error, "Failed to get local IP address")
+            null
         }
+    }
 }

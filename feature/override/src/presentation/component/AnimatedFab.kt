@@ -65,54 +65,42 @@ fun OverrideAnimatedFab(
 
     AnimatedVisibility(
         visibleState = fabVisibilityState,
-        enter =
-            slideInVertically(
-                animationSpec =
-                    tween(
-                        durationMillis = AnimationSpecs.Proxy.VisibilityDuration,
-                        easing = AnimationSpecs.EmphasizedDecelerate,
-                    ),
+        enter = slideInVertically(
+                animationSpec = tween(
+                    durationMillis = AnimationSpecs.Proxy.VisibilityDuration,
+                    easing = AnimationSpecs.EmphasizedDecelerate,
+                ),
                 initialOffsetY = { it / 2 },
-            ) +
-                scaleIn(
-                    initialScale = AnimationSpecs.Proxy.VisibilityInitialScale,
-                    animationSpec =
-                        tween(
-                            durationMillis = AnimationSpecs.Proxy.VisibilityDuration,
-                            easing = LinearEasing,
-                        ),
-                ) +
-                fadeIn(
-                    animationSpec =
-                        tween(
-                            durationMillis = AnimationSpecs.Proxy.VisibilityFadeDuration,
-                            easing = AnimationSpecs.EnterEasing,
-                        )
+            ) + scaleIn(
+                initialScale = AnimationSpecs.Proxy.VisibilityInitialScale,
+                animationSpec = tween(
+                    durationMillis = AnimationSpecs.Proxy.VisibilityDuration,
+                    easing = LinearEasing,
                 ),
-        exit =
-            slideOutVertically(
-                animationSpec =
-                    tween(
-                        durationMillis = AnimationSpecs.Proxy.VisibilityDuration,
-                        easing = AnimationSpecs.EmphasizedAccelerate,
-                    ),
+            ) + fadeIn(
+                animationSpec = tween(
+                    durationMillis = AnimationSpecs.Proxy.VisibilityFadeDuration,
+                    easing = AnimationSpecs.EnterEasing,
+                )
+            ),
+        exit = slideOutVertically(
+                animationSpec = tween(
+                    durationMillis = AnimationSpecs.Proxy.VisibilityDuration,
+                    easing = AnimationSpecs.EmphasizedAccelerate,
+                ),
                 targetOffsetY = { it / 2 },
-            ) +
-                scaleOut(
-                    targetScale = AnimationSpecs.Proxy.VisibilityTargetScale,
-                    animationSpec =
-                        tween(
-                            durationMillis = AnimationSpecs.Proxy.VisibilityDuration,
-                            easing = LinearEasing,
-                        ),
-                ) +
-                fadeOut(
-                    animationSpec =
-                        tween(
-                            durationMillis = AnimationSpecs.Proxy.VisibilityFadeDuration,
-                            easing = AnimationSpecs.ExitEasing,
-                        )
+            ) + scaleOut(
+                targetScale = AnimationSpecs.Proxy.VisibilityTargetScale,
+                animationSpec = tween(
+                    durationMillis = AnimationSpecs.Proxy.VisibilityDuration,
+                    easing = LinearEasing,
                 ),
+            ) + fadeOut(
+                animationSpec = tween(
+                    durationMillis = AnimationSpecs.Proxy.VisibilityFadeDuration,
+                    easing = AnimationSpecs.ExitEasing,
+                )
+            ),
         label = "override_shared_fab_visibility",
     ) {
         FloatingActionButton(

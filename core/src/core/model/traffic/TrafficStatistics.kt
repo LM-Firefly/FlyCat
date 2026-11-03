@@ -30,12 +30,8 @@ data class DailyTrafficSummary(
     val totalUpload: Long,
     val totalDownload: Long,
 ) {
-    val total: Long
-        get() = totalUpload + totalDownload
-
-    companion object {
-        val empty = DailyTrafficSummary(0L, 0L, 0L)
-    }
+    val total: Long get() = totalUpload + totalDownload
+    companion object { val empty = DailyTrafficSummary(0L, 0L, 0L) }
 }
 
 @Serializable
@@ -47,8 +43,7 @@ data class AppTrafficUsage(
     val totalDownload: Long = 0L,
     val lastActiveAt: Long = 0L,
 ) {
-    val totalBytes: Long
-        get() = totalUpload + totalDownload
+    val totalBytes: Long get() = totalUpload + totalDownload
 }
 
 data class AppTrafficDeltaRecord(
@@ -68,17 +63,15 @@ object TrafficStatisticsBuckets {
     val UNATTRIBUTED_APP_NAME get() = FlyTxt.TrafficStatistics.Buckets.UnattributedTrafficName
     const val UNATTRIBUTED_ROUTE_KEY = "route:unattributed"
     val UNATTRIBUTED_ROUTE_NAME get() = FlyTxt.TrafficStatistics.Buckets.UnattributedRouteName
-
-    fun buildUnattributedRecord(uploadDelta: Long, downloadDelta: Long) =
-        AppTrafficDeltaRecord(
-            appKey = UNATTRIBUTED_APP_KEY,
-            packageName = null,
-            appName = UNATTRIBUTED_APP_NAME,
-            uploadDelta = uploadDelta,
-            downloadDelta = downloadDelta,
-            routeKey = UNATTRIBUTED_ROUTE_KEY,
-            routeLabel = UNATTRIBUTED_ROUTE_NAME,
-        )
+    fun buildUnattributedRecord(uploadDelta: Long, downloadDelta: Long) = AppTrafficDeltaRecord(
+        appKey = UNATTRIBUTED_APP_KEY,
+        packageName = null,
+        appName = UNATTRIBUTED_APP_NAME,
+        uploadDelta = uploadDelta,
+        downloadDelta = downloadDelta,
+        routeKey = UNATTRIBUTED_ROUTE_KEY,
+        routeLabel = UNATTRIBUTED_ROUTE_NAME,
+    )
 }
 
 @Serializable
@@ -90,18 +83,14 @@ data class AppRouteTrafficUsage(
     val totalDownload: Long = 0L,
     val lastActiveAt: Long = 0L,
 ) {
-    val totalBytes: Long
-        get() = totalUpload + totalDownload
+    val totalBytes: Long get() = totalUpload + totalDownload
 }
 
 @Serializable
 data class DailyAppTrafficSummary(val dateMillis: Long, val appUsages: Map<String, AppTrafficUsage> = emptyMap()) {
-    val totalUpload: Long
-        get() = appUsages.values.sumOf(AppTrafficUsage::totalUpload)
-    val totalDownload: Long
-        get() = appUsages.values.sumOf(AppTrafficUsage::totalDownload)
-    val total: Long
-        get() = totalUpload + totalDownload
+    val totalUpload: Long get() = appUsages.values.sumOf(AppTrafficUsage::totalUpload)
+    val totalDownload: Long get() = appUsages.values.sumOf(AppTrafficUsage::totalDownload)
+    val total: Long get() = totalUpload + totalDownload
 }
 
 @Serializable

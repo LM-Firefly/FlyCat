@@ -32,6 +32,7 @@ import com.github.lmfirefly.flycat.core.model.ConnectionOverviewSnapshot
 import com.github.lmfirefly.flycat.core.model.ConnectionSnapshot
 import com.github.lmfirefly.flycat.core.model.LogMessage
 import com.github.lmfirefly.flycat.core.model.Provider
+import com.github.lmfirefly.flycat.core.model.RuntimeRule
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySort
@@ -91,92 +92,88 @@ class SessionRuntime(
     private var networkObserver: ServiceNetworkObserver? = null
     private var timeZoneReceiver: BroadcastReceiver? = null
     private val queryCache = SessionRuntimeQueryCache()
-    private val telemetry =
-        SessionRuntimeTelemetry(host = host, scope = scope) { ready ->
-            publishSnapshot(currentSnapshot.copy(logReady = ready))
-        }
+    private val telemetry = SessionRuntimeTelemetry(host = host, scope = scope) { ready ->
+        publishSnapshot(currentSnapshot.copy(logReady = ready))
+    }
     val telemetryTrafficNow: StateFlow<Long> = telemetry.trafficNow
     val telemetryTrafficTotal: StateFlow<Long> = telemetry.trafficTotal
 
-    suspend fun start(spec: RuntimeSpec): RuntimeOperationResult =
-        lock.withLock {
-            clearInterruptRequest()
-            try {
-                    stopInternal(reason = null, notifyHost = false)
-                    startupLog(spec, "session: start begin")
-                    startInternal(spec)
-                    RuntimeOperationResult(success = true)
-                }
-                catch (e: CancellationException) {
-                    startupLog(spec, "session: start cancelled")
-                    throw e
-                }
-                catch (error: Exception) {
-                    if (error is RuntimeInterruptedException) {
-                        startupLog(spec, "session: start interrupted reason=${error.message}")
-                        RuntimeOperationResult(success = true)
-                    } else {
-                        rollback(spec, error.message ?: "start runtime failed")
-                        RuntimeOperationResult(
-                            success = false,
-                            error = error.message ?: "start runtime failed",
-                        )
-                    }
-                }
+    suspend fun start(spec: RuntimeSpec): RuntimeOperationResult = lock.withLock {
+        clearInterruptRequest()
+        try {
+            stopInternal(reason = null, notifyHost = false)
+            startupLog(spec, "session: start begin")
+            startInternal(spec)
+            RuntimeOperationResult(success = true)
         }
+        catch (e: CancellationException) {
+            startupLog(spec, "session: start cancelled")
+            throw e
+        }
+        catch (error: Exception) {
+            if (error is RuntimeInterruptedException) {
+                startupLog(spec, "session: start interrupted reason=${error.message}")
+                RuntimeOperationResult(success = true)
+            } else {
+                rollback(spec, error.message ?: "start runtime failed")
+                RuntimeOperationResult(
+                    success = false,
+                    error = error.message ?: "start runtime failed",
+                )
+            }
+        }
+    }
 
-    suspend fun reload(spec: RuntimeSpec): RuntimeOperationResult =
-        lock.withLock {
-            clearInterruptRequest()
-            try {
-                    startupLog(spec, "session: reload begin")
-                    reloadInternal(spec)
-                    RuntimeOperationResult(success = true)
-                }
-                catch (e: CancellationException) {
-                    startupLog(spec, "session: reload cancelled")
-                    throw e
-                }
-                catch (error: Exception) {
-                    if (error is RuntimeInterruptedException) {
-                        startupLog(spec, "session: reload interrupted reason=${error.message}")
-                        RuntimeOperationResult(success = true)
-                    } else {
-                        startupLog(spec, "failed=${error.message ?: "reload runtime failed"}")
-                        RuntimeOperationResult(
-                            success = false,
-                            error = error.message ?: "reload runtime failed",
-                        )
-                    }
-                }
+    suspend fun reload(spec: RuntimeSpec): RuntimeOperationResult = lock.withLock {
+        clearInterruptRequest()
+        try {
+            startupLog(spec, "session: reload begin")
+            reloadInternal(spec)
+            RuntimeOperationResult(success = true)
         }
+        catch (e: CancellationException) {
+            startupLog(spec, "session: reload cancelled")
+            throw e
+        }
+        catch (error: Exception) {
+            if (error is RuntimeInterruptedException) {
+                startupLog(spec, "session: reload interrupted reason=${error.message}")
+                RuntimeOperationResult(success = true)
+            } else {
+                startupLog(spec, "failed=${error.message ?: "reload runtime failed"}")
+                RuntimeOperationResult(
+                    success = false,
+                    error = error.message ?: "reload runtime failed",
+                )
+            }
+        }
+    }
 
-    suspend fun restart(spec: RuntimeSpec): RuntimeOperationResult =
-        lock.withLock {
-            clearInterruptRequest()
-            try {
-                    stopInternal(reason = null, notifyHost = false)
-                    startupLog(spec, "session: restart begin")
-                    startInternal(spec)
-                    RuntimeOperationResult(success = true)
-                }
-                catch (e: CancellationException) {
-                    startupLog(spec, "session: restart cancelled")
-                    throw e
-                }
-                catch (error: Exception) {
-                    if (error is RuntimeInterruptedException) {
-                        startupLog(spec, "session: restart interrupted reason=${error.message}")
-                        RuntimeOperationResult(success = true)
-                    } else {
-                        rollback(spec, error.message ?: "restart runtime failed")
-                        RuntimeOperationResult(
-                            success = false,
-                            error = error.message ?: "restart runtime failed",
-                        )
-                    }
-                }
+    suspend fun restart(spec: RuntimeSpec): RuntimeOperationResult = lock.withLock {
+        clearInterruptRequest()
+        try {
+            stopInternal(reason = null, notifyHost = false)
+            startupLog(spec, "session: restart begin")
+            startInternal(spec)
+            RuntimeOperationResult(success = true)
         }
+        catch (e: CancellationException) {
+            startupLog(spec, "session: restart cancelled")
+            throw e
+        }
+        catch (error: Exception) {
+            if (error is RuntimeInterruptedException) {
+                startupLog(spec, "session: restart interrupted reason=${error.message}")
+                RuntimeOperationResult(success = true)
+            } else {
+                rollback(spec, error.message ?: "restart runtime failed")
+                RuntimeOperationResult(
+                    success = false,
+                    error = error.message ?: "restart runtime failed",
+                )
+            }
+        }
+    }
 
     suspend fun stop(reason: String? = null): RuntimeOperationResult {
         requestStop(reason)
@@ -208,32 +205,29 @@ class SessionRuntime(
 
     fun snapshot(): RuntimeSnapshot = currentSnapshot
 
-    fun queryTunnelState(): TunnelState =
-        if (currentSnapshot.phase == RuntimePhase.Running) {
-            Clash.queryTunnelState()
-        } else {
-            TunnelState(TunnelState.Mode.Rule)
-        }
+    fun queryTunnelState(): TunnelState = if (currentSnapshot.phase == RuntimePhase.Running) {
+        Clash.queryTunnelState()
+    } else {
+        TunnelState(TunnelState.Mode.Rule)
+    }
 
-    fun queryTrafficNow(): Long =
-        if (currentSnapshot.phase == RuntimePhase.Running) {
-            Clash.queryTrafficNow().also {
-                queryCache.updateTrafficNow(it)
-                publishSnapshot(currentSnapshot.copy(trafficReady = true))
-            }
-        } else {
-            0L
+    fun queryTrafficNow(): Long = if (currentSnapshot.phase == RuntimePhase.Running) {
+        Clash.queryTrafficNow().also {
+            queryCache.updateTrafficNow(it)
+            publishSnapshot(currentSnapshot.copy(trafficReady = true))
         }
+    } else {
+        0L
+    }
 
-    fun queryTrafficTotal(): Long =
-        if (currentSnapshot.phase == RuntimePhase.Running) {
-            Clash.queryTrafficTotal().also {
-                queryCache.updateTrafficTotal(it)
-                publishSnapshot(currentSnapshot.copy(trafficReady = true))
-            }
-        } else {
-            0L
+    fun queryTrafficTotal(): Long = if (currentSnapshot.phase == RuntimePhase.Running) {
+        Clash.queryTrafficTotal().also {
+            queryCache.updateTrafficTotal(it)
+            publishSnapshot(currentSnapshot.copy(trafficReady = true))
         }
+    } else {
+        0L
+    }
 
     fun queryConnections(): ConnectionSnapshot {
         if (currentSnapshot.phase != RuntimePhase.Running) return ConnectionSnapshot()
@@ -245,18 +239,25 @@ class SessionRuntime(
         return Clash.queryConnectionsOverview()
     }
 
+    // Root 链路原样透传原生 JSON：避免服务端「解码成对象再重编码」的双重序列化，对端自行容错解码。
+    fun queryConnectionsRawJson(): String = if (currentSnapshot.phase != RuntimePhase.Running) "{}" else Clash.queryConnectionsRawJson()
+
+    fun queryConnectionsOverviewRawJson(): String = if (currentSnapshot.phase != RuntimePhase.Running) "{}" else Clash.queryConnectionsOverviewRawJson()
+
+    fun queryRulesRawJson(): String = if (currentSnapshot.phase != RuntimePhase.Running) "[]" else Clash.queryRulesRawJson()
+
+    fun queryProvidersRawJson(): String = if (currentSnapshot.phase != RuntimePhase.Running) "[]" else Clash.queryProvidersRawJson()
+
     suspend fun queryAllProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> {
         if (currentSnapshot.phase != RuntimePhase.Running) return emptyList()
-        val groups =
-            runCatching { resolveRuntimeProxyGroups(excludeNotSelectable) }
-                .getOrElse {
-                    if (excludeNotSelectable) {
-                        val selectable = Clash.queryGroupNames(true).toSet()
-                        ensureRuntimeSnapshot().proxyGroups.filter { selectable.contains(it.name) }
-                    } else {
-                        ensureRuntimeSnapshot().proxyGroups
-                    }
-                }
+        val groups = runCatching { resolveRuntimeProxyGroups(excludeNotSelectable) }.getOrElse {
+            if (excludeNotSelectable) {
+                val selectable = Clash.queryGroupNames(true).toSet()
+                ensureRuntimeSnapshot().proxyGroups.filter { selectable.contains(it.name) }
+            } else {
+                ensureRuntimeSnapshot().proxyGroups
+            }
+        }
         queryCache.replaceProxyGroups(groups)
         publishSnapshot(currentSnapshot.copy(groupsReady = groups.isNotEmpty()))
         return groups
@@ -282,6 +283,16 @@ class SessionRuntime(
     fun queryProviders(): List<Provider> {
         if (currentSnapshot.phase != RuntimePhase.Running) return emptyList()
         return runCatching { Clash.queryProviders() }.getOrDefault(emptyList())
+    }
+
+    fun queryRules(): List<RuntimeRule> {
+        if (currentSnapshot.phase != RuntimePhase.Running) return emptyList()
+        return runCatching { Clash.queryRules() }.getOrDefault(emptyList())
+    }
+
+    fun setRuleDisabled(index: Int, disabled: Boolean): Boolean {
+        if (currentSnapshot.phase != RuntimePhase.Running) return false
+        return runCatching { Clash.setRuleDisabled(index, disabled) }.getOrDefault(false)
     }
 
     fun patchSelector(group: String, name: String): Boolean {
@@ -370,21 +381,17 @@ class SessionRuntime(
     }
 
     suspend fun updateProvider(type: String, name: String): String? {
-        val providerType =
-            runCatching { Provider.Type.valueOf(type) }
-                .getOrElse {
-                    return "invalid provider type: $type"
-                }
+        val providerType = runCatching { Provider.Type.valueOf(type) }.getOrElse {
+            return "invalid provider type: $type"
+        }
         return runCatching {
-                Clash.updateProvider(providerType, name).await()
-                refreshRuntimeSnapshot()
-                null
-            }
-            .getOrElse { it.message ?: "update provider failed" }
+            Clash.updateProvider(providerType, name).await()
+            refreshRuntimeSnapshot()
+            null
+        }.getOrElse { it.message ?: "update provider failed" }
     }
 
-    fun queryRecentLogsJson(sinceSeq: Long): RuntimeLogChunk =
-        telemetry.queryRecentLogsJson(sinceSeq)
+    fun queryRecentLogsJson(sinceSeq: Long): RuntimeLogChunk = telemetry.queryRecentLogsJson(sinceSeq)
 
     fun setLogConsumerActive(active: Boolean) = telemetry.setLogConsumerActive(active)
 
@@ -487,12 +494,11 @@ class SessionRuntime(
 
         updateSnapshot {
             currentSnapshot.copy(
-                phase =
-                    if (currentSnapshot.phase == RuntimePhase.Idle) {
-                        RuntimePhase.Idle
-                    } else {
-                        RuntimePhase.Stopping
-                    },
+                phase = if (currentSnapshot.phase == RuntimePhase.Idle) {
+                    RuntimePhase.Idle
+                } else {
+                    RuntimePhase.Stopping
+                },
                 transportReady = false,
                 groupsReady = false,
                 trafficReady = false,
@@ -585,20 +591,16 @@ class SessionRuntime(
         }
 
         ensureNotInterrupted(spec)
-        error(
-            "runtime loaded but exposed 0 proxy groups; expected=${expectedGroups.size} " +
-                "sample=${expectedGroups.take(min(5, expectedGroups.size))}"
-        )
+        error("runtime loaded but exposed 0 proxy groups; expected=${expectedGroups.size} " + "sample=${expectedGroups.take(min(5, expectedGroups.size))}")
     }
 
-    private suspend fun readExpectedGroupNames(spec: RuntimeSpec): List<String> =
-        runCatching {
-                proxyGroupResolver.expectedGroupNames(spec, false)
-            }
-            .getOrElse { error ->
-                startupLog(spec, "runtime verify: expected group inspect failed=${error.message}")
-                emptyList()
-            }
+    private suspend fun readExpectedGroupNames(spec: RuntimeSpec): List<String> = runCatching {
+        proxyGroupResolver.expectedGroupNames(spec, false)
+    }
+    .getOrElse { error ->
+        startupLog(spec, "runtime verify: expected group inspect failed=${error.message}")
+        emptyList()
+    }
 
     private suspend fun restoreSelections(spec: RuntimeSpec) {
         val profileUuid = UUID.fromString(spec.profileUuid)
@@ -607,9 +609,7 @@ class SessionRuntime(
         if (restoreSelections.isEmpty() && restorePins.isEmpty()) {
             return
         }
-        val runtimeGroups =
-            runCatching { resolveRuntimeProxyGroups(excludeNotSelectable = false) }
-                .getOrDefault(emptyList())
+        val runtimeGroups = runCatching { resolveRuntimeProxyGroups(excludeNotSelectable = false) }.getOrDefault(emptyList())
         SelectionRestoreExecutor.restore(
             profileUuid = profileUuid,
             selections = restoreSelections,
@@ -622,21 +622,19 @@ class SessionRuntime(
     private fun startObservers() {
         val appContext = host.context.appContextOrSelf
         if (networkObserver == null) {
-            networkObserver =
-                ServiceNetworkObserver(appContext) {
-                        transport.onNetworkChanged()
-                    }
-                    .also { it.start() }
+            networkObserver = ServiceNetworkObserver(appContext) {
+                transport.onNetworkChanged()
+            }
+            .also { it.start() }
         }
         if (timeZoneReceiver == null) {
-            val receiver =
-                object : BroadcastReceiver() {
-                    override fun onReceive(context: Context?, intent: Intent?) {
-                        if (intent?.action == Intent.ACTION_TIMEZONE_CHANGED) {
-                            runCatching { notifyCurrentTimeZone() }
-                        }
+            val receiver = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    if (intent?.action == Intent.ACTION_TIMEZONE_CHANGED) {
+                        runCatching { notifyCurrentTimeZone() }
                     }
                 }
+            }
             ContextCompat.registerReceiver(
                 appContext,
                 receiver,
@@ -699,9 +697,7 @@ class SessionRuntime(
         }
 
         val providers = runCatching { Clash.queryProviders() }.getOrDefault(emptyList())
-        val proxyGroups =
-            runCatching { resolveRuntimeProxyGroups(excludeNotSelectable = false) }
-                .getOrDefault(emptyList())
+        val proxyGroups = runCatching { resolveRuntimeProxyGroups(excludeNotSelectable = false) }.getOrDefault(emptyList())
         val trafficNow = runCatching { Clash.queryTrafficNow() }.getOrDefault(0L)
         val trafficTotal = runCatching { Clash.queryTrafficTotal() }.getOrDefault(0L)
         queryCache.replace(
@@ -716,10 +712,7 @@ class SessionRuntime(
         name: String,
         proxySort: ProxySort = ProxySort.Default,
     ): ProxyGroup? {
-        if (
-            currentSnapshot.phase != RuntimePhase.Running &&
-                currentSnapshot.phase != RuntimePhase.Starting
-        ) {
+        if (currentSnapshot.phase != RuntimePhase.Running && currentSnapshot.phase != RuntimePhase.Starting) {
             return null
         }
 
@@ -728,11 +721,9 @@ class SessionRuntime(
         return group
     }
 
-    private suspend fun resolveRuntimeProxyGroupNames(excludeNotSelectable: Boolean): List<String> =
-        proxyGroupResolver.resolvedGroupNames(currentSpec, excludeNotSelectable)
+    private suspend fun resolveRuntimeProxyGroupNames(excludeNotSelectable: Boolean): List<String> = proxyGroupResolver.resolvedGroupNames(currentSpec, excludeNotSelectable)
 
-    private suspend fun resolveRuntimeProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> =
-        proxyGroupResolver.resolvedGroups(currentSpec, excludeNotSelectable, enrichLive = true)
+    private suspend fun resolveRuntimeProxyGroups(excludeNotSelectable: Boolean): List<ProxyGroup> = proxyGroupResolver.resolvedGroups(currentSpec, excludeNotSelectable, enrichLive = true)
 
     private suspend fun ensureRuntimeSnapshot(): SessionRuntimeQuerySnapshot {
         val snapshot = queryCache.snapshot()
@@ -767,15 +758,13 @@ class SessionRuntime(
     }
 
     private fun startupLog(spec: RuntimeSpec, message: String) {
-        val scope =
-            when (spec.owner) {
-                RuntimeOwner.LocalTun -> RuntimeStartupLogStore.Scope.LOCAL_TUN
-                RuntimeOwner.RootTun -> RuntimeStartupLogStore.Scope.ROOT_TUN
-                RuntimeOwner.RemoteController,
-                RuntimeOwner.None -> return
-            }
-        RuntimeStartupLogStore(host.context.appContextOrSelf, scope)
-            .append("${scope.tag} session: $message")
+        val scope = when (spec.owner) {
+            RuntimeOwner.LocalTun -> RuntimeStartupLogStore.Scope.LOCAL_TUN
+            RuntimeOwner.RootTun -> RuntimeStartupLogStore.Scope.ROOT_TUN
+            RuntimeOwner.RemoteController,
+            RuntimeOwner.None -> return
+        }
+        RuntimeStartupLogStore(host.context.appContextOrSelf, scope).append("${scope.tag} session: $message")
     }
 
     private fun ensureNotInterrupted(spec: RuntimeSpec) {

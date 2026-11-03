@@ -22,7 +22,8 @@
 package com.github.lmfirefly.flycat.presentation.component.input
 
 import androidx.compose.runtime.Composable
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
 
 @Composable
 fun <T> EnumSelector(
@@ -33,17 +34,11 @@ fun <T> EnumSelector(
     values: List<T>,
     onValueChange: (T) -> Unit,
 ) {
-    val selectedIndex = values.indexOf(currentValue).coerceAtLeast(0)
-
-    WindowDropdownPreference(
+    GlassDropdownPreference(
+        options = values.zip(items).map { (value, label) -> GlassDropdownOption(value = value, label = label) },
+        selected = currentValue,
         title = title,
         summary = summary,
-        items = items,
-        selectedIndex = selectedIndex,
-        onSelectedIndexChange = { index ->
-            if (index >= 0 && index < values.size) {
-                onValueChange(values[index])
-            }
-        },
+        onSelected = onValueChange,
     )
 }

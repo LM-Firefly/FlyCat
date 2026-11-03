@@ -79,58 +79,50 @@ object YamlCodec {
         loader.loadFromString(content)
     }
 
-    private fun toYamlNode(element: JsonElement): Any? =
-        when (element) {
-            JsonNull -> null
-            is JsonObject ->
-                LinkedHashMap<String, Any?>().apply {
-                    element.forEach { (key, value) -> put(key, toYamlNode(value)) }
-                }
-
-            is JsonArray -> element.map(::toYamlNode)
-            is JsonPrimitive ->
-                when {
-                    element.isString -> element.content
-                    element.booleanOrNull != null -> element.booleanOrNull
-                    element.intOrNull != null -> element.intOrNull
-                    element.longOrNull != null -> element.longOrNull
-                    element.doubleOrNull != null -> element.doubleOrNull
-                    else -> element.content
-                }
+    private fun toYamlNode(element: JsonElement): Any? = when (element) {
+        JsonNull -> null
+        is JsonObject -> LinkedHashMap<String, Any?>().apply {
+            element.forEach { (key, value) -> put(key, toYamlNode(value)) }
         }
-
-    private fun toJsonElement(value: Any?): JsonElement =
-        when (value) {
-            null -> JsonNull
-            is Map<*, *> ->
-                JsonObject(
-                    LinkedHashMap<String, JsonElement>().apply {
-                        value.forEach { (key, child) -> put(key.toString(), toJsonElement(child)) }
-                    }
-                )
-
-            is List<*> -> JsonArray(value.map(::toJsonElement))
-            is Boolean -> JsonPrimitive(value)
-            is Int -> JsonPrimitive(value)
-            is Long -> JsonPrimitive(value)
-            is Float -> JsonPrimitive(value)
-            is Double -> JsonPrimitive(value)
-            is Number -> JsonPrimitive(value.toDouble())
-            else -> JsonPrimitive(value.toString())
+        is JsonArray -> element.map(::toYamlNode)
+        is JsonPrimitive -> when {
+            element.isString -> element.content
+            element.booleanOrNull != null -> element.booleanOrNull
+            element.intOrNull != null -> element.intOrNull
+            element.longOrNull != null -> element.longOrNull
+            element.doubleOrNull != null -> element.doubleOrNull
+            else -> element.content
         }
+    }
 
-    private fun normalizeYamlValue(value: Any?): Any? =
-        when (value) {
-            null -> null
-            is Map<*, *> ->
-                LinkedHashMap<String, Any?>().apply {
-                    value.forEach { (key, childValue) ->
-                        put(key.toString(), normalizeYamlValue(childValue))
-                    }
+    private fun toJsonElement(value: Any?): JsonElement = when (value) {
+        null -> JsonNull
+        is Map<*, *> ->
+            JsonObject(
+                LinkedHashMap<String, JsonElement>().apply {
+                    value.forEach { (key, child) -> put(key.toString(), toJsonElement(child)) }
                 }
+            )
+        is List<*> -> JsonArray(value.map(::toJsonElement))
+        is Boolean -> JsonPrimitive(value)
+        is Int -> JsonPrimitive(value)
+        is Long -> JsonPrimitive(value)
+        is Float -> JsonPrimitive(value)
+        is Double -> JsonPrimitive(value)
+        is Number -> JsonPrimitive(value.toDouble())
+        else -> JsonPrimitive(value.toString())
+    }
 
-            is Iterable<*> -> value.map(::normalizeYamlValue)
-            is Array<*> -> value.map(::normalizeYamlValue)
-            else -> value
-        }
+    private fun normalizeYamlValue(value: Any?): Any? = when (value) {
+        null -> null
+        is Map<*, *> ->
+            LinkedHashMap<String, Any?>().apply {
+                value.forEach { (key, childValue) ->
+                    put(key.toString(), normalizeYamlValue(childValue))
+                }
+            }
+        is Iterable<*> -> value.map(::normalizeYamlValue)
+        is Array<*> -> value.map(::normalizeYamlValue)
+        else -> value
+    }
 }

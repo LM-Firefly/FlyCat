@@ -35,8 +35,8 @@ import java.io.File
 @Keep
 object Bridge {
     /**
-     * Triggers native library loading and JNI initialization on the calling thread.
-     * Call this from a background thread during app startup so the main thread is never blocked by the synchronous [init] block.
+     * 在调用线程上触发原生库加载和JNI初始化。
+     * 在应用启动期间从后台线程调用此方法，以确保主线程永远不会被同步的 `init` 代码块阻塞。
      */
     fun preload() { /* accessing this object triggers init */ }
 
@@ -68,6 +68,9 @@ object Bridge {
     external fun nativeQueryConnections(): String
 
     external fun nativeQueryConnectionsOverview(): String
+
+    // 仅返回所请求连接 id（以换行分隔）的完整详情。
+    external fun nativeQueryConnectionsByIds(idsNewlineSeparated: String): String
 
     external fun nativeQueryConnectionGeneration(): Long
 
@@ -190,8 +193,7 @@ object Bridge {
             .detachFd()
 
         val home = ctx.runtimeHomeDir.apply { mkdirs() }.absolutePath
-        val versionName =
-            ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "unknown"
+        val versionName = ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "unknown"
         val sdkVersion = Build.VERSION.SDK_INT
 
         // 读取活动内核的版本信息，而非使用编译时常量。

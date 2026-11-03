@@ -21,9 +21,12 @@
 
 package com.github.lmfirefly.flycat.core.contract
 
+import com.github.lmfirefly.flycat.core.model.AccessControlImportStrategy
 import com.github.lmfirefly.flycat.core.model.AccessControlMode
+import com.github.lmfirefly.flycat.core.model.AppBackgroundStyle
 import com.github.lmfirefly.flycat.core.model.AppColorTheme
 import com.github.lmfirefly.flycat.core.model.AppLanguage
+import com.github.lmfirefly.flycat.core.model.NotificationLineContent
 import com.github.lmfirefly.flycat.core.model.ThemeMode
 import com.github.lmfirefly.flycat.core.model.WifiAutomationFallbackAction
 import com.github.lmfirefly.flycat.core.model.WifiAutomationRule
@@ -52,6 +55,7 @@ interface NetworkSettingsReader {
     val tunFakeIpRange: Preference<String>
     val tunFakeIpRange6: Preference<String>
     val accessControlMode: Preference<AccessControlMode>
+    val accessControlImportStrategy: Preference<AccessControlImportStrategy>
     val accessControlPackages: Preference<Set<String>>
     val accessControlShowSystemApps: Preference<Boolean>
     val accessControlSelectedFirst: Preference<Boolean>
@@ -83,8 +87,11 @@ interface AppSettingsReader {
     val hideAppIcon: Preference<Boolean>
     val showTrafficNotification: Preference<Boolean>
     val superIslandEnabled: Preference<Boolean>
+    val notificationFirstLine: Preference<NotificationLineContent>
+    val notificationSecondLine: Preference<NotificationLineContent>
+    val notificationFirstLineText: Preference<String>
+    val notificationSecondLineText: Preference<String>
     val bottomBarAutoHide: Preference<Boolean>
-    val topBarBlurEnabled: Preference<Boolean>
     val classicHomeEnabled: Preference<Boolean>
     val homeHitokotoEnabled: Preference<Boolean>
     val moeWallpaperUri: Preference<String>
@@ -96,6 +103,8 @@ interface AppSettingsReader {
     val moeHomeQuoteAuthor: Preference<String>
     val moeSidebarExpanded: Preference<Boolean>
     val moeWallpaperScrimEnabled: Preference<Boolean>
+    val appBackgroundStyle: Preference<AppBackgroundStyle>
+    val appBackgroundWallpaperBlur: Preference<Float>
     val pageScale: Preference<Float>
     val predictiveBackEnabled: Preference<Boolean>
     val predictiveBackMaxProgress: Preference<Float>

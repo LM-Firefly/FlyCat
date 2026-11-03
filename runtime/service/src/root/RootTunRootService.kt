@@ -63,201 +63,173 @@ class RootTunRootService : RootService() {
 
     private val binderSemaphore = Semaphore(MAX_CONCURRENT_BINDER_CALLS)
 
-    private val binder =
-        object : IRootTunService.Stub() {
-            override fun startRootTun(requestJson: String): String {
-                val request = decodeRequest(requestJson)
-                startupLogStore.append(
-                    "ROOT_TUN root-service: binder branch=start source=${request.source} mode=${request.mode}"
+    private val binder = object : IRootTunService.Stub() {
+        override fun startRootTun(requestJson: String): String {
+            val request = decodeRequest(requestJson)
+            startupLogStore.append("ROOT_TUN root-service: binder branch=start source=${request.source} mode=${request.mode}")
+            val spec = createSpec("start", request.mode)
+            startupLogStore.append("ROOT_TUN root-service: binder branch=start transport=${spec.transportFingerprint}")
+            stateStore.updateStatus(stateStore.snapshot().copy(
+                    state = RuntimePhase.Starting,
+                    running = true,
+                    profileUuid = spec.profileUuid,
+                    profileName = spec.profileName,
+                    runtimeReady = false,
+                    controllerReady = true,
+                    startedAt = System.currentTimeMillis(),
+                    staticPlanFingerprint = spec.staticPlanFingerprint,
+                    transportFingerprint = spec.transportFingerprint,
+                    overrideFingerprint = spec.effectiveFingerprint,
+                    profileFingerprint = spec.profileFingerprint,
+                    lastError = null,
                 )
-                val spec = createSpec("start", request.mode)
-                startupLogStore.append(
-                    "ROOT_TUN root-service: binder branch=start transport=${spec.transportFingerprint}"
-                )
-                stateStore.updateStatus(
-                    stateStore
-                        .snapshot()
-                        .copy(
-                            state = RuntimePhase.Starting,
-                            running = true,
-                            profileUuid = spec.profileUuid,
-                            profileName = spec.profileName,
-                            runtimeReady = false,
-                            controllerReady = true,
-                            startedAt = System.currentTimeMillis(),
-                            staticPlanFingerprint = spec.staticPlanFingerprint,
-                            transportFingerprint = spec.transportFingerprint,
-                            overrideFingerprint = spec.effectiveFingerprint,
-                            profileFingerprint = spec.profileFingerprint,
-                            lastError = null,
-                        )
-                )
-                val startResult = binderTimed { runtime.start(spec) }
-                if (startResult?.success == true && spec.runMode == RunMode.Ebpf) {
-                    startupLogStore.append("ROOT_TUN root-service: eBPF mode — native listener is part of mihomo process")
-                }
-                if (startResult?.success == false && spec.runMode == RunMode.Ebpf) {
-                    startupLogStore.append("ROOT_TUN root-service: eBPF start failed — ${startResult.error}")
-                    val hint = "Consider switching to Root TUN mode if eBPF is not supported on this kernel."
-                    val enhanced = startResult.error?.let { "$it\n$hint" } ?: hint
-                    return encodeResult(startResult.copy(error = enhanced))
-                }
-                return startResult?.let { encodeResult(it) } ?: encodeTimeoutResult()
+            )
+            val startResult = binderTimed { runtime.start(spec) }
+            if (startResult?.success == true && spec.runMode == RunMode.Ebpf) {
+                startupLogStore.append("ROOT_TUN root-service: eBPF mode — native listener is part of mihomo process")
             }
+            if (startResult?.success == false && spec.runMode == RunMode.Ebpf) {
+                startupLogStore.append("ROOT_TUN root-service: eBPF start failed — ${startResult.error}")
+                val hint = "Consider switching to Root TUN mode if eBPF is not supported on this kernel."
+                val enhanced = startResult.error?.let { "$it\n$hint" } ?: hint
+                return encodeResult(startResult.copy(error = enhanced))
+            }
+            return startResult?.let { encodeResult(it) } ?: encodeTimeoutResult()
+        }
 
-            override fun restartRootTun(requestJson: String): String {
-                val request = decodeRequest(requestJson)
-                startupLogStore.append(
-                    "ROOT_TUN root-service: binder branch=restart source=${request.source} mode=${request.mode}"
+        override fun restartRootTun(requestJson: String): String {
+            val request = decodeRequest(requestJson)
+            startupLogStore.append("ROOT_TUN root-service: binder branch=restart source=${request.source} mode=${request.mode}")
+            val spec = createSpec("restart", request.mode)
+            stateStore.updateStatus(
+                stateStore.snapshot().copy(
+                    state = RuntimePhase.Starting,
+                    runtimeReady = false,
+                    lastError = null,
                 )
-                val spec = createSpec("restart", request.mode)
-                stateStore.updateStatus(
-                    stateStore.snapshot().copy(
-                        state = RuntimePhase.Starting,
-                        runtimeReady = false,
-                        lastError = null,
-                    )
-                )
+            )
+            val restartResult = binderTimed { runtime.restart(spec) }
+            if (restartResult?.success == true && spec.runMode == RunMode.Ebpf) {
+                startupLogStore.append("ROOT_TUN root-service: eBPF mode — native listener active")
+            }
+            return restartResult?.let { encodeResult(it) } ?: encodeTimeoutResult()
+        }
+
+        override fun reloadActiveProfile(requestJson: String): String {
+            val request = decodeRequest(requestJson)
+            startupLogStore.append("ROOT_TUN root-service: binder branch=reload source=${request.source} mode=${request.mode}")
+            val spec = createSpec("reload", request.mode)
+            val currentTransport = stateStore.snapshot().transportFingerprint
+            return if (
+                currentTransport != null && currentTransport != spec.transportFingerprint
+            ) {
+                startupLogStore.append("ROOT_TUN root-service: binder branch=reload action=restart currentTransport=$currentTransport nextTransport=${spec.transportFingerprint}")
                 val restartResult = binderTimed { runtime.restart(spec) }
-                if (restartResult?.success == true && spec.runMode == RunMode.Ebpf) {
-                    startupLogStore.append("ROOT_TUN root-service: eBPF mode — native listener active")
-                }
-                return restartResult?.let { encodeResult(it) } ?: encodeTimeoutResult()
-            }
-
-            override fun reloadActiveProfile(requestJson: String): String {
-                val request = decodeRequest(requestJson)
-                startupLogStore.append(
-                    "ROOT_TUN root-service: binder branch=reload source=${request.source} mode=${request.mode}"
-                )
-                val spec = createSpec("reload", request.mode)
-                val currentTransport = stateStore.snapshot().transportFingerprint
-                return if (
-                    currentTransport != null && currentTransport != spec.transportFingerprint
-                ) {
-                    startupLogStore.append(
-                        "ROOT_TUN root-service: binder branch=reload action=restart currentTransport=$currentTransport nextTransport=${spec.transportFingerprint}"
-                    )
-                    val restartResult = binderTimed { runtime.restart(spec) }
-                    encodeResult(restartResult ?: return encodeTimeoutResult())
-                } else {
-                    startupLogStore.append(
-                        "ROOT_TUN root-service: binder branch=reload action=reload currentTransport=$currentTransport nextTransport=${spec.transportFingerprint}"
-                    )
-                    encodeResult(binderTimed { runtime.reload(spec) } ?: return encodeTimeoutResult())
-                }
-            }
-
-            override fun stopRootTun(): String {
-                val result = binderTimed { runtime.stop() } ?: return encodeTimeoutResult()
-                if (result.success) {
-                    stopSelf()
-                }
-                return encodeResult(result)
-            }
-
-            override fun queryStatus(): String =
-                RootTunJson.Default.encodeToString(
-                    RootTunStatus.serializer(),
-                    stateStore.snapshot(),
-                )
-
-            override fun queryTunnelStateJson(): String =
-                RootTunJson.Default.encodeToString(
-                    com.github.lmfirefly.flycat.core.model.tunnel.TunnelState.serializer(),
-                    runtime.queryTunnelState(),
-                )
-
-            override fun queryTrafficNow(): Long = runtime.queryTrafficNow()
-
-            override fun queryTrafficTotal(): Long = runtime.queryTrafficTotal()
-
-            override fun queryConnectionsJson(): String =
-                RootTunJson.Default.encodeToString(
-                    com.github.lmfirefly.flycat.core.model.ConnectionSnapshot.serializer(),
-                    runtime.queryConnections(),
-                )
-
-            override fun queryConnectionsOverviewJson(): String =
-                RootTunJson.Default.encodeToString(
-                    com.github.lmfirefly.flycat.core.model.ConnectionOverviewSnapshot.serializer(),
-                    runtime.queryConnectionsOverview(),
-                )
-
-            override fun queryAllProxyGroupsJson(excludeNotSelectable: Boolean): String = binderTimed {
-                // 以与原生端一致的分隔符布局重编码（结果经过滤/映射，非字节透传），免去几百 KB 的 kotlinx JSON 重序列化；对端 ProxyGroupPayload.decodeGroups 自带 JSON 回退。
-                ProxyGroupPayload.encode(runtime.queryAllProxyGroups(excludeNotSelectable))
-            } ?: "[]"
-
-            override fun queryProxyGroupNamesJson(excludeNotSelectable: Boolean): String =
-                binderTimed {
-                    RootTunJson.Default.encodeToString(
-                        ListSerializer(String.serializer()),
-                        runtime.queryProxyGroupNames(excludeNotSelectable),
-                    )
-                } ?: "[]"
-
-            override fun queryProxyGroupJson(name: String, sort: String): String = ProxyGroupPayload.encode(
-                runtime.queryProxyGroup(
-                    name,
-                    com.github.lmfirefly.flycat.core.model.proxy.ProxySort.valueOf(sort),
-                ),
-            )
-
-            override fun queryProvidersJson(): String =
-                RootTunJson.Default.encodeToString(
-                    ListSerializer(com.github.lmfirefly.flycat.core.model.Provider.serializer()),
-                    runtime.queryProviders(),
-                )
-
-            override fun patchSelector(group: String, name: String): Boolean =
-                runtime.patchSelector(group, name)
-
-            override fun patchForceSelector(group: String, name: String): Boolean = runtime.patchForceSelector(group, name)
-
-            override fun closeConnection(id: String): Boolean = runtime.closeConnection(id)
-
-            override fun closeAllConnections() = runtime.closeAllConnections()
-
-            override fun healthCheck(group: String): String? = binderTimed { runtime.healthCheck(group) }
-
-            override fun healthCheckProxy(group: String, proxyName: String): String = binderTimed { runtime.healthCheckProxy(group, proxyName) } ?: "-1"
-
-            override fun updateProvider(type: String, name: String): String? = binderTimed { runtime.updateProvider(type, name) }
-
-            override fun requestStop() {
-                runtime.requestStop()
-                binderTimed { runtime.stop() }
-                stopSelf()
-            }
-
-            override fun queryRecentLogsJson(sinceSeq: Long): String = binderTimed {
-                val chunk = runtime.queryRecentLogsJson(sinceSeq)
-                RootTunJson.Default.encodeToString(
-                    RootTunLogChunk.serializer(),
-                    RootTunLogChunk(nextSeq = chunk.nextSeq, items = chunk.items),
-                )
-            } ?: RootTunJson.Default.encodeToString(
-                RootTunLogChunk.serializer(),
-                RootTunLogChunk(nextSeq = sinceSeq, items = emptyList()),
-            )
-
-            override fun setLogConsumerActive(active: Boolean) {
-                runtime.setLogConsumerActive(active)
-            }
-
-            override fun appendStartupLog(text: String) {
-                startupLogStore.append(text)
-            }
-
-            override fun registerStateObserver(observer: IRootTunStateObserver) {
-                runtimeHost.statePublisher.register(observer)
-            }
-
-            override fun unregisterStateObserver(observer: IRootTunStateObserver) {
-                runtimeHost.statePublisher.unregister(observer)
+                encodeResult(restartResult ?: return encodeTimeoutResult())
+            } else {
+                startupLogStore.append("ROOT_TUN root-service: binder branch=reload action=reload currentTransport=$currentTransport nextTransport=${spec.transportFingerprint}")
+                encodeResult(binderTimed { runtime.reload(spec) } ?: return encodeTimeoutResult())
             }
         }
+
+        override fun stopRootTun(): String {
+            val result = binderTimed { runtime.stop() } ?: return encodeTimeoutResult()
+            if (result.success) {
+                stopSelf()
+            }
+            return encodeResult(result)
+        }
+
+        override fun queryStatus(): String = RootTunJson.Default.encodeToString(
+            RootTunStatus.serializer(),
+            stateStore.snapshot(),
+        )
+
+        override fun queryTunnelStateJson(): String = RootTunJson.Default.encodeToString(
+            com.github.lmfirefly.flycat.core.model.tunnel.TunnelState.serializer(),
+            runtime.queryTunnelState(),
+        )
+
+        override fun queryTrafficNow(): Long = runtime.queryTrafficNow()
+
+        override fun queryTrafficTotal(): Long = runtime.queryTrafficTotal()
+
+        override fun queryConnectionsJson(): String = runtime.queryConnectionsRawJson()
+
+        override fun queryConnectionsOverviewJson(): String = runtime.queryConnectionsOverviewRawJson()
+
+        override fun queryAllProxyGroupsJson(excludeNotSelectable: Boolean): String = binderTimed {
+            // 以与原生端一致的分隔符布局重编码（结果经过滤/映射，非字节透传），免去几百 KB 的 kotlinx JSON 重序列化；对端 ProxyGroupPayload.decodeGroups 自带 JSON 回退。
+            ProxyGroupPayload.encode(runtime.queryAllProxyGroups(excludeNotSelectable))
+        } ?: "[]"
+
+        override fun queryProxyGroupNamesJson(excludeNotSelectable: Boolean): String = binderTimed {
+            RootTunJson.Default.encodeToString(
+                ListSerializer(String.serializer()),
+                runtime.queryProxyGroupNames(excludeNotSelectable),
+            )
+        } ?: "[]"
+
+        override fun queryProxyGroupJson(name: String, sort: String): String = ProxyGroupPayload.encode(
+            runtime.queryProxyGroup(
+                name,
+                com.github.lmfirefly.flycat.core.model.proxy.ProxySort.valueOf(sort),
+            ),
+        )
+
+        override fun queryProvidersJson(): String = runtime.queryProvidersRawJson()
+
+        override fun queryRulesJson(): String = runtime.queryRulesRawJson()
+
+        override fun setRuleDisabled(index: Int, disabled: Boolean): Boolean = runtime.setRuleDisabled(index, disabled)
+
+        override fun patchSelector(group: String, name: String): Boolean = runtime.patchSelector(group, name)
+
+        override fun patchForceSelector(group: String, name: String): Boolean = runtime.patchForceSelector(group, name)
+
+        override fun closeConnection(id: String): Boolean = runtime.closeConnection(id)
+
+        override fun closeAllConnections() = runtime.closeAllConnections()
+
+        override fun healthCheck(group: String): String? = binderTimed { runtime.healthCheck(group) }
+
+        override fun healthCheckProxy(group: String, proxyName: String): String = binderTimed { runtime.healthCheckProxy(group, proxyName) } ?: "-1"
+
+        override fun updateProvider(type: String, name: String): String? = binderTimed { runtime.updateProvider(type, name) }
+
+        override fun requestStop() {
+            runtime.requestStop()
+            binderTimed { runtime.stop() }
+            stopSelf()
+        }
+
+        override fun queryRecentLogsJson(sinceSeq: Long): String = binderTimed {
+            val chunk = runtime.queryRecentLogsJson(sinceSeq)
+            RootTunJson.Default.encodeToString(
+                RootTunLogChunk.serializer(),
+                RootTunLogChunk(nextSeq = chunk.nextSeq, items = chunk.items),
+            )
+        } ?: RootTunJson.Default.encodeToString(
+            RootTunLogChunk.serializer(),
+            RootTunLogChunk(nextSeq = sinceSeq, items = emptyList()),
+        )
+
+        override fun setLogConsumerActive(active: Boolean) {
+            runtime.setLogConsumerActive(active)
+        }
+
+        override fun appendStartupLog(text: String) {
+            startupLogStore.append(text)
+        }
+
+        override fun registerStateObserver(observer: IRootTunStateObserver) {
+            runtimeHost.statePublisher.register(observer)
+        }
+
+        override fun unregisterStateObserver(observer: IRootTunStateObserver) {
+            runtimeHost.statePublisher.unregister(observer)
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -286,8 +258,7 @@ class RootTunRootService : RootService() {
         super.onDestroy()
     }
 
-    private fun decodeRequest(requestJson: String): RootTunStartRequest =
-        RootTunJson.Default.decodeFromString(RootTunStartRequest.serializer(), requestJson)
+    private fun decodeRequest(requestJson: String): RootTunStartRequest = RootTunJson.Default.decodeFromString(RootTunStartRequest.serializer(), requestJson)
 
     private fun createSpec(action: String, mode: RunMode = RunMode.Tun): RuntimeSpec {
         startupLogStore.append("ROOT_TUN root-service: spec create begin action=$action mode=$mode")

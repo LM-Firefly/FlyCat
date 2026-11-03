@@ -53,10 +53,12 @@ import com.github.lmfirefly.flycat.feature.settings.presentation.backup.BackupRe
 import com.github.lmfirefly.flycat.feature.settings.presentation.util.MetaWebDavConfig
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.MetaFeatureViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppConfirmDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppFormDialog
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
@@ -79,8 +81,7 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 @Composable
@@ -127,7 +128,7 @@ fun MetaFeatureScreen(navigator: Navigator) {
         )
     }
 
-    Scaffold(
+    GlassScaffold(
         topBar = { TopBar(title = FlyTxt.MetaFeature.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(navigator = navigator) }) }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
@@ -170,9 +171,7 @@ fun MetaFeatureScreen(navigator: Navigator) {
                     )
                 }
             }
-            item {
-                BackupRestoreSection()
-            }
+            item { BackupRestoreSection() }
             item {
                 Title(FlyTxt.MetaFeature.Section.BackupRestore + " — WebDAV")
                 Card {
@@ -312,7 +311,7 @@ fun MetaFeatureScreen(navigator: Navigator) {
             },
             error = webDavError,
         ) {
-            TextField(
+            GlassTextField(
                 value = webDavUrlField,
                 onValueChange = {
                     webDavUrlField = it
@@ -321,7 +320,7 @@ fun MetaFeatureScreen(navigator: Navigator) {
                 label = FlyTxt.MetaFeature.WebDav.LabelUrl,
                 modifier = Modifier.fillMaxWidth(),
             )
-            TextField(
+            GlassTextField(
                 value = webDavDirField,
                 onValueChange = {
                     webDavDirField = it
@@ -330,7 +329,7 @@ fun MetaFeatureScreen(navigator: Navigator) {
                 label = FlyTxt.MetaFeature.WebDav.LabelDir,
                 modifier = Modifier.fillMaxWidth(),
             )
-            TextField(
+            GlassTextField(
                 value = webDavAccountField,
                 onValueChange = {
                     webDavAccountField = it
@@ -339,7 +338,7 @@ fun MetaFeatureScreen(navigator: Navigator) {
                 label = FlyTxt.MetaFeature.WebDav.LabelAccount,
                 modifier = Modifier.fillMaxWidth(),
             )
-            TextField(
+            GlassTextField(
                 value = webDavPasswordField,
                 onValueChange = {
                     webDavPasswordField = it
@@ -408,14 +407,10 @@ private fun GeoXDownloadDialog(
                     endActions = {
                         Checkbox(
                             state = ToggleableState(selectedItems[item.type] ?: false),
-                            onClick = {
-                                selectedItems[item.type] = !(selectedItems[item.type] ?: false)
-                            },
+                            onClick = { selectedItems[item.type] = !(selectedItems[item.type] ?: false) },
                         )
                     },
-                    onClick = {
-                        selectedItems[item.type] = !(selectedItems[item.type] ?: false)
-                    },
+                    onClick = { selectedItems[item.type] = !(selectedItems[item.type] ?: false) },
                 )
             }
 
@@ -423,17 +418,17 @@ private fun GeoXDownloadDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(spacing.space16),
             ) {
-                TextButton(
+                GlassTextButton(
                     text = FlyTxt.Component.Button.Cancel,
                     onClick = { show.value = false },
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(
+                GlassTextButton(
                     text = FlyTxt.Component.Button.Confirm,
                     onClick = {
                         val itemsToDownload = geoXItems.filter { selectedItems[it.type] == true }
                         if (itemsToDownload.isEmpty()) {
-                            return@TextButton
+                            return@GlassTextButton
                         }
                         show.value = false
                         scope.launch(CoroutineExceptionHandler { _, throwable -> if (!throwable.isOkHttpCancellationBug()) { throw throwable } }) {
@@ -443,7 +438,7 @@ private fun GeoXDownloadDialog(
                     },
                     enabled = canConfirm,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    primary = true,
                 )
             }
         }
@@ -469,9 +464,7 @@ private fun restartApplication(context: android.content.Context, storeSynchroniz
 private fun Throwable.isOkHttpCancellationBug(): Boolean {
     var current: Throwable? = this
     while (current != null) {
-        if (current is IllegalStateException &&
-            current.message?.contains("Unbalanced enter/exit") == true
-        ) { return true }
+        if (current is IllegalStateException && current.message?.contains("Unbalanced enter/exit") == true) { return true }
         current = current.cause
     }
     return false

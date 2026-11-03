@@ -120,11 +120,10 @@ class RulesViewModel(
             pendingEnabledByIndex[index] = enabled
             silentCalibrationJob?.cancel()
             toggleJobs.remove(index)?.cancel()
-            toggleJobs[index] =
-                viewModelScope.launch(Dispatchers.IO) {
-                    delay(TOGGLE_DEBOUNCE_MS)
-                    applyDebouncedToggle(index)
-                }
+            toggleJobs[index] = viewModelScope.launch(Dispatchers.IO) {
+                delay(TOGGLE_DEBOUNCE_MS)
+                applyDebouncedToggle(index)
+            }
         }
 
         // Optimistic local update so UI responds immediately.
@@ -166,21 +165,19 @@ class RulesViewModel(
     private fun scheduleSilentCalibration() {
         synchronized(toggleStateLock) {
             silentCalibrationJob?.cancel()
-            silentCalibrationJob =
-                viewModelScope.launch(Dispatchers.IO) {
-                    delay(SILENT_CALIBRATION_MS)
-                    val shouldCalibrate =
-                        synchronized(toggleStateLock) {
-                            pendingEnabledByIndex.isEmpty() && toggleJobs.isEmpty()
-                        }
-                    if (!shouldCalibrate || currentState.togglingIndexes.isNotEmpty()) {
-                        return@launch
-                    }
-                    val updated = ruleToggle.calibrateIfNeeded(currentState.rules)
-                    if (updated != null) {
-                        updateState { it.copy(rules = updated, isRunning = true, error = null) }
-                    }
+            silentCalibrationJob = viewModelScope.launch(Dispatchers.IO) {
+                delay(SILENT_CALIBRATION_MS)
+                val shouldCalibrate = synchronized(toggleStateLock) {
+                    pendingEnabledByIndex.isEmpty() && toggleJobs.isEmpty()
                 }
+                if (!shouldCalibrate || currentState.togglingIndexes.isNotEmpty()) {
+                    return@launch
+                }
+                val updated = ruleToggle.calibrateIfNeeded(currentState.rules)
+                if (updated != null) {
+                    updateState { it.copy(rules = updated, isRunning = true, error = null) }
+                }
+            }
         }
     }
 

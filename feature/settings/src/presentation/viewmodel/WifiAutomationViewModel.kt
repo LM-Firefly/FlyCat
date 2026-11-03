@@ -95,62 +95,56 @@ class WifiAutomationViewModel(
         refreshProfiles()
     }
 
-    private val settingsState =
-        combine(
-            settings.wifiAutomationEnabled.state,
-            settings.wifiAutomationRules.state,
-            settings.runMode.state,
-            settings.wifiAutomationLocationRequested.state,
-        ) { enabled, rules, runMode, locationRequested ->
-            UiState(
-                enabled = enabled,
-                rules = rules,
-                runMode = runMode,
-                locationRequested = locationRequested,
-            )
-        }
+    private val settingsState = combine(
+        settings.wifiAutomationEnabled.state,
+        settings.wifiAutomationRules.state,
+        settings.runMode.state,
+        settings.wifiAutomationLocationRequested.state,
+    ) { enabled, rules, runMode, locationRequested ->
+        UiState(
+            enabled = enabled,
+            rules = rules,
+            runMode = runMode,
+            locationRequested = locationRequested,
+        )
+    }
 
-    val uiState: StateFlow<UiState> =
-        combine(
-            settingsState,
-            settings.wifiAutomationOtherWifiAction.state,
-            settings.wifiAutomationNoWifiAction.state,
-            profiles,
-        ) { state, otherWifiAction, noWifiAction, profiles ->
-            state.copy(
-                otherWifiAction = otherWifiAction,
-                noWifiAction = noWifiAction,
-                profiles = profiles,
-            )
-        }
-            .combine(settings.wifiAutomationOtherWifiProfileUuid.state) { state, profileUuid ->
-                state.copy(otherWifiProfileUuid = profileUuid.ifBlank { null })
-            }
-            .combine(settings.wifiAutomationNoWifiProfileUuid.state) { state, profileUuid ->
-                state.copy(noWifiProfileUuid = profileUuid.ifBlank { null })
-            }
-            .combine(scanState) { state, scan ->
-                state.copy(
-                    isScanning = scan.isScanning,
-                    scanCompleted = scan.scanCompleted,
-                    scannedNetworks = scan.networks,
-                    scanUnavailable = scan.unavailable,
-                )
-            }
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5_000),
-                UiState(
-                    enabled = settings.wifiAutomationEnabled.value,
-                    rules = settings.wifiAutomationRules.value,
-                    runMode = settings.runMode.value,
-                    locationRequested = settings.wifiAutomationLocationRequested.value,
-                    otherWifiAction = settings.wifiAutomationOtherWifiAction.value,
-                    noWifiAction = settings.wifiAutomationNoWifiAction.value,
-                    otherWifiProfileUuid = settings.wifiAutomationOtherWifiProfileUuid.value.ifBlank { null },
-                    noWifiProfileUuid = settings.wifiAutomationNoWifiProfileUuid.value.ifBlank { null },
-                ),
-            )
+    val uiState: StateFlow<UiState> = combine(
+        settingsState,
+        settings.wifiAutomationOtherWifiAction.state,
+        settings.wifiAutomationNoWifiAction.state,
+        profiles,
+    ) { state, otherWifiAction, noWifiAction, profiles ->
+        state.copy(
+            otherWifiAction = otherWifiAction,
+            noWifiAction = noWifiAction,
+            profiles = profiles,
+        )
+    }.combine(settings.wifiAutomationOtherWifiProfileUuid.state) { state, profileUuid ->
+        state.copy(otherWifiProfileUuid = profileUuid.ifBlank { null })
+    }.combine(settings.wifiAutomationNoWifiProfileUuid.state) { state, profileUuid ->
+        state.copy(noWifiProfileUuid = profileUuid.ifBlank { null })
+    }.combine(scanState) { state, scan ->
+        state.copy(
+            isScanning = scan.isScanning,
+            scanCompleted = scan.scanCompleted,
+            scannedNetworks = scan.networks,
+            scanUnavailable = scan.unavailable,
+        )
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+        UiState(
+            enabled = settings.wifiAutomationEnabled.value,
+            rules = settings.wifiAutomationRules.value,
+            runMode = settings.runMode.value,
+            locationRequested = settings.wifiAutomationLocationRequested.value,
+            otherWifiAction = settings.wifiAutomationOtherWifiAction.value,
+            noWifiAction = settings.wifiAutomationNoWifiAction.value,
+            otherWifiProfileUuid = settings.wifiAutomationOtherWifiProfileUuid.value.ifBlank { null },
+            noWifiProfileUuid = settings.wifiAutomationNoWifiProfileUuid.value.ifBlank { null },
+        ),
+    )
 
     private val _effects = MutableSharedFlow<Effect>()
     val effects = _effects.asSharedFlow()

@@ -111,28 +111,25 @@ class ChinaAppDetector(context: Context, private val cache: KeyValueCache) {
 
     private fun deepScan(packageName: String): Boolean {
         return try {
-            val flags =
-                PackageManager.MATCH_UNINSTALLED_PACKAGES or
-                    PackageManager.GET_ACTIVITIES or
-                    PackageManager.GET_SERVICES or
-                    PackageManager.GET_RECEIVERS or
-                    PackageManager.GET_PROVIDERS
-            val packageInfo =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    packageManager.getPackageInfo(
-                        packageName,
-                        PackageManager.PackageInfoFlags.of(flags.toLong()),
-                    )
-                } else {
-                    @Suppress("DEPRECATION") packageManager.getPackageInfo(packageName, flags)
-                }
-            val components =
-                buildList<ComponentInfo> {
-                    packageInfo.activities?.let { addAll(it) }
-                    packageInfo.services?.let { addAll(it) }
-                    packageInfo.receivers?.let { addAll(it) }
-                    packageInfo.providers?.let { addAll(it) }
-                }
+            val flags = PackageManager.MATCH_UNINSTALLED_PACKAGES or
+                PackageManager.GET_ACTIVITIES or
+                PackageManager.GET_SERVICES or
+                PackageManager.GET_RECEIVERS or
+                PackageManager.GET_PROVIDERS
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(
+                    packageName,
+                    PackageManager.PackageInfoFlags.of(flags.toLong()),
+                )
+            } else {
+                @Suppress("DEPRECATION") packageManager.getPackageInfo(packageName, flags)
+            }
+            val components = buildList<ComponentInfo> {
+                packageInfo.activities?.let { addAll(it) }
+                packageInfo.services?.let { addAll(it) }
+                packageInfo.receivers?.let { addAll(it) }
+                packageInfo.providers?.let { addAll(it) }
+            }
             if (components.any { it.name.matches(chinaAppRegex) }) {
                 return true
             }
@@ -154,17 +151,15 @@ class ChinaAppDetector(context: Context, private val cache: KeyValueCache) {
                 if (!(entry.name.startsWith("classes") && entry.name.endsWith(".dex"))) {
                     continue
                 }
-                // DexBackedDexFile.fromInputStream buffers the whole entry in memory, so
-                // parsing arbitrarily large dex risks OOM on low-end devices; skip as inconclusive.
+                // DexBackedDexFile.fromInputStream 会将整个条目缓冲到内存中，因此解析任意大小的 dex 在低端设备上有内存溢出的风险；跳过，视为不确定。
                 if (entry.size > MAX_SCANNABLE_DEX_BYTES) {
                     continue
                 }
-                val dexFile =
-                    try {
-                        DexBackedDexFile.fromInputStream(null, zip.getInputStream(entry).buffered())
-                    } catch (_: Exception) {
-                        continue
-                    }
+                val dexFile = try {
+                    DexBackedDexFile.fromInputStream(null, zip.getInputStream(entry).buffered())
+                } catch (_: Exception) {
+                    continue
+                }
                 if (dexContainsChinaClass(dexFile)) {
                     return true
                 }
@@ -190,96 +185,94 @@ class ChinaAppDetector(context: Context, private val cache: KeyValueCache) {
         // Bounds peak scan memory to MAX_CONCURRENT_DEEP_SCANS * MAX_SCANNABLE_DEX_BYTES.
         private const val MAX_CONCURRENT_DEEP_SCANS = 2
 
-        private val skipPrefixList =
-            listOf(
-                "com.google",
-                "com.android.chrome",
-                "com.android.vending",
-                "com.microsoft",
-                "com.apple",
-                "com.zhiliaoapp.musically",
-                "com.android.providers.downloads",
-            )
+        private val skipPrefixList = listOf(
+            "com.google",
+            "com.android.chrome",
+            "com.android.vending",
+            "com.microsoft",
+            "com.apple",
+            "com.zhiliaoapp.musically",
+            "com.android.providers.downloads",
+        )
 
-        private val chinaAppPrefixList =
-            listOf(
-                "com.tencent",
-                "com.tencent.mobileqq",
-                "com.tencent.mm",
-                "com.tencent.qqlive",
-                "com.tencent.news",
-                "com.tencent.wework",
-                "com.tencent.weishi",
-                "com.tencent.karaoke",
-                "com.tencent.qqmusic",
-                "com.alibaba",
-                "com.alibaba.android",
-                "com.alibaba.wireless",
-                "com.alibaba.rimet",
-                "com.umeng",
-                "com.qihoo",
-                "com.ali",
-                "com.alipay",
-                "com.amap",
-                "com.sina",
-                "com.weibo",
-                "com.sankuai",
-                "com.sankuai.meituan",
-                "com.sankuai.meituan.takeoutnew",
-                "com.dianping",
-                "com.jingdong",
-                "com.xunmeng",
-                "com.xingin",
-                "com.zhihu",
-                "com.bilibili",
-                "com.coolapk",
-                "tv.danmaku",
-                "com.kuaishou",
-                "com.smile.gifmaker",
-                "com.ss.android",
-                "com.ss.android.ugc",
-                "com.ss.android.article",
-                "com.qiyi",
-                "com.youku",
-                "com.youku.phone",
-                "com.sohu",
-                "com.autonavi",
-                "com.sogou",
-                "com.sogou.inputmethod",
-                "com.iflytek",
-                "com.iflytek.inputmethod",
-                "com.kingsoft",
-                "com.qzone",
-                "com.vivo",
-                "com.xiaomi",
-                "com.huawei",
-                "com.taobao",
-                "com.taobao.idlefish",
-                "com.secneo",
-                "s.h.e.l.l",
-                "com.stub",
-                "com.kiwisec",
-                "com.secshell",
-                "com.wrapper",
-                "cn.securitystack",
-                "com.mogosec",
-                "com.secoen",
-                "com.netease",
-                "com.mx",
-                "com.qq.e",
-                "com.baidu",
-                "com.bytedance",
-                "com.bugly",
-                "com.miui",
-                "com.oppo",
-                "com.coloros",
-                "com.iqoo",
-                "com.meizu",
-                "com.gionee",
-                "com.oplus",
-                "andes.oplus",
-                "com.unionpay",
-            )
+        private val chinaAppPrefixList = listOf(
+            "com.tencent",
+            "com.tencent.mobileqq",
+            "com.tencent.mm",
+            "com.tencent.qqlive",
+            "com.tencent.news",
+            "com.tencent.wework",
+            "com.tencent.weishi",
+            "com.tencent.karaoke",
+            "com.tencent.qqmusic",
+            "com.alibaba",
+            "com.alibaba.android",
+            "com.alibaba.wireless",
+            "com.alibaba.rimet",
+            "com.umeng",
+            "com.qihoo",
+            "com.ali",
+            "com.alipay",
+            "com.amap",
+            "com.sina",
+            "com.weibo",
+            "com.sankuai",
+            "com.sankuai.meituan",
+            "com.sankuai.meituan.takeoutnew",
+            "com.dianping",
+            "com.jingdong",
+            "com.xunmeng",
+            "com.xingin",
+            "com.zhihu",
+            "com.bilibili",
+            "com.coolapk",
+            "tv.danmaku",
+            "com.kuaishou",
+            "com.smile.gifmaker",
+            "com.ss.android",
+            "com.ss.android.ugc",
+            "com.ss.android.article",
+            "com.qiyi",
+            "com.youku",
+            "com.youku.phone",
+            "com.sohu",
+            "com.autonavi",
+            "com.sogou",
+            "com.sogou.inputmethod",
+            "com.iflytek",
+            "com.iflytek.inputmethod",
+            "com.kingsoft",
+            "com.qzone",
+            "com.vivo",
+            "com.xiaomi",
+            "com.huawei",
+            "com.taobao",
+            "com.taobao.idlefish",
+            "com.secneo",
+            "s.h.e.l.l",
+            "com.stub",
+            "com.kiwisec",
+            "com.secshell",
+            "com.wrapper",
+            "cn.securitystack",
+            "com.mogosec",
+            "com.secoen",
+            "com.netease",
+            "com.mx",
+            "com.qq.e",
+            "com.baidu",
+            "com.bytedance",
+            "com.bugly",
+            "com.miui",
+            "com.oppo",
+            "com.coloros",
+            "com.iqoo",
+            "com.meizu",
+            "com.gionee",
+            "com.oplus",
+            "andes.oplus",
+            "com.unionpay",
+        )
 
         private val chinaAppRegex by lazy {
             ("(" + chinaAppPrefixList.joinToString("|").replace(".", "\\.") + ").*").toRegex()

@@ -499,7 +499,7 @@ const fetch = async (input, init = undefined) => {
 };
 const b64d = (value) => __b64dNative(String(value));
 const createBuffer = (base64Value) => Object.freeze({
-  __isYumeBuffer: true,
+  __isFlyBuffer: true,
   __base64: String(base64Value),
   toString(encoding = "utf8") {
     const normalizedEncoding = String(encoding).toLowerCase();
@@ -517,7 +517,7 @@ const createBuffer = (base64Value) => Object.freeze({
 });
 const Buffer = Object.freeze({
   from(value, encoding = "utf8") {
-    if (value && value.__isYumeBuffer === true && typeof value.__base64 === "string") {
+    if (value && value.__isFlyBuffer === true && typeof value.__base64 === "string") {
       return createBuffer(value.__base64);
     }
     const normalizedEncoding = String(encoding).toLowerCase();
@@ -530,7 +530,7 @@ const Buffer = Object.freeze({
     throw new Error(`Buffer.from() unsupported encoding: ${encoding}`);
   },
   isBuffer(value) {
-    return Boolean(value && value.__isYumeBuffer === true && typeof value.__base64 === "string");
+    return Boolean(value && value.__isFlyBuffer === true && typeof value.__base64 === "string");
   }
 });
 const b64e = (value) => Buffer.isBuffer(value) ? value.toString("base64") : __b64eNative(String(value));

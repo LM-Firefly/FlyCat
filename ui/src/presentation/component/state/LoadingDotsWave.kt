@@ -74,9 +74,8 @@ fun LoadingDotsWave(
 @Composable
 private fun Dot(color: Color, dotSize: Dp, shift: Float, amplitude: Dp) {
     androidx.compose.foundation.layout.Box(
-        modifier =
-            Modifier.size(dotSize)
-                .graphicsLayer { translationY = shift * amplitude.toPx() }
-                .background(color, CircleShape)
+        modifier = Modifier.size(dotSize).graphicsLayer {
+            translationY = shift * amplitude.toPx()
+        }.background(color, CircleShape)
     )
 }

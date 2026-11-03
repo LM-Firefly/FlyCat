@@ -38,7 +38,6 @@ import org.koin.compose.koinInject
 fun OverrideScreen(navigator: Navigator) {
     val overrideConfigViewModel: OverrideConfigViewModel = koinInject()
     val scope = rememberCoroutineScope()
-
     OverrideListScreen(
         onNavigateBack = { navigator.pop() },
         onOpenCodeEditor = { config: OverrideConfig ->
@@ -71,8 +70,7 @@ fun OverrideConfigPreviewRoute(navigator: Navigator) {
     )
 }
 
-private fun OverrideContentType.toLanguageScope(): LanguageScope =
-    when (this) {
-        OverrideContentType.Yaml -> LanguageScope.Yaml
-        OverrideContentType.JavaScript -> LanguageScope.JavaScript
-    }
+private fun OverrideContentType.toLanguageScope(): LanguageScope = when (this) {
+    OverrideContentType.Yaml -> LanguageScope.Yaml
+    OverrideContentType.JavaScript -> LanguageScope.JavaScript
+}

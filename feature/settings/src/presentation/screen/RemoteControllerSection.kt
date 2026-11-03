@@ -50,8 +50,10 @@ import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -68,8 +70,7 @@ fun RemoteControllerSection(
     var sheetVisible by remember { mutableStateOf(false) }
 
     val activeBackend = backends.firstOrNull { it.id == activeBackendId } ?: backends.firstOrNull()
-    val selectedBackendIndex =
-        backends.indexOfFirst { it.id == activeBackend?.id }.takeIf { it >= 0 } ?: 0
+    val selectedBackendIndex = backends.indexOfFirst { it.id == activeBackend?.id }.takeIf { it >= 0 } ?: 0
     val backendItems = remember(backends) { backends.map { it.displayName() } }
 
     Title(FlyTxt.Feature.RemoteController.Section)
@@ -89,12 +90,11 @@ fun RemoteControllerSection(
         )
 
         if (backends.isNotEmpty()) {
-            WindowDropdownPreference(
+            GlassDropdownPreference(
                 title = FlyTxt.Feature.RemoteController.ControlBackend,
-                summary = null,
-                items = backendItems,
-                selectedIndex = selectedBackendIndex,
-                onSelectedIndexChange = { index ->
+                options = backendItems.mapIndexed { index, label -> GlassDropdownOption(value = index, label = label) },
+                selected = selectedBackendIndex.takeIf { it >= 0 },
+                onSelected = { index ->
                     backends.getOrNull(index)?.let { backend ->
                         if (controllerEnabled) {
                             onRequestLocalNetworkPermission(backend) { viewModel.setActive(backend.id) }
@@ -104,12 +104,11 @@ fun RemoteControllerSection(
                     }
                 },
             )
-            WindowDropdownPreference(
+            GlassDropdownPreference(
                 title = FlyTxt.Feature.RemoteController.Protocol,
-                summary = null,
-                items = RemoteProtocol.entries.map { it.scheme.uppercase() },
-                selectedIndex = RemoteProtocol.entries.indexOf(activeBackend?.protocol),
-                onSelectedIndexChange = { index ->
+                options = RemoteProtocol.entries.mapIndexed { index, protocol -> GlassDropdownOption(value = index, label = protocol.scheme.uppercase()) },
+                selected = RemoteProtocol.entries.indexOf(activeBackend?.protocol).takeIf { it >= 0 },
+                onSelected = { index ->
                     val protocol = RemoteProtocol.entries[index]
                     activeBackend?.let { backend ->
                         val update = { viewModel.setProtocol(backend.id, protocol) }
@@ -167,13 +166,12 @@ fun RemoteControllerSection(
                 }
                 sheetVisible = false
             },
-            onDelete =
-                (state as? BackendSheetState.Edit)?.let { editState ->
-                    {
-                        editState.form.id?.let(viewModel::deleteBackend)
-                        sheetVisible = false
-                    }
-                },
+            onDelete = (state as? BackendSheetState.Edit)?.let { editState ->
+                {
+                    editState.form.id?.let(viewModel::deleteBackend)
+                    sheetVisible = false
+                }
+            },
         )
     }
 }
@@ -213,7 +211,7 @@ private fun BackendEditSheet(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(spacing.space12),
             ) {
-                TextField(
+                GlassTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = FlyTxt.Feature.RemoteController.Name,
@@ -226,7 +224,7 @@ private fun BackendEditSheet(
                     horizontalArrangement = Arrangement.spacedBy(spacing.space12),
                     verticalAlignment = Alignment.Top,
                 ) {
-                    TextField(
+                    GlassTextField(
                         value = host,
                         onValueChange = { raw ->
                             val input = parseHostPortInput(raw, port)
@@ -237,7 +235,7 @@ private fun BackendEditSheet(
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
-                    TextField(
+                    GlassTextField(
                         value = port,
                         onValueChange = { port = it.filter(Char::isDigit).take(5) },
                         label = FlyTxt.Feature.RemoteController.Port,
@@ -247,7 +245,7 @@ private fun BackendEditSheet(
                     )
                 }
 
-                TextField(
+                GlassTextField(
                     value = secret,
                     onValueChange = { secret = it },
                     label = FlyTxt.Feature.RemoteController.Secret,
@@ -270,28 +268,25 @@ private fun BackendEditSheet(
                 horizontalArrangement = Arrangement.spacedBy(spacing.space16),
             ) {
                 if (onDelete != null) {
-                    TextButton(
+                    GlassTextButton(
                         text = FlyTxt.Feature.RemoteController.Delete,
                         onClick = onDelete,
                         modifier = Modifier.weight(1f),
-                        colors =
-                            ButtonDefaults.textButtonColors(
-                                textColor = MiuixTheme.colorScheme.error
-                            ),
+                        danger = true,
                     )
                 } else {
-                    TextButton(
+                    GlassTextButton(
                         text = FlyTxt.Component.Button.Cancel,
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
                     )
                 }
-                TextButton(
+                GlassTextButton(
                     text = FlyTxt.Component.Button.Confirm,
                     onClick = { if (canConfirm) onConfirm(name, normalizedHost, parsedPort, secret) },
                     modifier = Modifier.weight(1f),
                     enabled = canConfirm,
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    primary = true,
                 )
             }
         }
@@ -316,14 +311,13 @@ private data class BackendFormState(
     companion object {
         fun empty() = BackendFormState(id = null, name = "", host = "", port = "9090", secret = "")
 
-        fun from(backend: RemoteBackend) =
-            BackendFormState(
-                id = backend.id,
-                name = backend.name,
-                host = backend.host,
-                port = backend.port.toString(),
-                secret = backend.secret,
-            )
+        fun from(backend: RemoteBackend) = BackendFormState(
+            id = backend.id,
+            name = backend.name,
+            host = backend.host,
+            port = backend.port.toString(),
+            secret = backend.secret,
+        )
     }
 }
 
@@ -332,13 +326,7 @@ private fun RemoteBackend.displayName(): String = name.ifBlank { "${host}:${port
 private data class HostPortInput(val host: String, val port: String)
 
 private fun parseHostPortInput(raw: String, currentPort: String): HostPortInput {
-    val endpoint =
-        raw.trim()
-            .removePrefix("http://")
-            .removePrefix("https://")
-            .substringBefore('/')
-            .substringBefore('?')
-            .trimEnd('/')
+    val endpoint = raw.trim().removePrefix("http://").removePrefix("https://").substringBefore('/').substringBefore('?').trimEnd('/')
     val lastColonIndex = endpoint.lastIndexOf(':')
     if (lastColonIndex > 0 && endpoint.indexOf(':') == lastColonIndex) {
         val possiblePort = endpoint.substring(lastColonIndex + 1)

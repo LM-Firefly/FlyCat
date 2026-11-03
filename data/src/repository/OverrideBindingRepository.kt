@@ -81,6 +81,5 @@ class OverrideBindingRepository(private val configStore: OverrideConfigStore, pr
         }
     }
 
-    private fun isLegacyPresetOverrideId(overrideId: String): Boolean =
-        overrideId.startsWith(OverrideMetadata.LEGACY_SYSTEM_PREFIX)
+    private fun isLegacyPresetOverrideId(overrideId: String): Boolean = overrideId.startsWith(OverrideMetadata.LEGACY_SYSTEM_PREFIX)
 }

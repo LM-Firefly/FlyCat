@@ -56,12 +56,11 @@ class SessionRuntimeSpecFactory(
         val profileDir = context.importedDir.resolve(profile.uuid.toString())
         val disableAllUserOverrides = store.disableAllOverride
         val runMode = RunMode.VpnService
-        val userOverrides =
-            if (disableAllUserOverrides) {
-                emptyList()
-            } else {
-                compiledConfigPipeline.resolveOverrideSpecs(profile.uuid.toString())
-            }
+        val userOverrides = if (disableAllUserOverrides) {
+            emptyList()
+        } else {
+            compiledConfigPipeline.resolveOverrideSpecs(profile.uuid.toString())
+        }
         val overrideSpecs = userOverrides + GlobalUaOverride.materialize(profileDir)
         val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
         return RuntimeSpec(
@@ -74,32 +73,27 @@ class SessionRuntimeSpecFactory(
             overrideSpecs = overrideSpecs,
             runMode = runMode,
             skipRuntimePatches = disableAllUserOverrides,
-            effectiveFingerprint =
-                buildEffectiveFingerprint(profile.uuid.toString(), overrideSpecs, ageSecretKey, disableAllUserOverrides),
+            effectiveFingerprint = buildEffectiveFingerprint(profile.uuid.toString(), overrideSpecs, ageSecretKey, disableAllUserOverrides),
             profileFingerprint = buildProfileFingerprint(profile.uuid.toString()),
         )
     }
 
     fun createRootTunSpec(log: (String) -> Unit = {}): RuntimeSpec {
         val rootResult = RootTunConfigFactory(context).create(log)
-        val profile =
-            ImportedDao.queryByUUID(rootResult.profileUuid)
-                ?: error("Root tun profile metadata not found: ${rootResult.profileUuid}")
+        val profile = ImportedDao.queryByUUID(rootResult.profileUuid) ?: error("Root tun profile metadata not found: ${rootResult.profileUuid}")
         val profileDir = context.importedDir.resolve(rootResult.profileUuid.toString())
         val disableAllUserOverrides = store.disableAllOverride
         val skipModePatches = disableAllUserOverrides
-        val userOverrides =
-            if (disableAllUserOverrides) {
-                emptyList()
-            } else {
-                compiledConfigPipeline.resolveOverrideSpecs(rootResult.profileUuid.toString())
-            }
-        val modeOverrides =
-            if (!skipModePatches) {
-                userOverrides + TunOverride.materialize(rootResult.config, profileDir)
-            } else {
-                userOverrides
-            }
+        val userOverrides = if (disableAllUserOverrides) {
+            emptyList()
+        } else {
+            compiledConfigPipeline.resolveOverrideSpecs(rootResult.profileUuid.toString())
+        }
+        val modeOverrides = if (!skipModePatches) {
+            userOverrides + TunOverride.materialize(rootResult.config, profileDir)
+        } else {
+            userOverrides
+        }
         val overrideSpecs = modeOverrides + GlobalUaOverride.materialize(profileDir)
         val ageSecretKey = normalizeAgeSecretKey(profile.ageSecretKey)
         return RuntimeSpec(
@@ -115,13 +109,12 @@ class SessionRuntimeSpecFactory(
             rootTunConfig = rootResult.config,
             staticPlanFingerprint = rootResult.staticPlan.fingerprint,
             transportFingerprint = rootResult.dynamicOverrides.transportFingerprint,
-            effectiveFingerprint =
-                buildEffectiveFingerprint(
-                    rootResult.profileUuid.toString(),
-                    overrideSpecs,
-                    ageSecretKey,
-                    skipModePatches,
-                ),
+            effectiveFingerprint = buildEffectiveFingerprint(
+                rootResult.profileUuid.toString(),
+                overrideSpecs,
+                ageSecretKey,
+                skipModePatches,
+            ),
             profileFingerprint = rootResult.dynamicOverrides.profileFingerprint,
         )
     }
@@ -129,29 +122,25 @@ class SessionRuntimeSpecFactory(
     /** Creates a spec for eBPF mode. Uses the active profile with eBPF override (tun disabled, mixed-port 7890). */
     fun createEbpfSpec(log: (String) -> Unit = {}): RuntimeSpec {
         val rootResult = RootTunConfigFactory(context).create(log)
-        val profile =
-            ImportedDao.queryByUUID(rootResult.profileUuid)
-                ?: error("eBPF profile metadata not found: ${rootResult.profileUuid}")
+        val profile = ImportedDao.queryByUUID(rootResult.profileUuid) ?: error("eBPF profile metadata not found: ${rootResult.profileUuid}")
         val profileDir = context.importedDir.resolve(rootResult.profileUuid.toString())
         val disableAllUserOverrides = store.disableAllOverride
-        val userOverrides =
-            if (disableAllUserOverrides) {
-                emptyList()
-            } else {
-                compiledConfigPipeline.resolveOverrideSpecs(rootResult.profileUuid.toString())
-            }
+        val userOverrides = if (disableAllUserOverrides) {
+            emptyList()
+        } else {
+            compiledConfigPipeline.resolveOverrideSpecs(rootResult.profileUuid.toString())
+        }
         // eBPF模式：始终注入本地 cgroup listener；可选 CN bypass 覆写
         val uidPolicy = resolveEbpfUidPolicy()
-        val ebpfOverride =
-            EbpfOverride.materialize(
-                EbpfOverride.Config(
-                    bypassCn = store.ebpfBypassCn,
-                    includeUid = if (uidPolicy.mode == 1) uidPolicy.uids else emptyList(),
-                    excludeUid = if (uidPolicy.mode == 2) uidPolicy.uids else emptyList(),
-                ),
-                profileDir,
-                log,
-            )
+        val ebpfOverride = EbpfOverride.materialize(
+            EbpfOverride.Config(
+                bypassCn = store.ebpfBypassCn,
+                includeUid = if (uidPolicy.mode == 1) uidPolicy.uids else emptyList(),
+                excludeUid = if (uidPolicy.mode == 2) uidPolicy.uids else emptyList(),
+            ),
+            profileDir,
+            log,
+        )
         val modeOverrides = userOverrides + ebpfOverride
         // eBPF keeps the profile authoritative — skip GlobalUaOverride.
         val overrideSpecs = modeOverrides
@@ -169,13 +158,12 @@ class SessionRuntimeSpecFactory(
             rootTunConfig = rootResult.config, // eBPF reuses the profile config; transport applies EbpfOverride on top
             staticPlanFingerprint = rootResult.staticPlan.fingerprint,
             transportFingerprint = rootResult.dynamicOverrides.transportFingerprint,
-            effectiveFingerprint =
-                buildEffectiveFingerprint(
-                    rootResult.profileUuid.toString(),
-                    overrideSpecs,
-                    ageSecretKey,
-                    skipRuntimePatches = false,
-                ),
+            effectiveFingerprint = buildEffectiveFingerprint(
+                rootResult.profileUuid.toString(),
+                overrideSpecs,
+                ageSecretKey,
+                skipRuntimePatches = false,
+            ),
             profileFingerprint = rootResult.dynamicOverrides.profileFingerprint,
         )
     }
@@ -218,14 +206,8 @@ class SessionRuntimeSpecFactory(
 
     private fun resolveTunAccessControl(): TunAccessControl {
         val self = context.applicationInfo.uid
-        val selectedPackages =
-            store.accessControlPackages.map(String::trim).filter(String::isNotEmpty).toSet()
-        val selectedUid =
-            selectedPackages
-                .mapNotNull { pkg -> resolvePackageUid(pkg) }
-                .filter { it != self }
-                .distinct()
-                .sorted()
+        val selectedPackages = store.accessControlPackages.map(String::trim).filter(String::isNotEmpty).toSet()
+        val selectedUid = selectedPackages.mapNotNull { pkg -> resolvePackageUid(pkg) }.filter { it != self }.distinct().sorted()
         val allUsers = resolveIncludeAndroidUsers()
         return when (store.accessControlMode) {
             AccessControlMode.AcceptAll -> TunAccessControl(includeAndroidUser = allUsers)
@@ -326,8 +308,7 @@ class SessionRuntimeSpecFactory(
         }
     }
 
-    private fun normalizeAgeSecretKey(value: String?): String? =
-        value?.trim()?.takeIf { it.isNotEmpty() }
+    private fun normalizeAgeSecretKey(value: String?): String? = value?.trim()?.takeIf { it.isNotEmpty() }
 
     private fun sha256String(value: String): String {
         val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray())

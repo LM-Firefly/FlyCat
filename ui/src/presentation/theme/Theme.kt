@@ -46,20 +46,18 @@ fun FlyTheme(
 ) = ProvideFlyStrings {
     LocalPlatformSystemUiEffect.current()
     val effectiveThemeMode = themeMode ?: ThemeMode.Auto
-    val isDark =
-        when (effectiveThemeMode) {
-            ThemeMode.Auto -> isSystemInDarkTheme()
-            ThemeMode.Light -> false
-            ThemeMode.Dark -> true
-        }
-    val colorScheme =
-        remember(isDark, themeSeedColorArgb, invertOnPrimaryColors) {
-            colorSchemeFromSeed(
-                seed = colorFromArgb(themeSeedColorArgb),
-                isDark = isDark,
-                invertOnPrimaryColors = invertOnPrimaryColors,
-            )
-        }
+    val isDark = when (effectiveThemeMode) {
+        ThemeMode.Auto -> isSystemInDarkTheme()
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+    }
+    val colorScheme = remember(isDark, themeSeedColorArgb, invertOnPrimaryColors) {
+        colorSchemeFromSeed(
+            seed = colorFromArgb(themeSeedColorArgb),
+            isDark = isDark,
+            invertOnPrimaryColors = invertOnPrimaryColors,
+        )
+    }
 
     CompositionLocalProvider(
         LocalSpacing provides spacing,

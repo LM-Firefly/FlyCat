@@ -21,42 +21,27 @@
 
 package com.github.lmfirefly.flycat.presentation.component.dialog
 
-import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.ClipData
 import android.content.Context
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.locale.FlyTxt
-import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import com.github.lmfirefly.flycat.presentation.util.ToastDialogBridge
 import com.github.lmfirefly.flycat.presentation.util.ToastDialogEvent
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.layout.DialogDefaults
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowDialog
 
 @Composable
 fun ToastDialogHost() {
-    val opacity = AppTheme.opacity
-    val radii = AppTheme.radii
-    val spacing = AppTheme.spacing
-
     val event by ToastDialogBridge.event.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var eventSnapshot by remember { mutableStateOf<ToastDialogEvent?>(null) }
@@ -70,9 +55,7 @@ fun ToastDialogHost() {
     }
 
     eventSnapshot?.let { snapshot ->
-        val copyButtonShape = RoundedCornerShape(16.dp)
-        val copyButtonBgShape = RoundedCornerShape(radii.radius16)
-        WindowDialog(
+        AppDialog(
             show = showDialog.value,
             modifier = Modifier,
             title = snapshot.title,
@@ -91,36 +74,17 @@ fun ToastDialogHost() {
             insideMargin = DialogDefaults.insideMargin,
             defaultWindowInsetsPadding = true,
             content = {
-                Box(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .clip(copyButtonShape)
-                            .background(
-                                color =
-                                    MiuixTheme.colorScheme.primary.copy(
-                                        alpha = opacity.subtleStrong
-                                    ),
-                                shape = copyButtonBgShape,
-                            )
-                            .clickable {
-                                val clipboardManager =
-                                    context.getSystemService(Context.CLIPBOARD_SERVICE)
-                                        as ClipboardManager
-                                val textToCopy = snapshot.message.ifBlank { snapshot.title }
-                                clipboardManager.setPrimaryClip(
-                                    ClipData.newPlainText(snapshot.title, textToCopy)
-                                )
-                                showDialog.value = false
-                            }
-                            .padding(vertical = spacing.space14),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = FlyTxt.Component.Button.Copy,
-                        color = MiuixTheme.colorScheme.primary,
-                        style = MiuixTheme.textStyles.body1,
-                    )
-                }
+                GlassTextButton(
+                    text = FlyTxt.Component.Button.Copy,
+                    onClick = {
+                        val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val textToCopy = snapshot.message.ifBlank { snapshot.title }
+                        clipboardManager.setPrimaryClip(ClipData.newPlainText(snapshot.title, textToCopy))
+                        showDialog.value = false
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    primary = true,
+                )
             },
         )
     }

@@ -48,36 +48,33 @@ internal class RootTunPackageResolver(
         val selectedPackages = store.accessControlPackages
         val packageUidLookup = resolvePackageUidLookup(selectedPackages)
         val packageUidMap = packageUidLookup.packageUidMap
-        val allAppUid =
-            packageUidMap.values
-                .asSequence()
-                .filter { it >= APP_UID_MIN }
-                .filterNot { it == context.applicationInfo.uid }
-                .toSortedSet()
+        val allAppUid = packageUidMap.values
+            .asSequence()
+            .filter { it >= APP_UID_MIN }
+            .filterNot { it == context.applicationInfo.uid }
+            .toSortedSet()
 
-        val selectedUid =
-            selectedPackages
-                .asSequence()
-                .mapNotNull(packageUidMap::get)
-                .filter { it >= APP_UID_MIN }
-                .filterNot { it == context.applicationInfo.uid }
-                .toSortedSet()
+        val selectedUid = selectedPackages
+            .asSequence()
+            .mapNotNull(packageUidMap::get)
+            .filter { it >= APP_UID_MIN }
+            .filterNot { it == context.applicationInfo.uid }
+            .toSortedSet()
 
         val missingPackages = selectedPackages.filterNot(packageUidMap::containsKey).toSortedSet()
 
-        val includeUid =
-            when (store.accessControlMode) {
-                AccessControlMode.AcceptAll -> allAppUid
-                AccessControlMode.AcceptSelected -> selectedUid
-                AccessControlMode.RejectSelected -> {
-                    check(packageUidLookup.hasFullPackageAccess) {
-                        "App list permission is required to compute all application UIDs"
-                    }
-                    allAppUid - selectedUid
+        val includeUid = when (store.accessControlMode) {
+            AccessControlMode.AcceptAll -> allAppUid
+            AccessControlMode.AcceptSelected -> selectedUid
+            AccessControlMode.RejectSelected -> {
+                check(packageUidLookup.hasFullPackageAccess) {
+                    "App list permission is required to compute all application UIDs"
                 }
-                // Whitelist only ourselves ⇒ no other app is ever routed into the tun.
-                AccessControlMode.RejectAll -> listOf(context.applicationInfo.uid)
-            }.toList()
+                allAppUid - selectedUid
+            }
+            // 仅把自身列入白名单 ⇒ 不会有其他应用被路由进 tun。
+            AccessControlMode.RejectAll -> listOf(context.applicationInfo.uid)
+        }.toList()
 
         if (store.accessControlMode == AccessControlMode.AcceptAll) {
             check(packageUidLookup.hasFullPackageAccess) {
@@ -92,22 +89,21 @@ internal class RootTunPackageResolver(
         )
     }
 
-    private fun resolvePackageUidLookup(selectedPackages: Set<String>): PackageUidLookup =
-        when (store.accessControlMode) {
-            AccessControlMode.AcceptAll,
-            AccessControlMode.RejectSelected -> resolveFullPackageUidLookup(selectedPackages)
-            AccessControlMode.AcceptSelected ->
-                PackageUidLookup(
-                    packageUidMap = resolveSelectedPackageUidMap(selectedPackages),
-                    hasFullPackageAccess = false,
-                )
-            // RejectAll only needs the app's own UID; no full package scan required.
-            AccessControlMode.RejectAll ->
-                PackageUidLookup(
-                    packageUidMap = resolveSelectedPackageUidMap(setOf(context.packageName)),
-                    hasFullPackageAccess = false,
-                )
-        }
+    private fun resolvePackageUidLookup(selectedPackages: Set<String>): PackageUidLookup = when (store.accessControlMode) {
+        AccessControlMode.AcceptAll,
+        AccessControlMode.RejectSelected -> resolveFullPackageUidLookup(selectedPackages)
+        AccessControlMode.AcceptSelected ->
+            PackageUidLookup(
+                packageUidMap = resolveSelectedPackageUidMap(selectedPackages),
+                hasFullPackageAccess = false,
+            )
+        // RejectAll 只需要应用自身的 UID，无需全量包扫描。
+        AccessControlMode.RejectAll ->
+            PackageUidLookup(
+                packageUidMap = resolveSelectedPackageUidMap(setOf(context.packageName)),
+                hasFullPackageAccess = false,
+            )
+    }
 
     private fun resolveFullPackageUidLookup(selectedPackages: Set<String>): PackageUidLookup {
         RootPackageShell.queryPackageUidMap()
@@ -116,11 +112,10 @@ internal class RootTunPackageResolver(
                 return PackageUidLookup(packageUidMap = packageUidMap, hasFullPackageAccess = true)
             }
 
-        val fallback =
-            PackageUidLookup(
-                packageUidMap = resolveSelectedPackageUidMap(selectedPackages),
-                hasFullPackageAccess = false,
-            )
+        val fallback = PackageUidLookup(
+            packageUidMap = resolveSelectedPackageUidMap(selectedPackages),
+            hasFullPackageAccess = false,
+        )
 
         if (!hasInstalledAppsPermission()) {
             return fallback
@@ -164,47 +159,38 @@ internal class RootTunPackageResolver(
         return packageInfo.applicationInfo?.uid
     }
 
-    private fun queryPackageInfo(packageName: String): PackageInfo =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.packageManager.getPackageInfo(
-                packageName,
-                PackageManager.PackageInfoFlags.of(0),
-            )
-        } else {
-            @Suppress("DEPRECATION") context.packageManager.getPackageInfo(packageName, 0)
-        }
+    private fun queryPackageInfo(packageName: String): PackageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        context.packageManager.getPackageInfo(
+            packageName,
+            PackageManager.PackageInfoFlags.of(0),
+        )
+    } else {
+        @Suppress("DEPRECATION") context.packageManager.getPackageInfo(packageName, 0)
+    }
 
-    private fun installedPackageUidMap(): Map<String, Int> =
-        installedPackages()
-            .asSequence()
-            .mapNotNull { packageInfo ->
-                packageInfo.applicationInfo?.uid?.let { uid -> packageInfo.packageName to uid }
-            }
-            .toMap()
+    private fun installedPackageUidMap(): Map<String, Int> = installedPackages().asSequence().mapNotNull { packageInfo ->
+        packageInfo.applicationInfo?.uid?.let { uid -> packageInfo.packageName to uid }
+    }.toMap()
 
     private fun hasInstalledAppsPermission(): Boolean {
         val permission = MIUI_GET_INSTALLED_APPS_PERMISSION
-        val permissionExists =
-            runCatching {
-                    context.packageManager.getPermissionInfo(permission, 0)
-                    true
-                }
-                .getOrDefault(false)
+        val permissionExists = runCatching {
+            context.packageManager.getPermissionInfo(permission, 0)
+            true
+        }.getOrDefault(false)
 
         if (!permissionExists) {
             return true
         }
 
-        return ContextCompat.checkSelfPermission(context, permission) ==
-            PackageManager.PERMISSION_GRANTED
+        return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun installedPackages(): List<PackageInfo> =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.packageManager.getInstalledPackages(PackageManager.PackageInfoFlags.of(0))
-        } else {
-            @Suppress("DEPRECATION") context.packageManager.getInstalledPackages(0)
-        }
+    private fun installedPackages(): List<PackageInfo> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        context.packageManager.getInstalledPackages(PackageManager.PackageInfoFlags.of(0))
+    } else {
+        @Suppress("DEPRECATION") context.packageManager.getInstalledPackages(0)
+    }
 
     private companion object {
         const val APP_UID_MIN = 10_000

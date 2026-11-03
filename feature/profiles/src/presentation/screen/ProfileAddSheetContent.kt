@@ -65,14 +65,19 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.github.lmfirefly.flycat.core.util.crypto.AgeKeyCrypto
-import com.github.lmfirefly.flycat.feature.profiles.presentation.viewmodel.ProfilesViewModel
 import com.github.lmfirefly.flycat.feature.profiles.presentation.viewmodel.DownloadProgress
+import com.github.lmfirefly.flycat.feature.profiles.presentation.viewmodel.ProfilesViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
+import com.github.lmfirefly.flycat.presentation.component.SheetHeaderIconButton
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
-import com.github.lmfirefly.flycat.presentation.icon.flycat.PackageCheck
-import com.github.lmfirefly.flycat.presentation.icon.flycat.Eye
 import com.github.lmfirefly.flycat.presentation.icon.flycat.ArrowRight
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Copy
+import com.github.lmfirefly.flycat.presentation.icon.flycat.Eye
+import com.github.lmfirefly.flycat.presentation.icon.flycat.PackageCheck
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Sparkles
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
@@ -81,7 +86,6 @@ import com.github.lmfirefly.flycat.presentation.util.toast
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -99,17 +103,15 @@ internal fun DownloadProgressContent(
 ) {
     val isCompleted = downloadProgress?.isCompleted == true
     Column(
-        modifier =
-            Modifier.fillMaxWidth()
-                .height(
-                    if (isCompleted) {
-                        downloadCompleteSheetContentHeight
-                    } else if (stableSheetHeightPx > 0) {
-                        stableSheetHeight
-                    } else {
-                        downloadSheetContentHeight
-                    }
-                ),
+        modifier = Modifier.fillMaxWidth().height(
+            if (isCompleted) {
+                downloadCompleteSheetContentHeight
+            } else if (stableSheetHeightPx > 0) {
+                stableSheetHeight
+            } else {
+                downloadSheetContentHeight
+            }
+        ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(UiDp.dp16, Alignment.CenterVertically),
     ) {
@@ -117,9 +119,7 @@ internal fun DownloadProgressContent(
             targetState = isCompleted,
             modifier = Modifier.size(UiDp.dp48),
             contentAlignment = Alignment.Center,
-            transitionSpec = {
-                fadeIn(animationSpec = tween(AnimationSpecs.DURATION_NORMAL)) togetherWith fadeOut(animationSpec = tween(AnimationSpecs.DURATION_NORMAL))
-            },
+            transitionSpec = { fadeIn(animationSpec = tween(AnimationSpecs.DURATION_NORMAL)) togetherWith fadeOut(animationSpec = tween(AnimationSpecs.DURATION_NORMAL)) },
             label = "ProgressIcon",
         ) { complete ->
             if (complete) {
@@ -127,15 +127,9 @@ internal fun DownloadProgressContent(
                     imageVector = FlyCat.PackageCheck,
                     contentDescription = "Complete",
                     tint = MiuixTheme.colorScheme.onPrimary,
-                    modifier =
-                        Modifier.fillMaxSize()
-                            .clip(RoundedCornerShape(UiDp.dp16))
-                            .background(MiuixTheme.colorScheme.primary)
-                            .padding(UiDp.dp10),
+                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(UiDp.dp16)).background(MiuixTheme.colorScheme.primary).padding(UiDp.dp10),
                 )
-            } else {
-                InfiniteProgressIndicator(modifier = Modifier.size(UiDp.dp32))
-            }
+            } else { InfiniteProgressIndicator(modifier = Modifier.size(UiDp.dp32)) }
         }
 
         downloadProgress?.message?.let { message ->
@@ -230,11 +224,17 @@ private fun ProfileTypeSelectorCard(selectedImportType: ProfileImportType, profi
                 onClick = {},
             )
         ) {
-            WindowSpinnerPreference(
+            GlassDropdownPreference(
                 title = FlyTxt.ProfilesPage.Type.Title,
-                items = ProfileImportType.entries.map { type -> DropdownItem(type.spinnerTitle()) },
-                selectedIndex = selectedImportType.ordinal,
-                onSelectedIndexChange = { index -> onTypeSelected(ProfileImportType.fromSpinnerIndex(index)) },
+                options = ProfileImportType.entries.indices.map { index ->
+                    GlassDropdownOption(
+                        value = ProfileImportType.fromSpinnerIndex(index),
+                        label = ProfileImportType.entries[index].spinnerTitle(),
+                    )
+                },
+                selected = selectedImportType,
+                onSelected = onTypeSelected,
+                glassSurface = true,
             )
         }
     }
@@ -252,11 +252,7 @@ private fun QrScannerContent(
         verticalArrangement = Arrangement.spacedBy(UiDp.dp16),
     ) {
         Column(
-            modifier =
-                Modifier.fillMaxWidth()
-                    .height(UiDp.dp200)
-                    .clip(RoundedCornerShape(UiDp.dp12))
-                    .background(MiuixTheme.colorScheme.surfaceVariant),
+            modifier = Modifier.fillMaxWidth().height(UiDp.dp200).clip(RoundedCornerShape(UiDp.dp12)).background(MiuixTheme.colorScheme.surfaceVariant),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -269,7 +265,7 @@ private fun QrScannerContent(
             }
         }
 
-        TextButton(
+        GlassTextButton(
             text = FlyTxt.ProfilesPage.QrScanner.SelectFromAlbum,
             onClick = onSelectQrImage,
             modifier = Modifier.fillMaxWidth(),
@@ -301,7 +297,7 @@ private fun ManualProfileContent(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(UiDp.dp16),
     ) {
-        TextField(
+        GlassTextField(
             value = nameTextFieldValue,
             onValueChange = onNameChange,
             label = FlyTxt.ProfilesPage.Input.ProfileName,
@@ -310,7 +306,7 @@ private fun ManualProfileContent(
         )
 
         if (importType == ProfileImportType.Url) {
-            TextField(
+            GlassTextField(
                 value = urlTextFieldValue,
                 onValueChange = onUrlChange,
                 label = FlyTxt.ProfilesPage.Input.SubscriptionUrl,
@@ -322,7 +318,7 @@ private fun ManualProfileContent(
             )
             if (!profileLocked) {
                 Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp4)) {
-                    TextField(
+                    GlassTextField(
                         value = intervalTextFieldValue,
                         onValueChange = onIntervalChange,
                         label = FlyTxt.ProfilesPage.Input.AutoUpdateInterval,
@@ -338,20 +334,14 @@ private fun ManualProfileContent(
                 }
             }
         } else {
-            TextField(
+            GlassTextField(
                 value = fileNameTextFieldValue,
                 onValueChange = {},
                 label = FlyTxt.ProfilesPage.Input.SelectFile,
                 useLabelAsPlaceholder = true,
                 readOnly = true,
                 enabled = false,
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                            onClick = onPickFile,
-                        ),
+                modifier = Modifier.fillMaxWidth().clickable(indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = onPickFile),
             )
         }
         // Age public key (read-only, derived from private key)
@@ -366,7 +356,7 @@ private fun ManualProfileContent(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(UiDp.dp8),
             ) {
-                TextField(
+                GlassTextField(
                     value = agePublicKey,
                     onValueChange = { agePublicKey = it },
                     label = FlyTxt.ProfilesPage.AgeKey.PublicKeyPlaceholder,
@@ -375,12 +365,12 @@ private fun ManualProfileContent(
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                 )
-                IconButton(
+                SheetHeaderIconButton(
+                    icon = FlyCat.ArrowRight,
+                    contentDescription = FlyTxt.ProfilesPage.AgeKey.DerivePublicKey,
                     onClick = {
                         scope.launch {
-                            val keys = AgeKeyCrypto.agePublicKey(
-                                ageSecretKeyTextFieldValue.text
-                            )
+                            val keys = AgeKeyCrypto.agePublicKey(ageSecretKeyTextFieldValue.text)
                             if (keys != null) {
                                 agePublicKey = keys
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -391,24 +381,16 @@ private fun ManualProfileContent(
                             }
                         }
                     },
-                ) {
-                    Icon(
-                        imageVector = FlyCat.ArrowRight,
-                        contentDescription = FlyTxt.ProfilesPage.AgeKey.DerivePublicKey,
-                    )
-                }
-                IconButton(
+                )
+                SheetHeaderIconButton(
+                    icon = FlyCat.Copy,
+                    contentDescription = FlyTxt.ProfilesPage.AgeKey.CopiedPublicKey,
                     onClick = {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         clipboard.setPrimaryClip(ClipData.newPlainText("age_key", agePublicKey))
                         Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.CopiedPublicKey.format(agePublicKey), Toast.LENGTH_SHORT).show()
                     },
-                ) {
-                    Icon(
-                        imageVector = FlyCat.Copy,
-                        contentDescription = FlyTxt.ProfilesPage.AgeKey.CopyPublicKey,
-                    )
-                }
+                )
             }
         }
         // Age secret key input with generate, copy, and visibility toggle
@@ -423,7 +405,7 @@ private fun ManualProfileContent(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(UiDp.dp8),
             ) {
-                TextField(
+                GlassTextField(
                     value = ageSecretKeyTextFieldValue,
                     onValueChange = onAgeSecretKeyChange,
                     singleLine = true,
@@ -431,7 +413,9 @@ private fun ManualProfileContent(
                     visualTransformation = if (ageKeyVisible) VisualTransformation.None
                         else PasswordVisualTransformation(),
                 )
-                IconButton(
+                SheetHeaderIconButton(
+                    icon = FlyCat.Sparkles,
+                    contentDescription = FlyTxt.ProfilesPage.AgeKey.GenerateSecretKey,
                     onClick = {
                         scope.launch {
                             val result = AgeKeyCrypto.genAgeKey()
@@ -445,32 +429,21 @@ private fun ManualProfileContent(
                             }
                         }
                     },
-                ) {
-                    Icon(
-                        imageVector = FlyCat.Sparkles,
-                        contentDescription = FlyTxt.ProfilesPage.AgeKey.GenerateSecretKey,
-                    )
-                }
-                IconButton(
+                )
+                SheetHeaderIconButton(
+                    icon = FlyCat.Copy,
+                    contentDescription = FlyTxt.ProfilesPage.AgeKey.CopiedSecretKey,
                     onClick = {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         clipboard.setPrimaryClip(ClipData.newPlainText("age_key", ageSecretKeyTextFieldValue.text))
                         Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.CopiedSecretKey.format(ageSecretKeyTextFieldValue.text), Toast.LENGTH_SHORT).show()
                     },
-                ) {
-                    Icon(
-                        imageVector = FlyCat.Copy,
-                        contentDescription = FlyTxt.ProfilesPage.AgeKey.CopySecretKey,
-                    )
-                }
-                IconButton(
+                )
+                SheetHeaderIconButton(
+                    icon = FlyCat.Eye,
+                    contentDescription = if (ageKeyVisible) FlyTxt.ProfilesPage.AgeKey.HideKey else FlyTxt.ProfilesPage.AgeKey.ShowKey,
                     onClick = { ageKeyVisible = !ageKeyVisible },
-                ) {
-                    Icon(
-                        imageVector = FlyCat.Eye,
-                        contentDescription = if (ageKeyVisible) FlyTxt.ProfilesPage.AgeKey.HideKey else FlyTxt.ProfilesPage.AgeKey.ShowKey,
-                    )
-                }
+                )
             }
         }
         if (error.isNotEmpty()) {

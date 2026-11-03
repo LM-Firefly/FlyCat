@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.core.model.proxy.Proxy
 import com.github.lmfirefly.flycat.feature.proxy.presentation.util.extractNodeTags
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.component.misc.CountryFlag
 import com.github.lmfirefly.flycat.presentation.component.misc.EmojiAwareText
 import com.github.lmfirefly.flycat.presentation.component.misc.GroupIcon
@@ -77,8 +78,8 @@ import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
 
 internal object NodeCardDefaults {
-    val CornerRadius = 12.dp
-    val GroupCornerRadius = 12.dp
+    val CornerRadius = 18.dp
+    val GroupCornerRadius = 18.dp
     val PaddingHorizontal = 12.dp
     val PaddingVertical = 16.dp
 }
@@ -104,59 +105,57 @@ internal fun nodeLatencyLabel(delay: Int?, withUnit: Boolean = false): Pair<Stri
     return text to color
 }
 
-internal fun displayName(type: String): String =
-    when (type) {
-        Proxy.Type.Shadowsocks -> "SS"
-        Proxy.Type.ShadowsocksR -> "SSR"
-        Proxy.Type.Socks5 -> "SOCKS5"
-        Proxy.Type.Http -> "HTTP"
-        Proxy.Type.Vmess -> "VMess"
-        Proxy.Type.Vless -> "VLESS"
-        Proxy.Type.Tuic -> "TUIC"
-        Proxy.Type.Dns -> "DNS"
-        Proxy.Type.Ssh -> "SSH"
-        else -> type
-    }
+internal fun displayName(type: String): String = when (type) {
+    Proxy.Type.Shadowsocks -> "SS"
+    Proxy.Type.ShadowsocksR -> "SSR"
+    Proxy.Type.Socks5 -> "SOCKS5"
+    Proxy.Type.Http -> "HTTP"
+    Proxy.Type.Vmess -> "VMess"
+    Proxy.Type.Vless -> "VLESS"
+    Proxy.Type.Tuic -> "TUIC"
+    Proxy.Type.Dns -> "DNS"
+    Proxy.Type.Ssh -> "SSH"
+    else -> type
+}
 
-internal fun iconLabel(type: String): String =
-    when (type) {
-        Proxy.Type.Direct -> "DI"
-        Proxy.Type.Reject -> "RJ"
-        Proxy.Type.RejectDrop -> "RD"
-        Proxy.Type.Compatible -> "CP"
-        Proxy.Type.Pass -> "PS"
-        Proxy.Type.PassRule -> "PR"
-        Proxy.Type.Relay -> "RL"
-        Proxy.Type.Selector -> "SE"
-        Proxy.Type.Fallback -> "FB"
-        Proxy.Type.URLTest -> "UT"
-        Proxy.Type.LoadBalance -> "LB"
-        Proxy.Type.Smart -> "SM"
-        Proxy.Type.Unknown -> "UN"
-        Proxy.Type.Shadowsocks -> "SS"
-        Proxy.Type.ShadowsocksR -> "SR"
-        Proxy.Type.Snell -> "SN"
-        Proxy.Type.Socks5 -> "S5"
-        Proxy.Type.Http -> "HT"
-        Proxy.Type.Vmess -> "VM"
-        Proxy.Type.Vless -> "VL"
-        Proxy.Type.Trojan -> "TR"
-        Proxy.Type.Hysteria -> "HY"
-        Proxy.Type.Hysteria2 -> "H2"
-        Proxy.Type.Tuic -> "TU"
-        Proxy.Type.WireGuard -> "WG"
-        Proxy.Type.Dns -> "DN"
-        Proxy.Type.Ssh -> "SH"
-        Proxy.Type.Mieru -> "MI"
-        Proxy.Type.AnyTLS -> "AT"
-        Proxy.Type.Sudoku -> "SU"
-        Proxy.Type.Masque -> "MQ"
-        Proxy.Type.TrustTunnel -> "TT"
-        Proxy.Type.OpenVPN -> "OP"
-        Proxy.Type.Tailscale -> "Tl"
-        Proxy.Type.GostRelay -> "GR"
-        else -> type.take(2).uppercase()
-    }
+internal fun iconLabel(type: String): String = when (type) {
+    Proxy.Type.Direct -> "DI"
+    Proxy.Type.Reject -> "RJ"
+    Proxy.Type.RejectDrop -> "RD"
+    Proxy.Type.Compatible -> "CP"
+    Proxy.Type.Pass -> "PS"
+    Proxy.Type.PassRule -> "PR"
+    Proxy.Type.Relay -> "RL"
+    Proxy.Type.Selector -> "SE"
+    Proxy.Type.Fallback -> "FB"
+    Proxy.Type.URLTest -> "UT"
+    Proxy.Type.LoadBalance -> "LB"
+    Proxy.Type.Smart -> "SM"
+    Proxy.Type.Unknown -> "UN"
+    Proxy.Type.Shadowsocks -> "SS"
+    Proxy.Type.ShadowsocksR -> "SR"
+    Proxy.Type.Snell -> "SN"
+    Proxy.Type.Socks5 -> "S5"
+    Proxy.Type.Http -> "HT"
+    Proxy.Type.Vmess -> "VM"
+    Proxy.Type.Vless -> "VL"
+    Proxy.Type.Trojan -> "TR"
+    Proxy.Type.Hysteria -> "HY"
+    Proxy.Type.Hysteria2 -> "H2"
+    Proxy.Type.Tuic -> "TU"
+    Proxy.Type.WireGuard -> "WG"
+    Proxy.Type.Dns -> "DN"
+    Proxy.Type.Ssh -> "SH"
+    Proxy.Type.Mieru -> "MI"
+    Proxy.Type.AnyTLS -> "AT"
+    Proxy.Type.Sudoku -> "SU"
+    Proxy.Type.Masque -> "MQ"
+    Proxy.Type.TrustTunnel -> "TT"
+    Proxy.Type.OpenVPN -> "OP"
+    Proxy.Type.Tailscale -> "Tl"
+    Proxy.Type.GostRelay -> "GR"
+    else -> type.take(2).uppercase()
+}
 
 @Composable
 internal fun NodeSelectableCard(
@@ -170,7 +169,7 @@ internal fun NodeSelectableCard(
     val sizes = AppTheme.sizes
     val opacity = AppTheme.opacity
     val interactionSource = remember { MutableInteractionSource() }
-    val shape = RoundedCornerShape(radii.radius12)
+    val shape = RoundedCornerShape(radii.radius18)
     val primary = MiuixTheme.colorScheme.primary
     val backgroundColor = if (isSelected) {
         MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
@@ -178,43 +177,38 @@ internal fun NodeSelectableCard(
         MiuixTheme.colorScheme.background
     }
     val transition = updateTransition(targetState = isSelected, label = "node_card_selection")
-    val borderColor by
-        transition.animateColor(
-            transitionSpec = { tween(durationMillis = 220, easing = FastOutSlowInEasing) },
-            label = "node_card_border_color",
-        ) { selected ->
-            if (selected) primary.copy(alpha = opacity.disabled) else Color.Transparent
-        }
+    val borderColor by transition.animateColor(
+        transitionSpec = { tween(durationMillis = 220, easing = FastOutSlowInEasing) },
+        label = "node_card_border_color",
+    ) { selected ->
+        if (selected) primary.copy(alpha = opacity.disabled) else MiuixTheme.colorScheme.surfaceVariant
+    }
 
     Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .let {
-                    if (onClick != null) {
-                        it.pressable(
-                            interactionSource = interactionSource,
-                            indication = SinkFeedback(),
-                        )
-                    } else {
-                        it
-                    }
-                }
-                .clip(shape)
-                .background(backgroundColor)
-                .border(sizes.nodeCardBorderWidth, borderColor, shape)
-                .let {
-                    if (onClick != null) {
-                        it.clickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                            onClick = onClick,
-                        )
-                    } else {
-                        it
-                    }
-                }
-                .padding(horizontal = sizes.nodeCardPaddingHorizontal, vertical = paddingVertical),
+        modifier = modifier.fillMaxWidth().let {
+            if (onClick != null) {
+                it.pressable(
+                    interactionSource = interactionSource,
+                    indication = SinkFeedback(),
+                )
+            } else {
+                it
+            }
+        }.clip(shape).glassCardSurface(
+            shape = shape,
+            fallbackColor = backgroundColor,
+            glassTint = if (isSelected) primary.copy(alpha = 0.12f) else Color.Transparent,
+        ).border(sizes.nodeCardBorderWidth, borderColor, shape).let {
+            if (onClick != null) {
+                it.clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                )
+            } else {
+                it
+            }
+        }.padding(horizontal = sizes.nodeCardPaddingHorizontal, vertical = paddingVertical),
         content = content,
     )
 }
@@ -236,12 +230,10 @@ internal fun NodeCard(
     groupIconUri: String? = null,
 ) {
     val sizes = AppTheme.sizes
-    val onCardClick =
-        remember(proxy.name, onClick) { onClick?.let { click -> { click(proxy.name) } } }
-    val onNodeTestClick =
-        remember(proxy.name, onSingleNodeTestClick) {
-            onSingleNodeTestClick?.let { click -> { click(proxy.name) } }
-        }
+    val onCardClick = remember(proxy.name, onClick) { onClick?.let { click -> { click(proxy.name) } } }
+    val onNodeTestClick = remember(proxy.name, onSingleNodeTestClick) {
+        onSingleNodeTestClick?.let { click -> { click(proxy.name) } }
+    }
 
     NodeSelectableCard(
         isSelected = isSelected,
@@ -398,11 +390,8 @@ internal fun NodeLargeIcon(modifier: Modifier = Modifier, countryCode: String?, 
     val sizes = AppTheme.sizes
     val neutral = MiuixTheme.colorScheme.onSurface
     Box(
-        modifier =
-            modifier
-                .size(sizes.nodeLargeIconSize)
-                .clip(RoundedCornerShape(sizes.nodeLargeIconCornerRadius))
-                .background(neutral.copy(alpha = opacity.ambientLight + opacity.ambientShadow)),
+        modifier = modifier.size(sizes.nodeLargeIconSize).clip(RoundedCornerShape(sizes.nodeLargeIconCornerRadius))
+            .background(neutral.copy(alpha = opacity.ambientLight + opacity.ambientShadow)),
         contentAlignment = Alignment.Center,
     ) {
         if (showCountryFlag) {
@@ -427,10 +416,8 @@ private fun NodeTagChip(label: String) {
         text = label,
         style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
         color = primary,
-        modifier =
-            Modifier.clip(RoundedCornerShape(radii.full))
-                .background(primary.copy(alpha = opacity.subtle))
-                .padding(horizontal = spacing.space4, vertical = spacing.space2),
+        modifier = Modifier.clip(RoundedCornerShape(radii.full)).background(primary.copy(alpha = opacity.subtle))
+            .padding(horizontal = spacing.space4, vertical = spacing.space2),
     )
 }
 
@@ -443,21 +430,17 @@ private fun NodeMultiplierChip(multiplier: Float) {
     val sizes = AppTheme.sizes
     val isHigh = multiplier >= 2.0f
     val primary = MiuixTheme.colorScheme.primary
-    val chipBg =
-        if (isHigh) appColors.status.destructiveContainer else primary.copy(alpha = opacity.subtle)
+    val chipBg = if (isHigh) appColors.status.destructiveContainer else primary.copy(alpha = opacity.subtle)
     val chipColor = if (isHigh) appColors.status.destructive else primary
-    val label =
-        if (multiplier == multiplier.toLong().toFloat()) {
-            "x${multiplier.toLong()}"
-        } else {
-            "x$multiplier"
-        }
+    val label = if (multiplier == multiplier.toLong().toFloat()) {
+        "x${multiplier.toLong()}"
+    } else {
+        "x$multiplier"
+    }
 
     Row(
-        modifier =
-            Modifier.clip(RoundedCornerShape(radii.full))
-                .background(chipBg)
-                .padding(horizontal = spacing.space4, vertical = spacing.space2),
+        modifier = Modifier.clip(RoundedCornerShape(radii.full)).background(chipBg)
+            .padding(horizontal = spacing.space4, vertical = spacing.space2),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.space2),
     ) {

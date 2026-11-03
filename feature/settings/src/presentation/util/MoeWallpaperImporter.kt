@@ -46,29 +46,27 @@ import java.net.URL
  *   be read (caller should fall back to the original source URI in that case).
  */
 object MoeWallpaperImporter {
-    suspend fun importToLocal(context: Context, sourceUri: String): String? =
-        withContext(Dispatchers.IO) {
-            runCatching {
-                    val target = context.moeWallpaperFile()
-                    val tmp = File(target.parentFile, "wallpaper.tmp")
-                    if (sourceUri.startsWith("http://") || sourceUri.startsWith("https://")) {
-                        downloadToFile(sourceUri, tmp)
-                    } else {
-                        context.contentResolver.openInputStream(Uri.parse(sourceUri)).use { input ->
-                            requireNotNull(input) {
-                                "Unable to open Moe wallpaper source: $sourceUri"
-                            }
-                            tmp.outputStream().use { input.copyTo(it) }
-                        }
+    suspend fun importToLocal(context: Context, sourceUri: String): String? = withContext(Dispatchers.IO) {
+        runCatching {
+            val target = context.moeWallpaperFile()
+            val tmp = File(target.parentFile, "wallpaper.tmp")
+            if (sourceUri.startsWith("http://") || sourceUri.startsWith("https://")) {
+                downloadToFile(sourceUri, tmp)
+            } else {
+                context.contentResolver.openInputStream(Uri.parse(sourceUri)).use { input ->
+                    requireNotNull(input) {
+                        "Unable to open Moe wallpaper source: $sourceUri"
                     }
-                    if (!tmp.renameTo(target)) {
-                        target.delete()
-                        check(tmp.renameTo(target)) { "Failed to swap Moe wallpaper temp file" }
-                    }
-                    "file://${target.absolutePath}"
+                    tmp.outputStream().use { input.copyTo(it) }
                 }
-                .getOrNull()
-        }
+            }
+            if (!tmp.renameTo(target)) {
+                target.delete()
+                check(tmp.renameTo(target)) { "Failed to swap Moe wallpaper temp file" }
+            }
+            "file://${target.absolutePath}"
+        }.getOrNull()
+    }
 
     private fun downloadToFile(remoteUrl: String, target: File) {
         val conn = URL(remoteUrl).openConnection() as HttpURLConnection

@@ -100,9 +100,7 @@ class RootTunService : BaseService() {
                     NOTIFICATION_ID,
                     buildNotification(
                         NotificationPresentationFactory.createStatus(
-                            profileName =
-                                cachedStatus.profileName
-                                    ?: FlyTxt.Service.Notification.UnknownProfile,
+                            profileName = cachedStatus.profileName ?: FlyTxt.Service.Notification.UnknownProfile,
                             status = describeStatus(cachedStatus),
                         )
                     ),
@@ -121,114 +119,96 @@ class RootTunService : BaseService() {
                 }
 
                 if (notificationJob?.isActive != true) {
-                    notificationJob =
-                        launch(Dispatchers.Default) {
-                            var startedBroadcastSent = false
-                            var unreachableCount = 0
-                            var lastStatus = cachedStatus
+                    notificationJob = launch(Dispatchers.Default) {
+                        var startedBroadcastSent = false
+                        var unreachableCount = 0
+                        var lastStatus = cachedStatus
 
-                            PollingTimers.ticks(PollingTimerSpecs.RootTunStatusNotification)
-                                .throttleWhenScreenOff(powerController.screenOn)
-                                .collect {
-                                    if (!powerController.screenOn.value) return@collect
-                                    val snapshotResult = runCatching {
-                                        RootTunServiceBridge.queryStatus(appContextOrSelf)
-                                    }
-                                    val snapshot = snapshotResult.getOrNull()
-                                    if (snapshot == null) {
-                                        unreachableCount++
-                                        val error = snapshotResult.exceptionOrNull()
-                                        val fallbackStatus =
-                                            RootTunStatusFlow.current(appContextOrSelf).takeIf {
-                                                it.state != RuntimePhase.Idle ||
-                                                    !it.profileName.isNullOrBlank() ||
-                                                    !it.lastError.isNullOrBlank()
-                                            } ?: lastStatus
-                                        val title =
-                                            fallbackStatus.profileName
-                                                ?: FlyTxt.Service.Notification.UnknownProfile
-                                        val content =
-                                            if (unreachableCount >= 3) {
-                                                describeStatus(
-                                                    fallbackStatus.copy(
-                                                        lastError =
-                                                            fallbackStatus.lastError
-                                                                ?: error?.message
-                                                                ?: "State unavailable"
-                                                    )
-                                                )
-                                            } else {
-                                                error?.message ?: "Waiting for reconnect"
-                                            }
-                                        notificationManager.notify(
-                                            NOTIFICATION_ID,
-                                            buildNotification(
-                                                NotificationPresentationFactory.createStatus(
-                                                    profileName = title,
-                                                    status = content,
-                                                )
-                                            ),
+                        PollingTimers.ticks(PollingTimerSpecs.RootTunStatusNotification).throttleWhenScreenOff(powerController.screenOn).collect {
+                            if (!powerController.screenOn.value) return@collect
+                            val snapshotResult = runCatching {
+                                RootTunServiceBridge.queryStatus(appContextOrSelf)
+                            }
+                            val snapshot = snapshotResult.getOrNull()
+                            if (snapshot == null) {
+                                unreachableCount++
+                                val error = snapshotResult.exceptionOrNull()
+                                val fallbackStatus = RootTunStatusFlow.current(appContextOrSelf).takeIf {
+                                    it.state != RuntimePhase.Idle || !it.profileName.isNullOrBlank() || !it.lastError.isNullOrBlank()
+                                } ?: lastStatus
+                                val title = fallbackStatus.profileName ?: FlyTxt.Service.Notification.UnknownProfile
+                                val content = if (unreachableCount >= 3) {
+                                    describeStatus(
+                                        fallbackStatus.copy(
+                                            lastError = fallbackStatus.lastError ?: error?.message ?: "State unavailable"
                                         )
-                                        if (
-                                            !fallbackStatus.state.isActiveOrStopping &&
-                                                !fallbackStatus.state.isRecovering
-                                        ) {
-                                            stopSelf()
-                                            return@collect
-                                        }
-                                        return@collect
-                                    }
-
-                                    unreachableCount = 0
-                                    lastStatus = snapshot
-                                    syncStatus(snapshot)
-
-                                    if (
-                                        snapshot.state == RuntimePhase.Running &&
-                                            !startedBroadcastSent
-                                    ) {
-                                        sendClashStarted()
-                                        startedBroadcastSent = true
-                                    }
-
-                                    if (
-                                        snapshot.state == RuntimePhase.Idle ||
-                                            snapshot.state == RuntimePhase.Failed
-                                    ) {
-                                        notificationManager.notify(
-                                            NOTIFICATION_ID,
-                                            buildNotification(
-                                                NotificationPresentationFactory.createStatus(
-                                                    profileName =
-                                                        snapshot.profileName
-                                                            ?: FlyTxt.Service.Notification
-                                                                .UnknownProfile,
-                                                    status = describeStatus(snapshot),
-                                                )
-                                            ),
-                                        )
-                                        stopSelf()
-                                        return@collect
-                                    }
-
-                                    val profileName =
-                                        snapshot.profileName
-                                            ?: FlyTxt.Service.Notification.UnknownProfile
-                                    val presentation =
-                                        if (snapshot.state == RuntimePhase.Running) {
-                                            buildTrafficPresentation(profileName)
-                                        } else {
-                                            NotificationPresentationFactory.createStatus(
-                                                profileName = profileName,
-                                                status = describeStatus(snapshot),
-                                            )
-                                        }
-                                    notificationManager.notify(
-                                        NOTIFICATION_ID,
-                                        buildNotification(presentation),
                                     )
+                                } else {
+                                    error?.message ?: "Waiting for reconnect"
                                 }
+                                notificationManager.notify(
+                                    NOTIFICATION_ID,
+                                    buildNotification(
+                                        NotificationPresentationFactory.createStatus(
+                                            profileName = title,
+                                            status = content,
+                                        )
+                                    ),
+                                )
+                                if (
+                                    !fallbackStatus.state.isActiveOrStopping &&
+                                        !fallbackStatus.state.isRecovering
+                                ) {
+                                    stopSelf()
+                                    return@collect
+                                }
+                                return@collect
+                            }
+
+                            unreachableCount = 0
+                            lastStatus = snapshot
+                            syncStatus(snapshot)
+
+                            if (
+                                snapshot.state == RuntimePhase.Running &&
+                                    !startedBroadcastSent
+                            ) {
+                                sendClashStarted()
+                                startedBroadcastSent = true
+                            }
+
+                            if (
+                                snapshot.state == RuntimePhase.Idle ||
+                                    snapshot.state == RuntimePhase.Failed
+                            ) {
+                                notificationManager.notify(
+                                    NOTIFICATION_ID,
+                                    buildNotification(
+                                        NotificationPresentationFactory.createStatus(
+                                            profileName = snapshot.profileName ?: FlyTxt.Service.Notification.UnknownProfile,
+                                            status = describeStatus(snapshot),
+                                        )
+                                    ),
+                                )
+                                stopSelf()
+                                return@collect
+                            }
+
+                            val profileName = snapshot.profileName ?: FlyTxt.Service.Notification.UnknownProfile
+                            val presentation = if (snapshot.state == RuntimePhase.Running) {
+                                buildTrafficPresentation(profileName)
+                            } else {
+                                NotificationPresentationFactory.createStatus(
+                                    profileName = profileName,
+                                    status = describeStatus(snapshot),
+                                )
+                            }
+                            notificationManager.notify(
+                                NOTIFICATION_ID,
+                                buildNotification(presentation),
+                            )
                         }
+                    }
                 }
 
                 return START_STICKY
@@ -255,10 +235,8 @@ class RootTunService : BaseService() {
     }
 
     private suspend fun buildTrafficPresentation(profileName: String): NotificationPresentation {
-        val now =
-            runCatching { RootTunServiceBridge.queryTrafficNow(appContextOrSelf) }.getOrDefault(0L)
-        val total =
-            runCatching { RootTunServiceBridge.queryTrafficTotal(appContextOrSelf) }.getOrDefault(0L)
+        val now = runCatching { RootTunServiceBridge.queryTrafficNow(appContextOrSelf) }.getOrDefault(0L)
+        val total = runCatching { RootTunServiceBridge.queryTrafficTotal(appContextOrSelf) }.getOrDefault(0L)
         return NotificationPresentationFactory.createRunning(
             profileName = profileName,
             profile = resolveProfile(),
@@ -299,28 +277,26 @@ class RootTunService : BaseService() {
     }
 
     private fun buildNotification(presentation: NotificationPresentation): Notification {
-        val contentIntent =
-            PendingIntent.getActivity(
-                this,
-                0,
-                Intent().apply {
-                    component = Components.PROXY_SHEET_ACTIVITY
-                    addFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK or
-                            Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                            Intent.FLAG_ACTIVITY_NO_ANIMATION
-                    )
-                },
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
+        val contentIntent = PendingIntent.getActivity(
+            this,
+            0,
+            Intent().apply {
+                component = Components.PROXY_SHEET_ACTIVITY
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_NO_ANIMATION
+                )
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
 
-        val stopIntent =
-            PendingIntent.getService(
-                this,
-                1,
-                Intent(this, RootTunService::class.java).setAction(ACTION_STOP),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
+        val stopIntent = PendingIntent.getService(
+            this,
+            1,
+            Intent(this, RootTunService::class.java).setAction(ACTION_STOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(presentation.title)
@@ -342,9 +318,7 @@ class RootTunService : BaseService() {
     private fun createChannel() {
         notificationManager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
         notificationManager.createNotificationChannel(
-            NotificationChannelCompat.Builder(CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_LOW)
-                .setName(CHANNEL_NAME)
-                .build()
+            NotificationChannelCompat.Builder(CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_LOW).setName(CHANNEL_NAME).build()
         )
     }
 
@@ -358,14 +332,13 @@ class RootTunService : BaseService() {
         }
     }
 
-    private fun describeStatus(status: RootTunStatus): String =
-        when (status.state) {
-            RuntimePhase.Starting -> "Starting..."
-            RuntimePhase.Running -> FlyTxt.Service.Notification.Running
-            RuntimePhase.Stopping -> "Stopping..."
-            RuntimePhase.Failed -> "Failed: ${status.lastError ?: "unknown error"}"
-            RuntimePhase.Idle -> "Stopped"
-        }
+    private fun describeStatus(status: RootTunStatus): String = when (status.state) {
+        RuntimePhase.Starting -> "Starting..."
+        RuntimePhase.Running -> FlyTxt.Service.Notification.Running
+        RuntimePhase.Stopping -> "Stopping..."
+        RuntimePhase.Failed -> "Failed: ${status.lastError ?: "unknown error"}"
+        RuntimePhase.Idle -> "Stopped"
+    }
 
     companion object : RootTunForegroundServiceContract {
         private const val ACTION_START = "com.github.lmfirefly.flycat.ROOT_TUN_SERVICE_START"

@@ -51,12 +51,11 @@ class NetworkInfoService : Closeable, NetworkInfoReader {
     private var cachedExternalIp: IpInfo? = null
     private val httpClient = createHttpClient(HttpClientProfile.FAST, json = json)
 
-    private val _refreshTrigger =
-        MutableSharedFlow<Unit>(
-            replay = 0,
-            extraBufferCapacity = 1,
-            onBufferOverflow = BufferOverflow.DROP_OLDEST,
-        )
+    private val _refreshTrigger = MutableSharedFlow<Unit>(
+        replay = 0,
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
 
     override fun close() {
         httpClient.close()
@@ -108,12 +107,8 @@ class NetworkInfoService : Closeable, NetworkInfoReader {
             }
         }
 
-        // Debounce refresh triggers to coalesce rapid-fire emissions (e.g. network switch).
-        val refreshFlow =
-            merge(
-                _refreshTrigger,
-                externalRefreshFlow,
-            ).debounce(2_000L)
+        // 对刷新触发器进行防抖处理，以合并快速连续发出的事件（例如网络切换）。
+        val refreshFlow = merge(_refreshTrigger, externalRefreshFlow).debounce(2_000L)
 
         combine(refreshFlow, isProxyActiveFlow) { _, isProxyActive ->
                 val now = System.currentTimeMillis()

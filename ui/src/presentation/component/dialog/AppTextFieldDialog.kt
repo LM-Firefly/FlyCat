@@ -23,6 +23,7 @@ package com.github.lmfirefly.flycat.presentation.component.dialog
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -32,10 +33,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
-import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun AppTextFieldDialog(
@@ -78,8 +82,7 @@ fun AppTextFieldDialog(
             }
 
             pendingExternalSyncText != null -> {
-                localTextFieldValue =
-                    TextFieldValue(text = value, selection = TextRange(value.length))
+                localTextFieldValue = TextFieldValue(text = value, selection = TextRange(value.length))
                 pendingExternalSyncText = null
             }
         }
@@ -139,11 +142,9 @@ fun AppTextFieldDialog(
         renderInRootScaffold = renderInRootScaffold,
     ) {
         AppDialogColumn {
-            val textFieldModifier =
-                Modifier.fillMaxWidth()
-                    .padding(bottom = if (supportingContent == null) UiDp.dp0 else UiDp.dp8)
+            val textFieldModifier = Modifier.fillMaxWidth().padding(bottom = if (supportingContent == null) UiDp.dp0 else UiDp.dp8)
             if (label.isBlank()) {
-                TextField(
+                GlassTextField(
                     modifier = textFieldModifier,
                     value = textFieldValue,
                     onValueChange = onTextFieldValueChange,
@@ -154,7 +155,7 @@ fun AppTextFieldDialog(
                     trailingIcon = trailingIcon,
                 )
             } else {
-                TextField(
+                GlassTextField(
                     modifier = textFieldModifier,
                     value = textFieldValue,
                     onValueChange = onTextFieldValueChange,

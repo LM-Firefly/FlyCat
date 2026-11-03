@@ -45,8 +45,7 @@ class CaseEngine(
 
     @Volatile private var isRunning = false
 
-    private val argv2EnvScript =
-        """
+    private val argv2EnvScript = """
         process.argv.slice(2).forEach(arg => {
           if (arg.startsWith('--SUB_STORE')) {
             const [key, value] = arg.slice(2).split('=');
@@ -56,7 +55,7 @@ class CaseEngine(
           }
         });
         """
-            .trimIndent()
+        .trimIndent()
 
     init {
         @Suppress("TooGenericExceptionCaught")
@@ -91,38 +90,33 @@ class CaseEngine(
 
     @Suppress("TooGenericExceptionCaught")
     fun startServer() {
-        val runtime =
-            nodeRuntime
-                ?: run {
-                    Timber.w("Skip starting CaseEngine: runtime is not initialized")
-                    return
-                }
+        val runtime = nodeRuntime ?: run {
+            Timber.w("Skip starting CaseEngine: runtime is not initialized")
+            return
+        }
         if (isRunning) return
         isRunning = true
         shouldAwait = true
 
         val codeFile: File = SubStorePaths.backendBundle
 
-        thread =
-            Thread {
-                    try {
-                        val workingDir = SubStorePaths.workingDir.path
-                        runtime.getExecutor("process.chdir('$workingDir')").executeVoid()
-
-                        runtime.getExecutor(codeFile).executeVoid()
-                        while (shouldAwait) {
-                            runtime.await(V8AwaitMode.RunNoWait)
-                        }
-                    } catch (_: InterruptedException) {} catch (error: Exception) { // fault barrier: embedded JS engine
-                        Timber.e(error, "CaseEngine run failed")
-                    } finally {
-                        cleanup()
-                    }
+        thread = Thread {
+            try {
+                val workingDir = SubStorePaths.workingDir.path
+                runtime.getExecutor("process.chdir('$workingDir')").executeVoid()
+                runtime.getExecutor(codeFile).executeVoid()
+                while (shouldAwait) {
+                    runtime.await(V8AwaitMode.RunNoWait)
                 }
-                .apply {
-                    name = "CaseEngine-Worker"
-                    start()
-                }
+            } catch (_: InterruptedException) {} catch (error: Exception) { // 故障屏障：内嵌 JS 引擎
+                Timber.e(error, "CaseEngine run failed")
+            } finally {
+                cleanup()
+            }
+        }.apply {
+            name = "CaseEngine-Worker"
+            start()
+        }
     }
 
     fun isInitialized(): Boolean = nodeRuntime != null

@@ -28,11 +28,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -48,13 +48,13 @@ fun DialogButtonRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(UiDp.dp16),
     ) {
-        TextButton(text = cancelText, onClick = onCancel, modifier = Modifier.weight(1f))
-        TextButton(
+        GlassTextButton(text = cancelText, onClick = onCancel, modifier = Modifier.weight(1f))
+        GlassTextButton(
             text = confirmText,
             onClick = onConfirm,
             modifier = Modifier.weight(1f),
             enabled = confirmEnabled,
-            colors = ButtonDefaults.textButtonColorsPrimary(),
+            primary = true,
         )
     }
 }
@@ -73,16 +73,13 @@ fun DialogFilledButtonRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(UiDp.dp12),
     ) {
-        Button(onClick = onSecondary, enabled = secondaryEnabled, modifier = Modifier.weight(1f)) {
-            Text(secondaryText)
-        }
-        Button(
+        GlassTextButton(text = secondaryText, onClick = onSecondary, modifier = Modifier.weight(1f), enabled = secondaryEnabled)
+        GlassTextButton(
+            text = primaryText,
             onClick = onPrimary,
-            enabled = primaryEnabled,
             modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.buttonColorsPrimary(),
-        ) {
-            Text(text = primaryText, color = MiuixTheme.colorScheme.onPrimary)
-        }
+            enabled = primaryEnabled,
+            primary = true,
+        )
     }
 }

@@ -45,20 +45,19 @@ object TunOverride {
     const val FILE_NAME = "__tun_override__.yaml"
 
     fun buildYaml(config: TunConfig): String {
-        val tun =
-            linkedMapOf<String, Any?>(
-                "enable" to true,
-                "device" to config.ifName,
-                "stack" to config.stack,
-                "mtu" to config.mtu,
-                "auto-route" to config.autoRoute,
-                "strict-route" to config.strictRoute,
-                "auto-redirect" to config.autoRedirect,
-                // Tun mode replaces the VpnService's per-socket protect with auto-detect-interface: the core follows the real default route so its own egress never loops into the tun.
-                "auto-detect-interface" to true,
-                "dns-hijack" to config.dnsHijack,
-                "inet4-address" to config.inet4Address,
-            )
+        val tun = linkedMapOf<String, Any?>(
+            "enable" to true,
+            "device" to config.ifName,
+            "stack" to config.stack,
+            "mtu" to config.mtu,
+            "auto-route" to config.autoRoute,
+            "strict-route" to config.strictRoute,
+            "auto-redirect" to config.autoRedirect,
+            // Tun 模式以 auto-detect-interface 取代 VpnService 的逐 socket protect：核心跟随真实默认路由，自身出站流量永不回环进 tun。
+            "auto-detect-interface" to true,
+            "dns-hijack" to config.dnsHijack,
+            "inet4-address" to config.inet4Address,
+        )
         if (config.allowIpv6 && config.inet6Address.isNotEmpty()) {
             tun["inet6-address"] = config.inet6Address
         }
@@ -76,11 +75,10 @@ object TunOverride {
         // DNS follows the user's mode (redir-host works out of the box; fake-ip needs pool + filter).
         // `enable` here suppresses the compiler's fake-ip injection, so it backfills the nameserver when this leaves it empty (patch_static_runtime) — the resolver is never left crippled.
         val fakeIp = config.dnsMode == TunDnsMode.FakeIp
-        val dns =
-            linkedMapOf<String, Any?>(
-                "enable" to true,
-                "enhanced-mode" to if (fakeIp) "fake-ip" else "redir-host",
-            )
+        val dns = linkedMapOf<String, Any?>(
+            "enable" to true,
+            "enhanced-mode" to if (fakeIp) "fake-ip" else "redir-host",
+        )
         if (fakeIp) {
             config.fakeIpRange?.takeIf { it.isNotBlank() }?.let { dns["fake-ip-range"] = it }
             if (config.allowIpv6) {

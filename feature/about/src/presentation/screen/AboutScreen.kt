@@ -23,17 +23,16 @@ package com.github.lmfirefly.flycat.feature.about.presentation.screen
 
 import android.os.Build
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -46,13 +45,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.core.BuildConfigHolder
 import com.github.lmfirefly.flycat.core.model.UpdateSource
@@ -62,15 +63,18 @@ import com.github.lmfirefly.flycat.feature.about.UpdateDownloadProgress
 import com.github.lmfirefly.flycat.feature.about.UpdateManifestPackage
 import com.github.lmfirefly.flycat.feature.about.universalCoverageAbis
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import com.github.lmfirefly.flycat.presentation.component.card.Card
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.DialogButtonRow
-import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
-import com.github.lmfirefly.flycat.presentation.component.misc.PreferenceEnumItem
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
-import com.github.lmfirefly.flycat.presentation.component.misc.Title
-import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
+import com.github.lmfirefly.flycat.presentation.component.misc.PreferenceEnumItem
+import com.github.lmfirefly.flycat.presentation.component.misc.Title
+import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
+import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.navigation.Route
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
@@ -80,24 +84,19 @@ import kotlinx.coroutines.flow.StateFlow
 import org.koin.androidx.compose.koinViewModel
 import timber.log.Timber
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.layout.DialogDefaults
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowDialog
 
-private val AppNameGradient =
-    listOf(
-        Color(0xFFEFC0D9),
-        Color(0xFFD2C6F0),
-        Color(0xFFC0D5F5),
-    )
+internal val AppNameGradient = listOf(
+    Color(0xFFEFC0D9),
+    Color(0xFFD2C6F0),
+    Color(0xFFC0D5F5),
+)
 
 // Kernel version is read directly from BuildConfig (set at build time from mihomo git).
 private fun formatKernelVersion(): String {
@@ -111,7 +110,7 @@ private fun formatKernelVersion(): String {
 }
 
 @Composable
-fun AboutScreen(navigator: Navigator, appIconResId: Int) {
+fun AboutScreen(navigator: Navigator) {
     val context = LocalContext.current
     val updateViewModel = koinViewModel<GitHubUpdateViewModel>()
     val updateUiState by updateViewModel.uiState.collectAsStateWithLifecycle()
@@ -131,33 +130,37 @@ fun AboutScreen(navigator: Navigator, appIconResId: Int) {
             dialogCandidate = it
         }
     }
-    // Close dialog when download finishes (isDownloading transitions from true to false)
+    // 当下载完成时关闭对话框（isDownloading 从 true 变为 false）
     var wasDownloading by remember { mutableStateOf(false) }
     LaunchedEffect(downloadProgress.isDownloading) {
         if (wasDownloading && !downloadProgress.isDownloading) { dialogCandidate = null }
         wasDownloading = downloadProgress.isDownloading
     }
 
-    Scaffold(topBar = { TopBar(title = FlyTxt.About.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(navigator = navigator) }) }) {
-        innerPadding ->
+    // 与其他页面一致的标准版式：GlassScaffold + 全局壁纸玻璃背景 + 标准 TopBar；应用标识作为普通列表内容随列表滚动，不再做 hero 溶解渐隐。
+    GlassScaffold(
+        topBar = {
+            TopBar(
+                title = FlyTxt.About.Title,
+                scrollBehavior = scrollBehavior,
+                navigationIconPadding = 0.dp,
+                navigationIcon = { NavigationBackIcon(navigator = navigator) },
+            )
+        },
+    ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
             scrollBehavior = scrollBehavior,
             innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
         ) {
-            item {
-                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Spacer(modifier = Modifier.height(UiDp.dp24))
-                    Icon(painter = painterResource(id = appIconResId), contentDescription = "App Icon", modifier = Modifier.size(UiDp.dp120).clip(RoundedCornerShape(UiDp.dp24)), tint = Color.Unspecified)
-                    Spacer(modifier = Modifier.height(UiDp.dp24))
-                    Text(text = "FlyCat", style = MiuixTheme.textStyles.title1.copy(brush = Brush.linearGradient(AppNameGradient)))
-                    Spacer(modifier = Modifier.height(UiDp.dp8))
-                    Text(text = "${BuildConfigHolder.versionName} ($coreVersion)", style = MiuixTheme.textStyles.body1, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
-                    Spacer(modifier = Modifier.height(UiDp.dp4))
-                    Text(text = "UI Build: ${BuildConfigHolder.uiBuildId.ifBlank { "000000000000-000000" }}", style = MiuixTheme.textStyles.footnote1, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
-                    Spacer(modifier = Modifier.height(UiDp.dp32))
-                }
-
+            item("aboutIdentity") {
+                AboutIdentityHeader(
+                    name = "FlyCat",
+                    version = "${BuildConfigHolder.versionName} ($coreVersion)",
+                    buildInfo = "UI Build: ${BuildConfigHolder.uiBuildId.ifBlank { "000000000000-000000" }}",
+                )
+            }
+            item("aboutContent") {
                 Card {
                     BasicComponent(
                         title = "FlyCat",
@@ -178,7 +181,6 @@ fun AboutScreen(navigator: Navigator, appIconResId: Int) {
                         onClick = updateViewModel::checkForUpdate,
                     )
                 }
-
                 Title(FlyTxt.About.Section.ProjectLinks)
                 Card {
                     AboutLinkItem(
@@ -194,7 +196,6 @@ fun AboutScreen(navigator: Navigator, appIconResId: Int) {
                         showArrow = false,
                     )
                 }
-
                 Title(FlyTxt.About.Section.License)
                 Card {
                     ArrowPreference(
@@ -208,7 +209,6 @@ fun AboutScreen(navigator: Navigator, appIconResId: Int) {
                     )
                 }
             }
-
             item {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(top = UiDp.dp32),
@@ -220,16 +220,57 @@ fun AboutScreen(navigator: Navigator, appIconResId: Int) {
             }
         }
     }
-    UpdateCandidateDialog(
-        candidate = dialogCandidate,
-        downloadProgressFlow = updateViewModel.downloadProgress,
-        onDismiss = {
-            dialogCandidate = null
-            updateViewModel.dismissCandidate()
-        },
-        onDownload = updateViewModel::downloadAndInstall,
-        onCancelDownload = updateViewModel::cancelDownload,
-    )
+    // miuix 弹出层（OverlayDialog→DialogLayout）须注册进 Scaffold 持有的 dialogStates 才能渲染；
+    // 更新弹窗组合在 GlassScaffold 之外，故此处以透明 Scaffold 作为对话框宿主（与 MainActivity 的 HomePreviewGuideDialog 同款）。
+    Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent) {
+        UpdateCandidateDialog(
+            candidate = dialogCandidate,
+            downloadProgressFlow = updateViewModel.downloadProgress,
+            onDismiss = {
+                dialogCandidate = null
+                updateViewModel.dismissCandidate()
+            },
+            onDownload = updateViewModel::downloadAndInstall,
+            onCancelDownload = updateViewModel::cancelDownload,
+        )
+    }
+}
+
+/** 关于页应用标识块：logo + 渐变应用名 + 版本信息，作为普通列表内容随列表滚动（无 hero 溶解渐隐效果）。 */
+@Composable
+private fun AboutIdentityHeader(name: String, version: String, buildInfo: String) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = UiDp.dp24, bottom = UiDp.dp8),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .height(96.dp)
+                .aspectRatio(FlyCatLogoAspectRatio)
+                .clipToBounds(),
+        ) {
+            FlyCatLogoIcon(tint = Brush.linearGradient(AppNameGradient), modifier = Modifier.fillMaxSize())
+        }
+        Text(
+            text = name,
+            modifier = Modifier.padding(top = UiDp.dp12, bottom = UiDp.dp5),
+            style = MiuixTheme.textStyles.title1.copy(
+                fontSize = 32.sp,
+                fontWeight = FontWeight.ExtraBold,
+                brush = Brush.linearGradient(AppNameGradient),
+            ),
+        )
+        Text(
+            text = version,
+            style = MiuixTheme.textStyles.body1.copy(fontSize = 14.sp),
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+        Text(
+            text = buildInfo,
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+    }
 }
 
 @Composable
@@ -247,7 +288,7 @@ private fun AboutLinkItem(
 }
 
 @Composable
-private fun UpdateCandidateDialog(candidate: UpdateCandidate?, downloadProgressFlow: StateFlow<UpdateDownloadProgress>, onDismiss: () -> Unit, onDownload: (UpdateCandidate, UpdateManifestPackage?) -> Unit, onCancelDownload: () -> Unit) {
+internal fun UpdateCandidateDialog(candidate: UpdateCandidate?, downloadProgressFlow: StateFlow<UpdateDownloadProgress>, onDismiss: () -> Unit, onDownload: (UpdateCandidate, UpdateManifestPackage?) -> Unit, onCancelDownload: () -> Unit) {
     if (candidate == null) return
     val packageOptions = remember(candidate) { candidate.selectablePackages() }
     var selectedPackage by remember(candidate) { mutableStateOf(packageOptions.firstOrNull()) }
@@ -261,7 +302,7 @@ private fun UpdateCandidateDialog(candidate: UpdateCandidate?, downloadProgressF
     }
     val downloadProgress by downloadProgressFlow.collectAsStateWithLifecycle()
     val isDownloading = downloadProgress.isDownloading
-    WindowDialog(
+    AppDialog(
         show = true,
         title = if (isDownloading) FlyTxt.Component.Update.Message.Downloading else FlyTxt.Component.Update.Title.Available,
         titleColor = DialogDefaults.titleColor(),
@@ -280,14 +321,14 @@ private fun UpdateCandidateDialog(candidate: UpdateCandidate?, downloadProgressF
             if (dp.isDownloading) {
                 UpdateDownloadContent(progress = dp, onCancelDownload = onCancelDownload)
             } else {
-                // Fixed header
+                // 固定页眉
                 UpdateDialogMessage(message)
                 if (packageOptions.size > 1) {
                     Spacer(modifier = Modifier.height(UiDp.dp16))
                     Text(text = FlyTxt.Component.Update.Message.SelectPackage, style = MiuixTheme.textStyles.body1)
                     Spacer(modifier = Modifier.height(UiDp.dp8))
                 }
-                // Scrollable package list
+                // 可滚动的软件包列表
                 if (packageOptions.size > 1) {
                     Column(modifier = Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                         packageOptions.forEach { packageOption ->
@@ -301,7 +342,7 @@ private fun UpdateCandidateDialog(candidate: UpdateCandidate?, downloadProgressF
                         }
                     }
                 }
-                // Fixed buttons
+                // 固定按钮
                 Spacer(modifier = Modifier.height(UiDp.dp12))
                 DialogButtonRow(onCancel = onDismiss, onConfirm = { onDownload(candidate, selectedPackage) }, confirmText = FlyTxt.Component.Update.Action.DownloadNow)
             }
@@ -310,10 +351,7 @@ private fun UpdateCandidateDialog(candidate: UpdateCandidate?, downloadProgressF
 }
 
 private fun UpdateCandidate.selectablePackages(): List<UpdateManifestPackage> {
-    val available = manifest.packages.filter {
-        it.downloadUrl.isNotBlank() &&
-            !it.fileName.contains("standalone", ignoreCase = true)
-    }
+    val available = manifest.packages.filter { it.downloadUrl.isNotBlank() && !it.fileName.contains("standalone", ignoreCase = true) }
     if (available.isEmpty()) return emptyList()
     val supportedAbis = Build.SUPPORTED_ABIS?.toList().orEmpty()
     val exactMatches = supportedAbis.flatMap { abi -> available.filter { it.abi.equals(abi, ignoreCase = true) } }
@@ -350,15 +388,9 @@ private fun UpdateDownloadContent(progress: UpdateDownloadProgress, onCancelDown
             }
         }
         Spacer(modifier = Modifier.height(UiDp.dp12))
-        Button(onClick = onCancelDownload, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColorsPrimary()) {
-            Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp8), verticalAlignment = Alignment.CenterVertically) {
-                Text(text = FlyTxt.Component.Button.Cancel, color = MiuixTheme.colorScheme.onPrimary)
-            }
-        }
+        GlassTextButton(text = FlyTxt.Component.Button.Cancel, onClick = onCancelDownload, modifier = Modifier.fillMaxWidth(), primary = true)
     }
 }
 
 @Composable
-private fun UpdateDialogMessage(message: String) {
-    Text(text = message, style = MiuixTheme.textStyles.body1)
-}
+internal fun UpdateDialogMessage(message: String) { Text(text = message, style = MiuixTheme.textStyles.body1) }

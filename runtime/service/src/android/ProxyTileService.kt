@@ -156,11 +156,10 @@ class ProxyTileService : TileService() {
                     if (activeProfile == null) {
                         updateTileInactiveState(subtitle = FlyTxt.Service.Tile.ClickToOpen)
 
-                        val intent =
-                            Intent(Intent.ACTION_MAIN).apply {
-                                component = Components.MAIN_ACTIVITY
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
+                        val intent = Intent(Intent.ACTION_MAIN).apply {
+                            component = Components.MAIN_ACTIVITY
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
                         startActivityAndCollapseCompat(intent, requestCode = 1001)
                         return@launch
                     }
@@ -183,10 +182,9 @@ class ProxyTileService : TileService() {
                             )
                         }
                         RunMode.Tun, RunMode.Ebpf -> {
-                            val result =
-                                withContext(Dispatchers.IO) {
-                                    RootTunServiceBridge.start(applicationContext)
-                                }
+                            val result = withContext(Dispatchers.IO) {
+                                RootTunServiceBridge.start(applicationContext)
+                            }
                             if (!result.success) {
                                 error(result.error ?: "RootTun/eBPF start failed")
                             }
@@ -222,13 +220,12 @@ class ProxyTileService : TileService() {
         } else {
             RuntimeSnapshot(
                 owner = owner,
-                phase =
-                    when (owner) {
-                        RuntimeOwner.LocalTun -> StatusProvider.queryRuntimePhase(RunMode.VpnService)
-                        RuntimeOwner.RootTun -> rootStatus.state
-                        RuntimeOwner.RemoteController -> RuntimePhase.Running
-                        RuntimeOwner.None -> RuntimePhase.Idle
-                    },
+                phase = when (owner) {
+                    RuntimeOwner.LocalTun -> StatusProvider.queryRuntimePhase(RunMode.VpnService)
+                    RuntimeOwner.RootTun -> rootStatus.state
+                    RuntimeOwner.RemoteController -> RuntimePhase.Running
+                    RuntimeOwner.None -> RuntimePhase.Idle
+                },
                 targetMode = (modeForOwner(owner) ?: configuredMode).toRuntimeTargetMode(),
             )
         }
@@ -279,12 +276,11 @@ class ProxyTileService : TileService() {
         tile.label = tileLabelText
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            tile.subtitle =
-                if (isRunning) {
-                    FlyTxt.Service.Tile.ClickToStopProxy
-                } else {
-                    FlyTxt.Service.Tile.ClickToStartProxy
-                }
+            tile.subtitle = if (isRunning) {
+                FlyTxt.Service.Tile.ClickToStopProxy
+            } else {
+                FlyTxt.Service.Tile.ClickToStartProxy
+            }
         }
 
         tile.icon = Icon.createWithResource(this, R.drawable.ic_logo_service_white)
@@ -298,12 +294,11 @@ class ProxyTileService : TileService() {
         tile.label = tileLabelText
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            tile.subtitle =
-                if (isStarting) {
-                    FlyTxt.Service.Tile.Connecting
-                } else {
-                    FlyTxt.Service.Tile.Disconnecting
-                }
+            tile.subtitle = if (isStarting) {
+                FlyTxt.Service.Tile.Connecting
+            } else {
+                FlyTxt.Service.Tile.Disconnecting
+            }
         }
 
         tile.icon = Icon.createWithResource(this, R.drawable.ic_logo_service_white)
@@ -325,10 +320,8 @@ class ProxyTileService : TileService() {
 
     private fun startActivityAndCollapseCompat(intent: Intent, requestCode: Int) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            val pendingIntentFlags =
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            val pendingIntent =
-                PendingIntent.getActivity(this, requestCode, intent, pendingIntentFlags)
+            val pendingIntentFlags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            val pendingIntent = PendingIntent.getActivity(this, requestCode, intent, pendingIntentFlags)
             startActivityAndCollapse(pendingIntent)
             return
         }

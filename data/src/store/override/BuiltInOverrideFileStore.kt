@@ -41,27 +41,23 @@ class BuiltInOverrideFileStore(
             runCatching {
                 val assetBytes = context.assets.open(definition.assetPath).use { it.readBytes() }
                 val assetHash = sha256(assetBytes)
-                val target =
-                    configsDir.resolve("${definition.id}.${definition.contentType.extension}")
+                val target = configsDir.resolve("${definition.id}.${definition.contentType.extension}")
                 extensions
                     .filterNot { it == definition.contentType.extension }
-                    .forEach { extension ->
-                        configsDir.resolve("${definition.id}.$extension").delete()
-                    }
-                val currentHash =
-                    target.takeIf(File::isFile)?.let { file ->
-                        runCatching { sha256(file.readBytes()) }.getOrNull()
-                    }
+                    .forEach { extension -> configsDir.resolve("${definition.id}.$extension").delete() }
+                val currentHash = target.takeIf(File::isFile)?.let { file ->
+                    runCatching { sha256(file.readBytes()) }.getOrNull()
+                }
                 if (currentHash == null || !currentHash.contentEquals(assetHash)) {
                     configsDir.mkdirs()
                     target.writeText(String(assetBytes, StandardCharsets.UTF_8))
                 }
                 target
             }
-                .onFailure { error ->
-                    Timber.w(error, "Failed to synchronize built-in override: %s", id)
-                }
-                .getOrNull()
+            .onFailure { error ->
+                Timber.w(error, "Failed to synchronize built-in override: %s", id)
+            }
+            .getOrNull()
         }
     }
 
@@ -69,7 +65,6 @@ class BuiltInOverrideFileStore(
         private val lock = Any()
         private val extensions = listOf("yaml", "yml", "js")
 
-        private fun sha256(bytes: ByteArray): ByteArray =
-            MessageDigest.getInstance("SHA-256").digest(bytes)
+        private fun sha256(bytes: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(bytes)
     }
 }

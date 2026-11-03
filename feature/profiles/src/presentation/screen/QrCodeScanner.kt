@@ -72,18 +72,15 @@ internal fun StableQrScanner(onScanned: (String) -> Unit) {
     AndroidView(
         modifier = Modifier.fillMaxSize().clipToBounds(),
         factory = { context ->
-            val previewView =
-                PreviewView(context).apply {
-                    scaleType = PreviewView.ScaleType.FILL_CENTER
-                    layoutParams =
-                        ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                        )
-                }
+            val previewView = PreviewView(context).apply {
+                scaleType = PreviewView.ScaleType.FILL_CENTER
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                )
+            }
 
-            val previewUseCase =
-                Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
+            val previewUseCase = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
 
             val imageAnalysisUseCase = barcodeScanner?.let { scanner ->
                 ImageAnalysis.Builder()
@@ -162,53 +159,44 @@ internal fun processStableQrImage(
     } ?: imageProxy.close()
 }
 
-internal suspend fun Context.getStableCameraProvider(): ProcessCameraProvider =
-    suspendCancellableCoroutine { continuation ->
-        ProcessCameraProvider.getInstance(this).also { future ->
-            future.addListener(
-                {
-                    if (continuation.isActive) {
-                        continuation.resume(future.get())
-                    }
-                },
-                ContextCompat.getMainExecutor(this),
-            )
-        }
+internal suspend fun Context.getStableCameraProvider(): ProcessCameraProvider = suspendCancellableCoroutine { continuation ->
+    ProcessCameraProvider.getInstance(this).also { future ->
+        future.addListener(
+            {
+                if (continuation.isActive) {
+                    continuation.resume(future.get())
+                }
+            },
+            ContextCompat.getMainExecutor(this),
+        )
     }
+}
 
-internal suspend fun readQrFromImage(context: Context, uri: Uri): String? =
-    suspendCancellableCoroutine { continuation ->
-        try {
-            val inputImage = InputImage.fromFilePath(context, uri)
-            val scanner =
-                createBarcodeScannerOrNull()
-                    ?: run {
-                        if (continuation.isActive) {
-                            continuation.resume(null)
-                        }
-                        return@suspendCancellableCoroutine
-                    }
-            continuation.invokeOnCancellation { scanner.close() }
-            scanner
-                .process(inputImage)
-                .addOnSuccessListener { barcodes ->
-                    val barcode = barcodes.firstOrNull { it.format == Barcode.FORMAT_QR_CODE }
-                    if (continuation.isActive) {
-                        continuation.resume(barcode?.rawValue)
-                    }
-                }
-                .addOnFailureListener {
-                    if (continuation.isActive) {
-                        continuation.resume(null)
-                    }
-                }
-                .addOnCompleteListener { scanner.close() }
-        } catch (_: Exception) {
+internal suspend fun readQrFromImage(context: Context, uri: Uri): String? = suspendCancellableCoroutine { continuation ->
+    try {
+        val inputImage = InputImage.fromFilePath(context, uri)
+        val scanner = createBarcodeScannerOrNull() ?: run {
             if (continuation.isActive) {
                 continuation.resume(null)
             }
+            return@suspendCancellableCoroutine
+        }
+        continuation.invokeOnCancellation { scanner.close() }
+        scanner.process(inputImage).addOnSuccessListener { barcodes ->
+            val barcode = barcodes.firstOrNull { it.format == Barcode.FORMAT_QR_CODE }
+            if (continuation.isActive) {
+                continuation.resume(barcode?.rawValue)
+            }
+        }.addOnFailureListener {
+            if (continuation.isActive) {
+                continuation.resume(null)
+            }
+        }.addOnCompleteListener { scanner.close() }
+    } catch (_: Exception) {
+        if (continuation.isActive) {
+            continuation.resume(null)
         }
     }
+}
 
-private fun createBarcodeScannerOrNull(): BarcodeScanner? =
-    runCatching { BarcodeScanning.getClient() }.getOrNull()
+private fun createBarcodeScannerOrNull(): BarcodeScanner? = runCatching { BarcodeScanning.getClient() }.getOrNull()

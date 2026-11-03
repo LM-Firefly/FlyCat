@@ -13,11 +13,11 @@ pub fn run_cli() -> i32 {
         Some("helper") => return run_helper(args.next().as_deref()),
         Some(other) => {
             let _ = writeln!(io::stderr(), "unknown command: {other}");
-            let _ = writeln!(io::stderr(), "usage: YumeOverride <preview|compile>");
+            let _ = writeln!(io::stderr(), "usage: FlyOverride <preview|compile>");
             return 1;
         }
         None => {
-            let _ = writeln!(io::stderr(), "usage: YumeOverride <preview|compile>");
+            let _ = writeln!(io::stderr(), "usage: FlyOverride <preview|compile>");
             return 1;
         }
     };
@@ -67,7 +67,7 @@ fn run_helper(helper_name: Option<&str>) -> i32 {
         None => {
             let _ = writeln!(
                 io::stderr(),
-                "usage: YumeOverride helper <yaml-parse|yaml-stringify>"
+                "usage: FlyOverride helper <yaml-parse|yaml-stringify>"
             );
             return 1;
         }

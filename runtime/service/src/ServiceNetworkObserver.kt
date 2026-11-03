@@ -50,40 +50,36 @@ class ServiceNetworkObserver(
     private val connectivity = context.getSystemService(ConnectivityManager::class.java)
     private var lastDnsList = emptyList<String>()
 
-    private val request =
-        NetworkRequest.Builder()
-            .apply {
-                addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
-                addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    addCapability(NetworkCapabilities.NET_CAPABILITY_FOREGROUND)
-                }
-                addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
-            }
-            .build()
-
-    private val callback =
-        object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                networkInfos[network] = NetworkInfo()
-                updateDnsAndNotify()
-            }
-
-            override fun onLosing(network: Network, maxMsToLive: Int) {
-                networkInfos[network]?.losingMs = System.currentTimeMillis() + maxMsToLive
-                updateDnsAndNotify()
-            }
-
-            override fun onLost(network: Network) {
-                networkInfos.remove(network)
-                updateDnsAndNotify()
-            }
-
-            override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
-                networkInfos[network]?.dnsList = linkProperties.dnsServers
-                updateDnsAndNotify()
-            }
+    private val request = NetworkRequest.Builder().apply {
+        addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+        addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            addCapability(NetworkCapabilities.NET_CAPABILITY_FOREGROUND)
         }
+        addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
+    }.build()
+
+    private val callback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            networkInfos[network] = NetworkInfo()
+            updateDnsAndNotify()
+        }
+
+        override fun onLosing(network: Network, maxMsToLive: Int) {
+            networkInfos[network]?.losingMs = System.currentTimeMillis() + maxMsToLive
+            updateDnsAndNotify()
+        }
+
+        override fun onLost(network: Network) {
+            networkInfos.remove(network)
+            updateDnsAndNotify()
+        }
+
+        override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
+            networkInfos[network]?.dnsList = linkProperties.dnsServers
+            updateDnsAndNotify()
+        }
+    }
 
     fun start() {
         updateDnsAndNotify()

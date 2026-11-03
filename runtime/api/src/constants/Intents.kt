@@ -22,11 +22,9 @@
 package com.github.lmfirefly.flycat.runtime.api.constants
 
 object Intents {
-    private fun action(packageName: String, actionName: String): String =
-        "$packageName.action.$actionName"
+    private fun action(packageName: String, actionName: String): String = "$packageName.action.$actionName"
 
-    private fun intentAction(packageName: String, actionName: String): String =
-        "$packageName.intent.action.$actionName"
+    private fun intentAction(packageName: String, actionName: String): String = "$packageName.intent.action.$actionName"
 
     fun actionStartClash(packageName: String): String = action(packageName, "START_CLASH")
 
@@ -36,30 +34,23 @@ object Intents {
 
     fun actionToggleClash(packageName: String): String = action(packageName, "TOGGLE_CLASH")
 
-    fun actionServiceRecreated(packageName: String): String =
-        intentAction(packageName, "CLASH_RECREATED")
+    fun actionServiceRecreated(packageName: String): String = intentAction(packageName, "CLASH_RECREATED")
 
     fun actionClashStarted(packageName: String): String = intentAction(packageName, "CLASH_STARTED")
 
     fun actionClashStopped(packageName: String): String = intentAction(packageName, "CLASH_STOPPED")
 
-    fun actionClashRequestStop(packageName: String): String =
-        intentAction(packageName, "CLASH_REQUEST_STOP")
+    fun actionClashRequestStop(packageName: String): String = intentAction(packageName, "CLASH_REQUEST_STOP")
 
-    fun actionProfileChanged(packageName: String): String =
-        intentAction(packageName, "PROFILE_CHANGED")
+    fun actionProfileChanged(packageName: String): String = intentAction(packageName, "PROFILE_CHANGED")
 
-    fun actionProfileLoaded(packageName: String): String =
-        intentAction(packageName, "PROFILE_LOADED")
+    fun actionProfileLoaded(packageName: String): String = intentAction(packageName, "PROFILE_LOADED")
 
-    fun actionOverrideChanged(packageName: String): String =
-        intentAction(packageName, "OVERRIDE_CHANGED")
+    fun actionOverrideChanged(packageName: String): String = intentAction(packageName, "OVERRIDE_CHANGED")
 
-    fun actionRootRuntimeFailed(packageName: String): String =
-        intentAction(packageName, "ROOT_RUNTIME_FAILED")
+    fun actionRootRuntimeFailed(packageName: String): String = intentAction(packageName, "ROOT_RUNTIME_FAILED")
 
-    fun actionProxyGroupsUpdated(packageName: String): String =
-        intentAction(packageName, "PROXY_GROUPS_UPDATED")
+    fun actionProxyGroupsUpdated(packageName: String): String = intentAction(packageName, "PROXY_GROUPS_UPDATED")
 
     fun actionAppForeground(packageName: String): String = intentAction(packageName, "APP_FOREGROUND")
 

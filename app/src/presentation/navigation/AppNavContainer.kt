@@ -23,6 +23,7 @@ package com.github.lmfirefly.flycat.presentation.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -37,6 +38,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.ExperimentalDecomposeApi
 import com.arkivanov.decompose.extensions.compose.stack.Children
@@ -69,17 +72,27 @@ import com.github.lmfirefly.flycat.feature.settings.presentation.screen.EbpfServ
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.MetaFeatureScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.MoeWallpaperCropScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.NetworkSettingsScreen
+import com.github.lmfirefly.flycat.feature.settings.presentation.screen.NotificationSettingsScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.PrivilegedServiceScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.TunServiceOptionsScreen
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.VpnServiceOptionsScreen
+import com.github.lmfirefly.flycat.presentation.background.rememberAppBackgroundSpec
+import com.github.lmfirefly.flycat.presentation.component.background.LocalAppBackground
+import com.github.lmfirefly.flycat.presentation.component.dialog.ToastDialogHost
 import com.github.lmfirefly.flycat.presentation.component.layout.KeyValueEditorScreen
 import com.github.lmfirefly.flycat.presentation.component.layout.StringListEditorScreen
 import com.github.lmfirefly.flycat.presentation.component.navigation.LocalNavigator
 import com.github.lmfirefly.flycat.presentation.screen.MainScreen
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
+import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.github.lmfirefly.flycat.presentation.util.rememberWindowLayoutMode
 import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 import org.koin.java.KoinJavaComponent.getKoin
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 
 @Composable
 fun RouteContent(route: Route, navigator: Navigator, mainPage: Int = 0) {
@@ -99,6 +112,7 @@ fun RouteContent(route: Route, navigator: Navigator, mainPage: Int = 0) {
         Route.TunServiceOptions -> TunServiceOptionsScreen(navigator)
         Route.EbpfServiceOptions -> EbpfServiceOptionsScreen(navigator)
         Route.PrivilegedService -> PrivilegedServiceScreen(navigator)
+        Route.NotificationSettings -> NotificationSettingsScreen(navigator)
         Route.AccessControl -> AccessControlScreen(navigator)
         Route.MetaFeature -> MetaFeatureScreen(navigator)
         Route.Connection -> ConnectionScreen(navigator)
@@ -107,7 +121,7 @@ fun RouteContent(route: Route, navigator: Navigator, mainPage: Int = 0) {
         Route.MihomoLog -> MihomoLogScreen(navigator)
         Route.AppLog -> AppLogScreen(navigator)
         Route.Rules -> RulesScreen(navigator)
-        Route.About -> AboutScreen(navigator, appIconResId = R.drawable.flycat)
+        Route.About -> AboutScreen(navigator)
         Route.OpenSourceLicenses -> OpenSourceLicensesScreen(navigator, librariesResId = R.raw.aboutlibraries)
         Route.Override -> OverrideScreen(navigator)
         Route.OverrideConfigPreview -> OverrideConfigPreviewRoute(navigator)
@@ -121,41 +135,32 @@ fun RouteContent(route: Route, navigator: Navigator, mainPage: Int = 0) {
     }
 }
 
-// ── Decompose animation (matches FlyCat: fade 300 + slide 400 + scale 500) ──
+// ── 拆解动画（淡入 300 + 滑动 400 + 缩放 500）──
 internal fun <C : Any, T : Any> flyStackAnimation(): StackAnimation<C, T> = stackAnimation(fade(tween(AnimationSpecs.DURATION_NAV_FADE)) + slide(tween(AnimationSpecs.DURATION_NAV_SLIDE)) + scale(tween(AnimationSpecs.DURATION_NAV_SCALE)))
 
 @OptIn(ExperimentalDecomposeApi::class)
-private fun <T : Any> yumeAnimation(
-    backHandler: BackHandler,
-    onBack: () -> Unit,
-): StackAnimation<Any, T> =
-    predictiveBackAnimation(
-        backHandler = backHandler,
-        onBack = onBack,
-        fallbackAnimation = flyStackAnimation(),
-        selector = { event, _, _ -> androidPredictiveBackAnimatableV1(event) },
-    )
+private fun <T : Any> flyAnimation(backHandler: BackHandler, onBack: () -> Unit): StackAnimation<Any, T> = predictiveBackAnimation(
+    backHandler = backHandler,
+    onBack = onBack,
+    fallbackAnimation = flyStackAnimation(),
+    selector = { event, _, _ -> androidPredictiveBackAnimatableV1(event) },
+)
 
 // ── AppNavigationComponent ──
-
-class AppNavigationComponent(
-    val componentContext: ComponentContext,
-    val predictiveBackEnabledAtLaunch: Boolean,
-) {
+class AppNavigationComponent(val componentContext: ComponentContext, val predictiveBackEnabledAtLaunch: Boolean) {
     private val mainPageState = mutableIntStateOf(0)
     private var boundMainRoute: Route.Main? = null
     val navigator = Navigator(mutableStateListOf<Any>(Route.AppStart))
     // 横竖屏切换时暂存待迁移到 detailNavigator 的二级路由
     var pendingDetailRoute by mutableStateOf<Route?>(null)
-    internal val childStack =
-        componentContext.childStack(
-            source = navigator.navigation,
-            initialConfiguration = Route.AppStart,
-            serializer = null,
-            handleBackButton = false,
-        ) { rawRoute, _ ->
-            RouteChild(rawRoute as Route, navigator, this)
-        }
+    internal val childStack = componentContext.childStack(
+        source = navigator.navigation,
+        initialConfiguration = Route.AppStart,
+        serializer = null,
+        handleBackButton = false,
+    ) { rawRoute, _ ->
+        RouteChild(rawRoute as Route, navigator, this)
+    }
     internal fun bindMainRoute(route: Route.Main) {
         if (boundMainRoute != route) {
             mainPageState.intValue = route.initialPage
@@ -169,15 +174,8 @@ class AppNavigationComponent(
 }
 
 // ── RouteChild ──
-
-internal class RouteChild(
-    private val route: Route,
-    private val navigator: Navigator,
-    private val navigationComponent: AppNavigationComponent,
-) {
-    init {
-        if (route is Route.Main) navigationComponent.bindMainRoute(route)
-    }
+internal class RouteChild(private val route: Route, private val navigator: Navigator, private val navigationComponent: AppNavigationComponent) {
+    init { if (route is Route.Main) navigationComponent.bindMainRoute(route) }
     @Composable
     fun Content() {
         CompositionLocalProvider(LocalNavigator provides navigator) {
@@ -202,10 +200,14 @@ internal class RouteChild(
 }
 
 // ── AppNavContainer (main navigation host) ──
-
 @Composable
 fun AppNavContainer(component: AppNavigationComponent) {
     val navigator = component.navigator
+    val appSettings = koinInject<AppSettingsReader>()
+    val backgroundStyle by appSettings.appBackgroundStyle.state.collectAsStateWithLifecycle()
+    val wallpaperUri by appSettings.moeWallpaperUri.state.collectAsStateWithLifecycle()
+    val wallpaperBlur by appSettings.appBackgroundWallpaperBlur.state.collectAsStateWithLifecycle()
+    val appBackground = rememberAppBackgroundSpec(backgroundStyle, wallpaperUri, wallpaperBlur)
     val predictiveBackEnabled = component.predictiveBackEnabledAtLaunch
     val scope = rememberCoroutineScope()
     @Suppress("UNUSED_EXPRESSION")
@@ -219,10 +221,7 @@ fun AppNavContainer(component: AppNavigationComponent) {
         }
     }
     val stack by component.childStack.subscribeAsState()
-    SideEffect {
-        navigator.syncBackStack(stack.items.map { it.configuration })
-    }
-
+    SideEffect { navigator.syncBackStack(stack.items.map { it.configuration }) }
     // 横竖屏切换时自动迁移二级路由：Split 模式下根 navigator 有二级路由时迁移到 detailNavigator
     val windowLayoutMode = rememberWindowLayoutMode()
     LaunchedEffect(windowLayoutMode) {
@@ -235,22 +234,35 @@ fun AppNavContainer(component: AppNavigationComponent) {
             }
         }
     }
-
-    if (!predictiveBackEnabled) {
-        BackHandler(enabled = stack.backStack.isNotEmpty(), onBack = commitBack)
-    }
+    if (!predictiveBackEnabled) { BackHandler(enabled = stack.backStack.isNotEmpty(), onBack = commitBack) }
     val animation: StackAnimation<Any, RouteChild> = remember(component) {
         if (predictiveBackEnabled) {
-            yumeAnimation(component.componentContext.backHandler, commitBack)
+            flyAnimation(component.componentContext.backHandler, commitBack)
         } else {
             flyStackAnimation()
         }
     }
-    Children(
-        stack = stack,
-        modifier = Modifier.fillMaxSize(),
-        animation = animation,
-    ) { child ->
-        child.instance.Content()
+    // 壁纸录制层上提到导航根：页面卡片与弹层宿主（ProfilesDialogHost 等位于 GlassScaffold 外）共享同一 LocalGlassBackdrop。
+    val shaderSupported = isRuntimeShaderSupported()
+    val wallpaperBackdrop = rememberLayerBackdrop { drawContent() }
+    val glassBackdrop = if (appBackground.enabled && shaderSupported) wallpaperBackdrop else null
+    CompositionLocalProvider(LocalAppBackground provides appBackground, LocalGlassBackdrop provides glassBackdrop) {
+        Box(Modifier.fillMaxSize()) {
+            if (appBackground.enabled) {
+                appBackground.render(if (shaderSupported) Modifier.fillMaxSize().layerBackdrop(wallpaperBackdrop) else Modifier.fillMaxSize())
+            }
+            Children(
+                stack = stack,
+                modifier = Modifier.fillMaxSize(),
+                animation = animation,
+            ) { child ->
+                child.instance.Content()
+            }
+            // 全局 toast 对话框宿主：miuix 弹出层注册进 Scaffold 持有的 dialogStates 渲染；
+            // 透明 Scaffold 提供渲染位且不影响触控；置于壁纸提供域内使玻璃面板/按钮生效。
+            Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent) {
+                ToastDialogHost()
+            }
+        }
     }
 }

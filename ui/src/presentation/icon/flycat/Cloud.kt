@@ -35,46 +35,43 @@ val FlyCat.Cloud: ImageVector
         if (cloudVector != null) {
             return cloudVector!!
         }
-        cloudVector =
-            ImageVector.Builder(
-                name = "Cloud",
-                defaultWidth = 24.dp,
-                defaultHeight = 24.dp,
-                viewportWidth = 24f,
-                viewportHeight = 24f,
-            )
-                .apply {
-                    path(
-                        stroke = SolidColor(Color.White),
-                        strokeLineWidth = 2f,
-                        strokeLineCap = StrokeCap.Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                    ) {
-                        moveTo(17.5f, 19f)
-                        horizontalLineTo(9f)
-                        arcToRelative(
-                            7f,
-                            7f,
-                            0f,
-                            isMoreThanHalf = true,
-                            isPositiveArc = true,
-                            6.71f,
-                            -9f,
-                        )
-                        horizontalLineToRelative(1.79f)
-                        arcToRelative(
-                            4.5f,
-                            4.5f,
-                            0f,
-                            isMoreThanHalf = true,
-                            isPositiveArc = true,
-                            0f,
-                            9f,
-                        )
-                        close()
-                    }
-                }
-                .build()
+        cloudVector = ImageVector.Builder(
+            name = "Cloud",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(
+                stroke = SolidColor(Color.White),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(17.5f, 19f)
+                horizontalLineTo(9f)
+                arcToRelative(
+                    7f,
+                    7f,
+                    0f,
+                    isMoreThanHalf = true,
+                    isPositiveArc = true,
+                    6.71f,
+                    -9f,
+                )
+                horizontalLineToRelative(1.79f)
+                arcToRelative(
+                    4.5f,
+                    4.5f,
+                    0f,
+                    isMoreThanHalf = true,
+                    isPositiveArc = true,
+                    0f,
+                    9f,
+                )
+                close()
+            }
+        }.build()
 
         return cloudVector!!
     }

@@ -89,8 +89,7 @@ internal fun ProfileEditOptionsDialogHost(
             scope.launch {
                 openProfileConfigPreview(
                     targetFile = configFile,
-                    missingMessage =
-                        FlyTxt.ProfilesPage.SettingsDialog.ConfigMissing.format(configFile.absolutePath),
+                    missingMessage = FlyTxt.ProfilesPage.SettingsDialog.ConfigMissing.format(configFile.absolutePath),
                     editable = true,
                     onReadFailed = context::toast,
                 ) { content, callback ->
@@ -131,22 +130,19 @@ private fun shareProfileFile(context: Context, profile: Profile) {
     }
 
     runCatching {
-            val uri =
-                FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    file,
-                )
-            val shareIntent =
-                Intent(Intent.ACTION_SEND).apply {
-                    type = "application/x-yaml"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file,
+            )
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/x-yaml"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
             context.startActivity(
-                Intent.createChooser(shareIntent, FlyTxt.ProfilesPage.ShareDialog.ShareFile)
-                    .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                Intent.createChooser(shareIntent, FlyTxt.ProfilesPage.ShareDialog.ShareFile).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
             )
         }
         .onFailure { error -> context.toast(error.message ?: "Share failed") }
@@ -159,12 +155,11 @@ private fun shareProfileLink(context: Context, profile: Profile) {
         return
     }
 
-    val shareIntent =
-        Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, url)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, url)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
     context.startActivity(
         Intent.createChooser(shareIntent, FlyTxt.ProfilesPage.ShareDialog.ShareLink)
             .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }

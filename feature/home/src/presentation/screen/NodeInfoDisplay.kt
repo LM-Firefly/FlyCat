@@ -112,12 +112,11 @@ private fun PingValue(ping: Int?) {
     val semanticColors = AppTheme.colors
 
     if (ping != null && ping <= 1000) {
-        val color =
-            if (ping < 500) {
-                semanticColors.latency.fast
-            } else {
-                semanticColors.latency.moderate
-            }
+        val color = if (ping < 500) {
+            semanticColors.latency.fast
+        } else {
+            semanticColors.latency.moderate
+        }
         Text(
             text = FlyTxt.Home.NodeInfo.DelayValue.format(ping),
             style = MiuixTheme.textStyles.body1.copy(lineHeight = 20.sp),

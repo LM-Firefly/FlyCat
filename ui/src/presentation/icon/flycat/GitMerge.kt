@@ -37,58 +37,55 @@ val FlyCat.GitMerge: ImageVector
         if (gitMergeVector != null) {
             return gitMergeVector!!
         }
-        gitMergeVector =
-            Builder(
-                name = "GitMerge",
-                defaultWidth = 24.0.dp,
-                defaultHeight = 24.0.dp,
-                viewportWidth = 24.0f,
-                viewportHeight = 24.0f,
-            )
-                .apply {
-                    path(
-                        fill = SolidColor(Color(0x00000000)),
-                        stroke = SolidColor(Color(0xFF000000)),
-                        strokeLineWidth = 2.0f,
-                        strokeLineCap = Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                        strokeLineMiter = 4.0f,
-                        pathFillType = NonZero,
-                    ) {
-                        moveTo(18.0f, 18.0f)
-                        moveToRelative(-3.0f, 0.0f)
-                        arcToRelative(3.0f, 3.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, 6.0f, 0.0f)
-                        arcToRelative(3.0f, 3.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, -6.0f, 0.0f)
-                    }
-                    path(
-                        fill = SolidColor(Color(0x00000000)),
-                        stroke = SolidColor(Color(0xFF000000)),
-                        strokeLineWidth = 2.0f,
-                        strokeLineCap = Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                        strokeLineMiter = 4.0f,
-                        pathFillType = NonZero,
-                    ) {
-                        moveTo(6.0f, 6.0f)
-                        moveToRelative(-3.0f, 0.0f)
-                        arcToRelative(3.0f, 3.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, 6.0f, 0.0f)
-                        arcToRelative(3.0f, 3.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, -6.0f, 0.0f)
-                    }
-                    path(
-                        fill = SolidColor(Color(0x00000000)),
-                        stroke = SolidColor(Color(0xFF000000)),
-                        strokeLineWidth = 2.0f,
-                        strokeLineCap = Round,
-                        strokeLineJoin = StrokeJoin.Round,
-                        strokeLineMiter = 4.0f,
-                        pathFillType = NonZero,
-                    ) {
-                        moveTo(6.0f, 21.0f)
-                        verticalLineTo(9.0f)
-                        arcToRelative(9.0f, 9.0f, 0.0f, isMoreThanHalf = false, isPositiveArc = false, 9.0f, 9.0f)
-                    }
-                }
-                .build()
+        gitMergeVector = Builder(
+            name = "GitMerge",
+            defaultWidth = 24.0.dp,
+            defaultHeight = 24.0.dp,
+            viewportWidth = 24.0f,
+            viewportHeight = 24.0f,
+        ).apply {
+            path(
+                fill = SolidColor(Color(0x00000000)),
+                stroke = SolidColor(Color(0xFF000000)),
+                strokeLineWidth = 2.0f,
+                strokeLineCap = Round,
+                strokeLineJoin = StrokeJoin.Round,
+                strokeLineMiter = 4.0f,
+                pathFillType = NonZero,
+            ) {
+                moveTo(18.0f, 18.0f)
+                moveToRelative(-3.0f, 0.0f)
+                arcToRelative(3.0f, 3.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, 6.0f, 0.0f)
+                arcToRelative(3.0f, 3.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, -6.0f, 0.0f)
+            }
+            path(
+                fill = SolidColor(Color(0x00000000)),
+                stroke = SolidColor(Color(0xFF000000)),
+                strokeLineWidth = 2.0f,
+                strokeLineCap = Round,
+                strokeLineJoin = StrokeJoin.Round,
+                strokeLineMiter = 4.0f,
+                pathFillType = NonZero,
+            ) {
+                moveTo(6.0f, 6.0f)
+                moveToRelative(-3.0f, 0.0f)
+                arcToRelative(3.0f, 3.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, 6.0f, 0.0f)
+                arcToRelative(3.0f, 3.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, -6.0f, 0.0f)
+            }
+            path(
+                fill = SolidColor(Color(0x00000000)),
+                stroke = SolidColor(Color(0xFF000000)),
+                strokeLineWidth = 2.0f,
+                strokeLineCap = Round,
+                strokeLineJoin = StrokeJoin.Round,
+                strokeLineMiter = 4.0f,
+                pathFillType = NonZero,
+            ) {
+                moveTo(6.0f, 21.0f)
+                verticalLineTo(9.0f)
+                arcToRelative(9.0f, 9.0f, 0.0f, isMoreThanHalf = false, isPositiveArc = false, 9.0f, 9.0f)
+            }
+        }.build()
         return gitMergeVector!!
     }
 

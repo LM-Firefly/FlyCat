@@ -73,21 +73,13 @@ class FeatureStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = externalM
         return pending
     }
 
-    fun setLibraryCacheVersion(libraryName: String, version: Int) {
-        mmkv.encode("library_version_" + libraryName, version)
-    }
+    fun setLibraryCacheVersion(libraryName: String, version: Int) { mmkv.encode("library_version_" + libraryName, version) }
 
-    fun getLibraryCacheVersion(libraryName: String): Int =
-        mmkv.decodeInt("library_version_" + libraryName, -1)
+    fun getLibraryCacheVersion(libraryName: String): Int = mmkv.decodeInt("library_version_" + libraryName, -1)
 
-    fun setAssetCacheVersion(assetPath: String, version: Int) {
-        mmkv.encode("asset_version_" + assetPath, version)
-    }
+    fun setAssetCacheVersion(assetPath: String, version: Int) { mmkv.encode("asset_version_" + assetPath, version) }
 
-    fun getAssetCacheVersion(assetPath: String): Int =
-        mmkv.decodeInt("asset_version_" + assetPath, -1)
+    fun getAssetCacheVersion(assetPath: String): Int = mmkv.decodeInt("asset_version_" + assetPath, -1)
 
-    fun clearAll() {
-        mmkv.edit().clear().apply()
-    }
+    fun clearAll() { mmkv.edit().clear().apply() }
 }

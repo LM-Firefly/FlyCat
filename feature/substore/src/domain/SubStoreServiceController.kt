@@ -58,12 +58,11 @@ object SubStoreServiceController {
 
     fun startService(context: Context, request: SubStoreServiceRequest) {
         _snapshot.value = SubStoreServiceSnapshot(isRunning = false, isStarting = true)
-        val intent =
-            Intent(context, SubStoreService::class.java).apply {
-                putExtra(EXTRA_FRONTEND_PORT, request.frontendPort)
-                putExtra(EXTRA_BACKEND_PORT, request.backendPort)
-                putExtra(EXTRA_ALLOW_LAN, request.allowLan)
-            }
+        val intent = Intent(context, SubStoreService::class.java).apply {
+            putExtra(EXTRA_FRONTEND_PORT, request.frontendPort)
+            putExtra(EXTRA_BACKEND_PORT, request.backendPort)
+            putExtra(EXTRA_ALLOW_LAN, request.allowLan)
+        }
         runCatching {
                 val component = context.startService(intent)
                 if (component == null) {
@@ -82,16 +81,11 @@ object SubStoreServiceController {
         context.stopService(Intent(context, SubStoreService::class.java))
     }
 
-    fun requestFrom(intent: Intent?): SubStoreServiceRequest =
-        SubStoreServiceRequest(
-            frontendPort =
-                intent?.getIntExtra(EXTRA_FRONTEND_PORT, DEFAULT_FRONTEND_PORT)
-                    ?: DEFAULT_FRONTEND_PORT,
-            backendPort =
-                intent?.getIntExtra(EXTRA_BACKEND_PORT, DEFAULT_BACKEND_PORT)
-                    ?: DEFAULT_BACKEND_PORT,
-            allowLan = intent?.getBooleanExtra(EXTRA_ALLOW_LAN, false) ?: false,
-        )
+    fun requestFrom(intent: Intent?): SubStoreServiceRequest = SubStoreServiceRequest(
+        frontendPort = intent?.getIntExtra(EXTRA_FRONTEND_PORT, DEFAULT_FRONTEND_PORT) ?: DEFAULT_FRONTEND_PORT,
+        backendPort = intent?.getIntExtra(EXTRA_BACKEND_PORT, DEFAULT_BACKEND_PORT) ?: DEFAULT_BACKEND_PORT,
+        allowLan = intent?.getBooleanExtra(EXTRA_ALLOW_LAN, false) ?: false,
+    )
 
     internal fun markRunning() {
         _snapshot.value = SubStoreServiceSnapshot(isRunning = true, isStarting = false)

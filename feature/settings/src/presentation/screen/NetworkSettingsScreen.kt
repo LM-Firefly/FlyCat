@@ -68,12 +68,17 @@ import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.Netwo
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.RootTunServiceOptionsUiState
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.TunServiceOptionsUiState
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
+import com.github.lmfirefly.flycat.presentation.component.SectionSummary
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetCloseAction
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetConfirmAction
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppFormDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppTextFieldDialog
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
@@ -89,6 +94,7 @@ import com.github.lmfirefly.flycat.presentation.icon.flycat.PlaneTakeoff
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Tun
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.navigation.Route
+import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
@@ -96,11 +102,10 @@ import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TextFieldDefaults
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 @Composable
@@ -110,7 +115,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val accessControlMode by viewModel.accessControlMode.state.collectAsStateWithLifecycle()
 
-    Scaffold(
+    GlassScaffold(
         topBar = { TopBar(title = FlyTxt.NetworkSettings.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(navigator = navigator) }) }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
@@ -148,6 +153,7 @@ fun NetworkSettingsScreen(navigator: Navigator) {
     }
 }
 
+/** 运行模式选项：卡片内下拉单选，选项前侧带图标；不可用的模式置灰且无法被选中（如无 root 时的 TUN/eBPF）。 */
 @Composable
 private fun NetworkRunModeSection(
     viewModel: NetworkSettingsViewModel,
@@ -156,32 +162,33 @@ private fun NetworkRunModeSection(
     ebpfAvailable: Boolean,
 ) {
     Title(FlyTxt.NetworkSettings.RunMode.SectionTitle)
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ModeCard(
-            icon = FlyCat.PlaneTakeoff,
-            title = FlyTxt.NetworkSettings.RunMode.VpnServiceTitle,
-            summary = FlyTxt.NetworkSettings.RunMode.VpnServiceSummary,
-            selected = runMode == RunMode.VpnService,
-            enabled = true,
-            onSelect = { viewModel.onRunModeChange(RunMode.VpnService) },
-        )
-        ModeCard(
-            icon = FlyCat.Tun,
-            title = FlyTxt.NetworkSettings.RunMode.TunTitle,
-            summary = FlyTxt.NetworkSettings.RunMode.TunSummary,
-            selected = runMode == RunMode.Tun,
-            enabled = rootAvailable,
-            onSelect = { viewModel.onRunModeChange(RunMode.Tun) },
-        )
-        ModeCard(
-            icon = FlyCat.CPU,
-            title = FlyTxt.NetworkSettings.RunMode.EbpfTitle,
-            summary = FlyTxt.NetworkSettings.RunMode.EbpfSummary,
-            selected = runMode == RunMode.Ebpf,
-            enabled = ebpfAvailable,
-            onSelect = { viewModel.onRunModeChange(RunMode.Ebpf) },
+    Card {
+        GlassDropdownPreference(
+            options = listOf(
+                GlassDropdownOption(
+                    value = RunMode.VpnService,
+                    label = FlyTxt.NetworkSettings.RunMode.VpnServiceTitle,
+                    icon = FlyCat.PlaneTakeoff,
+                ),
+                GlassDropdownOption(
+                    value = RunMode.Tun,
+                    label = FlyTxt.NetworkSettings.RunMode.TunTitle,
+                    icon = FlyCat.Tun,
+                    enabled = rootAvailable,
+                ),
+                GlassDropdownOption(
+                    value = RunMode.Ebpf,
+                    label = FlyTxt.NetworkSettings.RunMode.EbpfTitle,
+                    icon = FlyCat.CPU,
+                    enabled = rootAvailable && ebpfAvailable,
+                ),
+            ),
+            selected = runMode,
+            title = FlyTxt.NetworkSettings.RunMode.CurrentModeTitle,
+            onSelected = viewModel::onRunModeChange,
         )
     }
+    SectionSummary(FlyTxt.NetworkSettings.RunMode.SectionSummary)
 }
 
 @Composable
@@ -194,6 +201,7 @@ private fun NetworkAdvancedSection(
     Card {
         PreferenceArrowItem(
             title = FlyTxt.NetworkSettings.Section.VpnOptions,
+            summary = FlyTxt.NetworkSettings.Advanced.ServiceConfigSummary,
             onClick = {
                 when (runMode) {
                     RunMode.VpnService -> navigator.push(Route.VpnServiceOptions)
@@ -208,6 +216,7 @@ private fun NetworkAdvancedSection(
             onCheckedChange = viewModel::onDisableAllOverrideChange,
         )
     }
+    SectionSummary(FlyTxt.NetworkSettings.Advanced.DisableOverrideSummary)
 }
 
 @Composable
@@ -223,18 +232,16 @@ private fun NetworkProxyOptionsSection(
             PreferenceEnumItem(
                 title = FlyTxt.NetworkSettings.ProxyOptions.AccessControlModeTitle,
                 currentValue = accessControlMode,
-                items =
-                    listOf(
-                        FlyTxt.NetworkSettings.ProxyOptions.AllowAll,
-                        FlyTxt.NetworkSettings.ProxyOptions.AllowSelected,
-                        FlyTxt.NetworkSettings.ProxyOptions.RejectSelected,
-                    ),
-                values =
-                    listOf(
-                        AccessControlMode.ALLOW_ALL,
-                        AccessControlMode.ALLOW_SPECIFIC,
-                        AccessControlMode.DENY_SPECIFIC
-                    ),
+                items = listOf(
+                    FlyTxt.NetworkSettings.ProxyOptions.AllowAll,
+                    FlyTxt.NetworkSettings.ProxyOptions.AllowSelected,
+                    FlyTxt.NetworkSettings.ProxyOptions.RejectSelected,
+                ),
+                values = listOf(
+                    AccessControlMode.ALLOW_ALL,
+                    AccessControlMode.ALLOW_SPECIFIC,
+                    AccessControlMode.DENY_SPECIFIC
+                ),
                 onValueChange = onAccessControlModeChange,
             )
         }
@@ -245,10 +252,7 @@ private fun NetworkProxyOptionsSection(
     }
 }
 
-/**
- * A run-mode option: its own card with an icon on the leading side and a trailing
- * selection radio. A disabled mode greys its contents and can't be selected.
- */
+/** 内核管理卡片：下拉切换已安装内核、检查并下载可用内核、导入自定义内核（[CustomKernelSheet]）；切换内核后弹出重启提示。 */
 @Composable
 private fun NetworkKernelSection(viewModel: NetworkSettingsViewModel) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -266,14 +270,13 @@ private fun NetworkKernelSection(viewModel: NetworkSettingsViewModel) {
         val installedIds = installedCommits.keys.sorted()
         val allKernelIds = listOf(KernelManager.BUNDLED_ALPHA_ID) + installedIds
         val activeIndex = allKernelIds.indexOf(activeKernelId).coerceAtLeast(0)
-        WindowDropdownPreference(
+        GlassDropdownPreference(
             title = FlyTxt.NetworkSettings.Kernel.ActiveTitle,
             summary = kernelLabel(activeKernelId, installedCommits[activeKernelId]),
-            items = allKernelIds.map { id -> kernelLabel(id, installedCommits[id]) },
-            selectedIndex = activeIndex,
+            options = allKernelIds.map { id -> GlassDropdownOption(value = id, label = kernelLabel(id, installedCommits[id])) },
+            selected = activeKernelId,
             enabled = !kernelBusy,
-            onSelectedIndexChange = { idx ->
-                val selectedId = allKernelIds[idx]
+            onSelected = { selectedId ->
                 if (selectedId != activeKernelId) {
                     viewModel.selectKernel(selectedId)
                 }
@@ -326,6 +329,7 @@ private fun NetworkKernelSection(viewModel: NetworkSettingsViewModel) {
             onClick = { showCustomDialog = true },
         )
     }
+    SectionSummary(FlyTxt.NetworkSettings.Kernel.SectionSummary)
 
     CustomKernelSheet(
         show = showCustomDialog,
@@ -360,9 +364,7 @@ private fun NetworkKernelSection(viewModel: NetworkSettingsViewModel) {
                 android.os.Process.killProcess(android.os.Process.myPid())
             },
         ) {
-            top.yukonga.miuix.kmp.basic.Text(
-                text = FlyTxt.NetworkSettings.Kernel.RestartDialogMessage,
-            )
+            Text(text = FlyTxt.NetworkSettings.Kernel.RestartDialogMessage)
         }
     }
 }
@@ -383,47 +385,6 @@ private fun kernelLabel(id: String, commit: String? = null): String {
     }
 }
 
-@Composable
-private fun ModeCard(
-    icon: ImageVector,
-    title: String,
-    summary: String,
-    selected: Boolean,
-    enabled: Boolean,
-    onSelect: () -> Unit,
-) {
-    Card {
-        BasicComponent(
-            title = title,
-            summary = summary,
-            enabled = enabled,
-            onClick = if (enabled) onSelect else null,
-            startAction = {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint =
-                        if (enabled) {
-                            colorScheme.onSurface
-                        } else {
-                            colorScheme.disabledOnSecondaryVariant
-                        },
-                    modifier = Modifier
-                        .padding(start = 4.dp, end = 12.dp)
-                        .size(24.dp),
-                )
-            },
-            endActions = {
-                RadioButton(
-                    selected = selected,
-                    onClick = if (enabled) onSelect else null,
-                    enabled = enabled,
-                )
-            },
-        )
-    }
-}
-
 // ── Reusable composables for service options pages ──
 
 @Composable
@@ -440,13 +401,12 @@ internal fun CommonTunServiceOptions(
     PreferenceEnumItem(
         title = FlyTxt.NetworkSettings.VpnOptions.TunStackTitle,
         currentValue = state.tunStack,
-        items =
-            listOf(
-                FlyTxt.NetworkSettings.VpnOptions.TunStackSystem,
-                FlyTxt.NetworkSettings.VpnOptions.TunStackGVisor,
-                FlyTxt.NetworkSettings.VpnOptions.TunStackMixed,
-                FlyTxt.NetworkSettings.VpnOptions.TunStackMips,
-            ),
+        items = listOf(
+            FlyTxt.NetworkSettings.VpnOptions.TunStackMips,
+            FlyTxt.NetworkSettings.VpnOptions.TunStackGVisor,
+            FlyTxt.NetworkSettings.VpnOptions.TunStackSystem,
+            FlyTxt.NetworkSettings.VpnOptions.TunStackMixed,
+        ),
         values = TunStack.entries,
         onValueChange = actions.onTunStackChange,
     )
@@ -619,11 +579,10 @@ private fun RootTunRoutingOptions(
     PreferenceEnumItem(
         title = FlyTxt.NetworkSettings.RootTun.DnsModeTitle,
         currentValue = tunDnsMode,
-        items =
-            listOf(
-                FlyTxt.NetworkSettings.RootTun.DnsModeRedirHost,
-                FlyTxt.NetworkSettings.RootTun.DnsModeFakeIp,
-            ),
+        items = listOf(
+            FlyTxt.NetworkSettings.RootTun.DnsModeRedirHost,
+            FlyTxt.NetworkSettings.RootTun.DnsModeFakeIp,
+        ),
         values = TunDnsMode.entries,
         onValueChange = ontunDnsModeChange,
     )
@@ -645,18 +604,12 @@ private fun RootTunFakeIpOptions(
         Column {
             PreferenceArrowItem(
                 title = FlyTxt.NetworkSettings.RootTun.FakeIpRangeTitle,
-                summary =
-                    tunFakeIpRangeDraft.ifBlank {
-                        FlyTxt.NetworkSettings.RootTun.FakeIpRangeSummary
-                    },
+                summary = tunFakeIpRangeDraft.ifBlank { FlyTxt.NetworkSettings.RootTun.FakeIpRangeSummary },
                 onClick = onEditFakeIpRange,
             )
             PreferenceArrowItem(
                 title = FlyTxt.NetworkSettings.RootTun.FakeIpRange6Title,
-                summary =
-                    tunFakeIpRange6Draft.ifBlank {
-                        FlyTxt.NetworkSettings.RootTun.FakeIpRange6Summary
-                    },
+                summary = tunFakeIpRange6Draft.ifBlank { FlyTxt.NetworkSettings.RootTun.FakeIpRange6Summary },
                 onClick = onEditFakeIpRange6,
             )
         }
@@ -687,8 +640,7 @@ private fun RootTunEditDialogs(
                 onValueChange = actions.ontunMtuDraftChange,
                 onDismiss = onDismiss,
                 onCommit = actions.committunMtu,
-                keyboardOptions =
-                    KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             )
 
         RootTunEditDialogState.FakeIpRange ->
@@ -791,15 +743,16 @@ private fun CustomKernelSheet(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Card(cornerRadius = TextFieldDefaults.CornerRadius, applyHorizontalPadding = false, modifier = Modifier.fillMaxWidth()) {
-                WindowDropdownPreference(
+            Card(applyHorizontalPadding = false, modifier = Modifier.fillMaxWidth()) {
+                GlassDropdownPreference(
                     title = FlyTxt.NetworkSettings.Kernel.CustomMethodTitle,
-                    items = listOf(
-                        FlyTxt.NetworkSettings.Kernel.CustomUrlMethod,
-                        FlyTxt.NetworkSettings.Kernel.CustomFileMethod,
+                    options = listOf(
+                        GlassDropdownOption(value = 0, label = FlyTxt.NetworkSettings.Kernel.CustomUrlMethod),
+                        GlassDropdownOption(value = 1, label = FlyTxt.NetworkSettings.Kernel.CustomFileMethod),
                     ),
-                    selectedIndex = mode,
-                    onSelectedIndexChange = { mode = it },
+                    selected = mode,
+                    onSelected = { mode = it },
+                    glassSurface = true,
                 )
             }
             AnimatedContent(
@@ -811,7 +764,7 @@ private fun CustomKernelSheet(
                 label = "custom_kernel_method",
             ) { selectedMode ->
                 if (selectedMode == 0) {
-                    TextField(
+                    GlassTextField(
                         value = url,
                         onValueChange = { url = it },
                         label = FlyTxt.NetworkSettings.Kernel.CustomUrlLabel,
@@ -834,7 +787,7 @@ private fun CustomKernelSheet(
                         },
                     )
                 } else {
-                    Card(cornerRadius = TextFieldDefaults.CornerRadius, applyHorizontalPadding = false, modifier = Modifier.fillMaxWidth()) {
+                    Card(applyHorizontalPadding = false, modifier = Modifier.fillMaxWidth()) {
                         PreferenceArrowItem(
                             title = FlyTxt.NetworkSettings.Kernel.CustomChooseFile,
                             onClick = {
@@ -887,11 +840,9 @@ private fun CustomKernelSheet(
             onDismissRequest = { showFormatHint = false },
             onConfirm = { showFormatHint = false },
         ) {
-            androidx.compose.foundation.text.BasicText(
+            Text(
                 text = annotatedText,
-                style = androidx.compose.ui.text.TextStyle(
-                    color = colorScheme.onSurface
-                ),
+                color = colorScheme.onSurface,
                 modifier = Modifier.padding(vertical = 4.dp),
             )
         }

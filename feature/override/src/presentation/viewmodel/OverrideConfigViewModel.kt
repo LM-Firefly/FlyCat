@@ -136,11 +136,10 @@ class OverrideConfigViewModel(
         viewModelScope.launch {
             val currentConfigs = _userConfigs.value
             if (fromIndex !in currentConfigs.indices || fromIndex == toIndex) return@launch
-            val reorderedConfigs =
-                currentConfigs.toMutableList().also { configs ->
-                    val moving = configs.removeAt(fromIndex)
-                    configs.add(toIndex.coerceIn(0, configs.size), moving)
-                }
+            val reorderedConfigs = currentConfigs.toMutableList().also { configs ->
+                val moving = configs.removeAt(fromIndex)
+                configs.add(toIndex.coerceIn(0, configs.size), moving)
+            }
             _userConfigs.value = reorderedConfigs
 
             runCatching { overrideCrud.reorderUserConfigs(reorderedConfigs.map(OverrideConfig::id)) }
@@ -178,32 +177,30 @@ class OverrideConfigViewModel(
         val selectedProfileIds: Set<String>,
     )
 
-    suspend fun loadApplySnapshot(overrideId: String): Result<OverrideApplySnapshot> =
-        withContext(Dispatchers.IO) {
-            runCatching {
-                val snapshot = overrideCrud.loadApplySnapshot(overrideId)
-                OverrideApplySnapshot(
-                    overrideId = snapshot.overrideId,
-                    profiles = snapshot.profiles,
-                    selectedProfileIds = snapshot.selectedProfileIds,
-                )
-            }.onFailure { error ->
-                Timber.tag(TAG).e(error, "Failed to load apply snapshot for %s", overrideId)
-            }
+    suspend fun loadApplySnapshot(overrideId: String): Result<OverrideApplySnapshot> = withContext(Dispatchers.IO) {
+        runCatching {
+            val snapshot = overrideCrud.loadApplySnapshot(overrideId)
+            OverrideApplySnapshot(
+                overrideId = snapshot.overrideId,
+                profiles = snapshot.profiles,
+                selectedProfileIds = snapshot.selectedProfileIds,
+            )
+        }.onFailure { error ->
+            Timber.tag(TAG).e(error, "Failed to load apply snapshot for %s", overrideId)
         }
+    }
 
     suspend fun applyOverrideToProfiles(
         overrideId: String,
         selectedProfileIds: Set<String>,
-    ): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            runCatching {
-                overrideCrud.applyOverrideToProfiles(overrideId, selectedProfileIds)
-                loadUsageCounts()
-            }.onFailure { error ->
-                Timber.tag(TAG).e(error, "Failed to apply override %s to profiles", overrideId)
-            }
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            overrideCrud.applyOverrideToProfiles(overrideId, selectedProfileIds)
+            loadUsageCounts()
+        }.onFailure { error ->
+            Timber.tag(TAG).e(error, "Failed to apply override %s to profiles", overrideId)
         }
+    }
 
     fun consumePendingRevealConfig(configId: String) {
         if (_pendingRevealConfigId.value == configId) {

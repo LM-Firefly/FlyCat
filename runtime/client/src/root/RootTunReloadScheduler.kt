@@ -69,16 +69,15 @@ object RootTunReloadScheduler {
     }
 
     private fun runReload(context: Context) {
-        val reasons =
-            synchronized(lock) {
-                if (reloadJob?.isActive == true) {
-                    dirtyWhileRunning = true
-                    return
-                }
-                val copied = pendingReasons.toSet()
-                pendingReasons.clear()
-                copied
+        val reasons = synchronized(lock) {
+            if (reloadJob?.isActive == true) {
+                dirtyWhileRunning = true
+                return
             }
+            val copied = pendingReasons.toSet()
+            pendingReasons.clear()
+            copied
+        }
         if (reasons.isEmpty()) {
             return
         }
@@ -95,17 +94,16 @@ object RootTunReloadScheduler {
                     notifyFailure(context, result.error ?: "root runtime reload failed")
                 }
 
-                val shouldRunAgain =
-                    synchronized(lock) {
-                        val rerun = (dirtyWhileRunning || pendingReasons.isNotEmpty()) && rerunCount < MAX_RERUN_COUNT
-                        if (rerun) {
-                            rerunCount++
-                        } else {
-                            rerunCount = 0
-                        }
-                        dirtyWhileRunning = false
-                        rerun
+                val shouldRunAgain = synchronized(lock) {
+                    val rerun = (dirtyWhileRunning || pendingReasons.isNotEmpty()) && rerunCount < MAX_RERUN_COUNT
+                    if (rerun) {
+                        rerunCount++
+                    } else {
+                        rerunCount = 0
                     }
+                    dirtyWhileRunning = false
+                    rerun
+                }
                 if (shouldRunAgain) {
                     delay(RELOAD_DEBOUNCE_MS)
                     runReload(context)
@@ -126,8 +124,7 @@ object RootTunReloadScheduler {
         context: Context
     ): RootTunOperationResult {
         val delays = longArrayOf(0L, 250L, 500L, 1000L)
-        var lastResult =
-            RootTunOperationResult(success = true)
+        var lastResult = RootTunOperationResult(success = true)
         for (index in delays.indices) {
             if (delays[index] > 0L) {
                 delay(delays[index])

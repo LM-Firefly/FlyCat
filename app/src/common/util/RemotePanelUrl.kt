@@ -24,24 +24,19 @@ package com.github.lmfirefly.flycat.common.util
 import android.net.Uri
 import com.github.lmfirefly.flycat.core.model.RemoteBackend
 
-/** Builds a dashboard URL that opens its controller setup with the selected backend. */
-fun buildRemotePanelUrl(
-    panelUrl: String,
-    backend: RemoteBackend,
-): String {
-    val query =
-        Uri
-            .Builder()
-            .appendQueryParameter(backend.protocol.scheme, "true")
-            .appendQueryParameter("hostname", backend.host)
-            .appendQueryParameter("port", backend.port.toString())
-            .appendQueryParameter("secret", backend.secret)
-            .build()
-            .encodedQuery
-            .orEmpty()
+/** 构建一个仪表板 URL，用于以选定的后端打开其控制器设置。*/
+fun buildRemotePanelUrl(panelUrl: String, backend: RemoteBackend): String {
+    val query = Uri
+        .Builder()
+        .appendQueryParameter(backend.protocol.scheme, "true")
+        .appendQueryParameter("hostname", backend.host)
+        .appendQueryParameter("port", backend.port.toString())
+        .appendQueryParameter("secret", backend.secret)
+        .build()
+        .encodedQuery
+        .orEmpty()
     return "${panelUrl.trimEnd('/')}/#/setup?$query"
 }
 
-/** Android 17 local-network protection does not apply to connections within this process. */
-fun RemoteBackend.requiresLocalNetworkPermission(): Boolean =
-    host.trim().lowercase() !in setOf("127.0.0.1", "::1", "[::1]", "localhost")
+/** Android 17 本地网络保护不适用于此进程内部的连接。 */
+fun RemoteBackend.requiresLocalNetworkPermission(): Boolean = host.trim().lowercase() !in setOf("127.0.0.1", "::1", "[::1]", "localhost")

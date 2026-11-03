@@ -29,18 +29,13 @@ private const val OFFICIAL_MRS_RULE_PROVIDER_INTERVAL = 86400
 private const val OFFICIAL_MRS_URL_TEST_INTERVAL = 300
 private const val OFFICIAL_MRS_URL_TEST_URL = "https://www.gstatic.com/generate_204"
 private const val OFFICIAL_MRS_EXCLUDE_FILTER = "(?i)GB|Traffic|Expire|Premium|频道|订阅|ISP|流量|到期|重置"
-private const val OFFICIAL_MRS_POPULAR_REGION_EXCLUDE_FILTER =
-    "(?i)(香港|HK|Hong Kong|\\x{1F1ED}\\x{1F1F0}|台湾|TW|Taiwan|\\x{1F1F9}\\x{1F1FC}|日本|JP|Japan|东京|大阪|\\x{1F1EF}\\x{1F1F5}|新加坡|SG|Singapore|狮城|\\x{1F1F8}\\x{1F1EC}|美国|US|United States|America|洛杉矶|硅谷|\\x{1F1FA}\\x{1F1F8})"
-private const val OFFICIAL_MRS_GEOSITE_URL =
-    "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/%s.mrs"
-private const val OFFICIAL_MRS_GEOIP_URL =
-    "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/%s.mrs"
+private const val OFFICIAL_MRS_POPULAR_REGION_EXCLUDE_FILTER = "(?i)(香港|HK|Hong Kong|\\x{1F1ED}\\x{1F1F0}|台湾|TW|Taiwan|\\x{1F1F9}\\x{1F1FC}|日本|JP|Japan|东京|大阪|\\x{1F1EF}\\x{1F1F5}|新加坡|SG|Singapore|狮城|\\x{1F1F8}\\x{1F1EC}|美国|US|United States|America|洛杉矶|硅谷|\\x{1F1FA}\\x{1F1F8})"
+private const val OFFICIAL_MRS_GEOSITE_URL = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/%s.mrs"
+private const val OFFICIAL_MRS_GEOIP_URL = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/%s.mrs"
 private const val OFFICIAL_MRS_AUTO_GROUP_NAME = "Auto"
 private const val OFFICIAL_MRS_FALLBACK_GROUP_NAME = "Fallback"
-private const val OFFICIAL_MRS_ICON_APP_BASE_URL =
-    "https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps"
-private const val OFFICIAL_MRS_CATALOG_BASE_URL =
-    "https://raw.githubusercontent.com/Orz-3/mini/master/Color"
+private const val OFFICIAL_MRS_ICON_APP_BASE_URL = "https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps"
+private const val OFFICIAL_MRS_CATALOG_BASE_URL = "https://raw.githubusercontent.com/Orz-3/mini/master/Color"
 
 data class OverridePresetTemplateSelection(
     val urlTestRegions: Set<OverridePresetRegion> = emptySet(),
@@ -130,10 +125,9 @@ enum class OverridePresetItem(
         title = "代理规则集",
         summary = "启用 proxy 规则集并走 Proxy。",
         icon = officialMrsCatalogIconUrl("Static"),
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("proxy_domain", "proxy", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec("proxy_domain", "proxy", OfficialMrsRuleBehavior.Domain)
+        ),
         detectionRules = listOf("RULE-SET,proxy_domain,Proxy"),
     ),
     Ads(
@@ -141,14 +135,13 @@ enum class OverridePresetItem(
         title = "广告拦截",
         summary = "启用 category-ads-all 并走 REJECT。",
         icon = officialMrsCatalogIconUrl("Adblock"),
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "ads_domain",
-                    "category-ads-all",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "ads_domain",
+                "category-ads-all",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         detectionRules = listOf("RULE-SET,ads_domain,REJECT"),
     ),
     Google(
@@ -158,18 +151,15 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Google"),
         groupName = "Google",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("google_domain", "google", OfficialMrsRuleBehavior.Domain),
-                OfficialMrsProviderSpec("google_ip", "google", OfficialMrsRuleBehavior.IpCidr),
-            ),
-        rules =
-            listOf(
-                OfficialMrsRuleSpec("google_domain", "Google"),
-                OfficialMrsRuleSpec("google_ip", "Google", noResolve = true),
-            ),
-        detectionRules =
-            listOf("RULE-SET,google_domain,Google", "RULE-SET,google_ip,Google,no-resolve"),
+        providers = listOf(
+            OfficialMrsProviderSpec("google_domain", "google", OfficialMrsRuleBehavior.Domain),
+            OfficialMrsProviderSpec("google_ip", "google", OfficialMrsRuleBehavior.IpCidr),
+        ),
+        rules = listOf(
+            OfficialMrsRuleSpec("google_domain", "Google"),
+            OfficialMrsRuleSpec("google_ip", "Google", noResolve = true),
+        ),
+        detectionRules = listOf("RULE-SET,google_domain,Google", "RULE-SET,google_ip,Google,no-resolve"),
     ),
     Telegram(
         id = "telegram",
@@ -178,22 +168,19 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Telegram"),
         groupName = "Telegram",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "telegram_domain",
-                    "telegram",
-                    OfficialMrsRuleBehavior.Domain,
-                ),
-                OfficialMrsProviderSpec("telegram_ip", "telegram", OfficialMrsRuleBehavior.IpCidr),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "telegram_domain",
+                "telegram",
+                OfficialMrsRuleBehavior.Domain,
             ),
-        rules =
-            listOf(
-                OfficialMrsRuleSpec("telegram_domain", "Telegram"),
-                OfficialMrsRuleSpec("telegram_ip", "Telegram", noResolve = true),
-            ),
-        detectionRules =
-            listOf("RULE-SET,telegram_domain,Telegram", "RULE-SET,telegram_ip,Telegram,no-resolve"),
+            OfficialMrsProviderSpec("telegram_ip", "telegram", OfficialMrsRuleBehavior.IpCidr),
+        ),
+        rules = listOf(
+            OfficialMrsRuleSpec("telegram_domain", "Telegram"),
+            OfficialMrsRuleSpec("telegram_ip", "Telegram", noResolve = true),
+        ),
+        detectionRules = listOf("RULE-SET,telegram_domain,Telegram", "RULE-SET,telegram_ip,Telegram,no-resolve"),
     ),
     WhatsApp(
         id = "whatsapp",
@@ -202,14 +189,13 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("WhatsApp.png"),
         groupName = "WhatsApp",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "whatsapp_domain",
-                    "whatsapp",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "whatsapp_domain",
+                "whatsapp",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         rules = listOf(OfficialMrsRuleSpec("whatsapp_domain", "WhatsApp")),
         detectionRules = listOf("RULE-SET,whatsapp_domain,WhatsApp"),
     ),
@@ -220,8 +206,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("LineTV"),
         groupName = "LINE",
-        providers =
-            listOf(OfficialMrsProviderSpec("line_domain", "line", OfficialMrsRuleBehavior.Domain)),
+        providers = listOf(OfficialMrsProviderSpec("line_domain", "line", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("line_domain", "LINE")),
         detectionRules = listOf("RULE-SET,line_domain,LINE"),
     ),
@@ -232,22 +217,19 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Twitter"),
         groupName = "Twitter",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "twitter_domain",
-                    "twitter",
-                    OfficialMrsRuleBehavior.Domain,
-                ),
-                OfficialMrsProviderSpec("twitter_ip", "twitter", OfficialMrsRuleBehavior.IpCidr),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "twitter_domain",
+                "twitter",
+                OfficialMrsRuleBehavior.Domain,
             ),
-        rules =
-            listOf(
-                OfficialMrsRuleSpec("twitter_domain", "Twitter"),
-                OfficialMrsRuleSpec("twitter_ip", "Twitter", noResolve = true),
-            ),
-        detectionRules =
-            listOf("RULE-SET,twitter_domain,Twitter", "RULE-SET,twitter_ip,Twitter,no-resolve"),
+            OfficialMrsProviderSpec("twitter_ip", "twitter", OfficialMrsRuleBehavior.IpCidr),
+        ),
+        rules = listOf(
+            OfficialMrsRuleSpec("twitter_domain", "Twitter"),
+            OfficialMrsRuleSpec("twitter_ip", "Twitter", noResolve = true),
+        ),
+        detectionRules = listOf("RULE-SET,twitter_domain,Twitter", "RULE-SET,twitter_ip,Twitter,no-resolve"),
     ),
     TikTok(
         id = "tiktok",
@@ -256,10 +238,9 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("TikTok"),
         groupName = "TikTok",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("tiktok_domain", "tiktok", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec("tiktok_domain", "tiktok", OfficialMrsRuleBehavior.Domain)
+        ),
         rules = listOf(OfficialMrsRuleSpec("tiktok_domain", "TikTok")),
         detectionRules = listOf("RULE-SET,tiktok_domain,TikTok"),
     ),
@@ -270,14 +251,13 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Speedtest"),
         groupName = "Speedtest",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "speedtest_domain",
-                    "speedtest",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "speedtest_domain",
+                "speedtest",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         rules = listOf(OfficialMrsRuleSpec("speedtest_domain", "Speedtest")),
         detectionRules = listOf("RULE-SET,speedtest_domain,Speedtest"),
     ),
@@ -288,10 +268,9 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("github_00.png"),
         groupName = "GitHub",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("github_domain", "github", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec("github_domain", "github", OfficialMrsRuleBehavior.Domain)
+        ),
         rules = listOf(OfficialMrsRuleSpec("github_domain", "GitHub")),
         detectionRules = listOf("RULE-SET,github_domain,GitHub"),
     ),
@@ -302,10 +281,9 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("Discord.png"),
         groupName = "Discord",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("discord_domain", "discord", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec("discord_domain", "discord", OfficialMrsRuleBehavior.Domain)
+        ),
         rules = listOf(OfficialMrsRuleSpec("discord_domain", "Discord")),
         detectionRules = listOf("RULE-SET,discord_domain,Discord"),
     ),
@@ -316,10 +294,9 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("Category_Magazine.png"),
         groupName = "Reddit",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("reddit_domain", "reddit", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec("reddit_domain", "reddit", OfficialMrsRuleBehavior.Domain)
+        ),
         rules = listOf(OfficialMrsRuleSpec("reddit_domain", "Reddit")),
         detectionRules = listOf("RULE-SET,reddit_domain,Reddit"),
     ),
@@ -330,22 +307,19 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("facebook.png"),
         groupName = "Facebook",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "facebook_domain",
-                    "facebook",
-                    OfficialMrsRuleBehavior.Domain,
-                ),
-                OfficialMrsProviderSpec("facebook_ip", "facebook", OfficialMrsRuleBehavior.IpCidr),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "facebook_domain",
+                "facebook",
+                OfficialMrsRuleBehavior.Domain,
             ),
-        rules =
-            listOf(
-                OfficialMrsRuleSpec("facebook_domain", "Facebook"),
-                OfficialMrsRuleSpec("facebook_ip", "Facebook", noResolve = true),
-            ),
-        detectionRules =
-            listOf("RULE-SET,facebook_domain,Facebook", "RULE-SET,facebook_ip,Facebook,no-resolve"),
+            OfficialMrsProviderSpec("facebook_ip", "facebook", OfficialMrsRuleBehavior.IpCidr),
+        ),
+        rules = listOf(
+            OfficialMrsRuleSpec("facebook_domain", "Facebook"),
+            OfficialMrsRuleSpec("facebook_ip", "Facebook", noResolve = true),
+        ),
+        detectionRules = listOf("RULE-SET,facebook_domain,Facebook", "RULE-SET,facebook_ip,Facebook,no-resolve"),
     ),
     Instagram(
         id = "instagram",
@@ -354,14 +328,13 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Instagram"),
         groupName = "Instagram",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "instagram_domain",
-                    "instagram",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "instagram_domain",
+                "instagram",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         rules = listOf(OfficialMrsRuleSpec("instagram_domain", "Instagram")),
         detectionRules = listOf("RULE-SET,instagram_domain,Instagram"),
     ),
@@ -372,10 +345,9 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("Threads.png"),
         groupName = "Threads",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("threads_domain", "threads", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec("threads_domain", "threads", OfficialMrsRuleBehavior.Domain)
+        ),
         rules = listOf(OfficialMrsRuleSpec("threads_domain", "Threads")),
         detectionRules = listOf("RULE-SET,threads_domain,Threads"),
     ),
@@ -386,14 +358,13 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Microsoft"),
         groupName = "Microsoft",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "microsoft_domain",
-                    "microsoft",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "microsoft_domain",
+                "microsoft",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         rules = listOf(OfficialMrsRuleSpec("microsoft_domain", "Microsoft")),
         detectionRules = listOf("RULE-SET,microsoft_domain,Microsoft"),
     ),
@@ -404,8 +375,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("bing.png"),
         groupName = "Bing",
-        providers =
-            listOf(OfficialMrsProviderSpec("bing_domain", "bing", OfficialMrsRuleBehavior.Domain)),
+        providers = listOf(OfficialMrsProviderSpec("bing_domain", "bing", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("bing_domain", "Bing")),
         detectionRules = listOf("RULE-SET,bing_domain,Bing"),
     ),
@@ -416,10 +386,9 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Apple"),
         groupName = "Apple",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("apple_domain", "apple", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec("apple_domain", "apple", OfficialMrsRuleBehavior.Domain)
+        ),
         rules = listOf(OfficialMrsRuleSpec("apple_domain", "Apple")),
         detectionRules = listOf("RULE-SET,apple_domain,Apple"),
     ),
@@ -430,10 +399,9 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("YouTube"),
         groupName = "YouTube",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("youtube_domain", "youtube", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec("youtube_domain", "youtube", OfficialMrsRuleBehavior.Domain)
+        ),
         rules = listOf(OfficialMrsRuleSpec("youtube_domain", "YouTube")),
         detectionRules = listOf("RULE-SET,youtube_domain,YouTube"),
     ),
@@ -444,10 +412,9 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Netflix"),
         groupName = "Netflix",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("netflix_domain", "netflix", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec("netflix_domain", "netflix", OfficialMrsRuleBehavior.Domain)
+        ),
         rules = listOf(OfficialMrsRuleSpec("netflix_domain", "Netflix")),
         detectionRules = listOf("RULE-SET,netflix_domain,Netflix"),
     ),
@@ -458,10 +425,9 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("DisneyPlus"),
         groupName = "Disney",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("disney_domain", "disney", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec("disney_domain", "disney", OfficialMrsRuleBehavior.Domain)
+        ),
         rules = listOf(OfficialMrsRuleSpec("disney_domain", "Disney")),
         detectionRules = listOf("RULE-SET,disney_domain,Disney"),
     ),
@@ -472,8 +438,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("HBO"),
         groupName = "HBO",
-        providers =
-            listOf(OfficialMrsProviderSpec("hbo_domain", "hbo", OfficialMrsRuleBehavior.Domain)),
+        providers = listOf(OfficialMrsProviderSpec("hbo_domain", "hbo", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("hbo_domain", "HBO")),
         detectionRules = listOf("RULE-SET,hbo_domain,HBO"),
     ),
@@ -484,14 +449,13 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("PrimeVideo"),
         groupName = "PrimeVideo",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "primevideo_domain",
-                    "primevideo",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "primevideo_domain",
+                "primevideo",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         rules = listOf(OfficialMrsRuleSpec("primevideo_domain", "PrimeVideo")),
         detectionRules = listOf("RULE-SET,primevideo_domain,PrimeVideo"),
     ),
@@ -502,8 +466,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("TVBAnywhere+.png"),
         groupName = "TVB",
-        providers =
-            listOf(OfficialMrsProviderSpec("tvb_domain", "tvb", OfficialMrsRuleBehavior.Domain)),
+        providers = listOf(OfficialMrsProviderSpec("tvb_domain", "tvb", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("tvb_domain", "TVB")),
         detectionRules = listOf("RULE-SET,tvb_domain,TVB"),
     ),
@@ -514,14 +477,13 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("TVBAnywhere+.png"),
         groupName = "MyTVSuper",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "mytvsuper_domain",
-                    "mytvsuper",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "mytvsuper_domain",
+                "mytvsuper",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         rules = listOf(OfficialMrsRuleSpec("mytvsuper_domain", "MyTVSuper")),
         detectionRules = listOf("RULE-SET,mytvsuper_domain,MyTVSuper"),
     ),
@@ -532,8 +494,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Streaming"),
         groupName = "DAZN",
-        providers =
-            listOf(OfficialMrsProviderSpec("dazn_domain", "dazn", OfficialMrsRuleBehavior.Domain)),
+        providers = listOf(OfficialMrsProviderSpec("dazn_domain", "dazn", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("dazn_domain", "DAZN")),
         detectionRules = listOf("RULE-SET,dazn_domain,DAZN"),
     ),
@@ -544,10 +505,9 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Spotify"),
         groupName = "Spotify",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("spotify_domain", "spotify", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec("spotify_domain", "spotify", OfficialMrsRuleBehavior.Domain)
+        ),
         rules = listOf(OfficialMrsRuleSpec("spotify_domain", "Spotify")),
         detectionRules = listOf("RULE-SET,spotify_domain,Spotify"),
     ),
@@ -558,10 +518,9 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("Amazon.png"),
         groupName = "Amazon",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("amazon_domain", "amazon", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec("amazon_domain", "amazon", OfficialMrsRuleBehavior.Domain)
+        ),
         rules = listOf(OfficialMrsRuleSpec("amazon_domain", "Amazon")),
         detectionRules = listOf("RULE-SET,amazon_domain,Amazon"),
     ),
@@ -572,10 +531,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Paypal"),
         groupName = "PayPal",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("paypal_domain", "paypal", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(OfficialMrsProviderSpec("paypal_domain", "paypal", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("paypal_domain", "PayPal")),
         detectionRules = listOf("RULE-SET,paypal_domain,PayPal"),
     ),
@@ -586,14 +542,13 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("Cloudflare.png"),
         groupName = "Cloudflare",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "cloudflare_domain",
-                    "cloudflare",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "cloudflare_domain",
+                "cloudflare",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         rules = listOf(OfficialMrsRuleSpec("cloudflare_domain", "Cloudflare")),
         detectionRules = listOf("RULE-SET,cloudflare_domain,Cloudflare"),
     ),
@@ -604,8 +559,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("Category_Networking.png"),
         groupName = "Zoom",
-        providers =
-            listOf(OfficialMrsProviderSpec("zoom_domain", "zoom", OfficialMrsRuleBehavior.Domain)),
+        providers = listOf(OfficialMrsProviderSpec("zoom_domain", "zoom", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("zoom_domain", "Zoom")),
         detectionRules = listOf("RULE-SET,zoom_domain,Zoom"),
     ),
@@ -616,14 +570,13 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("Category_Research.png"),
         groupName = "Wikimedia",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "wikimedia_domain",
-                    "wikimedia",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "wikimedia_domain",
+                "wikimedia",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         rules = listOf(OfficialMrsRuleSpec("wikimedia_domain", "Wikimedia")),
         detectionRules = listOf("RULE-SET,wikimedia_domain,Wikimedia"),
     ),
@@ -634,14 +587,13 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Bili"),
         groupName = "Bilibili",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "bilibili_domain",
-                    "bilibili",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "bilibili_domain",
+                "bilibili",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         rules = listOf(OfficialMrsRuleSpec("bilibili_domain", "Bilibili")),
         detectionRules = listOf("RULE-SET,bilibili_domain,Bilibili"),
     ),
@@ -652,14 +604,13 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Bili"),
         groupName = "BiliIntl",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "biliintl_domain",
-                    "biliintl",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "biliintl_domain",
+                "biliintl",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         rules = listOf(OfficialMrsRuleSpec("biliintl_domain", "BiliIntl")),
         detectionRules = listOf("RULE-SET,biliintl_domain,BiliIntl"),
     ),
@@ -670,10 +621,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsCatalogIconUrl("Bahamut"),
         groupName = "Bahamut",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("bahamut_domain", "bahamut", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(OfficialMrsProviderSpec("bahamut_domain", "bahamut", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("bahamut_domain", "Bahamut")),
         detectionRules = listOf("RULE-SET,bahamut_domain,Bahamut"),
     ),
@@ -684,8 +632,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("AnimeHome.png"),
         groupName = "DMM",
-        providers =
-            listOf(OfficialMrsProviderSpec("dmm_domain", "dmm", OfficialMrsRuleBehavior.Domain)),
+        providers = listOf(OfficialMrsProviderSpec("dmm_domain", "dmm", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("dmm_domain", "DMM")),
         detectionRules = listOf("RULE-SET,dmm_domain,DMM"),
     ),
@@ -696,10 +643,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("AnimeHome.png"),
         groupName = "Abema",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("abema_domain", "abema", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(OfficialMrsProviderSpec("abema_domain", "abema", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("abema_domain", "Abema")),
         detectionRules = listOf("RULE-SET,abema_domain,Abema"),
     ),
@@ -710,10 +654,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("HentaiHome.png"),
         groupName = "EHentai",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("ehentai_domain", "ehentai", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(OfficialMrsProviderSpec("ehentai_domain", "ehentai", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("ehentai_domain", "EHentai")),
         detectionRules = listOf("RULE-SET,ehentai_domain,EHentai"),
     ),
@@ -724,10 +665,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("ChatGPT.png"),
         groupName = "OpenAI",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("openai_domain", "openai", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(OfficialMrsProviderSpec("openai_domain", "openai", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("openai_domain", "OpenAI")),
         detectionRules = listOf("RULE-SET,openai_domain,OpenAI"),
     ),
@@ -738,14 +676,13 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("Claude_01.png"),
         groupName = "Claude",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "anthropic_domain",
-                    "anthropic",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "anthropic_domain",
+                "anthropic",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         rules = listOf(OfficialMrsRuleSpec("anthropic_domain", "Claude")),
         detectionRules = listOf("RULE-SET,anthropic_domain,Claude"),
     ),
@@ -756,14 +693,13 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("OneDrive.png"),
         groupName = "OneDrive",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "onedrive_domain",
-                    "onedrive",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "onedrive_domain",
+                "onedrive",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         rules = listOf(OfficialMrsRuleSpec("onedrive_domain", "OneDrive")),
         detectionRules = listOf("RULE-SET,onedrive_domain,OneDrive"),
     ),
@@ -774,10 +710,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("Category_Photo.png"),
         groupName = "Pixiv",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("pixiv_domain", "pixiv", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(OfficialMrsProviderSpec("pixiv_domain", "pixiv", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("pixiv_domain", "Pixiv")),
         detectionRules = listOf("RULE-SET,pixiv_domain,Pixiv"),
     ),
@@ -788,14 +721,13 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("AnimeHome.png"),
         groupName = "Niconico",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "niconico_domain",
-                    "niconico",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "niconico_domain",
+                "niconico",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         rules = listOf(OfficialMrsRuleSpec("niconico_domain", "Niconico")),
         detectionRules = listOf("RULE-SET,niconico_domain,Niconico"),
     ),
@@ -806,10 +738,7 @@ enum class OverridePresetItem(
         isService = true,
         icon = officialMrsAppIconUrl("steam.png"),
         groupName = "Steam",
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("steam_domain", "steam", OfficialMrsRuleBehavior.Domain)
-            ),
+        providers = listOf(OfficialMrsProviderSpec("steam_domain", "steam", OfficialMrsRuleBehavior.Domain)),
         rules = listOf(OfficialMrsRuleSpec("steam_domain", "Steam")),
         detectionRules = listOf("RULE-SET,steam_domain,Steam"),
     ),
@@ -818,11 +747,10 @@ enum class OverridePresetItem(
         title = "中国大陆直连",
         summary = "启用 cn 域名和 IP 规则并走 DIRECT。",
         icon = officialMrsCatalogIconUrl("China"),
-        providers =
-            listOf(
-                OfficialMrsProviderSpec("cn_domain", "cn", OfficialMrsRuleBehavior.Domain),
-                OfficialMrsProviderSpec("cn_ip", "cn", OfficialMrsRuleBehavior.IpCidr),
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec("cn_domain", "cn", OfficialMrsRuleBehavior.Domain),
+            OfficialMrsProviderSpec("cn_ip", "cn", OfficialMrsRuleBehavior.IpCidr),
+        ),
         detectionRules = listOf("RULE-SET,cn_domain,DIRECT", "RULE-SET,cn_ip,DIRECT,no-resolve"),
     ),
     GeolocationNotCn(
@@ -830,14 +758,13 @@ enum class OverridePresetItem(
         title = "境外地理规则",
         summary = "启用 geolocation-!cn 并走 Proxy。",
         icon = officialMrsCatalogIconUrl("Global"),
-        providers =
-            listOf(
-                OfficialMrsProviderSpec(
-                    "geolocation_not_cn_domain",
-                    "geolocation-!cn",
-                    OfficialMrsRuleBehavior.Domain,
-                )
-            ),
+        providers = listOf(
+            OfficialMrsProviderSpec(
+                "geolocation_not_cn_domain",
+                "geolocation-!cn",
+                OfficialMrsRuleBehavior.Domain,
+            )
+        ),
         detectionRules = listOf("RULE-SET,geolocation_not_cn_domain,Proxy"),
     ),
     Match(
@@ -877,86 +804,80 @@ private val orderedServiceItems = orderedItems.filter(OverridePresetItem::isServ
 private val orderedBaseItems = orderedItems.filterNot(OverridePresetItem::isService)
 private val itemById = orderedItems.associateBy(OverridePresetItem::id)
 private val regionById = orderedRegions.associateBy(OverridePresetRegion::specId)
-private val templateProviderIds =
-    orderedItems.flatMap { it.providers }.map(OfficialMrsProviderSpec::id).toSet()
-private val serviceGroupNames =
-    orderedServiceItems.mapNotNull(OverridePresetItem::groupName).toSet()
-private val regionGroupNames =
-    orderedRegions.flatMap { region -> listOf(region.groupName, region.fallbackGroupName) }.toSet()
-private val defaultEnabledItemIds =
-    linkedSetOf(
-        "proxy",
-        "ads",
-        "google",
-        "telegram",
-        "github",
-        "microsoft",
-        "bing",
-        "apple",
-        "youtube",
-        "netflix",
-        "spotify",
-        "openai",
-        "anthropic",
-        "steam",
-        "cn",
-        "geolocation_not_cn",
-        "match",
-    )
-private val ruleOrder =
-    listOf(
-        "ads",
-        "google",
-        "telegram",
-        "whatsapp",
-        "line",
-        "twitter",
-        "tiktok",
-        "speedtest",
-        "github",
-        "discord",
-        "reddit",
-        "facebook",
-        "instagram",
-        "threads",
-        "microsoft",
-        "bing",
-        "apple",
-        "youtube",
-        "netflix",
-        "disney",
-        "hbo",
-        "primevideo",
-        "tvb",
-        "mytvsuper",
-        "dazn",
-        "spotify",
-        "amazon",
-        "paypal",
-        "cloudflare",
-        "zoom",
-        "wikimedia",
-        "bilibili",
-        "biliintl",
-        "bahamut",
-        "dmm",
-        "abema",
-        "ehentai",
-        "openai",
-        "anthropic",
-        "onedrive",
-        "pixiv",
-        "niconico",
-        "steam",
-        "cn",
-        "proxy",
-        "geolocation_not_cn",
-        "match",
-    )
+private val templateProviderIds = orderedItems.flatMap { it.providers }.map(OfficialMrsProviderSpec::id).toSet()
+private val serviceGroupNames = orderedServiceItems.mapNotNull(OverridePresetItem::groupName).toSet()
+private val regionGroupNames = orderedRegions.flatMap { region -> listOf(region.groupName, region.fallbackGroupName) }.toSet()
+private val defaultEnabledItemIds = linkedSetOf(
+    "proxy",
+    "ads",
+    "google",
+    "telegram",
+    "github",
+    "microsoft",
+    "bing",
+    "apple",
+    "youtube",
+    "netflix",
+    "spotify",
+    "openai",
+    "anthropic",
+    "steam",
+    "cn",
+    "geolocation_not_cn",
+    "match",
+)
+private val ruleOrder = listOf(
+    "ads",
+    "google",
+    "telegram",
+    "whatsapp",
+    "line",
+    "twitter",
+    "tiktok",
+    "speedtest",
+    "github",
+    "discord",
+    "reddit",
+    "facebook",
+    "instagram",
+    "threads",
+    "microsoft",
+    "bing",
+    "apple",
+    "youtube",
+    "netflix",
+    "disney",
+    "hbo",
+    "primevideo",
+    "tvb",
+    "mytvsuper",
+    "dazn",
+    "spotify",
+    "amazon",
+    "paypal",
+    "cloudflare",
+    "zoom",
+    "wikimedia",
+    "bilibili",
+    "biliintl",
+    "bahamut",
+    "dmm",
+    "abema",
+    "ehentai",
+    "openai",
+    "anthropic",
+    "onedrive",
+    "pixiv",
+    "niconico",
+    "steam",
+    "cn",
+    "proxy",
+    "geolocation_not_cn",
+    "match",
+)
 private val templateRules = orderedItems.flatMap(OverridePresetItem::detectionRules).toSet()
 
-fun defaultEnabledPresetItems(): Set<OverridePresetItem> =
-    defaultEnabledItemIds.mapNotNull(itemById::get).toCollection(linkedSetOf())
+fun defaultEnabledPresetItems(): Set<OverridePresetItem> = defaultEnabledItemIds.mapNotNull(itemById::get).toCollection(linkedSetOf())
 
 fun orderedPresetRegions(): List<OverridePresetRegion> = orderedRegions
 
@@ -964,12 +885,11 @@ fun orderedBasePresetItems(): List<OverridePresetItem> = orderedBaseItems
 
 fun orderedServicePresetItems(): List<OverridePresetItem> = orderedServiceItems
 
-fun presetGroupTypeIconUrl(type: String): String? =
-    when (type) {
-        "urltest" -> officialMrsCatalogIconUrl("Urltest")
-        "fallback" -> officialMrsCatalogIconUrl("Available")
-        else -> null
-    }
+fun presetGroupTypeIconUrl(type: String): String? = when (type) {
+    "urltest" -> officialMrsCatalogIconUrl("Urltest")
+    "fallback" -> officialMrsCatalogIconUrl("Available")
+    else -> null
+}
 
 fun sortPresetRegions(regions: Collection<OverridePresetRegion>): List<OverridePresetRegion> {
     val selectedIds = regions.map(OverridePresetRegion::specId).toSet()
@@ -981,12 +901,11 @@ fun sortPresetItems(items: Collection<OverridePresetItem>): List<OverridePresetI
     return orderedItems.filter { it.id in selectedIds }
 }
 
-fun defaultOverridePresetTemplateSelection(): OverridePresetTemplateSelection =
-    OverridePresetTemplateSelection(
-        enabledItems = defaultEnabledPresetItems(),
-        enableUrlTestGroup = true,
-        enableFallbackGroup = false,
-    )
+fun defaultOverridePresetTemplateSelection(): OverridePresetTemplateSelection = OverridePresetTemplateSelection(
+    enabledItems = defaultEnabledPresetItems(),
+    enableUrlTestGroup = true,
+    enableFallbackGroup = false,
+)
 
 fun analyzePresetTemplateContent(content: String?): OverridePresetTemplateContentAnalysis {
     if (content.isNullOrBlank()) {
@@ -996,31 +915,27 @@ fun analyzePresetTemplateContent(content: String?): OverridePresetTemplateConten
         )
     }
 
-    val document =
-        runCatching { YamlCodec.loadValue(content).asStringKeyedMap() }
-            .getOrElse {
-                return OverridePresetTemplateContentAnalysis(
-                    selection = defaultOverridePresetTemplateSelection(),
-                    matchesTemplateExactly = false,
-                )
-            }
-            ?: return OverridePresetTemplateContentAnalysis(
-                selection = defaultOverridePresetTemplateSelection(),
-                matchesTemplateExactly = false,
-            )
+    val document = runCatching { YamlCodec.loadValue(content).asStringKeyedMap() }
+    .getOrElse {
+        return OverridePresetTemplateContentAnalysis(
+            selection = defaultOverridePresetTemplateSelection(),
+            matchesTemplateExactly = false,
+        )
+    }
+    ?: return OverridePresetTemplateContentAnalysis(
+        selection = defaultOverridePresetTemplateSelection(),
+        matchesTemplateExactly = false,
+    )
 
-    val selection =
-        inferPresetTemplateSelection(document)
-            ?: return OverridePresetTemplateContentAnalysis(
-                selection = defaultOverridePresetTemplateSelection(),
-                matchesTemplateExactly = false,
-            )
+    val selection = inferPresetTemplateSelection(document)
+    ?: return OverridePresetTemplateContentAnalysis(
+        selection = defaultOverridePresetTemplateSelection(),
+        matchesTemplateExactly = false,
+    )
 
-    val generatedDocument =
-        runCatching {
-                buildPresetTemplateYaml(selection).let(YamlCodec::loadValue).asStringKeyedMap()
-            }
-            .getOrNull()
+    val generatedDocument = runCatching {
+        buildPresetTemplateYaml(selection).let(YamlCodec::loadValue).asStringKeyedMap()
+    }.getOrNull()
 
     return OverridePresetTemplateContentAnalysis(
         selection = selection,
@@ -1028,57 +943,40 @@ fun analyzePresetTemplateContent(content: String?): OverridePresetTemplateConten
     )
 }
 
-fun inferPresetTemplateSelection(content: String?): OverridePresetTemplateSelection =
-    analyzePresetTemplateContent(content).selection
+fun inferPresetTemplateSelection(content: String?): OverridePresetTemplateSelection = analyzePresetTemplateContent(content).selection
 
 private fun inferPresetTemplateSelection(
     document: Map<String, Any?>
 ): OverridePresetTemplateSelection? {
     val providerKeys = document.stringKeyedMap("rule-providers").keys
-    val groupNames =
-        document
-            .listOfMaps("proxy-groups")
-            .mapNotNull { group -> group["name"]?.toString()?.takeIf(String::isNotBlank) }
-            .toSet()
+    val groupNames = document.listOfMaps("proxy-groups").mapNotNull { group -> group["name"]?.toString()?.takeIf(String::isNotBlank) }.toSet()
     val rules = document.stringList("rules")
-
-    val hasTemplateSignals =
-        providerKeys.any(templateProviderIds::contains) ||
-            groupNames.any(serviceGroupNames::contains) ||
-            groupNames.any(regionGroupNames::contains) ||
-            rules.any(::isOfficialMrsTemplateRule)
+    val hasTemplateSignals = providerKeys.any(templateProviderIds::contains) || groupNames.any(serviceGroupNames::contains) ||
+        groupNames.any(regionGroupNames::contains) || rules.any(::isOfficialMrsTemplateRule)
 
     if (!hasTemplateSignals) {
         return null
     }
 
-    val inferredUrlTestRegions =
-        orderedRegions.filter { it.groupName in groupNames }.toCollection(linkedSetOf())
-    val inferredFallbackRegions =
-        orderedRegions.filter { it.fallbackGroupName in groupNames }.toCollection(linkedSetOf())
-    val inferredEnabledItems =
-        orderedItems
-            .filter { item ->
-                isOfficialMrsItemEnabledInConfig(
-                    item = item,
-                    providerKeys = providerKeys,
-                    groupNames = groupNames,
-                    rules = rules,
-                )
-            }
-            .toCollection(linkedSetOf())
-            .ifEmpty { defaultEnabledPresetItems() }
+    val inferredUrlTestRegions = orderedRegions.filter { it.groupName in groupNames }.toCollection(linkedSetOf())
+    val inferredFallbackRegions = orderedRegions.filter { it.fallbackGroupName in groupNames }.toCollection(linkedSetOf())
+    val inferredEnabledItems = orderedItems
+    .filter { item ->
+        isOfficialMrsItemEnabledInConfig(
+            item = item,
+            providerKeys = providerKeys,
+            groupNames = groupNames,
+            rules = rules,
+        )
+    }
+    .toCollection(linkedSetOf()).ifEmpty { defaultEnabledPresetItems() }
 
     return OverridePresetTemplateSelection(
         urlTestRegions = inferredUrlTestRegions,
         fallbackRegions = inferredFallbackRegions,
         enabledItems = inferredEnabledItems,
-        enableUrlTestGroup =
-            OFFICIAL_MRS_AUTO_GROUP_NAME in groupNames ||
-                orderedRegions.any { it.groupName in groupNames },
-        enableFallbackGroup =
-            OFFICIAL_MRS_FALLBACK_GROUP_NAME in groupNames ||
-                orderedRegions.any { it.fallbackGroupName in groupNames },
+        enableUrlTestGroup = OFFICIAL_MRS_AUTO_GROUP_NAME in groupNames || orderedRegions.any { it.groupName in groupNames },
+        enableFallbackGroup = OFFICIAL_MRS_FALLBACK_GROUP_NAME in groupNames || orderedRegions.any { it.fallbackGroupName in groupNames },
     )
 }
 
@@ -1086,67 +984,56 @@ fun buildPresetTemplateYaml(selection: OverridePresetTemplateSelection): String 
     val normalizedEnabledItems = normalizeEnabledItems(selection.enabledItems)
     val selectedUrlTestRegions = orderedRegions.filter { it in selection.urlTestRegions }
     val selectedFallbackRegions = orderedRegions.filter { it in selection.fallbackRegions }
-    val document =
-        linkedMapOf<String, Any?>(
-                "rule-providers" to buildRuleProviders(normalizedEnabledItems),
-                "proxy-groups" to
-                    buildProxyGroups(
-                        selectedUrlTestRegions = selectedUrlTestRegions,
-                        selectedFallbackRegions = selectedFallbackRegions,
-                        enabledItems = normalizedEnabledItems,
-                        enableUrlTestGroup = selection.enableUrlTestGroup,
-                        enableFallbackGroup = selection.enableFallbackGroup,
-                    ),
-                "rules" to buildRules(normalizedEnabledItems),
-            )
-            .filterValues { value ->
-                when (value) {
-                    is Collection<*> -> value.isNotEmpty()
-                    is Map<*, *> -> value.isNotEmpty()
-                    else -> value != null
-                }
-            }
+    val document = linkedMapOf<String, Any?>(
+        "rule-providers" to buildRuleProviders(normalizedEnabledItems),
+        "proxy-groups" to buildProxyGroups(
+            selectedUrlTestRegions = selectedUrlTestRegions,
+            selectedFallbackRegions = selectedFallbackRegions,
+            enabledItems = normalizedEnabledItems,
+            enableUrlTestGroup = selection.enableUrlTestGroup,
+            enableFallbackGroup = selection.enableFallbackGroup,
+        ),
+        "rules" to buildRules(normalizedEnabledItems),
+    )
+    .filterValues { value ->
+        when (value) {
+            is Collection<*> -> value.isNotEmpty()
+            is Map<*, *> -> value.isNotEmpty()
+            else -> value != null
+        }
+    }
 
     val yamlContent = YamlCodec.dumpMap(document)
     runCatching {
-            YamlCodec.validate(yamlContent)
-            YamlCodec.loadMap(yamlContent)
-        }
-        .getOrElse { error ->
-            throw IllegalStateException(
-                "Custom routing YAML self-check failed: ${error.message}",
-                error,
-            )
-        }
+        YamlCodec.validate(yamlContent)
+        YamlCodec.loadMap(yamlContent)
+    }
+    .getOrElse { error ->
+        throw IllegalStateException(
+            "Custom routing YAML self-check failed: ${error.message}",
+            error,
+        )
+    }
     return yamlContent
 }
 
-private fun normalizeEnabledItems(items: Set<OverridePresetItem>): Set<OverridePresetItem> =
-    items.ifEmpty {
-        linkedSetOf(OverridePresetItem.Match)
-    }
+private fun normalizeEnabledItems(items: Set<OverridePresetItem>): Set<OverridePresetItem> = items.ifEmpty { linkedSetOf(OverridePresetItem.Match) }
 
-private fun buildRuleProviders(
-    enabledItems: Set<OverridePresetItem>
-): Map<String, Map<String, Any?>> =
-    linkedMapOf<String, Map<String, Any?>>().apply {
-        orderedItems
-            .filter { item -> item in enabledItems && item != OverridePresetItem.Match }
-            .flatMap(OverridePresetItem::providers)
-            .forEach { provider ->
-                put(
-                    provider.id,
-                    linkedMapOf(
-                        "type" to "http",
-                        "format" to "mrs",
-                        "behavior" to provider.behavior.wireName,
-                        "url" to provider.urlTemplate().format(provider.remoteName),
-                        "path" to "./providers/rules/${provider.id}.mrs",
-                        "interval" to OFFICIAL_MRS_RULE_PROVIDER_INTERVAL,
-                    ),
-                )
-            }
+private fun buildRuleProviders(enabledItems: Set<OverridePresetItem>): Map<String, Map<String, Any?>> = linkedMapOf<String, Map<String, Any?>>().apply {
+    orderedItems.filter { item -> item in enabledItems && item != OverridePresetItem.Match }.flatMap(OverridePresetItem::providers).forEach { provider ->
+        put(
+            provider.id,
+            linkedMapOf(
+                "type" to "http",
+                "format" to "mrs",
+                "behavior" to provider.behavior.wireName,
+                "url" to provider.urlTemplate().format(provider.remoteName),
+                "path" to "./providers/rules/${provider.id}.mrs",
+                "interval" to OFFICIAL_MRS_RULE_PROVIDER_INTERVAL,
+            ),
+        )
     }
+}
 
 private fun buildProxyGroups(
     selectedUrlTestRegions: List<OverridePresetRegion>,
@@ -1249,42 +1136,39 @@ private fun buildHealthCheckGroup(
     type: OfficialMrsHealthCheckGroupType,
     filter: String? = null,
     excludeFilter: String? = null,
-    icon: String =
-        when (type) {
-            OfficialMrsHealthCheckGroupType.UrlTest ->
-                officialMrsCatalogIconUrl("Urltest").orEmpty()
-            OfficialMrsHealthCheckGroupType.Fallback ->
-                officialMrsCatalogIconUrl("Available").orEmpty()
-        },
-): Map<String, Any?> =
-    linkedMapOf<String, Any?>().apply {
-        put("name", name)
-        put("type", type.wireName)
-        put("icon", icon)
-        put("url", OFFICIAL_MRS_URL_TEST_URL)
-        put("interval", OFFICIAL_MRS_URL_TEST_INTERVAL)
-        put("include-all", true)
-        put("exclude-filter", combineOfficialMrsExcludeFilters(excludeFilter))
-        filter?.let { put("filter", it) }
-    }
+    icon: String = when (type) {
+        OfficialMrsHealthCheckGroupType.UrlTest ->
+            officialMrsCatalogIconUrl("Urltest").orEmpty()
+        OfficialMrsHealthCheckGroupType.Fallback ->
+            officialMrsCatalogIconUrl("Available").orEmpty()
+    },
+): Map<String, Any?> = linkedMapOf<String, Any?>().apply {
+    put("name", name)
+    put("type", type.wireName)
+    put("icon", icon)
+    put("url", OFFICIAL_MRS_URL_TEST_URL)
+    put("interval", OFFICIAL_MRS_URL_TEST_INTERVAL)
+    put("include-all", true)
+    put("exclude-filter", combineOfficialMrsExcludeFilters(excludeFilter))
+    filter?.let { put("filter", it) }
+}
 
 private fun buildProxySelectGroup(
     regionNames: List<String>,
     enableUrlTestGroup: Boolean,
     enableFallbackGroup: Boolean,
-): Map<String, Any?> =
-    linkedMapOf(
-        "name" to "Proxy",
-        "type" to "select",
-        "icon" to OverridePresetItem.Proxy.icon.orEmpty(),
-        "proxies" to
-            buildSelectableGroupNames(
-                regionNames = regionNames,
-                enableUrlTestGroup = enableUrlTestGroup,
-                enableFallbackGroup = enableFallbackGroup,
-            ),
-        "include-all" to true,
-    )
+): Map<String, Any?> = linkedMapOf(
+    "name" to "Proxy",
+    "type" to "select",
+    "icon" to OverridePresetItem.Proxy.icon.orEmpty(),
+    "proxies" to
+        buildSelectableGroupNames(
+            regionNames = regionNames,
+            enableUrlTestGroup = enableUrlTestGroup,
+            enableFallbackGroup = enableFallbackGroup,
+        ),
+    "include-all" to true,
+)
 
 private fun buildServiceSelectGroup(
     item: OverridePresetItem,
@@ -1319,26 +1203,22 @@ private fun buildSelectableGroupNames(
     regionNames: List<String>,
     enableUrlTestGroup: Boolean,
     enableFallbackGroup: Boolean,
-): List<String> =
-    buildList {
-            if (enableUrlTestGroup) {
-                add(OFFICIAL_MRS_AUTO_GROUP_NAME)
-            }
-            if (enableFallbackGroup) {
-                add(OFFICIAL_MRS_FALLBACK_GROUP_NAME)
-            }
-            addAll(regionNames)
-        }
-        .distinct()
-
-private fun combineOfficialMrsExcludeFilters(extraExcludeFilter: String?): String =
-    listOf(OFFICIAL_MRS_EXCLUDE_FILTER, extraExcludeFilter).filterNotNull().joinToString("|")
-
-private fun OfficialMrsProviderSpec.urlTemplate(): String =
-    when (behavior) {
-        OfficialMrsRuleBehavior.Domain -> OFFICIAL_MRS_GEOSITE_URL
-        OfficialMrsRuleBehavior.IpCidr -> OFFICIAL_MRS_GEOIP_URL
+): List<String> = buildList {
+    if (enableUrlTestGroup) {
+        add(OFFICIAL_MRS_AUTO_GROUP_NAME)
     }
+    if (enableFallbackGroup) {
+        add(OFFICIAL_MRS_FALLBACK_GROUP_NAME)
+    }
+    addAll(regionNames)
+}.distinct()
+
+private fun combineOfficialMrsExcludeFilters(extraExcludeFilter: String?): String = listOf(OFFICIAL_MRS_EXCLUDE_FILTER, extraExcludeFilter).filterNotNull().joinToString("|")
+
+private fun OfficialMrsProviderSpec.urlTemplate(): String = when (behavior) {
+    OfficialMrsRuleBehavior.Domain -> OFFICIAL_MRS_GEOSITE_URL
+    OfficialMrsRuleBehavior.IpCidr -> OFFICIAL_MRS_GEOIP_URL
+}
 
 private fun isOfficialMrsItemEnabledInConfig(
     item: OverridePresetItem,
@@ -1362,34 +1242,26 @@ private fun isOfficialMrsTemplateRule(rule: String): Boolean {
         templateProviderIds.any { providerId -> normalizedRule.contains(providerId) }
 }
 
-private fun Map<String, Any?>.stringKeyedMap(key: String): Map<String, Any?> =
-    (this[key] as? Map<*, *>)
-        ?.entries
-        ?.associate { entry -> entry.key.toString() to entry.value }
-        .orEmpty()
+private fun Map<String, Any?>.stringKeyedMap(key: String): Map<String, Any?> = (this[key] as? Map<*, *>)
+    ?.entries ?.associate { entry -> entry.key.toString() to entry.value }.orEmpty()
 
-private fun Map<String, Any?>.listOfMaps(key: String): List<Map<String, Any?>> =
-    (this[key] as? List<*>)
-        ?.mapNotNull { element ->
-            (element as? Map<*, *>)?.entries?.associate { entry ->
-                entry.key.toString() to entry.value
-            }
+private fun Map<String, Any?>.listOfMaps(key: String): List<Map<String, Any?>> = (this[key] as? List<*>)
+    ?.mapNotNull { element ->
+        (element as? Map<*, *>)?.entries?.associate { entry ->
+            entry.key.toString() to entry.value
         }
-        .orEmpty()
+    }.orEmpty()
 
-private fun Map<String, Any?>.stringList(key: String): List<String> =
-    (this[key] as? List<*>)
-        ?.mapNotNull { value ->
-            when (value) {
-                null -> null
-                is String -> value
-                else -> value.toString()
-            }
+private fun Map<String, Any?>.stringList(key: String): List<String> = (this[key] as? List<*>)
+    ?.mapNotNull { value ->
+        when (value) {
+            null -> null
+            is String -> value
+            else -> value.toString()
         }
-        .orEmpty()
+    }.orEmpty()
 
-private fun Any?.asStringKeyedMap(): Map<String, Any?>? =
-    (this as? Map<*, *>)?.entries?.associate { entry -> entry.key.toString() to entry.value }
+private fun Any?.asStringKeyedMap(): Map<String, Any?>? = (this as? Map<*, *>)?.entries?.associate { entry -> entry.key.toString() to entry.value }
 
 private fun officialMrsCatalogIconUrl(iconName: String?): String? {
     val normalizedIconName = iconName?.trim()?.takeIf(String::isNotBlank) ?: return null
@@ -1401,5 +1273,4 @@ private fun officialMrsAppIconUrl(iconName: String?): String? {
     return "$OFFICIAL_MRS_ICON_APP_BASE_URL/${encodePathSegment(normalizedIconName)}"
 }
 
-private fun encodePathSegment(value: String): String =
-    URLEncoder.encode(value, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+private fun encodePathSegment(value: String): String = URLEncoder.encode(value, StandardCharsets.UTF_8.toString()).replace("+", "%20")

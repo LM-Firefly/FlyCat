@@ -53,16 +53,22 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.lmfirefly.flycat.core.model.AppBackgroundStyle
 import com.github.lmfirefly.flycat.core.model.AppLanguage
+import com.github.lmfirefly.flycat.core.model.NotificationLineContent
 import com.github.lmfirefly.flycat.core.model.ThemeMode
 import com.github.lmfirefly.flycat.core.model.UpdateSource
 import com.github.lmfirefly.flycat.feature.settings.presentation.screen.component.ThemeColorPickerItem
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.AppSettingsViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppFormDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppTextFieldDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.WarningBottomSheet
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
@@ -87,8 +93,6 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -96,7 +100,7 @@ fun AppSettingsScreen(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
     val viewModel = koinViewModel<AppSettingsViewModel>()
 
-    Scaffold(
+    GlassScaffold(
         topBar = { TopBar(title = FlyTxt.AppSettings.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(navigator = navigator) }) }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
@@ -144,44 +148,38 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
     val themeSeedColorArgb by viewModel.themeSeedColorArgb.state.collectAsStateWithLifecycle()
     val invertOnPrimaryColors by viewModel.invertOnPrimaryColors.state.collectAsStateWithLifecycle()
     val bottomBarAutoHide by viewModel.bottomBarAutoHide.state.collectAsStateWithLifecycle()
-    val topBarBlurEnabled by viewModel.topBarBlurEnabled.state.collectAsStateWithLifecycle()
+    val appBackgroundStyle by viewModel.appBackgroundStyle.state.collectAsStateWithLifecycle()
+    val appBackgroundWallpaperBlur by viewModel.appBackgroundWallpaperBlur.state.collectAsStateWithLifecycle()
     val pageScale by viewModel.pageScale.state.collectAsStateWithLifecycle()
     val classicHomeEnabled by viewModel.classicHomeEnabled.state.collectAsStateWithLifecycle()
     val homeHitokotoEnabled by viewModel.homeHitokotoEnabled.state.collectAsStateWithLifecycle()
     val homeQuote by viewModel.moeHomeQuote.state.collectAsStateWithLifecycle()
     val homeQuoteAuthor by viewModel.moeHomeQuoteAuthor.state.collectAsStateWithLifecycle()
-    val homeQuoteSummary =
-        remember(homeQuote) { homeQuote.ifBlank { FlyTxt.AppSettings.Interface.HomeQuoteDefault } }
-    val homeQuoteAuthorSummary =
-        remember(homeQuoteAuthor) {
-            homeQuoteAuthor.ifBlank { FlyTxt.AppSettings.Interface.HomeQuoteAuthorDefault }
-        }
-
+    val homeQuoteSummary = remember(homeQuote) { homeQuote.ifBlank { FlyTxt.AppSettings.Interface.HomeQuoteDefault } }
+    val homeQuoteAuthorSummary = remember(homeQuoteAuthor) { homeQuoteAuthor.ifBlank { FlyTxt.AppSettings.Interface.HomeQuoteAuthorDefault } }
     val navigator = LocalNavigator.current
     val wallpaperZoom by viewModel.moeWallpaperZoom.state.collectAsStateWithLifecycle()
     val wallpaperBiasX by viewModel.moeWallpaperBiasX.state.collectAsStateWithLifecycle()
     val wallpaperBiasY by viewModel.moeWallpaperBiasY.state.collectAsStateWithLifecycle()
     var showUrlInputDialog by remember { mutableStateOf(false) }
     var urlInput by remember { mutableStateOf("") }
-
-    val wallpaperPickerLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-            uri ?: return@rememberLauncherForActivityResult
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                )
-            }
-            navigator.push(
-                Route.MoeWallpaperCrop(
-                    wallpaperUri = uri.toString(),
-                    initialZoom = wallpaperZoom,
-                    initialBiasX = wallpaperBiasX,
-                    initialBiasY = wallpaperBiasY,
-                )
+    val wallpaperPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        runCatching {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION,
             )
         }
+        navigator.push(
+            Route.MoeWallpaperCrop(
+                wallpaperUri = uri.toString(),
+                initialZoom = wallpaperZoom,
+                initialBiasX = wallpaperBiasX,
+                initialBiasY = wallpaperBiasY,
+            )
+        )
+    }
 
     Title(FlyTxt.AppSettings.Interface.ColorThemeTitle)
     Card {
@@ -189,12 +187,11 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
             title = FlyTxt.AppSettings.Interface.ThemeModeTitle,
             summary = FlyTxt.AppSettings.Interface.ThemeModeSummary,
             currentValue = themeMode,
-            items =
-                listOf(
-                    FlyTxt.AppSettings.Interface.ThemeModeSystem,
-                    FlyTxt.AppSettings.Interface.ThemeModeLight,
-                    FlyTxt.AppSettings.Interface.ThemeModeDark,
-                ),
+            items = listOf(
+                FlyTxt.AppSettings.Interface.ThemeModeSystem,
+                FlyTxt.AppSettings.Interface.ThemeModeLight,
+                FlyTxt.AppSettings.Interface.ThemeModeDark,
+            ),
             values = ThemeMode.entries,
             onValueChange = viewModel::onThemeModeChange,
         )
@@ -215,29 +212,57 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
             title = FlyTxt.AppSettings.Interface.LanguageTitle,
             summary = FlyTxt.AppSettings.Interface.LanguageSummary,
             currentValue = appLanguage,
-            items =
-                listOf(
-                    FlyTxt.AppSettings.Interface.LanguageSystem,
-                    FlyTxt.AppSettings.Interface.LanguageChinese,
-                    FlyTxt.AppSettings.Interface.LanguageChineseTraditional,
-                    FlyTxt.AppSettings.Interface.LanguageEnglish,
-                    FlyTxt.AppSettings.Interface.LanguageJapanese,
-                    FlyTxt.AppSettings.Interface.LanguageRussian,
-                ),
+            items = listOf(
+                FlyTxt.AppSettings.Interface.LanguageSystem,
+                FlyTxt.AppSettings.Interface.LanguageChinese,
+                FlyTxt.AppSettings.Interface.LanguageChineseTraditional,
+                FlyTxt.AppSettings.Interface.LanguageEnglish,
+                FlyTxt.AppSettings.Interface.LanguageJapanese,
+                FlyTxt.AppSettings.Interface.LanguageRussian,
+            ),
             values = AppLanguage.entries,
             onValueChange = viewModel::onAppLanguageChange,
         )
+        PreferenceEnumItem(
+            title = FlyTxt.AppSettings.Interface.AppBackgroundTitle,
+            summary = FlyTxt.AppSettings.Interface.AppBackgroundSummary,
+            currentValue = appBackgroundStyle,
+            items = listOf(
+                FlyTxt.AppSettings.Interface.AppBackgroundOff,
+                FlyTxt.AppSettings.Interface.AppBackgroundDynamic,
+                FlyTxt.AppSettings.Interface.AppBackgroundWallpaper,
+            ),
+            values = AppBackgroundStyle.entries,
+            onValueChange = viewModel::onAppBackgroundStyleChange,
+        )
+        AnimatedVisibility(visible = appBackgroundStyle == AppBackgroundStyle.Wallpaper) {
+            Column {
+                GlassDropdownPreference(
+                    title = FlyTxt.AppSettings.Interface.HomeWallpaperSourceTitle,
+                    summary = FlyTxt.AppSettings.Interface.HomeWallpaperSourceSummary,
+                    options = listOf(
+                        GlassDropdownOption(value = 0, label = FlyTxt.AppSettings.Interface.HomeWallpaperSourceGallery),
+                        GlassDropdownOption(value = 1, label = FlyTxt.AppSettings.Interface.HomeWallpaperSourceUrl),
+                    ),
+                    selected = null,
+                    onSelected = { index ->
+                        when (index) {
+                            0 -> wallpaperPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            1 -> showUrlInputDialog = true
+                        }
+                    },
+                )
+                WallpaperBlurPreferenceItem(
+                    blur = appBackgroundWallpaperBlur,
+                    onApply = viewModel::onAppBackgroundWallpaperBlurChange,
+                )
+            }
+        }
         PreferenceSwitchItem(
             title = FlyTxt.AppSettings.Interface.AutoHideNavbarTitle,
             summary = FlyTxt.AppSettings.Interface.AutoHideNavbarSummary,
             checked = bottomBarAutoHide,
             onCheckedChange = viewModel::onBottomBarAutoHideChange,
-        )
-        PreferenceSwitchItem(
-            title = FlyTxt.AppSettings.Interface.TopBarBlurTitle,
-            summary = FlyTxt.AppSettings.Interface.TopBarBlurSummary,
-            checked = topBarBlurEnabled,
-            onCheckedChange = viewModel::onTopBarBlurEnabledChange,
         )
         PageScalePreferenceItem(pageScale = pageScale, onApply = viewModel::onPageScaleChange)
     }
@@ -273,23 +298,6 @@ private fun AppInterfaceSettingsSection(viewModel: AppSettingsViewModel) {
                     onConfirm = viewModel::onMoeHomeQuoteAuthorChange,
                 )
             }
-        }
-        AnimatedVisibility(visible = !classicHomeEnabled) {
-            WindowDropdownPreference(
-                title = FlyTxt.AppSettings.Interface.HomeWallpaperSourceTitle,
-                summary = FlyTxt.AppSettings.Interface.HomeWallpaperSourceSummary,
-                items = listOf(
-                    FlyTxt.AppSettings.Interface.HomeWallpaperSourceGallery,
-                    FlyTxt.AppSettings.Interface.HomeWallpaperSourceUrl,
-                ),
-                selectedIndex = -1,
-                onSelectedIndexChange = { index ->
-                    when (index) {
-                        0 -> wallpaperPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        1 -> showUrlInputDialog = true
-                    }
-                },
-            )
         }
     }
 
@@ -367,6 +375,31 @@ private fun PredictiveBackProgressPreferenceItem(
 }
 
 @Composable
+private fun WallpaperBlurPreferenceItem(blur: Float, onApply: (Float) -> Unit) {
+    var localBlur by remember(blur) { mutableFloatStateOf(blur) }
+    PreferenceArrowItem(
+        title = FlyTxt.AppSettings.Interface.WallpaperBlurTitle,
+        endActions = {
+            Text(
+                text = "${localBlur.toInt()}",
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+            )
+        },
+        onClick = {},
+        bottomAction = {
+            Slider(
+                value = localBlur,
+                onValueChange = { localBlur = it },
+                onValueChangeFinished = { onApply(localBlur) },
+                valueRange = 0f..25f,
+                magnetThreshold = 0.01f,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+            )
+        },
+    )
+}
+
+@Composable
 private fun AppPrivacySettingsSection(viewModel: AppSettingsViewModel) {
     val context = LocalContext.current
     val excludeFromRecents by viewModel.excludeFromRecents.state.collectAsStateWithLifecycle()
@@ -400,25 +433,22 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel, navigator
         mutableStateOf(isBatteryOptimizationIgnored(context))
     }
     val scope = rememberCoroutineScope()
-    // Launch via activity-result so the summary refreshes as soon as the system grant dialog
-    // returns - HyperOS shows it as a dialog-style activity where ON_RESUME timing is unreliable.
-    val batteryOptimizationLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+    // 通过 activity-result 启动，这样摘要会在系统授权对话框返回后立即刷新——HyperOS 将其显示为对话框样式的 activity，ON_RESUME 的时序不可靠。
+    val batteryOptimizationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        batteryOptimizationIgnored = isBatteryOptimizationIgnored(context)
+        scope.launch {
+            // PowerManager 白名单状态可能稍微滞后于对话框的结果。
+            delay(500)
             batteryOptimizationIgnored = isBatteryOptimizationIgnored(context)
-            scope.launch {
-                // The PowerManager whitelist state can lag slightly behind the dialog result.
-                delay(500)
-                batteryOptimizationIgnored = isBatteryOptimizationIgnored(context)
-            }
         }
-    val batteryOptimizationSummary =
-        remember(batteryOptimizationIgnored) {
-            if (batteryOptimizationIgnored) {
-                FlyTxt.AppSettings.ServiceSection.BatteryOptimizationSummaryEnabled
-            } else {
-                FlyTxt.AppSettings.ServiceSection.BatteryOptimizationSummaryDisabled
-            }
+    }
+    val batteryOptimizationSummary = remember(batteryOptimizationIgnored) {
+        if (batteryOptimizationIgnored) {
+            FlyTxt.AppSettings.ServiceSection.BatteryOptimizationSummaryEnabled
+        } else {
+            FlyTxt.AppSettings.ServiceSection.BatteryOptimizationSummaryDisabled
         }
+    }
 
     DisposableEffect(lifecycleOwner, context) {
         val observer = LifecycleEventObserver { _, event ->
@@ -468,14 +498,19 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel, navigator
             title = FlyTxt.AppSettings.ServiceSection.BatteryOptimizationTitle,
             summary = batteryOptimizationSummary,
             onClick = {
-                val launched =
-                    batteryOptimizationIntents(context, batteryOptimizationIgnored).any { intent ->
-                        runCatching { batteryOptimizationLauncher.launch(intent) }.isSuccess
-                    }
+                val launched = batteryOptimizationIntents(context, batteryOptimizationIgnored).any { intent ->
+                    runCatching { batteryOptimizationLauncher.launch(intent) }.isSuccess
+                }
                 if (!launched) {
                     context.toast(FlyTxt.Util.Error.UnknownError)
                 }
             },
+        )
+        // 通知内容作为服务子项：进入二级页设置（含实时预览）。
+        PreferenceArrowItem(
+            title = FlyTxt.AppSettings.Notification.ContentSection,
+            summary = FlyTxt.AppSettings.Notification.ContentSummary,
+            onClick = { navigator.push(Route.NotificationSettings) },
         )
     }
 }
@@ -543,11 +578,10 @@ private fun HideAppIconPreferenceItem(
     WarningBottomSheet(
         show = showHideIconDialogState,
         title = FlyTxt.AppSettings.WarningDialog.Title,
-        messages =
-            listOf(
-                FlyTxt.AppSettings.WarningDialog.HideIconMsg1,
-                FlyTxt.AppSettings.WarningDialog.HideIconMsg2,
-            ),
+        messages = listOf(
+            FlyTxt.AppSettings.WarningDialog.HideIconMsg1,
+            FlyTxt.AppSettings.WarningDialog.HideIconMsg2,
+        ),
         onConfirm = {
             onHideAppIconChange(true)
             AppIconUtils.toggleIcon(context, true)
@@ -565,18 +599,13 @@ private fun MoeQuotePreferenceItem(
 ) {
     val showEditDialog = remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
-    var localTextFieldValue by remember {
-        mutableStateOf(
-            TextFieldValue(text = currentValue, selection = TextRange(currentValue.length))
-        )
-    }
+    var localTextFieldValue by remember { mutableStateOf(TextFieldValue(text = currentValue, selection = TextRange(currentValue.length))) }
 
     PreferenceValueItem(
         title = title,
         summary = summary,
         onClick = {
-            localTextFieldValue =
-                TextFieldValue(text = currentValue, selection = TextRange(currentValue.length))
+            localTextFieldValue = TextFieldValue(text = currentValue, selection = TextRange(currentValue.length))
             showEditDialog.value = true
         },
     )
@@ -598,14 +627,13 @@ private fun MoeQuotePreferenceItem(
             showEditDialog.value = false
         },
         singleLine = true,
-        keyboardActions =
-            KeyboardActions(
-                onDone = {
-                    onConfirm(localTextFieldValue.text)
-                    focusManager.clearFocus()
-                    showEditDialog.value = false
-                }
-            ),
+        keyboardActions = KeyboardActions(
+            onDone = {
+                onConfirm(localTextFieldValue.text)
+                focusManager.clearFocus()
+                showEditDialog.value = false
+            }
+        ),
     )
 }
 
@@ -625,15 +653,13 @@ internal fun batteryOptimizationIntents(
             }
         )
     } else {
-        // Already whitelisted: open this app's own power policy page instead of the global
-        // "battery usage of all apps" list. MIUI/HyperOS per-app power keeper page first...
+        // 已在白名单中：请打开本应用自身的功耗策略页面，而非全局"所有应用的电量使用情况"列表。优先打开MIUI/HyperOS的单应用省电管理页面...
         add(
             Intent().apply {
-                component =
-                    ComponentName(
-                        "com.miui.powerkeeper",
-                        "com.miui.powerkeeper.ui.HiddenAppsConfigActivity",
-                    )
+                component = ComponentName(
+                    "com.miui.powerkeeper",
+                    "com.miui.powerkeeper.ui.HiddenAppsConfigActivity",
+                )
                 putExtra("package_name", context.packageName)
                 putExtra(
                     "package_label",
@@ -642,7 +668,7 @@ internal fun batteryOptimizationIntents(
             }
         )
     }
-    // ...then the public per-app details page as the fallback for both branches.
+    // ……然后将公共的应用详情页作为两个分支的回退方案。
     add(
         Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
             data = Uri.fromParts("package", context.packageName, null)
@@ -689,27 +715,16 @@ private fun PageScalePreferenceItem(pageScale: Float, onApply: (Float) -> Unit) 
 
 @Composable
 private fun CustomUserAgentPreferenceItem(customUserAgent: String, onConfirm: (String) -> Unit) {
-    val customUserAgentSummary =
-        remember(customUserAgent) {
-            customUserAgent.ifEmpty { FlyTxt.AppSettings.Network.CustomUserAgentSummaryDefault }
-        }
+    val customUserAgentSummary = remember(customUserAgent) { customUserAgent.ifEmpty { FlyTxt.AppSettings.Network.CustomUserAgentSummaryDefault } }
     val showEditCustomUserAgentDialog = remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
-    var localTextFieldValue by remember {
-        mutableStateOf(
-            TextFieldValue(text = customUserAgent, selection = TextRange(customUserAgent.length))
-        )
-    }
+    var localTextFieldValue by remember { mutableStateOf(TextFieldValue(text = customUserAgent, selection = TextRange(customUserAgent.length))) }
 
     PreferenceArrowItem(
         title = FlyTxt.AppSettings.Network.CustomUserAgentTitle,
         summary = customUserAgentSummary,
         onClick = {
-            localTextFieldValue =
-                TextFieldValue(
-                    text = customUserAgent,
-                    selection = TextRange(customUserAgent.length),
-                )
+            localTextFieldValue = TextFieldValue(text = customUserAgent, selection = TextRange(customUserAgent.length))
             showEditCustomUserAgentDialog.value = true
         },
         holdDownState = showEditCustomUserAgentDialog.value,
@@ -732,14 +747,13 @@ private fun CustomUserAgentPreferenceItem(customUserAgent: String, onConfirm: (S
             showEditCustomUserAgentDialog.value = false
         },
         singleLine = true,
-        keyboardActions =
-            KeyboardActions(
-                onDone = {
-                    onConfirm(localTextFieldValue.text)
-                    focusManager.clearFocus()
-                    showEditCustomUserAgentDialog.value = false
-                }
-            ),
+        keyboardActions = KeyboardActions(
+            onDone = {
+                onConfirm(localTextFieldValue.text)
+                focusManager.clearFocus()
+                showEditCustomUserAgentDialog.value = false
+            }
+        ),
     )
 }
 
@@ -751,17 +765,14 @@ private fun PageScaleDialog(
     onApply: (Float) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
-    var scaleText by
-        remember(show, pageScale) { mutableStateOf((pageScale * 100).toInt().toString()) }
+    var scaleText by remember(show, pageScale) { mutableStateOf((pageScale * 100).toInt().toString()) }
 
     AppTextFieldDialog(
         show = show,
         title = FlyTxt.AppSettings.Interface.PageScaleTitle,
         value = scaleText,
         onValueChange = { value ->
-            if (value.isEmpty() || value.all(Char::isDigit)) {
-                scaleText = value
-            }
+            if (value.isEmpty() || value.all(Char::isDigit)) { scaleText = value }
         },
         onDismissRequest = onDismissRequest,
         onConfirm = {
@@ -802,7 +813,7 @@ private fun RemoteWallpaperUrlDialog(
         },
         scrollable = false,
     ) {
-        TextField(
+        GlassTextField(
             value = url,
             onValueChange = { url = it },
             label = "https://example.com/image.jpg",

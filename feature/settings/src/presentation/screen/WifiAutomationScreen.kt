@@ -90,8 +90,9 @@ import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
+import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
+import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private enum class WifiPermissionAction { Enable, Scan }
@@ -121,53 +122,48 @@ fun WifiAutomationSettingsSection() {
         pendingAction = null
     }
 
-    fun hasSsidPermission(): Boolean =
-        when {
-            Build.VERSION.SDK_INT <= Build.VERSION_CODES.O -> true
-            Build.VERSION.SDK_INT <= Build.VERSION_CODES.P -> hasPermission(
-                context,
-                Manifest.permission.ACCESS_COARSE_LOCATION,
-            ) || hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+    fun hasSsidPermission(): Boolean = when {
+        Build.VERSION.SDK_INT <= Build.VERSION_CODES.O -> true
+        Build.VERSION.SDK_INT <= Build.VERSION_CODES.P -> hasPermission(
+            context,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+        ) || hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
 
-            else -> hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-        }
+        else -> hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+    }
 
-    fun systemLocationEnabled(): Boolean =
-        Build.VERSION.SDK_INT <= Build.VERSION_CODES.O ||
-            LocationManagerCompat.isLocationEnabled(
-                context.getSystemService(android.location.LocationManager::class.java)
-            )
+    fun systemLocationEnabled(): Boolean = Build.VERSION.SDK_INT <= Build.VERSION_CODES.O ||
+        LocationManagerCompat.isLocationEnabled(
+            context.getSystemService(android.location.LocationManager::class.java)
+        )
 
-    val locationSettingsLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (pendingAction != null && systemLocationEnabled()) {
-                if (hasSsidPermission()) completePendingAction() else showPermissionExplanation = true
-            }
+    val locationSettingsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (pendingAction != null && systemLocationEnabled()) {
+            if (hasSsidPermission()) completePendingAction() else showPermissionExplanation = true
         }
-    val appSettingsLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (pendingAction != null && hasSsidPermission() && systemLocationEnabled()) {
-                completePendingAction()
-            }
+    }
+    val appSettingsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (pendingAction != null && hasSsidPermission() && systemLocationEnabled()) {
+            completePendingAction()
         }
-    val permissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            if (hasSsidPermission()) {
-                completePendingAction()
-            } else if (
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                hasPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
-            ) {
-                showApproximateLocation = true
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        if (hasSsidPermission()) {
+            completePendingAction()
+        } else if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            hasPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+        ) {
+            showApproximateLocation = true
+        } else {
+            val permission = requiredLocationPermissions().last()
+            if (activity?.shouldShowRequestPermissionRationale(permission) == false) {
+                showPermissionSettings = true
             } else {
-                val permission = requiredLocationPermissions().last()
-                if (activity?.shouldShowRequestPermissionRationale(permission) == false) {
-                    showPermissionSettings = true
-                } else {
-                    showPermissionDenied = true
-                }
+                showPermissionDenied = true
             }
         }
+    }
 
     fun requestSsidAccess(action: WifiPermissionAction) {
         pendingAction = action
@@ -188,14 +184,13 @@ fun WifiAutomationSettingsSection() {
 
     LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
-            val message =
-                when (effect) {
-                    WifiAutomationViewModel.Effect.AddedCurrentSsid -> FlyTxt.NetworkSettings.WifiAutomation.Added
-                    WifiAutomationViewModel.Effect.SsidAlreadyExists -> FlyTxt.NetworkSettings.WifiAutomation.Duplicate
-                    WifiAutomationViewModel.Effect.NoWifi -> FlyTxt.NetworkSettings.WifiAutomation.NoWifi
-                    WifiAutomationViewModel.Effect.SsidUnavailable -> FlyTxt.NetworkSettings.WifiAutomation.Unavailable
-                    WifiAutomationViewModel.Effect.ScanUnavailable -> FlyTxt.NetworkSettings.WifiAutomation.ScanUnavailable
-                }
+            val message = when (effect) {
+                WifiAutomationViewModel.Effect.AddedCurrentSsid -> FlyTxt.NetworkSettings.WifiAutomation.Added
+                WifiAutomationViewModel.Effect.SsidAlreadyExists -> FlyTxt.NetworkSettings.WifiAutomation.Duplicate
+                WifiAutomationViewModel.Effect.NoWifi -> FlyTxt.NetworkSettings.WifiAutomation.NoWifi
+                WifiAutomationViewModel.Effect.SsidUnavailable -> FlyTxt.NetworkSettings.WifiAutomation.Unavailable
+                WifiAutomationViewModel.Effect.ScanUnavailable -> FlyTxt.NetworkSettings.WifiAutomation.ScanUnavailable
+            }
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
     }
@@ -403,11 +398,7 @@ private fun WifiScanSheet(
         enableNestedScroll = true,
     ) {
         Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .animateContentSize(),
+            modifier = Modifier.fillMaxWidth().wrapContentHeight().animateContentSize(),
             verticalArrangement = Arrangement.spacedBy(spacing.space16),
         ) {
             when {
@@ -441,21 +432,14 @@ private fun WifiScanSheet(
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(spacing.space12)) {
                             Card {
-                                WindowDropdownPreference(
+                                GlassDropdownPreference(
                                     title = FlyTxt.NetworkSettings.WifiAutomation.ActionTitle,
-                                    items = listOf(
-                                        FlyTxt.NetworkSettings.WifiAutomation.StartAction,
-                                        FlyTxt.NetworkSettings.WifiAutomation.StopAction,
+                                    options = listOf(
+                                        GlassDropdownOption(value = WifiAutomationAction.Start, label = FlyTxt.NetworkSettings.WifiAutomation.StartAction),
+                                        GlassDropdownOption(value = WifiAutomationAction.Stop, label = FlyTxt.NetworkSettings.WifiAutomation.StopAction),
                                     ),
-                                    selectedIndex = if (action == WifiAutomationAction.Start) 0 else 1,
-                                    onSelectedIndexChange = { index ->
-                                        action =
-                                            if (index == 0) {
-                                                WifiAutomationAction.Start
-                                            } else {
-                                                WifiAutomationAction.Stop
-                                            }
-                                    },
+                                    selected = action,
+                                    onSelected = { action = it },
                                 )
                             }
                             if (action == WifiAutomationAction.Start) {
@@ -551,17 +535,14 @@ private fun WifiRuleEditSheet(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(spacing.space12)) {
                     Card {
-                        WindowDropdownPreference(
+                        GlassDropdownPreference(
                             title = FlyTxt.NetworkSettings.WifiAutomation.ActionTitle,
-                            items = listOf(
-                                FlyTxt.NetworkSettings.WifiAutomation.StartAction,
-                                FlyTxt.NetworkSettings.WifiAutomation.StopAction,
+                            options = listOf(
+                                GlassDropdownOption(value = WifiAutomationAction.Start, label = FlyTxt.NetworkSettings.WifiAutomation.StartAction),
+                                GlassDropdownOption(value = WifiAutomationAction.Stop, label = FlyTxt.NetworkSettings.WifiAutomation.StopAction),
                             ),
-                            selectedIndex = if (action == WifiAutomationAction.Start) 0 else 1,
-                            onSelectedIndexChange = { index ->
-                                action =
-                                    if (index == 0) WifiAutomationAction.Start else WifiAutomationAction.Stop
-                            },
+                            selected = action,
+                            onSelected = { action = it },
                         )
                     }
                     if (action == WifiAutomationAction.Start) {
@@ -610,33 +591,31 @@ private fun WifiRuleEditSheet(
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically(),
             ) {
-                TextButton(
+                GlassTextButton(
                     text = FlyTxt.Component.ProfileCard.Delete,
                     onClick = {
                         selectedRule?.let { onDelete(it.ssid) }
                         selectedSsid = null
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.textButtonColors(textColor = MiuixTheme.colorScheme.error),
+                    danger = true,
                 )
             }
         }
     }
 }
 
-private fun actionLabel(action: WifiAutomationAction): String =
-    when (action) {
-        WifiAutomationAction.Start -> FlyTxt.NetworkSettings.WifiAutomation.StartAction
-        WifiAutomationAction.Stop -> FlyTxt.NetworkSettings.WifiAutomation.StopAction
-    }
+private fun actionLabel(action: WifiAutomationAction): String = when (action) {
+    WifiAutomationAction.Start -> FlyTxt.NetworkSettings.WifiAutomation.StartAction
+    WifiAutomationAction.Stop -> FlyTxt.NetworkSettings.WifiAutomation.StopAction
+}
 
 @Composable
-private fun fallbackActionLabels() =
-    listOf(
-        FlyTxt.NetworkSettings.WifiAutomation.KeepAction,
-        FlyTxt.NetworkSettings.WifiAutomation.StartAction,
-        FlyTxt.NetworkSettings.WifiAutomation.StopAction,
-    )
+private fun fallbackActionLabels() = listOf(
+    FlyTxt.NetworkSettings.WifiAutomation.KeepAction,
+    FlyTxt.NetworkSettings.WifiAutomation.StartAction,
+    FlyTxt.NetworkSettings.WifiAutomation.StopAction,
+)
 
 @Composable
 private fun WifiProfileSwitchSelector(
@@ -649,21 +628,19 @@ private fun WifiProfileSwitchSelector(
     }
     val selectedIndex = profiles.indexOfFirst { it.uuid.toString() == profileUuid } + 1
 
-    WindowDropdownPreference(
+    GlassDropdownPreference(
         title = FlyTxt.NetworkSettings.WifiAutomation.ProfileAction,
-        items = items,
-        selectedIndex = selectedIndex,
-        onSelectedIndexChange = { index -> onProfileUuidChange(profiles.getOrNull(index - 1)?.uuid?.toString()) },
+        options = items.mapIndexed { index, label -> GlassDropdownOption(value = index, label = label) },
+        selected = selectedIndex,
+        onSelected = { index -> onProfileUuidChange(profiles.getOrNull(index - 1)?.uuid?.toString()) },
     )
 }
 
-private fun hasPermission(context: Context, permission: String): Boolean =
-    ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+private fun hasPermission(context: Context, permission: String): Boolean = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
-private fun requiredLocationPermissions(): Array<String> =
-    when {
-        Build.VERSION.SDK_INT <= Build.VERSION_CODES.O -> emptyArray()
-        Build.VERSION.SDK_INT <= Build.VERSION_CODES.P -> arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION)
-        Build.VERSION.SDK_INT <= Build.VERSION_CODES.R -> arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
-        else -> arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION)
-    }
+private fun requiredLocationPermissions(): Array<String> = when {
+    Build.VERSION.SDK_INT <= Build.VERSION_CODES.O -> emptyArray()
+    Build.VERSION.SDK_INT <= Build.VERSION_CODES.P -> arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION)
+    Build.VERSION.SDK_INT <= Build.VERSION_CODES.R -> arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+    else -> arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION)
+}

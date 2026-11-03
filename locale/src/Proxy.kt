@@ -11,6 +11,8 @@ internal val ZhHansFlyStrings_Proxy: FlyStrings_Proxy = FlyStrings_Proxy(
         Panel = "面板",
         Test = "测试",
         Sort = "排序",
+        Layout = "布局",
+        TabsMode = "标签页模式",
     ),
     Node = FlyStrings_Proxy_Node(
         Timeout = "超时",
@@ -60,6 +62,8 @@ internal val ZhFlyStrings_Proxy: FlyStrings_Proxy = FlyStrings_Proxy(
         Panel = "面板",
         Test = "測試",
         Sort = "排序",
+        Layout = "佈局",
+        TabsMode = "標籤頁模式",
     ),
     Node = FlyStrings_Proxy_Node(
         Timeout = "逾時",
@@ -109,6 +113,8 @@ internal val EnFlyStrings_Proxy: FlyStrings_Proxy = FlyStrings_Proxy(
         Panel = "Panel",
         Test = "Test",
         Sort = "Sort",
+        Layout = "Layout",
+        TabsMode = "Tab mode",
     ),
     Node = FlyStrings_Proxy_Node(
         Timeout = "Timeout",
@@ -158,6 +164,8 @@ internal val JaFlyStrings_Proxy: FlyStrings_Proxy = FlyStrings_Proxy(
         Panel = "パネル",
         Test = "テスト",
         Sort = "並び替え",
+        Layout = "レイアウト",
+        TabsMode = "タブモード",
     ),
     Node = FlyStrings_Proxy_Node(
         Timeout = "タイムアウト",
@@ -207,6 +215,8 @@ internal val RuFlyStrings_Proxy: FlyStrings_Proxy = FlyStrings_Proxy(
         Panel = "Панель",
         Test = "Тест",
         Sort = "Сортировка",
+        Layout = "Макет",
+        TabsMode = "Режим вкладок",
     ),
     Node = FlyStrings_Proxy_Node(
         Timeout = "Таймаут",

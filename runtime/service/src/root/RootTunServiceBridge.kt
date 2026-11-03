@@ -25,6 +25,7 @@ import android.content.Context
 import com.github.lmfirefly.flycat.core.appContextOrSelf
 import com.github.lmfirefly.flycat.core.model.ConnectionOverviewSnapshot
 import com.github.lmfirefly.flycat.core.model.ConnectionSnapshot
+import com.github.lmfirefly.flycat.core.model.ConnectionSnapshotCodec
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroup
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupPayload
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySort
@@ -54,12 +55,11 @@ internal object RootTunServiceBridge {
     suspend fun start(context: Context): RootTunOperationResult {
         val appContext = context.appContextOrSelf
         val request = RootTunStartRequest(source = "service.bridge.start")
-        val result =
-            withContext(Dispatchers.IO) {
-                val service = bind(context)
-                val resultJson = service.startRootTun(rootTunEncode(request))
-                rootTunDecode<RootTunOperationResult>(resultJson)
-            }
+        val result = withContext(Dispatchers.IO) {
+            val service = bind(context)
+            val resultJson = service.startRootTun(rootTunEncode(request))
+            rootTunDecode<RootTunOperationResult>(resultJson)
+        }
         if (result.success) {
             RootTunService.start(appContext)
         }
@@ -67,37 +67,32 @@ internal object RootTunServiceBridge {
     }
 
     suspend fun stop(context: Context): RootTunOperationResult {
-        val result =
-            remoteCall(
-                context = context,
-                onBinderFailure = { RootTunOperationResult(success = true) },
-            ) { service ->
-                val resultJson = service.stopRootTun()
-                rootTunDecode<RootTunOperationResult>(resultJson)
-            }
+        val result = remoteCall(
+            context = context,
+            onBinderFailure = { RootTunOperationResult(success = true) },
+        ) { service ->
+            val resultJson = service.stopRootTun()
+            rootTunDecode<RootTunOperationResult>(resultJson)
+        }
         disconnect()
         return result
     }
 
-    suspend fun queryStatus(context: Context): RootTunStatus =
-        remoteCall(context) { service ->
-            val statusJson = service.queryStatus()
-            rootTunDecode<RootTunStatus>(statusJson)
-        }
+    suspend fun queryStatus(context: Context): RootTunStatus = remoteCall(context) { service ->
+        val statusJson = service.queryStatus()
+        rootTunDecode<RootTunStatus>(statusJson)
+    }
 
-    suspend fun queryTrafficNow(context: Context): Long =
-        remoteCall(context) { service -> service.queryTrafficNow() }
+    suspend fun queryTrafficNow(context: Context): Long = remoteCall(context) { service -> service.queryTrafficNow() }
 
-    suspend fun queryTrafficTotal(context: Context): Long =
-        remoteCall(context) { service -> service.queryTrafficTotal() }
+    suspend fun queryTrafficTotal(context: Context): Long = remoteCall(context) { service -> service.queryTrafficTotal() }
 
     suspend fun queryProxyGroupNames(
         context: Context,
         excludeNotSelectable: Boolean = false,
-    ): List<String> =
-        remoteCall(context) { service ->
-            rootTunDecode<List<String>>(service.queryProxyGroupNamesJson(excludeNotSelectable))
-        }
+    ): List<String> = remoteCall(context) { service ->
+        rootTunDecode<List<String>>(service.queryProxyGroupNamesJson(excludeNotSelectable))
+    }
 
     suspend fun queryProxyGroup(
         context: Context,
@@ -116,18 +111,15 @@ internal object RootTunServiceBridge {
         ProxyGroupPayload.decodeGroups(service.queryAllProxyGroupsJson(excludeNotSelectable))
     }
 
-    suspend fun queryConnections(context: Context): ConnectionSnapshot =
-        remoteCall(context) { service ->
-            rootTunDecode<ConnectionSnapshot>(service.queryConnectionsJson())
-        }
+    suspend fun queryConnections(context: Context): ConnectionSnapshot = remoteCall(context) { service ->
+        ConnectionSnapshotCodec.decodeSnapshot(service.queryConnectionsJson())
+    }
 
-    suspend fun queryConnectionsOverview(context: Context): ConnectionOverviewSnapshot =
-        remoteCall(context) { service ->
-            rootTunDecode<ConnectionOverviewSnapshot>(service.queryConnectionsOverviewJson())
-        }
+    suspend fun queryConnectionsOverview(context: Context): ConnectionOverviewSnapshot = remoteCall(context) { service ->
+        ConnectionSnapshotCodec.decodeOverview(service.queryConnectionsOverviewJson())
+    }
 
-    suspend fun closeConnection(context: Context, id: String): Boolean =
-        remoteCall(context) { service -> service.closeConnection(id) }
+    suspend fun closeConnection(context: Context, id: String): Boolean = remoteCall(context) { service -> service.closeConnection(id) }
 
     suspend fun closeAllConnections(context: Context) {
         remoteCall(context) { service -> service.closeAllConnections() }

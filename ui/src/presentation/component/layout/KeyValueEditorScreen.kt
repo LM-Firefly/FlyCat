@@ -52,16 +52,14 @@ import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingV
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
 import com.github.lmfirefly.flycat.presentation.component.misc.PreferenceValueItem
 import com.github.lmfirefly.flycat.presentation.component.misc.Title
-import com.github.lmfirefly.flycat.presentation.component.navigation.LocalTopBarHazeState
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.BadgePlus
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
-import dev.chrisbanes.haze.hazeSource
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TextField
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.AddCircle
 import top.yukonga.miuix.kmp.icon.extended.Delete
@@ -167,7 +165,6 @@ private sealed interface KeyValueDialogState {
 @Composable
 fun StringListEditorScreen(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
-    val topBarHazeState = LocalTopBarHazeState.current
     val items = remember { mutableStateListOf<TextDraftItem>() }
     val title = EditorDataHolder.listEditorTitle
     val placeholder = EditorDataHolder.listEditorPlaceholder
@@ -213,12 +210,7 @@ fun StringListEditorScreen(navigator: Navigator) {
             EditorEmptyState(
                 title = FlyTxt.Component.Editor.Empty.Title,
                 hint = FlyTxt.Component.Editor.Empty.Hint,
-                modifier =
-                    Modifier.fillMaxSize()
-                        .let { mod ->
-                            if (topBarHazeState != null) mod.hazeSource(topBarHazeState) else mod
-                        }
-                        .padding(combinedInnerPadding),
+                modifier = Modifier.fillMaxSize().padding(combinedInnerPadding),
             )
         } else {
             ScreenLazyColumn(
@@ -231,8 +223,7 @@ fun StringListEditorScreen(navigator: Navigator) {
                     Title(FlyTxt.Component.Editor.CountItems.format(items.size))
                 }
                 items(items = items, key = { it.id }) { item ->
-                    val index =
-                        remember(items, item.id) { items.indexOfFirst { it.id == item.id } + 1 }
+                    val index = remember(items, item.id) { items.indexOfFirst { it.id == item.id } + 1 }
                     EditorListItem(
                         index = index,
                         title = item.value,
@@ -313,7 +304,6 @@ fun StringListEditorScreen(navigator: Navigator) {
 @Composable
 fun KeyValueEditorScreen(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
-    val topBarHazeState = LocalTopBarHazeState.current
     val items = remember { mutableStateListOf<KeyValueDraftItem>() }
     val title = EditorDataHolder.mapEditorTitle
     val keyPlaceholder = EditorDataHolder.mapEditorKeyPlaceholder
@@ -343,14 +333,13 @@ fun KeyValueEditorScreen(navigator: Navigator) {
         title = title,
         scrollBehavior = scrollBehavior,
         navigationIcon = { NavigationBackIcon(navigator = navigator) },
-        actions =
-            remember {
-                listOf(
-                    EditorAction(icon = MiuixIcons.Reset, contentDescription = FlyTxt.Component.Action.Reset, onClick = { dialogState = KeyValueDialogState.Reset }),
-                    EditorAction(icon = MiuixIcons.AddCircle, contentDescription = FlyTxt.Component.Action.Add, onClick = { dialogState = KeyValueDialogState.Add }),
-                )
-            },
-            navigationIconPadding = 0.dp,
+        actions = remember {
+            listOf(
+                EditorAction(icon = MiuixIcons.Reset, contentDescription = FlyTxt.Component.Action.Reset, onClick = { dialogState = KeyValueDialogState.Reset }),
+                EditorAction(icon = MiuixIcons.AddCircle, contentDescription = FlyTxt.Component.Action.Add, onClick = { dialogState = KeyValueDialogState.Add }),
+            )
+        },
+        navigationIconPadding = 0.dp,
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         val combinedInnerPadding = combinePaddingValues(innerPadding, mainLikePadding)
@@ -358,12 +347,7 @@ fun KeyValueEditorScreen(navigator: Navigator) {
             EditorEmptyState(
                 title = FlyTxt.Component.Editor.Empty.Title,
                 hint = FlyTxt.Component.Editor.Empty.Hint,
-                modifier =
-                    Modifier.fillMaxSize()
-                        .let { mod ->
-                            if (topBarHazeState != null) mod.hazeSource(topBarHazeState) else mod
-                        }
-                        .padding(combinedInnerPadding),
+                modifier = Modifier.fillMaxSize().padding(combinedInnerPadding),
             )
         } else {
             ScreenLazyColumn(
@@ -376,8 +360,7 @@ fun KeyValueEditorScreen(navigator: Navigator) {
                     Title(FlyTxt.Component.Editor.CountItems.format(items.size))
                 }
                 items(items = items, key = { it.id }) { item ->
-                    val index =
-                        remember(items, item.id) { items.indexOfFirst { it.id == item.id } + 1 }
+                    val index = remember(items, item.id) { items.indexOfFirst { it.id == item.id } + 1 }
                     EditorListItem(
                         index = index,
                         title = item.key,
@@ -452,51 +435,48 @@ fun KeyValueEditorScreen(navigator: Navigator) {
     }
 }
 
-private val ruleTypePresets =
-    listOf(
-        "DOMAIN",
-        "DOMAIN-SUFFIX",
-        "DOMAIN-KEYWORD",
-        "DOMAIN-WILDCARD",
-        "DOMAIN-REGEX",
-        "GEOSITE",
-        "IP-CIDR",
-        "IP-CIDR6",
-        "IP-SUFFIX",
-        "IP-ASN",
-        "GEOIP",
-        "SRC-GEOIP",
-        "SRC-IP-ASN",
-        "SRC-IP-CIDR",
-        "SRC-IP-SUFFIX",
-        "DST-PORT",
-        "SRC-PORT",
-        "IN-PORT",
-        "IN-TYPE",
-        "IN-USER",
-        "IN-NAME",
-        "PROCESS-PATH",
-        "PROCESS-PATH-WILDCARD",
-        "PROCESS-PATH-REGEX",
-        "PROCESS-NAME",
-        "PROCESS-NAME-WILDCARD",
-        "PROCESS-NAME-REGEX",
-        "UID",
-        "NETWORK",
-        "DSCP",
-        "RULE-SET",
-        "AND",
-        "OR",
-        "NOT",
-        "SUB-RULE",
-        "MATCH",
-    )
+private val ruleTypePresets = listOf(
+    "DOMAIN",
+    "DOMAIN-SUFFIX",
+    "DOMAIN-KEYWORD",
+    "DOMAIN-WILDCARD",
+    "DOMAIN-REGEX",
+    "GEOSITE",
+    "IP-CIDR",
+    "IP-CIDR6",
+    "IP-SUFFIX",
+    "IP-ASN",
+    "GEOIP",
+    "SRC-GEOIP",
+    "SRC-IP-ASN",
+    "SRC-IP-CIDR",
+    "SRC-IP-SUFFIX",
+    "DST-PORT",
+    "SRC-PORT",
+    "IN-PORT",
+    "IN-TYPE",
+    "IN-USER",
+    "IN-NAME",
+    "PROCESS-PATH",
+    "PROCESS-PATH-WILDCARD",
+    "PROCESS-PATH-REGEX",
+    "PROCESS-NAME",
+    "PROCESS-NAME-WILDCARD",
+    "PROCESS-NAME-REGEX",
+    "UID",
+    "NETWORK",
+    "DSCP",
+    "RULE-SET",
+    "AND",
+    "OR",
+    "NOT",
+    "SUB-RULE",
+    "MATCH",
+)
 
-private val ruleExtraSupportedTypes =
-    setOf("IP-CIDR", "IP-CIDR6", "IP-SUFFIX", "IP-ASN", "GEOIP")
+private val ruleExtraSupportedTypes = setOf("IP-CIDR", "IP-CIDR6", "IP-SUFFIX", "IP-ASN", "GEOIP")
 
-private fun supportsRuleExtra(ruleType: String): Boolean =
-    ruleType.uppercase() in ruleExtraSupportedTypes
+private fun supportsRuleExtra(ruleType: String): Boolean = ruleType.uppercase() in ruleExtraSupportedTypes
 
 @Composable
 private fun SimpleTextEditorDialog(
@@ -506,12 +486,11 @@ private fun SimpleTextEditorDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    var textFieldValue by
-        remember(initialValue) {
-            mutableStateOf(
-                TextFieldValue(text = initialValue, selection = TextRange(initialValue.length))
-            )
-        }
+    var textFieldValue by remember(initialValue) {
+        mutableStateOf(
+            TextFieldValue(text = initialValue, selection = TextRange(initialValue.length))
+        )
+    }
     AppTextFieldDialog(
         show = true,
         title = title,
@@ -542,18 +521,16 @@ private fun KeyValueFormDialog(
     initialValue: String,
     currentEditingKey: String? = null,
 ) {
-    var keyTextFieldValue by
-        remember(initialKey) {
-            mutableStateOf(
-                TextFieldValue(text = initialKey, selection = TextRange(initialKey.length))
-            )
-        }
-    var valueTextFieldValue by
-        remember(initialValue) {
-            mutableStateOf(
-                TextFieldValue(text = initialValue, selection = TextRange(initialValue.length))
-            )
-        }
+    var keyTextFieldValue by remember(initialKey) {
+        mutableStateOf(
+            TextFieldValue(text = initialKey, selection = TextRange(initialKey.length))
+        )
+    }
+    var valueTextFieldValue by remember(initialValue) {
+        mutableStateOf(
+            TextFieldValue(text = initialValue, selection = TextRange(initialValue.length))
+        )
+    }
     var error by remember { mutableStateOf<String?>(null) }
 
     AppFormDialog(
@@ -563,20 +540,18 @@ private fun KeyValueFormDialog(
         onConfirm = {
             val normalizedKey = keyTextFieldValue.text.trim()
             val normalizedValue = valueTextFieldValue.text.trim()
-            error =
-                when {
-                    normalizedKey.isBlank() -> FlyTxt.Component.Editor.Error.KeyEmpty
-                    normalizedKey != currentEditingKey && normalizedKey in existingKeys ->
-                        FlyTxt.Component.Editor.Error.KeyExists
-                    else -> null
-                }
+            error = when {
+                normalizedKey.isBlank() -> FlyTxt.Component.Editor.Error.KeyEmpty
+                normalizedKey != currentEditingKey && normalizedKey in existingKeys -> FlyTxt.Component.Editor.Error.KeyExists
+                else -> null
+            }
             if (error == null) {
                 onConfirm(normalizedKey, normalizedValue)
             }
         },
         error = error,
     ) {
-        TextField(
+        GlassTextField(
             value = keyTextFieldValue,
             onValueChange = { updatedTextFieldValue ->
                 keyTextFieldValue = updatedTextFieldValue
@@ -585,7 +560,7 @@ private fun KeyValueFormDialog(
             label = keyPlaceholder,
             modifier = Modifier.fillMaxWidth(),
         )
-        TextField(
+        GlassTextField(
             value = valueTextFieldValue,
             onValueChange = { updatedTextFieldValue ->
                 valueTextFieldValue = updatedTextFieldValue
@@ -612,11 +587,9 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
             FlyTxt.Component.Editor.Rule.TargetMatch,
         )
     }
-    val selectedRuleTypeIndex =
-        remember(ruleType) {
-            ruleTypePresets.indexOfFirst { it.equals(ruleType, ignoreCase = true) }
-                .coerceAtLeast(0)
-        }
+    val selectedRuleTypeIndex = remember(ruleType) {
+        ruleTypePresets.indexOfFirst { it.equals(ruleType, ignoreCase = true) }.coerceAtLeast(0)
+    }
     val selectedTargetIndex = remember(target) { targetItems.indexOf(target).coerceAtLeast(0) }
 
     AppFormDialog(
@@ -632,21 +605,19 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
                 return@AppFormDialog
             }
 
-            val result =
-                if (target == FlyTxt.Component.Editor.Rule.TargetMatch) {
-                    "MATCH"
-                } else {
-                    buildList {
-                            add(normalizedType)
-                            add(normalizedPayload)
-                            add(target)
-                            if (supportsRuleExtra(normalizedType)) {
-                                if (useSrc) add("src")
-                                if (useNoResolve) add("no-resolve")
-                            }
-                        }
-                        .joinToString(",")
-                }
+            val result = if (target == FlyTxt.Component.Editor.Rule.TargetMatch) {
+                "MATCH"
+            } else {
+                buildList {
+                    add(normalizedType)
+                    add(normalizedPayload)
+                    add(target)
+                    if (supportsRuleExtra(normalizedType)) {
+                        if (useSrc) add("src")
+                        if (useNoResolve) add("no-resolve")
+                    }
+                }.joinToString(",")
+            }
             onConfirm(result)
         },
         error = error,
@@ -669,7 +640,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
                 error = null
             },
         )
-        TextField(
+        GlassTextField(
             value = payloadTextFieldValue,
             onValueChange = { updatedTextFieldValue ->
                 payloadTextFieldValue = updatedTextFieldValue

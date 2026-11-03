@@ -38,11 +38,15 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.dropUnlessResumed
+import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopIconButton
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme.spacing
+import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
@@ -53,12 +57,14 @@ fun NavigationBackIcon(
     modifier: Modifier = Modifier,
     contentDescription: String = "Back",
     extraStartPadding: Dp = UiDp.dp24,
+    backdrop: LayerBackdrop? = LocalTopBarBackdrop.current,
 ) {
     NavigationBackIcon(
         onNavigateBack = { navigator.popBackStack() },
         modifier = modifier,
         contentDescription = contentDescription,
         extraStartPadding = extraStartPadding,
+        backdrop = backdrop,
     )
 }
 
@@ -68,36 +74,18 @@ fun NavigationBackIcon(
     modifier: Modifier = Modifier,
     contentDescription: String = "Back",
     extraStartPadding: Dp = UiDp.dp24,
+    backdrop: LayerBackdrop? = LocalTopBarBackdrop.current,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by
-        animateFloatAsState(
-            targetValue = if (pressed) 0.92f else 1f,
-            animationSpec = AnimationSpecs.ButtonPressSpring,
-            label = "back_icon_scale",
-        )
-
-    Box(
-        modifier =
-            modifier
-                .padding(start = extraStartPadding)
-                .semantics { role = Role.Button }
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                }
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = dropUnlessResumed { onNavigateBack() },
-                ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = MiuixIcons.Back,
-            contentDescription = contentDescription,
-            tint = colorScheme.onBackground,
+    // 与顶栏右侧动作同款的 42dp 玻璃圆钮；无 backdrop 时自动退化实色 + 边缘光。
+    Box(modifier = Modifier.padding(start = extraStartPadding)) {
+        GlassTopIconButton(
+            action = GlassTopAction(
+                icon = MiuixIcons.Back,
+                contentDescription = contentDescription,
+                onClick = dropUnlessResumed { onNavigateBack() },
+            ),
+            backdrop = backdrop,
+            modifier = modifier,
         )
     }
 }

@@ -13,15 +13,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Modifier
@@ -36,6 +39,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.core.model.ConnectionInfo
 import com.github.lmfirefly.flycat.core.util.ProxyChainResolver
+import com.github.lmfirefly.flycat.presentation.component.EdgeLightDefaults
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
+import com.github.lmfirefly.flycat.presentation.component.edgeLight
+import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
 import kotlin.math.log10
 import kotlin.math.max
 import kotlin.math.min
@@ -45,10 +52,14 @@ import timber.log.Timber
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+private val TopologyChartShape = RoundedCornerShape(16.dp)
+private const val TOPOLOGY_GLASS_ALPHA = 0.55f
+
 @Composable
 fun TopologyChart(connections: List<ConnectionInfo>, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val textMeasurer = rememberTextMeasurer()
     val colorScheme = MiuixTheme.colorScheme
+    val isLightTheme = !isDarkTheme()
     val density = LocalDensity.current
     val topologyKey = remember(connections) {
         if (connections.isEmpty()) 0
@@ -69,7 +80,18 @@ fun TopologyChart(connections: List<ConnectionInfo>, onClick: () -> Unit, modifi
             .getOrElse { SankeyData(emptyList(), emptyList()) }
     }
     if (sankeyData.nodes.isEmpty()) {
-        Box(modifier = modifier.height(200.dp).fillMaxWidth()) {
+        Box(modifier = modifier.height(200.dp).fillMaxWidth().clip(TopologyChartShape)) {
+            Box(
+                Modifier.matchParentSize()
+                    .glassCardSurface(shape = TopologyChartShape, fallbackColor = colorScheme.surface)
+                    .graphicsLayer { alpha = TOPOLOGY_GLASS_ALPHA }
+                    .edgeLight(
+                        shape = TopologyChartShape,
+                        color = EdgeLightDefaults.tint(colorScheme.surface, isLightTheme),
+                        width = EdgeLightDefaults.width(isLightTheme),
+                        blendMode = EdgeLightDefaults.blendMode(isLightTheme),
+                    ),
+            )
             Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = FlyTxt.Connection.Topology.EmptyMessage, style = TextStyle(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.7f)))
                 Spacer(modifier = Modifier.height(8.dp))
@@ -92,16 +114,26 @@ fun TopologyChart(connections: List<ConnectionInfo>, onClick: () -> Unit, modifi
         val isScrollable = contentHeightPx > viewportHeightPx
         val scrollState = rememberScrollState()
         val layoutResult = remember(sankeyData, widthPx, contentHeightPx, textHeights, nodeTextLayoutMap, density) { calculateSankeyLayout(sankeyData = sankeyData, size = Size(widthPx, contentHeightPx), textHeights = textHeights, nodeTextLayoutMap = nodeTextLayoutMap, density = density) }
-        Box(modifier = Modifier.fillMaxWidth().height(viewportHeightDp).clipToBounds().then(if (isScrollable) Modifier.verticalScroll(scrollState) else Modifier)) {
-            Box(modifier = Modifier.fillMaxWidth().height(contentHeightDp)) {
-                Canvas(modifier = Modifier.fillMaxWidth().height(contentHeightDp).clipToBounds().pointerInput(Unit) { detectTapGestures(onTap = { onClick() }) }) {
-                    val (links, nodes) = layoutResult
-                    val nodeWidth = 12.dp.toPx()
-                    links.forEach { renderLink -> drawPath(path = renderLink.path, brush = renderLink.brush, alpha = 1f) }
-                    nodes.forEach { (node, color, textLayout, nodeX, nodeY, nodeHeight) ->
-                        drawRect(color = color, topLeft = Offset(nodeX, nodeY), size = Size(nodeWidth, nodeHeight))
-                        val textYOffset = (nodeHeight - textLayout.size.height) / 2
-                        drawText(textLayoutResult = textLayout, topLeft = Offset(nodeX + nodeWidth + 5f, nodeY + textYOffset))
+        Box(modifier = Modifier.fillMaxWidth().height(viewportHeightDp).clip(TopologyChartShape)) {
+            // 玻璃作为固定降透明度底层，图表内容在其上滚动，避免整卡发白。
+            Box(Modifier.matchParentSize().glassCardSurface(shape = TopologyChartShape, fallbackColor = colorScheme.surface).graphicsLayer { alpha = TOPOLOGY_GLASS_ALPHA }.edgeLight(
+                    shape = TopologyChartShape,
+                    color = EdgeLightDefaults.tint(colorScheme.surface, isLightTheme),
+                    width = EdgeLightDefaults.width(isLightTheme),
+                    blendMode = EdgeLightDefaults.blendMode(isLightTheme),
+                ),
+            )
+            Box(modifier = Modifier.fillMaxWidth().height(viewportHeightDp).clipToBounds().then(if (isScrollable) Modifier.verticalScroll(scrollState) else Modifier)) {
+                Box(modifier = Modifier.fillMaxWidth().height(contentHeightDp)) {
+                    Canvas(modifier = Modifier.fillMaxWidth().height(contentHeightDp).clipToBounds().pointerInput(Unit) { detectTapGestures(onTap = { onClick() }) }) {
+                        val (links, nodes) = layoutResult
+                        val nodeWidth = 12.dp.toPx()
+                        links.forEach { renderLink -> drawPath(path = renderLink.path, brush = renderLink.brush, alpha = 1f) }
+                        nodes.forEach { (node, color, textLayout, nodeX, nodeY, nodeHeight) ->
+                            drawRect(color = color, topLeft = Offset(nodeX, nodeY), size = Size(nodeWidth, nodeHeight))
+                            val textYOffset = (nodeHeight - textLayout.size.height) / 2
+                            drawText(textLayoutResult = textLayout, topLeft = Offset(nodeX + nodeWidth + 5f, nodeY + textYOffset))
+                        }
                     }
                 }
             }

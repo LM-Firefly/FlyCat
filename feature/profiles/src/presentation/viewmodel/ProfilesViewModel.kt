@@ -125,8 +125,7 @@ class ProfilesViewModel(
         viewModelScope.launch {
             try {
                 setLoading(true)
-                _downloadProgress.value =
-                    DownloadProgress(percent = 0, message = FlyTxt.ProfilesVM.Progress.Preparing)
+                _downloadProgress.value = DownloadProgress(percent = 0, message = FlyTxt.ProfilesVM.Progress.Preparing)
 
                 val uuid = profileCrud.createProfile(
                     type = type, name = name, source = source, ageSecretKey = ageSecretKey, interval = interval,
@@ -143,8 +142,7 @@ class ProfilesViewModel(
                     _downloadProgress.value = null
                     return@launch
                 }
-                _downloadProgress.value =
-                    DownloadProgress(percent = 100, message = FlyTxt.ProfilesVM.Progress.ImportComplete, isCompleted = true)
+                _downloadProgress.value = DownloadProgress(percent = 100, message = FlyTxt.ProfilesVM.Progress.ImportComplete, isCompleted = true)
                 showMessage(FlyTxt.ProfilesVM.Message.ProfileAdded.format(name))
                 refreshProfiles()
             } catch (error: Exception) {
@@ -238,8 +236,7 @@ class ProfilesViewModel(
                     onProgress = { status -> _downloadProgress.value = status.toDownloadProgress() },
                 )
                 if (count > 0) {
-                    _downloadProgress.value =
-                        DownloadProgress(percent = 100, message = FlyTxt.ProfilesVM.Progress.ImportComplete, isCompleted = true)
+                    _downloadProgress.value = DownloadProgress(percent = 100, message = FlyTxt.ProfilesVM.Progress.ImportComplete, isCompleted = true)
                     showMessage(FlyTxt.ProfilesPage.Action.UpdateAll)
                 }
                 refreshProfiles()
@@ -264,8 +261,7 @@ class ProfilesViewModel(
                     onProgress = { status -> _downloadProgress.value = status.toDownloadProgress() },
                 )
                 if (success) {
-                    _downloadProgress.value =
-                        DownloadProgress(percent = 100, message = FlyTxt.ProfilesVM.Progress.ImportComplete, isCompleted = true)
+                    _downloadProgress.value = DownloadProgress(percent = 100, message = FlyTxt.ProfilesVM.Progress.ImportComplete, isCompleted = true)
                     showMessage(FlyTxt.ProfilesVM.Message.ProfileUpdated.format(uuid.toString()))
                 } else {
                     showError(FlyTxt.ProfilesVM.Message.UpdateFailed.format("Unknown"))
@@ -368,8 +364,7 @@ class ProfilesViewModel(
         clearMessageState()
     }
 
-    suspend fun getBinding(profileId: String): ProfileBinding? =
-        bindingProvider.getBinding(profileId)
+    suspend fun getBinding(profileId: String): ProfileBinding? = bindingProvider.getBinding(profileId)
 
     suspend fun saveOverrideBinding(
         profileId: String,

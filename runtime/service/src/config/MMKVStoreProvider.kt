@@ -36,22 +36,19 @@ class MMKVStoreProvider(private val mmkv: MMKV) : StoreProvider {
         mmkv.encode(key, value)
     }
 
-    override fun getString(key: String, defaultValue: String): String =
-        mmkv.decodeString(key, defaultValue) ?: defaultValue
+    override fun getString(key: String, defaultValue: String): String = mmkv.decodeString(key, defaultValue) ?: defaultValue
 
     override fun setString(key: String, value: String) {
         mmkv.encode(key, value)
     }
 
-    override fun getStringSet(key: String, defaultValue: Set<String>): Set<String> =
-        mmkv.decodeStringSet(key, defaultValue) ?: defaultValue
+    override fun getStringSet(key: String, defaultValue: Set<String>): Set<String> = mmkv.decodeStringSet(key, defaultValue) ?: defaultValue
 
     override fun setStringSet(key: String, value: Set<String>) {
         mmkv.encode(key, value)
     }
 
-    override fun getBoolean(key: String, defaultValue: Boolean): Boolean =
-        mmkv.decodeBool(key, defaultValue)
+    override fun getBoolean(key: String, defaultValue: Boolean): Boolean = mmkv.decodeBool(key, defaultValue)
 
     override fun setBoolean(key: String, value: Boolean) {
         mmkv.encode(key, value)

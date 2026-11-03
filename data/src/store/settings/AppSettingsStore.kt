@@ -26,7 +26,9 @@ import com.github.lmfirefly.flycat.core.contract.AppSettingsReader
 import com.github.lmfirefly.flycat.core.contract.UpdateSettings
 import com.github.lmfirefly.flycat.core.contract.WebDavSettingsReader
 import com.github.lmfirefly.flycat.core.model.AppColorTheme
+import com.github.lmfirefly.flycat.core.model.AppBackgroundStyle
 import com.github.lmfirefly.flycat.core.model.AppLanguage
+import com.github.lmfirefly.flycat.core.model.NotificationLineContent
 import com.github.lmfirefly.flycat.core.model.ThemeMode
 import com.tencent.mmkv.MMKV
 
@@ -46,8 +48,11 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
     override val showTrafficNotification by boolFlow(true)
     // 前端服务经由同一个多进程 "settings" store 读取该开关。
     override val superIslandEnabled by boolFlow(true)
+    override val notificationFirstLine by enumFlow(NotificationLineContent.ProfileName)
+    override val notificationSecondLine by enumFlow(NotificationLineContent.LiveTraffic)
+    override val notificationFirstLineText by strFlow("")
+    override val notificationSecondLineText by strFlow("")
     override val bottomBarAutoHide by boolFlow(true)
-    override val topBarBlurEnabled by boolFlow(false)
     override val classicHomeEnabled by boolFlow(false)
     override val homeHitokotoEnabled by boolFlow(false)
     override val moeWallpaperUri by strFlow("")
@@ -59,6 +64,8 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
     override val moeHomeQuoteAuthor by strFlow("Firefly")
     override val moeSidebarExpanded by boolFlow(true)
     override val moeWallpaperScrimEnabled by boolFlow(true)
+    override val appBackgroundStyle by enumFlow(AppBackgroundStyle.DynamicGradient)
+    override val appBackgroundWallpaperBlur by floatFlow(0f)
     override val pageScale by floatFlow(1.0f)
     override val predictiveBackEnabled by boolFlow(false)
     override val predictiveBackMaxProgress by floatFlow(50.0f)
@@ -70,11 +77,7 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
 
     init { migrateLegacyHomeKeys() }
 
-    /**
-     * One-time rename migration: pre-rename builds persisted the home/wallpaper preferences under
-     * `acg*` keys. Copy any legacy value onto the new `moe*` key when the new key is still absent, so
-     * upgrading users keep their saved quote, author, wallpaper and crop framing.
-     */
+    /** 一次性重命名迁移：重命名前的构建版本将 home/wallpaper 首选项持久化在 `acg*` 键下。当新键仍然不存在时，将旧值复制到新的 `moe*` 键上，以确保升级用户保留其保存的语录、作者、壁纸和裁剪框设置。 */
     private fun migrateLegacyHomeKeys() {
         if (mmkv.decodeBool("_legacyHomeKeysMigrated", false)) return
         fun moveString(old: String, new: String) { if (mmkv.containsKey(old) && !mmkv.containsKey(new)) { mmkv.decodeString(old)?.let { mmkv.encode(new, it) } } }
@@ -92,9 +95,7 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
     }
 }
 
-/**
- * WebDAV backup settings, isolated to feature/dashboard consumers.
- */
+/** WebDAV 备份设置，隔离给 feature/settings 消费者使用。 */
 class WebDavSettings(mmkv: MMKV) : MMKVPreference(externalMmkv = mmkv), WebDavSettingsReader {
     override val webDavUrl by strFlow("")
     override val webDavAccount by strFlow("")
