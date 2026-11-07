@@ -37,7 +37,7 @@
 
 ## Usage
 
-FlyCat currently only supports **Android 8.0 (API 26) and above**.
+FlyCat currently only supports **Android 13 (API 33) and above**.
 
 - Download the installation package for your architecture from the [Release](https://github.com/LM-Firefly/FlyCat/releases) page
 - For more information, visit the official documentation: [lm-firefly.github.io/FlyCat](https://lm-firefly.github.io/FlyCat/)
