@@ -1,0 +1,19 @@
+{
+  "name": "flycat-website",
+  "private": true,
+  "type": "module",
+  "description": "FlyCat documentation site (VitePress)",
+  "license": "AGPL-3.0",
+  "scripts": {
+    "gen:api": "node scripts/gen-api.mjs",
+    "docs:dev": "npm run gen:api && vitepress dev",
+    "docs:build": "npm run gen:api && vitepress build",
+    "docs:preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "@lucide/vue": "^1.70.0",
+    "mermaid": "^12.3.0",
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.33"
+  }
+}

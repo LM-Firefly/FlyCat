@@ -9,7 +9,7 @@ icon: "smartphone"
 
 默认的 Moe 首页支持两种手势，无需进入设置即可操作壁纸与侧栏：
 
-<CardGroup cols={2}>
+<CardGroup :cols="2">
   <Card title="单击主图" icon="image">
     单击首页顶部的壁纸图片，会直接打开系统相册选择器，选图后进入裁剪界面调整显示范围，确认即更换首页壁纸。
   </Card>
@@ -85,7 +85,9 @@ icon: "smartphone"
 ### 隐私
 
 <ParamField path="隐藏应用图标" type="boolean" default="关闭">
+
   隐藏桌面图标后，可通过拨号盘输入 `*#*#0721#*#*` 重新打开 App。
+
 </ParamField>
 
 <ParamField path="隐藏后台卡片" type="boolean" default="关闭">
@@ -205,6 +207,6 @@ icon: "smartphone"
 | `flycat://screen/log` | 日志 |
 | `flycat://screen/about` | 关于 |
 
-<Note>
+::: info
 未识别的 host / 路径会被忽略，App 正常停留在当前界面。
-</Note>
+:::

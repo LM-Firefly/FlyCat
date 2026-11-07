@@ -100,9 +100,9 @@ function main(profile) {
 | `Buffer.from(...)` | 支持 `utf8` 与 `base64` |
 | `b64e(value)` / `b64d(value)` | Base64 编码与解码 |
 
-<Warning>
+::: warning
 嵌入式 `fetch` 只支持 `http://`，不支持 `https://`。
-</Warning>
+:::
 
 ### JS helper 的列表写法
 

@@ -1,0 +1,251 @@
+/* FlyCat 品牌色与自定义组件样式 */
+
+:root {
+  --vp-c-brand-1: #16a34a;
+  --vp-c-brand-2: #15803d;
+  --vp-c-brand-3: #166534;
+  --vp-c-brand-soft: rgba(22, 163, 74, 0.14);
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #16a34a 30%, #07c983);
+}
+
+.dark {
+  --vp-c-brand-1: #22c55e;
+  --vp-c-brand-2: #4ade80;
+  --vp-c-brand-3: #16a34a;
+  --vp-c-brand-soft: rgba(34, 197, 94, 0.16);
+}
+
+/* ---------- ParamField ---------- */
+
+.param-field {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  background-color: var(--vp-c-bg-soft);
+}
+
+.param-field__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.param-field__name {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vp-c-brand-1);
+}
+
+.param-field__type {
+  padding: 1px 8px;
+  border-radius: 6px;
+  background-color: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+}
+
+.param-field__default {
+  color: var(--vp-c-text-3);
+  font-size: 12px;
+}
+
+.param-field__body {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--vp-c-text-2);
+}
+
+.param-field__body > p {
+  margin: 4px 0;
+  line-height: 1.7;
+}
+
+.param-field__body > p:first-child {
+  margin-top: 0;
+}
+
+.param-field__body > p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- Card / CardGroup ---------- */
+
+.vp-card-group {
+  display: grid;
+  grid-template-columns: repeat(var(--card-cols, 2), minmax(0, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+
+@media (max-width: 640px) {
+  .vp-card-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+.vp-card {
+  display: block;
+  padding: 16px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  background-color: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-2);
+  text-decoration: none;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+
+a.vp-card:hover {
+  border-color: var(--vp-c-brand-1);
+  background-color: var(--vp-c-bg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.vp-card--horizontal {
+  display: flex;
+  flex-direction: column;
+}
+
+.vp-card__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vp-card__icon {
+  flex: none;
+  color: var(--vp-c-brand-1);
+}
+
+.vp-card__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
+.vp-card__body {
+  margin-top: 8px;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+.vp-card__body > p {
+  margin: 0;
+}
+
+.vp-card__body > p + p {
+  margin-top: 6px;
+}
+
+/* ---------- Steps ---------- */
+
+.vp-steps {
+  margin: 16px 0;
+  padding-left: 4px;
+  counter-reset: vp-step;
+}
+
+.vp-step {
+  position: relative;
+  padding: 0 0 18px 40px;
+  counter-increment: vp-step;
+}
+
+.vp-step:last-child {
+  padding-bottom: 0;
+}
+
+.vp-step::before {
+  content: counter(vp-step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.vp-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 12.5px;
+  top: 30px;
+  bottom: 4px;
+  width: 1px;
+  background-color: var(--vp-c-divider);
+}
+
+.vp-step__title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 26px;
+  color: var(--vp-c-text-1);
+}
+
+.vp-step__body {
+  font-size: 14px;
+  color: var(--vp-c-text-2);
+}
+
+.vp-step__body > p {
+  margin: 4px 0 0;
+  line-height: 1.7;
+}
+
+.vp-step__body > p:first-child {
+  margin-top: 0;
+}
+
+/* ---------- Frame ---------- */
+
+.vp-frame {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0;
+  padding: 24px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 16px;
+  background-color: var(--vp-c-bg-soft);
+  overflow: hidden;
+}
+
+.vp-frame img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+/* ---------- API 调试台：铺满内容区 ---------- */
+
+/* 调试台页面解除文档内容列宽度限制。
+   注意特异性：VitePress 的 .VPDoc.has-aside .content-container[data-v-*] 是 (0,4,0)，
+   这里必须打平或更高才能覆盖其 max-width: 688px。 */
+.VPDoc.has-aside .content-container:has(.ap) {
+  max-width: none;
+}
+
+/* 让内容列拉伸填满（默认 flex: 0 1 auto 只按内容宽度收缩） */
+.VPDoc .container:has(.ap) .content {
+  flex: 1 1 auto;
+  max-width: none;
+}
+
+/* 调试台页面隐藏右侧目录列（含 256px 的 aside 包装层），卡片铺满到右缘 */
+.VPDoc .container:has(.ap) > .aside,
+.VPDoc .container:has(.ap) .VPDocAside {
+  display: none;
+}
