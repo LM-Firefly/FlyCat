@@ -4,6 +4,35 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-07
+
+### 新增
+
+- **液态玻璃视觉体系**：全局 UI 迁移至基于 RuntimeShader 的 miuix 液态玻璃材质（玻璃着色器与样式参数体系，对话框 / 底部弹层 / 弹窗 / 导航栏 / 顶栏 / 标签栏 / 下拉与级联菜单玻璃化）；无 RuntimeShader 设备自动回退实色 + 发丝级边缘光；顶栏委托 GlassTopAppBar（渐进色带随滚动渐显、折叠大标题、pinned 钉住），底栏改 GlassNavigationBar（指针跟随胶囊指示器），移除 haze 依赖，玻璃采样统一走兄弟录制层规避 HyperOS hwui 自采样崩溃（`feat(ui)`）
+- **壁纸背景特效**：新增「应用背景」设置（关闭 / 动态渐变 / 壁纸图片，含壁纸来源与模糊强度），首页、对话框与输入框组件同步玻璃化；新增 About 页 Hero 布局与 FlyCat 矢量图标、亮色图标资源（`feat(ui)`）
+- **代理页标签页模式**：ProxyGroupTabs + HorizontalPager，与钉取式互斥；通知栏节点面板并入 AppActionBottomSheet 弹层宿主，显示设置经 ProxyDisplaySettingsStore 跨界面双向同步（`feat(proxy)`）
+- **通知内容设置页**：通知两行内容自定义与预览（`feat(settings)`）
+- **访问控制级联菜单与导入策略**：访问控制新增级联操作菜单，包名导入支持合并 / 覆盖两种策略（`feat(settings)`）
+
+### 修复
+
+- **Root TUN/eBPF 规则页空白**：规则查询改经 root 守护进程（BIDL 补 `queryRulesJson` / `setRuleDisabled`），不再依赖应用进程内的空内核；搜索框改常驻内联可编辑，移除点击弹出的整页搜索（`fix(dashboard)`）
+- **连接页增量轮询**：新增按 id 查询连接（Go `QueryConnectionsByIDs` + Rust JNI 绑定），增量轮询仅水合新连接，旧内核自动回退全量快照（`fix(dashboard)`）
+- **Tun 出站回环**：Tun 模式内置 tun 强制 `auto-detect-interface`，防止核心出站流量回环进 tun（`fix(tun)`）
+- **崩溃落盘**：tombstone / ANR trace 逐一抽取可读字符串行，按 reason 分前缀命名（`fix(runtime)`）
+
+### 性能优化
+
+- **Root 链路 JSON 透传**：connections / overview / rules / providers 原样透传原生 JSON，省去服务端「解码成对象再重编码」的三重往返；代理组加载与日志改分隔符化传输，消除逐行 JSON 编解码；RuntimeProxyGroupResolver 移除一次刷新内重复的组名查询（`perf(runtime)`）
+
+### 变更
+
+- **最低系统要求提升**：minSdk 26 → 33（Android 8.0 → Android 13），液态玻璃依赖 RuntimeShader / RenderEffect 能力（`build`）
+- **更新体系**：前台每小时自动检查 GitHub Release + 全局「发现新版本」弹窗 + 会话级「稍后」抑制（`feat(about)`）
+- **备份 Merge 策略**：写前快照、目录只补缺失、列表本机优先归并、回滚 zip 尽力回滚；访问控制 UID 解析按模式裁剪，通知取消路径改 NonCancellable 释放 XMSF 防火墙 bypass（`fix(backup)`）
+- **构建链升级**：Gradle 9.8.2、AGP 9.6.0-alpha02、Go 1.27、privKit 0.17.9、versionCatalogUpdate 1.1.2、Codacy 工作流 SARIF 上传 action v4.39.1；开源许可页同名库改分组展开（`chore(deps)`）
+- **注释规范化**：校验新增注释与实现的一致性，英文注释统一译为中文（`chore`）
+
 ## [0.5.9] - 2026-10-25
 
 ### 新增

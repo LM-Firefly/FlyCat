@@ -37,7 +37,7 @@
 
 ## 使用
 
-FlyCat 目前仅支持 **Android 8.0（API 26）及以上系统**。
+FlyCat 目前仅支持 **Android 13（API 33）及以上系统**。
 
 - 前往 [Release](https://github.com/LM-Firefly/FlyCat/releases) 页面下载对应架构的安装包
 - 更多内容请访问官方文档：[lm-firefly.github.io/FlyCat](https://lm-firefly.github.io/FlyCat/)
