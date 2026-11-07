@@ -23,9 +23,9 @@ description: "FlyCat 运行时覆写系统的使用方式与编译链路。"
 | YAML | 声明式补丁 | 固定配置、规则追加、DNS/TUN 调整 |
 | JavaScript | 脚本化转换 | 条件逻辑、远程片段、批量处理、调试输出 |
 
-<Warning>
+::: warning
 当前覆写文件只按 `.yaml`、`.yml`、`.js` 处理。旧版 JSON-only 写法不再对应当前实现。
-</Warning>
+:::
 
 ## 快速示例
 
@@ -48,21 +48,37 @@ rules-end:
 ## 绑定与执行顺序
 
 <Steps>
-  <Step title="创建覆写">
-    在覆写页面创建 YAML 或 JS 配置。
-  </Step>
-  <Step title="绑定订阅">
-    将一个或多个覆写绑定到目标订阅。
-  </Step>
-  <Step title="启动或重载">
-    FlyCat 解析绑定链，构建 `RuntimeSpec`，再进入 native 编译。
-  </Step>
-  <Step title="加载内核">
-    编译结果以内存形式加载到 mihomo，随后启动 HTTP、TUN 或 Root TUN。
-  </Step>
-  <Step title="按链叠加">
-    启动或重载时，FlyCat 按绑定顺序应用覆写链，后一个覆写基于前一个的结果继续处理。
-  </Step>
+
+<Step title="创建覆写">
+
+  在覆写页面创建 YAML 或 JS 配置。
+
+</Step>
+
+<Step title="绑定订阅">
+
+  将一个或多个覆写绑定到目标订阅。
+
+</Step>
+
+<Step title="启动或重载">
+
+  FlyCat 解析绑定链，构建 `RuntimeSpec`，再进入 native 编译。
+
+</Step>
+
+<Step title="加载内核">
+
+  编译结果以内存形式加载到 mihomo，随后启动 HTTP、TUN 或 Root TUN。
+
+</Step>
+
+<Step title="按链叠加">
+
+  启动或重载时，FlyCat 按绑定顺序应用覆写链，后一个覆写基于前一个的结果继续处理。
+
+</Step>
+
 </Steps>
 
 多个覆写按绑定顺序执行，叠加结果在 native 编译层一次性合并并加载进内核。

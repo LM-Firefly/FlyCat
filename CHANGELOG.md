@@ -1,6 +1,6 @@
 # Changelog
 
-本文件记录 FlyCat 的重要变更。更新日志按主题分组整理，与网站[更新日志](website/update/history.mdx)同步。
+本文件记录 FlyCat 的重要变更。更新日志按主题分组整理，与网站[更新日志](website/update/history.md)同步。
 
 ## [Unreleased]
 

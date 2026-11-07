@@ -6,13 +6,14 @@ icon: "house"
 ---
 
 <Frame>
-  <img
-    src="logo/FlyCat.webp"
-    noZoom={true}
-  />
+
+![FlyCat](/logo/FlyCat.webp)
+
 </Frame>
 
-<Info>如果结局是分开，那相遇的意义是什么 --  **恋×シンアイ彼女**</Info>
+::: info
+如果结局是分开，那相遇的意义是什么 --  **恋×シンアイ彼女**
+:::
 
 ## 特别
 
@@ -33,53 +34,75 @@ FlyCat 基于 YumeBox 持续迭代，未来将一直保持 **开源 & 免费**�
 
 ## 快速开始
 
-<CardGroup cols={2}>
-    <Card title="下载发布版本" icon="download" href="https://github.com/LM-Firefly/FlyCat/releases">
-        在 GitHub Releases 获取最新 APK。
-    </Card>
+<CardGroup :cols="2">
 
-    <Card title="GitHub 仓库" icon="github" href="https://github.com/LM-Firefly/FlyCat">
-        查看源码、提交 Issue、参与贡献。
-    </Card>
+<Card title="下载发布版本" icon="download" href="https://github.com/LM-Firefly/FlyCat/releases">
 
-    <Card title="问题反馈" icon="bug" href="https://github.com/LM-Firefly/FlyCat/issues">
-        遇到问题或有建议时在此反馈。
-    </Card>
+  在 GitHub Releases 获取最新 APK。
 
-    <Card title="更新日志" icon="clock" href="/update/history">
-        查看版本更新历史
-    </Card>
+</Card>
+
+<Card title="GitHub 仓库" icon="code" href="https://github.com/LM-Firefly/FlyCat">
+
+  查看源码、提交 Issue、参与贡献。
+
+</Card>
+
+<Card title="问题反馈" icon="bug" href="https://github.com/LM-Firefly/FlyCat/issues">
+
+  遇到问题或有建议时在此反馈。
+
+</Card>
+
+<Card title="更新日志" icon="clock" href="/update/history">
+
+  查看版本更新历史
+
+</Card>
+
 </CardGroup>
 
 
 ## 其他资料
 
-<CardGroup cols={2}>
-    <Card title="Mihomo 内核" icon="cpu" href="https://github.com/MetaCubeX/mihomo">
-        基于 MetaCubeX/mihomo 内核，稳定可靠。
-    </Card>
+<CardGroup :cols="2">
 
-    <Card title="强大的覆写支持" icon="box" href="/override/override">
-        使用修饰符的自定义覆写配置,对订阅进行覆写
-    </Card>
+<Card title="Mihomo 内核" icon="cpu" href="https://github.com/MetaCubeX/mihomo">
 
-    <Card title="SubStore 支持" icon="store" href="https://github.com/sub-store-org/Sub-Store">
-        可选 SubStore 支持，配置管理更方便。
-    </Card>
+  基于 MetaCubeX/mihomo 内核，稳定可靠。
 
-    <Card title="Web 面板" icon="monitor" href="https://github.com/MetaCubeX/metacubexd">
-        内置 Web 面板，便于管理和监控。
-    </Card>
+</Card>
 
-    <Card title="配置文档" icon="settings" href="https://wiki.metacubex.one/config/">
-        查看 mihomo 配置说明与最佳实践。
-    </Card>
+<Card title="强大的覆写支持" icon="box" href="/override/override">
+
+  使用修饰符的自定义覆写配置,对订阅进行覆写
+
+</Card>
+
+<Card title="SubStore 支持" icon="store" href="https://github.com/sub-store-org/Sub-Store">
+
+  可选 SubStore 支持，配置管理更方便。
+
+</Card>
+
+<Card title="Web 面板" icon="monitor" href="https://github.com/MetaCubeX/metacubexd">
+
+  内置 Web 面板，便于管理和监控。
+
+</Card>
+
+<Card title="配置文档" icon="settings" href="https://wiki.metacubex.one/config/">
+
+  查看 mihomo 配置说明与最佳实践。
+
+</Card>
+
 </CardGroup>
 
 ## 模块依赖
 
 ```mermaid
-%%{init: {"theme": "base", "flowchart": {"curve": "basis", "htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 46}, "themeVariables": {"primaryColor": "#0d2818", "primaryBorderColor": "#16a34a", "primaryTextColor": "#a7f3d0", "lineColor": "#4b5563", "background": "transparent", "fontSize": "14px", "fontFamily": "Inter, ui-sans-serif, system-ui"}}}%%
+%%{init: {"theme": "base", "look": "classic", "flowchart": {"curve": "basis", "nodeSpacing": 30, "rankSpacing": 46}, "themeVariables": {"primaryColor": "#0d2818", "primaryBorderColor": "#16a34a", "primaryTextColor": "#a7f3d0", "lineColor": "#4b5563", "background": "transparent", "fontSize": "14px", "fontFamily": "Inter, ui-sans-serif, system-ui"}}}%%
 flowchart TB
     app([":app"])
 
@@ -153,7 +176,7 @@ flowchart TB
 ## 启动流程
 
 ```mermaid
-%%{init: {"theme": "base", "flowchart": {"curve": "basis", "htmlLabels": true, "nodeSpacing": 36, "rankSpacing": 50}, "themeVariables": {"primaryColor": "#0d2818", "primaryBorderColor": "#16a34a", "primaryTextColor": "#a7f3d0", "lineColor": "#4b5563", "background": "transparent", "fontSize": "14px", "fontFamily": "Inter, ui-sans-serif, system-ui"}}}%%
+%%{init: {"theme": "base", "look": "classic", "flowchart": {"curve": "basis", "nodeSpacing": 36, "rankSpacing": 50}, "themeVariables": {"primaryColor": "#0d2818", "primaryBorderColor": "#16a34a", "primaryTextColor": "#a7f3d0", "lineColor": "#4b5563", "background": "transparent", "fontSize": "14px", "fontFamily": "Inter, ui-sans-serif, system-ui"}}}%%
 flowchart TB
     subgraph Boot["进程启动"]
         direction LR
