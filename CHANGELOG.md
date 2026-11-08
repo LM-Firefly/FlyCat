@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### 新增
+
+- **Android 16 实时通知**：服务常驻通知支持提升为实时通知（promoted ongoing / Live Update），置顶显示于通知栏并在状态栏 chip 展示实时速率；与 HyperOS 超级岛互斥展示，岛不接管的路径（非岛设备/root 模式）自动启用，含设置开关与备份支持（`feat(settings)`）
+
 ## [0.6.0] - 2026-11-07
 
 ### 新增

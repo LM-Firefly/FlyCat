@@ -170,7 +170,8 @@ class ServiceNotificationManager(
     private suspend fun postPlain(frame: NoticeFrame.Plain) {
         if (releaseBypass()) islandShown = false
         if (frame == lastFrame) return
-        deliver(buildNotification(frame.presentation))
+        // 岛不接管的路径（非岛设备/root 等）由 Android 16 实时通知置顶；与岛帧互斥，避免状态栏胶囊与 chip 重复。
+        deliver(buildNotification(frame.presentation, promote = LiveNotification.shouldPromote(frame.presentation)))
         lastFrame = frame
     }
 
@@ -222,7 +223,7 @@ class ServiceNotificationManager(
         )
     }
 
-    private fun buildNotification(presentation: NotificationPresentation): Notification {
+    private fun buildNotification(presentation: NotificationPresentation, promote: Boolean = false): Notification {
         val contentIntent = PendingIntent.getActivity(
             service,
             0,
@@ -250,6 +251,7 @@ class ServiceNotificationManager(
             .setShowWhen(false)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .apply { if (promote) LiveNotification.promote(this, presentation) }
             .build()
     }
 

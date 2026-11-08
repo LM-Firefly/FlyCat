@@ -90,6 +90,7 @@ data class AppSettingsBackup(
     val excludeFromRecents: Boolean = false,
     val showTrafficNotification: Boolean = true,
     val superIslandEnabled: Boolean = true,
+    val liveNotificationEnabled: Boolean = true,
     val notificationFirstLine: NotificationLineContent = NotificationLineContent.ProfileName,
     val notificationSecondLine: NotificationLineContent = NotificationLineContent.LiveTraffic,
     val notificationFirstLineText: String = "",

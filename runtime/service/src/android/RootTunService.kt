@@ -49,6 +49,7 @@ import com.github.lmfirefly.flycat.runtime.service.R
 import com.github.lmfirefly.flycat.runtime.service.ServicePowerController
 import com.github.lmfirefly.flycat.runtime.service.StatusProvider
 import com.github.lmfirefly.flycat.runtime.service.config.ServiceStore
+import com.github.lmfirefly.flycat.runtime.service.notification.LiveNotification
 import com.github.lmfirefly.flycat.runtime.service.notification.NotificationPresentation
 import com.github.lmfirefly.flycat.runtime.service.notification.NotificationPresentationFactory
 import com.github.lmfirefly.flycat.runtime.service.records.ImportedDao
@@ -205,7 +206,8 @@ class RootTunService : BaseService() {
                             }
                             notificationManager.notify(
                                 NOTIFICATION_ID,
-                                buildNotification(presentation),
+                                // Root 模式无超级岛接管，运行帧由 Android 16 实时通知置顶。
+                                buildNotification(presentation, promote = LiveNotification.shouldPromote(presentation)),
                             )
                         }
                     }
@@ -276,7 +278,7 @@ class RootTunService : BaseService() {
         return currentNode
     }
 
-    private fun buildNotification(presentation: NotificationPresentation): Notification {
+    private fun buildNotification(presentation: NotificationPresentation, promote: Boolean = false): Notification {
         val contentIntent = PendingIntent.getActivity(
             this,
             0,
@@ -312,6 +314,7 @@ class RootTunService : BaseService() {
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(0, FlyTxt.Service.Tile.ClickToStopProxy, stopIntent)
+            .apply { if (promote) LiveNotification.promote(this, presentation) }
             .build()
     }
 

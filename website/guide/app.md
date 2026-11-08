@@ -122,6 +122,10 @@ icon: "smartphone"
   在 HyperOS 超级岛显示当前节点、实时流量与订阅用量。
 </ParamField>
 
+<ParamField path="Android 16 实时通知" type="boolean" default="开启">
+  在 Android 16 及以上系统将服务通知提升为实时通知（Live Update），置顶显示于通知栏并在状态栏展示实时速率；超级岛开启时自动让位。
+</ParamField>
+
 <ParamField path="电池优化无限制" type="系统设置">
   显示当前后台是否受系统电池优化限制；点击跳转系统设置，建议设为「无限制」以降低后台被杀概率。
 </ParamField>

@@ -87,6 +87,7 @@ interface AppSettingsReader {
     val hideAppIcon: Preference<Boolean>
     val showTrafficNotification: Preference<Boolean>
     val superIslandEnabled: Preference<Boolean>
+    val liveNotificationEnabled: Preference<Boolean>
     val notificationFirstLine: Preference<NotificationLineContent>
     val notificationSecondLine: Preference<NotificationLineContent>
     val notificationFirstLineText: Preference<String>

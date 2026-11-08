@@ -159,6 +159,7 @@ class BackupRepository(
             excludeFromRecents = appSettings.excludeFromRecents.value,
             showTrafficNotification = appSettings.showTrafficNotification.value,
             superIslandEnabled = appSettings.superIslandEnabled.value,
+            liveNotificationEnabled = appSettings.liveNotificationEnabled.value,
             notificationFirstLine = appSettings.notificationFirstLine.value,
             notificationSecondLine = appSettings.notificationSecondLine.value,
             notificationFirstLineText = appSettings.notificationFirstLineText.value,
@@ -355,6 +356,7 @@ class BackupRepository(
             appSettings.appBackgroundStyle,
             appSettings.appBackgroundWallpaperBlur,
             appSettings.superIslandEnabled,
+            appSettings.liveNotificationEnabled,
             appSettings.notificationFirstLine,
             appSettings.notificationSecondLine,
             appSettings.notificationFirstLineText,
@@ -433,6 +435,7 @@ class BackupRepository(
         appSettings.excludeFromRecents.set(value.excludeFromRecents)
         appSettings.showTrafficNotification.set(value.showTrafficNotification)
         appSettings.superIslandEnabled.set(value.superIslandEnabled)
+        appSettings.liveNotificationEnabled.set(value.liveNotificationEnabled)
         appSettings.notificationFirstLine.set(value.notificationFirstLine)
         appSettings.notificationSecondLine.set(value.notificationSecondLine)
         appSettings.notificationFirstLineText.set(value.notificationFirstLineText)

@@ -75,6 +75,7 @@ class AppSettingsViewModel(
     val excludeFromRecents: Preference<Boolean> = settings.excludeFromRecents
     val showTrafficNotification: Preference<Boolean> = settings.showTrafficNotification
     val superIslandEnabled: Preference<Boolean> = settings.superIslandEnabled
+    val liveNotificationEnabled: Preference<Boolean> = settings.liveNotificationEnabled
     val notificationFirstLine: Preference<NotificationLineContent> = settings.notificationFirstLine
     val notificationSecondLine: Preference<NotificationLineContent> = settings.notificationSecondLine
     val notificationFirstLineText: Preference<String> = settings.notificationFirstLineText
@@ -308,6 +309,8 @@ class AppSettingsViewModel(
     fun onNotificationSecondLineTextChange(text: String) = notificationSecondLineText.set(text)
 
     fun onSuperIslandEnabledChange(enabled: Boolean) = superIslandEnabled.set(enabled)
+
+    fun onLiveNotificationEnabledChange(enabled: Boolean) = liveNotificationEnabled.set(enabled)
 
     /** Shizuku 授权器的实时授权状态，用于服务设置分组。 */
     data class ShizukuAccessState(

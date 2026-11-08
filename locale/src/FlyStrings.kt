@@ -221,6 +221,8 @@ public data class FlyStrings_AppSettings_ServiceSection(
     public val ExitUiWhenBackgroundTitle: String,
     public val ExitUiWhenBackgroundSummary: String,
     public val SuperIslandTitle: String,
+    public val LiveNotificationTitle: String,
+    public val LiveNotificationSummary: String,
     public val ShizukuTitle: String,
     public val ShizukuNotRunning: String,
     public val ShizukuPermissionRequired: String,

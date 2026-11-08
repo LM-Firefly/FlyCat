@@ -34,7 +34,7 @@ jobs:
         with:
           node-version: '20'
 
-      - run: npm install -g pnpm && pnpm add puppeteer marked
+      - run: npm install puppeteer marked
 
       - run: npx puppeteer browsers install chrome
 

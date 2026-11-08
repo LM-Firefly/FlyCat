@@ -128,7 +128,7 @@ fun HomePager(mainInnerPadding: PaddingValues, onOpenDashboard: (() -> Unit)? = 
     val isHomeQuote = homeHitokotoEnabled && homeQuote.isNotBlank()
     // 一言放 titleContent（随滚动缩放），作者放 bottomContent（不缩放），固定于一言下一行右下角。
     GlassScaffold(topBar = { TopBar(title = quoteTitle, titleContent = if (isHomeQuote) {
-        { Text(text = quoteTitle, style = MiuixTheme.textStyles.title1.copy(fontSize = 26.sp, lineHeight = 30.sp), color = MiuixTheme.colorScheme.onSurface, modifier = Modifier.fillMaxWidth().padding(horizontal = TopAppBarDefaults.TitlePadding)) }
+        { Text(text = quoteTitle, style = MiuixTheme.textStyles.title1.copy(fontSize = 36.sp, lineHeight = 38.sp), color = MiuixTheme.colorScheme.onSurface, modifier = Modifier.fillMaxWidth().padding(horizontal = TopAppBarDefaults.TitlePadding)) }
     } else null, scrollBehavior = scrollBehavior, bottomContent = {
         if (isHomeQuote && homeQuoteAuthor.isNotBlank()) {
             Text(text = "—— ${homeQuoteAuthor}", style = MiuixTheme.textStyles.body1, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, modifier = Modifier.fillMaxWidth().padding(start = TopAppBarDefaults.TitlePadding, end = TopAppBarDefaults.TitlePadding, bottom = UiDp.dp8), textAlign = TextAlign.End)

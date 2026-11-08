@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
@@ -98,9 +99,12 @@ fun TopBar(
                         Modifier
                             // 布局高度与绘制缩放同步收窄，下方代理链路/列表才能跟着上移；只做 graphicsLayer 的话占位不变，列表可见区域不会变多。
                             .layout { measurable, constraints ->
-                                val placeable = measurable.measure(constraints)
+                                // 测量宽度按 scale 反向放大再等比缩小绘制，让一言按缩小后的视觉字号重新排版铺满行宽（graphicsLayer 纯压小不重排，右侧会留白）。
+                                val inflatedMaxWidth = (constraints.maxWidth / scale).toInt().coerceIn(constraints.minWidth, Constraints.Infinity)
+                                val placeable = measurable.measure(constraints.copy(maxWidth = inflatedMaxWidth))
+                                val width = (placeable.width * scale).toInt().coerceAtLeast(0)
                                 val height = (placeable.height * scale).toInt().coerceAtLeast(0)
-                                layout(placeable.width, height) {
+                                layout(width, height) {
                                     placeable.place(0, 0)
                                 }
                             }

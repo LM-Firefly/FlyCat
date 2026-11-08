@@ -24,6 +24,7 @@ package com.github.lmfirefly.flycat.feature.settings.presentation.screen
 import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -426,6 +427,7 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel, navigator
     val lifecycleOwner = LocalLifecycleOwner.current
     val showTrafficNotification by viewModel.showTrafficNotification.state.collectAsStateWithLifecycle()
     val superIslandEnabled by viewModel.superIslandEnabled.state.collectAsStateWithLifecycle()
+    val liveNotificationEnabled by viewModel.liveNotificationEnabled.state.collectAsStateWithLifecycle()
     val shizukuAccess by viewModel.shizukuAccess.collectAsStateWithLifecycle()
     val privilegeAccess by viewModel.privilegeAccess.collectAsStateWithLifecycle()
     val exitUiWhenBackground by viewModel.exitUiWhenBackground.state.collectAsStateWithLifecycle()
@@ -492,6 +494,15 @@ private fun AppServiceSettingsSection(viewModel: AppSettingsViewModel, navigator
                 title = FlyTxt.AppSettings.ServiceSection.SuperIslandTitle,
                 checked = superIslandEnabled,
                 onCheckedChange = viewModel::onSuperIslandEnabledChange,
+            )
+        }
+        // Android 16 实时通知（promoted ongoing）仅在 Android 16+ 设备提供开关；与超级岛互斥展示。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+            PreferenceSwitchItem(
+                title = FlyTxt.AppSettings.ServiceSection.LiveNotificationTitle,
+                summary = FlyTxt.AppSettings.ServiceSection.LiveNotificationSummary,
+                checked = liveNotificationEnabled,
+                onCheckedChange = viewModel::onLiveNotificationEnabledChange,
             )
         }
         PreferenceArrowItem(

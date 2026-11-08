@@ -483,6 +483,12 @@ public object FlyTxt {
             public val SuperIslandTitle: String get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.SuperIslandTitle
             @androidx.compose.runtime.Composable
             public fun SuperIslandTitle(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.SuperIslandTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.SuperIslandTitle, *args)
+            public val LiveNotificationTitle: String get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.LiveNotificationTitle
+            @androidx.compose.runtime.Composable
+            public fun LiveNotificationTitle(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.LiveNotificationTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.LiveNotificationTitle, *args)
+            public val LiveNotificationSummary: String get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.LiveNotificationSummary
+            @androidx.compose.runtime.Composable
+            public fun LiveNotificationSummary(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.LiveNotificationSummary else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.LiveNotificationSummary, *args)
             public val ShizukuTitle: String get() = FlyLocaleManager.activeStrings.AppSettings.ServiceSection.ShizukuTitle
             @androidx.compose.runtime.Composable
             public fun ShizukuTitle(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.ServiceSection.ShizukuTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.ServiceSection.ShizukuTitle, *args)
