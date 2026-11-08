@@ -31,9 +31,9 @@ jobs:
           distribution: zulu
           java-version: "26"
       - name: Setup Kotlin
-        uses: fwilhe2/setup-kotlin@main
+        uses: fwilhe2/setup-kotlin@cf68a5189070d61ee3117555d55736bc73a67b3b # main
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
       - name: Generate locale sources
         shell: bash
         run: |
@@ -42,7 +42,7 @@ jobs:
           ./gradlew --no-daemon :locale:kspDebugKotlin
           test -s locale/build/generated/ksp/debug/kotlin/cafe/adriel/lyricist/Strings.kt
       - name: 'Qodana Scan'
-        uses: JetBrains/qodana-action@v2026.2
+        uses: JetBrains/qodana-action@3e8d76ff0e0241618abd808682f426afe84bab3f # v2026.2.2
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:

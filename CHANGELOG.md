@@ -127,3 +127,9 @@
 - **权限精简**：移除 `PROCESS_OUTGOING_CALLS` 权限与外呼广播监听，暗码仅保留 SECRET_CODE 路径（`fix(runtime)`）
 - **遥控器架构**：新增 `RemoteSwitch` 统一外部控制器探测/挂起/回退生命周期，连续 3 次探测失败才回退本地运行时（`refactor(runtime)`）
 - **构建/文档**：CI 工作流与 Gradle 依赖升级、Rust YAML 库重构、README 重写、国旗 URL 归一化（`chore`）
+
+[Unreleased]: https://github.com/LM-Firefly/FlyCat/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/LM-Firefly/FlyCat/releases/tag/v0.6.0
+[0.5.9]: https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.9
+[0.5.8]: https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.8
+[0.5.7]: https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.7
