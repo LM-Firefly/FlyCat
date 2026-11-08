@@ -44,10 +44,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.CompositeBackdrop
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.ArrowDownUp
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Bolt
@@ -55,13 +58,20 @@ import com.github.lmfirefly.flycat.presentation.icon.flycat.House
 import com.github.lmfirefly.flycat.presentation.icon.flycat.PackageCheck
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
 import com.github.lmfirefly.flycat.presentation.util.LocalBottomBarScrollBehavior
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.glass.GlassColorBlendMode
+import top.yukonga.miuix.kmp.glass.GlassColorLayer
+import top.yukonga.miuix.kmp.glass.GlassMaterial
+import top.yukonga.miuix.kmp.glass.GlassMaterials
 import top.yukonga.miuix.kmp.glass.GlassNavigationBar
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -165,11 +175,30 @@ fun rememberBottomBarReservedHeight(): Dp {
 
 @Composable
 fun BottomBarContent(isVisible: Boolean = true, backdrop: LayerBackdrop) {
-    FloatingBottomBarContent(isVisible = isVisible, backdrop = backdrop)
+    // 内容录制层在无内容区域是透明的，单独采样会让底栏玻璃在这些区域"全透"（issue #220）；
+    // 垫上不透明的壁纸录制层合成采样，整条底栏的模糊与颜色层处处一致生效。
+    val wallpaperBackdrop = LocalGlassBackdrop.current
+    val glassSample = remember(wallpaperBackdrop, backdrop) {
+        if (wallpaperBackdrop == null) backdrop else CompositeBackdrop(wallpaperBackdrop, backdrop)
+    }
+    FloatingBottomBarContent(isVisible = isVisible, backdrop = glassSample)
+}
+
+/**
+ * 底栏玻璃材质：在 [GlassMaterials.puredThinGlass] 基础上，把最靠近背景的颜色层换成平涂染色
+ * （亮色 8% 白 / 暗色 8% 黑，issue #220），轻微压低身后繁忙内容（流向图、节点卡片）透出后的对比度，减轻与图标、标签的叠影。
+ * 后两层保持不变（亮色为亮泽层，暗色为去饱和与压暗层）；原第一层 PlusDarker 仅为轻度压暗（亮色 2% / 暗色 10%），替换后整体观感几乎无损。
+ */
+private fun bottomBarGlassMaterial(isDark: Boolean): GlassMaterial {
+    val tint = if (isDark) Color(0x14000000) else Color(0x14FFFFFF)
+    return GlassMaterials.puredThinGlass(isDark).copy(
+//        blurRadius = 12.dp,
+        first = GlassColorLayer(tint, GlassColorBlendMode.SrcOver),
+    )
 }
 
 @Composable
-private fun FloatingBottomBarContent(isVisible: Boolean = true, backdrop: LayerBackdrop) {
+private fun FloatingBottomBarContent(isVisible: Boolean = true, backdrop: Backdrop) {
     val bottomBarScrollBehavior = LocalBottomBarScrollBehavior.current
     val mainPagerState = LocalMainPagerState.current
     val page by remember(mainPagerState) { derivedStateOf { mainPagerState.selectedPage } }
@@ -200,6 +229,7 @@ private fun FloatingBottomBarContent(isVisible: Boolean = true, backdrop: LayerB
         backdrop = backdrop,
         visible = bottomBarVisible,
         height = UiDp.dp48,
+        material = bottomBarGlassMaterial(isDarkTheme()),
         indicatorColor = MiuixTheme.colorScheme.primary.copy(alpha = AppTheme.opacity.subtle),
         selectedColor = MiuixTheme.colorScheme.primary,
         unselectedColor = MiuixTheme.colorScheme.onSurface.copy(alpha = AppTheme.opacity.secondaryText),
