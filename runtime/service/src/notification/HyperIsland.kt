@@ -45,21 +45,27 @@ object HyperIsland {
         }.getOrDefault(false)
     }
     fun isSupported(): Boolean = supported
+    /**
+     * @param appIconRes 展开卡片（亮/暗）的应用图标槽位：系统只取图标 alpha 单色着色绘制，实心轮廓会把爪印内部细节抹平，故传爪印镂空的负形图标，着色后爪印以圆底色透出。
+     * @param smallIconRes 小岛（状态栏胶囊）槽位：按原图全彩绘制，保留双色矢量图标。
+     */
     internal fun applyExtras(
         service: Service,
         notification: Notification,
         presentation: NotificationPresentation.Running,
-        iconRes: Int,
+        appIconRes: Int,
+        smallIconRes: Int,
         promote: Boolean,
     ) {
-        val icon = Icon.createWithResource(service, iconRes)
+        val appIcon = Icon.createWithResource(service, appIconRes)
+        val smallIcon = Icon.createWithResource(service, smallIconRes)
         notification.extras.putBundle(
             EXTRA_PICS,
             Bundle().apply {
-                putParcelable(PIC_APP_ICON, icon)
-                putParcelable(PIC_APP_ICON_DARK, icon)
-                putParcelable(PIC_SMALL, icon)
-                putParcelable(PIC_SMALL_DARK, icon)
+                putParcelable(PIC_APP_ICON, appIcon)
+                putParcelable(PIC_APP_ICON_DARK, appIcon)
+                putParcelable(PIC_SMALL, smallIcon)
+                putParcelable(PIC_SMALL_DARK, smallIcon)
             },
         )
         notification.extras.putString(

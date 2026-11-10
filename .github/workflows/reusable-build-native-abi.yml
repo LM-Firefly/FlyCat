@@ -35,7 +35,7 @@ jobs:
           java-version: "26"
 
       - name: Setup Kotlin
-        uses: fwilhe2/setup-kotlin@main
+        uses: fwilhe2/setup-kotlin@cf68a5189070d61ee3117555d55736bc73a67b3b # main
 
       - name: Setup Go
         uses: actions/setup-go@v7
@@ -47,7 +47,7 @@ jobs:
         # nightly + rust-src: the rust build uses -Zbuild-std and
         # -Cpanic=immediate-abort to shrink liboverride.so (~18%), see
         # RustBuilder in scripts/native-build.main.kts.
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@2c76c034f9e32a5d6e2c104dc4df23a22476db04 # nightly
         with:
           toolchain: nightly
           targets: armv7-linux-androideabi,aarch64-linux-android,i686-linux-android,x86_64-linux-android
@@ -74,7 +74,7 @@ jobs:
           fi
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         with:
           packages: ""
 

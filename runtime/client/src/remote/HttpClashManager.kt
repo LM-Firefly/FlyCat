@@ -314,6 +314,7 @@ class HttpClashManager(
             )
             response.status.isSuccess()
         } catch (error: Throwable) {
+            if (error is CancellationException) throw error
             false
         }
     }

@@ -465,10 +465,9 @@ onMounted(async () => {
   for (const [name, v] of Object.entries<any>(variables)) {
     serverVars[name] = { value: String(v.default ?? ''), default: v.default, description: v.description }
   }
-  const wanted =
-    [new URLSearchParams(location.search).get('op') ?? '', props.op ?? ''].find(
-      (k) => k && ops.value.some((o) => o.key === k)
-    ) ?? ops.value[0]?.key
+  const wanted = [new URLSearchParams(location.search).get('op') ?? '', props.op ?? ''].find(
+    (k) => k && ops.value.some((o) => o.key === k)
+  ) ?? ops.value[0]?.key
   selectedKey.value = wanted ?? ''
   if (wanted) initValues()
 })

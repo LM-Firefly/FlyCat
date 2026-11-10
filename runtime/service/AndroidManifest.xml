@@ -101,7 +101,7 @@
         <service
             android:name="com.github.lmfirefly.flycat.runtime.service.android.ProxyTileService"
             android:exported="true"
-            android:icon="@drawable/ic_logo_service"
+            android:icon="@drawable/ic_logo_service_white"
             android:label="@string/tile_proxy_label"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>

@@ -72,7 +72,7 @@ class DialerReceiver : BroadcastReceiver() {
                 )
 
                 val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-                    .setSmallIcon(R.drawable.ic_logo_service)
+                    .setSmallIcon(R.drawable.ic_logo_service_cutout)
                     .setContentTitle(FlyTxt.Service.Tile.ClickToOpen)
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(true)

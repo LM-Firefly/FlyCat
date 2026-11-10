@@ -348,7 +348,7 @@ class AutoRestartService : Service() {
     private fun createNotification(): Notification = NotificationCompat.Builder(this, CHANNEL_ID)
         .setContentTitle("FlyCat")
         .setContentText("Checking auto-start...")
-        .setSmallIcon(R.drawable.ic_logo_service)
+        .setSmallIcon(R.drawable.ic_logo_service_cutout)
         .setOngoing(true)
         .build()
 

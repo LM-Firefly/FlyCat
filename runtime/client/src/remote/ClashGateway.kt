@@ -387,6 +387,7 @@ class ClashGateway(
         return try {
             rootCall()
         } catch (error: Throwable) {
+            if (error is CancellationException) throw error
             handleRootRuntimeFailure(error)
             if (fallbackOnRootFailure) localCall() else throw error
         }

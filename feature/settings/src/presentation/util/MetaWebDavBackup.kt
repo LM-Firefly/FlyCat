@@ -11,8 +11,8 @@ import java.net.Socket
 import java.net.URI
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
-import java.time.format.DateTimeFormatter
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Base64
 import java.util.Locale
 import javax.net.ssl.SSLSocketFactory
@@ -20,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
+import timber.log.Timber
 
 data class MetaWebDavConfig(
     val url: String,
@@ -142,7 +143,9 @@ internal object MetaWebDavBackup {
             extraHeaders: Map<String, String> = emptyMap(),
         ): HttpResponse {
             val uri = URI(url)
+            require(uri.scheme.equals("http", ignoreCase = true) || uri.scheme.equals("https", ignoreCase = true)) { "Unsupported URL scheme in: $url" }
             val isTls = uri.scheme.equals("https", ignoreCase = true)
+            if (!isTls) { Timber.w("WebDAV over plain HTTP: credentials are sent unencrypted to %s", uri.host) }
             val host = uri.host ?: throw IllegalArgumentException("Missing host in URL: $url")
             val defaultPort = if (isTls) 443 else 80
             val port = if (uri.port > 0) uri.port else defaultPort

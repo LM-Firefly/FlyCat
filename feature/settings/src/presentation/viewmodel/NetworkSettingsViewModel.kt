@@ -39,6 +39,8 @@ import com.github.lmfirefly.flycat.runtime.api.contract.RuntimePhase
 import com.github.lmfirefly.flycat.runtime.api.contract.RuntimeStateMapper
 import com.github.lmfirefly.flycat.runtime.api.root.RootAccessStatus
 import java.io.File
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -50,7 +52,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -430,6 +431,7 @@ class NetworkSettingsViewModel(
                 refreshInstalledKernelCommits()
                 onDone(true)
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _errors.tryEmit("Failed to fetch kernel index: ${e.message}")
                 onDone(false)
             } finally {

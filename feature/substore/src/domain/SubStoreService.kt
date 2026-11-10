@@ -26,12 +26,13 @@ import android.content.Intent
 import android.os.IBinder
 import com.github.lmfirefly.flycat.core.util.network.NetworkUtils
 import com.github.lmfirefly.flycat.feature.substore.engine.NativeLibraryManager
+import com.github.lmfirefly.flycat.locale.FlyTxt
+import java.util.concurrent.TimeoutException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import com.github.lmfirefly.flycat.locale.FlyTxt
 import timber.log.Timber
 
 class SubStoreService : Service() {
@@ -78,7 +79,7 @@ class SubStoreService : Service() {
                 val backendReady = NetworkUtils.waitForPortReady(host = "127.0.0.1", port = request.backendPort)
                 Timber.w("Sub-Store port readiness: frontend=${request.frontendPort} ready=$frontendReady, backend=${request.backendPort} ready=$backendReady")
                 if (!frontendReady || !backendReady) {
-                    throw Exception("Sub-Store 启动超时（frontend:${request.frontendPort} ready=$frontendReady, backend:${request.backendPort} ready=$backendReady）")
+                    throw TimeoutException("Sub-Store 启动超时（frontend:${request.frontendPort} ready=$frontendReady, backend:${request.backendPort} ready=$backendReady）")
                 }
                 isRunning = true
                 SubStoreServiceController.markRunning()

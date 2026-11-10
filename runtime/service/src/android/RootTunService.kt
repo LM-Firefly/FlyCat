@@ -305,7 +305,7 @@ class RootTunService : BaseService() {
             .setContentText(presentation.content)
             .setSubText(presentation.subText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(presentation.expandedText).setSummaryText(presentation.subText))
-            .setSmallIcon(R.drawable.ic_logo_service)
+            .setSmallIcon(R.drawable.ic_logo_service_cutout)
             .setColor(getColor(R.color.color_flycat))
             .setContentIntent(contentIntent)
             .setOngoing(true)

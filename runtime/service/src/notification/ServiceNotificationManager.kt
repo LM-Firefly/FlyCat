@@ -191,7 +191,7 @@ class ServiceNotificationManager(
 
     private fun islandNotification(running: NotificationPresentation.Running, promote: Boolean): Notification {
         val notification = buildNotification(running)
-        HyperIsland.applyExtras(service, notification, running, R.drawable.ic_logo_service, promote)
+        HyperIsland.applyExtras(service, notification, running, R.drawable.ic_logo_service_cutout, R.drawable.ic_logo_service, promote)
         return notification
     }
 
@@ -243,7 +243,8 @@ class ServiceNotificationManager(
             .setContentText(presentation.content)
             .setSubText(presentation.subText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(presentation.expandedText).setSummaryText(presentation.subText))
-            .setSmallIcon(R.drawable.ic_logo_service)
+            // smallIcon 同样按 alpha 着色绘制，挖空图标可让爪印在着色后仍完整可见。
+            .setSmallIcon(R.drawable.ic_logo_service_cutout)
             .setColor(service.getColor(R.color.color_flycat))
             .setContentIntent(contentIntent)
             .setOngoing(true)

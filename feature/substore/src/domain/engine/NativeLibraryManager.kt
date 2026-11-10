@@ -191,7 +191,7 @@ object NativeLibraryManager {
 
     @SuppressLint("SetWorldReadable")
     private fun extractFromMainApk(info: LibraryInfo, targetFile: File): Boolean {
-        val apkPath = appContext?.applicationInfo?.sourceDir ?: throw RuntimeException("Context not initialized")
+        val apkPath = appContext?.applicationInfo?.sourceDir ?: throw IllegalStateException("Context not initialized")
 
         ZipFile(apkPath).use { zip ->
             var libEntry = zip.getEntry("lib/${getSupportedAbi()}/${info.name}")
@@ -218,7 +218,7 @@ object NativeLibraryManager {
             }
 
             if (libEntry == null) {
-                throw RuntimeException("Library not found in APK: ${info.name}")
+                throw IllegalStateException("Library not found in APK: ${info.name}")
             }
             val actualFileName = libEntry.name.substringAfterLast("/")
             recordLibraryVersionFromEntry(info.name, libEntry.name)
