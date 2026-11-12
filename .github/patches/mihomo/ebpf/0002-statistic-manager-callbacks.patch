@@ -11,41 +11,14 @@ Add InitialUpload/InitialDownload fields to TrackerInfo so consumers
 can compute per-connection traffic deltas without maintaining external
 baselines (B1 design: delta at source).
 diff --git a/tunnel/statistic/manager.go b/tunnel/statistic/manager.go
-index 7ac67ce51..fa2609aa2 100644
+index f84cab437..5b29dd471 100644
 --- a/tunnel/statistic/manager.go
 +++ b/tunnel/statistic/manager.go
-@@ -29,30 +29,41 @@ func init() {
- }
- 
- type Manager struct {
--	connections   xsync.Map[string, Tracker]
--	smartTarget   xsync.Map[string, *xsync.Map[string, bool]]
--	uploadTemp    atomic.Int64
--	downloadTemp  atomic.Int64
--	uploadBlip    atomic.Int64
--	downloadBlip  atomic.Int64
--	uploadTotal   atomic.Int64
--	downloadTotal atomic.Int64
--	pid           int32
--	memory        atomic.Uint64
--	memoryMu      sync.Mutex
--	memoryUpdated time.Time
--	trafficActive atomic.Bool
--	trafficWake   chan struct{}
-+	connections         xsync.Map[string, Tracker]
-+	smartTarget         xsync.Map[string, *xsync.Map[string, bool]]
-+	uploadTemp          atomic.Int64
-+	downloadTemp        atomic.Int64
-+	uploadBlip          atomic.Int64
-+	downloadBlip        atomic.Int64
-+	uploadTotal         atomic.Int64
-+	downloadTotal       atomic.Int64
-+	pid                 int32
-+	memory              atomic.Uint64
-+	memoryMu            sync.Mutex
-+	memoryUpdated       time.Time
-+	trafficActive       atomic.Bool
-+	trafficWake         chan struct{}
+@@ -56,11 +56,20 @@ type Manager struct {
+ 	sources     xsync.Map[netip.Addr, *sourceCounter]
+ 	sourceCount stdatomic.Int32
+ 	sourceSweep stdatomic.Int64
++
 +	lastPushedUpSpeed   atomic.Int64
 +	lastPushedDownSpeed atomic.Int64
 +	OnJoin              func(*TrackerInfo)
@@ -59,8 +32,10 @@ index 7ac67ce51..fa2609aa2 100644
 +	if m.OnJoin != nil {
 +		m.OnJoin(c.Info())
 +	}
- }
- 
+ 	// Bytes counted before tracking began are already stamped; announce them
+ 	// as an upload of their own, after the connection is visible to Range.
+ 	if c.Info().LastUpload.Load() != 0 {
+@@ -104,6 +113,9 @@ func (m *Manager) signalUpload() {
  func (m *Manager) Leave(c Tracker) {
  	m.connections.Delete(c.ID())
  	m.leaveSmartTarget(c)
@@ -70,16 +45,16 @@ index 7ac67ce51..fa2609aa2 100644
  }
  
  func (m *Manager) Get(id string) (c Tracker) {
-@@ -134,6 +145,8 @@ func (m *Manager) ResetStatistic() {
+@@ -201,6 +213,8 @@ func (m *Manager) ResetStatistic() {
  	m.downloadTemp.Store(0)
  	m.downloadBlip.Store(0)
  	m.downloadTotal.Store(0)
 +	m.lastPushedUpSpeed.Store(0)
 +	m.lastPushedDownSpeed.Store(0)
+ 	m.resetSources()
  }
  
- func (m *Manager) wakeTraffic() {
-@@ -163,6 +176,14 @@ func (m *Manager) handle(ctx context.Context, interval time.Duration) {
+@@ -231,6 +245,14 @@ func (m *Manager) handle(ctx context.Context, interval time.Duration) {
  			up, down := m.uploadTemp.Swap(0), m.downloadTemp.Swap(0)
  			m.uploadBlip.Store(up)
  			m.downloadBlip.Store(down)
@@ -95,7 +70,7 @@ index 7ac67ce51..fa2609aa2 100644
  				timer.Reset(interval)
  				continue
 diff --git a/tunnel/statistic/tracker.go b/tunnel/statistic/tracker.go
-index f42d81628..ed0b41bbd 100644
+index 1a6b54226..ce34d840c 100644
 --- a/tunnel/statistic/tracker.go
 +++ b/tunnel/statistic/tracker.go
 @@ -49,6 +49,8 @@ type TrackerInfo struct {
@@ -107,7 +82,7 @@ index f42d81628..ed0b41bbd 100644
  
  	// When payload last moved each way, in Unix nanoseconds; zero if it never
  	// has. Kept out of the API: they exist for AwaitingReply.
-@@ -246,14 +248,16 @@ func NewTCPTracker(conn C.Conn, manager *Manager, metadata *C.Metadata, rule C.R
+@@ -262,14 +264,16 @@ func NewTCPTracker(conn C.Conn, manager *Manager, metadata *C.Metadata, rule C.R
  		Conn:    conn,
  		manager: manager,
  		TrackerInfo: &TrackerInfo{
@@ -132,7 +107,7 @@ index f42d81628..ed0b41bbd 100644
  		},
  		pushToManager:        pushToManager,
  		initialUpload:        uploadTotal,
-@@ -361,14 +365,16 @@ func NewUDPTracker(conn C.PacketConn, manager *Manager, metadata *C.Metadata, ru
+@@ -387,14 +391,16 @@ func NewUDPTracker(conn C.PacketConn, manager *Manager, metadata *C.Metadata, ru
  		PacketConn: conn,
  		manager:    manager,
  		TrackerInfo: &TrackerInfo{
